@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DxDropDownBoxComponent, DxFormComponent } from 'devextreme-angular';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
 import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
@@ -15,6 +15,7 @@ import { OrganizationSaved, ShowOrganizationModal } from 'src/app/shared/organiz
 import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
 import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
+import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
 
 @Component({
   selector: 'app-events',
@@ -42,7 +43,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private cd: ChangeDetectorRef,
+  constructor(private authService: AuthService,
     private store: Store,
     private actions$: Actions,
     public eventService: EventService,
@@ -195,5 +196,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 
   closeSingleImageModal = () => {
     this.isSingleImageVisible$.next(false);
+  }
+
+  isVisible(roles: string[]): boolean {
+    let userRole = this.authService.getLoggedInUser().role;
+
+    return roles.filter(role => role == userRole).length > 0;
   }
 }

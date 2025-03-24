@@ -1,4 +1,4 @@
-<dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
+<dx-tabs #apiTabs [dataSource]="secureTabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
 <ng-template [ngIf]="selectedTab == 'Events'">
   <app-events></app-events>

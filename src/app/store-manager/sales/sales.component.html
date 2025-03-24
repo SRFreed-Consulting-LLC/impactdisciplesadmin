@@ -38,12 +38,12 @@
   <dxi-column dataField="shippingRate" [caption]="'Shipping'" cellTemplate="amountOtherTemplate"></dxi-column>
   <dxi-column dataField="paymentIntent.amount" cellTemplate="amountDollarTemplate" [caption]="'Charged'"></dxi-column>
   <dxi-column dataField="refundAmount" cellTemplate="amountOtherTemplate" [caption]="'Refunded'"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
+  <dxi-column type="buttons" caption="Actions" [allowReordering]="false" [visible]="isVisible(['Admin'])">
     <dxi-button icon="arrowdown" hint="DOWNLOAD SHIPPING LABEL" [onClick]="getShippingLabel" [visible]="isShippingButtonVisible"></dxi-button>
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
   </dxi-column>
 
-  <dxo-summary>
+  <dxo-summary *ngIf="isVisible(['Admin'])">
     <dxi-total-item column="id" summaryType="count"> </dxi-total-item>
     <dxi-total-item column="totalBeforeDiscount" summaryType="sum" valueFormat="currency"></dxi-total-item>
     <dxi-total-item column="discount" summaryType="sum" valueFormat="currency"></dxi-total-item>
@@ -95,6 +95,7 @@
   <dxi-toolbar-item toolbar="top" location="after" [visible]="this.selectedItem && this.selectedItem.processedStatus != 'PARTIAL_REFUND' && this.selectedItem.processedStatus != 'REFUNDED'">
     <div *dxTemplate>
       <dx-button
+        *ngIf="isVisible(['Admin'])"
         text="REFUND ORDER"
         stylingMode="contained"
         type="normal"
@@ -272,7 +273,7 @@
                     <dxi-column [caption]="'Discount'" cellTemplate="discountAmountTemplate"></dxi-column>
                     <dxi-column [caption]="'Total'" cellTemplate="totalAmountTemplate"></dxi-column>
                     <dxi-column dataField="processedStatus" [caption]="'Status'" [width]="150"></dxi-column>
-                    <dxi-column type="buttons" [allowReordering]="false" [width]="75">
+                    <dxi-column *ngIf="isVisible(['Admin'])" type="buttons" [allowReordering]="false" [width]="75">
                       <dxi-button icon="taskcomplete" hint="Mark As Shipped" [onClick]="markAsShipped" [visible]="isShippedButtonsVisible"></dxi-button>
                       <dxi-button icon="taskrejected" hint="Refund Amount" [onClick]="refundLineItem" [visible]="isRefundedButtonsVisible"></dxi-button>
                     </dxi-column>

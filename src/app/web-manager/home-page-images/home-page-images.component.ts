@@ -3,33 +3,31 @@ import { DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
-import { TESTIMONIAL_TYPES } from 'impactdisciplescommon/src/lists/testimonial_types.enum';
-import { TestimonialModel } from 'impactdisciplescommon/src/models/domain/testimonial.model';
-import { TestimonialService } from 'impactdisciplescommon/src/services/data/testimonial.service';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { BehaviorSubject, map, Observable } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import { Timestamp } from 'firebase/firestore';
+import { HomePageImageService } from 'impactdisciplescommon/src/services/data/home-page-images.service';
+import { HomePageImageModel } from 'impactdisciplescommon/src/models/domain/home-page-image.model';
 
 @Component({
-  selector: 'app-testimonials',
-  templateUrl: './testimonials.component.html',
-  styleUrls: ['./testimonials.component.css']
+  selector: 'app-home-page-images',
+  templateUrl: './home-page-images.component.html',
+  styleUrls: ['./home-page-images.component.css']
 })
-export class TestimonialsComponent implements OnInit{
+export class HomePageImagesComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
 
   datasource$: Observable<DataSource>;
-  selectedItem: TestimonialModel;
+  selectedItem: HomePageImageModel;
 
-  itemType = 'Testimonial'
+  itemType = 'Home Page Image'
 
   public inProgress$ = new BehaviorSubject<boolean>(false)
   public isVisible$ = new BehaviorSubject<boolean>(false);
 
-  testimonials:TESTIMONIAL_TYPES[] = [];
+  sides:string[] = ['l', 'r'];
 
-  constructor(private service: TestimonialService) {}
+  constructor(private service: HomePageImageService) {}
 
   async ngOnInit(): Promise<void> {
     this.datasource$ = this.service.streamAll().pipe(
@@ -48,8 +46,6 @@ export class TestimonialsComponent implements OnInit{
           })
       )
     );
-
-    this.testimonials = EnumHelper.getTestimonialTypesAsArray();
   }
 
   showEditModal = (e) => {
@@ -58,8 +54,7 @@ export class TestimonialsComponent implements OnInit{
   }
 
   showAddModal = () => {
-    this.selectedItem = {... new TestimonialModel()};
-    this.selectedItem.date = Timestamp.now().toDate();
+    this.selectedItem = {... new HomePageImageModel()};
     this.isVisible$.next(true);
   }
 
@@ -78,7 +73,7 @@ export class TestimonialsComponent implements OnInit{
     });
   }
 
-  onSave(item: TestimonialModel) {
+  onSave(item: HomePageImageModel) {
     item.date = Timestamp.now();
 
     if(this.addEditForm.instance.validate().isValid) {
@@ -133,4 +128,6 @@ export class TestimonialsComponent implements OnInit{
     this.inProgress$.next(false);
     this.isVisible$.next(false);
   }
+
 }
+

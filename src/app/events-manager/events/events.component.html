@@ -5,7 +5,7 @@
         <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
       </div>
     </dxi-item>
-    <dxi-item location="after">
+    <dxi-item *ngIf="isVisible(['Admin'])" location="after">
       <div *dxTemplate>
         <dx-button class="icon-button manage-button" hint="MANAGE EVENTS">
           <div *dxTemplate="let data of 'content'">
@@ -52,7 +52,7 @@
     <dxo-lookup [dataSource]="locations$ | async" displayExpr="name" valueExpr="id"></dxo-lookup>
   </dxi-column>
   <dxi-column dataField="description" [visible]="false"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
+  <dxi-column type="buttons" caption="Actions" [allowReordering]="false" [visible]="isVisible(['Admin'])">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
   </dxi-column>
 
@@ -78,9 +78,9 @@
       </p>
     </div>
   </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async">
+  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async" >
     <div *dxTemplate>
-      <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
+      <dx-switch *ngIf="isVisible(['Admin'])" [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
     </div>
   </dxi-toolbar-item>
   <div *dxTemplate="let data of 'content'">
@@ -93,7 +93,7 @@
             [showColonAfterLabel]="false"
             labelLocation="left">
             <dxi-item itemType="tabbed">
-              <dxi-tab title="Info" [colCount]="8">
+              <dxi-tab *ngIf="isVisible(['Admin'])" title="Info" [colCount]="8">
                 <dxi-item dataField="eventName" [colSpan]="4" [label]="{ text: 'Event Name' }" [isRequired]="true"></dxi-item>
                 <dxi-item [colSpan]="4" [label]="{ text: 'Email Template' }" [isRequired]="!selectedItem.isOnline">
                   <div *dxTemplate>
@@ -240,16 +240,16 @@
                 <dxi-item dataField="imageUrl.name" [label]="{ text: 'Image Name' }" [colSpan]="8" [disabled]="true"></dxi-item>
                 <dxi-item dataField="description" [colSpan]="8" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [label]="{ text: 'Web Description' }"></dxi-item>
               </dxi-tab>
-              <dxi-tab title="Application">
+              <dxi-tab *ngIf="isVisible(['Admin'])" title="Application">
                 <app-event-application [event]="selectedItem"></app-event-application>
               </dxi-tab>
-              <dxi-tab title="Agenda">
+              <dxi-tab *ngIf="isVisible(['Admin'])" title="Agenda">
                 <app-event-agenda [event]="selectedItem"></app-event-agenda>
               </dxi-tab>
-              <dxi-tab title="Attendees">
+              <dxi-tab *ngIf="isVisible(['Admin', 'Employee'])" title="Attendees">
                 <app-event-attendees [event]="selectedItem"></app-event-attendees>
               </dxi-tab>
-              <dxi-tab title="Break Outs">
+              <dxi-tab *ngIf="isVisible(['Admin'])" title="Break Outs">
                 <app-event-breakouts [event]="selectedItem"></app-event-breakouts>
               </dxi-tab>
             </dxi-item>
@@ -258,6 +258,7 @@
       </dx-scroll-view>
       <div class="add-item-modal__button-group" style="bottom: 10px; right: 10px; position: fixed;">
         <dx-button
+          *ngIf="isVisible(['Admin'])"
           text="Upload Main Image"
           width="250px"
           stylingMode="contained"

@@ -7,7 +7,7 @@
     </dxi-item>
     <dxi-item location="after">
       <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE TESTIMONIALS">
+        <dx-button class="icon-button manage-button" hint="MANAGE HOME PAGE IMAGES">
           <div *dxTemplate="let data of 'content'">
             <div class="d-flex">
               <i class="dx-icon-preferences"></i>
@@ -40,12 +40,12 @@
   <dxo-scrolling mode="virtual"></dxo-scrolling>
 
   <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="author"></dxi-column>
+  <dxi-column dataField="url"></dxi-column>
   <dxi-column dataField="date" [dataType]="'date'" [sortOrder]="'desc'"></dxi-column>
   <dxi-column dataField="title"></dxi-column>
   <dxi-column dataField="text" [visible]="false"></dxi-column>
-  <dxi-column dataField="type" [caption]="'Testimonial Type'">
-    <dxo-lookup [dataSource]="testimonials"></dxo-lookup>
+  <dxi-column dataField="side">
+    <dxo-lookup [dataSource]="sides"></dxo-lookup>
   </dxi-column>
   <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
@@ -83,14 +83,14 @@
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
         <dx-form #addEditForm [colCount]="2" [(formData)]="selectedItem">
-          <dxi-item dataField="author" [colSpan]="2" [isRequired]="true"></dxi-item>
+          <dxi-item dataField="url" [colSpan]="2" [isRequired]="true"></dxi-item>
           <dxi-item dataField="title" [colSpan]="2"></dxi-item>
           <dxi-item dataField="text" [colSpan]="2" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
           <dxi-item [label]="{ text: 'Type' }" [colSpan]="2" [isRequired]="true">
             <div *dxTemplate>
               <dx-select-box
-                [items]="testimonials"
-                [(value)]="selectedItem.type">
+                [items]="sides"
+                [(value)]="selectedItem.side">
               </dx-select-box>
             </div>
           </dxi-item>

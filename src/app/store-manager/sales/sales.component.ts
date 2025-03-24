@@ -13,6 +13,7 @@ import { Timestamp } from 'firebase/firestore';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { PaymentIntent } from '@stripe/stripe-js';
+import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
 
 @Component({
   selector: 'app-sales',
@@ -50,7 +51,7 @@ export class SalesComponent implements OnInit {
 
   phone_types;
 
-  constructor(private service: SalesService) {}
+  constructor(private service: SalesService, private authService: AuthService) {}
 
   ngOnInit() {
     this.datasource$ = this.service.streamAll().pipe(
@@ -420,5 +421,11 @@ export class SalesComponent implements OnInit {
       style: 'currency',
       currency: 'USD',
     }).format(parseFloat((itemInfo.value / 100).toFixed(2)));
+  }
+
+  isVisible(roles: string[]): boolean {
+    let userRole = this.authService.getLoggedInUser().role;
+
+    return roles.filter(role => role == userRole).length > 0;
   }
 }

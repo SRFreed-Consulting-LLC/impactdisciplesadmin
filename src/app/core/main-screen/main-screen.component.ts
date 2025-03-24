@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { DxButtonTypes } from 'devextreme-angular/ui/button';
+import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
+import { SecureMenuItem } from 'impactdisciplescommon/src/models/utils/secure-menu-item.model';
 import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
 import { TopNavService } from 'impactdisciplescommon/src/services/utils/top-nav.service';
 
@@ -9,16 +11,18 @@ import { TopNavService } from 'impactdisciplescommon/src/services/utils/top-nav.
   templateUrl: './main-screen.component.html',
   styleUrls: ['./main-screen.component.scss']
 })
-export class MainScreenComponent {
-  navigation: any[] = [
-    { id: 0, text: "HOME", icon: "home", path:"" },
-    { id: 1, text: "ADMIN MANAGER", icon: "user", path: "admin-manager" },
-    { id: 2, text: "EVENTS MANAGER", icon: "event", path: "events-manager" },
-    { id: 3, text: "REQUESTS MANAGER", icon: "belloutline", path: "requests-manager" },
-    { id: 4, text: "STORE MANAGER", icon: "user", path: "store-manager" },
-    { id: 5, text: "SUBSCRIPTIONS MANAGER", icon: "message", path: "subscriptions-manager" },
-    { id: 6, text: "WEB MANAGER", icon: "toolbox", path: "web-manager" }
+export class MainScreenComponent implements OnInit {
+  navigation: SecureMenuItem[] = [
+    { id: 0, text: "HOME", icon: "home", path:"", users:[Role.ADMIN] },
+    { id: 1, text: "ADMIN MANAGER", icon: "user", path: "admin-manager", users:[Role.ADMIN] },
+    { id: 2, text: "EVENTS MANAGER", icon: "event", path: "events-manager", users:[Role.ADMIN, Role.EMPLOYEE] },
+    { id: 3, text: "REQUESTS MANAGER", icon: "belloutline", path: "requests-manager", users:[Role.ADMIN] },
+    { id: 4, text: "STORE MANAGER", icon: "user", path: "store-manager", users:[Role.ADMIN, Role.EMPLOYEE] },
+    { id: 5, text: "SUBSCRIPTIONS MANAGER", icon: "message", path: "subscriptions-manager", users:[Role.ADMIN] },
+    { id: 6, text: "WEB MANAGER", icon: "toolbox", path: "web-manager", users:[Role.ADMIN] }
   ]
+
+  secureNav: SecureMenuItem[] = [];
 
   isDrawerOpen: boolean = false;
   buttonOptions: any = {
@@ -37,11 +41,18 @@ export class MainScreenComponent {
 
   constructor(public topNavService: TopNavService, private authService: AuthService, private router: Router){}
 
+  ngOnInit(): void {
+    let userRole = this.authService.getLoggedInUser().role;
+
+    this.secureNav = this.navigation.filter(item => item.users.find(role => role == userRole));
+  }
+
   tabClicked(e :any){
     this.topNavService.navigate(e.itemData)
   }
 
   menuItemClicked(e){
+    console.log(e)
     this.router.navigate(['/', e.itemData.path]);
   }
 }

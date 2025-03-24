@@ -14,6 +14,7 @@ export class WebManagerComponent {
     { id: 0, text: 'Blog Posts', template: 'Blog Posts' },
     { id: 1, text: 'Pod Casts', template: 'Pod Casts' },
     { id: 2, text: 'Testimonials', template: 'Testimonials' },
+    { id: 3, text: 'Hopme Page Images', template: 'Home Page Images' },
   ];
 
   selectTab(e) {

@@ -91,7 +91,7 @@
   <div *dxTemplate="let data of 'content'">
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isEditVisible$ | async">
-        <dx-form [colCount]="2" [(formData)]="selectedItem">
+        <dx-form #addEditForm [colCount]="2" [(formData)]="selectedItem">
           <dxi-item dataField="date" [editorType]="'dxDateBox'" [isRequired]="true" [colSpan]="1"></dxi-item>
           <dxi-item dataField="category" [colSpan]="1" [isRequired]="true">
             <div *dxTemplate>

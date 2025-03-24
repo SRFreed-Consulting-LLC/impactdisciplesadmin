@@ -70,7 +70,7 @@ export class BlogPostsComponent implements OnInit {
 
   showAddModal = () => {
     this.selectedItem = {... new BlogPostModel()};
-    this.selectedItem.date = Timestamp.now();
+    this.selectedItem.date = Timestamp.now().toDate();
     this.isVisible$.next(true);
   }
 

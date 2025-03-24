@@ -71,7 +71,7 @@ export class PodCastsComponent implements OnInit{
 
   showAddModal = () => {
     this.selectedItem = {... new PodCastModel()};
-    this.selectedItem.date = Timestamp.now();
+    this.selectedItem.date = Timestamp.now().toDate();
     this.isEditVisible$.next(true);
   }
 
