@@ -8,6 +8,7 @@ import { confirm } from 'devextreme/ui/dialog';
 import { Timestamp } from 'firebase/firestore';
 import { HomePageImageService } from 'impactdisciplescommon/src/services/data/home-page-images.service';
 import { HomePageImageModel } from 'impactdisciplescommon/src/models/domain/home-page-image.model';
+import menuData from 'impactdisciplescommon/src/services/data/nav-menu-data';
 
 @Component({
   selector: 'app-home-page-images',
@@ -26,7 +27,9 @@ export class HomePageImagesComponent implements OnInit {
   public isVisible$ = new BehaviorSubject<boolean>(false);
   public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
 
-  sides:string[] = ['l', 'r'];
+  sides: any[] = [{text: 'Left', value:'l'}, {text: 'Right', value:'r'}];
+
+  destinations: any[] = [];
 
   constructor(private service: HomePageImageService) {}
 
@@ -47,6 +50,16 @@ export class HomePageImagesComponent implements OnInit {
           })
       )
     );
+
+    menuData.forEach(menuData => {
+      this.destinations.push({text: menuData.title, value: menuData.link})
+
+      if(menuData.hasDropdown){
+        menuData.dropdownItems.forEach(ddMenu =>{
+          this.destinations.push({text: ddMenu.title, value: ddMenu.link})
+        })
+      }
+    })
   }
 
   showEditModal = (e) => {

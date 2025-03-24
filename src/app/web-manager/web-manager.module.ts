@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule, DxFileUploaderModule, DxFormModule, DxHtmlEditorModule, DxLoadIndicatorModule, DxLoadPanelModule, DxPopupModule,
+import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule, DxFileUploaderModule, DxFormModule, DxHtmlEditorModule, DxLoadIndicatorModule, DxLoadPanelModule, DxNumberBoxModule, DxPopupModule,
          DxSelectBoxModule,
          DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextBoxModule,
          DxToolbarModule} from 'devextreme-angular';
@@ -31,6 +31,7 @@ import { HomePageImagesComponent } from './home-page-images/home-page-images.com
     DxLoadPanelModule,
     DxHtmlEditorModule,
     DxLoadIndicatorModule,
+    DxNumberBoxModule,
     DxPopupModule,
     DxSelectBoxModule,
     DxSwitchModule,

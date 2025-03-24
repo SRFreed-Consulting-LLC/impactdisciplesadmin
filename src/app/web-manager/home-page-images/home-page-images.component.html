@@ -40,12 +40,17 @@
   <dxo-scrolling mode="virtual"></dxo-scrolling>
 
   <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
+  <dxi-column dataField="order" [sortOrder]="'asc'" [visible]="false"></dxi-column>
   <dxi-column dataField="image" [width]="120" cellTemplate="imageCellTemplate"></dxi-column>
-  <dxi-column dataField="date" [dataType]="'date'" [sortOrder]="'desc'"></dxi-column>
+  <dxi-column dataField="date" [dataType]="'date'"></dxi-column>
   <dxi-column dataField="title"></dxi-column>
   <dxi-column dataField="text" [visible]="false"></dxi-column>
-  <dxi-column dataField="side" [caption]="'Alignment'">
-    <dxo-lookup [dataSource]="sides"></dxo-lookup>
+  <dxi-column dataField="side" [caption]="'Float Text'">
+    <dxo-lookup [dataSource]="sides" [valueExpr]="'value'" [displayExpr]="'text'"></dxo-lookup>
+  </dxi-column>
+  <dxi-column dataField="ctaTitle"></dxi-column>
+  <dxi-column dataField="ctaDestination">
+    <dxo-lookup [dataSource]="destinations" [valueExpr]="'value'" [displayExpr]="'text'"></dxo-lookup>
   </dxi-column>
   <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
@@ -86,29 +91,47 @@
   <div *dxTemplate="let data of 'content'">
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form #addEditForm [colCount]="2" [(formData)]="selectedItem">
+        <dx-form #addEditForm [colCount]="4" [(formData)]="selectedItem">
           <dxi-item dataField="image.name" [colSpan]="2" [isRequired]="true"></dxi-item>
+          <dxi-item  [colSpan]="1">
+            <dx-button
+              text="Upload Image"
+              width="200px"
+              stylingMode="contained"
+              type="normal"
+              [disabled]="inProgress$ | async"
+              (onClick)="showSingleImageModal()">
+            </dx-button>
+          </dxi-item>
+          <dxi-item dataField="order" [colSpan]="1" [isRequired]="true">
+            <dx-number-box [(value)]="selectedItem.order" [showSpinButtons]="true"></dx-number-box>
+          </dxi-item>
+
           <dxi-item dataField="title" [colSpan]="2"></dxi-item>
-          <dxi-item dataField="text" [colSpan]="2" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
           <dxi-item [label]="{ text: 'Type' }" [colSpan]="2" [isRequired]="true">
             <div *dxTemplate>
               <dx-select-box
                 [items]="sides"
-                [(value)]="selectedItem.side">
+                [(value)]="selectedItem.side"
+                [valueExpr]="'value'" [displayExpr]="'text'">
+              </dx-select-box>
+            </div>
+          </dxi-item>
+          <dxi-item dataField="text" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
+
+          <dxi-item dataField="ctaTitle" [label]="{ text: 'CTA Title' }" [colSpan]="2" [visible]="selectedItem.ctaVisible" [colSpan]="2"></dxi-item>
+          <dxi-item [label]="{ text: 'CTA Destination' }" [colSpan]="2"  [visible]="selectedItem.ctaVisible">
+            <div *dxTemplate>
+              <dx-select-box
+                [items]="destinations"
+                [(value)]="selectedItem.ctaDestination"
+                [valueExpr]="'value'" [displayExpr]="'text'">
               </dx-select-box>
             </div>
           </dxi-item>
         </dx-form>
       </div>
       <div class="add-item-modal__button-group pb-2">
-        <dx-button
-          text="Upload Main Image"
-          width="250px"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="showSingleImageModal()">
-        </dx-button>
         <dx-button
           text="CANCEL"
           stylingMode="contained"
