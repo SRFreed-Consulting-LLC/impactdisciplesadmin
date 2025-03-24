@@ -40,11 +40,11 @@
   <dxo-scrolling mode="virtual"></dxo-scrolling>
 
   <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="url"></dxi-column>
+  <dxi-column dataField="image" [width]="120" cellTemplate="imageCellTemplate"></dxi-column>
   <dxi-column dataField="date" [dataType]="'date'" [sortOrder]="'desc'"></dxi-column>
   <dxi-column dataField="title"></dxi-column>
   <dxi-column dataField="text" [visible]="false"></dxi-column>
-  <dxi-column dataField="side">
+  <dxi-column dataField="side" [caption]="'Alignment'">
     <dxo-lookup [dataSource]="sides"></dxo-lookup>
   </dxi-column>
   <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
@@ -55,6 +55,10 @@
     <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
       {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
     </span>
+  </div>
+
+  <div *dxTemplate="let data of 'imageCellTemplate'">
+    <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
   </div>
 </dx-data-grid>
 
@@ -83,7 +87,7 @@
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
         <dx-form #addEditForm [colCount]="2" [(formData)]="selectedItem">
-          <dxi-item dataField="url" [colSpan]="2" [isRequired]="true"></dxi-item>
+          <dxi-item dataField="image.name" [colSpan]="2" [isRequired]="true"></dxi-item>
           <dxi-item dataField="title" [colSpan]="2"></dxi-item>
           <dxi-item dataField="text" [colSpan]="2" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
           <dxi-item [label]="{ text: 'Type' }" [colSpan]="2" [isRequired]="true">
@@ -97,6 +101,14 @@
         </dx-form>
       </div>
       <div class="add-item-modal__button-group pb-2">
+        <dx-button
+          text="Upload Main Image"
+          width="250px"
+          stylingMode="contained"
+          type="normal"
+          [disabled]="inProgress$ | async"
+          (onClick)="showSingleImageModal()">
+        </dx-button>
         <dx-button
           text="CANCEL"
           stylingMode="contained"
@@ -114,3 +126,14 @@
     </div>
   </div>
 </dx-popup>
+
+<ng-container *ngIf="isSingleImageVisible$ | async">
+  <app-image-uploader
+    [card]="selectedItem"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isSingleImageVisible$ | async"
+    (imageSelectClosed)="closeSingleImageModal()">
+  </app-image-uploader>
+</ng-container>

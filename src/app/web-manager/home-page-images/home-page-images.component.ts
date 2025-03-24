@@ -24,6 +24,7 @@ export class HomePageImagesComponent implements OnInit {
 
   public inProgress$ = new BehaviorSubject<boolean>(false)
   public isVisible$ = new BehaviorSubject<boolean>(false);
+  public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
 
   sides:string[] = ['l', 'r'];
 
@@ -127,6 +128,14 @@ export class HomePageImagesComponent implements OnInit {
     this.selectedItem = null;
     this.inProgress$.next(false);
     this.isVisible$.next(false);
+  }
+
+  showSingleImageModal = () => {
+    this.isSingleImageVisible$.next(true);
+  }
+
+  closeSingleImageModal = () => {
+    this.isSingleImageVisible$.next(false);
   }
 
 }
