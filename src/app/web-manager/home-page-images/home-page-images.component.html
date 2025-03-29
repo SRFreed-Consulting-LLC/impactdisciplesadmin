@@ -119,8 +119,8 @@
           </dxi-item>
           <dxi-item dataField="text" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
 
-          <dxi-item dataField="ctaTitle" [label]="{ text: 'CTA Title' }" [colSpan]="2" [visible]="selectedItem.ctaVisible" [colSpan]="2"></dxi-item>
-          <dxi-item [label]="{ text: 'CTA Destination' }" [colSpan]="2"  [visible]="selectedItem.ctaVisible">
+          <dxi-item dataField="ctaTitle" [label]="{ text: 'CTA Title' }" [colSpan]="2" [visible]="selectedItem.ctaTitle" [colSpan]="2"></dxi-item>
+          <dxi-item [label]="{ text: 'CTA Destination' }" [colSpan]="2"  [visible]="selectedItem.ctaTitle">
             <div *dxTemplate>
               <dx-select-box
                 [items]="destinations"
