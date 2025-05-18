@@ -10,7 +10,7 @@ import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.m
 import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
 import { CustomerService } from 'impactdisciplescommon/src/services/data/customer.service';
 import { CustomerModel } from 'impactdisciplescommon/src/models/domain/utils/customer.model';
-import { SalesService } from 'impactdisciplescommon/src/services/data/sales.service';
+import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
 import { EventRegistrationModel } from 'impactdisciplescommon/src/models/domain/event-registration.model';
 import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
@@ -86,7 +86,7 @@ export class CustomersComponent implements OnInit {
   public phone_types: string[];
 
   constructor(private service: CustomerService,
-    private salesService: SalesService,
+    private salesService: PurchasesService,
     private eventService: EventService,
     private eventRegistrationService: EventRegistrationService,
     private locationsService: LocationService,

@@ -5,6 +5,23 @@
         <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
       </div>
     </dxi-item>
+    <dxi-item location="after">
+      <div *dxTemplate>
+        <dx-button class="icon-button manage-button" hint="MANAGE COUPONS">
+          <div *dxTemplate="let data of 'content'">
+            <div class="d-flex">
+              <i class="dx-icon-preferences"></i>
+            </div>
+            <dx-context-menu
+              target=".manage-button"
+              showEvent="dxclick"
+              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
+              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
+            </dx-context-menu>
+          </div>
+        </dx-button>
+      </div>
+    </dxi-item>
   </dx-toolbar>
 </div>
 
@@ -18,71 +35,37 @@
   [showRowLines]="true"
   [focusedRowEnabled]="true"
   [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)"
-  (onRowPrepared)="onRowPrepared($event)">
+  (onRowDblClick)="showEditModal($event)">
 
   <dxo-scrolling mode="virtual"></dxo-scrolling>
   <dxo-filter-row [visible]="true"></dxo-filter-row>
 
-  <dxi-column dataField="processedStatus" [caption]="'Status'"></dxi-column>
-  <dxi-column dataField="id" [visible]="false"></dxi-column>
-  <dxi-column dataField="dateProcessed" [caption]="'Date'" [dataType]="'datetime'" [sortOrder]="'desc'"></dxi-column>
-  <dxi-column dataField="firstName"></dxi-column>
-  <dxi-column dataField="lastName"></dxi-column>
-  <dxi-column dataField="email"></dxi-column>
-  <dxi-column dataField="receipt" cellTemplate="receiptTemplate"></dxi-column>
-  <dxi-column dataField="couponCode"></dxi-column>
-  <dxi-column dataField="totalBeforeDiscount" [caption]="'Total'" cellTemplate="totalBeforeDiscountTemplate"></dxi-column>
-  <dxi-column dataField="discount" [caption]="'Discount'" cellTemplate="discountTemplate"></dxi-column>
-  <dxi-column dataField="estimatedTaxes" [caption]="'Taxes'" cellTemplate="amountOtherTemplate"></dxi-column>
-  <dxi-column dataField="shippingRate" [caption]="'Shipping'" cellTemplate="amountOtherTemplate"></dxi-column>
-  <dxi-column dataField="paymentIntent.amount" cellTemplate="amountDollarTemplate" [caption]="'Charged'"></dxi-column>
-  <dxi-column dataField="refundAmount" cellTemplate="amountOtherTemplate" [caption]="'Refunded'"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false" [visible]="isVisible(['Admin'])">
-    <dxi-button icon="arrowdown" hint="DOWNLOAD SHIPPING LABEL" [onClick]="getShippingLabel" [visible]="isShippingButtonVisible"></dxi-button>
+  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
+  <dxi-column dataField="name"></dxi-column>
+  <dxi-column dataField="startDate" [caption]="'From'" [dataType]="'date'" [sortOrder]="'desc'" [width]="200"></dxi-column>
+  <dxi-column dataField="endDate" [caption]="'To'" [dataType]="'date'" [sortOrder]="'desc'" [width]="200"></dxi-column>
+  <dxi-column dataField="percentOff" dataType="number" [width]="120"></dxi-column>
+  <dxi-column dataField="amountOff" dataType="number" [width]="120"></dxi-column>
+  <dxi-column dataField="isProducts" dataType="boolean" [width]="120"></dxi-column>
+  <dxi-column dataField="isEvents" dataType="boolean" [width]="120"></dxi-column>
+  <dxi-column dataField="isShipping" dataType="boolean" [width]="120"></dxi-column>
+  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
   </dxi-column>
 
-  <dxo-summary *ngIf="isVisible(['Admin'])">
-    <dxi-total-item column="id" summaryType="count"> </dxi-total-item>
-    <dxi-total-item column="totalBeforeDiscount" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="discount" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="estimatedTaxes" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="shippingRate" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="paymentIntent.amount" summaryType="sum" valueFormat="currency" [customizeText]="customizeAmount"></dxi-total-item>
-    <dxi-total-item column="refundAmount" summaryType="sum" valueFormat="currency"></dxi-total-item>
-  </dxo-summary>
-
-  <div *dxTemplate="let data of 'totalBeforeDiscountTemplate'">
-    {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
+  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
+    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
+      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
+    </span>
   </div>
-
-  <div *dxTemplate="let data of 'discountTemplate'">
-    {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
-  </div>
-
-  <div *dxTemplate="let data of 'receiptTemplate'">
-    {{data.data.paymentIntent?.id ? data.data.paymentIntent.id : data.data.receipt }}
-  </div>
-
-  <div *dxTemplate="let data of 'amountDollarTemplate'">
-    {{data.value > 0 ? (data.value / 100 | currency) : (0 | currency)}}
-  </div>
-
-  <div *dxTemplate="let data of 'amountOtherTemplate'">
-    {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
-  </div>
-
-
 </dx-data-grid>
 
 <dx-popup
-  #addEditPopup
   [showTitle]="true"
   [dragEnabled]="false"
   [visible]="isVisible$ | async"
-  [width]="'75%'"
-  [height]="'95%'"
+  height="45%"
+  width="30%"
   [showCloseButton]="true"
   (onHiding)="onCancel()">
   <dxi-toolbar-item toolbar="top" location="center">
@@ -92,16 +75,9 @@
       </p>
     </div>
   </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" [visible]="this.selectedItem && this.selectedItem.processedStatus != 'PARTIAL_REFUND' && this.selectedItem.processedStatus != 'REFUNDED'">
+  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async">
     <div *dxTemplate>
-      <dx-button
-        *ngIf="isVisible(['Admin'])"
-        text="REFUND ORDER"
-        stylingMode="contained"
-        type="normal"
-        [disabled]="inProgress$ | async"
-        (onClick)="refundOrder()">
-      </dx-button>
+      <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
     </div>
   </dxi-toolbar-item>
   <div *dxTemplate="let data of 'content'">
@@ -112,210 +88,45 @@
           [(formData)]="selectedItem"
           [showColonAfterLabel]="false"
           labelLocation="left"
-          [colCount]="12">
-          <dxi-item itemType="group" [colCount]="4" [colSpan]="4">
-            <dxi-item dataField="dateProcessed" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="firstName" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="email" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="paymentIntent.status" [label]="{text: 'Status'}" [colSpan]="4" [disabled]="true"></dxi-item>
+          [colCount]="6">
+          <dxi-item dataField="name" [colSpan]="4" [isRequired]="true"></dxi-item>
+          <dxi-item dataField="percentOff" [colSpan]="2" [isRequired]="true">
+            <div *dxTemplate>
+              <dx-number-box [(value)]="selectedItem.percentOff">
+              </dx-number-box>
+            </div>
           </dxi-item>
-          <dxi-item itemType="group" [colCount]="4" [colSpan]="4">
-            <dxi-item dataField="processedStatus" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="lastName" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="couponCode" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item [colSpan]="4" [label]="{text: 'Item Count'}" [disabled]="true">
-              <div *dxTemplate>
-                <dx-number-box [value]="selectedItem?.cartItems?.length"></dx-number-box>
-              </div>
-            </dxi-item>
+          <dxi-item
+            dataField="startDate"
+            editorType="dxDateBox"
+            [label]="{ text: 'Start Date' }"
+            [colSpan]="3"
+            [isRequired]="true"
+            [editorOptions]="{
+              displayFormat: 'M/d/yyyy',
+              type: 'date',
+              dateSerializationFormat: 'yyyy-MM-dd',
+              useMaskBehavior: true
+          }">
           </dxi-item>
-          <dxi-item itemType="group" caption="Summary" [colCount]="4" [colSpan]="4">
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Amount: </div>
-                  <div class="col-4 text-end">{{selectedItem?.totalBeforeDiscount > 0 ? (selectedItem?.totalBeforeDiscount | currency) : (0 | currency)}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Taxes: </div>
-                  <div class="col-4 text-end">{{selectedItem?.estimatedTaxes > 0 ? (selectedItem?.estimatedTaxes | currency) : (0 | currency)}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Shipping: </div>
-                  <div class="col-4 text-end">{{selectedItem?.shippingRate > 0 ? (selectedItem?.shippingRate | currency) : (0 | currency)}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Discount: </div>
-                  <div class="col-4 text-end">-{{getDiscountAmount() | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Total: </div>
-                  <div class="col-4 text-end">{{selectedItem?.total > 0 ? (selectedItem?.total | currency) : (0 | currency)}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Refunded: </div>
-                  <div class="col-4 text-end">{{getOrderRefundedAmount() | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Charged: </div>
-                  <div class="col-4 text-end">{{getChargedAmount() | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
+          <dxi-item
+              dataField="endDate"
+              editorType="dxDateBox"
+              [label]="{ text: 'End Date' }"
+              [colSpan]="3"
+              [isRequired]="true"
+              [editorOptions]="{
+                displayFormat: 'M/d/yyyy',
+                type: 'date',
+                dateSerializationFormat: 'yyyy-MM-dd',
+                useMaskBehavior: true
+              }">
           </dxi-item>
+          <dxi-item dataField="isProducts" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Products?' }" [colSpan]="2"></dxi-item>
+          <dxi-item dataField="isEvents" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Events?' }" [colSpan]="2"></dxi-item>
+          <dxi-item dataField="isShipping" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Shipping?' }" [colSpan]="2"></dxi-item>
 
-          <dxi-item itemType="tabbed" [colSpan]="12">
-            <dxi-tab title="Shipping / Billing Information">
-              <dxi-item itemType="tabbed" [colSpan]="6">
-                <dxi-tab title="Billing Address">
-                  <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="2">
-                    <dxi-item dataField="billingAddress.address1" [colSpan]="6" [label]="{ text: 'Address1' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.address2" [colSpan]="6" [label]="{ text: 'Address2' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.city" [colSpan]="3" [label]="{ text: 'City' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
-                      <div *dxTemplate>
-                        <dx-lookup
-                        [showCancelButton]="false"
-                          [items]="states"
-                          [(value)]="selectedItem.billingAddress.state">
-                        </dx-lookup>
-                      </div>
-                    </dxi-item>
-                    <dxi-item dataField="billingAddress.zip" [colSpan]="2" [label]="{ text: 'Zip' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }"></dxi-item>
-                  </dxi-item>
-                </dxi-tab>
-                <dxi-tab title="Shipping Address">
-                  <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="2">
-                    <dxi-item dataField="shippingAddress.address1" [colSpan]="6" [label]="{ text: 'Address1' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.address2" [colSpan]="6" [label]="{ text: 'Address2' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.city" [colSpan]="3" [label]="{ text: 'City' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
-                      <div *dxTemplate>
-                        <dx-select-box
-                          [items]="states"
-                          [(value)]="selectedItem.shippingAddress.state">
-                        </dx-select-box>
-                      </div>
-                    </dxi-item>
-                    <dxi-item dataField="shippingAddress.zip" [colSpan]="2" [label]="{ text: 'Zip' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }"></dxi-item>
-                  </dxi-item>
-                </dxi-tab>
-                <dxi-tab title="Contact">
-                  <dxi-item itemType="group" caption="Phone Number" [colCount]="6" [colSpan]="2">
-                    <dxi-item dataField="phone.countryCode" [colSpan]="2" [label]="{ text: 'Country Code' }"></dxi-item>
-                    <dxi-item dataField="phone.number" [colSpan]="2" [label]="{ text: 'Number' }" [editorOptions]="phoneEditorOptions"></dxi-item>
-                    <dxi-item [label]="{ text: 'Type' }" [colSpan]="2">
-                      <div *dxTemplate>
-                        <dx-select-box
-                          [items]="phone_types"
-                          [(value)]="selectedItem.phone.type">
-                        </dx-select-box>
-                      </div>
-                    </dxi-item>
-                  </dxi-item>
-                </dxi-tab>
-              </dxi-item>
-            </dxi-tab>
-            <dxi-tab title="Sale Details">
-              <dxi-item [colSpan]="6">
-                <div *dxTemplate>
-                  <dx-data-grid class="dx-card wide-card"
-                    #grid
-                    [dataSource]="selectedItem.cartItems"
-                    [height]="'36vh'"
-                    [showBorders]="false"
-                    [showColumnLines]="true"
-                    [wordWrapEnabled]="true"
-                    [showColumnLines]="true"
-                    [showRowLines]="true"
-                    [columnAutoWidth]="true">
 
-                    <dxo-scrolling mode="virtual"></dxo-scrolling>
-                    <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-                    <dxi-column dataField="img" cellTemplate="imageCellTemplate" [caption]="''" [width]="120"></dxi-column>
-                    <dxi-column dataField="itemName" cellTemplate="descriptionCellTemplate" [caption]="'Description'"></dxi-column>
-                    <dxi-column [caption]="'Tax'" cellTemplate="taxAmountTemplate"></dxi-column>
-                    <dxi-column [caption]="'Shipping'" cellTemplate="shippingAmountTemplate"></dxi-column>
-                    <dxi-column [caption]="'Discount'" cellTemplate="discountAmountTemplate"></dxi-column>
-                    <dxi-column [caption]="'Total'" cellTemplate="totalAmountTemplate"></dxi-column>
-                    <dxi-column dataField="processedStatus" [caption]="'Status'" [width]="150"></dxi-column>
-                    <dxi-column *ngIf="isVisible(['Admin'])" type="buttons" [allowReordering]="false" [width]="75">
-                      <dxi-button icon="taskcomplete" hint="Mark As Shipped" [onClick]="markAsShipped" [visible]="isShippedButtonsVisible"></dxi-button>
-                      <dxi-button icon="taskrejected" hint="Refund Amount" [onClick]="refundLineItem" [visible]="isRefundedButtonsVisible"></dxi-button>
-                    </dxi-column>
-
-                    <div *dxTemplate="let data of 'taxAmountTemplate'">
-                      <span width="100">{{getItemTaxableAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'shippingAmountTemplate'">
-                      <span width="100">{{getItemShippingAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'discountAmountTemplate'">
-                      <span width="100">{{getItemDiscountAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'totalAmountTemplate'">
-                      <span width="100">{{getItemTotalAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'imageCellTemplate'">
-                      <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-                    </div>
-
-                    <div *dxTemplate="let data of 'descriptionCellTemplate'">
-                      <div>{{data.value}}</div>
-                      <div>{{data.data.orderQuantity}}  x  {{data.data.price | currency}} = {{(data.data.orderQuantity * data.data.price) | currency}}</div>
-                      <div *ngIf="(data.data.attendees?.length) > 0">
-                        <ol type="1">
-                          <li *ngFor="let attendee of data.data.attendees">
-                            {{attendee.firstName}} {{attendee.lastName}} - ({{attendee.email}})
-                          </li>
-                        </ol>
-                      </div>
-                      <span *ngIf="data.data.size">Size: ({{data.data.size}})</span>
-                      <span *ngIf="data.data.color">     Color: ({{data.data.color}})</span>
-                    </div>
-                  </dx-data-grid>
-                </div>
-              </dxi-item>
-            </dxi-tab>
-          </dxi-item>
         </dx-form>
       </div>
       <div class="add-item-modal__button-group">
@@ -336,14 +147,3 @@
     </div>
   </div>
 </dx-popup>
-<dx-load-panel
-    #loadPanel
-    shadingColor="rgba(0,0,0,0.4)"
-    [position]="{ of: '#addEditPopup' }"
-    [visible]="isLoadingVisible$ | async"
-    [message] = "'Please wait while refund is processing!'"
-    [showIndicator]="true"
-    [showPane]="true"
-    [shading]="true"
-    [hideOnOutsideClick]="false">
-</dx-load-panel>

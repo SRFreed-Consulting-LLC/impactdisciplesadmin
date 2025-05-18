@@ -17,6 +17,7 @@
               showEvent="dxclick"
               [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
               <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
+              <dxi-item text="Export To Excel" icon="exportxlsx" [onClick]="exportXLSGrid"></dxi-item>
             </dx-context-menu>
           </div>
         </dx-button>
@@ -26,7 +27,7 @@
 </div>
 
 <dx-data-grid class="dx-card wide-card"
-  #grid
+  #userGrid
   [dataSource]="datasource$ | async"
   [height]="'75vh'"
   [showBorders]="false"

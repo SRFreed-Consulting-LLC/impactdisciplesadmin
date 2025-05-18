@@ -4,10 +4,14 @@
   <app-products></app-products>
 </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Sales'">
-  <app-sales></app-sales>
+<ng-template [ngIf]="selectedTab == 'Purchases'">
+  <app-purchases></app-purchases>
 </ng-template>
 
 <ng-template [ngIf]="selectedTab == 'Coupons'">
   <app-coupons></app-coupons>
+</ng-template>
+
+<ng-template [ngIf]="selectedTab == 'Sales'">
+  <app-sales></app-sales>
 </ng-template>

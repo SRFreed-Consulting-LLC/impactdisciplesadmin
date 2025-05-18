@@ -15,8 +15,9 @@ export class StoreManagerComponent implements OnInit {
 
   tabs: Tab[] = [
     { id: 0, text: 'Products', template: 'Products', users:[Role.ADMIN] },
-    { id: 1, text: 'Sales', template: 'Sales', users:[Role.ADMIN, Role.EMPLOYEE] },
+    { id: 1, text: 'Purchases', template: 'Purchases', users:[Role.ADMIN, Role.EMPLOYEE] },
     { id: 3, text: 'Coupons', template: 'Coupons', users:[Role.ADMIN] },
+    { id: 4, text: 'Sales', template: 'Sales', users:[Role.ADMIN] },
   ];
 
   secureTabs: Tab[] = [];
