@@ -5,11 +5,28 @@
         <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
       </div>
     </dxi-item>
+    <dxi-item location="after">
+      <div *dxTemplate>
+        <dx-button class="icon-button manage-button">
+          <div *dxTemplate="let data of 'content'">
+            <div class="d-flex">
+              <i class="dx-icon-preferences"></i>
+            </div>
+            <dx-context-menu
+              target=".manage-button"
+              showEvent="dxclick"
+              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
+              <dxi-item text="Export To Excel" icon="exportxlsx" [onClick]="exportXLSGrid"></dxi-item>
+            </dx-context-menu>
+          </div>
+        </dx-button>
+      </div>
+    </dxi-item>
   </dx-toolbar>
 </div>
 
 <dx-data-grid class="dx-card wide-card"
-  #grid
+  #purchasesGrid
   [dataSource]="datasource$ | async"
   [height]="'75vh'"
   [showBorders]="false"

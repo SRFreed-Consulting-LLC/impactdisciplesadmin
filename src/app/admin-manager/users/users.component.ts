@@ -168,20 +168,20 @@ export class UsersComponent implements OnInit {
     this.isVisible$.next(false);
   }
 
-    exportXLSGrid = () => {
-      const context = this;
+  exportXLSGrid = () => {
+    const context = this;
 
-      const workbook = new Workbook();
-      const worksheet = workbook.addWorksheet('Attendees');
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet('Attendees');
 
-      exportXLSDataGrid({
-        component: context.userGrid.instance,
-        worksheet,
-        autoFilterEnabled: true,
-      }).then(() => {
-        workbook.xlsx.writeBuffer().then((buffer) => {
-          saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'impact_users.xlsx');
-        });
+    exportXLSDataGrid({
+      component: context.userGrid.instance,
+      worksheet,
+      autoFilterEnabled: true,
+    }).then(() => {
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'impact_users.xlsx');
       });
-    }
+    });
+  }
 }

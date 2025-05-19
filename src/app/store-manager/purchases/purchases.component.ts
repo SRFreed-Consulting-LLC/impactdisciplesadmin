@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
+import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
@@ -14,6 +14,9 @@ import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-tim
 import { environment } from 'src/environments/environment';
 import { PaymentIntent } from '@stripe/stripe-js';
 import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { Workbook } from 'exceljs';
+import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
+import { saveAs } from 'file-saver';
 
 @Component({
   selector: 'app-purchases',
@@ -22,11 +25,12 @@ import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.servi
 })
 export class PurchasesComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
+  @ViewChild('purchasesGrid', { static: false }) purchasesGrid: DxDataGridComponent;
 
   datasource$: Observable<DataSource>;
   selectedItem: CheckoutForm;
 
-  itemType = 'Purchases';
+  itemType = 'Purchase';
 
   public inProgress$ = new BehaviorSubject<boolean>(false)
   public isVisible$ = new BehaviorSubject<boolean>(false);
@@ -428,5 +432,22 @@ export class PurchasesComponent implements OnInit {
     let userRole = this.authService.getLoggedInUser().role;
 
     return roles.filter(role => role == userRole).length > 0;
+  }
+
+  exportXLSGrid = () => {
+    const context = this;
+
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet('Attendees');
+
+    exportXLSDataGrid({
+      component: context.purchasesGrid.instance,
+      worksheet,
+      autoFilterEnabled: true,
+    }).then(() => {
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'purchases.xlsx');
+      });
+    });
   }
 }
