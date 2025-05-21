@@ -7,7 +7,7 @@
     </dxi-item>
     <dxi-item location="after">
       <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE BLOGS">
+        <dx-button class="icon-button manage-button" hint="MANAGE DMM">
           <div *dxTemplate="let data of 'content'">
             <div class="d-flex">
               <i class="dx-icon-preferences"></i>
@@ -17,7 +17,6 @@
               showEvent="dxclick"
               [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
               <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-              <dxi-item text="Categories" icon="contentlayout" [onClick]="showCategoriesModal"></dxi-item>
             </dx-context-menu>
           </div>
         </dx-button>
@@ -41,16 +40,8 @@
   <dxo-filter-row [visible]="true"></dxo-filter-row>
 
   <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="mainImage" [width]="120" cellTemplate="imageCellTemplate"></dxi-column>
   <dxi-column dataField="date" [dataType]="'date'" [width]="120" sortOrder="desc"></dxi-column>
   <dxi-column dataField="title"></dxi-column>
-  <dxi-column dataField="category">
-    <dxo-lookup [dataSource]="blogCategories" [displayExpr]="'tag'" [valueExpr]="'id'"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="extraImages" [visible]="false"></dxi-column>
-  <dxi-column dataField="tags"[visible]="false">
-    <dxo-lookup [dataSource]="blogTags" [displayExpr]="'tag'" [valueExpr]="'id'"></dxo-lookup>
-  </dxi-column>
   <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
   </dxi-column>
@@ -60,10 +51,6 @@
       {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
     </span>
   </div>
-
-  <div *dxTemplate="let data of 'imageCellTemplate'">
-    <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-  </div>
 </dx-data-grid>
 
 <dx-popup
@@ -71,7 +58,7 @@
   [dragEnabled]="false"
   [visible]="isVisible$ | async"
   [width]="'70%'"
-  [height]="'95%'"
+  [height]="'85%'"
   [showCloseButton]="true"
   (onHiding)="onCancel()">
   <dxi-toolbar-item toolbar="top" location="center">
@@ -97,16 +84,10 @@
           labelLocation="left"
           [colCount]="2">
           <dxi-item dataField="date" [editorType]="'dxDateBox'" [isRequired]="true" [colSpan]="1"></dxi-item>
-          <dxi-item dataField="category" [colSpan]="1" [isRequired]="true">
-            <div *dxTemplate>
-              <dx-select-box [(value)]="selectedItem.category" [dataSource]="blogCategories" [displayExpr]="'tag'" [valueExpr]="'id'" [showClearButton]="true"></dx-select-box>
-            </div>
-          </dxi-item>
           <dxi-item dataField="title" [isRequired]="true" [colSpan]="2"></dxi-item>
-          <dxi-item dataField="mainImage.name" [colSpan]="2" [label]="{text: 'Image Name'}" [disabled]="true"></dxi-item>
           <dxi-item [colSpan]="2" [isRequired]="true">
             <div *dxTemplate>
-              <dx-html-editor [height]="'400px'" [(value)]="selectedItem.blogText">
+              <dx-html-editor [height]="'550px'" [(value)]="selectedItem.text">
                 <dxo-toolbar [multiline]="false">
                   <dxi-item name="undo"></dxi-item>
                   <dxi-item name="redo"></dxi-item>
@@ -172,38 +153,9 @@
               </dx-html-editor>
             </div>
           </dxi-item>
-          <dxi-item [label]="{text: 'Tags'}" [colSpan]="2">
-            <div *dxTemplate>
-              <dx-tag-box
-                [dataSource]="blogTags"
-                [(value)]="selectedItem.tags"
-                [displayExpr]="'tag'"
-                [acceptCustomValue]="true"
-                [hideSelectedItems]="true"
-                placeholder="Tag this Blog..."
-                (onCustomItemCreating)="onCustomItemCreating($event)">
-              </dx-tag-box>
-            </div>
-          </dxi-item>
         </dx-form>
       </div>
       <div class="add-item-modal__button-group pb-2">
-        <dx-button
-          text="Upload Main Image"
-          width="250px"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="showSingleImageModal()">
-        </dx-button>
-        <dx-button
-          text="Upload Other Image"
-          width="250px"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="showMultipleImageModal()">
-        </dx-button>
         <dx-button
           text="CANCEL"
           stylingMode="contained"
@@ -222,38 +174,7 @@
   </div>
 </dx-popup>
 
-<ng-container *ngIf="isSingleImageVisible$ | async">
-  <app-image-uploader
-    [card]="selectedItem"
-    [isList]="false"
-    [field]="'mainImage'"
-    [selectionMode]="'single'"
-    [imageSelectVisible]="isSingleImageVisible$ | async"
-    (imageSelectClosed)="closeSingleImageModal()">
-  </app-image-uploader>
-</ng-container>
 
-<ng-container *ngIf="isMultipleImageVisible$ | async">
-  <app-image-uploader
-    [card]="selectedItem"
-    [isList]="true"
-    [field]="'extraImages'"
-    [selectionMode]="'multiple'"
-    [imageSelectVisible]="isMultipleImageVisible$ | async"
-    (imageSelectClosed)="closeMultipleImageModal()">
-  </app-image-uploader>
-</ng-container>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isCategoriesVisible$ | async"
-  [width]="'30%'"
-  [height]="'60%'"
-  [showCloseButton]="true"
-  (onHiding)="onCategoriesCancel()">
-  <app-blog-categories (seriesSelectClosed)="onCategoriesCancel()"></app-blog-categories>
-</dx-popup>
 
 
 

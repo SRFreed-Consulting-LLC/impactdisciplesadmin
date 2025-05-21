@@ -1,7 +1,7 @@
 <dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
-<ng-template [ngIf]="selectedTab == 'Blog Posts'">
-  <app-blog-posts></app-blog-posts>
+<ng-template [ngIf]="selectedTab == 'Disciple Making Minute'">
+  <app-dmms></app-dmms>
 </ng-template>
 
 <ng-template [ngIf]="selectedTab == 'Pod Casts'">

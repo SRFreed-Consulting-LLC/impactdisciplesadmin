@@ -7,12 +7,11 @@ import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule,
 import { ImpactFormsModule } from 'impactdisciplescommon/src/forms/forms.module';
 import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
 import { ImpactDisciplesModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
-import { BlogPostsComponent } from './blog-posts/blog-posts.component';
+import { DMMServiceComponent } from './dmms/dmms.component';
 import { PodCastsComponent } from './pod-casts/pod-casts.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
 import { WebManagerComponent } from './web-manager.component';
 import { SharedModule } from '../shared/shared.module';
-import { BlogCategoriesComponent } from './blog-categories/blog-categories.component';
 import { PodCastCategoriesComponent } from './pod-cast-categories/pod-cast-categories.component';
 import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
@@ -45,10 +44,9 @@ import { HomePageImagesComponent } from './home-page-images/home-page-images.com
   ],
   declarations: [
     WebManagerComponent,
-    BlogPostsComponent,
+    DMMServiceComponent,
     PodCastsComponent,
     TestimonialsComponent,
-    BlogCategoriesComponent,
     PodCastCategoriesComponent,
     HomePageImagesComponent
   ],

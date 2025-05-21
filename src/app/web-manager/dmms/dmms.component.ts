@@ -1,61 +1,55 @@
-import { CategoryModel } from '../../../../impactdisciplescommon/src/models/utils/categories.model';
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
 import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
+import ArrayStore from 'devextreme/data/array_store';
 import DataSource from 'devextreme/data/data_source';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { BlogCategoriesService } from 'impactdisciplescommon/src/services/data/blog-categories.service';
+import notify from 'devextreme/ui/notify';
+import { DMMModel } from 'impactdisciplescommon/src/models/domain/dmm.model';
+import { DMMService } from 'impactdisciplescommon/src/services/data/dmm.service';
+import { BehaviorSubject, map, Observable } from 'rxjs';
+import { confirm } from 'devextreme/ui/dialog';
+import { Timestamp } from 'firebase/firestore';
 
 @Component({
-  selector: 'app-blog-categories',
-  templateUrl: './blog-categories.component.html',
-  styleUrls: ['./blog-categories.component.css']
+  selector: 'app-dmms',
+  templateUrl: './dmms.component.html',
+  styleUrls: ['./dmms.component.css']
 })
-export class BlogCategoriesComponent implements OnInit {
+export class DMMServiceComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
 
   datasource$: Observable<DataSource>;
-  selectedItem: TagModel;
-
-  itemType = 'Categories';
+  selectedItem: DMMModel;
+  itemType = 'Disciple Making Minute';
 
   public inProgress$ = new BehaviorSubject<boolean>(false)
   public isVisible$ = new BehaviorSubject<boolean>(false);
 
-  constructor(private service: BlogCategoriesService) {}
+  constructor(private service: DMMService) {}
 
-  ngOnInit() {
+  async ngOnInit() {
     this.datasource$ = this.service.streamAll().pipe(
       map(
-        (items) =>
+        (data) =>
           new DataSource({
             reshapeOnPush: true,
             pushAggregationTimeout: 100,
-            store: new CustomStore({
+            store: new ArrayStore({
               key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
+              data
           })
+        })
       )
-    );
+    )
   }
 
   showEditModal = (e) => {
     this.selectedItem = (Object.assign({}, e.data));
-
     this.isVisible$.next(true);
-
   }
 
   showAddModal = () => {
-    this.selectedItem = {... new TagModel()};
-
+    this.selectedItem = {... new DMMModel()};
+    this.selectedItem.date = Timestamp.now().toDate();
     this.isVisible$.next(true);
   }
 
@@ -74,7 +68,7 @@ export class BlogCategoriesComponent implements OnInit {
     });
   }
 
-  onSave(item: TagModel) {
+  onSave(item: DMMModel) {
     if(this.addEditForm.instance.validate().isValid) {
       this.inProgress$.next(true);
 
