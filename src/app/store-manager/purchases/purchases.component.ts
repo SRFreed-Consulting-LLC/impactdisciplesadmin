@@ -411,6 +411,10 @@ export class PurchasesComponent implements OnInit {
         total += e.data.shippingRate;
       }
 
+      if(e.data.shippingDiscount){
+        total -= e.data.shippingDiscount;
+      }
+
 
       if (e.data.paymentIntent?.amount && parseFloat(total.toFixed(2)) != parseFloat((e.data.paymentIntent?.amount / 100).toFixed(2))) {
 

@@ -52,7 +52,7 @@
   <dxi-column dataField="totalBeforeDiscount" [caption]="'Total'" cellTemplate="totalBeforeDiscountTemplate"></dxi-column>
   <dxi-column dataField="discount" [caption]="'Discount'" cellTemplate="discountTemplate"></dxi-column>
   <dxi-column dataField="estimatedTaxes" [caption]="'Taxes'" cellTemplate="amountOtherTemplate"></dxi-column>
-  <dxi-column dataField="shippingRate" [caption]="'Shipping'" cellTemplate="amountOtherTemplate"></dxi-column>
+  <dxi-column dataField="shippingRate" [caption]="'Shipping'" cellTemplate="shippingDollarTemplate"></dxi-column>
   <dxi-column dataField="paymentIntent.amount" cellTemplate="amountDollarTemplate" [caption]="'Charged'"></dxi-column>
   <dxi-column dataField="refundAmount" cellTemplate="amountOtherTemplate" [caption]="'Refunded'"></dxi-column>
   <dxi-column type="buttons" caption="Actions" [allowReordering]="false" [visible]="isVisible(['Admin'])">
@@ -84,6 +84,10 @@
 
   <div *dxTemplate="let data of 'amountDollarTemplate'">
     {{data.value > 0 ? (data.value / 100 | currency) : (0 | currency)}}
+  </div>
+
+  <div *dxTemplate="let row of 'shippingDollarTemplate'">
+    {{row.data.shippingRate > 0 ? (row.data.shippingRate - row.data.shippingDiscount | currency) : (0 | currency)}}
   </div>
 
   <div *dxTemplate="let data of 'amountOtherTemplate'">
