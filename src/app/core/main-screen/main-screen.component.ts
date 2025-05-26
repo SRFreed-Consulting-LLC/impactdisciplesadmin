@@ -13,7 +13,7 @@ import { TopNavService } from 'impactdisciplescommon/src/services/utils/top-nav.
 })
 export class MainScreenComponent implements OnInit {
   navigation: SecureMenuItem[] = [
-    { id: 0, text: "HOME", icon: "home", path:"", users:[Role.ADMIN] },
+    { id: 0, text: "HOME", icon: "home", path:"home", users:[Role.ADMIN] },
     { id: 1, text: "ADMIN MANAGER", icon: "user", path: "admin-manager", users:[Role.ADMIN] },
     { id: 2, text: "EVENTS MANAGER", icon: "event", path: "events-manager", users:[Role.ADMIN, Role.EMPLOYEE] },
     { id: 3, text: "REQUESTS MANAGER", icon: "belloutline", path: "requests-manager", users:[Role.ADMIN] },
@@ -52,7 +52,6 @@ export class MainScreenComponent implements OnInit {
   }
 
   menuItemClicked(e){
-    console.log(e)
     this.router.navigate(['/', e.itemData.path]);
   }
 }

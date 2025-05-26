@@ -74,8 +74,6 @@ export class PurchasesComponent implements OnInit {
       )
     );
 
-    //this.service.copyToNewTable();
-
     this.phone_types = EnumHelper.getPhoneTypesAsArray();
     this.states = EnumHelper.getStateRoleTypesAsArray();
   }

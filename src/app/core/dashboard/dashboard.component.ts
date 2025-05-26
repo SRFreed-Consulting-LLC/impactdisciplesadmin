@@ -16,7 +16,6 @@ export class DashboardComponent implements OnInit{
   async ngOnInit(): Promise<void> {
 
     await this.eventService.queryAllByValue('isActive', WhereFilterOperandKeys.equal, true).then(events => {
-      console.log(events)
       events.forEach(event => {
         let eventData: EventData = new EventData();
         eventData.arg = event.eventName;

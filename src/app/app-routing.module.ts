@@ -28,6 +28,11 @@ const routes: Routes = [
         canActivate: [ AuthGuardService ]
       },
       {
+        path: 'home',
+        component: DashboardComponent,
+        canActivate: [ AuthGuardService ]
+      },
+      {
         path: 'admin-manager',
         component: AdminManagerComponent,
         canActivate: [ AuthGuardService ]
