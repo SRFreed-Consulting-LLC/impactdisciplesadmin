@@ -20,7 +20,7 @@ export const environment = {
   unsubscribeUrl: "https://us-central1-impactdisciplesdev.cloudfunctions.net/unsubscribe_from_email_list",
   youtubeKeyUrl: "https://us-central1-impactdisciplesdev.cloudfunctions.net/get_youtube_keys",
   application: "admin",
-  shippingCarriers: ["se-1047082"],
+  shippingCarriers: ["se-1047625"],
 };
 
 

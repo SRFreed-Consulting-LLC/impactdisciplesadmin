@@ -163,30 +163,34 @@ export class ShippingLabelsComponent implements OnInit {
   }
 
   generateShippingLabels(){
-   confirm('<i>Are you sure you want to create these Shipping Labels?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.labelResults = [];
+    if(!this.selectedBatch.shipFrom){
+      notify('Please verify the return address is correct before generating Shipping Labels')
+    } else {
+      confirm('<i>Are you sure you want to create these Shipping Labels?</i>', 'Confirm').then((dialogResult) => {
+        if (dialogResult) {
+          this.labelResults = [];
 
-        this.labelService.getAllByValue('batchId', this.selectedBatch.id).then(labels => {
-          this.shippinglabellist.startCustomLoading();
-          let promises: Promise<ShippingLabelRequest>[] = []
+          this.labelService.getAllByValue('batchId', this.selectedBatch.id).then(labels => {
+            this.shippinglabellist.startCustomLoading();
+            let promises: Promise<ShippingLabelRequest>[] = []
 
-          labels.forEach(async label => {
-            if(label.status == "NEW" || label.status == "FAILED"){
-              label.request.shipment.shipFrom = this.selectedBatch.shipFrom;
+            labels.forEach(async label => {
+              if(label.status == "NEW" || label.status == "FAILED"){
+                label.request.shipment.shipFrom = this.selectedBatch.shipFrom;
 
-              promises.push(this.labelService.createRequest(label));
-            }
+                promises.push(this.labelService.createRequest(label));
+              }
+            })
+
+            Promise.all(promises).then((labels) => {
+              this.labelResults = labels;
+              this.shippinglabellist.stopCustomLoading();
+              this.openResultsModal()
+            })
           })
-
-          Promise.all(promises).then((labels) => {
-            this.labelResults = labels;
-            this.shippinglabellist.stopCustomLoading();
-            this.openResultsModal()
-          })
-        })
-      }
-    });
+        }
+      });
+    }
   }
 
   getCount(results: ShippingLabelRequest[], status: string){
