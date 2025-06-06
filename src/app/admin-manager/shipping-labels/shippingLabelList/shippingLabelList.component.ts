@@ -7,8 +7,9 @@ import { ShippingLabelRequest } from 'impactdisciplescommon/src/models/domain/sh
 import { ShippingModel, ShippingRequest, ShippingToAddress } from 'impactdisciplescommon/src/models/domain/shipment.model';
 import { ShippingLabelService } from 'impactdisciplescommon/src/services/data/shipping-label.service';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { Observable, map } from 'rxjs';
+import { Observable, map, merge } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import _ from 'lodash';
 
 @Component({
   selector: 'app-shippingLabelList',
@@ -72,8 +73,7 @@ export class ShippingLabelListComponent implements OnInit {
   }
 
   onRowUpdating(options) {
-    options.newData.request.shipment.shipTo = Object.assign(options.oldData.request.shipment.shipTo, options.newData.request.shipment.shipTo);
-    options.newData = Object.assign(options.oldData, options.newData);
+    _.merge(options.newData, options.oldData)
   }
 
   isShippingButtonVisible(e){
