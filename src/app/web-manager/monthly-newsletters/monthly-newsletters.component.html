@@ -1,0 +1,40 @@
+<div class="content-block responsive-paddings">
+  <dx-toolbar class="content-list__header py-2 px-2">
+    <dxi-item location="before" locateInMenu="never">
+      <div *dxTemplate>
+        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
+      </div>
+    </dxi-item>
+  </dx-toolbar>
+</div>
+
+<dx-data-grid class="dx-card wide-card"
+  #grid
+  [dataSource]="datasource$ | async"
+  [height]="'75vh'"
+  [showBorders]="true"
+  [showColumnLines]="true"
+  [showRowLines]="true"
+  [focusedRowEnabled]="true"
+  [columnAutoWidth]="true"
+  (onRowUpdating)="onRowUpdating($event)">
+
+  <dxo-scrolling mode="virtual"></dxo-scrolling>
+  <dxo-editing
+    [useIcons]="true"
+    mode="row"
+    [allowUpdating]="true"
+    [allowDeleting]="true"
+    [allowAdding]="true">
+  </dxo-editing>
+  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
+  <dxi-column dataField="date" [dataType]="'date'" [sortOrder]="'desc'"></dxi-column>
+  <dxi-column dataField="title"></dxi-column>
+  <dxi-column dataField="url"></dxi-column>
+
+  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
+    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
+      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
+    </span>
+  </div>
+</dx-data-grid>

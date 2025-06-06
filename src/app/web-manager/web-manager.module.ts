@@ -15,6 +15,7 @@ import { SharedModule } from '../shared/shared.module';
 import { PodCastCategoriesComponent } from './pod-cast-categories/pod-cast-categories.component';
 import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
+import { MonthlyNewslettersComponent } from './monthly-newsletters/monthly-newsletters.component';
 
 
 @NgModule({
@@ -48,7 +49,8 @@ import { HomePageImagesComponent } from './home-page-images/home-page-images.com
     PodCastsComponent,
     TestimonialsComponent,
     PodCastCategoriesComponent,
-    HomePageImagesComponent
+    HomePageImagesComponent,
+    MonthlyNewslettersComponent
   ],
   providers:[
     PhoneNumberMaskPipe,

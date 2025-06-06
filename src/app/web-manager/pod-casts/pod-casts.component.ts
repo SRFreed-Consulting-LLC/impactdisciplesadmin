@@ -3,7 +3,7 @@ import { DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
-import { PodCastModel } from 'impactdisciplescommon/src/models/domain/pod-cast-model';
+import { PodCastModel } from 'impactdisciplescommon/src/models/domain/pod-cast.model';
 import { PodCastService } from 'impactdisciplescommon/src/services/data/pod-cast.service';
 import { BehaviorSubject, map, Observable } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
