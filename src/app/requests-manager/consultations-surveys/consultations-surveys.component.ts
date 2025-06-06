@@ -62,7 +62,7 @@ export class ConsultationsSurveysComponent implements OnInit {
     );
 
     this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateRoleTypesAsArray();
+    this.states = EnumHelper.getStateTypesAsArray();
   }
 
   showEditModal = (e) => {

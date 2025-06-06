@@ -8,6 +8,7 @@ import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule
          DxNumberBoxModule,
          DxPopupModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextAreaModule, DxTextBoxModule,
          DxToolbarModule,
+         DxTreeListModule,
          DxValidatorModule} from 'devextreme-angular';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { WebConfigComponent } from './web-config/web-config.component';
@@ -18,6 +19,8 @@ import { AdminManagerComponent } from './admin-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { EmailTemplatesComponent } from './email-templates/email-templates.component';
 import { CustomersComponent } from './customers/customers.component';
+import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
+import { ShippingLabelListComponent } from './shipping-labels/shippingLabelList/shippingLabelList.component';
 
 
 @NgModule({
@@ -44,6 +47,7 @@ import { CustomersComponent } from './customers/customers.component';
     DxTextBoxModule,
     DxTextAreaModule,
     DxToolbarModule,
+    DxTreeListModule,
     DxValidatorModule,
     ImpactDisciplesModule,
     SharedModule
@@ -55,7 +59,9 @@ import { CustomersComponent } from './customers/customers.component';
     UsersComponent,
     CustomersComponent,
     WebConfigComponent,
-    EmailTemplatesComponent
+    EmailTemplatesComponent,
+    ShippingLabelsComponent,
+    ShippingLabelListComponent
   ],
   providers:[
     PhoneNumberMaskPipe

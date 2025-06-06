@@ -1,0 +1,93 @@
+<div id="wrapper">
+  <dx-data-grid class="dx-card wide-card"
+    #addressGrid
+    id="addressGrid"
+    [dataSource]="batchDatasource$ | async"
+    [height]="'65vh'"
+    [showBorders]="false"
+    [showColumnLines]="true"
+    [showColumnLines]="true"
+    [showRowLines]="true"
+    [columnAutoWidth]="true"
+    [columnHidingEnabled]="true"
+    (onInitNewRow)="onInitNewRow($event)"
+    (onRowUpdating)="onRowUpdating($event)">
+
+    <dxo-scrolling mode="virtual"></dxo-scrolling>
+    <dxo-editing
+      [useIcons]="true"
+      mode="row"
+      [allowUpdating]="true"
+      [allowDeleting]="true"
+      [allowAdding]="true">
+    </dxo-editing>
+    <dxo-load-panel
+        [enabled]="true">
+    </dxo-load-panel>
+    <dxi-column dataField="request.shipment.shipTo.name" [sortOrder]="'asc'" [caption]="'Name'" [width]="200">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+    </dxi-column>
+    <dxi-column dataField="request.shipment.shipTo.addressLine1" [caption]="'Address'" [width]="200">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+    </dxi-column>
+    <dxi-column dataField="request.shipment.shipTo.cityLocality" [caption]="'City'" [width]="180">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+    </dxi-column>
+    <dxi-column dataField="request.shipment.shipTo.stateProvince" [caption]="'State'" [width]="150">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+      <dxo-lookup [dataSource]="states" [displayExpr]="'value'" [valueExpr]="'key'"></dxo-lookup>
+    </dxi-column>
+    <dxi-column dataField="request.shipment.shipTo.countryCode" [caption]="'Country'" [width]="150">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+      <dxo-lookup [dataSource]="countries" [displayExpr]="'value'" [valueExpr]="'key'"></dxo-lookup>
+    </dxi-column>
+    <dxi-column dataField="request.shipment.shipTo.postalCode" [caption]="'Zip'" [width]="75">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+    </dxi-column>
+    <dxi-column dataField="request.weight" [caption]="'Ounces'" dataType="number" [width]="75">
+      <dxi-validation-rule type="required"></dxi-validation-rule>
+    </dxi-column>
+    <dxi-column dataField="status" [caption]="'Status'" editCellTemplate="statusTemplate"></dxi-column>
+    <dxi-column dataField="message" [caption]="'Message'" editCellTemplate="messageTemplate"></dxi-column>
+    <dxi-column dataField="requestedDate" [caption]="'Label Requested Date'" dataType="date" editCellTemplate="requestedDateTemplate"></dxi-column>
+    <dxi-column dataField="purchasedDate" [caption]="'Label Purchased Date'" dataType="date" editCellTemplate="purchasedDateTemplate"></dxi-column>
+    <dxi-column dataField="request.shippingRate" [caption]="'Shiping Rate'" cellTemplate="shippingRateCellTemplate" editCellTemplate="shippingRateCellTemplate"></dxi-column>
+    <dxi-column type="buttons" caption="Actions" [allowReordering]="false" [width]="120">
+      <dxi-button icon="arrowdown" hint="DOWNLOAD SHIPPING LABEL" [onClick]="getShippingLabel" [visible]="isShippingButtonVisible"></dxi-button>
+      <dxi-button icon="edit" hint="EDIT" name="edit"></dxi-button>
+      <dxi-button icon="trash" hint="DELETE" name="delete"></dxi-button>
+    </dxi-column>
+    <div *dxTemplate="let cell of 'shippingRateCellTemplate'">
+      <div class="">
+        {{ cell.data.shippingRate | currency }}
+      </div>
+    </div>
+
+    <div *dxTemplate="let cell of 'requestedDateTemplate'">
+      <div class="">
+        {{ cell.data.requestedDate }}
+      </div>
+    </div>
+
+    <div *dxTemplate="let cell of 'purchasedDateTemplate'">
+      <div class="">
+        {{ cell.data.purchasedDate }}
+      </div>
+    </div>
+
+    <div *dxTemplate="let cell of 'statusTemplate'">
+      <div class="">
+        {{ cell.data.status }}
+      </div>
+    </div>
+
+    <div *dxTemplate="let cell of 'messageTemplate'">
+      <div class="">
+        {{ cell.data.message }}
+      </div>
+    </div>
+  </dx-data-grid>
+</div>
+
+
+

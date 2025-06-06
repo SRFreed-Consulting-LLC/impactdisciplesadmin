@@ -68,7 +68,7 @@ export class UsersComponent implements OnInit {
 
     this.roles = EnumHelper.getRoleTypesAsArray();
     this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateRoleTypesAsArray();
+    this.states = EnumHelper.getStateTypesAsArray();
     this.countries = EnumHelper.getCountryTypesAsArray();
   }
 

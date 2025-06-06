@@ -66,7 +66,7 @@ export class LocationsComponent implements OnInit {
     )
     this.phone_types = EnumHelper.getPhoneTypesAsArray();
     this.organizations = await this.organizationService.getAll();
-    this.states = EnumHelper.getStateRoleTypesAsArray();
+    this.states = EnumHelper.getStateTypesAsArray();
   }
 
   showEditModal = (e) => {

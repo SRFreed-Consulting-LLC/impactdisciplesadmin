@@ -16,7 +16,8 @@ export class AdminManagerComponent {
     { id: 2, text: 'Users', template: 'Users' },
     { id: 3, text: 'Customers', template: 'Customers' },
     { id: 4, text: 'Web Config', template: 'Web Config' },
-    { id: 5, text: 'Email Templates', template: 'Email Templates' }
+    { id: 5, text: 'Email Templates', template: 'Email Templates' },
+    { id: 5, text: 'Shipping Labels', template: 'Shipping Labels' }
   ];
 
   selectTab(e) {
