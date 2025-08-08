@@ -4,7 +4,7 @@ import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import { EventRegistrationModel } from 'impactdisciplescommon/src/models/domain/event-registration.model';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { BehaviorSubject, map, Observable, take } from 'rxjs';
+import { BehaviorSubject, map, Observable } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import notify from 'devextreme/ui/notify';
 import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
@@ -21,7 +21,6 @@ import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 import { Workbook } from 'exceljs';
-import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
 import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
 
 @Component({
@@ -40,7 +39,6 @@ export class EventAttendeesComponent implements OnInit{
   selectedRows: string[] = [];
   selectedCustomers: EventRegistrationModel[] = [];
   selectedList: EmailList;
-  emailLists: EmailList[];
   email: CustomerEmailModel
 
   itemType = 'Registered User';
@@ -50,12 +48,10 @@ export class EventAttendeesComponent implements OnInit{
   public inProgress$ = new BehaviorSubject<boolean>(false)
   public isVisible$ = new BehaviorSubject<boolean>(false);
   public isEmailVisible$ = new BehaviorSubject<boolean>(false);
-  public isListVisible$ = new BehaviorSubject<boolean>(false);
 
   public unsub: Unsubscribe;
 
   constructor(public service: EventRegistrationService,
-    private emailListService: EmailListService,
     private authService: AuthService,
     private emailService: EMailService,
     private toastrService: ToastrService,
@@ -80,14 +76,6 @@ export class EventAttendeesComponent implements OnInit{
             })
         )
       );
-
-      this.emailLists = await this.emailListService.getAllByValue('type', 'attendees_'+ this.event.id).then(list => {
-        if (list){
-          return list;
-        } else {
-          return [];
-        }
-      });
     }
   }
 
@@ -119,31 +107,10 @@ export class EventAttendeesComponent implements OnInit{
     this.isVisible$.next(true);
   }
 
-  showListModal = () => {
-    this.selectedList = {... new EmailList()};
-
-    this.isListVisible$.next(true);
-  }
-
   showEmailModal = () => {
     this.email = {... new CustomerEmailModel()};
     this.email.date = Timestamp.now();
     this.isEmailVisible$.next(true);
-  }
-
-  onListFilterChanged(event: any) {
-    if(event.value) {
-      this.selectedRows = [];
-
-      this.selectedList = this.emailLists.find(list => list.id === event.value) || null;
-
-      this.selectedList.list.forEach(item => {
-        this.selectedRows.push(item.id)
-      })
-    } else if(!event.value) {
-      this.selectedList = {... new EmailList()};
-      this.selectedRows = [];
-    }
   }
 
   delete = ({ row: { data } }) => {
@@ -210,89 +177,35 @@ export class EventAttendeesComponent implements OnInit{
     }
   }
 
-  onListSave = () => {
-    this.inProgress$.next(true);
-    this.selectedList.list = this.selectedCustomers;
-    this.selectedList.type = 'attendees_'+ this.event.id;
-
-    if(this.selectedList.id) {
-      this.emailListService.update(this.selectedList.id, this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Updated',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        }
-      })
-    } else {
-      this.emailListService.add(this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Added',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.emailLists.push(item);
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'error'
-          });
-        }
-      })
-    }
-  }
-
   sendEmail(){
-    this.authService.getUser().pipe(take(1)).subscribe(user => {
-      this.email.sender = user.firstName + ' ' + user.lastName
-      let html='';
+    let user = this.authService.getLoggedInUser();
 
-      let list: Promise<EventRegistrationModel[]>
-      if(this.selectedList){
-        list = Promise.resolve(this.selectedList.list);
-      } else {
-        list = this.service.getAll();
-      }
+    this.email.sender = user.firstName + ' ' + user.lastName
 
-      list.then(subscribers => {
-        subscribers.forEach(subscriber => {
-          html = this.email.html
-          html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-          html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-          html = html.replace('{{Sender First Name}}', user.firstName);
-          html = html.replace('{{Sender Last Name}}', user.lastName);
-          html = html.replace('{{Date}}', (dateFromTimestamp(this.email.date) as Date).toLocaleString());
-          this.email.html = html;
+    let html='';
 
-          let unsubscribe = "<br><br><br><div>If you believe you received this email by mistake, please click " +
-            "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-            "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
+    let list: Promise<EventRegistrationModel[]>
 
-          this.emailService.sendHtmlEmail(subscriber.email, this.email.subject, this.email.html + unsubscribe);
-        })
-      }).then(() => {
-        this.customerEmailService.add(this.email).then(email => {
-          this.toastrService.success('Email ("' + email.subject + '") Sent Successfully!');
-          this.isEmailVisible$.next(false);
-        })
+    this.service.getAllByValue('eventId', this.event.id).then(subscribers => {
+      subscribers.forEach(subscriber => {
+        html = this.email.html
+        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
+        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
+        html = html.replace('{{Sender First Name}}', user.firstName);
+        html = html.replace('{{Sender Last Name}}', user.lastName);
+        html = html.replace('{{Date}}', (dateFromTimestamp(this.email.date) as Date).toLocaleString());
+        this.email.html = html;
+
+        let unsubscribe = "<br><br><br><div>If you believe you received this email by mistake, please click " +
+          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
+          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
+
+        this.emailService.sendHtmlEmail(subscriber.email, this.email.subject, this.email.html + unsubscribe);
+      })
+    }).then(() => {
+      this.customerEmailService.add(this.email).then(email => {
+        this.toastrService.success('Email ("' + email.subject + '") Sent Successfully!');
+        this.isEmailVisible$.next(false);
       })
     })
   }
@@ -307,11 +220,6 @@ export class EventAttendeesComponent implements OnInit{
     this.email = null;
     this.inProgress$.next(false);
     this.isEmailVisible$.next(false);
-  }
-
-  onListCancel() {
-    this.inProgress$.next(false);
-    this.isListVisible$.next(false);
   }
 
   selectRow(e){
