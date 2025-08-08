@@ -49,9 +49,11 @@
     <dxo-lookup [dataSource]="sides" [valueExpr]="'value'" [displayExpr]="'text'"></dxo-lookup>
   </dxi-column>
   <dxi-column dataField="ctaTitle"></dxi-column>
+  <dxi-column dataField="ctaWidth" dataType="number"></dxi-column>
   <dxi-column dataField="ctaDestination">
     <dxo-lookup [dataSource]="destinations" [valueExpr]="'value'" [displayExpr]="'text'"></dxo-lookup>
   </dxi-column>
+  <dxi-column dataField="ctaUrl"></dxi-column>
   <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
   </dxi-column>
@@ -92,7 +94,7 @@
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
         <dx-form #addEditForm [colCount]="4" [(formData)]="selectedItem">
-          <dxi-item dataField="image.name" [colSpan]="2" [isRequired]="true"></dxi-item>
+          <dxi-item dataField="image.name" [colSpan]="2" [isRequired]="true" disabled="true"></dxi-item>
           <dxi-item  [colSpan]="1">
             <dx-button
               text="Upload Image"
@@ -107,8 +109,9 @@
             <dx-number-box [(value)]="selectedItem.order" [showSpinButtons]="true"></dx-number-box>
           </dxi-item>
 
-          <dxi-item dataField="title" [colSpan]="2"></dxi-item>
-          <dxi-item [label]="{ text: 'Type' }" [colSpan]="2" [isRequired]="true">
+
+          <dxi-item dataField="ctaTitle" [label]="{ text: 'CTA Title' }" [colSpan]="2" [visible]="selectedItem.ctaTitle" [colSpan]="2"></dxi-item>
+          <dxi-item [label]="{ text: 'Location' }" [colSpan]="1" [isRequired]="true">
             <div *dxTemplate>
               <dx-select-box
                 [items]="sides"
@@ -117,11 +120,19 @@
               </dx-select-box>
             </div>
           </dxi-item>
+          <dxi-item [label]="{ text: 'Width (px)' }" [colSpan]="1" [isRequired]="true">
+            <div *dxTemplate>
+              <dx-number-box
+                [(value)]="selectedItem.ctaWidth">
+              </dx-number-box>
+            </div>
+          </dxi-item>
+
           <dxi-item dataField="text" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
 
-          <dxi-item dataField="ctaTitle" [label]="{ text: 'CTA Title' }" [colSpan]="2" [visible]="selectedItem.ctaTitle" [colSpan]="2"></dxi-item>
-          <dxi-item [label]="{ text: 'CTA Destination' }" [colSpan]="2"  [visible]="selectedItem.ctaTitle">
-            <div *dxTemplate>
+
+          <dxi-item [label]="{ text: 'CTA Internal Destination' }" [colSpan]="2">
+            <div #dxTemplate>
               <dx-select-box
                 [items]="destinations"
                 [(value)]="selectedItem.ctaDestination"
@@ -129,6 +140,9 @@
               </dx-select-box>
             </div>
           </dxi-item>
+
+          <dxi-item dataField="ctaUrl" [label]="{ text: 'CTA External URL' }" [colSpan]="2"></dxi-item>
+
         </dx-form>
       </div>
       <div class="add-item-modal__button-group pb-2">

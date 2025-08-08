@@ -27,7 +27,17 @@ export class HomePageImagesComponent implements OnInit {
   public isVisible$ = new BehaviorSubject<boolean>(false);
   public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
 
-  sides: any[] = [{text: 'Left', value:'l'}, {text: 'Right', value:'r'}];
+  sides: any[] = [
+    {text: 'Top Left', value:'tl'},
+    {text: 'Top Center', value:'tc'},
+    {text: 'Top Right', value:'tr'},
+    {text: 'Center Left', value:'cl'},
+    {text: 'Center Center', value:'cc'},
+    {text: 'Center Right', value:'cr'},
+    {text: 'Bottom Left', value:'bl'},
+    {text: 'Bottom Center', value:'bc'},
+    {text: 'Bottom Right', value:'br'},
+  ];
 
   destinations: any[] = [];
 
@@ -60,6 +70,8 @@ export class HomePageImagesComponent implements OnInit {
         })
       }
     })
+
+    this.destinations.push({text: 'External', value: 'external'})
   }
 
   showEditModal = (e) => {
