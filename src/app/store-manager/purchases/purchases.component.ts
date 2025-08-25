@@ -275,7 +275,7 @@ export class PurchasesComponent implements OnInit {
   }
 
   getItemTotalAmount(cartItem){
-    let totalPrice = cartItem.data.price ? cartItem.data.price : 0;
+    let totalPrice = cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
     let quantity = cartItem.data.orderQuantity;
     let discount = cartItem.data.discount ? cartItem.data.discount : 0;
     let shippingAmount = cartItem.data.isEvent? 0 : this.getItemShippingAmount(cartItem);
@@ -321,17 +321,17 @@ export class PurchasesComponent implements OnInit {
       if (dialogResult) {
         this.isLoadingVisible$.next(true);
 
-        let request = { 'paymentIntent': (this.selectedItem.paymentIntent as PaymentIntent).id, 'amount': Number(amountToRefund.toFixed(2)) * 100}
+        // let request = { 'paymentIntent': (this.selectedItem.paymentIntent as PaymentIntent).id, 'amount': Number(amountToRefund.toFixed(2)) * 100}
 
-        let response = await fetch(environment.stripeRefundURL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request)
-        })
+        // let response = await fetch(environment.stripeRefundURL, {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify(request)
+        // })
 
-        let result = await response.json();
+        // let result = await response.json();
 
-        cartItem.row.data.refundId=result.id;
+        // cartItem.row.data.refundId=result.id;
         cartItem.row.data.processedStatus="REFUNDED";
         cartItem.row.data.dateProcessed = dateFromTimestamp(Timestamp.now() as Timestamp);
 

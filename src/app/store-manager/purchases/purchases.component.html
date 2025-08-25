@@ -328,7 +328,7 @@
 
                     <div *dxTemplate="let data of 'descriptionCellTemplate'">
                       <div>{{data.value}}</div>
-                      <div>{{data.data.orderQuantity}}  x  {{data.data.price | currency}} = {{(data.data.orderQuantity * data.data.price) | currency}}</div>
+                      <div>{{data.data.orderQuantity}}  x  {{(data.data.salePrice ? data.data.salePrice : data.data.price) | currency}} = {{(data.data.orderQuantity * (data.data.salePrice ? data.data.salePrice : data.data.price)) | currency}}</div>
                       <div *ngIf="(data.data.attendees?.length) > 0">
                         <ol type="1">
                           <li *ngFor="let attendee of data.data.attendees">
@@ -337,7 +337,7 @@
                         </ol>
                       </div>
                       <span *ngIf="data.data.size">Size: ({{data.data.size}})</span>
-                      <span *ngIf="data.data.color">     Color: ({{data.data.color}})</span>
+                      <span *ngIf="data.data.color">Color: ({{data.data.color}})</span>
                     </div>
                   </dx-data-grid>
                 </div>
