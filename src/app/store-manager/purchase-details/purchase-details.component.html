@@ -1,0 +1,60 @@
+<dx-data-grid class="dx-card wide-card"
+  #grid
+  [dataSource]="selectedItem.cartItems"
+  [height]="'36vh'"
+  [showBorders]="false"
+  [showColumnLines]="true"
+  [wordWrapEnabled]="true"
+  [showColumnLines]="true"
+  [showRowLines]="true"
+  [columnAutoWidth]="true">
+
+  <dxo-scrolling mode="virtual"></dxo-scrolling>
+  <dxo-filter-row [visible]="true"></dxo-filter-row>
+
+  <dxi-column dataField="img" cellTemplate="imageCellTemplate" [caption]="''" [width]="120"></dxi-column>
+  <dxi-column dataField="itemName" cellTemplate="descriptionCellTemplate" [caption]="'Description'"></dxi-column>
+  <dxi-column [caption]="'Tax'" cellTemplate="taxAmountTemplate"></dxi-column>
+  <dxi-column [caption]="'Shipping'" cellTemplate="shippingAmountTemplate"></dxi-column>
+  <dxi-column [caption]="'Discount'" cellTemplate="discountAmountTemplate"></dxi-column>
+  <dxi-column [caption]="'Total'" cellTemplate="totalAmountTemplate"></dxi-column>
+  <dxi-column dataField="processedStatus" [caption]="'Status'" [width]="150"></dxi-column>
+  <dxi-column *ngIf="isVisible(['Admin'])" type="buttons" [allowReordering]="false" [width]="75">
+    <dxi-button icon="taskcomplete" hint="Mark As Shipped" [onClick]="markAsShipped" [visible]="isShippedButtonsVisible"></dxi-button>
+    <!--<dxi-button icon="taskrejected" hint="Refund Amount" [onClick]="refundLineItem" [visible]="isRefundedButtonsVisible"></dxi-button>-->
+  </dxi-column>
+
+  <div *dxTemplate="let row of 'taxAmountTemplate'">
+    <span width="100">{{service.calculateItemTaxableAmount(row, selectedItem) | currency}}</span>
+  </div>
+
+  <div *dxTemplate="let row of 'shippingAmountTemplate'">
+    <span width="100">{{service.calculateItemShippingAmount(row, selectedItem) | currency}}</span>
+  </div>
+
+  <div *dxTemplate="let row of 'discountAmountTemplate'">
+    <span width="100">{{service.calculateItemDiscountAmount(row) | currency}}</span>
+  </div>
+
+  <div *dxTemplate="let row of 'totalAmountTemplate'">
+    <span width="100">{{service.calculateItemTotalAmount(row, selectedItem) | currency}}</span>
+  </div>
+
+  <div *dxTemplate="let data of 'imageCellTemplate'">
+    <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
+  </div>
+
+  <div *dxTemplate="let row of 'descriptionCellTemplate'">
+    <div>{{row.value}}</div>
+    <div>{{row.data.orderQuantity}}  x  {{service.calculateProductCostAmount(row) | currency}} = {{(row.data.orderQuantity * service.calculateProductCostAmount(row)) | currency}}</div>
+    <div *ngIf="(row.data.attendees?.length) > 0">
+      <ol type="1">
+        <li *ngFor="let attendee of row.data.attendees">
+          {{attendee.firstName}} {{attendee.lastName}} - ({{attendee.email}})
+        </li>
+      </ol>
+    </div>
+    <span *ngIf="row.data.size">Size: ({{row.data.size}})</span>
+    <span *ngIf="row.data.color">Color: ({{row.data.color}})</span>
+  </div>
+</dx-data-grid>

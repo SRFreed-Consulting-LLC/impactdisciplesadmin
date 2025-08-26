@@ -49,9 +49,9 @@
   <dxi-column dataField="email"></dxi-column>
   <dxi-column dataField="receipt" cellTemplate="receiptTemplate"></dxi-column>
   <dxi-column dataField="couponCode"></dxi-column>
-  <dxi-column dataField="totalBeforeDiscount" [caption]="'Total'" cellTemplate="totalBeforeDiscountTemplate"></dxi-column>
+  <dxi-column dataField="totalBeforeDiscount" [caption]="'Total'" cellTemplate="productTotalTemplate"></dxi-column>
   <dxi-column dataField="discount" [caption]="'Discount'" cellTemplate="discountTemplate"></dxi-column>
-  <dxi-column dataField="estimatedTaxes" [caption]="'Taxes'" cellTemplate="amountOtherTemplate"></dxi-column>
+  <dxi-column dataField="estimatedTaxes" [caption]="'Taxes'" cellTemplate="amountTaxTemplate"></dxi-column>
   <dxi-column dataField="shippingRate" [caption]="'Shipping'" cellTemplate="shippingDollarTemplate"></dxi-column>
   <dxi-column dataField="paymentIntent.amount" cellTemplate="amountDollarTemplate" [caption]="'Charged'"></dxi-column>
   <dxi-column dataField="refundAmount" cellTemplate="amountOtherTemplate" [caption]="'Refunded'"></dxi-column>
@@ -74,24 +74,32 @@
     {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
   </div>
 
-  <div *dxTemplate="let data of 'discountTemplate'">
-    {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
+  <div *dxTemplate="let row of 'discountTemplate'">
+    {{getDiscountDisplayAmount(row.data) | currency}}
   </div>
 
   <div *dxTemplate="let data of 'receiptTemplate'">
     {{data.data.paymentIntent?.id ? data.data.paymentIntent.id : data.data.receipt }}
   </div>
 
-  <div *dxTemplate="let data of 'amountDollarTemplate'">
-    {{data.value > 0 ? (data.value / 100 | currency) : (0 | currency)}}
+  <div *dxTemplate="let row of 'productTotalTemplate'">
+    {{getProductTotalDisplayAmount(row.data) | currency}}
+  </div>
+
+  <div *dxTemplate="let row of 'amountDollarTemplate'">
+    {{getChargedDisplayAmount(row.data) | currency}}
   </div>
 
   <div *dxTemplate="let row of 'shippingDollarTemplate'">
-    {{row.data.shippingRate > 0 ? (row.data.shippingRate - row.data.shippingDiscount | currency) : (0 | currency)}}
+    {{getShippingDisplayAmount(row.data) | currency}}
+  </div>
+
+ <div *dxTemplate="let row of 'amountTaxTemplate'">
+    {{getTaxesDisplayAmount(row.data) | currency}}
   </div>
 
   <div *dxTemplate="let data of 'amountOtherTemplate'">
-    {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
+    {{data.value > 0 ? (data.value / 100 | currency) : (0 | currency)}}
   </div>
 
 
@@ -138,7 +146,11 @@
             <dxi-item dataField="dateProcessed" [colSpan]="4" [disabled]="true"></dxi-item>
             <dxi-item dataField="firstName" [colSpan]="4" [disabled]="true"></dxi-item>
             <dxi-item dataField="email" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="paymentIntent.status" [label]="{text: 'Status'}" [colSpan]="4" [disabled]="true"></dxi-item>
+            <dxi-item dataField="payPalReceipt ? payPalReceipt.status : paymentIntent.status" [label]="{text: 'Status'}" [colSpan]="4" [disabled]="true">
+              <div *dxTemplate>
+                {{getOrderStatusDisplay(selectedItem)}}
+              </div>
+            </dxi-item>
           </dxi-item>
           <dxi-item itemType="group" [colCount]="4" [colSpan]="4">
             <dxi-item dataField="processedStatus" [colSpan]="4">
@@ -161,8 +173,8 @@
             <dxi-item [colSpan]="4">
               <div *dxTemplate>
                 <div class="row">
-                  <div class="col-6">Amount: </div>
-                  <div class="col-4 text-end">{{selectedItem?.totalBeforeDiscount > 0 ? (selectedItem?.totalBeforeDiscount | currency) : (0 | currency)}}</div>
+                  <div class="col-6">Item Total: </div>
+                  <div class="col-4 text-end">{{getProductTotalDisplayAmount(selectedItem) | currency}}</div>
                   <div class="col-2"></div>
                 </div>
               </div>
@@ -171,7 +183,7 @@
               <div *dxTemplate>
                 <div class="row">
                   <div class="col-6">Taxes: </div>
-                  <div class="col-4 text-end">{{selectedItem?.estimatedTaxes > 0 ? (selectedItem?.estimatedTaxes | currency) : (0 | currency)}}</div>
+                  <div class="col-4 text-end">{{getTaxesDisplayAmount(selectedItem) | currency}}</div>
                   <div class="col-2"></div>
                 </div>
               </div>
@@ -180,7 +192,16 @@
               <div *dxTemplate>
                 <div class="row">
                   <div class="col-6">Shipping: </div>
-                  <div class="col-4 text-end">{{selectedItem?.shippingRate > 0 ? (selectedItem?.shippingRate | currency) : (0 | currency)}}</div>
+                  <div class="col-4 text-end">{{getShippingDisplayAmount(selectedItem) | currency}}</div>
+                  <div class="col-2"></div>
+                </div>
+              </div>
+            </dxi-item>
+            <dxi-item [colSpan]="4">
+              <div *dxTemplate>
+                <div class="row">
+                  <div class="col-6">Sub Total: </div>
+                  <div class="col-4 text-end">{{(getProductTotalDisplayAmount(selectedItem) + getTaxesDisplayAmount(selectedItem) + getShippingDisplayAmount(selectedItem)) | currency}}</div>
                   <div class="col-2"></div>
                 </div>
               </div>
@@ -189,7 +210,7 @@
               <div *dxTemplate>
                 <div class="row">
                   <div class="col-6">Discount: </div>
-                  <div class="col-4 text-end">-{{getDiscountAmount() | currency}}</div>
+                  <div class="col-4 text-end">-{{getDiscountDisplayAmount(selectedItem) | currency}}</div>
                   <div class="col-2"></div>
                 </div>
               </div>
@@ -197,17 +218,8 @@
             <dxi-item [colSpan]="4">
               <div *dxTemplate>
                 <div class="row">
-                  <div class="col-6">Total: </div>
-                  <div class="col-4 text-end">{{selectedItem?.total > 0 ? (selectedItem?.total | currency) : (0 | currency)}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Refunded: </div>
-                  <div class="col-4 text-end">{{getOrderRefundedAmount() | currency}}</div>
+                  <div class="col-6">Shipping Discount: </div>
+                  <div class="col-4 text-end">-{{getShippingDiscountDisplayAmount(selectedItem) | currency}}</div>
                   <div class="col-2"></div>
                 </div>
               </div>
@@ -216,7 +228,7 @@
               <div *dxTemplate>
                 <div class="row">
                   <div class="col-6">Charged: </div>
-                  <div class="col-4 text-end">{{getChargedAmount() | currency}}</div>
+                  <div class="col-4 text-end">{{getChargedDisplayAmount(selectedItem) | currency}}</div>
                   <div class="col-2"></div>
                 </div>
               </div>
@@ -280,66 +292,7 @@
             <dxi-tab title="Sale Details">
               <dxi-item [colSpan]="6">
                 <div *dxTemplate>
-                  <dx-data-grid class="dx-card wide-card"
-                    #grid
-                    [dataSource]="selectedItem.cartItems"
-                    [height]="'36vh'"
-                    [showBorders]="false"
-                    [showColumnLines]="true"
-                    [wordWrapEnabled]="true"
-                    [showColumnLines]="true"
-                    [showRowLines]="true"
-                    [columnAutoWidth]="true">
-
-                    <dxo-scrolling mode="virtual"></dxo-scrolling>
-                    <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-                    <dxi-column dataField="img" cellTemplate="imageCellTemplate" [caption]="''" [width]="120"></dxi-column>
-                    <dxi-column dataField="itemName" cellTemplate="descriptionCellTemplate" [caption]="'Description'"></dxi-column>
-                    <dxi-column [caption]="'Tax'" cellTemplate="taxAmountTemplate"></dxi-column>
-                    <dxi-column [caption]="'Shipping'" cellTemplate="shippingAmountTemplate"></dxi-column>
-                    <dxi-column [caption]="'Discount'" cellTemplate="discountAmountTemplate"></dxi-column>
-                    <dxi-column [caption]="'Total'" cellTemplate="totalAmountTemplate"></dxi-column>
-                    <dxi-column dataField="processedStatus" [caption]="'Status'" [width]="150"></dxi-column>
-                    <dxi-column *ngIf="isVisible(['Admin'])" type="buttons" [allowReordering]="false" [width]="75">
-                      <dxi-button icon="taskcomplete" hint="Mark As Shipped" [onClick]="markAsShipped" [visible]="isShippedButtonsVisible"></dxi-button>
-                      <dxi-button icon="taskrejected" hint="Refund Amount" [onClick]="refundLineItem" [visible]="isRefundedButtonsVisible"></dxi-button>
-                    </dxi-column>
-
-                    <div *dxTemplate="let data of 'taxAmountTemplate'">
-                      <span width="100">{{getItemTaxableAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'shippingAmountTemplate'">
-                      <span width="100">{{getItemShippingAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'discountAmountTemplate'">
-                      <span width="100">{{getItemDiscountAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'totalAmountTemplate'">
-                      <span width="100">{{getItemTotalAmount(data) | currency}}</span>
-                    </div>
-
-                    <div *dxTemplate="let data of 'imageCellTemplate'">
-                      <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-                    </div>
-
-                    <div *dxTemplate="let data of 'descriptionCellTemplate'">
-                      <div>{{data.value}}</div>
-                      <div>{{data.data.orderQuantity}}  x  {{(data.data.salePrice ? data.data.salePrice : data.data.price) | currency}} = {{(data.data.orderQuantity * (data.data.salePrice ? data.data.salePrice : data.data.price)) | currency}}</div>
-                      <div *ngIf="(data.data.attendees?.length) > 0">
-                        <ol type="1">
-                          <li *ngFor="let attendee of data.data.attendees">
-                            {{attendee.firstName}} {{attendee.lastName}} - ({{attendee.email}})
-                          </li>
-                        </ol>
-                      </div>
-                      <span *ngIf="data.data.size">Size: ({{data.data.size}})</span>
-                      <span *ngIf="data.data.color">Color: ({{data.data.color}})</span>
-                    </div>
-                  </dx-data-grid>
+                  <app-purchase-details [selectedItem]="selectedItem"></app-purchase-details>
                 </div>
               </dxi-item>
             </dxi-tab>

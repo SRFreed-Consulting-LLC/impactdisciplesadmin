@@ -14,12 +14,14 @@ import { CouponsComponent } from './coupons/coupons.component';
 import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.component';
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 import { SalesComponent } from './sales/sales.component';
+import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
 
 @NgModule({
   declarations: [
     StoreManagerComponent,
     ProductsComponent,
     PurchasesComponent,
+    PurchaseDetailsComponent,
     CouponsComponent,
     AffiliateSalesComponent,
     AffilliattePaymentsComponent,
