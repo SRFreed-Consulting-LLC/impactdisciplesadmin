@@ -49,6 +49,7 @@
           <dxi-column dataField="imageUrl" cellTemplate="imageCellTemplate"></dxi-column>
           <dxi-column dataField="order" dataType="number" [sortOrder]="'asc'"></dxi-column>
           <dxi-column dataField="name"></dxi-column>
+          <dxi-column dataField="showInStore" dataType="boolean"></dxi-column>
           <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
             <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
           </dxi-column>

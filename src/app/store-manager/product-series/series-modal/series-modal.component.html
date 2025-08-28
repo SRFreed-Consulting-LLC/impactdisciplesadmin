@@ -21,14 +21,16 @@
           [(formData)]="series"
           [showColonAfterLabel]="false"
           labelLocation="left"
-          [colCount]="3">
+          [colCount]="5">
           <dxi-item dataField="order" [colSpan]="1" [isRequired]="true">
             <div *dxTemplate>
               <dx-number-box [(value)]="series.order"></dx-number-box>
             </div>
           </dxi-item>
-          <dxi-item dataField="name" [colSpan]="2" [isRequired]="true"></dxi-item>
-          <dxi-item dataField="imageUrl.name" [colSpan]="2" [disabled]="true"></dxi-item>
+          <dxi-item dataField="name" [colSpan]="4" [isRequired]="true"></dxi-item>
+
+          <dxi-item dataField="showInStore" [colSpan]="2"></dxi-item>
+          <dxi-item dataField="imageUrl.name" [colSpan]="3" [disabled]="true"></dxi-item>
           <dxi-item>
             <div *dxTemplate>
               <dx-button
