@@ -165,7 +165,7 @@
             <dxi-item dataField="couponCode" [colSpan]="4" [disabled]="true"></dxi-item>
             <dxi-item [colSpan]="4" [label]="{text: 'Item Count'}" [disabled]="true">
               <div *dxTemplate>
-                <dx-number-box [value]="selectedItem?.cartItems?.length"></dx-number-box>
+                <dx-number-box [value]="getOrderItemCount(selectedItem)"></dx-number-box>
               </div>
             </dxi-item>
           </dxi-item>
@@ -236,58 +236,34 @@
           </dxi-item>
 
           <dxi-item itemType="tabbed" [colSpan]="12">
-            <dxi-tab title="Shipping / Billing Information">
-              <dxi-item itemType="tabbed" [colSpan]="6">
-                <dxi-tab title="Billing Address">
-                  <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="2">
-                    <dxi-item dataField="billingAddress.address1" [colSpan]="6" [label]="{ text: 'Address1' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.address2" [colSpan]="6" [label]="{ text: 'Address2' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.city" [colSpan]="3" [label]="{ text: 'City' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
-                      <div *dxTemplate>
-                        <dx-lookup
-                          [showCancelButton]="false"
-                          [items]="states"
-                          [(value)]="selectedItem.billingAddress.state">
-                        </dx-lookup>
-                      </div>
-                    </dxi-item>
-                    <dxi-item dataField="billingAddress.zip" [colSpan]="2" [label]="{ text: 'Zip' }"></dxi-item>
-                    <dxi-item dataField="billingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }"></dxi-item>
+            <dxi-tab title="Contact" [colCount]="2">
+                <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="3">
+                  <dxi-item dataField="shippingAddress.address1" [colSpan]="6" [label]="{ text: 'Address1' }"></dxi-item>
+                  <dxi-item dataField="shippingAddress.address2" [colSpan]="6" [label]="{ text: 'Address2' }"></dxi-item>
+                  <dxi-item dataField="shippingAddress.city" [colSpan]="3" [label]="{ text: 'City' }"></dxi-item>
+                  <dxi-item dataField="shippingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
+                    <div *dxTemplate>
+                      <dx-select-box
+                        [items]="states"
+                        [(value)]="selectedItem.shippingAddress.state">
+                      </dx-select-box>
+                    </div>
                   </dxi-item>
-                </dxi-tab>
-                <dxi-tab title="Shipping Address">
-                  <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="2">
-                    <dxi-item dataField="shippingAddress.address1" [colSpan]="6" [label]="{ text: 'Address1' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.address2" [colSpan]="6" [label]="{ text: 'Address2' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.city" [colSpan]="3" [label]="{ text: 'City' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
-                      <div *dxTemplate>
-                        <dx-select-box
-                          [items]="states"
-                          [(value)]="selectedItem.shippingAddress.state">
-                        </dx-select-box>
-                      </div>
-                    </dxi-item>
-                    <dxi-item dataField="shippingAddress.zip" [colSpan]="2" [label]="{ text: 'Zip' }"></dxi-item>
-                    <dxi-item dataField="shippingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }"></dxi-item>
+                  <dxi-item dataField="shippingAddress.zip" [colSpan]="2" [label]="{ text: 'Zip' }"></dxi-item>
+                  <dxi-item dataField="shippingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }"></dxi-item>
+                </dxi-item>
+                <dxi-item itemType="group" caption="Phone Number" [colCount]="6" [colSpan]="3">
+                  <dxi-item dataField="phone.countryCode" [colSpan]="2" [label]="{ text: 'Country Code' }"></dxi-item>
+                  <dxi-item dataField="phone.number" [colSpan]="2" [label]="{ text: 'Number' }" [editorOptions]="phoneEditorOptions"></dxi-item>
+                  <dxi-item [label]="{ text: 'Type' }" [colSpan]="2">
+                    <div *dxTemplate>
+                      <dx-select-box
+                        [items]="phone_types"
+                        [(value)]="selectedItem.phone.type">
+                      </dx-select-box>
+                    </div>
                   </dxi-item>
-                </dxi-tab>
-                <dxi-tab title="Contact">
-                  <dxi-item itemType="group" caption="Phone Number" [colCount]="6" [colSpan]="2">
-                    <dxi-item dataField="phone.countryCode" [colSpan]="2" [label]="{ text: 'Country Code' }"></dxi-item>
-                    <dxi-item dataField="phone.number" [colSpan]="2" [label]="{ text: 'Number' }" [editorOptions]="phoneEditorOptions"></dxi-item>
-                    <dxi-item [label]="{ text: 'Type' }" [colSpan]="2">
-                      <div *dxTemplate>
-                        <dx-select-box
-                          [items]="phone_types"
-                          [(value)]="selectedItem.phone.type">
-                        </dx-select-box>
-                      </div>
-                    </dxi-item>
-                  </dxi-item>
-                </dxi-tab>
-              </dxi-item>
+                </dxi-item>
             </dxi-tab>
             <dxi-tab title="Sale Details">
               <dxi-item [colSpan]="6">

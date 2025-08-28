@@ -257,24 +257,29 @@ export class PurchasesComponent implements OnInit {
     return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.value) : item.total > 0 ? (item.total) : 0
   }
 
-  getProductTotalDisplayAmount(item: any) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.breakdown.item_total.value) : item.totalBeforeDiscount > 0 ? (item.totalBeforeDiscount) : 0
+  getProductTotalDisplayAmount(item: CheckoutForm) {
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.breakdown.item_total.value) : item.total > 0 ? (item.total) : 0
   }
 
-  getDiscountDisplayAmount(item: any){
+  getDiscountDisplayAmount(item: CheckoutForm){
     return item.payPalReceipt  && item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount?.value) : item.discount > 0 ? (item.discount) : 0
   }
 
-  getShippingDisplayAmount(item: any) {
+  getShippingDisplayAmount(item: CheckoutForm) {
     return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
   }
 
-  getShippingDiscountDisplayAmount(item: any) {
+  getShippingDiscountDisplayAmount(item: CheckoutForm) {
     return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0].amount.breakdown.shipping_discount.value) : item.shippingDiscount > 0 ? item.shippingDiscount : 0;
   }
 
-  getTaxesDisplayAmount(item: any) {
+  getTaxesDisplayAmount(item: CheckoutForm) {
     return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0].amount.breakdown.tax_total.value) : item.estimatedTaxes > 0 ? item.estimatedTaxes : 0;
+  }
+
+  getOrderItemCount(item: CheckoutForm){
+    return item.cartItems.map(item => item.orderQuantity).reduce((a,b) => a + b);
+
   }
 
 
