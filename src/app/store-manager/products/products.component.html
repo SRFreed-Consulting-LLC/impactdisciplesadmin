@@ -340,15 +340,18 @@
                 </dx-button>
               </div>
             </dxi-item>
-            <dxi-item dataField="weight" [colSpan]="6" [label]="{ text: 'Weight' }" [isRequired]="true">
+            <dxi-item dataField="weight" [colSpan]="4" [label]="{ text: 'Weight' }" [isRequired]="true">
               <div *dxTemplate>
                 <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
               </div>
             </dxi-item>
-            <dxi-item dataField="uom" [colSpan]="6" [label]="{ text: 'Unit of Measure' }" [isRequired]="true">
+            <dxi-item dataField="uom" [colSpan]="4" [label]="{ text: 'Unit of Measure' }" [isRequired]="true">
               <div *dxTemplate>
                 <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
               </div>
+            </dxi-item>
+            <dxi-item dataField="showInStore" [colSpan]="4" [label]="{ text: 'List In Store?' }">
+              <dx-check-box [(value)]="this.selectedItem.showInStore"></dx-check-box>
             </dxi-item>
             <dxi-item [colSpan]="12" [label]="{ text: 'Tags' }">
               <dx-tag-box
