@@ -121,7 +121,7 @@
       </p>
     </div>
   </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" [visible]="this.selectedItem && this.selectedItem.processedStatus != 'PARTIAL_REFUND' && this.selectedItem.processedStatus != 'REFUNDED'">
+  <!--<dxi-toolbar-item toolbar="top" location="after" [visible]="this.selectedItem && this.selectedItem.processedStatus != 'PARTIAL_REFUND' && this.selectedItem.processedStatus != 'REFUNDED'">
     <div *dxTemplate>
       <dx-button
         *ngIf="isVisible(['Admin'])"
@@ -132,7 +132,7 @@
         (onClick)="refundOrder()">
       </dx-button>
     </div>
-  </dxi-toolbar-item>
+  </dxi-toolbar-item>-->
   <div *dxTemplate="let data of 'content'">
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
