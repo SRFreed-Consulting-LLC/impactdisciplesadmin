@@ -250,11 +250,11 @@ export class PurchasesComponent implements OnInit {
   }
 
   getOrderStatusDisplay(item: any) {
-    return item.payPalReceipt ? item.payPalReceipt.status : item.paymentIntent.status
+    return item.payPalReceipt ? item.payPalReceipt?.status : item.paymentIntent?.status
   }
 
   getChargedDisplayAmount(item: any) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.value) : item.total > 0 ? (item.total) : 0
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.value) : item.total - item.discount > 0 ? (item.total) : 0
   }
 
   getProductTotalDisplayAmount(item: CheckoutForm) {
@@ -266,11 +266,11 @@ export class PurchasesComponent implements OnInit {
   }
 
   getShippingDisplayAmount(item: CheckoutForm) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
   }
 
   getShippingDiscountDisplayAmount(item: CheckoutForm) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0].amount.breakdown.shipping_discount.value) : item.shippingDiscount > 0 ? item.shippingDiscount : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0].amount.breakdown.shipping_discount.value) : item.shippingDiscount > 0 ? item.shippingDiscount : 0;
   }
 
   getTaxesDisplayAmount(item: CheckoutForm) {

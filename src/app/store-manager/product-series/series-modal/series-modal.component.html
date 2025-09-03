@@ -29,7 +29,7 @@
           </dxi-item>
           <dxi-item dataField="name" [colSpan]="4" [isRequired]="true"></dxi-item>
 
-          <dxi-item dataField="showInStore" [colSpan]="2"></dxi-item>
+          <dxi-item dataField="showInStore" editorType="dxCheckBox" [label]="{ text: 'Show In Store?' }" [colSpan]="2"></dxi-item>
           <dxi-item dataField="imageUrl.name" [colSpan]="3" [disabled]="true"></dxi-item>
           <dxi-item>
             <div *dxTemplate>
