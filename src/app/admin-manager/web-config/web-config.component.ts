@@ -1,11 +1,9 @@
-import { ToastrService } from 'ngx-toastr';
 import { Component, OnInit } from '@angular/core';
 import { WebConfigModel } from 'impactdisciplescommon/src/models/utils/web-config.model';
 import { WebConfigService } from 'impactdisciplescommon/src/services/data/web-config.service';
 import { BehaviorSubject, map, Observable } from 'rxjs';
-import { FileImportService } from 'impactdisciplescommon/src/services/utils/file-import.service';
 import DataSource from 'devextreme/data/data_source';
-import { TaxRate } from 'impactdisciplescommon/src/models/utils/tax-rate.model';
+import notify from 'devextreme/ui/notify';
 
 @Component({
   selector: 'app-web-config',
@@ -25,9 +23,7 @@ export class WebConfigComponent implements OnInit{
 
   loadingVisible = false;
 
-  constructor(private service: WebConfigService,
-    private toastr:ToastrService,
-    private fileImportService: FileImportService<TaxRate>,) {}
+  constructor(private service: WebConfigService) {}
 
   async ngOnInit() {
     this.selectedItem = await this.service.getAll().then(config => {
@@ -49,7 +45,13 @@ export class WebConfigComponent implements OnInit{
     } else {
       this.selectedItem = await this.service.add({... this.selectedItem});
     }
-    this.toastr.success("Configuration Saved Successfully!");
+
+    notify({
+      message: "Configuration Saved Successfully!",
+      position: 'top',
+      width: 600,
+      type: 'success'
+    });
 
     this.spinnerVisible = false;
   }

@@ -10,7 +10,6 @@ import { Timestamp } from 'firebase/firestore';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
 import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
-import { ToastrService } from 'ngx-toastr';
 import { NewsletterModel } from 'impactdisciplescommon/src/models/domain/newsletter.model';
 import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
 import { environment } from 'src/environments/environment';
@@ -55,7 +54,6 @@ export class NewsletterSubscriptionComponent {
     private emailService: EMailService,
     private authService: AuthService,
     private newsletterService: NewsletterService,
-    private toastrService: ToastrService,
     private emailListService: EmailListService
   ) {}
 
@@ -260,7 +258,13 @@ export class NewsletterSubscriptionComponent {
         })
       }).then(() => {
         this.newsletterService.add(this.newsletter).then(newsletter => {
-          this.toastrService.success('Newsletter ("' + newsletter.subject + '") Sent Successfully!');
+          notify({
+            message: 'Newsletter ("' + newsletter.subject + '") Sent Successfully!',
+            position: 'top',
+            width: 600,
+            type: 'success'
+          });
+
           this.isPrayerVisible$.next(false);
         })
       })

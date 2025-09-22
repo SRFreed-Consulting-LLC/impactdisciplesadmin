@@ -1,4 +1,3 @@
-import { ToastrService } from 'ngx-toastr';
 import { Timestamp } from 'firebase/firestore';
 import { Component, ViewChild } from '@angular/core';
 import ArrayStore from 'devextreme/data/array_store';
@@ -52,7 +51,6 @@ export class PrayerTeamSubscriptionComponent {
     private emailService: EMailService,
     private authService: AuthService,
     private prayerService: PrayerService,
-    private toastrService: ToastrService,
     private emailListService: EmailListService) {}
 
    async ngOnInit() {
@@ -260,7 +258,13 @@ export class PrayerTeamSubscriptionComponent {
         })
       }).then(() => {
         this.prayerService.add(this.prayer).then(prayer => {
-          this.toastrService.success('Prayer Sent Successfully!');
+          notify({
+            message: 'Prayer Request Sent Successfully!',
+            position: 'top',
+            width: 600,
+            type: 'success'
+          });
+
           this.isPrayerVisible$.next(false);
         })
       })

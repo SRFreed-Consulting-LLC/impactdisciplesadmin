@@ -1,11 +1,11 @@
 import { Component, NgZone, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
-import { ToastrService } from 'ngx-toastr';
 import { Form } from '../common/models/editor/form.model';
 import { Page } from '../common/models/editor/page.model';
 import { FormService } from '../common/services/forms.service';
 import { PageService } from '../common/services/page.service';
+import notify from 'devextreme/ui/notify';
 
 @Component({
   selector: 'app-form-administration',
@@ -23,8 +23,7 @@ export class FormAdministrationComponent implements OnInit {
   constructor(public formService: FormService,
     public pageService: PageService,
     public ngZone: NgZone,
-    public router: Router,
-    public toster: ToastrService,) {
+    public router: Router) {
       this.dataSource = new CustomStore({
         key: "dbId",
         loadMode: "raw",
@@ -98,7 +97,12 @@ export class FormAdministrationComponent implements OnInit {
         this.pageService.update(page.dbId, page);
       });
     }).then(()=>{
-      this.toster.success('Form successfully published!');
+      notify({
+        message: 'Form successfully published!',
+        position: 'top',
+        width: 600,
+        type: 'success'
+      });
     });
   }
 

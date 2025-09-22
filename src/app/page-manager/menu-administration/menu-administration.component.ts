@@ -1,5 +1,4 @@
 import { Component, OnInit, ViewChild } from "@angular/core";
-import { ToastrService } from "ngx-toastr";
 import { DxTreeListComponent } from "devextreme-angular";
 import CustomStore from "devextreme/data/custom_store";
 import { Role } from "impactdisciplescommon/src/lists/roles.enum";
@@ -59,7 +58,6 @@ export class MenuAdministrationComponent implements OnInit {
   constructor(
     private menuService: MenuService,
     private pageService: PageService,
-    public toster: ToastrService
   ) {
     this.onReorder = this.onReorder.bind(this);
 

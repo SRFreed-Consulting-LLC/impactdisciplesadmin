@@ -2,11 +2,11 @@ import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
-import { ToastrService } from 'ngx-toastr';
 import { Page } from '../common/models/editor/page.model';
 import { CardService } from '../common/services/card.service';
 import { PageService } from '../common/services/page.service';
 import { Card } from '../common/models/editor/card.model';
+import notify from 'devextreme/ui/notify';
 
 @Component({
   selector: 'app-card-manager',
@@ -32,8 +32,7 @@ export class CardAdministrationComponent implements OnInit {
   constructor(public cardService: CardService,
     public pageService: PageService,
     public ngZone: NgZone,
-    public router: Router,
-    public toster: ToastrService){
+    public router: Router){
     this.dataSource = new CustomStore({
       key: "dbId",
       loadMode: "raw",
@@ -85,7 +84,13 @@ export class CardAdministrationComponent implements OnInit {
         this.pageService.update(page.dbId, page);
       });
     }).then(()=>{
-      this.toster.success('Card successfully published!');
+      notify({
+        message: 'Card successfully published!',
+        position: 'top',
+        width: 600,
+        type: 'success'
+      });
+
       this.closePublishcardWarning();
     }).catch((error) => {
       console.error('Error in Card Admin.', error);

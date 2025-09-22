@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { ToastrService } from 'ngx-toastr';
+import notify from 'devextreme/ui/notify';
 import { input_type_values } from 'src/app/page-manager/common/lists/card-fields.list';
 import { Form, FormInputs, FormRow } from 'src/app/page-manager/common/models/editor/form.model';
 import { FormService } from 'src/app/page-manager/common/services/forms.service';
@@ -25,7 +25,7 @@ export class FormBodyViewComponent implements OnInit {
 
   formToSubmit: any = {};
 
-  constructor(private formsService: FormService, public toster: ToastrService) {}
+  constructor(private formsService: FormService) {}
 
   toggleHelp() {
     this.helpVisible = !this.helpVisible;
@@ -85,7 +85,12 @@ export class FormBodyViewComponent implements OnInit {
     this.formsService
       .saveSubmittedForm(this.formToSubmit.dbId, this.formToSubmit)
       .then((f) => {
-        this.toster.info('Form Successfully Submitted!');
+        notify({
+          message: 'Form Successfully Submitted!',
+          position: 'top',
+          width: 600,
+          type: 'success'
+        });
       })
       .catch((error) => {
         console.error('Error in Body View.', error);

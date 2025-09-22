@@ -12,7 +12,6 @@ import { CustomerEmailModel } from 'impactdisciplescommon/src/models/domain/cust
 import { Timestamp, Unsubscribe } from 'firebase/firestore';
 import { CustomerEmailService } from 'impactdisciplescommon/src/services/data/customer-email.service';
 import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
-import { ToastrService } from 'ngx-toastr';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
 import { environment } from 'src/environments/environment';
@@ -54,7 +53,6 @@ export class EventAttendeesComponent implements OnInit{
   constructor(public service: EventRegistrationService,
     private authService: AuthService,
     private emailService: EMailService,
-    private toastrService: ToastrService,
     private customerEmailService: CustomerEmailService
   ){}
 
@@ -204,7 +202,13 @@ export class EventAttendeesComponent implements OnInit{
       })
     }).then(() => {
       this.customerEmailService.add(this.email).then(email => {
-        this.toastrService.success('Email ("' + email.subject + '") Sent Successfully!');
+        notify({
+          message: 'Email ("' + email.subject + '") Sent Successfully!',
+          position: 'top',
+          width: 600,
+          type: 'success'
+        });
+
         this.isEmailVisible$.next(false);
       })
     })

@@ -5,7 +5,6 @@ import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { environment } from 'src/environments/environment';
-import { ToastrModule } from 'ngx-toastr';
 import { AdminManagerModule } from './admin-manager/admin-manager.module';
 import { ImpactDisciplesModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
 import { EventsManagerModule } from './events-manager/events-manager.module';
@@ -29,7 +28,6 @@ import { PageManagerModule } from './page-manager/page-manager.module';
     NgxsModule.forRoot([], { developmentMode: !environment.production }),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
     provideFirestore(() => getFirestore()),
-    ToastrModule.forRoot(),
     AdminManagerModule,
     RequestsManagerModule,
     StoreManagerModule,

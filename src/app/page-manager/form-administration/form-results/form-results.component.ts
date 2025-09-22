@@ -1,6 +1,5 @@
 import { Component, NgZone, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
 import { take } from 'rxjs/operators';
 import { FormService } from '../../common/services/forms.service';
 import { PageService } from '../../common/services/page.service';
@@ -25,8 +24,7 @@ export class FormResultsComponent implements OnInit {
     public pageService: PageService,
     public ngZone: NgZone,
     public router: Router,
-    private route: ActivatedRoute,
-    public toster: ToastrService,) {}
+    private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.breadCrumbItems = [{ label: 'Admin' }, { label: 'Form Administration',  path: '/forms/form-administration' }];
