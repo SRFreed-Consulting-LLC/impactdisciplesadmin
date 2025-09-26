@@ -79,19 +79,14 @@
   <dxi-column dataField="title" [sortOrder]="'asc'"></dxi-column>
   <dxi-column dataField="cost" [width]="80" dataType="number" format="currency"></dxi-column>
   <dxi-column dataField="salePrice" [width]="80" dataType="number" format="currency"></dxi-column>
-  <dxi-column dataField="weight" [width]="80" dataType="number"></dxi-column>
-  <dxi-column dataField="uom">
-    <dxo-lookup [dataSource]="uoms"></dxo-lookup>
-  </dxi-column>
   <dxi-column dataField="series" [visible]="selectedSeries">
     <dxo-lookup [dataSource]="series" [displayExpr]="'name'" [valueExpr]="'id'"></dxo-lookup>
   </dxi-column>
-  <dxi-column dataField="seriesOrder" [visible]="selectedSeries"></dxi-column>
   <dxi-column dataField="category" [visible]="selectedCategory">
     <dxo-lookup [dataSource]="productCategories" [displayExpr]="'tag'" [valueExpr]="'id'"></dxo-lookup>
   </dxi-column>
-  <dxi-column dataField="categoryOrder" [visible]="selectedCategory"></dxi-column>
   <dxi-column dataField="isEBook" dataType="boolean"></dxi-column>
+  <dxi-column dataField="isDigitalBook" dataType="boolean"></dxi-column>
   <dxi-column dataField="tags" [visible]="false">
     <dxo-lookup [dataSource]="productTags" [displayExpr]="'tag'" [valueExpr]="'id'"></dxo-lookup>
   </dxi-column>
@@ -309,7 +304,18 @@
                   </dxo-toolbar>
                 </dx-html-editor>
               </div>
-
+            </dxi-item>
+            <dxi-item dataField="imageUrl.name" [colSpan]="10" [label]="{ text: 'Image Name' }" [disabled]="true"></dxi-item>
+            <dxi-item [colSpan]="2">
+              <div *dxTemplate>
+                <dx-button
+                  text="Upload Image"
+                  stylingMode="contained"
+                  type="normal"
+                  [disabled]="inProgress$ | async"
+                  (onClick)="showSingleImageModal()">
+                </dx-button>
+              </div>
             </dxi-item>
             <dxi-item dataField="isEBook" [colSpan]="2" [label]="{ text: 'Is this an eBook?' }">
               <dx-check-box [(value)]="this.selectedItem.isEBook"></dx-check-box>
@@ -327,19 +333,6 @@
                 </dx-button>
               </div>
             </dxi-item>
-            <dxi-item [colSpan]="2"></dxi-item>
-            <dxi-item dataField="imageUrl.name" [colSpan]="8" [label]="{ text: 'Image Name' }" [disabled]="true"></dxi-item>
-            <dxi-item [colSpan]="2">
-              <div *dxTemplate>
-                <dx-button
-                  text="Upload Image"
-                  stylingMode="contained"
-                  type="normal"
-                  [disabled]="inProgress$ | async"
-                  (onClick)="showSingleImageModal()">
-                </dx-button>
-              </div>
-            </dxi-item>
             <dxi-item dataField="weight" [colSpan]="4" [label]="{ text: 'Weight' }" [isRequired]="true">
               <div *dxTemplate>
                 <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
@@ -350,8 +343,11 @@
                 <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
               </div>
             </dxi-item>
-            <dxi-item dataField="showInStore" [colSpan]="4" [label]="{ text: 'List In Store?' }">
+            <dxi-item dataField="showInStore" [colSpan]="2" [label]="{ text: 'List In Store?' }">
               <dx-check-box [(value)]="this.selectedItem.showInStore"></dx-check-box>
+            </dxi-item>
+            <dxi-item dataField="digitalBook" [colSpan]="2" [label]="{ text: 'Digital Book?' }">
+              <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
             </dxi-item>
             <dxi-item [colSpan]="12" [label]="{ text: 'Tags' }">
               <dx-tag-box
@@ -365,7 +361,7 @@
                 (onCustomItemCreating)="onCustomItemCreating($event)">
               </dx-tag-box>
             </dxi-item>
-            <dxi-item [colSpan]="12" [label]="{ text: 'Sizes' }">
+            <dxi-item [colSpan]="6" [label]="{ text: 'Sizes' }">
               <dx-tag-box
                 [dataSource]="sizes"
                 [(value)]="selectedItem.sizes"
@@ -376,7 +372,7 @@
                 (onCustomItemCreating)="onSizesCreating($event)">
               </dx-tag-box>
             </dxi-item>
-            <dxi-item [colSpan]="12" [label]="{ text: 'Colors' }">
+            <dxi-item [colSpan]="6" [label]="{ text: 'Colors' }">
               <dx-tag-box
                 [dataSource]="colors"
                 [(value)]="selectedItem.colors"
