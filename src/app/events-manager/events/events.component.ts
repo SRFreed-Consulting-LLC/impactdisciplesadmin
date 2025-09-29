@@ -15,7 +15,7 @@ import { OrganizationSaved, ShowOrganizationModal } from 'src/app/shared/organiz
 import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
 import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
   selector: 'app-events',
@@ -43,7 +43,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private authService: AuthService,
+  constructor(private authService: AdminAuthService,
     private store: Store,
     private actions$: Actions,
     public eventService: EventService,

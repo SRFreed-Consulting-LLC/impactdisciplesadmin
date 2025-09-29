@@ -14,7 +14,7 @@ import { EventsManagerComponent } from './events-manager/events-manager.componen
 import { DashboardComponent } from './core/dashboard/dashboard.component';
 import { StoreManagerComponent } from './store-manager/store-manager.component';
 import { PageManagerComponent } from './page-manager/page-manager.component';
-import { AuthGuardService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AuthGuardService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 const routes: Routes = [
   {

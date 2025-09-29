@@ -9,7 +9,7 @@ import {
   ViewContainerRef
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { Subscription } from 'rxjs';
 import { CardViewerComponent } from '../../card-administration/card-viewer/card-viewer.component';
 import { CardSpacerComponent } from '../../common/content/card-spacer/card-spacer.component';
@@ -40,7 +40,7 @@ export class PageViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     private CFR: ComponentFactoryResolver,
     private pageService: PageService,
     private route: ActivatedRoute,
-    private authService: AuthService,
+    private authService: AdminAuthService,
   ) {}
 
   ngOnInit(): void {

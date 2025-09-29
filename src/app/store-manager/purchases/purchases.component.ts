@@ -13,10 +13,10 @@ import { Timestamp } from 'firebase/firestore';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { PaymentIntent } from '@stripe/stripe-js';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
 import { Workbook } from 'exceljs';
 import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
 import { saveAs } from 'file-saver';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
   selector: 'app-purchases',
@@ -54,7 +54,7 @@ export class PurchasesComponent implements OnInit {
 
   phone_types;
 
-  constructor(private service: PurchasesService, private authService: AuthService) {}
+  constructor(private service: PurchasesService, private authService: AdminAuthService) {}
 
   ngOnInit() {
     this.datasource$ = this.service.streamAll().pipe(

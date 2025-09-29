@@ -8,7 +8,7 @@ import { EventAnnouncementService } from 'impactdisciplescommon/src/services/dat
 import DataSource from 'devextreme/data/data_source';
 import CustomStore from 'devextreme/data/custom_store';
 import { DxFormComponent } from 'devextreme-angular';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { Timestamp } from 'firebase/firestore';
 
 @Component({
@@ -29,7 +29,7 @@ export class AnnouncementsComponent implements OnInit {
   public inProgress$ = new BehaviorSubject<boolean>(false)
 
   constructor(private service: EventAnnouncementService,
-    private authService: AuthService
+    private authService: AdminAuthService
   ) { }
 
   ngOnInit() {
@@ -91,7 +91,7 @@ export class AnnouncementsComponent implements OnInit {
     if(this.form.instance.validate().isValid) {
       item.date = Timestamp.now();
 
-      let user = await this.authService.getUserAsPromise()
+      let user = await this.authService.getLoggedInUser();
 
       item.sentBy = user.firstName + ' ' + user.lastName;
 

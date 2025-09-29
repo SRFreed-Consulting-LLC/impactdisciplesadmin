@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
   selector: 'app-store-manager',
@@ -22,7 +22,7 @@ export class StoreManagerComponent implements OnInit {
 
   secureTabs: Tab[] = [];
 
-  constructor(private authService: AuthService){}
+  constructor(private authService: AdminAuthService){}
 
   ngOnInit(): void {
     let userRole = this.authService.getLoggedInUser().role;

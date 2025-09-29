@@ -1,5 +1,5 @@
 import { Component, HostBinding } from '@angular/core';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { ScreenService } from 'impactdisciplescommon/src/services/utils/screen.service';
 
 @Component({
@@ -14,7 +14,7 @@ export class AppComponent {
     return Object.keys(this.screen.sizes).filter(cl => this.screen.sizes[cl]).join(' ');
   }
 
-  constructor(private authService: AuthService, private screen: ScreenService) { }
+  constructor(private authService: AdminAuthService, private screen: ScreenService) { }
 
   isAuthenticated() {
     return this.authService.loggedIn;

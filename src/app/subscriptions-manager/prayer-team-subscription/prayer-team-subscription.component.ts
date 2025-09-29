@@ -4,7 +4,7 @@ import ArrayStore from 'devextreme/data/array_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
 import { PrayerTeamSubscriptionModel } from 'impactdisciplescommon/src/models/domain/prayer-team-subscription.model';
-import { BehaviorSubject, Observable, map, take } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
 import { PrayerModel } from 'impactdisciplescommon/src/models/domain/prayer.model';
@@ -17,7 +17,7 @@ import jsPDF from 'jspdf';
 import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
 import { PrayerTeamSubscriptionService } from 'impactdisciplescommon/src/services/data/prayer-team-subscription.service';
 import { PrayerService } from 'impactdisciplescommon/src/services/data/prayer.service';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
   selector: 'app-prayer-team-subscription',
@@ -49,7 +49,7 @@ export class PrayerTeamSubscriptionComponent {
 
   constructor(private service: PrayerTeamSubscriptionService,
     private emailService: EMailService,
-    private authService: AuthService,
+    private authService: AdminAuthService,
     private prayerService: PrayerService,
     private emailListService: EmailListService) {}
 
@@ -223,52 +223,52 @@ export class PrayerTeamSubscriptionComponent {
   }
 
   sendPrayer(){
-    this.authService.getUser().pipe(take(1)).subscribe(user => {
-      this.prayer.sender = user.firstName + ' ' + user.lastName
-      let html='';
+    let user = this.authService.getLoggedInUser()
+    this.prayer.sender = user.firstName + ' ' + user.lastName
+    let html='';
 
-      let list: Promise<PrayerTeamSubscriptionModel[]>
-      if(this.selectedList){
-        list = Promise.resolve(this.selectedList.list);
-      } else {
-        list = this.service.getAll();
-      }
+    let list: Promise<PrayerTeamSubscriptionModel[]>
+    if(this.selectedList){
+      list = Promise.resolve(this.selectedList.list);
+    } else {
+      list = this.service.getAll();
+    }
 
-      list.then(subscribers => {
-        subscribers.forEach(subscriber => {
-          let form = {};
-          form['firstName'] = subscriber.firstName;
-          form['lastName'] = subscriber.lastName;
-          form['email'] = subscriber.email;
-          form['date'] = subscriber;
+    list.then(subscribers => {
+      subscribers.forEach(subscriber => {
+        let form = {};
+        form['firstName'] = subscriber.firstName;
+        form['lastName'] = subscriber.lastName;
+        form['email'] = subscriber.email;
+        form['date'] = subscriber;
 
-          html = this.prayer.html
-          html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-          html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-          html = html.replace('{{Sender First Name}}', user.firstName);
-          html = html.replace('{{Sender Last Name}}', user.lastName);
-          html = html.replace('{{Date}}', (dateFromTimestamp(this.prayer.date) as Date).toLocaleString());
-          html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
-            "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-            "&list=prayer_team_subscriptions'>here</a></b> to remove your address.</div>"
+        html = this.prayer.html
+        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
+        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
+        html = html.replace('{{Sender First Name}}', user.firstName);
+        html = html.replace('{{Sender Last Name}}', user.lastName);
+        html = html.replace('{{Date}}', (dateFromTimestamp(this.prayer.date) as Date).toLocaleString());
+        html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
+          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
+          "&list=prayer_team_subscriptions'>here</a></b> to remove your address.</div>"
 
-          this.prayer.html = html;
+        this.prayer.html = html;
 
-          this.emailService.sendHtmlEmail(subscriber.email, this.prayer.subject, this.prayer.html);
-        })
-      }).then(() => {
-        this.prayerService.add(this.prayer).then(prayer => {
-          notify({
-            message: 'Prayer Request Sent Successfully!',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
+        this.emailService.sendHtmlEmail(subscriber.email, this.prayer.subject, this.prayer.html);
+      })
+    }).then(() => {
+      this.prayerService.add(this.prayer).then(prayer => {
+        notify({
+          message: 'Prayer Request Sent Successfully!',
+          position: 'top',
+          width: 600,
+          type: 'success'
+        });
 
-          this.isPrayerVisible$.next(false);
-        })
+        this.isPrayerVisible$.next(false);
       })
     })
+
   }
 
   onCancel() {

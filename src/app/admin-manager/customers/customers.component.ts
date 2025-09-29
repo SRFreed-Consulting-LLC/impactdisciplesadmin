@@ -3,7 +3,7 @@ import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
-import { BehaviorSubject, Observable, map, of, take } from 'rxjs';
+import { BehaviorSubject, Observable, map, of } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
@@ -18,7 +18,7 @@ import { OrganizationModel } from 'impactdisciplescommon/src/models/domain/organ
 import { LocationModel } from 'impactdisciplescommon/src/models/domain/location.model';
 import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
 import { Timestamp } from 'firebase/firestore';
 import { CustomerEmailModel } from 'impactdisciplescommon/src/models/domain/customer-email.model';
@@ -90,14 +90,14 @@ export class CustomersComponent implements OnInit {
     private eventRegistrationService: EventRegistrationService,
     private locationsService: LocationService,
     private organizationsService: OrganizationService,
-    private authService: AuthService,
+    private authService: AdminAuthService,
     private emailListService: EmailListService,
     private emailService: EMailService,
     private customerEmailService: CustomerEmailService
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.user = await this.authService.getUserAsPromise() as AppUser;
+    this.user = this.authService.getLoggedInUser() as AppUser;
 
     this.datasource$ = this.service.streamAll().pipe(
       map(
@@ -410,44 +410,43 @@ export class CustomersComponent implements OnInit {
   }
 
   sendEmail(){
-    this.authService.getUser().pipe(take(1)).subscribe(user => {
-      this.email.sender = user.firstName + ' ' + user.lastName
-      let html='';
+    let user = this.authService.getLoggedInUser();
+    this.email.sender = user.firstName + ' ' + user.lastName
+    let html='';
 
-      let list: Promise<CustomerModel[]>
-      if(this.selectedList){
-        list = Promise.resolve(this.selectedList.list);
-      } else {
-        list = this.service.getAll();
-      }
+    let list: Promise<CustomerModel[]>
+    if(this.selectedList){
+      list = Promise.resolve(this.selectedList.list);
+    } else {
+      list = this.service.getAll();
+    }
 
-      list.then(subscribers => {
-        console.log(subscribers)
-        subscribers.forEach(subscriber => {
-          html = this.email.html
-          html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-          html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-          html = html.replace('{{Sender First Name}}', user.firstName);
-          html = html.replace('{{Sender Last Name}}', user.lastName);
-          html = html.replace('{{Date}}', (dateFromTimestamp(this.email.date) as Date).toLocaleString());
-          html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
-            "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-            "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
-          this.email.html = html;
+    list.then(subscribers => {
+      console.log(subscribers)
+      subscribers.forEach(subscriber => {
+        html = this.email.html
+        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
+        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
+        html = html.replace('{{Sender First Name}}', user.firstName);
+        html = html.replace('{{Sender Last Name}}', user.lastName);
+        html = html.replace('{{Date}}', (dateFromTimestamp(this.email.date) as Date).toLocaleString());
+        html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
+          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
+          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
+        this.email.html = html;
 
-          this.emailService.sendHtmlEmail(subscriber.email, this.email.subject, this.email.html);
-        })
-      }).then(() => {
-        this.customerEmailService.add(this.email).then(email => {
-          notify({
-            message: 'Email ("' + email.subject + '") Sent Successfully!',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
+        this.emailService.sendHtmlEmail(subscriber.email, this.email.subject, this.email.html);
+      })
+    }).then(() => {
+      this.customerEmailService.add(this.email).then(email => {
+        notify({
+          message: 'Email ("' + email.subject + '") Sent Successfully!',
+          position: 'top',
+          width: 600,
+          type: 'success'
+        });
 
-          this.isEmailVisible$.next(false);
-        })
+        this.isEmailVisible$.next(false);
       })
     })
   }
@@ -465,14 +464,15 @@ export class CustomersComponent implements OnInit {
   }
 
   addCustomerNote(){
-    this.authService.getUser().pipe(take(1)).subscribe(user => {
-      let note: CustomerNoteModel = {... new CustomerNoteModel()};
-      note.date = Timestamp.now();
-      note.addedBy = user.firstName + " " + user.lastName;
-      note.private = false;
-      note.id = this.generateRandomId();
-      this.selectedItem.notes.push(note);
-    })
+    let user = this.authService.getLoggedInUser();
+
+    let note: CustomerNoteModel = {... new CustomerNoteModel()};
+    note.date = Timestamp.now();
+    note.addedBy = user.firstName + " " + user.lastName;
+    note.private = false;
+    note.id = this.generateRandomId();
+    this.selectedItem.notes.push(note);
+
   }
 
   deleteNote(index: number){

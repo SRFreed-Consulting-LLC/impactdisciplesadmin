@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { DxButtonTypes } from 'devextreme-angular/ui/button';
 import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
 import { SecureMenuItem } from 'impactdisciplescommon/src/models/utils/secure-menu-item.model';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { TopNavService } from 'impactdisciplescommon/src/services/utils/top-nav.service';
 
 @Component({
@@ -39,7 +39,7 @@ export class MainScreenComponent implements OnInit {
     },
   };
 
-  constructor(public topNavService: TopNavService, private authService: AuthService, private router: Router){}
+  constructor(public topNavService: TopNavService, private authService: AdminAuthService, private router: Router){}
 
   ngOnInit(): void {
     let userRole = this.authService.getLoggedInUser().role;

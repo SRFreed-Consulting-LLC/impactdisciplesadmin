@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ShippingLabelBatchRequest, ShippingLabelRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
 import { ShippingLabelBatchService } from 'impactdisciplescommon/src/services/data/shipping-label-batch.service';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { BehaviorSubject, map, Observable } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import notify from 'devextreme/ui/notify';
@@ -42,7 +42,7 @@ export class ShippingLabelsComponent implements OnInit {
 
   config: WebConfigModel;
 
-  constructor(private authService: AuthService,
+  constructor(private authService: AdminAuthService,
     private batchService: ShippingLabelBatchService,
     private labelService: ShippingLabelService,
     private webConfigService: WebConfigService) { }

@@ -13,7 +13,7 @@ import { Timestamp, Unsubscribe } from 'firebase/firestore';
 import { CustomerEmailService } from 'impactdisciplescommon/src/services/data/customer-email.service';
 import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { environment } from 'src/environments/environment';
 import { exportDataGrid as exportPDFDataGrid} from 'devextreme/pdf_exporter';
 import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
@@ -51,7 +51,7 @@ export class EventAttendeesComponent implements OnInit{
   public unsub: Unsubscribe;
 
   constructor(public service: EventRegistrationService,
-    private authService: AuthService,
+    private authService: AdminAuthService,
     private emailService: EMailService,
     private customerEmailService: CustomerEmailService
   ){}

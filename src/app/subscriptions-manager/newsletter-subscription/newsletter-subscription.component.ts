@@ -9,7 +9,6 @@ import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
 import { Timestamp } from 'firebase/firestore';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
 import { NewsletterModel } from 'impactdisciplescommon/src/models/domain/newsletter.model';
 import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
 import { environment } from 'src/environments/environment';
@@ -18,6 +17,7 @@ import jsPDF from 'jspdf';
 import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
 import { NewsletterService } from 'impactdisciplescommon/src/services/data/newletter.service';
 import { NewsletterSubscriptionService } from 'impactdisciplescommon/src/services/data/newsletter-subscription.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
   selector: 'app-newsletter-subscription',
@@ -52,7 +52,7 @@ export class NewsletterSubscriptionComponent {
 
   constructor(private service: NewsletterSubscriptionService,
     private emailService: EMailService,
-    private authService: AuthService,
+    private authService: AdminAuthService,
     private newsletterService: NewsletterService,
     private emailListService: EmailListService
   ) {}
@@ -229,44 +229,43 @@ export class NewsletterSubscriptionComponent {
   }
 
   sendNewsletter(){
-    this.authService.getUser().pipe(take(1)).subscribe(user => {
-      this.newsletter.sender = user.firstName + ' ' + user.lastName
-      let html='';
+    let user = this.authService.getLoggedInUser();
+    this.newsletter.sender = user.firstName + ' ' + user.lastName
+    let html='';
 
-      let list: Promise<NewsletterSubscriptionModel[]>
-      if(this.selectedList){
-        list = Promise.resolve(this.selectedList.list);
-      } else {
-        list = this.service.getAll();
-      }
+    let list: Promise<NewsletterSubscriptionModel[]>
+    if(this.selectedList){
+      list = Promise.resolve(this.selectedList.list);
+    } else {
+      list = this.service.getAll();
+    }
 
-      list.then(subscribers => {
-        console.log(subscribers)
-        subscribers.forEach(subscriber => {
-          html = this.newsletter.html
-          html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-          html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-          html = html.replace('{{Sender First Name}}', user.firstName);
-          html = html.replace('{{Sender Last Name}}', user.lastName);
-          html = html.replace('{{Date}}', (dateFromTimestamp(this.newsletter.date) as Date).toLocaleString());
-          html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
-            "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-            "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
-          this.newsletter.html = html;
+    list.then(subscribers => {
+      console.log(subscribers)
+      subscribers.forEach(subscriber => {
+        html = this.newsletter.html
+        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
+        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
+        html = html.replace('{{Sender First Name}}', user.firstName);
+        html = html.replace('{{Sender Last Name}}', user.lastName);
+        html = html.replace('{{Date}}', (dateFromTimestamp(this.newsletter.date) as Date).toLocaleString());
+        html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
+          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
+          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
+        this.newsletter.html = html;
 
-          this.emailService.sendHtmlEmail(subscriber.email, this.newsletter.subject, this.newsletter.html);
-        })
-      }).then(() => {
-        this.newsletterService.add(this.newsletter).then(newsletter => {
-          notify({
-            message: 'Newsletter ("' + newsletter.subject + '") Sent Successfully!',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
+        this.emailService.sendHtmlEmail(subscriber.email, this.newsletter.subject, this.newsletter.html);
+      })
+    }).then(() => {
+      this.newsletterService.add(this.newsletter).then(newsletter => {
+        notify({
+          message: 'Newsletter ("' + newsletter.subject + '") Sent Successfully!',
+          position: 'top',
+          width: 600,
+          type: 'success'
+        });
 
-          this.isPrayerVisible$.next(false);
-        })
+        this.isPrayerVisible$.next(false);
       })
     })
   }

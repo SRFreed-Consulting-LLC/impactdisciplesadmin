@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
 import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { confirm } from 'devextreme/ui/dialog';
 import notify from 'devextreme/ui/notify';
@@ -16,7 +16,7 @@ export class PurchaseDetailsComponent implements OnInit {
 
   @Input('selectedItem')selectedItem: CheckoutForm;
 
-  constructor(public service: PurchasesService, private authService: AuthService) { }
+  constructor(public service: PurchasesService, private authService: AdminAuthService) { }
 
   ngOnInit() {
   }

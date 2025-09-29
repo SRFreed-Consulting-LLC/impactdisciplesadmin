@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { AuthService } from 'impactdisciplescommon/src/services/utils/auth.service';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { cta_button_style_values, card_form_data_type_values } from 'src/app/page-manager/common/lists/card-fields.list';
 import { CardComponent, CardComponentFormItem, CardComponentUrl } from 'src/app/page-manager/common/models/editor/card.model';
 import { Form } from 'src/app/page-manager/common/models/editor/form.model';
@@ -47,7 +47,7 @@ export class FormMakerComponentComponent implements OnInit {
 
   mode: string;
 
-  constructor(private formsService: FormService, private authService: AuthService) {}
+  constructor(private formsService: FormService, private authService: AdminAuthService) {}
 
   ngOnInit(): void {
     this.button_component = {
