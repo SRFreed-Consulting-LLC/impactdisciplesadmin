@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CoursesComponent } from './courses/courses.component';
 import { LocationsComponent } from './locations/locations.component';
-import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule, DxDraggableModule, DxDropDownBoxModule, DxFileManagerModule, DxFormModule, DxHtmlEditorModule, DxListModule, DxLoadIndicatorModule, DxLoadPanelModule, DxLookupModule, DxNumberBoxModule, DxPopupModule, DxSchedulerModule, DxScrollViewModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextAreaModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
+import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule, DxDraggableModule, DxDropDownBoxModule, DxFileManagerModule, DxFormModule, DxHtmlEditorModule,
+  DxListModule, DxLoadIndicatorModule, DxLoadPanelModule, DxLookupModule, DxNumberBoxModule, DxPopupModule, DxSchedulerModule, DxScrollViewModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextAreaModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
 import { OrganizationsComponent } from './organizations/organizations.component';
-import { ImpactDisciplesModule } from "../../../impactdisciplescommon/src/impactdisciples.common.module";
-import { ImpactFormsModule } from 'impactdisciplescommon/src/forms/forms.module';
+import { ImpactDisciplesCommonModule } from "../../../impactdisciplescommon/src/impactdisciples.common.module";
 import { CoachesComponent } from './coaches/coaches.component';
 import { EventsComponent } from './events/events.component';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
@@ -19,6 +19,7 @@ import { AnnouncementsComponent } from './events/event-application/announcements
 import { EventApplicationComponent } from './events/event-application/event-application.component';
 import { DetailsComponent } from './events/event-application/details/details.component';
 import { EventBreakoutsComponent } from './events/event-breakouts/event-breakouts.component';
+import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 
 @NgModule({
     declarations: [
@@ -41,7 +42,7 @@ import { EventBreakoutsComponent } from './events/event-breakouts/event-breakout
       CommonModule,
       SharedModule,
       FormsModule,
-      ImpactFormsModule,
+      ImageUploaderModule,
       DxButtonModule,
       DxContextMenuModule,
       DxDataGridModule,
@@ -66,7 +67,7 @@ import { EventBreakoutsComponent } from './events/event-breakouts/event-breakout
       DxSelectBoxModule,
       DxDropDownBoxModule,
       DxLoadIndicatorModule,
-      ImpactDisciplesModule
+      ImpactDisciplesCommonModule
     ]
 })
 export class EventsManagerModule { }

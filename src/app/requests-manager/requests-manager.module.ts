@@ -1,25 +1,22 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DxAutocompleteModule, DxButtonModule, DxContextMenuModule, DxDataGridModule, DxFileUploaderModule, DxFormModule, DxHtmlEditorModule, DxLoadIndicatorModule, DxLookupModule, DxPopupModule,
-         DxScrollViewModule,
-         DxSelectBoxModule,
-         DxSwitchModule, DxTabsModule, DxTextBoxModule,
-         DxToolbarModule} from 'devextreme-angular';
-import { ImpactFormsModule } from 'impactdisciplescommon/src/forms/forms.module';
+import { DxAutocompleteModule, DxButtonModule, DxContextMenuModule, DxDataGridModule, DxFileUploaderModule, DxFormModule, DxHtmlEditorModule, DxLoadIndicatorModule,
+  DxLookupModule, DxPopupModule, DxScrollViewModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTextBoxModule, DxToolbarModule} from 'devextreme-angular';
 import { LunchAndLearnsComponent } from './lunch-and-learns-requests/lunch-and-learns.component';
 import { SeminarsComponent } from './seminars-requests/seminars.component';
 import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
-import { ImpactDisciplesModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
 import { ConsultationsRequestsComponent } from './consultations-requests/consultations-requests.component';
 import { ConsultationsSurveysComponent } from './consultations-surveys/consultations-surveys.component';
 import { RequestsManagerComponent } from './requests-manager.component';
 import { SharedModule } from '../shared/shared.module';
+import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
-    ImpactFormsModule,
+    ImageUploaderModule,
     DxAutocompleteModule,
     DxContextMenuModule,
     DxDataGridModule,
@@ -36,7 +33,7 @@ import { SharedModule } from '../shared/shared.module';
     DxTabsModule,
     DxTextBoxModule,
     DxToolbarModule,
-    ImpactDisciplesModule,
+    ImpactDisciplesCommonModule,
     SharedModule
   ],
   declarations: [

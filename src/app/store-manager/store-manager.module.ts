@@ -5,7 +5,6 @@ import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule
 import { ProductsComponent } from './products/products.component';
 import { PurchasesComponent } from './purchases/purchases.component';
 import { SharedModule } from '../shared/shared.module';
-import { ImpactFormsModule } from 'impactdisciplescommon/src/forms/forms.module';
 import { ProductCategoriesComponent } from './product-categories/product-categories.component';
 import { CategoryModalComponent } from './product-categories/category-modal/category-modal.component';
 import { ProductSeriesComponent } from './product-series/product-series.component';
@@ -15,6 +14,7 @@ import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.compo
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 import { SalesComponent } from './sales/sales.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
+import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 
 @NgModule({
   declarations: [
@@ -33,7 +33,7 @@ import { PurchaseDetailsComponent } from './purchase-details/purchase-details.co
   ],
   imports: [
     CommonModule,
-    ImpactFormsModule,
+    ImageUploaderModule,
     DxButtonModule,
     DxCheckBoxModule,
     DxDataGridModule,

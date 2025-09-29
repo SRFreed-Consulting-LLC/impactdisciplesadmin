@@ -6,7 +6,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { environment } from 'src/environments/environment';
 import { AdminManagerModule } from './admin-manager/admin-manager.module';
-import { ImpactDisciplesModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
 import { EventsManagerModule } from './events-manager/events-manager.module';
 import { CoreModule } from './core/core.module';
 import { CookieService } from 'ngx-cookie-service';
@@ -17,6 +17,7 @@ import { NgxsModule } from '@ngxs/store';
 import { SharedModule } from './shared/shared.module';
 import { StoreManagerModule } from './store-manager/store-manager.module';
 import { PageManagerModule } from './page-manager/page-manager.module';
+import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/admin-forms.module';
 
 @NgModule({
   declarations: [
@@ -36,7 +37,8 @@ import { PageManagerModule } from './page-manager/page-manager.module';
     CoreModule,
     EventsManagerModule,
     PageManagerModule,
-    ImpactDisciplesModule,
+    ImpactDisciplesCommonModule,
+    ImpactAdminFormsModule,
     SharedModule
 
   ],

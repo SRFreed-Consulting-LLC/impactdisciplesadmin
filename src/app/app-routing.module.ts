@@ -1,10 +1,10 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { CapturePasswordFormComponent } from 'impactdisciplescommon/src/forms/capture-password-form/capture-password-form.component';
-import { CaptureUsernameFormComponent } from 'impactdisciplescommon/src/forms/capture-username-form/capture-username-form.component';
-import { ChangePasswordFormComponent } from 'impactdisciplescommon/src/forms/change-password-form/change-password-form.component';
-import { CreateAuthFormComponent } from 'impactdisciplescommon/src/forms/create-auth-form/create-auth-form.component';
-import { ResetPasswordFormComponent } from 'impactdisciplescommon/src/forms/reset-password-form/reset-password-form.component';
+import { CapturePasswordFormComponent } from 'impactdisciplescommon/src/forms/admin/capture-password-form/capture-password-form.component';
+import { CaptureUsernameFormComponent } from 'impactdisciplescommon/src/forms/admin/capture-username-form/capture-username-form.component';
+import { ChangePasswordFormComponent } from 'impactdisciplescommon/src/forms/admin/change-password-form/change-password-form.component';
+import { CreateAuthFormComponent } from 'impactdisciplescommon/src/forms/admin/create-auth-form/create-auth-form.component';
+import { ResetPasswordFormComponent } from 'impactdisciplescommon/src/forms/admin/reset-password-form/reset-password-form.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { WebManagerComponent } from './web-manager/web-manager.component';
 import { SubscriptionsManagerComponent } from './subscriptions-manager/subscriptions-manager.component';

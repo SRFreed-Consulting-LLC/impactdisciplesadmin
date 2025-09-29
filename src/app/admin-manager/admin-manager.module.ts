@@ -12,21 +12,21 @@ import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule
          DxValidatorModule} from 'devextreme-angular';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { WebConfigComponent } from './web-config/web-config.component';
-import { ImpactFormsModule } from 'impactdisciplescommon/src/forms/forms.module';
 import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
-import { ImpactDisciplesModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
 import { AdminManagerComponent } from './admin-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { EmailTemplatesComponent } from './email-templates/email-templates.component';
 import { CustomersComponent } from './customers/customers.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
 import { ShippingLabelListComponent } from './shipping-labels/shippingLabelList/shippingLabelList.component';
+import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
-    ImpactFormsModule,
+    ImageUploaderModule,
     DxCheckBoxModule,
     DxContextMenuModule,
     DxDataGridModule,
@@ -49,7 +49,7 @@ import { ShippingLabelListComponent } from './shipping-labels/shippingLabelList/
     DxToolbarModule,
     DxTreeListModule,
     DxValidatorModule,
-    ImpactDisciplesModule,
+    ImpactDisciplesCommonModule,
     SharedModule
   ],
   declarations: [

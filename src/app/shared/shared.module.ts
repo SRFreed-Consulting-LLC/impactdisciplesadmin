@@ -8,8 +8,8 @@ import { OrganizationModalComponent } from "./organization-modal/organization-mo
 @NgModule({
   declarations: [IndicatorButtonComponent, LocationModalComponent, OrganizationModalComponent],
   imports: [
-    CommonModule, 
-    DxButtonModule, 
+    CommonModule,
+    DxButtonModule,
     DxLoadIndicatorModule,
     DxPopupModule,
     DxFormModule
