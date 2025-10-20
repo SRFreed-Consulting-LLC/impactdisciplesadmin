@@ -20,7 +20,7 @@
               "zone.js"
             ],
             "allowedCommonJsDependencies": [
-              "jszip", "devexpress-diagram", "devexpress-gantt", "devextreme-quill",
+              "jszip", "devexpress-diagram", "devexpress-gantt", "devextreme-quill", "lodash",
               "raf", "rgbcolor", "dompurify", "html2canvas", "parchment", "exceljs", "file-saver",
               "core-js/modules/es.array.index-of.js", "core-js/modules/es.array.iterator.js",
               "core-js/modules/es.array.reduce.js", "core-js/modules/es.array.reverse.js",
