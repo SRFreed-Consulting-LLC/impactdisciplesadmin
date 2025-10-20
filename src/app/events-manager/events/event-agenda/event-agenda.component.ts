@@ -9,6 +9,7 @@ import { CoachService } from 'impactdisciplescommon/src/services/data/coach.serv
 import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import dxForm from 'devextreme/ui/form';
 
 @Component({
   selector: 'app-event-agenda',
@@ -150,9 +151,13 @@ export class EventAgendaComponent implements OnInit{
       editorType: 'dxSelectBox',
       dataField: 'room',
       editorOptions: {
+        showClearButton: true,
         items: that.rooms,
         displayExpr: 'name',
-        valueExpr: 'id'
+        valueExpr: 'id',
+        onValueChanged({ value }) {
+          that.setMaxParticipants(data, value, form);
+        }
       },
     }];
     form.repaint();
@@ -320,10 +325,20 @@ export class EventAgendaComponent implements OnInit{
       editorOptions: {
         items: that.rooms,
         displayExpr: 'name',
-        valueExpr: 'id'
+        valueExpr: 'id',
       },
     }];
+
     form.repaint();
+  }
+
+  setMaxParticipants(data: DxSchedulerTypes.AppointmentFormOpeningEvent, value: string, form:dxForm){
+    let room = this.rooms.find(room => room.id == value)
+
+    if(room && room.capacity && data.appointmentData['maxParticipants']){
+      data.appointmentData['maxParticipants'] = room.capacity;
+      form.updateData('maxParticipants', room.capacity);
+    }
   }
 
   private generateEventId() {
