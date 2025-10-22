@@ -42,9 +42,9 @@
   <dxo-selection mode="multiple" ></dxo-selection>
   <dxo-scrolling mode="virtual"></dxo-scrolling>
   <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-  <dxi-column dataField="question" [width]="'25%'" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="answer" [width]="'65%'"></dxi-column>
+  <dxi-column dataField="sortOrder" [width]="'15%'" [sortOrder]="'asc'"></dxi-column>
+  <dxi-column dataField="question" [width]="'25%'"></dxi-column>
+  <dxi-column dataField="answer" [width]="'50%'"></dxi-column>
   <dxi-column type="buttons" [width]="150" caption="Actions" [width]="100">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
   </dxi-column>
@@ -72,8 +72,14 @@
           #addEditForm
           [(formData)]="selectedItem"
           [showColonAfterLabel]="false"
-          labelLocation="left">
-          <dxi-item dataField="question" [colSpan]="2" [isRequired]="true"></dxi-item>
+          labelLocation="left"
+          [colCount]="8">
+          <dxi-item dataField="sortOrder" [colSpan]="2">
+            <div *dxTemplate>
+              <dx-number-box [(value)]="selectedItem.sortOrder"></dx-number-box>
+            </div>
+          </dxi-item>
+          <dxi-item dataField="question" [colSpan]="6" [isRequired]="true"></dxi-item>
           <dxi-item dataField="answer" [colSpan]="8" [template]="'answer_template'"></dxi-item>
 
           <div *dxTemplate="let data of 'answer_template'">
