@@ -66,8 +66,8 @@ export class EventBreakoutsComponent implements OnInit {
     }
   }
 
-  getSessionTime(date: Date){
-    return date.toLocaleTimeString();
+  getSessionTime(date){
+    return new Date(date).toLocaleTimeString();
   }
 }
 

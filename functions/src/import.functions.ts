@@ -11,19 +11,14 @@ exports.importJSON = functions
 
       response.set("Access-Control-Allow-Credentials", "true");
       response.set("Access-Control-Allow-Origin", "*");
-      const retval = [];
 
+      const table = request.query.table;
       const requestBody = request.body;
 
-      const batch = db.batch();
+      console.log(requestBody.id);
+      console.log(table);
+      await db.collection(table as string).doc(requestBody.id).set(requestBody);
 
-      requestBody.forEach((record) => {
-        const ref = db.doc(`blog-files-temp/${record.ID}`);
-        batch.set(ref, record);
-      });
-
-      await batch.commit().then(() => {
-        response.send(retval);
-      });
+      response.send(requestBody);
     });
   });
