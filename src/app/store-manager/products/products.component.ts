@@ -45,6 +45,7 @@ export class ProductsComponent implements OnInit {
 
   sizes: string[] = [];
   colors: string[] = [];
+  languages: string[] = [];
   productTags: TagModel[] = [];
   productCategories: TagModel[] = [];
   series: SeriesModel[] = [];
@@ -274,6 +275,18 @@ export class ProductsComponent implements OnInit {
 
       if (!isItemInDataSource) {
         this.colors.push(args.text);
+      }
+
+      args.customItem = args.text;
+    }
+  }
+
+  onLanguagesCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {
+    if(args.text){
+      const isItemInDataSource = this.languages.some((item) => item === args.text);
+
+      if (!isItemInDataSource) {
+        this.languages.push(args.text);
       }
 
       args.customItem = args.text;

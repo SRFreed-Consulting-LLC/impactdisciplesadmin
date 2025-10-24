@@ -361,7 +361,7 @@
                 (onCustomItemCreating)="onCustomItemCreating($event)">
               </dx-tag-box>
             </dxi-item>
-            <dxi-item [colSpan]="6" [label]="{ text: 'Sizes' }">
+            <dxi-item [colSpan]="4" [label]="{ text: 'Sizes' }">
               <dx-tag-box
                 [dataSource]="sizes"
                 [(value)]="selectedItem.sizes"
@@ -372,7 +372,7 @@
                 (onCustomItemCreating)="onSizesCreating($event)">
               </dx-tag-box>
             </dxi-item>
-            <dxi-item [colSpan]="6" [label]="{ text: 'Colors' }">
+            <dxi-item [colSpan]="4" [label]="{ text: 'Colors' }">
               <dx-tag-box
                 [dataSource]="colors"
                 [(value)]="selectedItem.colors"
@@ -381,6 +381,17 @@
                 [hideSelectedItems]="true"
                 placeholder="Enter Colors..."
                 (onCustomItemCreating)="onColorsCreating($event)">
+              </dx-tag-box>
+            </dxi-item>
+            <dxi-item [colSpan]="4" [label]="{ text: 'Languages' }">
+              <dx-tag-box
+                [dataSource]="colors"
+                [(value)]="selectedItem.languages"
+                [acceptCustomValue]="true"
+                [searchEnabled]="true"
+                [hideSelectedItems]="true"
+                placeholder="Enter Languages..."
+                (onCustomItemCreating)="onLanguagesCreating($event)">
               </dx-tag-box>
             </dxi-item>
           </dx-form>
