@@ -19,6 +19,8 @@ import { ShowSeriesModal } from '../product-series/series-modal/series-modal.act
 import { ShowCategoryModal } from '../product-categories/category-modal/category-modal.actions';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { ProductTagsService } from 'impactdisciplescommon/src/services/data/product-tags.service';
+import { BookModel } from 'impactdisciplespwacommon/src/models/book.model';
+import { BookService } from 'impactdisciplespwacommon/src/services/book.service';
 
 @Component({
   selector: 'app-products',
@@ -49,6 +51,7 @@ export class ProductsComponent implements OnInit {
   productTags: TagModel[] = [];
   productCategories: TagModel[] = [];
   series: SeriesModel[] = [];
+  books: BookModel[] = [];
   selectedCategory: TagModel;
   selectedSeries: SeriesModel;
   gridFilter: any = null;
@@ -57,6 +60,7 @@ export class ProductsComponent implements OnInit {
 
   constructor(
     private service: ProductService,
+    private bookService: BookService,
     private productTagService: ProductTagsService,
     private seriesService: SeriesService,
     private productCategoriesService: ProductCategoriesService,
@@ -91,6 +95,10 @@ export class ProductsComponent implements OnInit {
 
     this.seriesService.streamAll().subscribe(series => {
       this.series = series;
+    });
+
+    this.bookService.streamAll().subscribe(books => {
+      this.books = books;
     });
   }
 

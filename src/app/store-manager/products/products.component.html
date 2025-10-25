@@ -239,7 +239,7 @@
             </dxi-item>
             <dxi-item dataField="description" [colSpan]="12" [isRequired]="true">
               <div *dxTemplate>
-                <dx-html-editor [height]="'300px'" [(value)]="selectedItem.description">
+                <dx-html-editor [height]="'200px'" [(value)]="selectedItem.description">
                   <dxo-toolbar [multiline]="false">
                     <dxi-item name="undo"></dxi-item>
                     <dxi-item name="redo"></dxi-item>
@@ -317,10 +317,11 @@
                 </dx-button>
               </div>
             </dxi-item>
+
             <dxi-item dataField="isEBook" [colSpan]="2" [label]="{ text: 'Is this an eBook?' }">
               <dx-check-box [(value)]="this.selectedItem.isEBook"></dx-check-box>
             </dxi-item>
-            <dxi-item dataField="eBookUrl.name" [colSpan]="8" [label]="{ text: 'eBook Name' }"></dxi-item>
+            <dxi-item dataField="eBookUrl.name" [colSpan]="8" [label]="{ text: 'eBook' }"></dxi-item>
             <dxi-item [colSpan]="2">
               <div *dxTemplate>
                 <dx-button
@@ -333,6 +334,22 @@
                 </dx-button>
               </div>
             </dxi-item>
+            <dxi-item dataField="isDigitalBook" [colSpan]="4" [label]="{ text: 'Is this a Digital Book?' }">
+              <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
+            </dxi-item>
+            <dxi-item dataField="digitalBookId" [colSpan]="8" [label]="{ text: 'Select Book' }">
+              <dx-select-box
+                #digiatlBookDropbox
+                [disabled]="this.selectedItem.isDigitalBook != true"
+                [dataSource]="books"
+                [(value)]="selectedItem.digitalBookId"
+                [showDropDownButton]="true"
+                [openOnFieldClick]="true"
+                displayExpr="title"
+                valueExpr="id">
+              </dx-select-box>
+            </dxi-item>
+
             <dxi-item dataField="weight" [colSpan]="4" [label]="{ text: 'Weight' }" [isRequired]="true">
               <div *dxTemplate>
                 <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
@@ -343,11 +360,8 @@
                 <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
               </div>
             </dxi-item>
-            <dxi-item dataField="showInStore" [colSpan]="2" [label]="{ text: 'List In Store?' }">
+            <dxi-item dataField="showInStore" [colSpan]="4" [label]="{ text: 'List In Store?' }">
               <dx-check-box [(value)]="this.selectedItem.showInStore"></dx-check-box>
-            </dxi-item>
-            <dxi-item dataField="digitalBook" [colSpan]="2" [label]="{ text: 'Digital Book?' }">
-              <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
             </dxi-item>
             <dxi-item [colSpan]="12" [label]="{ text: 'Tags' }">
               <dx-tag-box
