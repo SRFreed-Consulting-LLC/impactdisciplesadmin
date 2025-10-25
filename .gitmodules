@@ -3,3 +3,7 @@
 	path = impactdisciplescommon
 	url = https://github.com/SRFreed-Consulting-LLC/impactdisciplescommon.git
 	branch = development
+[submodule "impactdisciplespwacommon"]
+	path = impactdisciplespwacommon
+	url = https://github.com/SRFreed-Consulting-LLC/impactdisciplespwacommon.git
+	branch = main
