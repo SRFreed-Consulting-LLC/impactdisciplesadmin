@@ -21,6 +21,8 @@ import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { ProductTagsService } from 'impactdisciplescommon/src/services/data/product-tags.service';
 import { BookModel } from 'impactdisciplespwacommon/src/models/book.model';
 import { BookService } from 'impactdisciplespwacommon/src/services/book.service';
+import { MailTemplateModel } from 'impactdisciplescommon/src/models/admin/mail.model';
+import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
 
 @Component({
   selector: 'app-products',
@@ -52,6 +54,7 @@ export class ProductsComponent implements OnInit {
   productCategories: TagModel[] = [];
   series: SeriesModel[] = [];
   books: BookModel[] = [];
+  emails: any[] = []
   selectedCategory: TagModel;
   selectedSeries: SeriesModel;
   gridFilter: any = null;
@@ -64,6 +67,7 @@ export class ProductsComponent implements OnInit {
     private productTagService: ProductTagsService,
     private seriesService: SeriesService,
     private productCategoriesService: ProductCategoriesService,
+    public emailTemplatesService: EMailTemplatesService,
     private store: Store
   ) {}
 
@@ -96,6 +100,14 @@ export class ProductsComponent implements OnInit {
     this.seriesService.streamAll().subscribe(series => {
       this.series = series;
     });
+
+    this.emailTemplatesService.streamAll().pipe(
+      map(items => {
+        items.forEach(item => {
+          this.emails.push({id: item.id, name: item.name})
+        })
+      })
+    ).subscribe();
 
     this.bookService.streamAll().subscribe(books => {
       this.books = books;
