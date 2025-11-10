@@ -423,6 +423,7 @@
                 #followUpEmailIdDropBox
                 [disabled]="this.selectedItem.sendFollowUpEmail != true"
                 [dataSource]="emails"
+                [showClearButton]="true"
                 [(value)]="selectedItem.followUpEmailId"
                 [showDropDownButton]="true"
                 [openOnFieldClick]="true"
