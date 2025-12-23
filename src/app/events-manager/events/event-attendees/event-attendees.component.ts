@@ -285,7 +285,14 @@ export class EventAttendeesComponent implements OnInit{
 
           return mail;
         }).then(mail => {
-          this.emailService.update(mail.id, mail);
+          this.emailService.update(mail.id, mail).then(email => {
+            notify({
+              message: 'Email Resent Successfully!',
+              position: 'top',
+              width: 600,
+              type: 'success'
+            });
+          });
         })
       }
     });
