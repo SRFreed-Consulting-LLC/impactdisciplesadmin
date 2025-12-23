@@ -65,6 +65,7 @@
   <dxi-column dataField="receipt"></dxi-column>
   <dxi-column type="buttons" [width]="150" caption="Actions">
     <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
+    <dxi-button icon="message" hint="RESEND EMAIL" [onClick]="resendConfirmationEmail"></dxi-button>
   </dxi-column>
 
   <dxo-summary>

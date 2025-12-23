@@ -276,4 +276,18 @@ export class EventAttendeesComponent implements OnInit{
       this.emailService.update(mail.id, mail);
     })
   }
+
+  resendConfirmationEmail = ({ row: { data } }) => {
+    confirm('<i>Are you sure you want resend this Registration Confirmation?</i>', 'Confirm').then((dialogResult) => {
+      if (dialogResult) {
+        this.emailService.getById(data.receiptEmailId).then(mail =>{
+          delete mail['delivery'];
+
+          return mail;
+        }).then(mail => {
+          this.emailService.update(mail.id, mail);
+        })
+      }
+    });
+  }
 }
