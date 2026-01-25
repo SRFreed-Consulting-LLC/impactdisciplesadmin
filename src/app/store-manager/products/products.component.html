@@ -110,9 +110,10 @@
   [dragEnabled]="false"
   [visible]="isVisible$ | async"
   [width]="'75%'"
-  [height]="'90%'"
+  [height]="'85%'"
   [showCloseButton]="true"
-  (onHiding)="onCancel()">
+  (onHiding)="onCancel()"
+>
   <dxi-toolbar-item toolbar="top" location="center">
     <div *dxTemplate>
       <p class="popup-title">
@@ -123,13 +124,96 @@
   <div class="add-item-modal">
     <div class="add-item-modal__content" *ngIf="isVisible$ | async">
       <div class="row">
-        <div class="col-xl-8">
+        <div class="col-xl-3">
+          <dx-switch class="switch-button" [(value)]="selectedItem.isActive" [switchedOnText]="'LIVE'" [switchedOffText]="'INACTIVE'" [width]="'100%'"></dx-switch>
+          <div class="add-image" [class.has-image]="selectedItem?.imageUrl?.name" (click)="showSingleImageModal()">
+            <ng-container *ngIf="!selectedItem?.imageUrl?.name; else imageTpl">
+              <i class="dx-icon-add"></i>
+              Click to Add Image
+            </ng-container>
+
+            <ng-template #imageTpl>
+              <div class="image-wrapper">
+                <img
+                  [src]="selectedItem?.imageUrl?.url"
+                  [alt]="selectedItem?.imageUrl?.name"
+                />
+                <div class="image-overlay">Click to Edit</div>
+              </div>
+            </ng-template>
+          </div>
+
           <dx-form
             #addEditForm
             [(formData)]="selectedItem"
             [showColonAfterLabel]="false"
             labelLocation="left"
-            [colCount]="12">
+            [colCount]="2"
+          >
+            <dxi-item [colSpan]="2">
+              <div *dxTemplate>
+                <div class="form-section">Product Dimensions</div>
+              </div>
+            </dxi-item>
+            <dxi-item [colSpan]="2" dataField="imageUrl.name" [label]="{ text: 'Image Name' }" [disabled]="true" [isRequired]="true"></dxi-item>
+            <dxi-item dataField="weight" [label]="{ text: 'Weight' }" [isRequired]="true">
+              <div *dxTemplate>
+                <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
+              </div>
+            </dxi-item>
+            <dxi-item dataField="uom" [label]="{ text: 'UOM' }" [isRequired]="true">
+              <div *dxTemplate>
+                <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
+              </div>
+            </dxi-item>
+                <dxi-item [colSpan]="2" [label]="{ text: 'Sizes' }">
+              <dx-tag-box
+                [dataSource]="sizes"
+                [(value)]="selectedItem.sizes"
+                [acceptCustomValue]="true"
+                [searchEnabled]="true"
+                [hideSelectedItems]="true"
+                placeholder="Enter Sizes..."
+                (onCustomItemCreating)="onSizesCreating($event)">
+              </dx-tag-box>
+            </dxi-item>
+            <dxi-item [colSpan]="2" [label]="{ text: 'Colors' }">
+              <dx-tag-box
+                [dataSource]="colors"
+                [(value)]="selectedItem.colors"
+                [acceptCustomValue]="true"
+                [searchEnabled]="true"
+                [hideSelectedItems]="true"
+                placeholder="Enter Colors..."
+                (onCustomItemCreating)="onColorsCreating($event)">
+              </dx-tag-box>
+            </dxi-item>
+            <dxi-item [colSpan]="2" [label]="{ text: 'Languages' }">
+              <dx-tag-box
+                [dataSource]="colors"
+                [(value)]="selectedItem.languages"
+                [acceptCustomValue]="true"
+                [searchEnabled]="true"
+                [hideSelectedItems]="true"
+                placeholder="Enter Languages..."
+                (onCustomItemCreating)="onLanguagesCreating($event)">
+              </dx-tag-box>
+            </dxi-item>
+          </dx-form>
+        </div>
+        <div class="col-xl-9">
+          <dx-form
+            #addEditForm
+            [(formData)]="selectedItem"
+            [showColonAfterLabel]="false"
+            labelLocation="left"
+            [colCount]="12"
+          >
+            <dxi-item [colSpan]="12">
+              <div *dxTemplate>
+                <div class="form-section">Product Details</div>
+              </div>
+            </dxi-item>
             <dxi-item [colSpan]="6" dataField="title" [label]="{ text: 'Product Name' }" [isRequired]="true"></dxi-item>
             <dxi-item [colSpan]="3" dataField="cost"
               editorType="dxNumberBox"
@@ -149,96 +233,38 @@
                 min: 0
               }">
             </dxi-item>
-
-            <dxi-item [colSpan]="4" dataField="category" [label]="{ text: 'Category' }" [isRequired]="true">
+            <dxi-item  [colSpan]="2"dataField="isEBook" [label]="{ text: 'Is this an eBook?' }">
+              <dx-check-box [(value)]="this.selectedItem.isEBook"></dx-check-box>
+            </dxi-item>
+            <dxi-item [colSpan]="8" dataField="eBookUrl.name" [label]="{ text: 'eBook' }" [disabled]="true"></dxi-item>
+            <dxi-item [colSpan]="2">
               <div *dxTemplate>
-                <dx-drop-down-box
-                  #categoryDropbox
-                  [dataSource]="productCategories"
-                  [(value)]="selectedItem.category"
-                  [showDropDownButton]="false"
-                  [openOnFieldClick]="true"
-                  displayExpr="tag"
-                  valueExpr="id">
-                  <dxi-button
-                    name="add"
-                    location="after"
-                    [options]="{
-                      icon: 'add',
-                      hint: 'ADD CATEGORY',
-                      type: 'default',
-                      stylingMode: 'outlined',
-                      onClick: showCategoriesModal,
-                      template: 'buttonTemplate',
-                      disabled: inProgress$ | async
-                    }">
-                    <div *dxTemplate="let data of 'buttonTemplate'">
-                      <i class="dx-icon dx-icon-add" *ngIf="(inProgress$ | async) === false"></i>
-                      <dx-load-indicator [visible]="inProgress$ | async" height="20" width="20"></dx-load-indicator>
-                    </div>
-                  </dxi-button>
-                  <div *dxTemplate="let data of 'content'">
-                    <dx-list
-                      keyExpr="id"
-                      displayExpr="tag"
-                      selectionMode="single"
-                      (onItemClick)="selectCategory($event)"
-                      [items]="productCategories">
-                    </dx-list>
-                  </div>
-                </dx-drop-down-box>
+                <dx-button
+                  text="Upload eBook"
+                  stylingMode="contained"
+                  type="normal"
+                  class="form-button"
+                  [disabled]="inProgress$ | async"
+                  (onClick)="showEBookModal()"
+                  [disabled]="!this.selectedItem.isEBook">
+                </dx-button>
               </div>
             </dxi-item>
-            <dxi-item [colSpan]="2" dataField="categoryOrder" [label]="{ text: 'Order' }">
-              <div *dxTemplate>
-                <dx-number-box [(value)]="selectedItem.categoryOrder"></dx-number-box>
-              </div>
+            <dxi-item [colSpan]="2" dataField="isDigitalBook" [label]="{ text: 'Is this a Digital Book?' }">
+              <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
             </dxi-item>
-            <dxi-item [colSpan]="4" dataField="series" [label]="{ text: 'Series' }">
-              <div *dxTemplate>
-                <dx-drop-down-box
-                  #seriesDropbox
-                  [dataSource]="series"
-                  [(value)]="selectedItem.series"
-                  [showDropDownButton]="false"
-                  [openOnFieldClick]="true"
-                  displayExpr="name"
-                  valueExpr="id">
-                  <dxi-button
-                    name="add"
-                    location="after"
-                    [options]="{
-                      icon: 'add',
-                      hint: 'ADD SERIES',
-                      type: 'default',
-                      stylingMode: 'outlined',
-                      onClick: showSeriesModal,
-                      template: 'buttonTemplate',
-                      disabled: inProgress$ | async
-                    }">
-                    <div *dxTemplate="let data of 'buttonTemplate'">
-                      <i class="dx-icon dx-icon-add" *ngIf="(inProgress$ | async) === false"></i>
-                      <dx-load-indicator [visible]="inProgress$ | async" height="20" width="20"></dx-load-indicator>
-                    </div>
-                  </dxi-button>
-                  <div *dxTemplate="let data of 'content'">
-                    <dx-list
-                      keyExpr="id"
-                      displayExpr="name"
-                      selectionMode="single"
-                      (onItemClick)="selectSeries($event)"
-                      [items]="series">
-                    </dx-list>
-                  </div>
-                </dx-drop-down-box>
-              </div>
+            <dxi-item [colSpan]="10" dataField="digitalBookId" [label]="{ text: 'Select Book' }">
+              <dx-select-box
+                #digiatlBookDropbox
+                [disabled]="this.selectedItem.isDigitalBook != true"
+                [dataSource]="books"
+                [(value)]="selectedItem.digitalBookId"
+                [showDropDownButton]="true"
+                [openOnFieldClick]="true"
+                displayExpr="title"
+                valueExpr="id">
+              </dx-select-box>
             </dxi-item>
-            <dxi-item [colSpan]="2" dataField="seriesOrder" [label]="{ text: 'Order' }">
-              <div *dxTemplate>
-                <dx-number-box [(value)]="selectedItem.seriesOrder"></dx-number-box>
-              </div>
-            </dxi-item>
-
             <dxi-item [colSpan]="12" dataField="description" [isRequired]="true">
               <div *dxTemplate>
                 <dx-html-editor [height]="'200px'" [(value)]="selectedItem.description">
@@ -308,66 +334,99 @@
               </div>
             </dxi-item>
 
-            <dxi-item [colSpan]="10" dataField="imageUrl.name" [label]="{ text: 'Image Name' }" [disabled]="true"></dxi-item>
-            <dxi-item [colSpan]="2">
+            <dxi-item [colSpan]="12">
               <div *dxTemplate>
-                <dx-button
-                  text="Upload Image"
-                  stylingMode="contained"
-                  type="normal"
-                  [disabled]="inProgress$ | async"
-                  (onClick)="showSingleImageModal()">
-                </dx-button>
+                <div class="form-section">Product Organization</div>
               </div>
             </dxi-item>
-
-            <dxi-item  [colSpan]="2"dataField="isEBook" [label]="{ text: 'Is this an eBook?' }">
-              <dx-check-box [(value)]="this.selectedItem.isEBook"></dx-check-box>
-            </dxi-item>
-            <dxi-item [colSpan]="8" dataField="eBookUrl.name" [label]="{ text: 'eBook' }"></dxi-item>
-            <dxi-item [colSpan]="2">
+            <dxi-item [colSpan]="8" dataField="category" [label]="{ text: 'Category' }" [isRequired]="true">
               <div *dxTemplate>
-                <dx-button
-                  text="Upload eBook"
-                  stylingMode="contained"
-                  type="normal"
-                  [disabled]="inProgress$ | async"
-                  (onClick)="showEBookModal()"
-                  [disabled]="!this.selectedItem.isEBook">
-                </dx-button>
+                <dx-drop-down-box
+                  #categoryDropbox
+                  [dataSource]="productCategories"
+                  [(value)]="selectedItem.category"
+                  [showDropDownButton]="false"
+                  [openOnFieldClick]="true"
+                  displayExpr="tag"
+                  valueExpr="id">
+                  <dxi-button
+                    name="add"
+                    location="after"
+                    [options]="{
+                      icon: 'add',
+                      hint: 'ADD CATEGORY',
+                      type: 'default',
+                      stylingMode: 'outlined',
+                      onClick: showCategoriesModal,
+                      template: 'buttonTemplate',
+                      disabled: inProgress$ | async
+                    }">
+                    <div *dxTemplate="let data of 'buttonTemplate'">
+                      <i class="dx-icon dx-icon-add" *ngIf="(inProgress$ | async) === false"></i>
+                      <dx-load-indicator [visible]="inProgress$ | async" height="20" width="20"></dx-load-indicator>
+                    </div>
+                  </dxi-button>
+                  <div *dxTemplate="let data of 'content'">
+                    <dx-list
+                      keyExpr="id"
+                      displayExpr="tag"
+                      selectionMode="single"
+                      (onItemClick)="selectCategory($event)"
+                      [items]="productCategories">
+                    </dx-list>
+                  </div>
+                </dx-drop-down-box>
               </div>
             </dxi-item>
-
-            <dxi-item [colSpan]="4" dataField="isDigitalBook" [label]="{ text: 'Is this a Digital Book?' }">
-              <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
-            </dxi-item>
-            <dxi-item [colSpan]="8" dataField="digitalBookId" [label]="{ text: 'Select Book' }">
-              <dx-select-box
-                #digiatlBookDropbox
-                [disabled]="this.selectedItem.isDigitalBook != true"
-                [dataSource]="books"
-                [(value)]="selectedItem.digitalBookId"
-                [showDropDownButton]="true"
-                [openOnFieldClick]="true"
-                displayExpr="title"
-                valueExpr="id">
-              </dx-select-box>
-            </dxi-item>
-
-            <dxi-item [colSpan]="4" dataField="weight" [label]="{ text: 'Weight' }" [isRequired]="true">
+            <dxi-item [colSpan]="4" dataField="categoryOrder" [label]="{ text: 'Order' }">
               <div *dxTemplate>
-                <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
+                <dx-number-box [(value)]="selectedItem.categoryOrder"></dx-number-box>
               </div>
             </dxi-item>
-            <dxi-item [colSpan]="4" dataField="uom" [label]="{ text: 'Unit of Measure' }" [isRequired]="true">
+            <dxi-item [colSpan]="8" dataField="series" [label]="{ text: 'Series' }">
               <div *dxTemplate>
-                <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
+                <dx-drop-down-box
+                  #seriesDropbox
+                  [dataSource]="series"
+                  [(value)]="selectedItem.series"
+                  [showDropDownButton]="false"
+                  [openOnFieldClick]="true"
+                  displayExpr="name"
+                  valueExpr="id">
+                  <dxi-button
+                    name="add"
+                    location="after"
+                    [options]="{
+                      icon: 'add',
+                      hint: 'ADD SERIES',
+                      type: 'default',
+                      stylingMode: 'outlined',
+                      onClick: showSeriesModal,
+                      template: 'buttonTemplate',
+                      disabled: inProgress$ | async
+                    }">
+                    <div *dxTemplate="let data of 'buttonTemplate'">
+                      <i class="dx-icon dx-icon-add" *ngIf="(inProgress$ | async) === false"></i>
+                      <dx-load-indicator [visible]="inProgress$ | async" height="20" width="20"></dx-load-indicator>
+                    </div>
+                  </dxi-button>
+                  <div *dxTemplate="let data of 'content'">
+                    <dx-list
+                      keyExpr="id"
+                      displayExpr="name"
+                      selectionMode="single"
+                      (onItemClick)="selectSeries($event)"
+                      [items]="series">
+                    </dx-list>
+                  </div>
+                </dx-drop-down-box>
               </div>
             </dxi-item>
-            <dxi-item [colSpan]="4" dataField="showInStore" [label]="{ text: 'List In Store?' }">
-              <dx-check-box [(value)]="this.selectedItem.showInStore"></dx-check-box>
+            <dxi-item [colSpan]="4" dataField="seriesOrder" [label]="{ text: 'Order' }">
+              <div *dxTemplate>
+                <dx-number-box [(value)]="selectedItem.seriesOrder"></dx-number-box>
+              </div>
             </dxi-item>
-
             <dxi-item [colSpan]="12" [label]="{ text: 'Tags' }">
               <dx-tag-box
                 [dataSource]="productTags"
@@ -380,45 +439,10 @@
                 (onCustomItemCreating)="onCustomItemCreating($event)">
               </dx-tag-box>
             </dxi-item>
-
-            <dxi-item [colSpan]="4" [label]="{ text: 'Sizes' }">
-              <dx-tag-box
-                [dataSource]="sizes"
-                [(value)]="selectedItem.sizes"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Enter Sizes..."
-                (onCustomItemCreating)="onSizesCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-            <dxi-item [colSpan]="4" [label]="{ text: 'Colors' }">
-              <dx-tag-box
-                [dataSource]="colors"
-                [(value)]="selectedItem.colors"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Enter Colors..."
-                (onCustomItemCreating)="onColorsCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-            <dxi-item [colSpan]="4" [label]="{ text: 'Languages' }">
-              <dx-tag-box
-                [dataSource]="colors"
-                [(value)]="selectedItem.languages"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Enter Languages..."
-                (onCustomItemCreating)="onLanguagesCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-
-            <dxi-item [colSpan]="4" dataField="sendFollowUpEmail" [label]="{ text: 'Send Follow Up Email?' }">
+            <dxi-item [colSpan]="2" dataField="sendFollowUpEmail" [label]="{ text: 'Send Follow Up Email?' }">
               <dx-check-box [(value)]="this.selectedItem.sendFollowUpEmail"></dx-check-box>
             </dxi-item>
-            <dxi-item [colSpan]="8" dataField="followUpEmailId" [label]="{ text: 'Select Email' }">
+            <dxi-item [colSpan]="10" dataField="followUpEmailId" [label]="{ text: 'Select Email' }">
               <dx-select-box
                 #followUpEmailIdDropBox
                 [disabled]="this.selectedItem.sendFollowUpEmail != true"
@@ -433,35 +457,7 @@
             </dxi-item>
           </dx-form>
         </div>
-        <div class="col-xl-4">
-          <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'LIVE'" [switchedOffText]="'INACTIVE'" [width]="'100%'"></dx-switch>
-          <div *ngIf="selectedItem?.isActive" class="product">
-            <div class="product__item product__border-bottom mb-30 pb-60">
-              <div class="product__thumb fix">
-                  <a>
-                    <img class="product__img" [src]="selectedItem?.imageUrl?.url" alt="product">
-                  </a>
-              </div>
-              <div class="product__content">
-                  <h4>
-                    <strong><a>{{selectedItem?.title}}</a></strong>
-                  </h4>
-                  <h5><strong>$ {{ selectedItem.cost }}</strong></h5>
-                  <p class="truncate" [innerHTML]="selectedItem?.description"></p>
-                  <div class="d-flex">
-                    <a class="impact-btn mr-20">view</a>
-                    <a class="impact-icon-btn impact-icon-btn-no-border"><i class="fas fa-cart-plus"></i>ADD</a>
-                  </div>
-              </div>
-            </div>
-          </div>
-          <div *ngIf="!selectedItem?.isActive" class="product-unavailable">
-            <h1>Product Currently Unavailable In Store</h1>
-          </div>
-
-        </div>
       </div>
-
     </div>
     <div class="add-item-modal__button-group">
       <dx-button
@@ -480,7 +476,6 @@
     </div>
   </div>
 </dx-popup>
-
 
 <app-product-categories></app-product-categories>
 <app-category-modal></app-category-modal>
