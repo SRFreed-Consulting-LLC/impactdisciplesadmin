@@ -112,7 +112,7 @@ export class PodCastsComponent implements OnInit{
             podCast.isActive = true;
             podCast.thumbnail = {};
             podCast.thumbnail.name = video.snippet.title;
-            podCast.thumbnail.url = video.snippet.thumbnails.maxres.url;
+            podCast.thumbnail.url = video.snippet.thumbnails.maxres ? video.snippet.thumbnails.maxres.url : video.snippet.thumbnails.high.url;
             podCast.title = video.snippet.title;
             podCast.videoId = video.contentDetails.videoId;
             podCast.videoType = "Youtube";
