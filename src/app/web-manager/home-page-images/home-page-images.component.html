@@ -91,7 +91,7 @@
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
         <dx-form #addEditForm [colCount]="4" [(formData)]="selectedItem">
           <dxi-item dataField="image.name" [caption]="'Slide Background Image'" [colSpan]="2" [isRequired]="true" disabled="true"></dxi-item>
-          <dxi-item >
+          <dxi-item>
             <dx-button
               text="Upload Image"
               width="200px"

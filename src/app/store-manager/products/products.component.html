@@ -156,17 +156,17 @@
               </div>
             </dxi-item>
             <dxi-item [colSpan]="2" dataField="imageUrl.name" [label]="{ text: 'Image Name' }" [disabled]="true" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="weight" [label]="{ text: 'Weight' }" [isRequired]="true">
+            <dxi-item [colSpan]="2" dataField="weight" [label]="{ text: 'Weight' }" [isRequired]="true">
               <div *dxTemplate>
                 <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
               </div>
             </dxi-item>
-            <dxi-item dataField="uom" [label]="{ text: 'UOM' }" [isRequired]="true">
+            <dxi-item [colSpan]="2" dataField="uom" [label]="{ text: 'UOM' }" [isRequired]="true">
               <div *dxTemplate>
                 <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
               </div>
             </dxi-item>
-                <dxi-item [colSpan]="2" [label]="{ text: 'Sizes' }">
+            <dxi-item [colSpan]="2" [label]="{ text: 'Sizes' }">
               <dx-tag-box
                 [dataSource]="sizes"
                 [(value)]="selectedItem.sizes"
@@ -233,14 +233,14 @@
                 min: 0
               }">
             </dxi-item>
-            <dxi-item  [colSpan]="2"dataField="isEBook" [label]="{ text: 'Is this an eBook?' }">
+            <dxi-item  [colSpan]="3"dataField="isEBook" [label]="{ text: 'Is this an eBook?' }">
               <dx-check-box [(value)]="this.selectedItem.isEBook"></dx-check-box>
             </dxi-item>
-            <dxi-item [colSpan]="8" dataField="eBookUrl.name" [label]="{ text: 'eBook' }" [disabled]="true"></dxi-item>
+            <dxi-item [colSpan]="7" dataField="eBookUrl.name" [label]="{ text: 'eBook' }" [disabled]="true"></dxi-item>
             <dxi-item [colSpan]="2">
               <div *dxTemplate>
                 <dx-button
-                  text="Upload eBook"
+                  text="Upload"
                   stylingMode="contained"
                   type="normal"
                   class="form-button"
@@ -250,10 +250,10 @@
                 </dx-button>
               </div>
             </dxi-item>
-            <dxi-item [colSpan]="2" dataField="isDigitalBook" [label]="{ text: 'Is this a Digital Book?' }">
+            <dxi-item [colSpan]="3" dataField="isDigitalBook" [label]="{ text: 'Is this a Digital Book?' }">
               <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
             </dxi-item>
-            <dxi-item [colSpan]="10" dataField="digitalBookId" [label]="{ text: 'Select Book' }">
+            <dxi-item [colSpan]="9" dataField="digitalBookId" [label]="{ text: 'Select Book' }">
               <dx-select-box
                 #digiatlBookDropbox
                 [disabled]="this.selectedItem.isDigitalBook != true"
@@ -439,10 +439,10 @@
                 (onCustomItemCreating)="onCustomItemCreating($event)">
               </dx-tag-box>
             </dxi-item>
-            <dxi-item [colSpan]="2" dataField="sendFollowUpEmail" [label]="{ text: 'Send Follow Up Email?' }">
+            <dxi-item [colSpan]="3" dataField="sendFollowUpEmail" [label]="{ text: 'Send Follow Up Email?' }">
               <dx-check-box [(value)]="this.selectedItem.sendFollowUpEmail"></dx-check-box>
             </dxi-item>
-            <dxi-item [colSpan]="10" dataField="followUpEmailId" [label]="{ text: 'Select Email' }">
+            <dxi-item [colSpan]="9" dataField="followUpEmailId" [label]="{ text: 'Select Email' }">
               <dx-select-box
                 #followUpEmailIdDropBox
                 [disabled]="this.selectedItem.sendFollowUpEmail != true"

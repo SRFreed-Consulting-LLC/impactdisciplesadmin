@@ -14,8 +14,9 @@ export class WebManagerComponent {
     { id: 0, text: 'Disciple Making Minute', template: 'Disciple Making Minute' },
     { id: 1, text: 'Pod Casts', template: 'Pod Casts' },
     { id: 2, text: 'Testimonials', template: 'Testimonials' },
-    { id: 3, text: 'Hopme Page Images', template: 'Home Page Images' },
-    { id: 4, text: 'Monthly Newsletter', template: 'Monthly Newsletter' },
+    { id: 3, text: 'Home Page Images', template: 'Home Page Images' },
+    { id: 4, text: 'Home Page Popups', template: 'Home Page Popups' },
+    { id: 5, text: 'Monthly Newsletter', template: 'Monthly Newsletter' },
   ];
 
   selectTab(e) {

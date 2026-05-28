@@ -15,6 +15,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { MonthlyNewslettersComponent } from './monthly-newsletters/monthly-newsletters.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { HomePagePopupsComponent } from './home-page-popups/home-page-popups.component';
 
 @NgModule({
   imports: [
@@ -47,6 +48,7 @@ import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploa
     TestimonialsComponent,
     PodCastCategoriesComponent,
     HomePageImagesComponent,
+    HomePagePopupsComponent,
     MonthlyNewslettersComponent
   ],
   providers:[
