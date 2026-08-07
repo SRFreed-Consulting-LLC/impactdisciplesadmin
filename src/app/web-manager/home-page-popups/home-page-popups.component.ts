@@ -139,7 +139,8 @@ export class HomePagePopupsComponent implements OnInit {
 
   // devextreme-angular's DxPopupComponent no longer declares `elementAttr` as an
   // Input (still supported by the underlying widget), so set it imperatively.
-  onPreviewPopupInitialized(e: { component: DxPopup }) {
-    e.component.option('elementAttr', { class: 'no-padding-popup' });
+  // (onInitialized) is typed as EventEmitter<Object> by devextreme-angular, hence `any` here.
+  onPreviewPopupInitialized(e: any) {
+    (e.component as DxPopup).option('elementAttr', { class: 'no-padding-popup' });
   }
 }

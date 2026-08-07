@@ -7,13 +7,13 @@
   [showCloseButton]="true"
   (onHiding)="onCancel()"
 >
-  <dxi-toolbar-item toolbar="top" location="center">
+  <dxi-popup-toolbar-item toolbar="top" location="center">
     <div *dxTemplate>
       <p class="popup-title">
         ADD ORGANIZATION
       </p>
     </div>
-  </dxi-toolbar-item>
+  </dxi-popup-toolbar-item>
   <div *dxTemplate="let data of 'content'">
     <div class="add-item-modal">
       <div class="add-item-modal__content" *ngIf="isVisible$ | async">
