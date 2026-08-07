@@ -5,7 +5,7 @@
   },
   "hosting": [{
     "target": "production",
-    "public": "dist/impactdisciplesadmin",
+    "public": "dist/impactdisciplesadmin/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -19,7 +19,7 @@
     ]
   },{
     "target": "development",
-    "public": "dist/impactdisciplesadmin",
+    "public": "dist/impactdisciplesadmin/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
