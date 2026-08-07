@@ -27,8 +27,6 @@ import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/ad
     BrowserModule,
     AppRoutingModule,
     NgxsModule.forRoot([], { developmentMode: !environment.production }),
-    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideFirestore(() => getFirestore()),
     AdminManagerModule,
     RequestsManagerModule,
     StoreManagerModule,
@@ -43,7 +41,9 @@ import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/ad
 
   ],
   providers: [
-    CookieService
+    CookieService,
+    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
+    provideFirestore(() => getFirestore())
   ],
   bootstrap: [AppComponent]
 })

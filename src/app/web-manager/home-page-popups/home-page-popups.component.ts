@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { DxFormComponent } from 'devextreme-angular';
+import DxPopup from 'devextreme/ui/popup';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
 import { confirm } from 'devextreme/ui/dialog';
@@ -134,5 +135,11 @@ export class HomePagePopupsComponent implements OnInit {
   onCancelPreview() {
     this.inProgress$.next(false);
     this.isPreviewVisible$.next(false);
+  }
+
+  // devextreme-angular's DxPopupComponent no longer declares `elementAttr` as an
+  // Input (still supported by the underlying widget), so set it imperatively.
+  onPreviewPopupInitialized(e: { component: DxPopup }) {
+    e.component.option('elementAttr', { class: 'no-padding-popup' });
   }
 }

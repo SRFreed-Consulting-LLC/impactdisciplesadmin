@@ -100,13 +100,13 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "impactdisciplesadmin:build:production"
+              "buildTarget": "impactdisciplesadmin:build:production"
             },
             "development": {
-              "browserTarget": "impactdisciplesadmin:build:development"
+              "buildTarget": "impactdisciplesadmin:build:development"
             },
             "local": {
-              "browserTarget": "impactdisciplesadmin:build:local"
+              "buildTarget": "impactdisciplesadmin:build:local"
             }
           },
           "defaultConfiguration": "local"
@@ -114,7 +114,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "impactdisciplesadmin:build"
+            "buildTarget": "impactdisciplesadmin:build"
           }
         },
         "test": {
