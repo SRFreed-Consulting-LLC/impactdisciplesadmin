@@ -16,6 +16,7 @@
               target=".manage-button"
               showEvent="dxclick"
               [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
+              <dxi-item text="Select Columns to Display" icon="columnchooser" [onClick]="showColumnChooser"></dxi-item>
               <dxi-item text="Export To Excel" icon="exportxlsx" [onClick]="exportXLSGrid"></dxi-item>
             </dx-context-menu>
           </div>
@@ -47,6 +48,11 @@
   <dxi-column dataField="firstName"></dxi-column>
   <dxi-column dataField="lastName"></dxi-column>
   <dxi-column dataField="email"></dxi-column>
+  <dxi-column dataField="billingAddress.address1" [caption]="'Address 1'" [visible]="false"></dxi-column>
+  <dxi-column dataField="billingAddress.address2" [caption]="'Address 2'" [visible]="false"></dxi-column>
+  <dxi-column dataField="billingAddress.city" [caption]="'City'" [visible]="false"></dxi-column>
+  <dxi-column dataField="billingAddress.state" [caption]="'State'" [visible]="false"></dxi-column>
+  <dxi-column dataField="billingAddress.zip" [caption]="'Zip'" [visible]="false"></dxi-column>
   <dxi-column dataField="receipt" cellTemplate="receiptTemplate"></dxi-column>
   <dxi-column dataField="couponCode"></dxi-column>
   <dxi-column dataField="totalBeforeDiscount" [caption]="'Total'" cellTemplate="productTotalTemplate"></dxi-column>

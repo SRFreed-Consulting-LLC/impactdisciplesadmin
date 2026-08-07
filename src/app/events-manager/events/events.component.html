@@ -155,8 +155,9 @@
                 <dxi-item *ngIf="selectedItem.isSummit" dataField="videoId" [label]="{ text: 'Promo Video Id?' }" [colSpan]="4"></dxi-item>
 
                 <dxi-item dataField="isOnline" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Is Online Event?' }" [colSpan]="8"></dxi-item>
-                <dxi-item *ngIf="selectedItem.isOnline" [isRequired]="selectedItem.isOnline" dataField="kajabiPurchaseURL" [label]="{ text: 'Purchase URL?' }" [colSpan]="4"></dxi-item>
-                <dxi-item *ngIf="selectedItem.isOnline" [isRequired]="selectedItem.isOnline" dataField="kajabiSubscribeURL" [label]="{ text: 'Subscribe URL?' }" [colSpan]="4"></dxi-item>
+                <dxi-item dataField="isKajabiCourse" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Is Kajabi Needed?' }" [colSpan]="8"></dxi-item>
+                <dxi-item *ngIf="selectedItem.isKajabiCourse" [isRequired]="selectedItem.isOnline" dataField="kajabiPurchaseURL" [label]="{ text: 'Purchase URL?' }" [colSpan]="4"></dxi-item>
+                <dxi-item *ngIf="selectedItem.isKajabiCourse" [isRequired]="selectedItem.isOnline" dataField="kajabiSubscribeURL" [label]="{ text: 'Subscribe URL?' }" [colSpan]="4"></dxi-item>
 
                 <dxi-item dataField="location" [colSpan]="4" [label]="{ text: 'Location' }" [isRequired]="!selectedItem.isOnline">
                   <div *dxTemplate>

@@ -360,6 +360,10 @@ export class PurchasesComponent implements OnInit {
     return roles.filter(role => role == userRole).length > 0;
   }
 
+  showColumnChooser = () => {
+    this.purchasesGrid.instance.showColumnChooser()
+  }
+
   exportXLSGrid = () => {
     const context = this;
 
