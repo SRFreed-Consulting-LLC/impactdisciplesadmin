@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-radio-buttons',
-  templateUrl: './radio-buttons.component.html'
+    selector: 'app-radio-buttons',
+    templateUrl: './radio-buttons.component.html',
+    standalone: false
 })
 export class RadioButtonsComponent implements OnInit {
   @Input ('form') form: Form;

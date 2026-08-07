@@ -14,9 +14,10 @@ import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/dat
 import { PodCastTagsService } from 'impactdisciplescommon/src/services/data/pod-cast-tags.service';
 
 @Component({
-  selector: 'app-pod-casts',
-  templateUrl: './pod-casts.component.html',
-  styleUrls: ['./pod-casts.component.css']
+    selector: 'app-pod-casts',
+    templateUrl: './pod-casts.component.html',
+    styleUrls: ['./pod-casts.component.css'],
+    standalone: false
 })
 export class PodCastsComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

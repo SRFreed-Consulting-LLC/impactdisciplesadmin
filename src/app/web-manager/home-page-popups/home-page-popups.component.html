@@ -217,7 +217,7 @@
 <ng-container *ngIf="isPreviewVisible$ | async">
   <dx-popup
     [showTitle]="false"
-    [closeOnOutsideClick]="true"
+    [hideOnOutsideClick]="true"
     [title]="selectedItem?.title"
     [dragEnabled]="false"
     [visible]="isPreviewVisible$ | async"

@@ -13,9 +13,10 @@ import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model
 import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
 
 @Component({
-  selector: 'app-consultations-surveys',
-  templateUrl: './consultations-surveys.component.html',
-  styleUrls: ['./consultations-surveys.component.css']
+    selector: 'app-consultations-surveys',
+    templateUrl: './consultations-surveys.component.html',
+    styleUrls: ['./consultations-surveys.component.css'],
+    standalone: false
 })
 export class ConsultationsSurveysComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

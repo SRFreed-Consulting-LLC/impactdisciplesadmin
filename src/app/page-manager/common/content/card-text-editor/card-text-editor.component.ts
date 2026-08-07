@@ -6,8 +6,9 @@ import { TextEditorMacro } from '../../models/editor/text-editor-macro.model';
 import { MacroService } from '../../services/macro.service';
 
 @Component({
-  selector: 'app-card-text-editor',
-  templateUrl: './card-text-editor.component.html'
+    selector: 'app-card-text-editor',
+    templateUrl: './card-text-editor.component.html',
+    standalone: false
 })
 
 export class CardTextEditorComponent implements OnInit {

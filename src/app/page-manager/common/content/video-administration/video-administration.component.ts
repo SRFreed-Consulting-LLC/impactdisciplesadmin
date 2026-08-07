@@ -5,9 +5,10 @@ import { Video } from '../../models/ui/video.model';
 import { VideoService } from '../../services/video.service';
 
 @Component({
-  selector: 'app-video-administration',
-  templateUrl: './video-administration.component.html',
-  styleUrls: ['./video-administration.component.scss']
+    selector: 'app-video-administration',
+    templateUrl: './video-administration.component.html',
+    styleUrls: ['./video-administration.component.scss'],
+    standalone: false
 })
 export class VideoAdministrationComponent implements OnInit {
   breadCrumbItems: Array<{}>;

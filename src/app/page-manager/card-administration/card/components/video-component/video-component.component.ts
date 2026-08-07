@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CardComponent } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-video-component',
-  templateUrl: './video-component.component.html'
+    selector: 'app-video-component',
+    templateUrl: './video-component.component.html',
+    standalone: false
 })
 export class VideoComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

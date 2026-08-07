@@ -4,8 +4,9 @@ import { cta_type_values } from '../../common/lists/card-fields.list';
 
 
 @Component({
-  selector: 'app-footer-view',
-  templateUrl: './footer-view.component.html'
+    selector: 'app-footer-view',
+    templateUrl: './footer-view.component.html',
+    standalone: false
 })
 export class ComponentFooterViewComponent implements OnInit {
   @Input('component') component: CardComponent;

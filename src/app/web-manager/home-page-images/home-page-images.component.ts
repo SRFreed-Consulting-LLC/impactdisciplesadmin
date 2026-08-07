@@ -11,9 +11,10 @@ import { HomePageImageModel } from 'impactdisciplescommon/src/models/domain/home
 import menuData from 'impactdisciplescommon/src/services/data/nav-menu-data';
 
 @Component({
-  selector: 'app-home-page-images',
-  templateUrl: './home-page-images.component.html',
-  styleUrls: ['./home-page-images.component.css']
+    selector: 'app-home-page-images',
+    templateUrl: './home-page-images.component.html',
+    styleUrls: ['./home-page-images.component.css'],
+    standalone: false
 })
 export class HomePageImagesComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

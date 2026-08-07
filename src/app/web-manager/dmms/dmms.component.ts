@@ -10,9 +10,10 @@ import { confirm } from 'devextreme/ui/dialog';
 import { Timestamp } from 'firebase/firestore';
 
 @Component({
-  selector: 'app-dmms',
-  templateUrl: './dmms.component.html',
-  styleUrls: ['./dmms.component.css']
+    selector: 'app-dmms',
+    templateUrl: './dmms.component.html',
+    styleUrls: ['./dmms.component.css'],
+    standalone: false
 })
 export class DMMServiceComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

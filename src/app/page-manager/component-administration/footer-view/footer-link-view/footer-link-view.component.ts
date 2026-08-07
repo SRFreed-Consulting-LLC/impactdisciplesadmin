@@ -7,8 +7,9 @@ import { PageService } from 'src/app/page-manager/common/services/page.service';
 import { ProductService } from 'src/app/page-manager/common/services/products.service';
 
 @Component({
-  selector: 'app-footer-link-view',
-  templateUrl: './footer-link-view.component.html'
+    selector: 'app-footer-link-view',
+    templateUrl: './footer-link-view.component.html',
+    standalone: false
 })
 export class FooterLinkViewComponent implements OnInit {
   @Input('component') component: CardComponent;

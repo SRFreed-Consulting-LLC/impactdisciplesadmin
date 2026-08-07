@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CardComponent, GalleryItem } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-carousel-component',
-  templateUrl: './carousel-component.component.html'
+    selector: 'app-carousel-component',
+    templateUrl: './carousel-component.component.html',
+    standalone: false
 })
 export class CarouselComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

@@ -20,9 +20,10 @@ import { NewsletterSubscriptionService } from 'impactdisciplescommon/src/service
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
-  selector: 'app-newsletter-subscription',
-  templateUrl: './newsletter-subscription.component.html',
-  styleUrls: ['./newsletter-subscription.component.scss']
+    selector: 'app-newsletter-subscription',
+    templateUrl: './newsletter-subscription.component.html',
+    styleUrls: ['./newsletter-subscription.component.scss'],
+    standalone: false
 })
 export class NewsletterSubscriptionComponent {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

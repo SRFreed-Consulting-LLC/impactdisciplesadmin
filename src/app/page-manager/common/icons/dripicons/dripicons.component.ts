@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'app-dripicons',
-  templateUrl: './dripicons.component.html',
-  styleUrls: ['./dripicons.component.scss']
+    selector: 'app-dripicons',
+    templateUrl: './dripicons.component.html',
+    styleUrls: ['./dripicons.component.scss'],
+    standalone: false
 })
 
 /**

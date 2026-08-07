@@ -16,9 +16,10 @@ import { CoachService } from 'impactdisciplescommon/src/services/data/coach.serv
 import { DxDataGridTypes } from 'devextreme-angular/ui/data-grid';
 
 @Component({
-  selector: 'app-coaches',
-  templateUrl: './coaches.component.html',
-  styleUrls: ['./coaches.component.css']
+    selector: 'app-coaches',
+    templateUrl: './coaches.component.html',
+    styleUrls: ['./coaches.component.css'],
+    standalone: false
 })
 export class CoachesComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

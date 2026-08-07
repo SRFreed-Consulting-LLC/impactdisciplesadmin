@@ -5,8 +5,9 @@ import { Form, FormInputs, FormRow } from 'src/app/page-manager/common/models/ed
 import { FormService } from 'src/app/page-manager/common/services/forms.service';
 
 @Component({
-  selector: 'app-form-body-view',
-  templateUrl: './body-view.component.html',
+    selector: 'app-form-body-view',
+    templateUrl: './body-view.component.html',
+    standalone: false
 })
 export class FormBodyViewComponent implements OnInit {
   @Input('form') form: Form;

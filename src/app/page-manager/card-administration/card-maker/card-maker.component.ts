@@ -5,8 +5,9 @@ import { Card, CardComponent } from '../../common/models/editor/card.model';
 import { CardService } from '../../common/services/card.service';
 
 @Component({
-  selector: 'app-card-maker',
-  templateUrl: './card-maker.component.html'
+    selector: 'app-card-maker',
+    templateUrl: './card-maker.component.html',
+    standalone: false
 })
 export class CardMakerComponent implements OnInit {
   loading: Promise<any> = new Promise((resolve) => resolve(false));

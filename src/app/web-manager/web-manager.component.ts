@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 
 @Component({
-  selector: 'app-web-manager',
-  templateUrl: './web-manager.component.html',
-  styleUrls: ['./web-manager.component.css']
+    selector: 'app-web-manager',
+    templateUrl: './web-manager.component.html',
+    styleUrls: ['./web-manager.component.css'],
+    standalone: false
 })
 export class WebManagerComponent {
   selectedIndex: number = 0;

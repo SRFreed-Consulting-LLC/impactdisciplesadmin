@@ -18,9 +18,10 @@ import { PageService } from '../../common/services/page.service';
 import { FormViewerComponent } from '../../form-administration/form-viewer/form-viewer.component';
 
 @Component({
-  selector: 'app-page-viewer',
-  styleUrls: ['./page-viewer.component.scss'],
-  templateUrl: './page-viewer.component.html'
+    selector: 'app-page-viewer',
+    styleUrls: ['./page-viewer.component.scss'],
+    templateUrl: './page-viewer.component.html',
+    standalone: false
 })
 export class PageViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('carddiv', { read: ViewContainerRef })

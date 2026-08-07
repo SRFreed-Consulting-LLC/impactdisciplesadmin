@@ -19,9 +19,10 @@ import { saveAs } from 'file-saver';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
-  selector: 'app-purchases',
-  templateUrl: './purchases.component.html',
-  styleUrls: ['./purchases.component.css']
+    selector: 'app-purchases',
+    templateUrl: './purchases.component.html',
+    styleUrls: ['./purchases.component.css'],
+    standalone: false
 })
 export class PurchasesComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

@@ -12,9 +12,10 @@ import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-tim
 import dxForm from 'devextreme/ui/form';
 
 @Component({
-  selector: 'app-event-agenda',
-  templateUrl: './event-agenda.component.html',
-  styleUrls: ['./event-agenda.component.css']
+    selector: 'app-event-agenda',
+    templateUrl: './event-agenda.component.html',
+    styleUrls: ['./event-agenda.component.css'],
+    standalone: false
 })
 export class EventAgendaComponent implements OnInit{
   @Input('event') event: EventModel;

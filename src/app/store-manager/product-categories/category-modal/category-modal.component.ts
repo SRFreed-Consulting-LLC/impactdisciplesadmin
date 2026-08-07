@@ -8,9 +8,10 @@ import { ProductCategoriesService } from 'impactdisciplescommon/src/services/dat
 import notify from 'devextreme/ui/notify';
 
 @Component({
-  selector: 'app-category-modal',
-  templateUrl: './category-modal.component.html',
-  styleUrls: ['./category-modal.component.css']
+    selector: 'app-category-modal',
+    templateUrl: './category-modal.component.html',
+    styleUrls: ['./category-modal.component.css'],
+    standalone: false
 })
 export class CategoryModalComponent implements OnInit, OnDestroy {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

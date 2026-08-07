@@ -5,8 +5,9 @@ import UploadInfo from 'devextreme/file_management/upload_info';
 import { FileManagerService } from '../../services/file-manager.service';
 
 @Component({
-  selector: 'app-card-image-uploader',
-  templateUrl: './card-image-uploader.component.html'
+    selector: 'app-card-image-uploader',
+    templateUrl: './card-image-uploader.component.html',
+    standalone: false
 })
 export class CardImageUploaderComponent {
   @Input() imageSelectVisible: boolean = false;

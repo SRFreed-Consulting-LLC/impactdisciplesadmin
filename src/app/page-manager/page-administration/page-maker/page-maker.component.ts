@@ -8,8 +8,9 @@ import { FormService } from '../../common/services/forms.service';
 import { PageService } from '../../common/services/page.service';
 
 @Component({
-  selector: 'app-page-wizard',
-  templateUrl: './page-maker.component.html'
+    selector: 'app-page-wizard',
+    templateUrl: './page-maker.component.html',
+    standalone: false
 })
 export class PageMakerComponent implements OnInit {
   loading: Promise<any> = new Promise((resolve) => resolve(false));

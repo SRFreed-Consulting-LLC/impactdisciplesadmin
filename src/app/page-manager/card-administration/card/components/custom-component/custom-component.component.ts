@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CardComponent } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-custom-component',
-  templateUrl: './custom-component.component.html'
+    selector: 'app-custom-component',
+    templateUrl: './custom-component.component.html',
+    standalone: false
 })
 export class CustomComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

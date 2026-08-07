@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CardComponent, TestimonialItem } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-testimonial-component',
-  templateUrl: './testimonial-component.component.html'
+    selector: 'app-testimonial-component',
+    templateUrl: './testimonial-component.component.html',
+    standalone: false
 })
 export class TestimonialComponent implements OnInit {
   @Input('component') component: CardComponent;

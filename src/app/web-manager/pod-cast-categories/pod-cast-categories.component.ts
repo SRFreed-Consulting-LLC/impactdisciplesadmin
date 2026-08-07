@@ -9,9 +9,10 @@ import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
 
 @Component({
-  selector: 'app-pod-cast-categories',
-  templateUrl: './pod-cast-categories.component.html',
-  styleUrls: ['./pod-cast-categories.component.css']
+    selector: 'app-pod-cast-categories',
+    templateUrl: './pod-cast-categories.component.html',
+    styleUrls: ['./pod-cast-categories.component.css'],
+    standalone: false
 })
 export class PodCastCategoriesComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

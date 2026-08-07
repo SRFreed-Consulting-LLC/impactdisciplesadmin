@@ -4,9 +4,9 @@ import { Card } from '../../common/models/editor/card.model';
 import { CardService } from '../../common/services/card.service';
 
 @Component({
-  selector: 'app-card-previewer',
-  templateUrl: './card-viewer.component.html'
-
+    selector: 'app-card-previewer',
+    templateUrl: './card-viewer.component.html',
+    standalone: false
 })
 export class CardViewerComponent implements OnInit {
   loading: Promise<any> = new Promise((resolve) => resolve(false));

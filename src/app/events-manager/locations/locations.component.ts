@@ -15,9 +15,10 @@ import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.m
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
 
 @Component({
-  selector: 'app-locations',
-  templateUrl: './locations.component.html',
-  styleUrls: ['./locations.component.css']
+    selector: 'app-locations',
+    templateUrl: './locations.component.html',
+    styleUrls: ['./locations.component.css'],
+    standalone: false
 })
 export class LocationsComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

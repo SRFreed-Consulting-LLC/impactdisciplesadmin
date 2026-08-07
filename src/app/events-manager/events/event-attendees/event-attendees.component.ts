@@ -23,9 +23,10 @@ import { Workbook } from 'exceljs';
 import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
 
 @Component({
-  selector: 'app-event-attendees',
-  templateUrl: './event-attendees.component.html',
-  styleUrls: ['./event-attendees.component.css']
+    selector: 'app-event-attendees',
+    templateUrl: './event-attendees.component.html',
+    styleUrls: ['./event-attendees.component.css'],
+    standalone: false
 })
 export class EventAttendeesComponent implements OnInit{
   @Input('event') event: EventModel;

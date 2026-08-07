@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 
 @Component({
-  selector: 'app-requests-manager',
-  templateUrl: './requests-manager.component.html',
-  styleUrls: ['./requests-manager.component.css']
+    selector: 'app-requests-manager',
+    templateUrl: './requests-manager.component.html',
+    styleUrls: ['./requests-manager.component.css'],
+    standalone: false
 })
 export class RequestsManagerComponent {
   selectedIndex: number = 0;

@@ -5,8 +5,9 @@ import { Page } from 'src/app/page-manager/common/models/editor/page.model';
 import { PageService } from 'src/app/page-manager/common/services/page.service';
 
 @Component({
-  selector: 'app-footer-image-view',
-  templateUrl: './footer-image-view.component.html'
+    selector: 'app-footer-image-view',
+    templateUrl: './footer-image-view.component.html',
+    standalone: false
 })
 export class FooterImageViewComponent implements OnInit {
   @Input('component') component: CardComponent;

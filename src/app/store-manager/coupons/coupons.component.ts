@@ -13,9 +13,10 @@ import { ProductService } from 'impactdisciplescommon/src/services/data/product.
 import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
 
 @Component({
-  selector: 'app-coupons',
-  templateUrl: './coupons.component.html',
-  styleUrls: ['./coupons.component.css']
+    selector: 'app-coupons',
+    templateUrl: './coupons.component.html',
+    styleUrls: ['./coupons.component.css'],
+    standalone: false
 })
 export class CouponsComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

@@ -4,9 +4,10 @@ import { EventRegistrationService } from 'impactdisciplescommon/src/services/dat
 import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls: ['./dashboard.component.css'],
+    standalone: false
 })
 export class DashboardComponent implements OnInit{
   eventsList: EventData[] = [];

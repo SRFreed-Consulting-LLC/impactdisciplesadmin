@@ -3,9 +3,10 @@ import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model'
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 
 @Component({
-  selector: 'app-event-application',
-  templateUrl: './event-application.component.html',
-  styleUrls: ['./event-application.component.css']
+    selector: 'app-event-application',
+    templateUrl: './event-application.component.html',
+    styleUrls: ['./event-application.component.css'],
+    standalone: false
 })
 export class EventApplicationComponent implements OnInit {
   @Input('event') event: EventModel;

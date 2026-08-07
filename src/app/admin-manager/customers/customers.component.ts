@@ -35,9 +35,10 @@ import { EventService } from 'impactdisciplescommon/src/services/data/event.serv
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
 
 @Component({
-  selector: 'app-customers',
-  templateUrl: './customers.component.html',
-  styleUrls: ['./customers.component.scss']
+    selector: 'app-customers',
+    templateUrl: './customers.component.html',
+    styleUrls: ['./customers.component.scss'],
+    standalone: false
 })
 export class CustomersComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

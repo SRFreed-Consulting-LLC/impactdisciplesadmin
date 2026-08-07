@@ -3,8 +3,9 @@ import { card_type_values } from 'src/app/page-manager/common/lists/card-fields.
 import { Card, CardComponent, CardRow } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-card-body-view',
-  templateUrl: './body-view.html'
+    selector: 'app-card-body-view',
+    templateUrl: './body-view.html',
+    standalone: false
 })
 export class CardBodyViewComponent implements OnInit {
   @Input('card') card: Card;

@@ -12,9 +12,10 @@ import { confirm } from 'devextreme/ui/dialog';
 import { Timestamp } from 'firebase/firestore';
 
 @Component({
-  selector: 'app-testimonials',
-  templateUrl: './testimonials.component.html',
-  styleUrls: ['./testimonials.component.css']
+    selector: 'app-testimonials',
+    templateUrl: './testimonials.component.html',
+    styleUrls: ['./testimonials.component.css'],
+    standalone: false
 })
 export class TestimonialsComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

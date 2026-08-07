@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 
 @Component({
-  selector: 'app-page-manager',
-  templateUrl: './page-manager.component.html',
-  styleUrls: ['./page-manager.component.css']
+    selector: 'app-page-manager',
+    templateUrl: './page-manager.component.html',
+    styleUrls: ['./page-manager.component.css'],
+    standalone: false
 })
 export class PageManagerComponent {
   selectedIndex: number = 0;

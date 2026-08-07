@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 
 @Component({
-  selector: 'app-subscriptions-manager',
-  templateUrl: './subscriptions-manager.component.html',
-  styleUrls: ['./subscriptions-manager.component.css']
+    selector: 'app-subscriptions-manager',
+    templateUrl: './subscriptions-manager.component.html',
+    styleUrls: ['./subscriptions-manager.component.css'],
+    standalone: false
 })
 export class SubscriptionsManagerComponent {
   selectedIndex: number = 0;

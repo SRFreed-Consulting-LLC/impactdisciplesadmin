@@ -7,9 +7,10 @@ import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-au
 import { TopNavService } from 'impactdisciplescommon/src/services/utils/top-nav.service';
 
 @Component({
-  selector: 'app-main-screen',
-  templateUrl: './main-screen.component.html',
-  styleUrls: ['./main-screen.component.scss']
+    selector: 'app-main-screen',
+    templateUrl: './main-screen.component.html',
+    styleUrls: ['./main-screen.component.scss'],
+    standalone: false
 })
 export class MainScreenComponent implements OnInit {
   navigation: SecureMenuItem[] = [

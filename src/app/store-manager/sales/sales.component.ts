@@ -11,9 +11,10 @@ import { SaleModel } from 'impactdisciplescommon/src/models/utils/sale.model';
 import { SalesService } from 'impactdisciplescommon/src/services/data/sales.service';
 
 @Component({
-  selector: 'app-sales',
-  templateUrl: './sales.component.html',
-  styleUrls: ['./sales.component.css']
+    selector: 'app-sales',
+    templateUrl: './sales.component.html',
+    styleUrls: ['./sales.component.css'],
+    standalone: false
 })
 export class SalesComponent implements OnInit {
 

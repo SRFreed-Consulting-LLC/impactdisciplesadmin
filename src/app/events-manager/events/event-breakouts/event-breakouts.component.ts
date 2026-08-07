@@ -8,9 +8,10 @@ import { EventRegistrationService } from 'impactdisciplescommon/src/services/dat
 import { Observable, map } from 'rxjs';
 
 @Component({
-  selector: 'app-event-breakouts',
-  templateUrl: './event-breakouts.component.html',
-  styleUrls: ['./event-breakouts.component.css']
+    selector: 'app-event-breakouts',
+    templateUrl: './event-breakouts.component.html',
+    styleUrls: ['./event-breakouts.component.css'],
+    standalone: false
 })
 export class EventBreakoutsComponent implements OnInit {
   @Input('event') event: EventModel;

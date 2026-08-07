@@ -10,9 +10,10 @@ import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-tim
 import { map, Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-affiliate-sales',
-  templateUrl: './affiliate-sales.component.html',
-  styleUrls: ['./affiliate-sales.component.css']
+    selector: 'app-affiliate-sales',
+    templateUrl: './affiliate-sales.component.html',
+    styleUrls: ['./affiliate-sales.component.css'],
+    standalone: false
 })
 export class AffiliateSalesComponent implements OnInit {
   @Input('selectedItem') selectedItem: CouponModel;

@@ -3,7 +3,8 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { Video } from '../models/ui/video.model';
 
 @Pipe({
-  name: 'safeVideoVimeoUrlPipe'
+    name: 'safeVideoVimeoUrlPipe',
+    standalone: false
 })
 export class SafeVideoVimeoUrlPipe implements PipeTransform {
   constructor(private sanitizer: DomSanitizer) {}

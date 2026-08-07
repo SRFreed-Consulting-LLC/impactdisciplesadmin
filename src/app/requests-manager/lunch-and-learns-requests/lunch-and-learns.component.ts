@@ -13,9 +13,10 @@ import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.m
 import { LunchAndLearnService } from 'impactdisciplescommon/src/services/data/lunch-and-learn.service';
 
 @Component({
-  selector: 'app-lunch-and-learns',
-  templateUrl: './lunch-and-learns.component.html',
-  styleUrls: ['./lunch-and-learns.component.css']
+    selector: 'app-lunch-and-learns',
+    templateUrl: './lunch-and-learns.component.html',
+    styleUrls: ['./lunch-and-learns.component.css'],
+    standalone: false
 })
 export class LunchAndLearnsComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

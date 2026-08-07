@@ -8,8 +8,9 @@ import { PageService } from '../common/services/page.service';
 import notify from 'devextreme/ui/notify';
 
 @Component({
-  selector: 'app-form-administration',
-  templateUrl: './form-administration.component.html'
+    selector: 'app-form-administration',
+    templateUrl: './form-administration.component.html',
+    standalone: false
 })
 export class FormAdministrationComponent implements OnInit {
   breadCrumbItems: Array<{}>;

@@ -8,8 +8,9 @@ import { PageService } from 'src/app/page-manager/common/services/page.service';
 import { ProductService } from 'src/app/page-manager/common/services/products.service';
 
 @Component({
-  selector: 'app-footer-button-view',
-  templateUrl: './footer-button-view.component.html'
+    selector: 'app-footer-button-view',
+    templateUrl: './footer-button-view.component.html',
+    standalone: false
 })
 export class FooterButtonViewComponent implements OnInit {
   @Input('component') component: CardComponent;

@@ -7,8 +7,9 @@ import { PageService } from 'src/app/page-manager/common/services/page.service';
 import { ProductService } from 'src/app/page-manager/common/services/products.service';
 
 @Component({
-  selector: 'app-image-component',
-  templateUrl: './image-component.component.html'
+    selector: 'app-image-component',
+    templateUrl: './image-component.component.html',
+    standalone: false
 })
 export class ImageComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

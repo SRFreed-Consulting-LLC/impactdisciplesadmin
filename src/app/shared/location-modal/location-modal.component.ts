@@ -11,9 +11,10 @@ import { OrganizationService } from 'impactdisciplescommon/src/services/data/org
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
 
 @Component({
-  selector: 'app-location-modal',
-  templateUrl: './location-modal.component.html',
-  styleUrls: ['./location-modal.component.css']
+    selector: 'app-location-modal',
+    templateUrl: './location-modal.component.html',
+    styleUrls: ['./location-modal.component.css'],
+    standalone: false
 })
 export class LocationModalComponent implements OnInit {
   phone_types: PHONE_TYPES[];

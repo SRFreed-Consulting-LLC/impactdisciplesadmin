@@ -13,9 +13,10 @@ import { ShowCategoryModal } from './category-modal/category-modal.actions';
 import { ShowProductCategoriesModal } from './product-categories-modal.actions';
 
 @Component({
-  selector: 'app-product-categories',
-  templateUrl: './product-categories.component.html',
-  styleUrls: ['./product-categories.component.css']
+    selector: 'app-product-categories',
+    templateUrl: './product-categories.component.html',
+    styleUrls: ['./product-categories.component.css'],
+    standalone: false
 })
 export class ProductCategoriesComponent implements OnInit, OnDestroy {
   datasource$: Observable<DataSource>;

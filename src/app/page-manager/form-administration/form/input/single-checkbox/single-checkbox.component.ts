@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-single-checkbox',
-  templateUrl: './single-checkbox.component.html'
+    selector: 'app-single-checkbox',
+    templateUrl: './single-checkbox.component.html',
+    standalone: false
 })
 export class SingleCheckboxComponent implements OnInit {
   @Input ('form') form: Form;

@@ -15,9 +15,10 @@ import { CoachService } from 'impactdisciplescommon/src/services/data/coach.serv
 import { SeminarService } from 'impactdisciplescommon/src/services/data/seminar.service';
 
 @Component({
-  selector: 'app-seminars',
-  templateUrl: './seminars.component.html',
-  styleUrls: ['./seminars.component.css']
+    selector: 'app-seminars',
+    templateUrl: './seminars.component.html',
+    styleUrls: ['./seminars.component.css'],
+    standalone: false
 })
 export class SeminarsComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

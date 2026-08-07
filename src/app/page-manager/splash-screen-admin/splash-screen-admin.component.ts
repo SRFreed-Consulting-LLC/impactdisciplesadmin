@@ -6,9 +6,10 @@ import { CardService } from '../common/services/card.service';
 import { SplashScreenService } from '../common/services/splash-screen.service';
 
 @Component({
-  selector: 'app-splash-screen-admin',
-  templateUrl: './splash-screen-admin.component.html',
-  styleUrls: ['./splash-screen-admin.component.scss']
+    selector: 'app-splash-screen-admin',
+    templateUrl: './splash-screen-admin.component.html',
+    styleUrls: ['./splash-screen-admin.component.scss'],
+    standalone: false
 })
 export class SplashScreenAdminComponent implements OnInit {
   @ViewChild('carddiv', { read: ViewContainerRef })

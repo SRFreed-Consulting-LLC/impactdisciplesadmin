@@ -20,9 +20,10 @@ import { PrayerService } from 'impactdisciplescommon/src/services/data/prayer.se
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
-  selector: 'app-prayer-team-subscription',
-  templateUrl: './prayer-team-subscription.component.html',
-  styleUrls: ['./prayer-team-subscription.component.css']
+    selector: 'app-prayer-team-subscription',
+    templateUrl: './prayer-team-subscription.component.html',
+    styleUrls: ['./prayer-team-subscription.component.css'],
+    standalone: false
 })
 export class PrayerTeamSubscriptionComponent {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

@@ -2,8 +2,9 @@ import { Component, Input, OnInit} from '@angular/core';
 import { CardComponent, GalleryItem } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-gallery-component',
-  templateUrl: './gallery-component.component.html'
+    selector: 'app-gallery-component',
+    templateUrl: './gallery-component.component.html',
+    standalone: false
 })
 export class GalleryComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

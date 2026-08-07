@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-select',
-  templateUrl: './select.component.html'
+    selector: 'app-select',
+    templateUrl: './select.component.html',
+    standalone: false
 })
 export class SelectComponent implements OnInit {
   @Input ('form') form: Form;

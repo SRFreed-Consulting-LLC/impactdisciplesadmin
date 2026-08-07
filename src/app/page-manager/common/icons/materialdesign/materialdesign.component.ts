@@ -3,9 +3,10 @@ import { Component, OnInit } from '@angular/core';
 import { icons } from './data';
 
 @Component({
-  selector: 'app-materialdesign',
-  templateUrl: './materialdesign.component.html',
-  styleUrls: ['./materialdesign.component.scss']
+    selector: 'app-materialdesign',
+    templateUrl: './materialdesign.component.html',
+    styleUrls: ['./materialdesign.component.scss'],
+    standalone: false
 })
 
 /**

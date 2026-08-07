@@ -11,8 +11,9 @@ import { AGENT_TYPE } from "../common/lists/agent-type.enum";
 
 
 @Component({
-  selector: "app-menu-administration",
-  templateUrl: "./menu-administration.component.html",
+    selector: "app-menu-administration",
+    templateUrl: "./menu-administration.component.html",
+    standalone: false
 })
 export class MenuAdministrationComponent implements OnInit {
   @ViewChild("menuItems", { static: false }) tree: DxTreeListComponent;

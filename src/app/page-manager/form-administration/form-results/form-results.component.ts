@@ -6,8 +6,9 @@ import { PageService } from '../../common/services/page.service';
 import { Form } from '../../common/models/editor/form.model';
 
 @Component({
-  selector: 'app-form-results',
-  templateUrl: './form-results.component.html'
+    selector: 'app-form-results',
+    templateUrl: './form-results.component.html',
+    standalone: false
 })
 export class FormResultsComponent implements OnInit {
   breadCrumbItems: Array<{}>;

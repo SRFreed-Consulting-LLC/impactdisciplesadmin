@@ -7,8 +7,9 @@ import { FormService } from 'src/app/page-manager/common/services/forms.service'
 
 
 @Component({
-  selector: 'app-form-maker-component',
-  templateUrl: './form-maker-component.component.html',
+    selector: 'app-form-maker-component',
+    templateUrl: './form-maker-component.component.html',
+    standalone: false
 })
 export class FormMakerComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

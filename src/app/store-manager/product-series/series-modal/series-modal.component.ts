@@ -8,9 +8,10 @@ import { ShowSeriesModal } from './series-modal.actions';
 import notify from 'devextreme/ui/notify';
 
 @Component({
-  selector: 'app-series-modal',
-  templateUrl: './series-modal.component.html',
-  styleUrls: ['./series-modal.component.css']
+    selector: 'app-series-modal',
+    templateUrl: './series-modal.component.html',
+    styleUrls: ['./series-modal.component.css'],
+    standalone: false
 })
 export class SeriesModalComponent implements OnInit, OnDestroy {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

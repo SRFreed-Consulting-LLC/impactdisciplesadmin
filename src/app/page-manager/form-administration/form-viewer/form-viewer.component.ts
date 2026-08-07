@@ -4,8 +4,9 @@ import { Form } from '../../common/models/editor/form.model';
 import { FormService } from '../../common/services/forms.service';
 
 @Component({
-  selector: 'app-form-viewer',
-  templateUrl: './form-viewer.component.html'
+    selector: 'app-form-viewer',
+    templateUrl: './form-viewer.component.html',
+    standalone: false
 })
 export class FormViewerComponent implements OnInit {
   loading: Promise<any> = new Promise((resolve) => resolve(false));

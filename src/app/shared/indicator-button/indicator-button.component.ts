@@ -1,9 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
-  selector: 'app-indicator-button',
-  templateUrl: './indicator-button.component.html',
-  styleUrls: ['./indicator-button.component.scss']
+    selector: 'app-indicator-button',
+    templateUrl: './indicator-button.component.html',
+    styleUrls: ['./indicator-button.component.scss'],
+    standalone: false
 })
 export class IndicatorButtonComponent {
   @Input() public cssClass?: string;

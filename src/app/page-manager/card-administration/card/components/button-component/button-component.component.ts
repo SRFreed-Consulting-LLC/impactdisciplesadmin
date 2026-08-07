@@ -8,8 +8,9 @@ import { PageService } from 'src/app/page-manager/common/services/page.service';
 import { ProductService } from 'src/app/page-manager/common/services/products.service';
 
 @Component({
-  selector: 'app-button-component',
-  templateUrl: './button-component.component.html'
+    selector: 'app-button-component',
+    templateUrl: './button-component.component.html',
+    standalone: false
 })
 export class ButtonComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

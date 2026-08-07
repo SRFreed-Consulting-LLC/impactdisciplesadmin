@@ -9,9 +9,10 @@ import { OrganizationSaved, ShowOrganizationModal } from './organization-modal.a
 import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
 
 @Component({
-  selector: 'app-organization-modal',
-  templateUrl: './organization-modal.component.html',
-  styleUrls: ['./organization-modal.component.scss']
+    selector: 'app-organization-modal',
+    templateUrl: './organization-modal.component.html',
+    styleUrls: ['./organization-modal.component.scss'],
+    standalone: false
 })
 export class OrganizationModalComponent implements OnInit {
   phone_types: PHONE_TYPES[];

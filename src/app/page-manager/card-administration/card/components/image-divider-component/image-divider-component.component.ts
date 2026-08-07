@@ -4,8 +4,9 @@ import { image_view_values } from 'src/app/page-manager/common/lists/card-fields
 import { CardComponent, CardComponentImage, CardComponentContent } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-image-divider-component',
-  templateUrl: './image-divider-component.component.html'
+    selector: 'app-image-divider-component',
+    templateUrl: './image-divider-component.component.html',
+    standalone: false
 })
 export class ImageDividerComponentComponent implements OnInit {
   @ViewChild('scrollView') scrollView: DxScrollViewComponent;

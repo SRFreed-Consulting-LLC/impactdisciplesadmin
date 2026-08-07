@@ -6,9 +6,10 @@ import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
 
 @Component({
-  selector: 'app-web-config',
-  templateUrl: './web-config.component.html',
-  styleUrls: ['./web-config.component.css']
+    selector: 'app-web-config',
+    templateUrl: './web-config.component.html',
+    styleUrls: ['./web-config.component.css'],
+    standalone: false
 })
 export class WebConfigComponent implements OnInit{
   datasource$: Observable<DataSource>;

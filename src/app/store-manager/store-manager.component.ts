@@ -4,9 +4,10 @@ import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
-  selector: 'app-store-manager',
-  templateUrl: './store-manager.component.html',
-  styleUrls: ['./store-manager.component.css']
+    selector: 'app-store-manager',
+    templateUrl: './store-manager.component.html',
+    styleUrls: ['./store-manager.component.css'],
+    standalone: false
 })
 export class StoreManagerComponent implements OnInit {
 

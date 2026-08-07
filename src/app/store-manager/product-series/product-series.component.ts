@@ -10,9 +10,10 @@ import { confirm } from 'devextreme/ui/dialog';
 import { ShowSeriesModal } from './series-modal/series-modal.actions';
 
 @Component({
-  selector: 'app-product-series',
-  templateUrl: './product-series.component.html',
-  styleUrls: ['./product-series.component.css']
+    selector: 'app-product-series',
+    templateUrl: './product-series.component.html',
+    styleUrls: ['./product-series.component.css'],
+    standalone: false
 })
 export class ProductSeriesComponent implements OnInit, OnDestroy {
   datasource$: Observable<DataSource>;

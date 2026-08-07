@@ -6,9 +6,10 @@ import { MonthlyNewletterService } from 'impactdisciplescommon/src/services/data
 import { map, Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-monthly-newsletters',
-  templateUrl: './monthly-newsletters.component.html',
-  styleUrls: ['./monthly-newsletters.component.css']
+    selector: 'app-monthly-newsletters',
+    templateUrl: './monthly-newsletters.component.html',
+    styleUrls: ['./monthly-newsletters.component.css'],
+    standalone: false
 })
 export class MonthlyNewslettersComponent implements OnInit {
   datasource$: Observable<DataSource>;

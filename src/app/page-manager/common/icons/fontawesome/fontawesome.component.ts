@@ -3,9 +3,10 @@ import { Component, OnInit } from '@angular/core';
 import { icons } from './data';
 
 @Component({
-  selector: 'app-fontawesome',
-  templateUrl: './fontawesome.component.html',
-  styleUrls: ['./fontawesome.component.scss']
+    selector: 'app-fontawesome',
+    templateUrl: './fontawesome.component.html',
+    styleUrls: ['./fontawesome.component.scss'],
+    standalone: false
 })
 
 /**

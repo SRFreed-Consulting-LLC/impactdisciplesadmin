@@ -15,9 +15,10 @@ import { ShippingFromAddress } from 'impactdisciplescommon/src/models/domain/shi
 import { ShippingLabelListComponent } from './shippingLabelList/shippingLabelList.component';
 
 @Component({
-  selector: 'app-shipping-labels',
-  templateUrl: './shipping-labels.component.html',
-  styleUrls: ['./shipping-labels.component.css']
+    selector: 'app-shipping-labels',
+    templateUrl: './shipping-labels.component.html',
+    styleUrls: ['./shipping-labels.component.css'],
+    standalone: false
 })
 export class ShippingLabelsComponent implements OnInit {
   @ViewChild('shippinglabellist', { static: false }) shippinglabellist: ShippingLabelListComponent;

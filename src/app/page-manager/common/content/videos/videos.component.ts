@@ -4,8 +4,9 @@ import { QueryParam, WhereFilterOperandKeys } from 'impactdisciplescommon/src/da
 import { VideoService } from '../../services/video.service';
 
 @Component({
-  selector: 'app-videos',
-  templateUrl: './videos.component.html'
+    selector: 'app-videos',
+    templateUrl: './videos.component.html',
+    standalone: false
 })
 export class VideosComponent implements OnInit {
   @Input('video_type') videoType: string;

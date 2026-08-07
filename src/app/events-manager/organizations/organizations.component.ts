@@ -13,9 +13,10 @@ import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.m
 import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
 
 @Component({
-  selector: 'app-organizations',
-  templateUrl: './organizations.component.html',
-  styleUrls: ['./organizations.component.css']
+    selector: 'app-organizations',
+    templateUrl: './organizations.component.html',
+    styleUrls: ['./organizations.component.css'],
+    standalone: false
 })
 export class OrganizationsComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

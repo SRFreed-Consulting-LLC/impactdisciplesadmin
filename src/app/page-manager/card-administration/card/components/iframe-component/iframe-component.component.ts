@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CardComponent } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-iframe-component',
-  templateUrl: './iframe-component.component.html',
+    selector: 'app-iframe-component',
+    templateUrl: './iframe-component.component.html',
+    standalone: false
 })
 export class IframeComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-boolean',
-  templateUrl: './boolean.component.html'
+    selector: 'app-boolean',
+    templateUrl: './boolean.component.html',
+    standalone: false
 })
 export class BooleanComponent implements OnInit {
   @Input ('form') form: Form;

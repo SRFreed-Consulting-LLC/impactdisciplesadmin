@@ -6,9 +6,10 @@ import { LoggerService } from 'impactdisciplescommon/src/services/data/logger.se
 import { Observable, map } from 'rxjs';
 
 @Component({
-  selector: 'app-log-messages',
-  templateUrl: './log-messages.component.html',
-  styleUrls: ['./log-messages.component.css']
+    selector: 'app-log-messages',
+    templateUrl: './log-messages.component.html',
+    styleUrls: ['./log-messages.component.css'],
+    standalone: false
 })
 export class LogMessagesComponent implements OnInit {
   datasource$: Observable<DataSource>;

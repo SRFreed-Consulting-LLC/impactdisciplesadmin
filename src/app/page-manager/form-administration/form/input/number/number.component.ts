@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-number',
-  templateUrl: './number.component.html'
+    selector: 'app-number',
+    templateUrl: './number.component.html',
+    standalone: false
 })
 export class NumberComponent implements OnInit {
   @Input ('form') form: Form;

@@ -8,9 +8,10 @@ import { confirm } from 'devextreme/ui/dialog';
 import notify from 'devextreme/ui/notify';
 
 @Component({
-  selector: 'app-purchase-details',
-  templateUrl: './purchase-details.component.html',
-  styleUrls: ['./purchase-details.component.css']
+    selector: 'app-purchase-details',
+    templateUrl: './purchase-details.component.html',
+    styleUrls: ['./purchase-details.component.css'],
+    standalone: false
 })
 export class PurchaseDetailsComponent implements OnInit {
 

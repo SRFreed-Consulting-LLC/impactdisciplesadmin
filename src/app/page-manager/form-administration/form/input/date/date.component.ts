@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-date',
-  templateUrl: './date.component.html'
+    selector: 'app-date',
+    templateUrl: './date.component.html',
+    standalone: false
 })
 export class DateComponent implements OnInit {
   @Input ('form') form: Form;

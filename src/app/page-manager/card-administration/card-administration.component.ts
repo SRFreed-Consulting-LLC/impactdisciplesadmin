@@ -9,8 +9,9 @@ import { Card } from '../common/models/editor/card.model';
 import notify from 'devextreme/ui/notify';
 
 @Component({
-  selector: 'app-card-manager',
-  templateUrl: './card-administration.component.html'
+    selector: 'app-card-manager',
+    templateUrl: './card-administration.component.html',
+    standalone: false
 })
 export class CardAdministrationComponent implements OnInit {
   @ViewChild("cardTable") cardTable: DxDataGridComponent;

@@ -12,9 +12,10 @@ import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-au
 import { Timestamp } from 'firebase/firestore';
 
 @Component({
-  selector: 'app-details',
-  templateUrl: './details.component.html',
-  styleUrls: ['./details.component.css']
+    selector: 'app-details',
+    templateUrl: './details.component.html',
+    styleUrls: ['./details.component.css'],
+    standalone: false
 })
 export class DetailsComponent implements OnInit {
   @Input('event') event: EventModel;

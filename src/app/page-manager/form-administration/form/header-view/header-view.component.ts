@@ -5,8 +5,9 @@ import { Form, FormHeader, FormInputs } from 'src/app/page-manager/common/models
 
 
 @Component({
-  selector: 'app-form-header-view',
-  templateUrl: './header-view.component.html'
+    selector: 'app-form-header-view',
+    templateUrl: './header-view.component.html',
+    standalone: false
 })
 export class FormHeaderViewComponent implements OnInit {
   @Input('input') input: FormInputs;

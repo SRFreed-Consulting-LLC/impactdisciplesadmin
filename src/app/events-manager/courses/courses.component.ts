@@ -9,9 +9,10 @@ import notify from 'devextreme/ui/notify';
 import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
 
 @Component({
-  selector: 'app-courses',
-  templateUrl: './courses.component.html',
-  styleUrls: ['./courses.component.css']
+    selector: 'app-courses',
+    templateUrl: './courses.component.html',
+    styleUrls: ['./courses.component.css'],
+    standalone: false
 })
 export class CoursesComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

@@ -12,9 +12,10 @@ import { environment } from 'src/environments/environment';
 import _ from 'lodash';
 
 @Component({
-  selector: 'app-shippingLabelList',
-  templateUrl: './shippingLabelList.component.html',
-  styleUrls: ['./shippingLabelList.component.css']
+    selector: 'app-shippingLabelList',
+    templateUrl: './shippingLabelList.component.html',
+    styleUrls: ['./shippingLabelList.component.css'],
+    standalone: false
 })
 export class ShippingLabelListComponent implements OnInit {
   @ViewChild('addressGrid', { static: false }) addressGrid: DxDataGridComponent;

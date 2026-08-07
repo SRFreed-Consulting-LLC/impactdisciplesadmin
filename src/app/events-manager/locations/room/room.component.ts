@@ -6,9 +6,10 @@ import { BehaviorSubject, map } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
-  selector: 'app-room',
-  templateUrl: './room.component.html',
-  styleUrls: ['./room.component.css']
+    selector: 'app-room',
+    templateUrl: './room.component.html',
+    styleUrls: ['./room.component.css'],
+    standalone: false
 })
 export class RoomComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

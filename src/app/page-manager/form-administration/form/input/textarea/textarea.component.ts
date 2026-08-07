@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-textarea',
-  templateUrl: './textarea.component.html'
+    selector: 'app-textarea',
+    templateUrl: './textarea.component.html',
+    standalone: false
 })
 export class TextareaComponent implements OnInit {
   @Input ('form') form: Form;

@@ -5,8 +5,9 @@ import { Page } from '../common/models/editor/page.model';
 import { PageService } from '../common/services/page.service';
 
 @Component({
-  selector: 'app-page-administration',
-  templateUrl: './page-administration.component.html'
+    selector: 'app-page-administration',
+    templateUrl: './page-administration.component.html',
+    standalone: false
 })
 export class PageAdministrationComponent implements OnInit {
   breadCrumbItems: Array<{}>;

@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CardComponent, CardComponentContent } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-content-component',
-  templateUrl: './content-component.component.html',
+    selector: 'app-content-component',
+    templateUrl: './content-component.component.html',
+    standalone: false
 })
 export class ContentComponentComponent implements OnInit {
   @Input('component') component: CardComponent;

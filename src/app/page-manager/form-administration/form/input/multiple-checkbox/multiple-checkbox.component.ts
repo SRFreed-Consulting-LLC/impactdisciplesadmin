@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-multiple-checkbox',
-  templateUrl: './multiple-checkbox.component.html'
+    selector: 'app-multiple-checkbox',
+    templateUrl: './multiple-checkbox.component.html',
+    standalone: false
 })
 export class MultipleCheckboxComponent implements OnInit {
   @Input ('form') form: Form;

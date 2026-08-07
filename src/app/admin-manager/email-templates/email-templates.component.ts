@@ -9,9 +9,10 @@ import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/e
 import { MailTemplateModel } from 'impactdisciplescommon/src/models/admin/mail.model';
 
 @Component({
-  selector: 'app-email-templates',
-  templateUrl: './email-templates.component.html',
-  styleUrls: ['./email-templates.component.css']
+    selector: 'app-email-templates',
+    templateUrl: './email-templates.component.html',
+    styleUrls: ['./email-templates.component.css'],
+    standalone: false
 })
 export class EmailTemplatesComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

@@ -5,9 +5,10 @@ import { TextEditorMacro } from '../common/models/editor/text-editor-macro.model
 import { MacroService } from '../common/services/macro.service';
 
 @Component({
-  selector: 'app-macro-creator',
-  templateUrl: './macro-creator.component.html',
-  styleUrls: ['./macro-creator.component.scss']
+    selector: 'app-macro-creator',
+    templateUrl: './macro-creator.component.html',
+    styleUrls: ['./macro-creator.component.scss'],
+    standalone: false
 })
 export class MacroCreatorComponent implements OnInit {
   @ViewChild('macros') macrosList: DxDataGridComponent;

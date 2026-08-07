@@ -9,9 +9,10 @@ import notify from 'devextreme/ui/notify';
 import { ConsultationRequestService } from 'impactdisciplescommon/src/services/data/consultation-request.service';
 
 @Component({
-  selector: 'app-consultations-requests',
-  templateUrl: './consultations-requests.component.html',
-  styleUrls: ['./consultations-requests.component.css']
+    selector: 'app-consultations-requests',
+    templateUrl: './consultations-requests.component.html',
+    styleUrls: ['./consultations-requests.component.css'],
+    standalone: false
 })
 export class ConsultationsRequestsComponent implements OnInit{
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

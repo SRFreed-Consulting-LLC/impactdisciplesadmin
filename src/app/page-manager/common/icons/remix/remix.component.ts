@@ -3,9 +3,10 @@ import { Component, OnInit } from '@angular/core';
 import { icons } from './data';
 
 @Component({
-  selector: 'app-remix',
-  templateUrl: './remix.component.html',
-  styleUrls: ['./remix.component.scss']
+    selector: 'app-remix',
+    templateUrl: './remix.component.html',
+    styleUrls: ['./remix.component.scss'],
+    standalone: false
 })
 export class RemixComponent implements OnInit {
   // bread crumb items

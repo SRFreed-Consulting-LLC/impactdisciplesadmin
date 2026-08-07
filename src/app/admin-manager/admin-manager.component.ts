@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 
 @Component({
-  selector: 'app-admin-manager',
-  templateUrl: './admin-manager.component.html',
-  styleUrls: ['./admin-manager.component.css']
+    selector: 'app-admin-manager',
+    templateUrl: './admin-manager.component.html',
+    styleUrls: ['./admin-manager.component.css'],
+    standalone: false
 })
 export class AdminManagerComponent {
   selectedIndex: number = 0;

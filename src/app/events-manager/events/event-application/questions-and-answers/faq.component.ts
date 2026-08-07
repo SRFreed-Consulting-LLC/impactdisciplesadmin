@@ -10,9 +10,10 @@ import CustomStore from 'devextreme/data/custom_store';
 import { FAQService } from 'impactdisciplescommon/src/services/data/faq.service';
 
 @Component({
-  selector: 'app-faq',
-  templateUrl: './faq.component.html',
-  styleUrls: ['./faq.component.css']
+    selector: 'app-faq',
+    templateUrl: './faq.component.html',
+    styleUrls: ['./faq.component.css'],
+    standalone: false
 })
 export class FAQComponent implements OnInit {
   @Input('event') event: EventModel;

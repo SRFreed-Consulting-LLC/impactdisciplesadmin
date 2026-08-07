@@ -7,9 +7,10 @@ import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-tim
 import { map, Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-affilliatte-payments',
-  templateUrl: './affilliatte-payments.component.html',
-  styleUrls: ['./affilliatte-payments.component.css']
+    selector: 'app-affilliatte-payments',
+    templateUrl: './affilliatte-payments.component.html',
+    styleUrls: ['./affilliatte-payments.component.css'],
+    standalone: false
 })
 export class AffilliattePaymentsComponent implements OnInit {
   @Input('selectedItem') selectedItem: CouponModel;

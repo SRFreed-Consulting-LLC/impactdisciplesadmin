@@ -10,9 +10,10 @@ import { HomePagePopUpService } from 'impactdisciplescommon/src/services/data/ho
 import CustomStore from 'devextreme/data/custom_store';
 
 @Component({
-  selector: 'app-home-page-popups',
-  templateUrl: './home-page-popups.component.html',
-  styleUrls: ['./home-page-popups.component.css']
+    selector: 'app-home-page-popups',
+    templateUrl: './home-page-popups.component.html',
+    styleUrls: ['./home-page-popups.component.css'],
+    standalone: false
 })
 export class HomePagePopupsComponent implements OnInit {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;

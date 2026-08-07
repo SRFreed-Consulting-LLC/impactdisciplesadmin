@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Form, FormInputs } from 'src/app/page-manager/common/models/editor/form.model';
 
 @Component({
-  selector: 'app-date-time',
-  templateUrl: './date-time.component.html'
+    selector: 'app-date-time',
+    templateUrl: './date-time.component.html',
+    standalone: false
 })
 export class DateTimeComponent implements OnInit {
   @Input ('form') form: Form;

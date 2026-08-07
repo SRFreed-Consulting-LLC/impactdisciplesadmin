@@ -5,8 +5,9 @@ import { Form } from '../../common/models/editor/form.model';
 import { FormService } from '../../common/services/forms.service';
 
 @Component({
-  selector: 'app-form-maker',
-  templateUrl: './form-maker.component.html'
+    selector: 'app-form-maker',
+    templateUrl: './form-maker.component.html',
+    standalone: false
 })
 export class FormMakerComponent implements OnInit {
   loading: Promise<any> = new Promise((resolve) => resolve(false));

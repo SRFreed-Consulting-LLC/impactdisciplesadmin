@@ -2,8 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Card } from 'src/app/page-manager/common/models/editor/card.model';
 
 @Component({
-  selector: 'app-card-header-view',
-  templateUrl: './header-view.component.html'
+    selector: 'app-card-header-view',
+    templateUrl: './header-view.component.html',
+    standalone: false
 })
 export class CardHeaderViewComponentComponent implements OnInit {
   @Input('card') card: Card;

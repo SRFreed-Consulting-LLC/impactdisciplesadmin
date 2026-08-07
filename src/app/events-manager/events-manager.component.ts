@@ -4,9 +4,10 @@ import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 
 @Component({
-  selector: 'app-events-manager',
-  templateUrl: './events-manager.component.html',
-  styleUrls: ['./events-manager.component.css']
+    selector: 'app-events-manager',
+    templateUrl: './events-manager.component.html',
+    styleUrls: ['./events-manager.component.css'],
+    standalone: false
 })
 export class EventsManagerComponent implements OnInit {
   selectedIndex: number = 0;
