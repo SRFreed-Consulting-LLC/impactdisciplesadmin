@@ -1,0 +1,30 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 50vh;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.attendees-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.attendees-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.columns-button {
+  margin-right: 8px;
+}

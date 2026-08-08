@@ -11,6 +11,8 @@ import { CoachesComponent } from './coaches/coaches.component';
 import { CoachDialogComponent } from './coaches/coach-dialog.component';
 import { EventsComponent } from './events/events.component';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
+import { EventAttendeeDialogComponent } from './events/event-attendees/event-attendee-dialog.component';
+import { EventEmailDialogComponent } from './events/event-attendees/event-email-dialog.component';
 import { EventAgendaComponent } from './events/event-agenda/event-agenda.component';
 import { EventsManagerComponent } from './events-manager.component';
 import { SharedModule } from '../shared/shared.module';
@@ -43,6 +45,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatMenuModule } from '@angular/material/menu';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -59,6 +62,8 @@ import { QuillModule } from 'ngx-quill';
       OrganizationDialogComponent,
       EventAgendaComponent,
       EventAttendeesComponent,
+      EventAttendeeDialogComponent,
+      EventEmailDialogComponent,
       EventBreakoutsComponent,
       RoomComponent,
       RoomDialogComponent,
@@ -111,6 +116,7 @@ import { QuillModule } from 'ngx-quill';
       MatTabsModule,
       MatSlideToggleModule,
       MatCheckboxModule,
+      MatMenuModule,
       QuillModule
     ]
 })

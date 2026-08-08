@@ -1,0 +1,50 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' REGISTERED USER'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>First Name</mat-label>
+      <input matInput formControlName="firstName" required>
+      <mat-error *ngIf="form.get('firstName')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Last Name</mat-label>
+      <input matInput formControlName="lastName" required>
+      <mat-error *ngIf="form.get('lastName')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Email</mat-label>
+    <input matInput formControlName="email" required>
+    <mat-error *ngIf="form.get('email')?.hasError('required')">Required</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Registration Date</mat-label>
+    <input matInput type="datetime-local" formControlName="registrationDate">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width" *ngIf="isEdit">
+    <mat-label>Receipt Email Status</mat-label>
+    <input matInput [value]="data.item?.receiptEmailStatus ?? ''" readonly>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Receipt</mat-label>
+    <input matInput formControlName="receipt" required>
+    <mat-error *ngIf="form.get('receipt')?.hasError('required')">Required</mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" *ngIf="data.item?.receiptEmailId" [disabled]="inProgress$ | async" (click)="resendEmail()">Resend Email</button>
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

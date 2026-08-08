@@ -1,242 +1,105 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-attendee-button" hint="MANAGE ATTENDEES">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-attendee-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-              <dxi-item text="Email Registered Users" icon="email" [onClick]="showEmailModal"></dxi-item>
-              <dxi-item text="Select Columns to Display" icon="columnchooser" [onClick]="showColumnChooser"></dxi-item>
-              <dxi-item text="Export To PDF" icon="exportpdf" [onClick]="exportPDFGrid"></dxi-item>
-              <dxi-item text="Export To Excel" icon="exportxlsx" [onClick]="exportXLSGrid"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header [title]="itemType + 's'" [actions]="actions">
+  <button mat-stroked-button type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+    <mat-icon>view_column</mat-icon>
+    Columns
+  </button>
+  <mat-menu #columnsMenu="matMenu">
+    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
+      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+    </button>
+  </mat-menu>
+</app-list-header>
+
+<div class="table-scroll">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+  <table mat-table [dataSource]="(attendees$ | async) ?? []" class="attendees-table">
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef>
+        <mat-checkbox (change)="masterToggle()" [checked]="isAllSelected()"></mat-checkbox>
+      </th>
+      <td mat-cell *matCellDef="let item">
+        <mat-checkbox (click)="$event.stopPropagation()" (change)="selection.toggle(item)" [checked]="selection.isSelected(item)"></mat-checkbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="lastName">
+      <th mat-header-cell *matHeaderCellDef>Last Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.lastName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="firstName">
+      <th mat-header-cell *matHeaderCellDef>First Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.firstName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let item">{{ item.email }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="registrationDate">
+      <th mat-header-cell *matHeaderCellDef>Registration Date</th>
+      <td mat-cell *matCellDef="let item">{{ $any(item.registrationDate) | date: 'short' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="loggedIn">
+      <th mat-header-cell *matHeaderCellDef>Logged In</th>
+      <td mat-cell *matCellDef="let item">{{ item.loggedIn ? 'Yes' : 'No' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="receipt">
+      <th mat-header-cell *matHeaderCellDef>Receipt</th>
+      <td mat-cell *matCellDef="let item">{{ item.receipt }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="RESEND EMAIL" *ngIf="item.receiptEmailId" (click)="resendConfirmationEmail(item)">
+          <mat-icon>forward_to_inbox</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- Filter row -->
+    <ng-container matColumnDef="select-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="lastName-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('lastName', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="firstName-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('firstName', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="email-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('email', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="registrationDate-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="loggedIn-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="receipt-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('receipt', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+  </table>
 </div>
-
-<dx-data-grid class="dx-card wide-card"
-  #attendeeGrid
-  [dataSource]="datasource$ | async"
-  [height]="'50vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [allowColumnReordering]="true"
-  [allowColumnResizing]="true"
-  [columnHidingEnabled]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  [(selectedRowKeys)]="selectedRows"
-  (onSelectionChanged)="selectRow($event)"
-  (onRowDblClick)="showEditModal($event)">
-  <dxo-state-storing
-    [enabled]="true"
-    type="localStorage"
-    storageKey="storage"
-  ></dxo-state-storing>
-  <dxo-selection mode="multiple" ></dxo-selection>
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-  <dxo-group-panel [visible]="true"></dxo-group-panel>
-  <dxo-grouping #expand [autoExpandAll]="false"></dxo-grouping>
-
-  <dxi-column dataField="lastName" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="firstName"></dxi-column>
-  <dxi-column dataField="email"></dxi-column>
-  <dxi-column dataField="registrationDate" [dataType]="'datetime'"></dxi-column>
-  <dxi-column dataField="loggedIn"></dxi-column>
-  <dxi-column dataField="receipt"></dxi-column>
-  <dxi-column type="buttons" [width]="150" caption="Actions">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-    <dxi-button icon="message" hint="RESEND EMAIL" [onClick]="resendConfirmationEmail"></dxi-button>
-  </dxi-column>
-
-  <dxo-summary>
-    <dxi-group-item column="email" summaryType="count" displayFormat="{0}"></dxi-group-item>
-  </dxo-summary>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [height]="'60vh'"
-  [width]="'60vw'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left">
-          <dxi-item itemType="group" caption="Event" [colCount]="4">
-            <dxi-item dataField="firstName" [colSpan]="2" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="lastName" [colSpan]="2" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="email" [colSpan]="2" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="registrationDate" [colSpan]="2">
-              <div *dxTemplate>
-                <dx-date-box [(value)]="selectedItem.registrationDate"></dx-date-box>
-              </div>
-            </dxi-item>
-            <dxi-item dataField="receiptEmailStatus" [colSpan]="2"></dxi-item>
-            <dxi-item dataField="receiptEmailDate" [colSpan]="2">
-              <div *dxTemplate>
-                <dx-date-box [type]="'datetime'" [(value)]="selectedItem.receiptEmailDate"></dx-date-box>
-              </div>
-            </dxi-item>
-            <dxi-item dataField="receipt" [colSpan]="4" [isRequired]="true"></dxi-item>
-          </dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          *ngIf="selectedItem && selectedItem.receiptEmailId"
-          text="Resend Email"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="resendEmail()">
-        </dx-button>
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isEmailVisible$ | async"
-  [width]="'80%'"
-  [height]="'60%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        SEND EMAIL
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isEmailVisible$ | async">
-        <dx-form
-            #addEditForm
-            class="pb-2"
-            [(formData)]="email"
-            [showColonAfterLabel]="false"
-            labelLocation="left">
-            <dxi-item dataField="subject" [colSpan]="1" [isRequired]="true"></dxi-item>
-        </dx-form>
-        <dx-html-editor height="100%" [(value)]="email.html">
-            <dxo-toolbar [multiline]="false">
-              <dxi-item name="undo"></dxi-item>
-              <dxi-item name="redo"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item
-                name="size"
-                [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-              ></dxi-item>
-              <dxi-item
-                name="font"
-                [acceptedValues]="[
-                  'Arial',
-                  'Courier New',
-                  'Georgia',
-                  'Impact',
-                  'Lucida Console',
-                  'Tahoma',
-                  'Times New Roman',
-                  'Verdana'
-                ]"
-              ></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="bold"></dxi-item>
-              <dxi-item name="italic"></dxi-item>
-              <dxi-item name="strike"></dxi-item>
-              <dxi-item name="underline"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="alignLeft"></dxi-item>
-              <dxi-item name="alignCenter"></dxi-item>
-              <dxi-item name="alignRight"></dxi-item>
-              <dxi-item name="alignJustify"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="orderedList"></dxi-item>
-              <dxi-item name="bulletList"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="header" [acceptedValues]="[false, 1, 2, 3, 4, 5]"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="color"></dxi-item>
-              <dxi-item name="background"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="link"></dxi-item>
-              <dxi-item name="image"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="clear"></dxi-item>
-              <dxi-item name="codeBlock"></dxi-item>
-              <dxi-item name="blockquote"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="variable"></dxi-item>
-            </dxo-toolbar>
-            <dxo-variables [dataSource]="emailVals" [escapeChar]="['{{', '}}']"> </dxo-variables>
-            <dxo-media-resizing [enabled]="true"> </dxo-media-resizing>
-        </dx-html-editor>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onEmailCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SEND'"
-          [disabled]="inProgress$ | async"
-          (onClick)="sendEmail()">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>

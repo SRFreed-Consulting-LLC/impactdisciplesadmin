@@ -1,286 +1,194 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, of, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { SelectionModel } from '@angular/cdk/collections';
+import jsPDF from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
+import { Unsubscribe } from 'firebase/firestore';
 import { EventRegistrationModel } from 'impactdisciplescommon/src/models/domain/event-registration.model';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import notify from 'devextreme/ui/notify';
-import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
-import { CustomerEmailModel } from 'impactdisciplescommon/src/models/domain/customer-email.model';
-import { Timestamp, Unsubscribe } from 'firebase/firestore';
-import { CustomerEmailService } from 'impactdisciplescommon/src/services/data/customer-email.service';
+import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
 import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { environment } from 'src/environments/environment';
-import { exportDataGrid as exportPDFDataGrid} from 'devextreme/pdf_exporter';
-import jsPDF from 'jspdf';
-import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
-import { exportGridToExcel } from '../../../shared/grid-export.util';
+import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../../shared/snackbar.service';
+import { ListHeaderAction } from '../../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../../shared/table-export.util';
+import { EventAttendeeDialogComponent } from './event-attendee-dialog.component';
+import { EventEmailDialogComponent } from './event-email-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-event-attendees',
     templateUrl: './event-attendees.component.html',
-    styleUrls: ['./event-attendees.component.css'],
+    styleUrls: ['./event-attendees.component.scss'],
     standalone: false
 })
-export class EventAttendeesComponent implements OnInit{
+export class EventAttendeesComponent implements OnInit, OnDestroy {
   @Input('event') event: EventModel;
 
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('attendeeGrid', { static: false }) attendeeGrid: DxDataGridComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: EventRegistrationModel;
-  selectedRows: string[] = [];
-  selectedCustomers: EventRegistrationModel[] = [];
-  selectedList: EmailList;
-  email: CustomerEmailModel
+  attendees$: Observable<EventRegistrationModel[]>;
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Registered User';
 
-  emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name', 'Date'];
+  columns: ColumnDef[] = [
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'registrationDate', label: 'Registration Date', visible: true },
+    { key: 'loggedIn', label: 'Logged In', visible: true },
+    { key: 'receipt', label: 'Receipt', visible: true }
+  ];
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isEmailVisible$ = new BehaviorSubject<boolean>(false);
+  selection = new SelectionModel<EventRegistrationModel>(true, []);
 
-  public unsub: Unsubscribe;
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  constructor(public service: EventRegistrationService,
-    private authService: AdminAuthService,
+  currentRows: EventRegistrationModel[] = [];
+
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private unsub?: Unsubscribe;
+
+  constructor(
+    private service: EventRegistrationService,
     private emailService: EMailService,
-    private customerEmailService: CustomerEmailService
-  ){}
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  async ngOnInit(): Promise<void> {
-    if(this.event?.id){
-      this.datasource$ = this.service.streamAllByValue('eventId', this.event.id).pipe(
-        map(
-          (items) =>
-            new DataSource({
-              reshapeOnPush: true,
-              pushAggregationTimeout: 100,
-              store: new CustomStore({
-                key: 'id',
-                loadMode: 'raw',
-                load: function (loadOptions: any) {
-                  return items;
-                }
-              })
-            })
-        )
-      );
-    }
+  ngOnInit(): void {
+    const source$ = this.event?.id ? this.service.streamAllByValue('eventId', this.event.id) : of([]);
+
+    this.attendees$ = combineLatest([source$, this.filters$]).pipe(
+      map(([items, filters]) => {
+        const filtered = items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], 'text')))
+          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
+      tap(() => this.loading$.next(false))
+    );
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
+  ngOnDestroy(): void {
+    this.unsub?.();
+  }
 
-    if(this.selectedItem.receiptEmailId){
-      let callBack = (mail) => {
+  get displayedColumns(): string[] {
+    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
 
-        if(mail['delivery']){
-          this.selectedItem.receiptEmailStatus = mail['delivery']['state'];
-          this.selectedItem.receiptEmailDate = dateFromTimestamp(mail['delivery']['endTime'] as Timestamp);
+  get filterColumns(): string[] {
+    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+    { label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() },
+    { label: 'Export to PDF', icon: 'picture_as_pdf', onClick: () => this.exportPdf() },
+    { label: 'Export to Excel', icon: 'grid_on', onClick: () => this.exportExcel() }
+  ];
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  isAllSelected(): boolean {
+    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
+  }
+
+  masterToggle(): void {
+    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  showAddModal(): void {
+    this.dialog.open(EventAttendeeDialogComponent, { width: '700px', data: { item: null, eventId: this.event?.id } });
+  }
+
+  showEditModal(item: EventRegistrationModel): void {
+    this.unsub?.();
+    if (item.receiptEmailId) {
+      this.unsub = this.emailService.streamRecord(item.receiptEmailId, (mail: any) => {
+        if (mail?.delivery) {
+          item.receiptEmailStatus = mail.delivery.state;
+          item.receiptEmailDate = dateFromTimestamp(mail.delivery.endTime);
         }
-
-      }
-
-      this.unsub = this.emailService.streamRecord(this.selectedItem.receiptEmailId, callBack)
-
+      });
     } else {
-      this.selectedItem.receiptEmailStatus = 'N/A';
+      item.receiptEmailStatus = 'N/A';
     }
 
-    this.isVisible$.next(true);
+    this.dialog.open(EventAttendeeDialogComponent, { width: '700px', data: { item, eventId: this.event?.id } });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new EventRegistrationModel()};
-
-    this.isVisible$.next(true);
+  showEmailModal(): void {
+    this.dialog.open(EventEmailDialogComponent, { width: '900px', maxWidth: '95vw', data: { eventId: this.event?.id } });
   }
 
-  showEmailModal = () => {
-    this.email = {... new CustomerEmailModel()};
-    this.email.date = Timestamp.now();
-    this.isEmailVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
-    });
-  }
-
-  onSave(item: EventRegistrationModel) {
-    item.eventId = this.event.id;
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
-  }
-
-  sendEmail(){
-    let user = this.authService.getLoggedInUser();
-
-    this.email.sender = user.firstName + ' ' + user.lastName
-
-    let html='';
-
-    let list: Promise<EventRegistrationModel[]>
-
-    this.service.getAllByValue('eventId', this.event.id).then(subscribers => {
-      subscribers.forEach(subscriber => {
-        html = this.email.html
-        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-        html = html.replace('{{Sender First Name}}', user.firstName);
-        html = html.replace('{{Sender Last Name}}', user.lastName);
-        html = html.replace('{{Date}}', (dateFromTimestamp(this.email.date) as Date).toLocaleString());
-        this.email.html = html;
-
-        let unsubscribe = "<br><br><br><div>If you believe you received this email by mistake, please click " +
-          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
-
-        this.emailService.sendHtmlEmail(subscriber.email, this.email.subject, this.email.html + unsubscribe);
-      })
-    }).then(() => {
-      this.customerEmailService.add(this.email).then(email => {
-        notify({
-          message: 'Email ("' + email.subject + '") Sent Successfully!',
-          position: 'top',
-          width: 600,
-          type: 'success'
+  delete(item: EventRegistrationModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
         });
-
-        this.isEmailVisible$.next(false);
-      })
-    })
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  onEmailCancel() {
-    this.email = null;
-    this.inProgress$.next(false);
-    this.isEmailVisible$.next(false);
-  }
-
-  selectRow(e){
-    this.selectedCustomers = e.selectedRowsData;
-  }
-
-  exportPDFGrid = () => {
-    const context = this;
-    const doc = new jsPDF();
-
-    exportPDFDataGrid({
-      selectedRowsOnly: true,
-      jsPDFDocument: doc,
-      component: context.attendeeGrid.instance,
-      topLeft: { x: 7, y: 5 },
-      columnWidths: [20, 50, 50, 50],
-
-    }).then(() => {
-        doc.save('attendee_list.pdf');
-    });
-  }
-
-  exportXLSGrid = () => {
-    exportGridToExcel(this.attendeeGrid.instance, 'attendee_list.xlsx');
-  }
-
-  showColumnChooser = () => {
-    this.attendeeGrid.instance.showColumnChooser()
-  }
-
-  resendEmail(){
-    this.emailService.getById(this.selectedItem.receiptEmailId).then(mail =>{
-      delete mail['delivery'];
-
-      return mail;
-    }).then(mail => {
-      this.emailService.update(mail.id, mail);
-    })
-  }
-
-  resendConfirmationEmail = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want resend this Registration Confirmation?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.emailService.getById(data.receiptEmailId).then(mail =>{
-          delete mail['delivery'];
-
-          return mail;
-        }).then(mail => {
-          this.emailService.update(mail.id, mail).then(email => {
-            notify({
-              message: 'Email Resent Successfully!',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          });
-        })
       }
     });
+  }
+
+  resendConfirmationEmail(item: EventRegistrationModel): void {
+    this.confirmService.confirm('<i>Are you sure you want resend this Registration Confirmation?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed && item.receiptEmailId) {
+        this.emailService.getById(item.receiptEmailId).then((mail: any) => {
+          delete mail['delivery'];
+          return mail;
+        }).then((mail) => {
+          this.emailService.update(mail.id, mail).then(() => {
+            this.snackbar.success('Email Resent Successfully!');
+          });
+        });
+      }
+    });
+  }
+
+  exportPdf(): void {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      startY: 12,
+      head: [['Last Name', 'First Name', 'Email', 'Registration Date']],
+      body: this.currentRows.map((row) => [
+        row.lastName ?? '',
+        row.firstName ?? '',
+        row.email ?? '',
+        row.registrationDate instanceof Date ? row.registrationDate.toLocaleDateString() : ''
+      ])
+    });
+    doc.save('attendee_list.pdf');
+  }
+
+  exportExcel(): void {
+    const columns: ExcelColumn<EventRegistrationModel>[] = [
+      { header: 'Last Name', value: (r) => r.lastName ?? '' },
+      { header: 'First Name', value: (r) => r.firstName ?? '' },
+      { header: 'Email', value: (r) => r.email ?? '' },
+      { header: 'Registration Date', value: (r) => (r.registrationDate instanceof Date ? r.registrationDate : '') },
+      { header: 'Logged In', value: (r) => (r.loggedIn ? 'Yes' : 'No') },
+      { header: 'Receipt', value: (r) => r.receipt ?? '' }
+    ];
+    exportToExcel(this.currentRows, columns, 'attendee_list.xlsx');
   }
 }
