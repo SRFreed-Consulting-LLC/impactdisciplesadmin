@@ -1,0 +1,54 @@
+.application-layout {
+  display: flex;
+  gap: 16px;
+  height: 60vh;
+}
+
+.application-nav {
+  flex: 0 0 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  padding-right: 12px;
+  overflow-y: auto;
+}
+
+.application-nav__item {
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.application-nav__item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.application-nav__item--active {
+  background: rgba(63, 81, 181, 0.1);
+  color: #3f51b5;
+  font-weight: 600;
+}
+
+.application-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  quill-editor {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}

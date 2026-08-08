@@ -19,7 +19,6 @@ import { FAQComponent } from './events/event-application/questions-and-answers/f
 import { FaqDialogComponent } from './events/event-application/questions-and-answers/faq-dialog.component';
 import { AnnouncementsComponent } from './events/event-application/announcements/announcements.component';
 import { EventApplicationComponent } from './events/event-application/event-application.component';
-import { DetailsComponent } from './events/event-application/details/details.component';
 import { EventBreakoutsComponent } from './events/event-breakouts/event-breakouts.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
@@ -67,8 +66,7 @@ import { QuillModule } from 'ngx-quill';
       FaqDialogComponent,
       AnnouncementsComponent,
       AnnouncementDialogComponent,
-      EventApplicationComponent,
-      DetailsComponent
+      EventApplicationComponent
     ],
     imports: [
       CommonModule,

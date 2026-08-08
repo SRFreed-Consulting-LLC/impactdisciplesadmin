@@ -1,185 +1,34 @@
-  <div class="row">
-    <div class="col-2">
-      <dx-tabs
-        #withText
-        [width]="'100%'"
-        [height]="'100%'"
-        [selectedIndex]="selectedIndex"
-        [scrollByContent]="false"
-        [showNavButtons]="true"
-        [dataSource]="tabs"
-        [orientation]="'vertical'"
-        [stylingMode]="'primary'"
-        [iconPosition]="'start'"
-        [(selectedIndex)]="selectedIndex"
-        (onItemClick)="selectTab($event)">
-      </dx-tabs>
-    </div>
-    <div class="col-10" style="height: 60vh;">
-      <ng-template [ngIf]="selectedTab == 'Announcements'">
-        <app-announcements [event]="event"></app-announcements>
-      </ng-template>
-      <ng-template [ngIf]="selectedTab == 'Dining Options'">
-        <dx-html-editor height="100%" [(value)]="event.diningOptions">
-          <dxo-toolbar [multiline]="false">
-            <dxi-item name="undo"></dxi-item>
-            <dxi-item name="redo"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item
-              name="size"
-              [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-            ></dxi-item>
-            <dxi-item
-              name="font"
-              [acceptedValues]="[
-                'Arial',
-                'Courier New',
-                'Georgia',
-                'Impact',
-                'Lucida Console',
-                'Tahoma',
-                'Times New Roman',
-                'Verdana'
-              ]"
-            ></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="bold"></dxi-item>
-            <dxi-item name="italic"></dxi-item>
-            <dxi-item name="strike"></dxi-item>
-            <dxi-item name="underline"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="alignLeft"></dxi-item>
-            <dxi-item name="alignCenter"></dxi-item>
-            <dxi-item name="alignRight"></dxi-item>
-            <dxi-item name="alignJustify"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="orderedList"></dxi-item>
-            <dxi-item name="bulletList"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="header" [acceptedValues]="[false, 1, 2, 3, 4, 5]"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="color"></dxi-item>
-            <dxi-item name="background"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="link"></dxi-item>
-            <dxi-item name="image"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="clear"></dxi-item>
-            <dxi-item name="codeBlock"></dxi-item>
-            <dxi-item name="blockquote"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-          </dxo-toolbar>
-          <dxo-media-resizing [enabled]="true"> </dxo-media-resizing>
-        </dx-html-editor>
-      </ng-template>
-      <ng-template [ngIf]="selectedTab == 'Checkin Instructions'">
-        <dx-html-editor height="100%" [(value)]="event.checkinInstructions">
-          <dxo-toolbar [multiline]="false">
-            <dxi-item name="undo"></dxi-item>
-            <dxi-item name="redo"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item
-              name="size"
-              [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-            ></dxi-item>
-            <dxi-item
-              name="font"
-              [acceptedValues]="[
-                'Arial',
-                'Courier New',
-                'Georgia',
-                'Impact',
-                'Lucida Console',
-                'Tahoma',
-                'Times New Roman',
-                'Verdana'
-              ]"
-            ></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="bold"></dxi-item>
-            <dxi-item name="italic"></dxi-item>
-            <dxi-item name="strike"></dxi-item>
-            <dxi-item name="underline"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="alignLeft"></dxi-item>
-            <dxi-item name="alignCenter"></dxi-item>
-            <dxi-item name="alignRight"></dxi-item>
-            <dxi-item name="alignJustify"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="orderedList"></dxi-item>
-            <dxi-item name="bulletList"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="header" [acceptedValues]="[false, 1, 2, 3, 4, 5]"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="color"></dxi-item>
-            <dxi-item name="background"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="link"></dxi-item>
-            <dxi-item name="image"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="clear"></dxi-item>
-            <dxi-item name="codeBlock"></dxi-item>
-            <dxi-item name="blockquote"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-          </dxo-toolbar>
-          <dxo-media-resizing [enabled]="true"> </dxo-media-resizing>
-      </dx-html-editor>
-      </ng-template>
-      <ng-template [ngIf]="selectedTab == 'Questions and Answers'">
-        <app-faq [event]="event"></app-faq>
-      </ng-template>
-      <ng-template [ngIf]="selectedTab == 'Whats Next'">
-        <dx-html-editor height="100%" [(value)]="event.whatsNext">
-          <dxo-toolbar [multiline]="false">
-            <dxi-item name="undo"></dxi-item>
-            <dxi-item name="redo"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item
-              name="size"
-              [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-            ></dxi-item>
-            <dxi-item
-              name="font"
-              [acceptedValues]="[
-                'Arial',
-                'Courier New',
-                'Georgia',
-                'Impact',
-                'Lucida Console',
-                'Tahoma',
-                'Times New Roman',
-                'Verdana'
-              ]"
-            ></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="bold"></dxi-item>
-            <dxi-item name="italic"></dxi-item>
-            <dxi-item name="strike"></dxi-item>
-            <dxi-item name="underline"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="alignLeft"></dxi-item>
-            <dxi-item name="alignCenter"></dxi-item>
-            <dxi-item name="alignRight"></dxi-item>
-            <dxi-item name="alignJustify"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="orderedList"></dxi-item>
-            <dxi-item name="bulletList"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="header" [acceptedValues]="[false, 1, 2, 3, 4, 5]"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="color"></dxi-item>
-            <dxi-item name="background"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="link"></dxi-item>
-            <dxi-item name="image"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="clear"></dxi-item>
-            <dxi-item name="codeBlock"></dxi-item>
-            <dxi-item name="blockquote"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-          </dxo-toolbar>
-          <dxo-media-resizing [enabled]="true"> </dxo-media-resizing>
-        </dx-html-editor>
-      </ng-template>
-    </div>
+<div class="application-layout">
+  <!-- Local vertical nav, replacing the vertical dx-tabs - not worth a new
+       shared component for this one, one-off use. -->
+  <div class="application-nav">
+    <button
+      *ngFor="let tab of tabs"
+      type="button"
+      class="application-nav__item"
+      [class.application-nav__item--active]="selectedTab === tab.key"
+      (click)="selectTab(tab.key)">
+      {{ tab.label }}
+    </button>
   </div>
+
+  <div class="application-content">
+    <ng-container [ngSwitch]="selectedTab">
+      <app-announcements *ngSwitchCase="'announcements'" [event]="event"></app-announcements>
+
+      <div *ngSwitchCase="'diningOptions'" class="editor-wrap">
+        <quill-editor [(ngModel)]="event.diningOptions" [modules]="richTextModules"></quill-editor>
+      </div>
+
+      <div *ngSwitchCase="'checkinInstructions'" class="editor-wrap">
+        <quill-editor [(ngModel)]="event.checkinInstructions" [modules]="richTextModules"></quill-editor>
+      </div>
+
+      <app-faq *ngSwitchCase="'faq'" [event]="event"></app-faq>
+
+      <div *ngSwitchCase="'whatsNext'" class="editor-wrap">
+        <quill-editor [(ngModel)]="event.whatsNext" [modules]="richTextModules"></quill-editor>
+      </div>
+    </ng-container>
+  </div>
+</div>

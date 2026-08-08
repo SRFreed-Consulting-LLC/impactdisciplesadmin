@@ -1,35 +1,33 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
+import { RICH_TEXT_TOOLBAR } from '../../../shared/rich-text-editor/quill-toolbar.config';
+
+interface ApplicationTab {
+  key: string;
+  label: string;
+}
 
 @Component({
     selector: 'app-event-application',
     templateUrl: './event-application.component.html',
-    styleUrls: ['./event-application.component.css'],
+    styleUrls: ['./event-application.component.scss'],
     standalone: false
 })
-export class EventApplicationComponent implements OnInit {
+export class EventApplicationComponent {
   @Input('event') event: EventModel;
 
-  selectedTab = 'Announcements';
+  selectedTab = 'announcements';
+  richTextModules = RICH_TEXT_TOOLBAR;
 
-  selectedIndex: number = 0;
-
-  tabs: Tab[] = [
-    { id: 0, text: 'Announcements', template: 'Announcements' },
-    { id: 1, text: 'Dining Options', template: 'Dining Options' },
-    { id: 2, text: 'Checkin Instructions', template: 'Checkin Instructions' },
-    { id: 3, text: 'Questions and Answers', template: 'Questions and Answers' },
-    { id: 4, text: 'Whats Next', template: 'Whats Next' },
+  tabs: ApplicationTab[] = [
+    { key: 'announcements', label: 'Announcements' },
+    { key: 'diningOptions', label: 'Dining Options' },
+    { key: 'checkinInstructions', label: 'Checkin Instructions' },
+    { key: 'faq', label: 'Questions and Answers' },
+    { key: 'whatsNext', label: 'Whats Next' }
   ];
 
-  constructor() { }
-
-  ngOnInit() {
+  selectTab(key: string): void {
+    this.selectedTab = key;
   }
-
-  selectTab(e) {
-    this.selectedTab = e.itemData.template;
-  }
-
 }
