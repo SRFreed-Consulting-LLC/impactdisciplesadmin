@@ -229,7 +229,15 @@ app-list-header {
 // app's consistent single-line header row height) so they stack instead of
 // overlapping; tables with only one header row (e.g. the Purchases/Events
 // Attended sub-tables in the Customer dialog) simply have no second row to
-// offset, :nth-of-type(2) never matches and nothing else is affected.
+// offset, :nth-of-type(2) never matches and nothing else is affected. A
+// fixed height on both rows guarantees that "first row's real rendered
+// height" and the second row's hardcoded 56px offset can never drift apart
+// (e.g. a longer filter dropdown label wrapping onto two lines) - without
+// it, any such drift shows up as a sliver of whatever's actually behind
+// the header (scrolled-past data rows) peeking through between the two
+// sticky rows. The border gives the seam between them (and between the
+// second row and the first data row) an intentional line instead of the
+// two rows silently abutting with nothing to visually separate them.
 //
 // This only works because .table-scroll is now a genuinely bounded scroll
 // container (see e.g. customers.component.scss) - sticky's "stuck" range
@@ -239,10 +247,34 @@ app-list-header {
 // scroll container that was always exactly as tall as its own content,
 // giving sticky nothing to stick within (the exact same "phantom box"
 // problem app-list-header had - see above).
+// border-collapse: collapse (Material's own default) and position: sticky
+// on table rows don't reliably composite together during an active scroll
+// in Chromium - live-diagnosed via Playwright, screenshotting after each
+// of several small (~100px) wheel scrolls: the two sticky header rows
+// stayed correctly positioned, but by the 5th increment a sliver of
+// already-scrolled-past data text was visibly bleeding through between
+// them, matching exactly what was reported. This is a known, documented
+// browser rendering issue: collapsed border painting is computed as part
+// of the table's static layout, and doesn't reliably stay in sync with a
+// row that's being repositioned by position: sticky as the page scrolls.
+// separate + border-spacing: 0 keeps the same "borders touch, no visible
+// gap" appearance without the collapse algorithm being involved at all.
+table.mat-mdc-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
 table.mat-mdc-table tr.mat-mdc-header-row {
   position: sticky;
   z-index: 1;
+  height: 56px;
   background: var(--mat-sys-surface, #fff);
+  // box-shadow instead of border-bottom: border-collapse: separate means
+  // borders on <tr> itself are simply not rendered at all per spec (only
+  // cell borders are, in separate mode) - box-shadow isn't part of the
+  // table border model, so it isn't subject to that restriction and paints
+  // reliably regardless of collapse mode.
+  box-shadow: 0 1px 0 var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
 
   &:nth-of-type(1) {
     top: 0;
