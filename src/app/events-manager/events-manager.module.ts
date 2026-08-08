@@ -21,12 +21,22 @@ import { DetailsComponent } from './events/event-application/details/details.com
 import { EventBreakoutsComponent } from './events/event-breakouts/event-breakouts.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 import { EventsManagerRoutingModule } from './events-manager-routing.module';
+import { CourseDialogComponent } from './courses/course-dialog.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @NgModule({
     declarations: [
       EventsManagerComponent,
       EventsComponent,
       CoursesComponent,
+      CourseDialogComponent,
       CoachesComponent,
       LocationsComponent,
       OrganizationsComponent,
@@ -69,7 +79,15 @@ import { EventsManagerRoutingModule } from './events-manager-routing.module';
       DxSelectBoxModule,
       DxDropDownBoxModule,
       DxLoadIndicatorModule,
-      ImpactDisciplesCommonModule
+      ImpactDisciplesCommonModule,
+      ReactiveFormsModule,
+      MatDialogModule,
+      MatFormFieldModule,
+      MatInputModule,
+      MatTableModule,
+      MatIconModule,
+      MatButtonModule,
+      MatTooltipModule
     ]
 })
 export class EventsManagerModule { }

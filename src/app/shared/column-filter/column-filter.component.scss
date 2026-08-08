@@ -1,0 +1,78 @@
+.column-filter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  // Compact icon button, matching the "New" button treatment used elsewhere
+  // - smaller than Material's 40px default so it fits a table header cell.
+  // Explicit flex centering (rather than relying on the ligature font's own
+  // line-height) keeps the funnel glyph centered in its clickable area.
+  &__operator {
+    --mat-icon-button-state-layer-size: 28px;
+    --mat-icon-button-icon-size: 16px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: rgba(0, 0, 0, 0.5);
+
+    .mat-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+  }
+
+  // The math-symbol equivalent of a mat-icon inside the compact button
+  // (Equals, Greater Than, etc.) - sized/weighted to read at a glance next
+  // to the real icons used for the other operators.
+  &__glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  &__input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: transparent;
+    padding: 4px 2px;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+
+    &:focus {
+      border-bottom-color: var(--mat-sys-primary, #00629f);
+    }
+  }
+
+  &__label {
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+// Menu item leading icon/glyph slot - fixed width so glyph-based items
+// (Equals, Greater Than) line up with icon-based items (Contains, Is Blank).
+.column-filter__menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  margin-right: 16px;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.column-filter__menu-glyph {
+  font-size: 16px;
+  font-weight: 700;
+}

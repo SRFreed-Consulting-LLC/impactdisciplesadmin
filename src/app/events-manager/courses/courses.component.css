@@ -1,0 +1,12 @@
+.courses-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.courses-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

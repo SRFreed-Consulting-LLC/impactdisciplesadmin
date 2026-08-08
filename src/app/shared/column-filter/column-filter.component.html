@@ -1,0 +1,36 @@
+<div class="column-filter">
+  <input
+    *ngIf="needsValue"
+    class="column-filter__input"
+    [type]="inputType"
+    [placeholder]="placeholder"
+    [value]="value"
+    (input)="onValueChange($any($event.target).value)">
+  <span *ngIf="!needsValue" class="column-filter__label">{{ currentLabel }}</span>
+
+  <button
+    type="button"
+    mat-icon-button
+    class="column-filter__operator"
+    [matMenuTriggerFor]="menu"
+    [matTooltip]="currentLabel"
+    aria-label="Choose filter condition">
+    <ng-container *ngIf="hasChosenOperator && currentOption as chosen; else defaultIcon">
+      <mat-icon *ngIf="chosen.icon">{{ chosen.icon }}</mat-icon>
+      <span *ngIf="chosen.glyph" class="column-filter__glyph">{{ chosen.glyph }}</span>
+    </ng-container>
+    <ng-template #defaultIcon>
+      <mat-icon>filter_alt</mat-icon>
+    </ng-template>
+  </button>
+</div>
+
+<mat-menu #menu="matMenu">
+  <button mat-menu-item *ngFor="let op of operators" (click)="selectOperator(op.value)">
+    <span class="column-filter__menu-icon">
+      <mat-icon *ngIf="op.icon">{{ op.icon }}</mat-icon>
+      <span *ngIf="op.glyph" class="column-filter__menu-glyph">{{ op.glyph }}</span>
+    </span>
+    <span>{{ op.label }}</span>
+  </button>
+</mat-menu>

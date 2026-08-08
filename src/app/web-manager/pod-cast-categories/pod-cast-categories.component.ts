@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PodCastCategoryDialogComponent } from './pod-cast-category-dialog.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 // Opened via MatDialog.open(PodCastCategoriesComponent, ...) from PodCastsComponent's
 // "Categories" menu item - there is no standalone route for this screen. Because it's
@@ -20,8 +21,15 @@ import { PodCastCategoryDialogComponent } from './pod-cast-category-dialog.compo
 export class PodCastCategoriesComponent implements OnInit {
   categories$: Observable<TagModel[]>;
   displayedColumns = ['tag', 'actions'];
+  // Second header row of per-column filters, mirroring the original
+  // dx-data-grid's dxo-filter-row (dropped in an earlier round for this
+  // screen specifically, now restored app-wide with the operator dropdown).
+  filterColumns = ['tag-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Categories';
+
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: PodCastCategoriesService,
@@ -32,9 +40,21 @@ export class PodCastCategoriesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.categories$ = this.service.streamAll().pipe(
-      map((items) => items.slice().sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? '')))
+    this.categories$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) =>
+              matchesColumnFilter(item[field as keyof TagModel], filters[field], 'text')
+            )
+          )
+          .sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? ''))
+      )
     );
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   onClose(): void {

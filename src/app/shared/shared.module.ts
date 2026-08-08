@@ -7,6 +7,7 @@ import { OrganizationModalComponent } from "./organization-modal/organization-mo
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { ListHeaderComponent } from './list-header/list-header.component';
 import { PopupHeaderComponent } from './popup-header/popup-header.component';
+import { ColumnFilterComponent } from './column-filter/column-filter.component';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -23,7 +24,8 @@ import { MatDividerModule } from '@angular/material/divider';
     OrganizationModalComponent,
     ConfirmDialogComponent,
     ListHeaderComponent,
-    PopupHeaderComponent
+    PopupHeaderComponent,
+    ColumnFilterComponent
   ],
   imports: [
     CommonModule,
@@ -46,7 +48,8 @@ import { MatDividerModule } from '@angular/material/divider';
     OrganizationModalComponent,
     ConfirmDialogComponent,
     ListHeaderComponent,
-    PopupHeaderComponent
+    PopupHeaderComponent,
+    ColumnFilterComponent
   ]
 })
 export class SharedModule {}

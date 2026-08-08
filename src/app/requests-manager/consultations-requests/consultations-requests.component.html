@@ -37,6 +37,42 @@
     </td>
   </ng-container>
 
+  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+  <ng-container matColumnDef="date-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('date', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="lastName-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('lastName', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="firstName-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('firstName', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="email-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('email', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="message-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('message', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="actions-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns"></tr>
   <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
 </table>

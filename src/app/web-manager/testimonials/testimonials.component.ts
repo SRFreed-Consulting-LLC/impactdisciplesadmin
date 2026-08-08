@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { TestimonialModel } from 'impactdisciplescommon/src/models/domain/testimonial.model';
 import { TestimonialService } from 'impactdisciplescommon/src/services/data/testimonial.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +7,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { TestimonialDialogComponent } from './testimonial-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-testimonials',
@@ -17,12 +18,21 @@ import { ListHeaderAction } from '../../shared/list-header/list-header.component
 export class TestimonialsComponent implements OnInit {
   testimonials$: Observable<TestimonialModel[]>;
   displayedColumns = ['isActive', 'author', 'date', 'title', 'type', 'actions'];
+  // Second header row of per-column filters, mirroring dx-data-grid's
+  // dxo-filter-row. The original grid here didn't have a filter row, but
+  // it's added for consistency with every other migrated table. No filter
+  // on isActive - it's a status badge, not free text.
+  filterColumns = ['isActive-filter', 'author-filter', 'date-filter', 'title-filter', 'type-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Testimonial';
 
   actions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
+
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: TestimonialService,
@@ -32,15 +42,29 @@ export class TestimonialsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.testimonials$ = this.service.streamAll().pipe(
-      map((items) =>
-        items.slice().sort((a, b) => {
-          const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-          const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-          return bTime - aTime;
-        })
+    this.testimonials$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) =>
+              matchesColumnFilter(
+                item[field as keyof TestimonialModel],
+                filters[field],
+                field === 'date' ? 'date' : 'text'
+              )
+            )
+          )
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return bTime - aTime;
+          })
       )
     );
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   showAddModal(): void {

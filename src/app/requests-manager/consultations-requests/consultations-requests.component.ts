@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { ConsultationRequestModel } from 'impactdisciplescommon/src/models/domain/consultation-request.model';
 import { ConsultationRequestService } from 'impactdisciplescommon/src/services/data/consultation-request.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +7,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConsultationRequestDialogComponent } from './consultation-request-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-consultations-requests',
@@ -17,12 +18,19 @@ import { ListHeaderAction } from '../../shared/list-header/list-header.component
 export class ConsultationsRequestsComponent implements OnInit {
   requests$: Observable<ConsultationRequestModel[]>;
   displayedColumns = ['date', 'lastName', 'firstName', 'email', 'message', 'actions'];
+  // Second header row of per-column filters, mirroring the original
+  // dx-data-grid's dxo-filter-row.
+  filterColumns = ['date-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'message-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Consultation Request';
 
   actions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
+
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: ConsultationRequestService,
@@ -32,15 +40,29 @@ export class ConsultationsRequestsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.requests$ = this.service.streamAll().pipe(
-      map((items) =>
-        items.slice().sort((a, b) => {
-          const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-          const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-          return bTime - aTime;
-        })
+    this.requests$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) =>
+              matchesColumnFilter(
+                item[field as keyof ConsultationRequestModel],
+                filters[field],
+                field === 'date' ? 'date' : 'text'
+              )
+            )
+          )
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return bTime - aTime;
+          })
       )
     );
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   showAddModal(): void {

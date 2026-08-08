@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { MonthlyNewsletterModel } from 'impactdisciplescommon/src/models/domain/monthly-newsletter.model';
 import { MonthlyNewletterService } from 'impactdisciplescommon/src/services/data/monthly-newsletter.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +7,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { MonthlyNewsletterDialogComponent } from './monthly-newsletter-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 // Previously an inline-editable dx-data-grid (dxo-editing mode="row") with no
 // separate add/edit popup at all. Material has no inline-row-edit equivalent
@@ -21,12 +22,21 @@ import { ListHeaderAction } from '../../shared/list-header/list-header.component
 export class MonthlyNewslettersComponent implements OnInit {
   newsletters$: Observable<MonthlyNewsletterModel[]>;
   displayedColumns = ['isActive', 'date', 'title', 'url', 'actions'];
+  // Second header row of per-column filters, mirroring dx-data-grid's
+  // dxo-filter-row. The original grid here didn't have a filter row, but
+  // it's added for consistency with every other migrated table. No filter
+  // on isActive - it's a status badge, not free text.
+  filterColumns = ['isActive-filter', 'date-filter', 'title-filter', 'url-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Monthly Newletter';
 
   actions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
+
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: MonthlyNewletterService,
@@ -36,7 +46,23 @@ export class MonthlyNewslettersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.newsletters$ = this.service.streamAll();
+    this.newsletters$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items.filter((item) =>
+          Object.keys(filters).every((field) =>
+            matchesColumnFilter(
+              item[field as keyof MonthlyNewsletterModel],
+              filters[field],
+              field === 'date' ? 'date' : 'text'
+            )
+          )
+        )
+      )
+    );
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   showAddModal(): void {

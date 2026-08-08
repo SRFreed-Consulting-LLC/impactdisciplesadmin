@@ -1,102 +1,56 @@
 <div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE COURSES">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+  <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 </div>
 
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
+<table mat-table [dataSource]="(courses$ | async) ?? []" class="courses-table">
+  <ng-container matColumnDef="title">
+    <th mat-header-cell *matHeaderCellDef>Title</th>
+    <td mat-cell *matCellDef="let item">{{ item.title }}</td>
+  </ng-container>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+  <ng-container matColumnDef="resources">
+    <th mat-header-cell *matHeaderCellDef>Resources</th>
+    <td mat-cell *matCellDef="let item">{{ item.resources }}</td>
+  </ng-container>
 
-  <dxi-column dataField="title" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="shortDescription" [caption]="'Description'" [visible]="false"></dxi-column>
-  <dxi-column dataField="longDescription" [caption]="'Details'" [visible]="false"></dxi-column>
-  <dxi-column dataField="resources" [caption]="'Resources'"></dxi-column>
-  <dxi-column dataField="length"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-</dx-data-grid>
+  <ng-container matColumnDef="length">
+    <th mat-header-cell *matHeaderCellDef>Length</th>
+    <td mat-cell *matCellDef="let item">{{ item.length }}</td>
+  </ng-container>
 
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="80%"
-  width="60%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left">
-          <dxi-item itemType="group" [colCount]="2" [colSpan]="1">
-            <dxi-item dataField="title" [colSpan]="1" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="length" [colSpan]="1"></dxi-item>
-            <dxi-item dataField="shortDescription" [colSpan]="2" [editorType]="'dxTextArea'" [editorOptions]="{ height: 100 }" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="longDescription" [colSpan]="2" [editorType]="'dxTextArea'" [editorOptions]="{ height: 200 }" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="resources" [colSpan]="1"></dxi-item>
-          </dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+    <td mat-cell *matCellDef="let item" class="actions-column">
+      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+  <ng-container matColumnDef="title-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="resources-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('resources', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="length-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('length', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="actions-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+</table>

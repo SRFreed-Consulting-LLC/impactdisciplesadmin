@@ -36,6 +36,34 @@
     </td>
   </ng-container>
 
+  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+  <ng-container matColumnDef="isActive-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <ng-container matColumnDef="date-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('date', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="title-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="url-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('url', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="actions-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns"></tr>
   <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
 </table>
