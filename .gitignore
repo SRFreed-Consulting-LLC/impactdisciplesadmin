@@ -38,6 +38,13 @@ testem.log
 /typings
 /.firebase
 
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+e2e/.auth
+
 # System files
 .DS_Store
 Thumbs.db

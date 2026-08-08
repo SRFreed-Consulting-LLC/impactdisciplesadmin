@@ -13,7 +13,8 @@
     "add-git-submodule": "git submodule add -b development https://github.com/SRFreed-Consulting-LLC/impactdisciplescommon.git",
     "init-git-submodules": "git submodule update --init && git submodule update --init --recursive && git submodule status --recursive",
     "add-git-pwa-submodule": "git submodule add -b main https://github.com/SRFreed-Consulting-LLC/impactdisciplespwacommon.git",
-    "init-git-pwa-submodules": "git submodule update --init --recursive && git submodule status --recursive"
+    "init-git-pwa-submodules": "git submodule update --init --recursive && git submodule status --recursive",
+    "e2e": "playwright test"
   },
   "private": true,
   "dependencies": {
@@ -55,6 +56,7 @@
     "@angular/cli": "^20.3.33",
     "@angular/compiler-cli": "^20.3.27",
     "@material/material-color-utilities": "^0.4.0",
+    "@playwright/test": "^1.62.1",
     "@types/dompurify": "^2.4.0",
     "@types/jasmine": "~4.3.0",
     "devextreme-cli": "latest",
