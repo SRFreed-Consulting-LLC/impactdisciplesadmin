@@ -1,8 +1,18 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
-import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { SectionTab } from '../shared/section-tabs/section-tabs.component';
+
+// SectionTab itself has no role field (role-filtering already happens here,
+// upstream of the tab bar) - this local extension carries `users` only
+// through the filtering step below, same shape the original Tab[] had
+// minus the unused `id` (which had a pre-existing bug: Coupons and Sales
+// both used id: 3/4 inconsistently with array position - moot now that
+// dropping `id` removes the field that could go stale at all).
+interface RoleGatedTab extends SectionTab {
+  users: Role[];
+}
 
 @Component({
     selector: 'app-store-manager',
@@ -12,17 +22,16 @@ import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-au
 })
 export class StoreManagerComponent implements OnInit, OnDestroy {
 
-  selectedIndex: number = 0;
   selectedTab: string = 'Products';
 
-  tabs: Tab[] = [
-    { id: 0, text: 'Products', template: 'Products', users:[Role.ADMIN] },
-    { id: 1, text: 'Purchases', template: 'Purchases', users:[Role.ADMIN, Role.EMPLOYEE] },
-    { id: 3, text: 'Coupons', template: 'Coupons', users:[Role.ADMIN] },
-    { id: 4, text: 'Sales', template: 'Sales', users:[Role.ADMIN] },
+  tabs: RoleGatedTab[] = [
+    { text: 'Products', template: 'Products', users: [Role.ADMIN] },
+    { text: 'Purchases', template: 'Purchases', users: [Role.ADMIN, Role.EMPLOYEE] },
+    { text: 'Coupons', template: 'Coupons', users: [Role.ADMIN] },
+    { text: 'Sales', template: 'Sales', users: [Role.ADMIN] },
   ];
 
-  secureTabs: Tab[] = [];
+  secureTabs: SectionTab[] = [];
 
   private ngUnsubscribe = new Subject<void>();
 
@@ -45,8 +54,7 @@ export class StoreManagerComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
-  selectTab(e) {
-    this.selectedTab = e.itemData.template;
-    this.selectedIndex = e.itemData.id;
+  selectTab(template: string): void {
+    this.selectedTab = template;
   }
 }

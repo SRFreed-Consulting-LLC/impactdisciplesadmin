@@ -1,4 +1,4 @@
-<dx-tabs #apiTabs [dataSource]="secureTabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
+<app-section-tabs [tabs]="secureTabs" [selectedTab]="selectedTab" (tabChange)="selectTab($event)"></app-section-tabs>
 
 <div class="manager-content">
   <ng-template [ngIf]="selectedTab == 'Products'">
