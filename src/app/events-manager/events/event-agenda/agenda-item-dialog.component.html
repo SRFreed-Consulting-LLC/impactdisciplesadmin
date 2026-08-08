@@ -1,0 +1,92 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' AGENDA ITEM'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Type</mat-label>
+    <mat-select formControlName="type" required>
+      <mat-option value="agenda">Agenda Item</mat-option>
+      <mat-option value="course">Course Session</mat-option>
+      <mat-option value="foodBreak">Snack / Refreshment / Food Break</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Start Date</mat-label>
+      <input matInput type="datetime-local" formControlName="startDate" required>
+      <mat-error *ngIf="form.get('startDate')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>End Date</mat-label>
+      <input matInput type="datetime-local" formControlName="endDate" required>
+      <mat-error *ngIf="form.get('endDate')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <ng-container *ngIf="form.get('type')?.value === 'course'">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Course</mat-label>
+      <mat-select formControlName="course" required>
+        <mat-option *ngFor="let course of data.courses" [value]="course.id">{{ course.title }}</mat-option>
+      </mat-select>
+      <mat-error *ngIf="form.get('course')?.hasError('required')">Course is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Max Participants</mat-label>
+      <input matInput type="number" formControlName="maxParticipants">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Coaches</mat-label>
+      <mat-select formControlName="coaches" multiple>
+        <mat-option *ngFor="let coach of data.coaches" [value]="coach.id">{{ coach.fullname }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Room</mat-label>
+      <mat-select formControlName="room">
+        <mat-option [value]="null">(None)</mat-option>
+        <mat-option *ngFor="let room of data.rooms" [value]="room.id">{{ room.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </ng-container>
+
+  <ng-container *ngIf="form.get('type')?.value !== 'course'">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="text" required>
+      <mat-error *ngIf="form.get('text')?.hasError('required')">Title is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('type')?.value === 'agenda'">
+      <mat-label>Coaches</mat-label>
+      <mat-select formControlName="coaches" multiple>
+        <mat-option *ngFor="let coach of data.coaches" [value]="coach.id">{{ coach.fullname }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="3" required></textarea>
+      <mat-error *ngIf="form.get('description')?.hasError('required')">Description is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Room</mat-label>
+      <mat-select formControlName="room">
+        <mat-option [value]="null">(None)</mat-option>
+        <mat-option *ngFor="let room of data.rooms" [value]="room.id">{{ room.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </ng-container>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" color="warn" *ngIf="isEdit" (click)="onDelete()">DELETE</button>
+  <span class="spacer"></span>
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-raised-button color="primary" type="button" (click)="onSave()">SAVE</button>
+</mat-dialog-actions>

@@ -1,0 +1,30 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+}
+
+.agenda-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+.agenda-toolbar__title {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 0 8px;
+}
+
+.agenda-toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+.agenda-calendar {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 16px 16px;
+}

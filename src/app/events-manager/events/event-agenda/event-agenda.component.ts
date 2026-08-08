@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import Query from 'devextreme/data/query';
-import { DxSchedulerTypes } from 'devextreme-angular/ui/scheduler';
+import { Component, Input, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { CalendarEvent, CalendarEventTimesChangedEvent, CalendarView } from 'angular-calendar';
+import { EventColor } from 'calendar-utils';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
+import { AgendaItem } from 'impactdisciplescommon/src/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'impactdisciplescommon/src/models/domain/course.model';
 import { CoachModel } from 'impactdisciplescommon/src/models/domain/coach.model';
 import { TrainingRoomModel } from 'impactdisciplescommon/src/models/domain/training-room.model';
@@ -9,344 +11,159 @@ import { CoachService } from 'impactdisciplescommon/src/services/data/coach.serv
 import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import dxForm from 'devextreme/ui/form';
+import { AgendaItemDialogComponent, AgendaItemDialogResult } from './agenda-item-dialog.component';
+
+// Replaces DevExtreme's dx-scheduler. Deliberate, documented deviations
+// from the original (see the Events Manager migration plan):
+// - daysInWeek:3 replicates the original's fixed 3-day rolling window
+//   exactly (angular-calendar's week view supports this directly).
+// - Drag-to-move and resize-to-change-duration are native to the week
+//   view; drag-to-create-on-empty-space is not, so an explicit "+ Add
+//   Agenda Item" button (and clicking an empty hour segment) opens the
+//   same edit dialog instead.
+// - No true swim-lanes per resource (course/coach/room) - the original's
+//   3 dxi-resource axes with no `groups` set never actually rendered as
+//   lanes either, just per-course coloring, which this replicates by
+//   hashing each course id to a color from a fixed palette.
+const COURSE_COLORS: EventColor[] = [
+  { primary: '#1e88e5', secondary: '#e3f2fd' },
+  { primary: '#43a047', secondary: '#e8f5e9' },
+  { primary: '#fb8c00', secondary: '#fff3e0' },
+  { primary: '#8e24aa', secondary: '#f3e5f5' },
+  { primary: '#00897b', secondary: '#e0f2f1' },
+  { primary: '#d81b60', secondary: '#fce4ec' },
+  { primary: '#3949ab', secondary: '#e8eaf6' }
+];
+const FOOD_BREAK_COLOR: EventColor = { primary: '#6d4c41', secondary: '#efebe9' };
+const AGENDA_COLOR: EventColor = { primary: '#546e7a', secondary: '#eceff1' };
 
 @Component({
     selector: 'app-event-agenda',
     templateUrl: './event-agenda.component.html',
-    styleUrls: ['./event-agenda.component.css'],
+    styleUrls: ['./event-agenda.component.scss'],
     standalone: false
 })
-export class EventAgendaComponent implements OnInit{
+export class EventAgendaComponent implements OnInit {
   @Input('event') event: EventModel;
-  @Output() onCloseWindow = new  EventEmitter<boolean>();
 
-  draggingGroupName = 'appointmentsGroup';
-
-  currentDate: Date;
+  CalendarView = CalendarView;
+  view: CalendarView = CalendarView.Week;
+  viewDate = new Date();
+  events: CalendarEvent<AgendaItem>[] = [];
 
   courses: CourseModel[] = [];
-  coursesList: CourseModel[] = [];
   coaches: CoachModel[] = [];
-  rooms: TrainingRoomModel[] = []
+  rooms: TrainingRoomModel[] = [];
 
-  constructor(private courseService: CourseService, private coachService: CoachService, private locationService: LocationService){}
+  constructor(
+    private courseService: CourseService,
+    private coachService: CoachService,
+    private locationService: LocationService,
+    private dialog: MatDialog
+  ) {}
 
   async ngOnInit(): Promise<void> {
-    if(!this.event.agendaItems){
+    if (!this.event.agendaItems) {
       this.event.agendaItems = [];
     }
-    this.currentDate = dateFromTimestamp(this.event.startDate);
+    this.viewDate = this.toValidDate(dateFromTimestamp(this.event.startDate)) ?? new Date();
 
     this.courses = await this.courseService.getAll();
-
     this.coaches = await this.coachService.getAll();
 
-    this.rooms = (await this.locationService.getById(typeof this.event.location=='string'? this.event.location : this.event.location.id)).trainingrooms;
+    const locationId = typeof this.event.location === 'string' ? this.event.location : this.event.location?.id;
+    this.rooms = locationId ? ((await this.locationService.getById(locationId))?.trainingrooms ?? []) : [];
+
+    this.rebuildEvents();
   }
 
-  getCoachById = (id: string) => Query(this.coaches).filter(['id', '=', id]).toArray()[0];
-  getCourseById = (id: string) => Query(this.courses).filter(['id', '=', id]).toArray()[0];
+  // dateFromTimestamp() has a known, pre-existing gap (see its own
+  // comment): a date already stored in Firestore as a plain string in an
+  // unrecognized format is returned unchanged rather than parsed - a real
+  // data-quality artifact from the original DevExtreme date box's
+  // dateSerializationFormat writing some dates back as strings instead of
+  // Timestamps. Coerces whatever comes back into a real Date (or null),
+  // matching the same defensiveness events.component.ts's own
+  // toInputValue() already applies.
+  private toValidDate(value: unknown): Date | null {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value as string);
+    return isNaN(date.getTime()) ? null : date;
+  }
 
-  onAppointmentAdd = (e:any) => {
-    e.appointmentData.id = this.generateEventId();
-  };
+  private rebuildEvents(): void {
+    this.events = (this.event.agendaItems ?? []).map((item) => this.toCalendarEvent(item));
+  }
 
-  onAppointmentRemove = (e: DxSchedulerTypes.AppointmentDraggingRemoveEvent) => {
-    const index = this.event.agendaItems.indexOf(e.itemData);
+  private toCalendarEvent(item: AgendaItem): CalendarEvent<AgendaItem> {
+    return {
+      id: item.id,
+      start: new Date(item.startDate),
+      end: item.endDate ? new Date(item.endDate) : undefined,
+      title: this.titleFor(item),
+      color: this.colorFor(item),
+      meta: item,
+      resizable: { beforeStart: true, afterEnd: true },
+      draggable: true
+    };
+  }
 
-    if (index >= 0) {
-      this.event.agendaItems.splice(index, 1);
-      this.courses.push(e.itemData);
+  titleFor(item: AgendaItem): string {
+    if (item.isCourse) {
+      return this.getCourseById(item.course)?.title ?? '(Course)';
     }
-  };
+    return item.text || '(Untitled)';
+  }
 
-  onAppointmentFormOpening = (data: DxSchedulerTypes.AppointmentFormOpeningEvent) => {
-    if(data.appointmentData['isCourse']){
-      this.setSingleSessionCourseForm(data);
-    } else if(data.appointmentData['isFoodBreak']){
-      this.setFoodBreakForm(data);
-    } else {
-      this.setAgendaForm(data);
+  private colorFor(item: AgendaItem): EventColor {
+    if (item.isFoodBreak) return FOOD_BREAK_COLOR;
+    if (item.isCourse && item.course) {
+      const index = this.courses.findIndex((c) => c.id === item.course);
+      return COURSE_COLORS[Math.max(index, 0) % COURSE_COLORS.length];
     }
+    return AGENDA_COLOR;
   }
 
-  setSingleSessionCourseForm(data: DxSchedulerTypes.AppointmentFormOpeningEvent){
-    const that = this;
-    const form = data.form;
-    form.option().items = [{
-      dataField: 'startDate',
-      colSpan: 1,
-      editorType: 'dxDateBox',
-      editorOptions: {
-        width: '100%',
-        type: 'datetime'
-      },
-    }, {
-      name: 'endDate',
-      colSpan: 1,
-      dataField: 'endDate',
-      editorType: 'dxDateBox',
-      editorOptions: {
-        width: '100%',
-        type: 'datetime',
-      },
-    }, {
-      label: {
-        text: 'Create Course?',
-      },
-      colSpan: 1,
-      editorType: 'dxSwitch',
-      dataField: 'isCourse',
-      editorOptions: {
-        switchedOnText: 'Yes',
-        switchedOffText: 'No',
-        onValueChanged({ value }) {
-          if(!value){
-            that.setAgendaForm(data);
-          }
-        }
-      }
-    }, {
-      label: {
-        text: 'Max Participants',
-      },
-      colSpan: 1,
-      editorType: 'dxNumberBox',
-      dataField: 'maxParticipants',
-      editorOptions: {
+  getCourseById = (id: string | undefined): CourseModel | undefined => this.courses.find((c) => c.id === id);
+  getCoachById = (id: string): CoachModel | undefined => this.coaches.find((c) => c.id === id);
 
-      }
-    },{
-      label: {
-        text: 'Course',
-      },
-      colSpan: 2,
-      editorType: 'dxSelectBox',
-      dataField: 'course',
-      isRequired: true,
-      editorOptions: {
-        items: that.courses,
-        displayExpr: 'title',
-        valueExpr: 'id',
-        value: data.appointmentData['course']? data.appointmentData['course']['id'] : '',
-      },
-    }, {
-      label: {
-        text: 'Coaches',
-      },
-      colSpan: 2,
-      editorType: 'dxTagBox',
-      dataField: 'coaches',
-      isRequired: true,
-      editorOptions: {
-        items: that.coaches,
-        displayExpr: 'fullname',
-        valueExpr: 'id'
-      },
-    }, {
-      label: {
-        text: 'Room',
-      },
-      colSpan: 2,
-      editorType: 'dxSelectBox',
-      dataField: 'room',
-      editorOptions: {
-        showClearButton: true,
-        items: that.rooms,
-        displayExpr: 'name',
-        valueExpr: 'id',
-        onValueChanged({ value }) {
-          that.setMaxParticipants(data, value, form);
-        }
-      },
-    }];
-    form.repaint();
+  onEventClicked({ event }: { event: CalendarEvent<AgendaItem> }): void {
+    this.openDialog(event.meta ?? null, event.start);
   }
 
-  setFoodBreakForm(data: DxSchedulerTypes.AppointmentFormOpeningEvent){
-    const that = this;
-    const form = data.form;
-    form.option().colCount = 2;
+  onEventTimesChanged({ event, newStart, newEnd }: CalendarEventTimesChangedEvent<AgendaItem>): void {
+    const item = event.meta;
+    if (!item) return;
 
-    form.option().items = [{
-      dataField: 'startDate',
-      colSpan: 1,
-      editorType: 'dxDateBox',
-      editorOptions: {
-        width: '100%',
-        type: 'datetime'
-      },
-    }, {
-      name: 'endDate',
-      colSpan: 1,
-      dataField: 'endDate',
-      editorType: 'dxDateBox',
-      editorOptions: {
-        width: '100%',
-        type: 'datetime',
-      },
-    }, {
-      label: {
-        text: 'Snack/Refreshment/Food Break?',
-      },
-      colSpan: 1,
-      editorType: 'dxSwitch',
-      dataField: 'isFoodBreak',
-      editorOptions: {
-        switchedOnText: 'Yes',
-        switchedOffText: 'No',
-        onValueChanged({ value }) {
-          if(!value){
-            that.setAgendaForm(data);
-          }
-        }
-      }
-    }, {
-      label: {
-        text: 'Title',
-      },
-      colSpan:2,
-      isRequired: true,
-      editorType: 'dxTextBox',
-      dataField: 'text',
-    }, {
-      label: {
-        text: 'Description',
-      },
-      colSpan:2,
-      isRequired: true,
-      editorType: 'dxTextArea',
-      dataField: 'description'
-    }, {
-      label: {
-        text: 'Room',
-      },
-      colSpan: 2,
-      editorType: 'dxSelectBox',
-      dataField: 'room',
-      editorOptions: {
-        items: that.rooms,
-        displayExpr: 'name',
-        valueExpr: 'id'
-      },
-    }];
-    form.repaint();
-  }
-
-  setAgendaForm(data: DxSchedulerTypes.AppointmentFormOpeningEvent){
-    const that = this;
-    const form = data.form;
-    form.option().colCount = 2;
-
-    form.option().items = [{
-      dataField: 'startDate',
-      colSpan: 1,
-      editorType: 'dxDateBox',
-      editorOptions: {
-        width: '100%',
-        type: 'datetime'
-      },
-    }, {
-      name: 'endDate',
-      colSpan: 1,
-      dataField: 'endDate',
-      editorType: 'dxDateBox',
-      editorOptions: {
-        width: '100%',
-        type: 'datetime',
-      },
-    }, {
-      label: {
-        text: 'Create Course?',
-      },
-      colSpan: 1,
-      editorType: 'dxSwitch',
-      dataField: 'isCourse',
-      editorOptions: {
-        switchedOnText: 'Yes',
-        switchedOffText: 'No',
-        onValueChanged({ value }) {
-          if(value){
-            that.setSingleSessionCourseForm(data)
-          }
-        }
-      }
-    },  {
-      label: {
-        text: 'Snack/Refreshment/Food Break?',
-      },
-      colSpan: 1,
-      editorType: 'dxSwitch',
-      dataField: 'isFoodBreak',
-      editorOptions: {
-        switchedOnText: 'Yes',
-        switchedOffText: 'No',
-        onValueChanged({ value }) {
-          if(value){
-            that.setFoodBreakForm(data)
-          }
-        }
-      }
-    }, {
-      label: {
-        text: 'Title',
-      },
-      colSpan:2,
-      isRequired: true,
-      editorType: 'dxTextBox',
-      dataField: 'text',
-    }, {
-      label: {
-        text: 'Coaches',
-      },
-      colSpan: 2,
-      editorType: 'dxTagBox',
-      dataField: 'coaches',
-      editorOptions: {
-        items: that.coaches,
-        displayExpr: 'fullname',
-        valueExpr: 'id'
-      },
-    }, {
-      label: {
-        text: 'Description',
-      },
-      colSpan:2,
-      isRequired: true,
-      editorType: 'dxTextArea',
-      dataField: 'description'
-    }, {
-      label: {
-        text: 'Room',
-      },
-      colSpan: 2,
-      editorType: 'dxSelectBox',
-      dataField: 'room',
-      editorOptions: {
-        items: that.rooms,
-        displayExpr: 'name',
-        valueExpr: 'id',
-      },
-    }];
-
-    form.repaint();
-  }
-
-  setMaxParticipants(data: DxSchedulerTypes.AppointmentFormOpeningEvent, value: string, form:dxForm){
-    let room = this.rooms.find(room => room.id == value)
-
-    if(room && room.capacity && data.appointmentData['maxParticipants']){
-      data.appointmentData['maxParticipants'] = room.capacity;
-      form.updateData('maxParticipants', room.capacity);
+    item.startDate = newStart;
+    if (newEnd) {
+      item.endDate = newEnd;
     }
+    this.rebuildEvents();
   }
 
-  private generateEventId() {
-    return 'xxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0,
-        v = c == 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
+  openDialog(item: AgendaItem | null, defaultStart: Date): void {
+    const ref = this.dialog.open<AgendaItemDialogComponent, unknown, AgendaItemDialogResult>(AgendaItemDialogComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      data: { item, defaultStart, courses: this.courses, coaches: this.coaches, rooms: this.rooms }
+    });
+
+    ref.afterClosed().subscribe((result) => {
+      if (!result) return;
+
+      const items = this.event.agendaItems ?? (this.event.agendaItems = []);
+      const index = items.findIndex((i) => i.id === result.item.id);
+
+      if (result.action === 'delete') {
+        if (index >= 0) items.splice(index, 1);
+      } else if (index >= 0) {
+        items[index] = result.item;
+      } else {
+        items.push(result.item);
+      }
+
+      this.rebuildEvents();
     });
   }
 }

@@ -14,6 +14,7 @@ import { EventAttendeesComponent } from './events/event-attendees/event-attendee
 import { EventAttendeeDialogComponent } from './events/event-attendees/event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './events/event-attendees/event-email-dialog.component';
 import { EventAgendaComponent } from './events/event-agenda/event-agenda.component';
+import { AgendaItemDialogComponent } from './events/event-agenda/agenda-item-dialog.component';
 import { EventsManagerComponent } from './events-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { RoomComponent } from './locations/room/room.component';
@@ -48,6 +49,22 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuillModule } from 'ngx-quill';
+// Replaces DevExtreme's dx-scheduler on the Agenda tab - see
+// event-agenda.component.ts for the full rationale. angular-calendar
+// ships standalone components/directives/pipes only (no NgModule
+// wrapper); these drop directly into this NgModule's own imports array
+// like any other standalone piece, with provideCalendar() below supplying
+// the required DateAdapter.
+import {
+  CalendarDatePipe,
+  CalendarNextViewDirective,
+  CalendarPreviousViewDirective,
+  CalendarTodayDirective,
+  CalendarWeekViewComponent,
+  DateAdapter,
+  provideCalendar
+} from 'angular-calendar';
+import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 
 @NgModule({
     declarations: [
@@ -62,6 +79,7 @@ import { QuillModule } from 'ngx-quill';
       OrganizationsComponent,
       OrganizationDialogComponent,
       EventAgendaComponent,
+      AgendaItemDialogComponent,
       EventAttendeesComponent,
       EventAttendeeDialogComponent,
       EventEmailDialogComponent,
@@ -119,7 +137,18 @@ import { QuillModule } from 'ngx-quill';
       MatCheckboxModule,
       MatMenuModule,
       MatToolbarModule,
-      QuillModule
+      QuillModule,
+      CalendarWeekViewComponent,
+      CalendarPreviousViewDirective,
+      CalendarNextViewDirective,
+      CalendarTodayDirective,
+      CalendarDatePipe
+    ],
+    providers: [
+      provideCalendar({
+        provide: DateAdapter,
+        useFactory: adapterFactory
+      })
     ]
 })
 export class EventsManagerModule { }

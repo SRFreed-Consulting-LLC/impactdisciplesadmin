@@ -1,57 +1,28 @@
+<div class="agenda-toolbar">
+  <button mat-icon-button type="button" mwlCalendarPreviousView [view]="view" [(viewDate)]="viewDate" matTooltip="Previous">
+    <mat-icon>chevron_left</mat-icon>
+  </button>
+  <button mat-stroked-button type="button" mwlCalendarToday [(viewDate)]="viewDate">Today</button>
+  <button mat-icon-button type="button" mwlCalendarNextView [view]="view" [(viewDate)]="viewDate" matTooltip="Next">
+    <mat-icon>chevron_right</mat-icon>
+  </button>
+  <h3 class="agenda-toolbar__title">{{ viewDate | calendarDate: 'weekViewTitle' : 'en' }}</h3>
+  <span class="agenda-toolbar__spacer"></span>
+  <button mat-raised-button color="primary" type="button" (click)="openDialog(null, viewDate)">
+    <mat-icon>add</mat-icon>
+    Add Agenda Item
+  </button>
+</div>
 
-  <dx-scheduler
-    timeZone="America/Los_Angeles"
-    id="scheduler"
-    [dataSource]="event.agendaItems"
-    [currentDate]="currentDate"
-    [startDayHour]="9"
-    [width]="'83vw'"
-    [timeZone]="'EST'"
-    [editing]="true"
-    appointmentTemplate="appointment-template"
-    (onAppointmentFormOpening)="onAppointmentFormOpening($event)"
-    (onAppointmentAdding)="onAppointmentAdd($event)"
-    [textExpr]="'name'">
-    <dxi-resource
-      fieldExpr="course"
-      [useColorAsDefault]="true"
-      [dataSource]="courses">
-    </dxi-resource>
-    <dxi-resource
-      fieldExpr="coach"
-      [useColorAsDefault]="true"
-      [dataSource]="coaches">
-    </dxi-resource>
-    <dxi-resource
-      fieldExpr="room"
-      [useColorAsDefault]="true"
-      [dataSource]="rooms">
-    </dxi-resource>
-    <dxi-view type="day" [intervalCount]="3"> </dxi-view>
-    <div *dxTemplate="let model of 'appointment-template'">
-      <div class="showtime-preview" *ngIf="model.targetedAppointmentData.isCourse">
-        <div>Course: <strong>{{getCourseById(model.appointmentData.course)?.title}}</strong></div>
-        <div *ngFor="let coach of model.targetedAppointmentData.coaches">
-          Coach:  <strong>{{getCoachById(coach)?.fullname }}</strong>
-        </div>
-        <div>{{getCourseById(model.appointmentData.course)?.shortDescription}}</div>
-        <div *ngIf="model.appointmentData.maxParticipants > 0">
-          Capcacity Left: {{model.appointmentData.maxParticipants - (model.appointmentData.signedUp ? model.appointmentData.signedUp : 0)}}
-        </div>
-      </div>
-      <div class="showtime-preview" *ngIf="!model.targetedAppointmentData.isCourse">
-        <div><strong>{{model.appointmentData.text}}</strong></div>
-        <div><strong>{{model.targetedAppointmentData.description }}</strong></div>
-      </div>
-      <div>
-        <div class="dropdown-appointment-dates">
-          {{
-            (model.targetedAppointmentData?.displayStartDate | date : "shortTime") +
-              " - " +
-              (model.targetedAppointmentData?.displayEndDate | date : "shortTime")
-          }}
-        </div>
-      </div>
-    </div>
-  </dx-scheduler>
-
+<div class="agenda-calendar">
+  <mwl-calendar-week-view
+    [viewDate]="viewDate"
+    [events]="events"
+    [daysInWeek]="3"
+    [dayStartHour]="9"
+    [hourSegments]="4"
+    (eventClicked)="onEventClicked($event)"
+    (eventTimesChanged)="onEventTimesChanged($event)"
+    (hourSegmentClicked)="openDialog(null, $event.date)">
+  </mwl-calendar-week-view>
+</div>
