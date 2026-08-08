@@ -1,40 +1,41 @@
 <div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+  <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 </div>
 
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowUpdating)="onRowUpdating($event)">
+<table mat-table [dataSource]="(newsletters$ | async) ?? []" class="newsletters-table">
+  <ng-container matColumnDef="isActive">
+    <th mat-header-cell *matHeaderCellDef>Live</th>
+    <td mat-cell *matCellDef="let item">
+      <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
+        {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
+      </span>
+    </td>
+  </ng-container>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-editing
-    [useIcons]="true"
-    mode="row"
-    [allowUpdating]="true"
-    [allowDeleting]="true"
-    [allowAdding]="true">
-  </dxo-editing>
-  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="date" [dataType]="'date'" [sortOrder]="'desc'"></dxi-column>
-  <dxi-column dataField="title"></dxi-column>
-  <dxi-column dataField="url"></dxi-column>
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef>Date</th>
+    <td mat-cell *matCellDef="let item">{{ item.date | date }}</td>
+  </ng-container>
 
-  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
-    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
-      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
-    </span>
-  </div>
-</dx-data-grid>
+  <ng-container matColumnDef="title">
+    <th mat-header-cell *matHeaderCellDef>Title</th>
+    <td mat-cell *matCellDef="let item">{{ item.title }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="url">
+    <th mat-header-cell *matHeaderCellDef>Url</th>
+    <td mat-cell *matCellDef="let item">{{ item.url }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+    <td mat-cell *matCellDef="let item" class="actions-column">
+      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+</table>

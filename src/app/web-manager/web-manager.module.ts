@@ -19,6 +19,7 @@ import { HomePagePopupsComponent } from './home-page-popups/home-page-popups.com
 import { WebManagerRoutingModule } from './web-manager-routing.module';
 import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
+import { MonthlyNewsletterDialogComponent } from './monthly-newsletters/monthly-newsletter-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -29,6 +30,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @NgModule({
   imports: [
@@ -63,7 +66,9 @@ import { MatSelectModule } from '@angular/material/select';
     MatButtonModule,
     MatTooltipModule,
     MatSlideToggleModule,
-    MatSelectModule
+    MatSelectModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   declarations: [
     WebManagerComponent,
@@ -75,7 +80,8 @@ import { MatSelectModule } from '@angular/material/select';
     PodCastCategoryDialogComponent,
     HomePageImagesComponent,
     HomePagePopupsComponent,
-    MonthlyNewslettersComponent
+    MonthlyNewslettersComponent,
+    MonthlyNewsletterDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe,

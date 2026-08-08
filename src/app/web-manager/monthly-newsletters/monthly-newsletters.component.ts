@@ -1,10 +1,17 @@
 import { Component, OnInit } from '@angular/core';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
+import { Observable } from 'rxjs';
 import { MonthlyNewsletterModel } from 'impactdisciplescommon/src/models/domain/monthly-newsletter.model';
 import { MonthlyNewletterService } from 'impactdisciplescommon/src/services/data/monthly-newsletter.service';
-import { map, Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { MonthlyNewsletterDialogComponent } from './monthly-newsletter-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 
+// Previously an inline-editable dx-data-grid (dxo-editing mode="row") with no
+// separate add/edit popup at all. Material has no inline-row-edit equivalent
+// for MatTable, so this now follows the same popup-based add/edit pattern as
+// every other migrated screen instead - see MonthlyNewsletterDialogComponent.
 @Component({
     selector: 'app-monthly-newsletters',
     templateUrl: './monthly-newsletters.component.html',
@@ -12,41 +19,47 @@ import { map, Observable } from 'rxjs';
     standalone: false
 })
 export class MonthlyNewslettersComponent implements OnInit {
-  datasource$: Observable<DataSource>;
-  selectedItem: MonthlyNewsletterModel;
-  itemType = 'Monthly Newletter'
+  newsletters$: Observable<MonthlyNewsletterModel[]>;
+  displayedColumns = ['isActive', 'date', 'title', 'url', 'actions'];
 
-  constructor(private service: MonthlyNewletterService,) { }
+  itemType = 'Monthly Newletter';
 
-  ngOnInit() {
-    let that = this;
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
+  ];
 
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-        new DataSource({
-          reshapeOnPush: true,
-          pushAggregationTimeout: 100,
-          store: new CustomStore({
-            key: 'id',
-            loadMode: 'raw',
-            load: function (loadOptions: any) {
-              return items;
-            },
-            insert(value) {
-              return that.service.add(value);
-            },
-            update(key, value) {
-              return that.service.update(key, value);
-            },
-            remove(key) {
-              return that.service.delete(key);
-            },
-          })
-        })
-      ))
+  constructor(
+    private service: MonthlyNewletterService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
+
+  ngOnInit(): void {
+    this.newsletters$ = this.service.streamAll();
   }
-  onRowUpdating(options) {
-    options.newData = Object.assign(options.oldData, options.newData);
+
+  showAddModal(): void {
+    this.dialog.open(MonthlyNewsletterDialogComponent, {
+      width: '500px',
+      data: { item: null }
+    });
+  }
+
+  showEditModal(item: MonthlyNewsletterModel): void {
+    this.dialog.open(MonthlyNewsletterDialogComponent, {
+      width: '500px',
+      data: { item }
+    });
+  }
+
+  delete(item: MonthlyNewsletterModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }
