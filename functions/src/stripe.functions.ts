@@ -1,20 +1,14 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as functions from "firebase-functions";
+import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 let stripe;
-
-const cors = require("cors")({
-  origin: true,
-});
 
 exports.create_payment_intent = functions
   .runWith({secrets: ["STRIPE_SECRET_KEY"]})
   .https.onRequest((request, response) => {
-    return cors(request, response, async () => {
+    return restrictedCors(request, response, async () => {
       stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
-      response.set("Access-Control-Allow-Credentials", "true");
-      response.set("Access-Control-Allow-Origin", "*");
 
       let total = 0;
 
@@ -52,11 +46,8 @@ exports.create_payment_intent = functions
 exports.cancel_payment_intent = functions
   .runWith({secrets: ["STRIPE_SECRET_KEY"]})
   .https.onRequest((request, response) => {
-    return cors(request, response, async () => {
+    return restrictedCors(request, response, async () => {
       stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
-      response.set("Access-Control-Allow-Credentials", "true");
-      response.set("Access-Control-Allow-Origin", "*");
 
       try {
         await stripe.paymentIntents.cancel(request.body.paymentIntent);
@@ -77,11 +68,17 @@ exports.cancel_payment_intent = functions
 exports.refund_payment = functions
   .runWith({secrets: ["STRIPE_SECRET_KEY"]})
   .https.onRequest((request, response) => {
-    return cors(request, response, async () => {
-      stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+    return restrictedCors(request, response, async () => {
+      // Refunds move real money -- only recognized staff (admin app,
+      // real Firebase Auth session) may call this.
+      try {
+        await requireStaffAuth(request);
+      } catch (err) {
+        response.status(401).send({code: 401, error: "Unauthorized"});
+        return;
+      }
 
-      response.set("Access-Control-Allow-Credentials", "true");
-      response.set("Access-Control-Allow-Origin", "*");
+      stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
       try {
         const refund = await stripe.refunds.create({

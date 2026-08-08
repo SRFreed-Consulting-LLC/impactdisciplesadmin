@@ -1,18 +1,14 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as functions from "firebase-functions";
+import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 const ShipEngine = require("shipengine");
-
-const cors = require("cors")({origin: true});
 
 exports.get_shipping_rates = functions
   .runWith({secrets: ["SHIP_ENGINE_API_KEY"]})
   .https.onRequest((request, response) => {
-    return cors(request, response, async () => {
+    return restrictedCors(request, response, async () => {
       const shipengine = new ShipEngine(process.env.SHIP_ENGINE_API_KEY);
-
-      response.set("Access-Control-Allow-Credentials", "true");
-      response.set("Access-Control-Allow-Origin", "*");
 
       const requestBody = request.body;
 
@@ -33,11 +29,17 @@ exports.get_shipping_rates = functions
 exports.get_shipping_label = functions
   .runWith({secrets: ["SHIP_ENGINE_API_KEY"]})
   .https.onRequest((request, response) => {
-    return cors(request, response, async () => {
-      const shipengine = new ShipEngine(process.env.SHIP_ENGINE_API_KEY);
+    return restrictedCors(request, response, async () => {
+      // Purchasing a label costs real postage -- only recognized staff
+      // (admin app, real Firebase Auth session) may call this.
+      try {
+        await requireStaffAuth(request);
+      } catch (err) {
+        response.status(401).send({code: 401, error: "Unauthorized"});
+        return;
+      }
 
-      response.set("Access-Control-Allow-Credentials", "true");
-      response.set("Access-Control-Allow-Origin", "*");
+      const shipengine = new ShipEngine(process.env.SHIP_ENGINE_API_KEY);
 
       const requestBody = request.body;
 

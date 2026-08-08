@@ -156,9 +156,13 @@ export class PurchasesComponent implements OnInit {
     if(!e.row.data?.shippingLabel){
       let data = { 'shipId': e.row.data.shippingRateId.rateId};
 
+      // Purchasing a shipping label costs real postage -- this endpoint now
+      // requires a verified staff Firebase ID token.
+      let idToken = await this.authService.dao.auth.currentUser?.getIdToken();
+
       let request = await fetch(environment.shippingLabelUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
         body: JSON.stringify(data)
       })
 
@@ -289,9 +293,13 @@ export class PurchasesComponent implements OnInit {
 
         let request = { 'paymentIntent': (this.selectedItem.paymentIntent as PaymentIntent).id}
 
+        // Refunds move real money -- this endpoint now requires a verified
+        // staff Firebase ID token.
+        let idToken = await this.authService.dao.auth.currentUser?.getIdToken();
+
         let response = await fetch(environment.stripeRefundURL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
           body: JSON.stringify(request)
         })
 

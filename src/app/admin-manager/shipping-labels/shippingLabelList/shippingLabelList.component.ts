@@ -9,6 +9,7 @@ import { ShippingLabelService } from 'impactdisciplescommon/src/services/data/sh
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { Observable, map, merge } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import _ from 'lodash';
 
 @Component({
@@ -26,7 +27,7 @@ export class ShippingLabelListComponent implements OnInit {
   public states: { key: string; value: string; }[];
   public countries: { key: string; value: string; }[];
 
-  constructor(private labelService: ShippingLabelService,) { }
+  constructor(private labelService: ShippingLabelService, private authService: AdminAuthService) { }
 
   ngOnInit() {
     let that = this;
@@ -98,9 +99,13 @@ export class ShippingLabelListComponent implements OnInit {
     if(!e.row.data?.shippingLabel){
       let data = { 'shipId': e.row.data.shippingRateId.rateId};
 
+      // Purchasing a shipping label costs real postage -- this endpoint now
+      // requires a verified staff Firebase ID token.
+      let idToken = await this.authService.dao.auth.currentUser?.getIdToken();
+
       let request = await fetch(environment.shippingLabelUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
         body: JSON.stringify(data)
       })
 
