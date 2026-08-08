@@ -1,165 +1,74 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { CouponModel } from 'impactdisciplescommon/src/models/utils/coupon.model';
 import { CouponService } from 'impactdisciplescommon/src/services/data/coupon.service';
-import { BehaviorSubject, Observable, Subject, map, merge, takeUntil } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { ProductService } from 'impactdisciplescommon/src/services/data/product.service';
-import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { CouponDialogComponent } from './coupon-dialog.component';
 
 @Component({
     selector: 'app-coupons',
     templateUrl: './coupons.component.html',
-    styleUrls: ['./coupons.component.css'],
+    styleUrls: ['./coupons.component.scss'],
     standalone: false
 })
-export class CouponsComponent implements OnInit, OnDestroy {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: CouponModel;
+export class CouponsComponent implements OnInit {
+  coupons$: Observable<CouponModel[]>;
+  displayedColumns = ['isActive', 'code', 'percentOff', 'affilliateName', 'actions'];
+  filterColumns = ['isActive-filter', 'code-filter', 'percentOff-filter', 'affilliateName-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Coupon';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  couponTags: TagModel[] = [];
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  private ngUnsubscribe = new Subject<void>();
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  constructor(private service: CouponService,
-    private eventService: EventService,
-    private productService: ProductService) {}
+  constructor(
+    private service: CouponService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
+  ngOnInit(): void {
+    this.coupons$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], field === 'percentOff' ? 'number' : 'text')))
+          .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''))
+      ),
+      tap(() => this.loading$.next(false))
     );
-
-    let list = merge(
-      this.eventService.streamAll(),
-      this.productService.streamAll()
-    )
-
-    list.pipe(takeUntil(this.ngUnsubscribe)).subscribe(items => {
-      items.forEach(item => this.couponTags.push({id: item.id, tag: item.title? item.title : item.eventName}));
-    });
   }
 
-  ngOnDestroy(): void {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    this.isVisible$.next(true);
+  showAddModal(): void {
+    this.dialog.open(CouponDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new CouponModel()};
-
-    this.isVisible$.next(true);
+  showEditModal(item: CouponModel): void {
+    this.dialog.open(CouponDialogComponent, { width: '900px', maxWidth: '95vw', data: { item } });
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  delete(item: CouponModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
     });
-  }
-
-  onSave(item: CouponModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  formatDate(time: number){
-    return (dateFromTimestamp(time) as Date).toDateString();
-  }
-
-  validateCouponValue(e){
-    if(!e.data.percentOff && !e.data.dollarsOff){
-      return false;
-    }
-
-    return true;
   }
 }

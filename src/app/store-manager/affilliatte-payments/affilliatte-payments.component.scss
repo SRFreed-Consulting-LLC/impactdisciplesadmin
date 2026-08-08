@@ -1,0 +1,16 @@
+.panel-header__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.table-scroll {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+.payments-table {
+  width: 100%;
+}

@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StoreManagerComponent } from './store-manager.component';
-import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule, DxFormModule, DxListModule, DxLoadIndicatorModule, DxLoadPanelModule, DxLookupModule, DxNumberBoxModule, DxPopupModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
+import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxFormModule, DxLoadIndicatorModule, DxLoadPanelModule, DxNumberBoxModule, DxPopupModule, DxSelectBoxModule, DxTabsModule, DxToolbarModule } from 'devextreme-angular';
 import { ProductsComponent } from './products/products.component';
 import { PurchasesComponent } from './purchases/purchases.component';
 import { SharedModule } from '../shared/shared.module';
@@ -10,6 +10,7 @@ import { CategoryModalComponent } from './product-categories/category-modal/cate
 import { ProductSeriesComponent } from './product-series/product-series.component';
 import { SeriesModalComponent } from './product-series/series-modal/series-modal.component';
 import { CouponsComponent } from './coupons/coupons.component';
+import { CouponDialogComponent } from './coupons/coupon-dialog.component';
 import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.component';
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 import { SalesComponent } from './sales/sales.component';
@@ -46,6 +47,7 @@ import { QuillModule } from 'ngx-quill';
     PurchasesComponent,
     PurchaseDetailsComponent,
     CouponsComponent,
+    CouponDialogComponent,
     AffiliateSalesComponent,
     AffilliattePaymentsComponent,
     ProductCategoriesComponent,
@@ -59,27 +61,23 @@ import { QuillModule } from 'ngx-quill';
     CommonModule,
     StoreManagerRoutingModule,
     ImageUploaderModule,
-    // Still needed by Coupons/Purchases/Purchase Details/Affiliate Sales,
-    // not yet migrated in this pass - DxHtmlEditorModule and
-    // DxDropDownBoxModule were only ever used by Products, now removed.
+    // DxTabsModule is still needed by the store-manager shell itself
+    // (dx-tabs, Step 6 of this migration); the rest are still needed by
+    // Purchases/Purchase Details, not yet migrated in this pass. Coupons/
+    // Affiliate Sales/Affiliate Payments were the last consumers of
+    // DxCheckBoxModule/DxListModule/DxLookupModule/DxSwitchModule/
+    // DxTagBoxModule/DxTextBoxModule/DxLoadIndicatorModule - all now removed.
     DxButtonModule,
-    DxCheckBoxModule,
     DxDataGridModule,
     DxFormModule,
-    DxListModule,
     DxLoadPanelModule,
-    DxLookupModule,
     DxNumberBoxModule,
     DxPopupModule,
     DxSelectBoxModule,
-    DxSwitchModule,
     DxTabsModule,
-    DxTagBoxModule,
-    DxTextBoxModule,
     DxToolbarModule,
     DxContextMenuModule,
     SharedModule,
-    DxLoadIndicatorModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,

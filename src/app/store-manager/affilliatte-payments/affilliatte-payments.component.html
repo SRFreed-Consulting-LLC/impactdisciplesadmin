@@ -1,25 +1,23 @@
-<h2 class="content-block responsive-paddings underline pb-1">Affilliate Payments</h2>
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="affilliatePayments | async"
-  [height]="'35vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [columnAutoWidth]="true"
-  [columnHidingEnabled]="true">
+<h3 class="panel-header__title">Affiliate Payments</h3>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+<div class="table-scroll">
+  <table mat-table [dataSource]="(affiliatePayments$ | async) ?? []" class="payments-table">
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let item">{{ item.date | date }}</td>
+    </ng-container>
 
-  <dxi-column dataField="date" dataType="date" [sortOrder]="'desc'"></dxi-column>
-  <dxi-column dataField="receipt"></dxi-column>
-  <dxi-column dataField="amountPayed" dataType="number" format="currency" [caption]="'Payed Amount'"></dxi-column>
-  <dxi-column dataField="saleIdsPayed" [hidden]="true" ></dxi-column>
-  <dxo-summary>
-    <dxi-total-item column="date" summaryType="count">
-    </dxi-total-item>
-    <dxi-total-item column="amountPayed" summaryType="sum" valueFormat="currency"></dxi-total-item>
-  </dxo-summary>
-</dx-data-grid>
+    <ng-container matColumnDef="receipt">
+      <th mat-header-cell *matHeaderCellDef>Receipt</th>
+      <td mat-cell *matCellDef="let item">{{ item.receipt }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="amountPayed">
+      <th mat-header-cell *matHeaderCellDef>Payed Amount</th>
+      <td mat-cell *matCellDef="let item">{{ item.amountPayed | currency }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="['date', 'receipt', 'amountPayed']"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['date', 'receipt', 'amountPayed'];"></tr>
+  </table>
+</div>

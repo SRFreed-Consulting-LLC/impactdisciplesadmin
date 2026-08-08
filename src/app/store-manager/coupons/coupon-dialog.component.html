@@ -1,0 +1,55 @@
+<app-popup-header [formGroup]="form" [title]="(isEdit ? 'EDIT' : 'ADD') + ' COUPON'" [showCloseButton]="true" (closed)="onCancel()">
+  <mat-slide-toggle popup-header-actions formControlName="isActive">Live</mat-slide-toggle>
+</app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Code</mat-label>
+      <input matInput formControlName="code" required>
+      <mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Percent Off</mat-label>
+      <input matInput type="number" formControlName="percentOff" required>
+      <span matTextSuffix>%</span>
+      <mat-error *ngIf="form.get('percentOff')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <mat-checkbox formControlName="isAffilliate">Affiliate Coupon?</mat-checkbox>
+
+  <div class="field-row" *ngIf="form.get('isAffilliate')?.value">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Affiliate Name</mat-label>
+      <input matInput formControlName="affilliateName">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Affiliate PayPal Account</mat-label>
+      <input matInput formControlName="affiliatePaypalAccount">
+    </mat-form-field>
+  </div>
+
+  <app-tag-chips formControlName="tags" [options]="couponTags" label="Item Tags" placeholder="Tag this Coupon..."></app-tag-chips>
+
+  <!-- Only affiliate coupons that have already been saved (and so have a
+       stable code to query sales/payments by) show these panels - the
+       original always rendered them, even for a brand-new blank coupon,
+       which meant two guaranteed-empty tables on every "Add" flow. -->
+  <div class="affiliate-panels" *ngIf="isEdit && form.get('isAffilliate')?.value">
+    <app-affiliate-sales class="affiliate-panels__sales" [code]="data.item?.code" [paypalAccount]="form.get('affiliatePaypalAccount')?.value"></app-affiliate-sales>
+    <app-affilliatte-payments class="affiliate-panels__payments" [code]="data.item?.code"></app-affilliatte-payments>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

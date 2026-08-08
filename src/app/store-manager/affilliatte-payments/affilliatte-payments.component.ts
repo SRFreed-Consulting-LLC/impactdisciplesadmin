@@ -1,31 +1,34 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { AffilliatePaymentModel } from 'impactdisciplescommon/src/models/utils/affilliate-payment.model';
-import { CouponModel } from 'impactdisciplescommon/src/models/utils/coupon.model';
 import { AffilliatePaymentsService } from 'impactdisciplescommon/src/services/data/affiliate-payment.service';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';
 
+// Embedded (not a dialog) inside CouponDialogComponent, alongside
+// AffiliateSalesComponent - see its own comment for why this is now
+// gated to affiliate coupons with a saved code, rather than always shown.
 @Component({
     selector: 'app-affilliatte-payments',
     templateUrl: './affilliatte-payments.component.html',
-    styleUrls: ['./affilliatte-payments.component.css'],
+    styleUrls: ['./affilliatte-payments.component.scss'],
     standalone: false
 })
-export class AffilliattePaymentsComponent implements OnInit {
-  @Input('selectedItem') selectedItem: CouponModel;
+export class AffilliattePaymentsComponent implements OnChanges {
+  @Input() code: string;
 
-  affilliatePayments: Observable<AffilliatePaymentModel[]>;
+  affiliatePayments$: Observable<AffilliatePaymentModel[]>;
 
-  constructor(private affilliatePaymentService: AffilliatePaymentsService) { }
+  constructor(private affilliatePaymentService: AffilliatePaymentsService) {}
 
-  async ngOnInit() {
-    this.affilliatePayments = await this.affilliatePaymentService.streamAllByValue("code", this.selectedItem.code).pipe(
-      map(payments => {
-        payments.forEach(payment => payment.date = dateFromTimestamp(payment.date as Timestamp))
-        return payments;
-      })
-    );
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['code'] && this.code) {
+      this.affiliatePayments$ = this.affilliatePaymentService.streamAllByValue('code', this.code).pipe(
+        map((payments) => {
+          payments.forEach((payment) => (payment.date = dateFromTimestamp(payment.date as Timestamp) as any));
+          return payments;
+        })
+      );
+    }
   }
-
 }

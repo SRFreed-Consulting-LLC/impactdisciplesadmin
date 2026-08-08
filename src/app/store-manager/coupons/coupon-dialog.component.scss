@@ -1,0 +1,30 @@
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+.affiliate-panels {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.affiliate-panels__sales {
+  flex: 3 1 0;
+  min-width: 0;
+}
+
+.affiliate-panels__payments {
+  flex: 2 1 0;
+  min-width: 0;
+}
