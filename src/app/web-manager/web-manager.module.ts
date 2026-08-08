@@ -18,6 +18,7 @@ import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploa
 import { HomePagePopupsComponent } from './home-page-popups/home-page-popups.component';
 import { WebManagerRoutingModule } from './web-manager-routing.module';
 import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
+import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,6 +27,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSelectModule } from '@angular/material/select';
 
 @NgModule({
   imports: [
@@ -58,13 +61,16 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatTableModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSlideToggleModule,
+    MatSelectModule
   ],
   declarations: [
     WebManagerComponent,
     DMMServiceComponent,
     PodCastsComponent,
     TestimonialsComponent,
+    TestimonialDialogComponent,
     PodCastCategoriesComponent,
     PodCastCategoryDialogComponent,
     HomePageImagesComponent,

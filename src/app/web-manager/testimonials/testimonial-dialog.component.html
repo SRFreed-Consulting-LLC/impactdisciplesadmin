@@ -1,0 +1,40 @@
+<app-popup-header [formGroup]="form" [title]="(isEdit ? 'EDIT' : 'ADD') + ' TESTIMONIAL'" [showCloseButton]="true" (closed)="onCancel()">
+  <mat-slide-toggle popup-header-actions formControlName="isActive">Live</mat-slide-toggle>
+</app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Author</mat-label>
+    <input matInput formControlName="author" required>
+    <mat-error *ngIf="form.get('author')?.hasError('required')">Author is required</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Title</mat-label>
+    <input matInput formControlName="title">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Testimonial Type</mat-label>
+    <mat-select formControlName="type" required>
+      <mat-option *ngFor="let type of testimonialTypes" [value]="type">{{ type }}</mat-option>
+    </mat-select>
+    <mat-error *ngIf="form.get('type')?.hasError('required')">Type is required</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Text</mat-label>
+    <textarea matInput formControlName="text" rows="6" required></textarea>
+    <mat-error *ngIf="form.get('text')?.hasError('required')">Text is required</mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

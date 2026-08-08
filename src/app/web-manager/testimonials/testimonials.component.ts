@@ -1,15 +1,12 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { TESTIMONIAL_TYPES } from 'impactdisciplescommon/src/lists/testimonial_types.enum';
+import { Component, OnInit } from '@angular/core';
+import { map, Observable } from 'rxjs';
 import { TestimonialModel } from 'impactdisciplescommon/src/models/domain/testimonial.model';
 import { TestimonialService } from 'impactdisciplescommon/src/services/data/testimonial.service';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { Timestamp } from 'firebase/firestore';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { TestimonialDialogComponent } from './testimonial-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 
 @Component({
     selector: 'app-testimonials',
@@ -17,121 +14,56 @@ import { Timestamp } from 'firebase/firestore';
     styleUrls: ['./testimonials.component.css'],
     standalone: false
 })
-export class TestimonialsComponent implements OnInit{
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
+export class TestimonialsComponent implements OnInit {
+  testimonials$: Observable<TestimonialModel[]>;
+  displayedColumns = ['isActive', 'author', 'date', 'title', 'type', 'actions'];
 
-  datasource$: Observable<DataSource>;
-  selectedItem: TestimonialModel;
+  itemType = 'Testimonial';
 
-  itemType = 'Testimonial'
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
+  ];
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  constructor(
+    private service: TestimonialService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  testimonials:TESTIMONIAL_TYPES[] = [];
-
-  constructor(private service: TestimonialService) {}
-
-  async ngOnInit(): Promise<void> {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
+  ngOnInit(): void {
+    this.testimonials$ = this.service.streamAll().pipe(
+      map((items) =>
+        items.slice().sort((a, b) => {
+          const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+          const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+          return bTime - aTime;
+        })
       )
     );
-
-    this.testimonials = EnumHelper.getTestimonialTypesAsArray();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-    this.isVisible$.next(true);
-  }
-
-  showAddModal = () => {
-    this.selectedItem = {... new TestimonialModel()};
-    this.selectedItem.date = Timestamp.now().toDate();
-    this.isVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(TestimonialDialogComponent, {
+      width: '600px',
+      data: { item: null }
     });
   }
 
-  onSave(item: TestimonialModel) {
-    item.date = Timestamp.now();
-
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: TestimonialModel): void {
+    this.dialog.open(TestimonialDialogComponent, {
+      width: '600px',
+      data: { item }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: TestimonialModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }
