@@ -1,0 +1,14 @@
+<app-popup-header title="NEW DIRECTORY" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Folder Name</mat-label>
+    <input matInput formControlName="name" required cdkFocusInitial>
+    <mat-error *ngIf="form.get('name')?.hasError('required')">Folder name is required</mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-raised-button color="primary" type="button" (click)="onCreate()">CREATE</button>
+</mat-dialog-actions>

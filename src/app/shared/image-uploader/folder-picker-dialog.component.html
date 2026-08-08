@@ -1,0 +1,28 @@
+<app-popup-header [title]="data.title" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content>
+  <div class="picker__breadcrumb">
+    <button mat-icon-button type="button" [disabled]="!currentPath" (click)="navigateUp()">
+      <mat-icon>arrow_upward</mat-icon>
+    </button>
+    <span class="picker__breadcrumb-label">{{ currentFolderLabel }}</span>
+  </div>
+
+  <div class="picker__loading" *ngIf="loading">
+    <mat-spinner diameter="28"></mat-spinner>
+  </div>
+
+  <div class="picker__list" *ngIf="!loading">
+    <div class="picker__row" *ngFor="let folder of folders" (dblclick)="navigateInto(folder)">
+      <mat-icon class="picker__icon">folder</mat-icon>
+      <span class="picker__name">{{ folder.name }}</span>
+      <button mat-button type="button" (click)="navigateInto(folder)">OPEN</button>
+    </div>
+    <div class="picker__empty" *ngIf="!folders.length">No sub-folders here</div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-raised-button color="primary" type="button" (click)="onSelectFolder()">SELECT THIS FOLDER</button>
+</mat-dialog-actions>

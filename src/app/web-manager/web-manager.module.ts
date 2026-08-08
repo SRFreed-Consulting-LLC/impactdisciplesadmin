@@ -14,11 +14,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
 import { MonthlyNewslettersComponent } from './monthly-newsletters/monthly-newsletters.component';
-// app-image-uploader is the one remaining DevExtreme dependency in this
-// module - it wraps dx-file-manager (a full file browser: folders, chunked
-// upload, rename/move/copy/delete) with no Material equivalent. Left as-is
-// for now per plan; everything else in this module is Material-only.
-import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+// This app's own Material file browser, replacing the DevExtreme
+// dx-file-manager-backed app-image-uploader from impactdisciplescommon -
+// see src/app/shared/image-uploader/ for the full rationale. Web Manager
+// is now fully DevExtreme-free.
+import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { HomePagePopupsComponent } from './home-page-popups/home-page-popups.component';
 import { HomePagePopupPreviewDialogComponent } from './home-page-popups/home-page-popup-preview-dialog.component';
 import { WebManagerRoutingModule } from './web-manager-routing.module';

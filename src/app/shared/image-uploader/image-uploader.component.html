@@ -1,0 +1,158 @@
+<!-- This component is used as a plain embedded child element at every call
+     site (*ngIf + imageSelectVisible, not MatDialog.open()) - the original
+     DevExtreme dx-popup could still float above everything else despite
+     that, since dx-popup manages its own overlay/portal internally. A
+     plain <div> has no such behavior on its own, so this backdrop+panel
+     shell recreates it: fixed, centered, above the Material dialog that
+     hosts it (z-index in src/styles.scss, same tier as .dx-overlay-wrapper
+     since this can still be opened from screens that also have a
+     DevExtreme popup open elsewhere on the page during the migration). -->
+<div class="uploader-backdrop">
+  <div class="uploader" [style.width.px]="width" [style.height.px]="height">
+    <app-popup-header title="SELECT FILE" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+  <div class="uploader__toolbar">
+    <ng-container *ngIf="!selectedItems.length; else selectionToolbar">
+      <button mat-button type="button" (click)="showNewFolderDialog()">
+        <mat-icon>create_new_folder</mat-icon> New directory
+      </button>
+      <button mat-button type="button" (click)="triggerUpload()">
+        <mat-icon>upload</mat-icon> Upload files
+      </button>
+      <span class="uploader__spacer"></span>
+      <button mat-icon-button type="button" matTooltip="Switch view" (click)="toggleView()">
+        <mat-icon>{{ viewMode === 'list' ? 'grid_view' : 'view_list' }}</mat-icon>
+      </button>
+      <button mat-icon-button type="button" matTooltip="Refresh" (click)="refresh()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </ng-container>
+    <ng-template #selectionToolbar>
+      <button mat-button type="button" (click)="downloadSelected()">
+        <mat-icon>download</mat-icon> Download
+      </button>
+      <button mat-button type="button" [disabled]="selectedItems.length > 1" (click)="showMoveDialog()">
+        <mat-icon>drive_file_move</mat-icon> Move to
+      </button>
+      <button mat-button type="button" [disabled]="selectedItems.length > 1" (click)="showCopyDialog()">
+        <mat-icon>file_copy</mat-icon> Copy to
+      </button>
+      <button mat-button type="button" [disabled]="selectedItems.length !== 1" (click)="showRenameDialog()">
+        <mat-icon>edit</mat-icon> Rename
+      </button>
+      <button mat-button type="button" (click)="deleteSelected()">
+        <mat-icon>delete</mat-icon> Delete
+      </button>
+      <span class="uploader__spacer"></span>
+      <button mat-button type="button" (click)="clearSelection()">
+        <mat-icon>close</mat-icon> Clear selection
+      </button>
+    </ng-template>
+  </div>
+  <mat-divider></mat-divider>
+
+  <input #fileInput type="file" multiple hidden (change)="onFilesPicked($event)">
+
+  <div class="uploader__body">
+    <div class="uploader__tree">
+      <app-file-tree-node
+        folderPath=""
+        folderName="Files"
+        [selectedPath]="currentPath"
+        [refreshToken]="treeRefreshToken"
+        (folderSelected)="onTreeFolderSelected($event)">
+      </app-file-tree-node>
+    </div>
+
+    <mat-divider [vertical]="true"></mat-divider>
+
+    <div
+      class="uploader__content"
+      [class.uploader__content--drag-over]="dragOver"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()">
+      <div class="uploader__breadcrumb">
+        <button mat-icon-button type="button" [disabled]="!currentPath" (click)="navigateUp()">
+          <mat-icon>arrow_upward</mat-icon>
+        </button>
+        <span class="uploader__breadcrumb-label">{{ currentFolderLabel }}</span>
+      </div>
+
+      <div class="uploader__list-header" *ngIf="viewMode === 'list'">
+        <span class="uploader__list-header-name">Name</span>
+      </div>
+
+      <div class="uploader__loading" *ngIf="loading || uploading">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>{{ uploading ? 'Uploading...' : 'Loading...' }}</span>
+      </div>
+
+      <ng-container *ngIf="!loading">
+        <div class="uploader__list" *ngIf="viewMode === 'list'">
+          <div
+            class="uploader__row"
+            *ngFor="let item of items"
+            [class.uploader__row--selected]="isSelected(item)"
+            (click)="onRowClick(item, $event)"
+            (dblclick)="onRowDoubleClick(item)"
+            (contextmenu)="onContextMenu($event, item, contextMenuTrigger)">
+            <mat-icon class="uploader__row-icon">{{ iconFor(item) }}</mat-icon>
+            <span class="uploader__row-name">{{ item.name }}</span>
+            <button mat-icon-button type="button" [matMenuTriggerFor]="rowMenu" (click)="setContextItem(item, $event)">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </div>
+          <div class="uploader__empty" *ngIf="!items.length">This folder is empty</div>
+        </div>
+
+        <div class="uploader__grid" *ngIf="viewMode === 'grid'">
+          <div
+            class="uploader__tile"
+            *ngFor="let item of items"
+            [class.uploader__tile--selected]="isSelected(item)"
+            (click)="onRowClick(item, $event)"
+            (dblclick)="onRowDoubleClick(item)"
+            (contextmenu)="onContextMenu($event, item, contextMenuTrigger)">
+            <mat-icon class="uploader__tile-icon">{{ iconFor(item) }}</mat-icon>
+            <span class="uploader__tile-name">{{ item.name }}</span>
+            <button mat-icon-button type="button" class="uploader__tile-menu" [matMenuTriggerFor]="rowMenu" (click)="setContextItem(item, $event)">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </div>
+          <div class="uploader__empty" *ngIf="!items.length">This folder is empty</div>
+        </div>
+      </ng-container>
+
+      <div class="uploader__drop-hint" *ngIf="dragOver">Drop to upload</div>
+    </div>
+  </div>
+
+    <mat-divider></mat-divider>
+    <div class="uploader__actions">
+      <button mat-raised-button color="primary" type="button" [disabled]="!canConfirm()" (click)="onSelectConfirm()">Select</button>
+      <button mat-raised-button type="button" (click)="onCancel()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden anchor for the right-click context menu, positioned at the
+     cursor - the row/tile's own "..." button uses matMenuTriggerFor
+     directly instead since it has a real element to anchor to. -->
+<div
+  class="uploader__context-anchor"
+  [style.left.px]="contextMenuPosition.x"
+  [style.top.px]="contextMenuPosition.y"
+  [matMenuTriggerFor]="rowMenu"
+  #contextMenuTrigger="matMenuTrigger">
+</div>
+
+<mat-menu #rowMenu="matMenu">
+  <button mat-menu-item type="button" (click)="showRenameDialog()"><mat-icon>edit</mat-icon><span>Rename</span></button>
+  <button mat-menu-item type="button" (click)="showMoveDialog()"><mat-icon>drive_file_move</mat-icon><span>Move to</span></button>
+  <button mat-menu-item type="button" (click)="showCopyDialog()"><mat-icon>file_copy</mat-icon><span>Copy to</span></button>
+  <button mat-menu-item type="button" (click)="deleteSelected()"><mat-icon>delete</mat-icon><span>Delete</span></button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item type="button" (click)="refresh()"><mat-icon>refresh</mat-icon><span>Refresh</span></button>
+  <button mat-menu-item type="button" (click)="downloadSelected()"><mat-icon>download</mat-icon><span>Download</span></button>
+</mat-menu>

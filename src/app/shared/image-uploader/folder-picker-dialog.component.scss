@@ -1,0 +1,54 @@
+.picker__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.picker__breadcrumb-label {
+  font-weight: 500;
+}
+
+.picker__loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.picker__list {
+  max-height: 320px;
+  min-height: 120px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+.picker__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.picker__icon {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.picker__name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker__empty {
+  padding: 24px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+}

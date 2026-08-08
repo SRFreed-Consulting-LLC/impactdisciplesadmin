@@ -1,0 +1,29 @@
+<div class="tree-node" [style.padding-left.px]="depth * 16">
+  <button
+    mat-icon-button
+    class="tree-node__toggle"
+    type="button"
+    (click)="toggle($event)">
+    <mat-spinner *ngIf="loading" diameter="14"></mat-spinner>
+    <mat-icon *ngIf="!loading">{{ expanded ? 'arrow_drop_down' : 'arrow_right' }}</mat-icon>
+  </button>
+  <div
+    class="tree-node__label"
+    [class.tree-node__label--selected]="folderPath === selectedPath"
+    (click)="select()">
+    <mat-icon class="tree-node__icon">folder</mat-icon>
+    <span class="tree-node__name">{{ folderName }}</span>
+  </div>
+</div>
+
+<div class="tree-node__children" *ngIf="expanded">
+  <app-file-tree-node
+    *ngFor="let child of children"
+    [folderPath]="childPath(child)"
+    [folderName]="child.name"
+    [depth]="depth + 1"
+    [selectedPath]="selectedPath"
+    [refreshToken]="refreshToken"
+    (folderSelected)="onChildSelected($event)">
+  </app-file-tree-node>
+</div>
