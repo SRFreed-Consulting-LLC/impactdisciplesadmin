@@ -1,36 +1,37 @@
-<dx-data-grid class="dx-card wide-card"
-  #attendeeGrid
-  [dataSource]="datasource$ | async"
-  [height]="'50vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [allowColumnReordering]="true"
-  [allowColumnResizing]="true"
-  [columnHidingEnabled]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true">
-  <dxo-state-storing
-    [enabled]="true"
-    type="localStorage"
-    storageKey="storage"
-  ></dxo-state-storing>
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+<div class="filter-row">
+  <app-column-filter [operators]="textOperators" placeholder="Filter by name or email..." (filterChange)="onFilterChange($event)"></app-column-filter>
+</div>
 
-  <dxi-column dataField="lastName" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="firstName"></dxi-column>
-  <dxi-column dataField="email"></dxi-column>
-  <dxi-column dataField="breakoutName" [groupIndex]="0"></dxi-column>
-  <dxi-column dataField="startDate" [caption]="" [groupIndex]="1" groupCellTemplate="cellTemplate" [sortOrder]="0"></dxi-column>
+<div class="table-scroll">
+  <table mat-table [dataSource]="(rows$ | async) ?? []" class="breakouts-table">
+    <!-- Group/session header rows share one full-width cell -->
+    <ng-container matColumnDef="groupHeader">
+      <td mat-cell *matCellDef="let row" class="group-cell" [class.group-cell--breakout]="row.kind === 'breakout'">
+        {{ row.label }} — {{ row.count }} registered
+      </td>
+    </ng-container>
 
-  <div *dxTemplate="let data of 'cellTemplate'">
-    {{getSessionTime(data.value)}}
-  </div>
+    <ng-container matColumnDef="lastName">
+      <th mat-header-cell *matHeaderCellDef>Last Name</th>
+      <td mat-cell *matCellDef="let row">{{ row.lastName }}</td>
+    </ng-container>
 
-  <dxo-summary>
-    <dxi-total-item column="email" summaryType="count"> </dxi-total-item>
-    <dxi-group-item column="email" summaryType="count" displayFormat="{0} registered"></dxi-group-item>
-  </dxo-summary>
-</dx-data-grid>
+    <ng-container matColumnDef="firstName">
+      <th mat-header-cell *matHeaderCellDef>First Name</th>
+      <td mat-cell *matCellDef="let row">{{ row.firstName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="['lastName', 'firstName', 'email']; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['groupHeader']; when: isGroupRow" [class.session-row]="row.kind === 'session'"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['lastName', 'firstName', 'email']; when: isStudentRow"></tr>
+  </table>
+
+  <p class="empty-state" *ngIf="(rows$ | async)?.length === 0">No breakout registrations yet.</p>
+</div>
+
+<div class="total-row">Total registered: {{ totalRegistered$ | async }}</div>

@@ -1,0 +1,58 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 50vh;
+}
+
+.filter-row {
+  flex: 0 0 auto;
+  max-width: 320px;
+  margin-bottom: 8px;
+}
+
+.table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+.breakouts-table {
+  width: 100%;
+}
+
+// Group/session header rows are synthesized from a single matColumnDef
+// ("groupHeader") - the lone cell needs to explicitly claim the full row
+// width since mat-table's flex layout otherwise sizes it to content.
+.group-cell {
+  flex: 1 1 100%;
+  width: 100%;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+  padding-left: 16px !important;
+}
+
+.group-cell--breakout {
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.session-row .group-cell {
+  padding-left: 32px !important;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.empty-state {
+  padding: 24px 16px;
+  color: rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.total-row {
+  flex: 0 0 auto;
+  padding: 8px 4px 0;
+  font-weight: 600;
+  font-size: 13px;
+}
