@@ -4,6 +4,7 @@ import { StoreManagerComponent } from './store-manager.component';
 import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxFormModule, DxLoadIndicatorModule, DxLoadPanelModule, DxNumberBoxModule, DxPopupModule, DxSelectBoxModule, DxTabsModule, DxToolbarModule } from 'devextreme-angular';
 import { ProductsComponent } from './products/products.component';
 import { PurchasesComponent } from './purchases/purchases.component';
+import { PurchaseDialogComponent } from './purchases/purchase-dialog.component';
 import { SharedModule } from '../shared/shared.module';
 import { ProductCategoriesComponent } from './product-categories/product-categories.component';
 import { CategoryModalComponent } from './product-categories/category-modal/category-modal.component';
@@ -38,6 +39,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatMenuModule } from '@angular/material/menu';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -45,6 +47,7 @@ import { QuillModule } from 'ngx-quill';
     StoreManagerComponent,
     ProductsComponent,
     PurchasesComponent,
+    PurchaseDialogComponent,
     PurchaseDetailsComponent,
     CouponsComponent,
     CouponDialogComponent,
@@ -93,6 +96,7 @@ import { QuillModule } from 'ngx-quill';
     MatCheckboxModule,
     MatTabsModule,
     MatToolbarModule,
+    MatMenuModule,
     QuillModule
   ]
 })

@@ -1,312 +1,198 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="Select Columns to Display" icon="columnchooser" [onClick]="showColumnChooser"></dxi-item>
-              <dxi-item text="Export To Excel" icon="exportxlsx" [onClick]="exportXLSGrid"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header [title]="itemType + 's'">
+  <button mat-stroked-button type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+    <mat-icon>view_column</mat-icon>
+    Columns
+  </button>
+  <mat-menu #columnsMenu="matMenu">
+    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
+      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+    </button>
+  </mat-menu>
+
+  <button mat-stroked-button type="button" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="table-scroll">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+  <table mat-table [dataSource]="(purchases$ | async) ?? []" class="purchases-table">
+    <ng-container matColumnDef="processedStatus">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let item">{{ item.processedStatus }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="dateProcessed">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let item">{{ $any(item.dateProcessed) | date: 'short' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="firstName">
+      <th mat-header-cell *matHeaderCellDef>First Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.firstName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="lastName">
+      <th mat-header-cell *matHeaderCellDef>Last Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.lastName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let item">{{ item.email }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="billingAddress1">
+      <th mat-header-cell *matHeaderCellDef>Address 1</th>
+      <td mat-cell *matCellDef="let item">{{ item.billingAddress?.address1 }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="billingAddress2">
+      <th mat-header-cell *matHeaderCellDef>Address 2</th>
+      <td mat-cell *matCellDef="let item">{{ item.billingAddress?.address2 }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="billingCity">
+      <th mat-header-cell *matHeaderCellDef>City</th>
+      <td mat-cell *matCellDef="let item">{{ item.billingAddress?.city }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="billingState">
+      <th mat-header-cell *matHeaderCellDef>State</th>
+      <td mat-cell *matCellDef="let item">{{ item.billingAddress?.state }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="billingZip">
+      <th mat-header-cell *matHeaderCellDef>Zip</th>
+      <td mat-cell *matCellDef="let item">{{ item.billingAddress?.zip }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="receipt">
+      <th mat-header-cell *matHeaderCellDef>Receipt</th>
+      <td mat-cell *matCellDef="let item">{{ item.paymentIntent?.id ?? item.receipt }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="couponCode">
+      <th mat-header-cell *matHeaderCellDef>Coupon</th>
+      <td mat-cell *matCellDef="let item">{{ item.couponCode }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="totalBeforeDiscount">
+      <th mat-header-cell *matHeaderCellDef>Total</th>
+      <td mat-cell *matCellDef="let item">{{ getProductTotalDisplayAmount(item) | currency }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="discount">
+      <th mat-header-cell *matHeaderCellDef>Discount</th>
+      <td mat-cell *matCellDef="let item">{{ getDiscountDisplayAmount(item) | currency }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="estimatedTaxes">
+      <th mat-header-cell *matHeaderCellDef>Taxes</th>
+      <td mat-cell *matCellDef="let item">{{ getTaxesDisplayAmount(item) | currency }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="shippingRate">
+      <th mat-header-cell *matHeaderCellDef>Shipping</th>
+      <td mat-cell *matCellDef="let item">{{ getShippingDisplayAmount(item) | currency }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="charged">
+      <th mat-header-cell *matHeaderCellDef>Charged</th>
+      <td mat-cell *matCellDef="let item">{{ getChargedDisplayAmount(item) | currency }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="refundAmount">
+      <th mat-header-cell *matHeaderCellDef>Refunded</th>
+      <td mat-cell *matCellDef="let item">{{ item.refundAmount | currency }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <ng-container *ngIf="isVisible(['Admin'])">
+          <button mat-icon-button matTooltip="DOWNLOAD SHIPPING LABEL" *ngIf="isShippingButtonVisible(item)" (click)="getShippingLabel(item)">
+            <mat-icon>local_shipping</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <!-- Filter row -->
+    <ng-container matColumnDef="processedStatus-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('processedStatus', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="dateProcessed-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="firstName-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('firstName', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="lastName-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('lastName', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="email-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('email', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="billingAddress1-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="billingAddress2-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="billingCity-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="billingState-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="billingZip-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="receipt-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('receipt', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="couponCode-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('couponCode', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="totalBeforeDiscount-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('totalBeforeDiscount', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="discount-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('discount', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="estimatedTaxes-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('estimatedTaxes', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="shippingRate-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('shippingRate', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="charged-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('charged', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="refundAmount-filter">
+      <th mat-header-cell *matHeaderCellDef><app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('refundAmount', $event)"></app-column-filter></th>
+    </ng-container>
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.amount-mismatch]="isAmountMismatch(row)" (dblclick)="showEditModal(row)"></tr>
+  </table>
 </div>
 
-<dx-data-grid class="dx-card wide-card"
-  #purchasesGrid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)"
-  (onRowPrepared)="onRowPrepared($event)">
-
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-  <dxi-column dataField="processedStatus" [caption]="'Status'"></dxi-column>
-  <dxi-column dataField="id" [visible]="false"></dxi-column>
-  <dxi-column dataField="dateProcessed" [caption]="'Date'" [dataType]="'datetime'" [sortOrder]="'desc'"></dxi-column>
-  <dxi-column dataField="firstName"></dxi-column>
-  <dxi-column dataField="lastName"></dxi-column>
-  <dxi-column dataField="email"></dxi-column>
-  <dxi-column dataField="billingAddress.address1" [caption]="'Address 1'" [visible]="false"></dxi-column>
-  <dxi-column dataField="billingAddress.address2" [caption]="'Address 2'" [visible]="false"></dxi-column>
-  <dxi-column dataField="billingAddress.city" [caption]="'City'" [visible]="false"></dxi-column>
-  <dxi-column dataField="billingAddress.state" [caption]="'State'" [visible]="false"></dxi-column>
-  <dxi-column dataField="billingAddress.zip" [caption]="'Zip'" [visible]="false"></dxi-column>
-  <dxi-column dataField="receipt" cellTemplate="receiptTemplate"></dxi-column>
-  <dxi-column dataField="couponCode"></dxi-column>
-  <dxi-column dataField="totalBeforeDiscount" [caption]="'Total'" cellTemplate="productTotalTemplate"></dxi-column>
-  <dxi-column dataField="discount" [caption]="'Discount'" cellTemplate="discountTemplate"></dxi-column>
-  <dxi-column dataField="estimatedTaxes" [caption]="'Taxes'" cellTemplate="amountTaxTemplate"></dxi-column>
-  <dxi-column dataField="shippingRate" [caption]="'Shipping'" cellTemplate="shippingDollarTemplate"></dxi-column>
-  <dxi-column dataField="paymentIntent.amount" cellTemplate="amountDollarTemplate" [caption]="'Charged'"></dxi-column>
-  <dxi-column dataField="refundAmount" cellTemplate="amountOtherTemplate" [caption]="'Refunded'"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false" [visible]="isVisible(['Admin'])">
-    <dxi-button icon="arrowdown" hint="DOWNLOAD SHIPPING LABEL" [onClick]="getShippingLabel" [visible]="isShippingButtonVisible"></dxi-button>
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-
-  <dxo-summary *ngIf="isVisible(['Admin'])">
-    <dxi-total-item column="id" summaryType="count"> </dxi-total-item>
-    <dxi-total-item column="totalBeforeDiscount" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="discount" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="estimatedTaxes" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="shippingRate" summaryType="sum" valueFormat="currency"></dxi-total-item>
-    <dxi-total-item column="paymentIntent.amount" summaryType="sum" valueFormat="currency" [customizeText]="customizeAmount"></dxi-total-item>
-    <dxi-total-item column="refundAmount" summaryType="sum" valueFormat="currency"></dxi-total-item>
-  </dxo-summary>
-
-  <div *dxTemplate="let data of 'totalBeforeDiscountTemplate'">
-    {{data.value > 0 ? (data.value | currency) : (0 | currency)}}
-  </div>
-
-  <div *dxTemplate="let row of 'discountTemplate'">
-    {{getDiscountDisplayAmount(row.data) | currency}}
-  </div>
-
-  <div *dxTemplate="let data of 'receiptTemplate'">
-    {{data.data.paymentIntent?.id ? data.data.paymentIntent.id : data.data.receipt }}
-  </div>
-
-  <div *dxTemplate="let row of 'productTotalTemplate'">
-    {{getProductTotalDisplayAmount(row.data) | currency}}
-  </div>
-
-  <div *dxTemplate="let row of 'amountDollarTemplate'">
-    {{getChargedDisplayAmount(row.data) | currency}}
-  </div>
-
-  <div *dxTemplate="let row of 'shippingDollarTemplate'">
-    {{getShippingDisplayAmount(row.data) | currency}}
-  </div>
-
- <div *dxTemplate="let row of 'amountTaxTemplate'">
-    {{getTaxesDisplayAmount(row.data) | currency}}
-  </div>
-
-  <div *dxTemplate="let data of 'amountOtherTemplate'">
-    {{data.value > 0 ? (data.value / 100 | currency) : (0 | currency)}}
-  </div>
-
-
-</dx-data-grid>
-
-<dx-popup
-  #addEditPopup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'75%'"
-  [height]="'95%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <!--<dxi-toolbar-item toolbar="top" location="after" [visible]="this.selectedItem && this.selectedItem.processedStatus != 'PARTIAL_REFUND' && this.selectedItem.processedStatus != 'REFUNDED'">
-    <div *dxTemplate>
-      <dx-button
-        *ngIf="isVisible(['Admin'])"
-        text="REFUND ORDER"
-        stylingMode="contained"
-        type="normal"
-        [disabled]="inProgress$ | async"
-        (onClick)="refundOrder()">
-      </dx-button>
-    </div>
-  </dxi-toolbar-item>-->
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left"
-          [colCount]="12">
-          <dxi-item itemType="group" [colCount]="4" [colSpan]="4">
-            <dxi-item dataField="dateProcessed" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="firstName" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="email" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="payPalReceipt ? payPalReceipt.status : paymentIntent.status" [label]="{text: 'Status'}" [colSpan]="4" [disabled]="true">
-              <div *dxTemplate>
-                {{getOrderStatusDisplay(selectedItem)}}
-              </div>
-            </dxi-item>
-          </dxi-item>
-          <dxi-item itemType="group" [colCount]="4" [colSpan]="4">
-            <dxi-item dataField="processedStatus" [colSpan]="4">
-              <div *dxTemplate>
-                <dx-select-box
-                  [items]="['NEW', 'COMPLETE', 'REFUNDED']"
-                  [(value)]="selectedItem.processedStatus">
-                </dx-select-box>
-              </div>
-            </dxi-item>
-            <dxi-item dataField="lastName" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item dataField="couponCode" [colSpan]="4" [disabled]="true"></dxi-item>
-            <dxi-item [colSpan]="4" [label]="{text: 'Item Count'}" [disabled]="true">
-              <div *dxTemplate>
-                <dx-number-box [value]="getOrderItemCount(selectedItem)"></dx-number-box>
-              </div>
-            </dxi-item>
-          </dxi-item>
-          <dxi-item itemType="group" caption="Summary" [colCount]="4" [colSpan]="4">
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Item Total: </div>
-                  <div class="col-4 text-end">{{getProductTotalDisplayAmount(selectedItem) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Taxes: </div>
-                  <div class="col-4 text-end">{{getTaxesDisplayAmount(selectedItem) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Shipping: </div>
-                  <div class="col-4 text-end">{{getShippingDisplayAmount(selectedItem) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Sub Total: </div>
-                  <div class="col-4 text-end">{{(getProductTotalDisplayAmount(selectedItem) + getTaxesDisplayAmount(selectedItem) + getShippingDisplayAmount(selectedItem)) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Discount: </div>
-                  <div class="col-4 text-end">-{{getDiscountDisplayAmount(selectedItem) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Shipping Discount: </div>
-                  <div class="col-4 text-end">-{{getShippingDiscountDisplayAmount(selectedItem) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4">
-              <div *dxTemplate>
-                <div class="row">
-                  <div class="col-6">Charged: </div>
-                  <div class="col-4 text-end">{{getChargedDisplayAmount(selectedItem) | currency}}</div>
-                  <div class="col-2"></div>
-                </div>
-              </div>
-            </dxi-item>
-          </dxi-item>
-
-          <dxi-item itemType="tabbed" [colSpan]="12">
-            <dxi-tab title="Contact" [colCount]="2">
-                <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="3">
-                  <dxi-item dataField="shippingAddress.address1" [colSpan]="6" [label]="{ text: 'Address1' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.address2" [colSpan]="6" [label]="{ text: 'Address2' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.city" [colSpan]="3" [label]="{ text: 'City' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
-                    <div *dxTemplate>
-                      <dx-select-box
-                        [items]="states"
-                        [(value)]="selectedItem.shippingAddress.state">
-                      </dx-select-box>
-                    </div>
-                  </dxi-item>
-                  <dxi-item dataField="shippingAddress.zip" [colSpan]="2" [label]="{ text: 'Zip' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }"></dxi-item>
-                </dxi-item>
-                <dxi-item itemType="group" caption="Phone Number" [colCount]="6" [colSpan]="3">
-                  <dxi-item dataField="phone.countryCode" [colSpan]="2" [label]="{ text: 'Country Code' }"></dxi-item>
-                  <dxi-item dataField="phone.number" [colSpan]="2" [label]="{ text: 'Number' }" [editorOptions]="phoneEditorOptions"></dxi-item>
-                  <dxi-item [label]="{ text: 'Type' }" [colSpan]="2">
-                    <div *dxTemplate>
-                      <dx-select-box
-                        [items]="phone_types"
-                        [(value)]="selectedItem.phone.type">
-                      </dx-select-box>
-                    </div>
-                  </dxi-item>
-                </dxi-item>
-            </dxi-tab>
-            <dxi-tab title="Sale Details">
-              <dxi-item [colSpan]="6">
-                <div *dxTemplate>
-                  <app-purchase-details [selectedItem]="selectedItem"></app-purchase-details>
-                </div>
-              </dxi-item>
-            </dxi-tab>
-          </dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
-<dx-load-panel
-    #loadPanel
-    shadingColor="rgba(0,0,0,0.4)"
-    [position]="{ of: '#addEditPopup' }"
-    [visible]="isLoadingVisible$ | async"
-    [message] = "'Please wait while refund is processing!'"
-    [showIndicator]="true"
-    [showPane]="true"
-    [shading]="true"
-    [hideOnOutsideClick]="false">
-</dx-load-panel>
+<div class="summary-row" *ngIf="isVisible(['Admin'])">
+  <span>{{ currentRows.length }} orders</span>
+  <span>Total: {{ sumOf('totalBeforeDiscount') | currency }}</span>
+  <span>Discount: {{ sumOf('discount') | currency }}</span>
+  <span>Taxes: {{ sumOf('estimatedTaxes') | currency }}</span>
+  <span>Shipping: {{ sumOf('shippingRate') | currency }}</span>
+  <span>Charged: {{ sumOf('charged') | currency }}</span>
+  <span>Refunded: {{ sumOf('refundAmount') | currency }}</span>
+</div>

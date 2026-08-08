@@ -1,0 +1,14 @@
+.table-scroll {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+.details-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}

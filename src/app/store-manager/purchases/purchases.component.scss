@@ -1,0 +1,49 @@
+/* See admin-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.purchases-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.purchases-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+// Same highlight the original applied via onRowPrepared's direct style
+// mutation - a bound row class instead.
+.purchases-table .amount-mismatch {
+  background-color: #fff9c4;
+}
+
+.columns-button {
+  margin-right: 8px;
+}
+
+.summary-row {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.02);
+}

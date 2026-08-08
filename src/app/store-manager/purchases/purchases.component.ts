@@ -1,387 +1,272 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
-import { ProductModel } from 'impactdisciplescommon/src/models/utils/product.model';
-import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
-import { Observable, BehaviorSubject, map, Subject, takeUntil } from 'rxjs';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { Timestamp } from 'firebase/firestore';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { environment } from 'src/environments/environment';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { PaymentIntent } from '@stripe/stripe-js';
+import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
+import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { exportGridToExcel } from '../../shared/grid-export.util';
+import { environment } from 'src/environments/environment';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { PurchaseDialogComponent } from './purchase-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-purchases',
     templateUrl: './purchases.component.html',
-    styleUrls: ['./purchases.component.css'],
+    styleUrls: ['./purchases.component.scss'],
     standalone: false
 })
-export class PurchasesComponent implements OnInit, OnDestroy {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('purchasesGrid', { static: false }) purchasesGrid: DxDataGridComponent;
-
-  private ngUnsubscribe = new Subject<void>();
-  // Was read fresh via authService.getLoggedInUser().role on every
-  // isVisible() call - see events.component.ts for the full explanation
-  // (a stale/expired role cookie throwing on a valid Firebase session).
-  private currentUserRole?: string;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: CheckoutForm;
+export class PurchasesComponent implements OnInit {
+  purchases$: Observable<CheckoutForm[]>;
+  textOperators = TEXT_FILTER_OPERATORS;
+  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Purchase';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isLoadingVisible$ = new BehaviorSubject<boolean>(false);
-  public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
+  // Mirrors the original's column chooser - most columns visible by
+  // default, the billing-address ones default hidden (never actually used
+  // day-to-day, kept toggleable for parity).
+  columns: ColumnDef[] = [
+    { key: 'processedStatus', label: 'Status', visible: true },
+    { key: 'dateProcessed', label: 'Date', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'billingAddress1', label: 'Address 1', visible: false },
+    { key: 'billingAddress2', label: 'Address 2', visible: false },
+    { key: 'billingCity', label: 'City', visible: false },
+    { key: 'billingState', label: 'State', visible: false },
+    { key: 'billingZip', label: 'Zip', visible: false },
+    { key: 'receipt', label: 'Receipt', visible: true },
+    { key: 'couponCode', label: 'Coupon', visible: true },
+    { key: 'totalBeforeDiscount', label: 'Total', visible: true },
+    { key: 'discount', label: 'Discount', visible: true },
+    { key: 'estimatedTaxes', label: 'Taxes', visible: true },
+    { key: 'shippingRate', label: 'Shipping', visible: true },
+    { key: 'charged', label: 'Charged', visible: true },
+    { key: 'refundAmount', label: 'Refunded', visible: true }
+  ];
 
-  productTags: any[] = [];
+  // Was read fresh via authService.getLoggedInUser().role on every
+  // isVisible() call - see events.component.ts for the full explanation.
+  currentUserRole?: string;
 
-  series: any[] = [];
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
+  currentRows: CheckoutForm[] = [];
 
-  public states: string[];
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  phone_types;
+  constructor(
+    private service: PurchasesService,
+    private authService: AdminAuthService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  constructor(private service: PurchasesService, private authService: AdminAuthService) {}
-
-  ngOnInit() {
-    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+  ngOnInit(): void {
+    this.authService.dao.loggedInUser$.subscribe((user) => {
       this.currentUserRole = user?.role;
     });
 
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
+    this.purchases$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) => {
+        const filtered = items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(this.fieldValue(item, field), filters[field], this.fieldType(field))))
+          .sort((a, b) => this.toMillis(b.dateProcessed) - this.toMillis(a.dateProcessed));
+        this.currentRows = filtered;
+        return filtered;
+      }),
+      tap(() => this.loading$.next(false))
     );
-
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateTypesAsArray();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    this.isVisible$.next(true);
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new ProductModel()};
-
-    this.isVisible$.next(true);
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  isVisible(roles: string[]): boolean {
+    return roles.some((role) => role === this.currentUserRole);
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  private fieldType(field: string): 'text' | 'number' | 'date' {
+    if (field === 'dateProcessed') return 'date';
+    if (['totalBeforeDiscount', 'discount', 'estimatedTaxes', 'shippingRate', 'charged', 'refundAmount'].includes(field)) return 'number';
+    return 'text';
+  }
+
+  private fieldValue(item: CheckoutForm, field: string): any {
+    switch (field) {
+      case 'billingAddress1': return item.billingAddress?.address1;
+      case 'billingAddress2': return item.billingAddress?.address2;
+      case 'billingCity': return item.billingAddress?.city;
+      case 'billingState': return item.billingAddress?.state;
+      case 'billingZip': return item.billingAddress?.zip;
+      case 'totalBeforeDiscount': return this.getProductTotalDisplayAmount(item);
+      case 'charged': return this.getChargedDisplayAmount(item);
+      default: return (item as any)[field];
+    }
+  }
+
+  private toMillis(value: any): number {
+    if (!value) return 0;
+    return value instanceof Date ? value.getTime() : 0;
+  }
+
+  // Real dollar amounts come from the PayPal receipt when present, falling
+  // back to the Stripe-derived fields the storefront itself already wrote -
+  // see purchase-dialog.component.ts for the identical per-record logic
+  // (kept duplicated rather than shared, since it's this cheap and each
+  // call site already needs its own CheckoutForm instance).
+  getProductTotalDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.breakdown.item_total.value) : (item.total ?? 0) > 0 ? item.total! : 0;
+  }
+
+  getDiscountDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt && (item.payPalReceipt as any)?.purchase_units[0]?.amount?.breakdown?.discount
+      ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.discount.value)
+      : (item.discount ?? 0) > 0
+        ? item.discount!
+        : 0;
+  }
+
+  getTaxesDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.tax_total.value) : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
+  }
+
+  getShippingDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
+  }
+
+  getChargedDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.value) : (item.total ?? 0) - (item.discount ?? 0) > 0 ? item.total! : 0;
+  }
+
+  // Yellow-row highlight when what the customer was actually charged
+  // (Stripe's own paymentIntent.amount, in cents) doesn't match this
+  // record's own computed total - same check as the original's
+  // onRowPrepared, now a bound row class instead of direct style mutation.
+  isAmountMismatch(item: CheckoutForm): boolean {
+    // totalBeforeDiscount is a real, server-written field (set at checkout)
+    // that was never added to the CheckoutForm interface - read dynamically
+    // here rather than declaring it, per the "don't change the data model"
+    // constraint.
+    let total = (item as any).totalBeforeDiscount ?? 0;
+    if (item.discount) total -= item.discount;
+    if (item.estimatedTaxes) total += item.estimatedTaxes;
+    if (item.shippingRate) total += item.shippingRate;
+    if (item.shippingDiscount) total -= item.shippingDiscount;
+
+    const chargedCents = (item.paymentIntent as PaymentIntent)?.amount;
+    return !!chargedCents && parseFloat(total.toFixed(2)) !== parseFloat((chargedCents / 100).toFixed(2));
+  }
+
+  // Backs the Admin-only summary row - matches the original's dxo-summary
+  // sums, computed over whatever's currently on screen (post-filter).
+  sumOf(field: 'totalBeforeDiscount' | 'discount' | 'estimatedTaxes' | 'shippingRate' | 'charged' | 'refundAmount'): number {
+    const amount = (item: CheckoutForm): number => {
+      switch (field) {
+        case 'totalBeforeDiscount': return this.getProductTotalDisplayAmount(item);
+        case 'discount': return this.getDiscountDisplayAmount(item);
+        case 'estimatedTaxes': return this.getTaxesDisplayAmount(item);
+        case 'shippingRate': return this.getShippingDisplayAmount(item);
+        case 'charged': return this.getChargedDisplayAmount(item);
+        case 'refundAmount': return item.refundAmount ?? 0;
+      }
+    };
+    return this.currentRows.reduce((sum, item) => sum + amount(item), 0);
+  }
+
+  showEditModal(item: CheckoutForm): void {
+    this.dialog.open(PurchaseDialogComponent, { width: '1000px', maxWidth: '95vw', data: { item } });
+  }
+
+  delete(item: CheckoutForm): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
     });
   }
 
-  onSave(item: CheckoutForm) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  isShippingButtonVisible(item: CheckoutForm): boolean {
+    return (item.shippingRate ?? 0) > 0;
   }
 
-  getShippingLabel = async (e) =>{
-    if(!e.row.data?.shippingLabel){
-      let data = { 'shipId': e.row.data.shippingRateId.rateId};
+  // Purchasing a shipping label costs real postage - this endpoint requires
+  // a verified staff Firebase ID token. Never triggered during my own live
+  // verification.
+  async getShippingLabel(item: CheckoutForm): Promise<void> {
+    if (!item.shippingLabel) {
+      const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
 
-      // Purchasing a shipping label costs real postage -- this endpoint now
-      // requires a verified staff Firebase ID token.
-      let idToken = await this.authService.dao.auth.currentUser?.getIdToken();
+      const request = await fetch(environment.shippingLabelUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+        body: JSON.stringify({ shipId: item.shippingRateId.rateId })
+      });
 
-      let request = await fetch(environment.shippingLabelUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
-        body: JSON.stringify(data)
-      })
+      const response = await request.json();
 
-      let response = await request.json();
-
-      if(response.code == 400){
-        notify({
-          message: response.error.message,
-          position: 'top',
-          width: 600,
-          type: 'error'
-        });
-
-        e.row.data.shippingLabel = response;
+      if (response.code === 400) {
+        this.snackbar.error(response.error.message);
+        item.shippingLabel = response;
       } else {
-        e.row.data.shippingLabel = response;
-
-        await this.service.update(e.row.data.id, e.row.data).then(sale => {
-          this.downloadShippingLabel(sale.shippingLabel.labelDownload.pdf)
-        })
+        item.shippingLabel = response;
+        this.service.update(item.id!, item).then((saved) => {
+          this.downloadShippingLabel(saved!.shippingLabel.labelDownload.pdf);
+        });
       }
+    } else if (item.shippingLabel?.code) {
+      this.snackbar.error(item.shippingLabel.error.message);
     } else {
-      if(e.row.data.shippingLabel?.code){
-        notify({
-          message: e.row.data.shippingLabel.error.message,
-          position: 'top',
-          width: 600,
-          type: 'error'
-        });
-      } else {
-        this.downloadShippingLabel(e.row.data.shippingLabel.labelDownload.pdf)
-      }
+      this.downloadShippingLabel(item.shippingLabel.labelDownload.pdf);
     }
   }
 
-  downloadShippingLabel(pdf){
+  private downloadShippingLabel(pdf: string): void {
     const link = document.createElement('a');
     link.setAttribute('target', '_blank');
     link.setAttribute('href', pdf);
-    link.setAttribute('download', `products.csv`);
+    link.setAttribute('download', 'shipping-label.pdf');
     document.body.appendChild(link);
     link.click();
     link.remove();
   }
 
-  isShippingButtonVisible(e){
-    return e.row.data?.shippingRate > 0;
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  markAsShipped = (e) => {
-    confirm('<i>Are you sure you want to mark item as Shipped?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        e.row.data.processedStatus="SHIPPED";
-        e.row.data.dateProcessed = dateFromTimestamp(Timestamp.now() as Timestamp);
-
-        let isOrderComplete = true;
-
-        this.selectedItem.cartItems.forEach(item => {
-          if(item.processedStatus != 'SHIPPED'){
-            isOrderComplete = false;
-          }
-        })
-
-        if(isOrderComplete){
-          this.selectedItem.processedStatus = 'COMPLETE';
-          this.selectedItem.dateProcessed = Timestamp.now();
-        }
-
-        this.service.update(this.selectedItem.id, this.selectedItem).then(item => {
-          notify({
-            message: e.row.data.itemName + ' x ( ' + e.row.data.orderQuantity + ' ) marked as ' + e.row.data.processedStatus,
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
-    });
-  }
-
-  getOrderStatusDisplay(item: any) {
-    return item.payPalReceipt ? item.payPalReceipt?.status : item.paymentIntent?.status
-  }
-
-  getChargedDisplayAmount(item: any) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.value) : item.total - item.discount > 0 ? (item.total) : 0
-  }
-
-  getProductTotalDisplayAmount(item: CheckoutForm) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.breakdown.item_total.value) : item.total > 0 ? (item.total) : 0
-  }
-
-  getDiscountDisplayAmount(item: CheckoutForm){
-    return item.payPalReceipt  && item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount? parseFloat(item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount?.value) : item.discount > 0 ? (item.discount) : 0
-  }
-
-  getShippingDisplayAmount(item: CheckoutForm) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
-  }
-
-  getShippingDiscountDisplayAmount(item: CheckoutForm) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt?.purchase_units[0].amount.breakdown.shipping_discount.value) : item.shippingDiscount > 0 ? item.shippingDiscount : 0;
-  }
-
-  getTaxesDisplayAmount(item: CheckoutForm) {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0].amount.breakdown.tax_total.value) : item.estimatedTaxes > 0 ? item.estimatedTaxes : 0;
-  }
-
-  getOrderItemCount(item: CheckoutForm){
-    return item.cartItems.map(item => item.orderQuantity).reduce((a,b) => a + b);
-
-  }
-
-
-
-  refundOrder = () => {
-    let amountToRefund = this.selectedItem.total;
-
-    confirm('<i>Are you sure you want to refund amount $'+amountToRefund.toFixed(2)+'?</i>', 'Confirm').then(async (dialogResult) => {
-      if (dialogResult) {
-        this.isLoadingVisible$.next(true);
-
-        let request = { 'paymentIntent': (this.selectedItem.paymentIntent as PaymentIntent).id}
-
-        // Refunds move real money -- this endpoint now requires a verified
-        // staff Firebase ID token.
-        let idToken = await this.authService.dao.auth.currentUser?.getIdToken();
-
-        let response = await fetch(environment.stripeRefundURL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
-          body: JSON.stringify(request)
-        })
-
-        let result = await response.json();
-
-        this.selectedItem.refundAmount = Number(amountToRefund.toFixed(2))
-        this.selectedItem.refundId=result.id;
-
-        this.selectedItem.processedStatus="REFUNDED";
-
-        this.service.update(this.selectedItem.id, this.selectedItem).then((item) => {
-          notify({
-            message: 'Order  Refunded ($' + amountToRefund.toFixed(2) + ')',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.isLoadingVisible$.next(false);
-        })
-      }
-    });
-  }
-
-  onRowPrepared(e) {
-    if (e.rowType === "data") {
-      let total = e.data.totalBeforeDiscount;
-
-      if(e.data.discount){
-        total -= e.data.discount;
-      }
-
-      if(e.data.estimatedTaxes){
-        total += e.data.estimatedTaxes;
-      }
-
-      if(e.data.shippingRate){
-        total += e.data.shippingRate;
-      }
-
-      if(e.data.shippingDiscount){
-        total -= e.data.shippingDiscount;
-      }
-
-
-      if (e.data.paymentIntent?.amount && parseFloat(total.toFixed(2)) != parseFloat((e.data.paymentIntent?.amount / 100).toFixed(2))) {
-        e.rowElement.style.backgroundColor =  "yellow";
-      }
-    }
-  }
-
-  customizeAmount(itemInfo){
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(parseFloat((itemInfo.value / 100).toFixed(2)));
-  }
-
-  isVisible(roles: string[]): boolean {
-    return roles.filter(role => role == this.currentUserRole).length > 0;
-  }
-
-  ngOnDestroy(): void {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
-  }
-
-  showColumnChooser = () => {
-    this.purchasesGrid.instance.showColumnChooser()
-  }
-
-  exportXLSGrid = () => {
-    exportGridToExcel(this.purchasesGrid.instance, 'purchases.xlsx');
+  // Exports whatever's currently on screen (after filters) - matches the
+  // original's exportGridToExcel default (visible rows, current column set).
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const columns: ExcelColumn<CheckoutForm>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, columns, 'purchases.xlsx');
   }
 }

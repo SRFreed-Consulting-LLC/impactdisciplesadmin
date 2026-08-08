@@ -1,60 +1,60 @@
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="selectedItem.cartItems"
-  [height]="'36vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [wordWrapEnabled]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [columnAutoWidth]="true">
+<div class="table-scroll">
+  <table mat-table [dataSource]="selectedItem.cartItems ?? []" class="details-table">
+    <ng-container matColumnDef="img">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let item">
+        <img *ngIf="item.img" width="80" [src]="item.img.url" [alt]="item.img.name">
+      </td>
+    </ng-container>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+    <ng-container matColumnDef="itemName">
+      <th mat-header-cell *matHeaderCellDef>Description</th>
+      <td mat-cell *matCellDef="let item">
+        <div>{{ item.itemName }}</div>
+        <div>{{ item.orderQuantity }} x {{ service.calculateProductCostAmount(costRow(item)) | currency }} = {{ (item.orderQuantity * service.calculateProductCostAmount(costRow(item))) | currency }}</div>
+        <ol *ngIf="item.attendees?.length" type="1">
+          <li *ngFor="let attendee of item.attendees">{{ attendee.firstName }} {{ attendee.lastName }} - ({{ attendee.email }})</li>
+        </ol>
+        <span *ngIf="item.size">Size: ({{ item.size }})</span>
+        <span *ngIf="item.color">Color: ({{ item.color }})</span>
+      </td>
+    </ng-container>
 
-  <dxi-column dataField="img" cellTemplate="imageCellTemplate" [caption]="''" [width]="120"></dxi-column>
-  <dxi-column dataField="itemName" cellTemplate="descriptionCellTemplate" [caption]="'Description'"></dxi-column>
-  <dxi-column [caption]="'Tax'" cellTemplate="taxAmountTemplate"></dxi-column>
-  <dxi-column [caption]="'Shipping'" cellTemplate="shippingAmountTemplate"></dxi-column>
-  <dxi-column [caption]="'Discount'" cellTemplate="discountAmountTemplate"></dxi-column>
-  <dxi-column [caption]="'Total'" cellTemplate="totalAmountTemplate"></dxi-column>
-  <dxi-column dataField="processedStatus" [caption]="'Status'" [width]="150"></dxi-column>
-  <dxi-column *ngIf="isVisible(['Admin'])" type="buttons" [allowReordering]="false" [width]="75">
-    <dxi-button icon="taskcomplete" hint="Mark As Shipped" [onClick]="markAsShipped" [visible]="isShippedButtonsVisible"></dxi-button>
-    <!--<dxi-button icon="taskrejected" hint="Refund Amount" [onClick]="refundLineItem" [visible]="isRefundedButtonsVisible"></dxi-button>-->
-  </dxi-column>
+    <ng-container matColumnDef="tax">
+      <th mat-header-cell *matHeaderCellDef>Tax</th>
+      <td mat-cell *matCellDef="let item">{{ service.calculateItemTaxableAmount(costRow(item), selectedItem) | currency }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let row of 'taxAmountTemplate'">
-    <span width="100">{{service.calculateItemTaxableAmount(row, selectedItem) | currency}}</span>
-  </div>
+    <ng-container matColumnDef="shipping">
+      <th mat-header-cell *matHeaderCellDef>Shipping</th>
+      <td mat-cell *matCellDef="let item">{{ service.calculateItemShippingAmount(costRow(item), selectedItem) | currency }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let row of 'shippingAmountTemplate'">
-    <span width="100">{{service.calculateItemShippingAmount(row, selectedItem) | currency}}</span>
-  </div>
+    <ng-container matColumnDef="discount">
+      <th mat-header-cell *matHeaderCellDef>Discount</th>
+      <td mat-cell *matCellDef="let item">{{ service.calculateItemDiscountAmount(costRow(item)) | currency }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let row of 'discountAmountTemplate'">
-    <span width="100">{{service.calculateItemDiscountAmount(row) | currency}}</span>
-  </div>
+    <ng-container matColumnDef="total">
+      <th mat-header-cell *matHeaderCellDef>Total</th>
+      <td mat-cell *matCellDef="let item">{{ service.calculateItemTotalAmount(costRow(item), selectedItem) | currency }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let row of 'totalAmountTemplate'">
-    <span width="100">{{service.calculateItemTotalAmount(row, selectedItem) | currency}}</span>
-  </div>
+    <ng-container matColumnDef="processedStatus">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let item">{{ item.processedStatus }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let data of 'imageCellTemplate'">
-    <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-  </div>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="Mark As Shipped" *ngIf="isVisible(['Admin']) && isShippedButtonVisible(item)" (click)="markAsShipped(item)">
+          <mat-icon>local_shipping</mat-icon>
+        </button>
+      </td>
+    </ng-container>
 
-  <div *dxTemplate="let row of 'descriptionCellTemplate'">
-    <div>{{row.value}}</div>
-    <div>{{row.data.orderQuantity}}  x  {{service.calculateProductCostAmount(row) | currency}} = {{(row.data.orderQuantity * service.calculateProductCostAmount(row)) | currency}}</div>
-    <div *ngIf="(row.data.attendees?.length) > 0">
-      <ol type="1">
-        <li *ngFor="let attendee of row.data.attendees">
-          {{attendee.firstName}} {{attendee.lastName}} - ({{attendee.email}})
-        </li>
-      </ol>
-    </div>
-    <span *ngIf="row.data.size">Size: ({{row.data.size}})</span>
-    <span *ngIf="row.data.color">Color: ({{row.data.color}})</span>
-  </div>
-</dx-data-grid>
+    <tr mat-header-row *matHeaderRowDef="['img', 'itemName', 'tax', 'shipping', 'discount', 'total', 'processedStatus', 'actions']; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['img', 'itemName', 'tax', 'shipping', 'discount', 'total', 'processedStatus', 'actions'];"></tr>
+  </table>
+</div>
