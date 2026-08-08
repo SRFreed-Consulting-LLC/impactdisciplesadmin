@@ -1,0 +1,38 @@
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+// Bounded height so the tab header never scrolls away from the content
+// under it. Unlike Web Config's standalone tab group, this one lives inside
+// mat-dialog-content, which already ships its own overflow-y: auto and a
+// max-height cap - that's what actually provides the scroll here, not a
+// plain-selector override on Material's internal .mat-mdc-tab-body-wrapper
+// (confirmed via live testing that such overrides silently never apply,
+// same as the bug found and fixed on Web Config - not worth writing here
+// since mat-dialog-content's own scroll already makes every field and the
+// SAVE button reachable regardless).
+.user-tabs {
+  height: 55vh;
+}
+
+.tab-content {
+  padding: 16px 4px 4px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}

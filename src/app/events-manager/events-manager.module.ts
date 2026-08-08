@@ -22,6 +22,10 @@ import { EventBreakoutsComponent } from './events/event-breakouts/event-breakout
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 import { EventsManagerRoutingModule } from './events-manager-routing.module';
 import { CourseDialogComponent } from './courses/course-dialog.component';
+import { RoomDialogComponent } from './locations/room/room-dialog.component';
+import { AnnouncementDialogComponent } from './events/event-application/announcements/announcement-dialog.component';
+import { OrganizationDialogComponent } from './organizations/organization-dialog.component';
+import { LocationDialogComponent } from './locations/location-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -30,6 +34,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
 
 @NgModule({
     declarations: [
@@ -39,13 +44,17 @@ import { MatTooltipModule } from '@angular/material/tooltip';
       CourseDialogComponent,
       CoachesComponent,
       LocationsComponent,
+      LocationDialogComponent,
       OrganizationsComponent,
+      OrganizationDialogComponent,
       EventAgendaComponent,
       EventAttendeesComponent,
       EventBreakoutsComponent,
       RoomComponent,
+      RoomDialogComponent,
       FAQComponent,
       AnnouncementsComponent,
+      AnnouncementDialogComponent,
       EventApplicationComponent,
       DetailsComponent
     ],
@@ -87,7 +96,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
       MatTableModule,
       MatIconModule,
       MatButtonModule,
-      MatTooltipModule
+      MatTooltipModule,
+      MatSelectModule
     ]
 })
 export class EventsManagerModule { }

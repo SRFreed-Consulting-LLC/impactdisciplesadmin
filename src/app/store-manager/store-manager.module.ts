@@ -16,6 +16,18 @@ import { SalesComponent } from './sales/sales.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 import { StoreManagerRoutingModule } from './store-manager-routing.module';
+import { SaleDialogComponent } from './sales/sale-dialog.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @NgModule({
   declarations: [
@@ -30,7 +42,8 @@ import { StoreManagerRoutingModule } from './store-manager-routing.module';
     CategoryModalComponent,
     ProductSeriesComponent,
     SeriesModalComponent,
-    SalesComponent
+    SalesComponent,
+    SaleDialogComponent
   ],
   imports: [
     CommonModule,
@@ -55,7 +68,18 @@ import { StoreManagerRoutingModule } from './store-manager-routing.module';
     DxDropDownBoxModule,
     DxContextMenuModule,
     SharedModule,
-    DxLoadIndicatorModule
+    DxLoadIndicatorModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MatSlideToggleModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ]
 })
 export class StoreManagerModule { }

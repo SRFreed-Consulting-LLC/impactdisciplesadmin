@@ -1,227 +1,117 @@
-
-<div class="row" style="position: absolute;top: 50%; left: 50%;">
-  <div class="col-12 alignCenter">
-    <dx-load-indicator
-      [visible]="spinnerVisible"
-      id="large-indicator"
-      height="100"
-      width="100">
-    </dx-load-indicator>
-  </div>
+<div class="spinner-overlay" *ngIf="spinnerVisible">
+  <mat-spinner diameter="80"></mat-spinner>
 </div>
+
 <div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}</h2>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+  <app-list-header [title]="itemType"></app-list-header>
 </div>
 
-<dx-form [colCount]="2" [formData]="selectedItem">
-  <dxi-item itemType="tabbed" [colSpan]="2">
-    <dxi-tab title="Info" [colCount]="2">
-      <dxi-item itemType="group" caption="Socials" [colCount]="2" [colSpan]="1">
-        <dxi-item dataField="twitter" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="facebook" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="facebookLive" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="applePodCast" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="linkedIn" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="youtube" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="instagram" [colSpan]="2"></dxi-item>
-        <dxi-item dataField="inpersonSeminarCost" [colSpan]="1" [editorType]="'dxNumberBox'" [editorOptions]="{format: {type:'currency',currency:'USD', precision: 2}}" ></dxi-item>
-        <dxi-item dataField="onlineSeminarCost" [colSpan]="1" [editorType]="'dxNumberBox'" [editorOptions]="{format: {type:'currency',currency:'USD', precision: 2}}" ></dxi-item>
-        <dxi-item dataField="equippingGroupTotalCost" [colSpan]="1" [editorType]="'dxNumberBox'" [editorOptions]="{format: {type:'currency',currency:'USD', precision: 2}}" ></dxi-item>
-        <dxi-item dataField="equippingGroupPaymentCost" [colSpan]="1" [editorType]="'dxNumberBox'" [editorOptions]="{format: {type:'currency',currency:'USD', precision: 2}}" ></dxi-item>
-        <dxi-item dataField="freeShippingAmount" [colSpan]="1" [editorType]="'dxNumberBox'" [editorOptions]="{format: {type:'currency',currency:'USD', precision: 2}}" ></dxi-item>
-      </dxi-item>
-      <dxi-item itemType="group" caption="Contact Information" [colCount]="4" [colSpan]="1">
-        <dxi-item dataField="adminEmailAddress" [colSpan]="4"></dxi-item>
-        <dxi-item dataField="email" [colSpan]="4"></dxi-item>
-        <dxi-item dataField="phone" [colSpan]="4" [editorOptions]="{ mask: '(000) 000-0000' }"></dxi-item>
-        <dxi-item dataField="address.address1" [colSpan]="4">
-          <dxo-label template="Address 1"></dxo-label>
-        </dxi-item>
-        <dxi-item dataField="address.address2" [colSpan]="4">
-          <dxo-label template="Address 2"></dxo-label>
-        </dxi-item>
-        <dxi-item dataField="address.city" [colSpan]="2">
-          <dxo-label template="City"></dxo-label>
-        </dxi-item>
-        <dxi-item dataField="address.state" [colSpan]="1">
-          <dxo-label template="State"></dxo-label>
-        </dxi-item>
-        <dxi-item dataField="address.zip" [colSpan]="1">
-          <dxo-label template="Zip Code"></dxo-label>
-        </dxi-item>
-      </dxi-item>
-      <dxi-item [colSpan]="2">
-        <div class="row">
-          <div class="col-12 text-end">
-            <dx-button text="Save" width="250" [type]="'default'"[stylingMode]="'contained'" (onClick)="save()"></dx-button>
-          </div>
-        </div>
-      </dxi-item>
-    </dxi-tab>
-    <dxi-tab title="Privacy Policy">
-      <dxi-item dataField="policy" [colSpan]="1" [template]="'policy_template'"></dxi-item>
-      <dxi-item>
-        <div class="row">
-          <div class="col-12 text-end">
-            <dx-button text="Save" width="250" [type]="'default'"[stylingMode]="'contained'" (onClick)="save()"></dx-button>
-          </div>
-        </div>
-      </dxi-item>
-    </dxi-tab>
-    <dxi-tab title="Terms Of Use">
-      <dxi-item dataField="tos" [colSpan]="1" [template]="'tos_template'"></dxi-item>
-      <dxi-item>
-        <div class="row">
-          <div class="col-12 text-end">
-            <dx-button text="Save" width="250" [type]="'default'"[stylingMode]="'contained'" (onClick)="save()"></dx-button>
-          </div>
-        </div>
-      </dxi-item>
-    </dxi-tab>
-  </dxi-item>
+<mat-tab-group [formGroup]="form" class="config-tabs">
+  <mat-tab label="Info">
+    <div class="tab-content">
+      <div class="columns">
+        <div class="column">
+          <h3 class="section-title">Socials</h3>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Twitter</mat-label>
+            <input matInput formControlName="twitter">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Facebook</mat-label>
+            <input matInput formControlName="facebook">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Facebook Live</mat-label>
+            <input matInput formControlName="facebookLive">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Apple Pod Cast</mat-label>
+            <input matInput formControlName="applePodCast">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>LinkedIn</mat-label>
+            <input matInput formControlName="linkedIn">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Youtube</mat-label>
+            <input matInput formControlName="youtube">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Instagram</mat-label>
+            <input matInput formControlName="instagram">
+          </mat-form-field>
 
-  <div *dxTemplate="let data of 'policy_template'">
-    <dx-html-editor
-      height="60vh"
-      [(value)]="selectedItem.policy">
-      <dxo-toolbar [multiline]="false">
-        <dxi-item name="undo"></dxi-item>
-        <dxi-item name="redo"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item
-          name="size"
-          [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-          [options]="{ inputAttr: { 'aria-label': 'Font size' } }">
-        </dxi-item>
-        <dxi-item
-          name="font"
-          [acceptedValues]="[
-            'Arial',
-            'Courier New',
-            'Georgia',
-            'Impact',
-            'Lucida Console',
-            'Tahoma',
-            'Times New Roman',
-            'Verdana'
-          ]"
-          [options]="{ inputAttr: { 'aria-label': 'Font family' } }">
-        </dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="bold"></dxi-item>
-        <dxi-item name="italic"></dxi-item>
-        <dxi-item name="strike"></dxi-item>
-        <dxi-item name="underline"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="alignLeft"></dxi-item>
-        <dxi-item name="alignCenter"></dxi-item>
-        <dxi-item name="alignRight"></dxi-item>
-        <dxi-item name="alignJustify"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="orderedList"></dxi-item>
-        <dxi-item name="bulletList"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item
-          name="header"
-          [acceptedValues]="[false, 1, 2, 3, 4, 5]"
-          [options]="{ inputAttr: { 'aria-label': 'Header' } }">
-        </dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="color"></dxi-item>
-        <dxi-item name="background"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="link"></dxi-item>
-        <dxi-item name="image"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="clear"></dxi-item>
-        <dxi-item name="codeBlock"></dxi-item>
-        <dxi-item name="blockquote"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="insertTable"></dxi-item>
-        <dxi-item name="deleteTable"></dxi-item>
-        <dxi-item name="insertRowAbove"></dxi-item>
-        <dxi-item name="insertRowBelow"></dxi-item>
-        <dxi-item name="deleteRow"></dxi-item>
-        <dxi-item name="insertColumnLeft"></dxi-item>
-        <dxi-item name="insertColumnRight"></dxi-item>
-        <dxi-item name="deleteColumn"></dxi-item>
-      </dxo-toolbar>
-    </dx-html-editor>
-  </div>
-  <div *dxTemplate="let data of 'tos_template'">
-    <dx-html-editor
-      height="60vh"
-      [(value)]="selectedItem.tos">
-      <dxo-toolbar [multiline]="false">
-        <dxi-item name="undo"></dxi-item>
-        <dxi-item name="redo"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item
-          name="size"
-          [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-          [options]="{ inputAttr: { 'aria-label': 'Font size' } }">
-        </dxi-item>
-        <dxi-item
-          name="font"
-          [acceptedValues]="[
-            'Arial',
-            'Courier New',
-            'Georgia',
-            'Impact',
-            'Lucida Console',
-            'Tahoma',
-            'Times New Roman',
-            'Verdana'
-          ]"
-          [options]="{ inputAttr: { 'aria-label': 'Font family' } }">
-        </dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="bold"></dxi-item>
-        <dxi-item name="italic"></dxi-item>
-        <dxi-item name="strike"></dxi-item>
-        <dxi-item name="underline"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="alignLeft"></dxi-item>
-        <dxi-item name="alignCenter"></dxi-item>
-        <dxi-item name="alignRight"></dxi-item>
-        <dxi-item name="alignJustify"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="orderedList"></dxi-item>
-        <dxi-item name="bulletList"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item
-          name="header"
-          [acceptedValues]="[false, 1, 2, 3, 4, 5]"
-          [options]="{ inputAttr: { 'aria-label': 'Header' } }">
-        </dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="color"></dxi-item>
-        <dxi-item name="background"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="link"></dxi-item>
-        <dxi-item name="image"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="clear"></dxi-item>
-        <dxi-item name="codeBlock"></dxi-item>
-        <dxi-item name="blockquote"></dxi-item>
-        <dxi-item name="separator"></dxi-item>
-        <dxi-item name="insertTable"></dxi-item>
-        <dxi-item name="deleteTable"></dxi-item>
-        <dxi-item name="insertRowAbove"></dxi-item>
-        <dxi-item name="insertRowBelow"></dxi-item>
-        <dxi-item name="deleteRow"></dxi-item>
-        <dxi-item name="insertColumnLeft"></dxi-item>
-        <dxi-item name="insertColumnRight"></dxi-item>
-        <dxi-item name="deleteColumn"></dxi-item>
-      </dxo-toolbar>
-    </dx-html-editor>
-  </div>
-</dx-form>
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Inperson Seminar Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="inpersonSeminarCost">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Online Seminar Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="onlineSeminarCost">
+            </mat-form-field>
+          </div>
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Equipping Group Total Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="equippingGroupTotalCost">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Equipping Group Payment Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="equippingGroupPaymentCost">
+            </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Free Shipping Amount</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" formControlName="freeShippingAmount">
+          </mat-form-field>
+        </div>
 
+        <div class="column">
+          <h3 class="section-title">Contact Information</h3>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Admin Email Address</mat-label>
+            <input matInput formControlName="adminEmailAddress">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="phone" appPhoneMask>
+          </mat-form-field>
 
+          <app-address-field [group]="$any(form.get('address'))"></app-address-field>
+        </div>
+      </div>
+
+      <div class="save-row">
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (onClick)="save()"></app-indicator-button>
+      </div>
+    </div>
+  </mat-tab>
+
+  <mat-tab label="Privacy Policy">
+    <div class="tab-content tab-content--editor">
+      <quill-editor formControlName="policy" [modules]="richTextModules"></quill-editor>
+      <div class="save-row">
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (onClick)="save()"></app-indicator-button>
+      </div>
+    </div>
+  </mat-tab>
+
+  <mat-tab label="Terms Of Use">
+    <div class="tab-content tab-content--editor">
+      <quill-editor formControlName="tos" [modules]="richTextModules"></quill-editor>
+      <div class="save-row">
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (onClick)="save()"></app-indicator-button>
+      </div>
+    </div>
+  </mat-tab>
+</mat-tab-group>

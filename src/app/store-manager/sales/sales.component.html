@@ -1,149 +1,120 @@
 <div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE COUPONS">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+  <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 </div>
 
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
+<div class="table-scroll">
+  <table mat-table [dataSource]="(sales$ | async) ?? []" class="sales-table">
+    <ng-container matColumnDef="isActive">
+      <th mat-header-cell *matHeaderCellDef>Live</th>
+      <td mat-cell *matCellDef="let item">
+        <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
+          {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
+        </span>
+      </td>
+    </ng-container>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.name }}</td>
+    </ng-container>
 
-  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="name"></dxi-column>
-  <dxi-column dataField="startDate" [caption]="'From'" [dataType]="'date'" [sortOrder]="'desc'" [width]="200"></dxi-column>
-  <dxi-column dataField="endDate" [caption]="'To'" [dataType]="'date'" [sortOrder]="'desc'" [width]="200"></dxi-column>
-  <dxi-column dataField="percentOff" dataType="number" [width]="120"></dxi-column>
-  <dxi-column dataField="amountOff" dataType="number" [width]="120"></dxi-column>
-  <dxi-column dataField="isProducts" dataType="boolean" [width]="120"></dxi-column>
-  <dxi-column dataField="isEvents" dataType="boolean" [width]="120"></dxi-column>
-  <dxi-column dataField="isShipping" dataType="boolean" [width]="120"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
+    <ng-container matColumnDef="startDate">
+      <th mat-header-cell *matHeaderCellDef>From</th>
+      <td mat-cell *matCellDef="let item">{{ item.startDateParsed | date }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
-    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
-      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
-    </span>
-  </div>
-</dx-data-grid>
+    <ng-container matColumnDef="endDate">
+      <th mat-header-cell *matHeaderCellDef>To</th>
+      <td mat-cell *matCellDef="let item">{{ item.endDateParsed | date }}</td>
+    </ng-container>
 
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="45%"
-  width="30%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async">
-    <div *dxTemplate>
-      <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left"
-          [colCount]="6">
-          <dxi-item dataField="name" [colSpan]="4" [isRequired]="true"></dxi-item>
-          <dxi-item dataField="percentOff" [colSpan]="2" [isRequired]="true">
-            <div *dxTemplate>
-              <dx-number-box [(value)]="selectedItem.percentOff">
-              </dx-number-box>
-            </div>
-          </dxi-item>
-          <dxi-item
-            dataField="startDate"
-            editorType="dxDateBox"
-            [label]="{ text: 'Start Date' }"
-            [colSpan]="3"
-            [isRequired]="true"
-            [editorOptions]="{
-              displayFormat: 'M/d/yyyy',
-              type: 'date',
-              dateSerializationFormat: 'yyyy-MM-dd',
-              useMaskBehavior: true
-          }">
-          </dxi-item>
-          <dxi-item
-              dataField="endDate"
-              editorType="dxDateBox"
-              [label]="{ text: 'End Date' }"
-              [colSpan]="3"
-              [isRequired]="true"
-              [editorOptions]="{
-                displayFormat: 'M/d/yyyy',
-                type: 'date',
-                dateSerializationFormat: 'yyyy-MM-dd',
-                useMaskBehavior: true
-              }">
-          </dxi-item>
-          <dxi-item dataField="isProducts" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Products?' }" [colSpan]="2"></dxi-item>
-          <dxi-item dataField="isEvents" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Events?' }" [colSpan]="2"></dxi-item>
-          <dxi-item dataField="isShipping" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }" [label]="{ text: 'Shipping?' }" [colSpan]="2"></dxi-item>
+    <ng-container matColumnDef="percentOff">
+      <th mat-header-cell *matHeaderCellDef>Percent Off</th>
+      <td mat-cell *matCellDef="let item">{{ item.percentOff }}</td>
+    </ng-container>
 
+    <ng-container matColumnDef="amountOff">
+      <th mat-header-cell *matHeaderCellDef>Amount Off</th>
+      <td mat-cell *matCellDef="let item">{{ item.amountOff }}</td>
+    </ng-container>
 
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
+    <ng-container matColumnDef="isProducts">
+      <th mat-header-cell *matHeaderCellDef>Products</th>
+      <td mat-cell *matCellDef="let item">{{ item.isProducts ? 'Yes' : 'No' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="isEvents">
+      <th mat-header-cell *matHeaderCellDef>Events</th>
+      <td mat-cell *matCellDef="let item">{{ item.isEvents ? 'Yes' : 'No' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="isShipping">
+      <th mat-header-cell *matHeaderCellDef>Shipping</th>
+      <td mat-cell *matCellDef="let item">{{ item.isShipping ? 'Yes' : 'No' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+    <ng-container matColumnDef="isActive-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <ng-container matColumnDef="name-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('name', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="startDate-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('startDate', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="endDate-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('endDate', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="percentOff-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('percentOff', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="amountOff-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('amountOff', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="isProducts-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <ng-container matColumnDef="isEvents-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <ng-container matColumnDef="isShipping-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+  </table>
+</div>

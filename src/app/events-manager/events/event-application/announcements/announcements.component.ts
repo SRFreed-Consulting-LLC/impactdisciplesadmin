@@ -1,15 +1,14 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { AnnouncementModel } from 'impactdisciplescommon/src/models/domain/announcement.model.ts';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import notify from 'devextreme/ui/notify';
+import { BehaviorSubject, combineLatest, map, Observable, of } from 'rxjs';
 import { EventAnnouncementService } from 'impactdisciplescommon/src/services/data/event-announcement.service';
-import DataSource from 'devextreme/data/data_source';
-import CustomStore from 'devextreme/data/custom_store';
-import { DxFormComponent } from 'devextreme-angular';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { Timestamp } from 'firebase/firestore';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../../../shared/snackbar.service';
+import { AnnouncementDialogComponent } from './announcement-dialog.component';
+import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-announcements',
@@ -19,126 +18,72 @@ import { Timestamp } from 'firebase/firestore';
 })
 export class AnnouncementsComponent implements OnInit {
   @Input('event') event: EventModel;
-  @ViewChild('form', { static: false }) form: DxFormComponent;
 
-  datasource$: Observable<DataSource>;
+  announcements$: Observable<AnnouncementModel[]>;
+  displayedColumns = ['date', 'sentBy', 'announcement', 'actions'];
+  filterColumns = ['date-filter', 'sentBy-filter', 'announcement-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
-  selectedItem: AnnouncementModel;
   itemType = 'Event Announcement';
 
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public inProgress$ = new BehaviorSubject<boolean>(false)
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
+  ];
 
-  constructor(private service: EventAnnouncementService,
-    private authService: AdminAuthService
-  ) { }
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  ngOnInit() {
-    if(this.event?.id){
-      this.datasource$ = this.service.streamAllByValue('eventId', this.event.id).pipe(
-        map(
-          (items) =>
-            new DataSource({
-              reshapeOnPush: true,
-              pushAggregationTimeout: 100,
-              store: new CustomStore({
-                key: 'id',
-                loadMode: 'raw',
-                load: function (loadOptions: any) {
-                  return items;
-                }
-              })
-            })
-        )
-      );
-    }
+  constructor(
+    private service: EventAnnouncementService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
+
+  ngOnInit(): void {
+    const source$ = this.event?.id ? this.service.streamAllByValue('eventId', this.event.id) : of([]);
+
+    this.announcements$ = combineLatest([source$, this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) =>
+              matchesColumnFilter(item[field as keyof AnnouncementModel], filters[field], 'text')
+            )
+          )
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return aTime - bTime;
+          })
+      )
+    );
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new AnnouncementModel()};
-
-    this.isVisible$.next(true);
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this announcement?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(AnnouncementDialogComponent, {
+      width: '600px',
+      data: { item: null, eventId: this.event?.id }
     });
   }
-  async onSave(item: AnnouncementModel) {
-    item.eventId = this.event.id;
 
-    if(this.form.instance.validate().isValid) {
-      item.date = Timestamp.now();
+  showEditModal(item: AnnouncementModel): void {
+    this.dialog.open(AnnouncementDialogComponent, {
+      width: '600px',
+      data: { item, eventId: this.event?.id }
+    });
+  }
 
-      let user = await this.authService.getLoggedInUser();
-
-      item.sentBy = user.firstName + ' ' + user.lastName;
-
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
+  delete(item: AnnouncementModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this announcement?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
-    }
+    });
   }
 }

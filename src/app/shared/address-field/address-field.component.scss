@@ -1,0 +1,25 @@
+.address-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.city-field {
+  flex: 2 1 0;
+}
+
+.state-field {
+  flex: 1 1 0;
+}
+
+.zip-field {
+  flex: 1 1 0;
+}

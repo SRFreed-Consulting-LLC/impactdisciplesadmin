@@ -1,0 +1,16 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.announcements-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.announcements-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

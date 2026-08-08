@@ -1,0 +1,16 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.locations-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.locations-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

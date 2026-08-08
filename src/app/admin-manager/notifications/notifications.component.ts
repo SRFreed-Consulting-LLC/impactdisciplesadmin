@@ -1,16 +1,16 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import { DxButtonTypes } from 'devextreme-angular/ui/button';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { Functions, getFunctions, HttpsCallable, httpsCallable } from "firebase/functions";
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { NotificationRegistrationModel } from 'impactdisciplescommon/src/models/admin/notification-registration.model';
 import { NotificationRegistrationService } from 'impactdisciplescommon/src/services/data/notification-registration.service';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
+import { MatDialog } from '@angular/material/dialog';
+import { NotificationDialogComponent } from './notification-dialog.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
-
+// Only the grid's "Send Notification" row action opens the dialog here,
+// matching the original - there's no page-level "New" action and no delete
+// button in this grid. Both showAddModal and delete() existed in the
+// original component but were never wired to anything in its template, so
+// omitting them here changes nothing observable.
 @Component({
     selector: 'app-notifications',
     templateUrl: './notifications.component.html',
@@ -18,121 +18,42 @@ import { confirm } from 'devextreme/ui/dialog';
     standalone: false
 })
 export class NotificationsComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: NotificationRegistrationModel;
+  notifications$: Observable<NotificationRegistrationModel[]>;
+  displayedColumns = ['id', 'email', 'dateRegistered', 'dateRemoved', 'fcmId', 'actions'];
+  filterColumns = ['id-filter', 'email-filter', 'dateRegistered-filter', 'dateRemoved-filter', 'fcmId-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Notifications';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  functions: Functions;
+  constructor(
+    private service: NotificationRegistrationService,
+    private dialog: MatDialog
+  ) {}
 
-  addMessageFunction: HttpsCallable;
-
-  title: string = '';
-  body: string = '';
-
-  constructor(private service: NotificationRegistrationService) {
-    this.functions = getFunctions();
-    this.addMessageFunction = httpsCallable(this.functions, 'sendNotification');
-   }
-
-  ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-
-            })
+  ngOnInit(): void {
+    this.notifications$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items.filter((item) =>
+          Object.keys(filters).every((field) => {
+            const type = field === 'dateRegistered' || field === 'dateRemoved' ? 'date' : 'text';
+            return matchesColumnFilter(item[field as keyof NotificationRegistrationModel], filters[field], type);
           })
+        )
       )
     );
   }
 
-  showEditModal = ({ row: { data } }) => {
-    this.selectedItem = data
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new NotificationRegistrationModel()};
-    this.isVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showEditModal(item: NotificationRegistrationModel): void {
+    this.dialog.open(NotificationDialogComponent, {
+      width: '600px',
+      data: { item }
     });
-  }
-
-  onSave() {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-      notify({
-        message: this.itemType + ' Sent',
-        position: 'top',
-        width: 600,
-        type: 'success'
-      });
-      setTimeout(() => {
-        this.sendMessage();
-
-        notify({
-          message: this.itemType + ' Sent',
-          position: 'top',
-          width: 600,
-          type: 'success'
-        });
-      }, 5000);
-
-      this.onCancel();
-
-    }
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  sendMessage(){
-    this.addMessageFunction({ title: this.title, body: this.body, token: this.selectedRegistration.fcmId }).then((result: any) => {
-      this.body = '';
-      this.title = '';
-    });
-  }
-
-  clearForm(){
-    this.body = '';
-    this.title = '';
-  }
-
-  selectedRegistration: NotificationRegistrationModel;
-
-  showSendMessage(e){
-    this.selectedRegistration = e.row.data;
-    this.onCancel();
   }
 }
-

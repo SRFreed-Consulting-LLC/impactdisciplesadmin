@@ -22,6 +22,20 @@ import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.compo
 import { ShippingLabelListComponent } from './shipping-labels/shippingLabelList/shippingLabelList.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
+import { NotificationDialogComponent } from './notifications/notification-dialog.component';
+import { UserDialogComponent } from './users/user-dialog.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { QuillModule } from 'ngx-quill';
 
 
 @NgModule({
@@ -52,13 +66,27 @@ import { AdminManagerRoutingModule } from './admin-manager-routing.module';
     DxTreeListModule,
     DxValidatorModule,
     ImpactDisciplesCommonModule,
-    SharedModule
+    SharedModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MatSelectModule,
+    MatTabsModule,
+    MatProgressSpinnerModule,
+    QuillModule
   ],
   declarations: [
     AdminManagerComponent,
     LogMessagesComponent,
     NotificationsComponent,
+    NotificationDialogComponent,
     UsersComponent,
+    UserDialogComponent,
     CustomersComponent,
     WebConfigComponent,
     EmailTemplatesComponent,

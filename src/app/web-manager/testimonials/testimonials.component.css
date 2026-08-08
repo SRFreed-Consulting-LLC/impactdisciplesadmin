@@ -7,6 +7,10 @@
   color: #fff;
 }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
 .testimonials-table {
   width: 100%;
 }

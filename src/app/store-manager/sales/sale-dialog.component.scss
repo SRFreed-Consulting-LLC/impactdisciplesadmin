@@ -1,0 +1,21 @@
+.field-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.field-row + .field-row {
+  margin-top: 8px;
+}
+
+.name-field {
+  flex: 2 1 0;
+}
+
+.percent-field {
+  flex: 1 1 0;
+}
+
+.half-width {
+  flex: 1 1 0;
+}

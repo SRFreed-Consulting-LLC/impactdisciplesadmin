@@ -2,6 +2,7 @@
   <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 </div>
 
+<div class="table-scroll">
 <table mat-table [dataSource]="(newsletters$ | async) ?? []" class="newsletters-table">
   <ng-container matColumnDef="isActive">
     <th mat-header-cell *matHeaderCellDef>Live</th>
@@ -63,7 +64,8 @@
     <th mat-header-cell *matHeaderCellDef></th>
   </ng-container>
 
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-header-row *matHeaderRowDef="filterColumns"></tr>
+  <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
   <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
 </table>
+</div>

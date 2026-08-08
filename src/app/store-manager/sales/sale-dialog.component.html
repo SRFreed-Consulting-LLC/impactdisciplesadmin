@@ -1,0 +1,53 @@
+<app-popup-header [formGroup]="form" [title]="(isEdit ? 'EDIT' : 'ADD') + ' SALE'" [showCloseButton]="true" (closed)="onCancel()">
+  <mat-slide-toggle popup-header-actions formControlName="isActive">Live</mat-slide-toggle>
+</app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="name-field">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="percent-field">
+      <mat-label>Percent Off</mat-label>
+      <input matInput type="number" formControlName="percentOff" required>
+      <mat-error *ngIf="form.get('percentOff')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="half-width">
+      <mat-label>Start Date</mat-label>
+      <input matInput [matDatepicker]="startPicker" formControlName="startDate" required>
+      <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+      <mat-datepicker #startPicker></mat-datepicker>
+      <mat-error *ngIf="form.get('startDate')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="half-width">
+      <mat-label>End Date</mat-label>
+      <input matInput [matDatepicker]="endPicker" formControlName="endDate" required>
+      <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+      <mat-datepicker #endPicker></mat-datepicker>
+      <mat-error *ngIf="form.get('endDate')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="field-row">
+    <mat-slide-toggle formControlName="isProducts">Products?</mat-slide-toggle>
+    <mat-slide-toggle formControlName="isEvents">Events?</mat-slide-toggle>
+    <mat-slide-toggle formControlName="isShipping">Shipping?</mat-slide-toggle>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

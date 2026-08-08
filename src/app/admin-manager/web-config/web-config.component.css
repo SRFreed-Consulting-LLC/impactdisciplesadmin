@@ -1,0 +1,104 @@
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 1000;
+}
+
+.config-tabs {
+  padding: 0 16px;
+}
+
+/* This is the actual bounded, scrolling region for every tab - a plain div
+   written directly in THIS component's own template, so it's reliably
+   reachable by these plain selectors with no encapsulation uncertainty.
+   (An earlier version tried to make Material's own internal
+   .mat-mdc-tab-body-wrapper/.mat-mdc-tab-body-content elements do this via
+   plain selectors, on the assumption Material's structural classes aren't
+   Angular-encapsulated - confirmed by live testing that assumption was
+   wrong: those rules never matched anything, content just silently
+   clipped past 70vh with no scrollbar at all instead of scrolling.) */
+.tab-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 4px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The Privacy Policy / Terms of Use tabs: hard-lock this tab's content
+   region to exactly max-height (not just a cap it might stay under, like
+   the Info tab above) so quill-editor can flex-fill it and let its own
+   .ql-editor scroll internally for a long document, instead of this
+   container having spare overflow of its own to scroll. */
+.tab-content--editor {
+  height: 60vh;
+}
+
+/* flex-basis: 0 (not auto) is deliberate here: quill-editor also has its
+   own height: 100% (global rule, for when it's the sole/only child of a
+   bounded container elsewhere). With flex-basis: auto, that height: 100%
+   would win as the starting main-size and quill-editor would claim the
+   *entire* tab regardless of .save-row below it, pushing the button out
+   of view (the "Save button scrolls with the content" bug). flex-basis: 0
+   makes flexbox ignore that height and size this purely by sharing space
+   with save-row instead. */
+.tab-content--editor quill-editor {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+}
+
+.columns {
+  display: flex;
+  gap: 24px;
+  min-width: 0;
+}
+
+.column {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}
+
+/* Stuck to the bottom of .tab-content's own scroll region - sticky
+   resolves against the nearest scrolling ancestor, which is .tab-content
+   itself now (its overflow-y: auto above), not some Material internal. */
+.save-row {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding: 12px 0 4px;
+  background: #fff;
+}

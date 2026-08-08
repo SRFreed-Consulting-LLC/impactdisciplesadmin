@@ -8,6 +8,10 @@ import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.componen
 import { ListHeaderComponent } from './list-header/list-header.component';
 import { PopupHeaderComponent } from './popup-header/popup-header.component';
 import { ColumnFilterComponent } from './column-filter/column-filter.component';
+import { PhoneFieldComponent } from './phone-field/phone-field.component';
+import { PhoneMaskDirective } from './phone-field/phone-mask.directive';
+import { AddressFieldComponent } from './address-field/address-field.component';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -16,6 +20,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 @NgModule({
   declarations: [
@@ -25,7 +32,10 @@ import { MatDividerModule } from '@angular/material/divider';
     ConfirmDialogComponent,
     ListHeaderComponent,
     PopupHeaderComponent,
-    ColumnFilterComponent
+    ColumnFilterComponent,
+    PhoneFieldComponent,
+    PhoneMaskDirective,
+    AddressFieldComponent
   ],
   imports: [
     CommonModule,
@@ -33,6 +43,7 @@ import { MatDividerModule } from '@angular/material/divider';
     DxLoadIndicatorModule,
     DxPopupModule,
     DxFormModule,
+    ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
     MatProgressSpinnerModule,
@@ -40,7 +51,10 @@ import { MatDividerModule } from '@angular/material/divider';
     MatToolbarModule,
     MatMenuModule,
     MatIconModule,
-    MatDividerModule
+    MatDividerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule
   ],
   exports: [
     IndicatorButtonComponent,
@@ -49,7 +63,10 @@ import { MatDividerModule } from '@angular/material/divider';
     ConfirmDialogComponent,
     ListHeaderComponent,
     PopupHeaderComponent,
-    ColumnFilterComponent
+    ColumnFilterComponent,
+    PhoneFieldComponent,
+    PhoneMaskDirective,
+    AddressFieldComponent
   ]
 })
 export class SharedModule {}

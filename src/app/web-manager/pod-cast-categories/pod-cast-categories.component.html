@@ -7,6 +7,7 @@
     </button>
   </div>
 
+  <div class="table-scroll">
   <table mat-table [dataSource]="(categories$ | async) ?? []" class="category-table">
     <ng-container matColumnDef="tag">
       <th mat-header-cell *matHeaderCellDef>Tag</th>
@@ -33,8 +34,9 @@
       <th mat-header-cell *matHeaderCellDef></th>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-header-row *matHeaderRowDef="filterColumns"></tr>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
   </table>
+  </div>
 </mat-dialog-content>

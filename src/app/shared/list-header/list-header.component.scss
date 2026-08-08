@@ -1,5 +1,11 @@
 .list-header {
-  background: transparent;
+  // Stuck at the top of the page's scroll region while the table beneath it
+  // scrolls - the "row of buttons stays put" rule applied to every list
+  // screen automatically, since they all use this shared component.
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--mat-sys-surface, #fff);
   padding: 0;
 
   &__title {

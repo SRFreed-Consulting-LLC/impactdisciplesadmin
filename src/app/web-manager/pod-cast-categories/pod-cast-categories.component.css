@@ -9,6 +9,10 @@ mat-dialog-content {
   --mat-icon-button-icon-size: 20px;
 }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
 .category-table {
   width: 100%;
   --mat-table-header-container-height: 40px;

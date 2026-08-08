@@ -1,0 +1,18 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' ROOM'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Name</mat-label>
+    <input matInput formControlName="name">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Capacity</mat-label>
+    <input matInput type="number" formControlName="capacity">
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button title="SAVE" [isInProgress]="false" (onClick)="onSave()"></app-indicator-button>
+</mat-dialog-actions>

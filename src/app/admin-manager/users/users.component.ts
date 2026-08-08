@@ -1,16 +1,14 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { AppUser } from 'impactdisciplescommon/src/models/admin/appuser.model';
 import { AppUserService } from 'impactdisciplescommon/src/services/data/user.service';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
-import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { exportGridToExcel } from '../../shared/grid-export.util';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { UserDialogComponent } from './user-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { exportToExcel } from '../../shared/table-export.util';
 
 @Component({
     selector: 'app-users',
@@ -19,155 +17,95 @@ import { exportGridToExcel } from '../../shared/grid-export.util';
     standalone: false
 })
 export class UsersComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('userGrid', { static: false }) userGrid: DxDataGridComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: AppUser;
+  users$: Observable<AppUser[]>;
+  displayedColumns = ['lastName', 'firstName', 'email', 'role', 'phone', 'actions'];
+  filterColumns = ['lastName-filter', 'firstName-filter', 'email-filter', 'role-filter', 'phone-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'User';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+    { label: 'Export To Excel', icon: 'file_download', onClick: () => this.exportXLSGrid() }
+  ];
 
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private currentRows: AppUser[] = [];
 
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
-
-  public states: string[];
-  public countries: string[];
-  public roles: string[];
-  public phone_types: string[];
-
-  constructor(private service: AppUserService) {}
+  constructor(
+    private service: AppUserService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
   ngOnInit(): void {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              },
-            })
-          })
-      )
+    this.users$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
+          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''))
+      ),
+      map((rows) => {
+        this.currentRows = rows;
+        return rows;
+      })
     );
-
-    this.roles = EnumHelper.getRoleTypesAsArray();
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateTypesAsArray();
-    this.countries = EnumHelper.getCountryTypesAsArray();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    if(!this.selectedItem.phone){
-      this.selectedItem.phone = {... new Phone()};
+  private matchesField(item: AppUser, field: string, filter: ColumnFilterValue): boolean {
+    if (field === 'phone') {
+      return matchesColumnFilter(item.phone?.number, filter, 'text');
     }
-
-    if(!this.selectedItem.shippingAddress){
-      this.selectedItem.shippingAddress = {... new Address()};
-    }
-
-    if(!this.selectedItem.billingAddress){
-      this.selectedItem.billingAddress = {... new Address()};
-    }
-
-    this.isVisible$.next(true);
+    return matchesColumnFilter(item[field as keyof AppUser], filter, 'text');
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new AppUser()};
-    this.selectedItem.shippingAddress = {... new Address()};
-    this.selectedItem.billingAddress = {... new Address()};
-    this.selectedItem.phone = {... new Phone()};
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  showAddModal(): void {
+    this.dialog.open(UserDialogComponent, {
+      width: '800px',
+      data: { item: null }
+    });
+  }
+
+  showEditModal(item: AppUser): void {
+    this.dialog.open(UserDialogComponent, {
+      width: '800px',
+      data: { item }
+    });
+  }
+
+  delete(item: AppUser): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
     });
   }
 
-  onSave(item: AppUser) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  exportXLSGrid = () => {
-    exportGridToExcel(this.userGrid.instance, 'impact_users.xlsx');
+  // Exports whatever's currently filtered/visible in currentRows, matching
+  // the original's grid export (which exported the grid's current state -
+  // DevExtreme's exportDataGrid also respects active filters).
+  exportXLSGrid(): void {
+    exportToExcel(
+      this.currentRows,
+      [
+        { header: 'Last Name', value: (row) => row.lastName },
+        { header: 'First Name', value: (row) => row.firstName },
+        { header: 'Email', value: (row) => row.email },
+        { header: 'UID', value: (row) => row.firebaseUID },
+        { header: 'Role', value: (row) => row.role },
+        { header: 'Country Code', value: (row) => row.phone?.countryCode },
+        { header: 'Number', value: (row) => row.phone?.number },
+        { header: 'Type', value: (row) => row.phone?.type }
+      ],
+      'impact_users.xlsx',
+      'Users'
+    );
   }
 }

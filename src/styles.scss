@@ -43,6 +43,78 @@
   --mat-dialog-container-shape: 4px;
 }
 
+// House rule: no screen/tab ever scrolls horizontally unless it truly can't
+// be avoided. Quill's toolbar buttons are floated, not flex, so without an
+// explicit wrap they don't reflow onto a second line - they just push their
+// container wider and trigger horizontal scroll. Global since every
+// rich-text screen (Web Config, DMM Service, newsletter/prayer-request
+// "send" screens) reuses the same ngx-quill toolbar.
+.ql-toolbar.ql-snow {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+// Lock quill-editor to fill whatever height its container gives it (never
+// grow taller/shorter than that on its own), and let only its own
+// .ql-editor content area scroll internally for long documents - the same
+// "fixed chrome, scrolling content" pattern used for tables/tabs elsewhere.
+// Never pass a height via ngx-quill's [styles] input - that sets an inline
+// style directly on .ql-container (toolbar excluded), which fights this.
+// Global since every rich-text screen (Web Config, DMM Service, the
+// newsletter/prayer-request "send" screens) reuses the same component.
+//
+// The !important flags below are load-bearing, not decorative: ngx-quill
+// ships its own component styles setting quill-editor's display, and
+// they're injected into the page AFTER this global stylesheet (component
+// styles load as their component is instantiated, which for a
+// lazy-loaded module happens later than the app's initial CSS bundle).
+// At equal selector specificity the later rule wins, so without
+// !important here ngx-quill's own `display: block` silently won every
+// time - confirmed by inspecting live computed styles (quill-editor's
+// `display` read back as "block", not "flex", despite this rule).
+quill-editor {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+quill-editor .ql-toolbar {
+  flex: 0 0 auto;
+}
+
+// flex-basis: 0 (not auto) is required here: .ql-editor below is
+// position: absolute (removed from normal flow), so .ql-container has no
+// in-flow content left to compute a content-based hypothetical size from.
+// With flex-basis: auto that hypothetical size resolved to ~1px and
+// flex-grow never actually kicked in to claim the real available space -
+// live-tested and confirmed .ql-container collapsed to 1px tall, which is
+// why the editor rendered blank (its absolutely-positioned child had a
+// 1px box to fill). flex-basis: 0 makes flexbox skip content-sizing
+// entirely and distribute space by the flex-grow ratio alone.
+quill-editor .ql-container {
+  display: block !important;
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+// A percentage height on .ql-editor (Quill's own default: height: 100%)
+// resolving correctly against a flex-grown ancestor is exactly the kind of
+// thing browsers are inconsistent about - live-tested and confirmed it
+// silently failed, with the document's content overflowing straight past
+// every ancestor box uncontained (no scrollbar, text bleeding out past the
+// card) instead of scrolling internally. Absolute positioning sidesteps
+// the ambiguity entirely: inset: 0 fills the nearest positioned ancestor's
+// actual laid-out box directly (.ql-container already has position:
+// relative from Quill's own CSS), regardless of how that box's height was
+// computed (flex-grow, percentage, fixed - doesn't matter).
+quill-editor .ql-editor {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+}
+
 @import './assets/theme/css/fontAwesome5Pro.css';
 @import './assets/theme/css/ionicons.min.css';
 @import './assets/theme/css/animate.min.css';

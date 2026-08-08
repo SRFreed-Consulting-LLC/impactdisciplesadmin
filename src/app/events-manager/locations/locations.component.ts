@@ -1,18 +1,15 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { PHONE_TYPES } from 'impactdisciplescommon/src/lists/phone_types.enum';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { LocationModel } from 'impactdisciplescommon/src/models/domain/location.model';
 import { OrganizationModel } from 'impactdisciplescommon/src/models/domain/organization.model';
-import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
+import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { LocationDialogComponent } from './location-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-locations',
@@ -21,142 +18,94 @@ import { LocationService } from 'impactdisciplescommon/src/services/data/locatio
     standalone: false
 })
 export class LocationsComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: LocationModel;
+  locations$: Observable<LocationModel[]>;
+  displayedColumns = ['name', 'contactName', 'organization', 'city', 'state', 'phone', 'phoneType', 'actions'];
+  filterColumns = ['name-filter', 'contactName-filter', 'organization-filter', 'city-filter', 'state-filter', 'phone-filter', 'phoneType-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Location';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  organizations: OrganizationModel[] = [];
+  private organizationsById: Record<string, OrganizationModel> = {};
 
-  phone_types: PHONE_TYPES[];
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
+  ];
 
-  organizations: OrganizationModel[];
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  public states: string[];
-
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
-
-  constructor(public service: LocationService, private organizationService: OrganizationService){}
+  constructor(
+    public service: LocationService,
+    private organizationService: OrganizationService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
   async ngOnInit(): Promise<void> {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              },
-            })
-          })
-      )
-    )
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
     this.organizations = await this.organizationService.getAll();
-    this.states = EnumHelper.getStateTypesAsArray();
+    this.organizationsById = Object.fromEntries(this.organizations.map((org) => [org.id, org]));
+
+    this.locations$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) => this.matchesField(item, field, filters[field]))
+          )
+          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+      )
+    );
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
+  organizationName(item: LocationModel): string {
+    const orgId = item.organization as unknown as string;
+    return this.organizationsById[orgId]?.name ?? '';
+  }
 
-    if(!this.selectedItem.phone){
-      this.selectedItem.phone = {... new Phone()};
+  private matchesField(item: LocationModel, field: string, filter: ColumnFilterValue): boolean {
+    if (field === 'organization') {
+      return matchesColumnFilter(this.organizationName(item), filter, 'text');
     }
-
-    if(!this.selectedItem.address){
-      this.selectedItem.address = {... new Address()};
+    if (field === 'city') {
+      return matchesColumnFilter(item.address?.city, filter, 'text');
     }
-
-    this.isVisible$.next(true);
+    if (field === 'state') {
+      return matchesColumnFilter(item.address?.state, filter, 'text');
+    }
+    if (field === 'phone') {
+      return matchesColumnFilter(item.phone?.number, filter, 'text');
+    }
+    if (field === 'phoneType') {
+      return matchesColumnFilter(item.phone?.type, filter, 'text');
+    }
+    return matchesColumnFilter(item[field as keyof LocationModel], filter, 'text');
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new LocationModel()};
-    this.selectedItem.phone = {... new Phone()};
-    this.selectedItem.address = {... new Address()};
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(LocationDialogComponent, {
+      width: '800px',
+      data: { item: null, organizations: this.organizations }
     });
   }
 
-  onSave(item: LocationModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: LocationModel): void {
+    this.dialog.open(LocationDialogComponent, {
+      width: '800px',
+      data: { item, organizations: this.organizations }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: LocationModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

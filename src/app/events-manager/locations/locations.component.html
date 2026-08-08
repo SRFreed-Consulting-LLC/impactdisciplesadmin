@@ -1,152 +1,104 @@
 <div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE LOCATIONS">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+  <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 </div>
 
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
+<div class="table-scroll">
+  <table mat-table [dataSource]="(locations$ | async) ?? []" class="locations-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.name }}</td>
+    </ng-container>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+    <ng-container matColumnDef="contactName">
+      <th mat-header-cell *matHeaderCellDef>Contact Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.contactName }}</td>
+    </ng-container>
 
-  <dxi-column dataField="name" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="contactName"></dxi-column>
-  <dxi-column dataField="organization">
-    <dxo-lookup [dataSource]="organizations" displayExpr="name" valueExpr="id"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="address.address1" [caption]="'Address 1'" [visible]="false"></dxi-column>
-  <dxi-column dataField="address.address2" [caption]="'Address 2'" [visible]="false"></dxi-column>
-  <dxi-column dataField="address.city" [caption]="'City'"></dxi-column>
-  <dxi-column dataField="address.state" [caption]="'State'">
-    <dxo-lookup [dataSource]="states"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="address.zip" [caption]="'Zip Code'" [visible]="false"></dxi-column>
-  <dxi-column dataField="address.country" [caption]="'Country'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.countryCode" [caption]="'Country Code'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.number" [caption]="'Phone Number'" cellTemplate="phoneNumberCellTemplate"></dxi-column>
-  <dxi-column dataField="phone.type" [caption]="'Type'">
-    <dxo-lookup [dataSource]="phone_types"></dxo-lookup>
-  </dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
+    <ng-container matColumnDef="organization">
+      <th mat-header-cell *matHeaderCellDef>Organization</th>
+      <td mat-cell *matCellDef="let item">{{ organizationName(item) }}</td>
+    </ng-container>
 
-  <div *dxTemplate="let cell of 'phoneNumberCellTemplate'">
-    <div class="">
-      {{ (cell.data?.phone?.countryCode ? "+" + cell.data?.phone?.countryCode : '')}} {{cell.data.phone? ((cell.data.phone | phoneNumberMask : false)) : '' }}
-    </div>
-  </div>
-</dx-data-grid>
+    <ng-container matColumnDef="city">
+      <th mat-header-cell *matHeaderCellDef>City</th>
+      <td mat-cell *matCellDef="let item">{{ item.address?.city }}</td>
+    </ng-container>
 
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="90%"
-  width="60%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left">
-          <dxi-item itemType="group" [colCount]="2" [colSpan]="1">
-            <dxi-item dataField="name" [colSpan]="1" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="contactName" [colSpan]="1" [isRequired]="true"></dxi-item>
-            <dxi-item dataField="organization" [colSpan]="1" [isRequired]="true">
-              <div *dxTemplate>
-                <dx-select-box [(value)]="selectedItem.organization" [dataSource]="organizations" [displayExpr]="'name'" [valueExpr]="'id'"></dx-select-box>
-              </div>
-            </dxi-item>
-          </dxi-item>
-          <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="1">
-            <dxi-item dataField="address.address1" [colSpan]="6" [label]="{ text: 'Address 1' }"></dxi-item>
-            <dxi-item dataField="address.address2" [colSpan]="6" [label]="{ text: 'Address 2' }"></dxi-item>
-            <dxi-item dataField="address.city" [colSpan]="3"  [label]="{ text: 'City' }"></dxi-item>
-            <dxi-item dataField="address.state" [colSpan]="2" [label]="{ text: 'State' }">
-              <div *dxTemplate>
-                <dx-lookup
-                  [showCancelButton]="false"
-                  [items]="states"
-                  [(value)]="selectedItem.address.state">
-                </dx-lookup>
-              </div>
-            </dxi-item>
-            <dxi-item dataField="address.zip" [colSpan]="1" [label]="{ text: 'Zip' }"></dxi-item>
-          </dxi-item>
-          <dxi-item itemType="group" caption="Phone" [colCount]="4" [colSpan]="1">
-            <dxi-item dataField="phone.countryCode" [colSpan]="1"  [label]="{ text: 'Country Code' }"></dxi-item>
-            <dxi-item dataField="phone.number" [colSpan]="2" [label]="{ text: 'Number' }" [editorOptions]="phoneEditorOptions"></dxi-item>
-            <dxi-item dataField="phone.type" [colSpan]="2" [label]="{text: 'Type'}">
-              <div *dxTemplate>
-                <dx-select-box [(value)]="selectedItem.phone.type" [dataSource]="phone_types"></dx-select-box>
-              </div>
-            </dxi-item>
-          </dxi-item>
-          <dxi-item [colSpan]="1">
-            <div *dxTemplate>
-              <app-room [trainingRooms]="selectedItem.trainingrooms"></app-room>
-            </div>
-          </dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
+    <ng-container matColumnDef="state">
+      <th mat-header-cell *matHeaderCellDef>State</th>
+      <td mat-cell *matCellDef="let item">{{ item.address?.state }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="phone">
+      <th mat-header-cell *matHeaderCellDef>Phone Number</th>
+      <td mat-cell *matCellDef="let item">
+        {{ item.phone?.countryCode ? '+' + item.phone.countryCode : '' }} {{ item.phone ? (item.phone | phoneNumberMask: false) : '' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="phoneType">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let item">{{ item.phone?.type }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+    <ng-container matColumnDef="name-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('name', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="contactName-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('contactName', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="organization-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('organization', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="city-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('city', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="state-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('state', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="phone-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('phone', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="phoneType-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('phoneType', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+  </table>
+</div>

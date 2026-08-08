@@ -1,0 +1,11 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.notifications-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}

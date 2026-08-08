@@ -1,0 +1,18 @@
+<div class="phone-field" [formGroup]="group">
+  <mat-form-field appearance="outline" class="cc-field">
+    <mat-label>Country Code</mat-label>
+    <input matInput formControlName="countryCode">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="number-field">
+    <mat-label>Number</mat-label>
+    <input matInput formControlName="number" appPhoneMask>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="type-field">
+    <mat-label>Type</mat-label>
+    <mat-select formControlName="type">
+      <mat-option *ngFor="let phoneType of phoneTypes" [value]="phoneType">{{ phoneType }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>

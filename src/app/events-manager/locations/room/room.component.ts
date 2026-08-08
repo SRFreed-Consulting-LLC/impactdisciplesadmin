@@ -1,10 +1,21 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import notify from 'devextreme/ui/notify';
+import { Component, Input, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatTableDataSource } from '@angular/material/table';
 import { TrainingRoomModel } from 'impactdisciplescommon/src/models/domain/training-room.model';
-import { BehaviorSubject, map } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
+import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../../shared/snackbar.service';
+import { RoomDialogComponent } from './room-dialog.component';
+import { ListHeaderAction } from '../../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/column-filter/column-filter.model';
 
+// Rooms live embedded in the parent Location's own document, not their own
+// Firestore collection - this component just mutates the shared
+// @Input() trainingRooms array in place (matching the original), and the
+// parent's own save picks up the change since it's the same array
+// reference. MatTable doesn't observe in-place array mutations though, so
+// a MatTableDataSource is used here (unlike the Observable-backed tables
+// elsewhere) and its `.data` is explicitly reassigned after every mutation
+// to force a re-render.
 @Component({
     selector: 'app-room',
     templateUrl: './room.component.html',
@@ -12,92 +23,88 @@ import { confirm } from 'devextreme/ui/dialog';
     standalone: false
 })
 export class RoomComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
   @Input() trainingRooms: TrainingRoomModel[];
 
-  selectedItem: TrainingRoomModel;
+  dataSource = new MatTableDataSource<TrainingRoomModel>([]);
+  displayedColumns = ['name', 'capacity', 'actions'];
+  filterColumns = ['name-filter', 'capacity-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Rooms';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
+  ];
 
-  constructor() {}
+  private filters: Record<string, ColumnFilterValue> = {};
 
-  ngOnInit() {
-    if(!this.trainingRooms){
+  constructor(
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
+
+  ngOnInit(): void {
+    if (!this.trainingRooms) {
       this.trainingRooms = [];
     }
+    this.dataSource.data = this.trainingRooms;
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters = { ...this.filters, [field]: filter };
+    this.dataSource.data = this.trainingRooms.filter((room) =>
+      Object.keys(this.filters).every((f) =>
+        matchesColumnFilter(room[f as keyof TrainingRoomModel], this.filters[f], 'text')
+      )
+    );
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new TrainingRoomModel()};
-    this.selectedItem.id = this.generateRandomId();
-    this.isVisible$.next(true);
-  }
+  showAddModal(): void {
+    const dialogRef = this.dialog.open(RoomDialogComponent, {
+      width: '400px',
+      data: { item: null }
+    });
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        let i: number = this.trainingRooms.findIndex(room => room.id === data.id);
-
-        this.trainingRooms.splice(i, 1);
-
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
+    dialogRef.afterClosed().subscribe((result: TrainingRoomModel | false) => {
+      if (result) {
+        result.id = this.generateRandomId();
+        this.trainingRooms.push(result);
+        this.dataSource.data = this.trainingRooms;
+        this.snackbar.success(this.itemType + ' Added');
       }
     });
   }
 
-  onSave(item: TrainingRoomModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
+  showEditModal(item: TrainingRoomModel): void {
+    const dialogRef = this.dialog.open(RoomDialogComponent, {
+      width: '400px',
+      data: { item }
+    });
 
-      if(item) {
-        let i: number = this.trainingRooms.findIndex(room => room.id === item.id);
-
-        if(i == -1){
-          this.trainingRooms.push(item);
-
-          notify({
-            message: this.itemType + ' Added',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.onCancel();
-        } else {
-          this.trainingRooms.splice(i, 1, item);
-
-          notify({
-            message: this.itemType + ' Updated',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.onCancel();
+    dialogRef.afterClosed().subscribe((result: TrainingRoomModel | false) => {
+      if (result) {
+        const i = this.trainingRooms.findIndex((room) => room.id === result.id);
+        if (i > -1) {
+          this.trainingRooms.splice(i, 1, result);
+          this.dataSource.data = this.trainingRooms;
+          this.snackbar.success(this.itemType + ' Updated');
         }
       }
-    }
-
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: TrainingRoomModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        const i = this.trainingRooms.findIndex((room) => room.id === item.id);
+        if (i > -1) {
+          this.trainingRooms.splice(i, 1);
+          this.dataSource.data = this.trainingRooms;
+          this.snackbar.success(this.itemType + ' Deleted');
+        }
+      }
+    });
   }
 
   private generateRandomId() {
@@ -107,5 +114,4 @@ export class RoomComponent implements OnInit {
       return v.toString(16);
     });
   }
-
 }

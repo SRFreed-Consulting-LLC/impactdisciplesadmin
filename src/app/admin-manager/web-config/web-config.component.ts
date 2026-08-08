@@ -1,59 +1,83 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { WebConfigModel } from 'impactdisciplescommon/src/models/utils/web-config.model';
 import { WebConfigService } from 'impactdisciplescommon/src/services/data/web-config.service';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 
+// A singleton settings document, not a list - the original had no popup and
+// no add/delete, just one dx-form saved in place. Every tab (Info, Privacy
+// Policy, Terms of Use) has its own SAVE button calling the same save(),
+// matching the original exactly.
 @Component({
     selector: 'app-web-config',
     templateUrl: './web-config.component.html',
     styleUrls: ['./web-config.component.css'],
     standalone: false
 })
-export class WebConfigComponent implements OnInit{
-  datasource$: Observable<DataSource>;
-
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-
-  selectedItem: WebConfigModel;
-
-  spinnerVisible: boolean = true;
+export class WebConfigComponent implements OnInit {
+  form: FormGroup;
+  spinnerVisible = true;
+  richTextModules = RICH_TEXT_TOOLBAR;
 
   itemType = 'Web Configuration';
 
-  loadingVisible = false;
+  private selectedItem: WebConfigModel;
 
-  constructor(private service: WebConfigService) {}
-
-  async ngOnInit() {
-    this.selectedItem = await this.service.getAll().then(config => {
-      this.spinnerVisible = false;
-
-      if(config && config.length == 1){
-        return config[0];
-      } else {
-        return {...new WebConfigModel()};
-      }
+  constructor(
+    private service: WebConfigService,
+    private fb: FormBuilder,
+    private snackbar: SnackbarService
+  ) {
+    this.form = this.fb.group({
+      twitter: [''],
+      facebook: [''],
+      facebookLive: [''],
+      applePodCast: [''],
+      linkedIn: [''],
+      youtube: [''],
+      instagram: [''],
+      inpersonSeminarCost: [null],
+      onlineSeminarCost: [null],
+      equippingGroupTotalCost: [null],
+      equippingGroupPaymentCost: [null],
+      freeShippingAmount: [null],
+      adminEmailAddress: [''],
+      email: [''],
+      phone: [''],
+      address: this.fb.group({
+        address1: [''],
+        address2: [''],
+        city: [''],
+        state: [''],
+        zip: ['']
+      }),
+      policy: [''],
+      tos: ['']
     });
   }
 
-  save = async () => {
-    this.spinnerVisible = true;
+  async ngOnInit(): Promise<void> {
+    const config = await this.service.getAll();
+    this.selectedItem = config && config.length === 1 ? config[0] : { ...new WebConfigModel() };
 
-    if(this.selectedItem.id){
-      this.selectedItem = await this.service.update(this.selectedItem.id, {... this.selectedItem});
-    } else {
-      this.selectedItem = await this.service.add({... this.selectedItem});
-    }
-
-    notify({
-      message: "Configuration Saved Successfully!",
-      position: 'top',
-      width: 600,
-      type: 'success'
+    this.form.patchValue({
+      ...this.selectedItem,
+      address: this.selectedItem.address ?? {}
     });
 
+    this.spinnerVisible = false;
+  }
+
+  async save(): Promise<void> {
+    this.spinnerVisible = true;
+    const value: WebConfigModel = { ...this.selectedItem, ...this.form.value };
+
+    this.selectedItem = this.selectedItem.id
+      ? await this.service.update(this.selectedItem.id, value)
+      : await this.service.add(value);
+
+    this.snackbar.success('Configuration Saved Successfully!');
     this.spinnerVisible = false;
   }
 }
