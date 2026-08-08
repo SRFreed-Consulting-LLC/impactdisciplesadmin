@@ -46,6 +46,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -117,6 +118,7 @@ import { QuillModule } from 'ngx-quill';
       MatSlideToggleModule,
       MatCheckboxModule,
       MatMenuModule,
+      MatToolbarModule,
       QuillModule
     ]
 })
