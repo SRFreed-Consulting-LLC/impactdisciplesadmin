@@ -1,0 +1,90 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' CONSULTATION SURVEY'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>First Name</mat-label>
+      <input matInput formControlName="firstName" required>
+      <mat-error *ngIf="form.get('firstName')?.hasError('required')">First name is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Last Name</mat-label>
+      <input matInput formControlName="lastName" required>
+      <mat-error *ngIf="form.get('lastName')?.hasError('required')">Last name is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Email</mat-label>
+      <input matInput formControlName="email" required>
+      <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <h3 class="section-title">Contact Information</h3>
+  <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+
+  <h3 class="section-title">Address</h3>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Church Name</mat-label>
+    <input matInput formControlName="churchName" required>
+    <mat-error *ngIf="form.get('churchName')?.hasError('required')">Church name is required</mat-error>
+  </mat-form-field>
+  <app-address-field [group]="$any(form.get('location'))" [showCountry]="true"></app-address-field>
+
+  <div class="level-row">
+    <div class="level-field">
+      <label class="level-field__label">Commitment Level?</label>
+      <mat-radio-group formControlName="commitment">
+        <mat-radio-button *ngFor="let level of levels" [value]="level">{{ level }}</mat-radio-button>
+      </mat-radio-group>
+    </div>
+
+    <div class="level-field">
+      <label class="level-field__label">Readiness Level?</label>
+      <mat-radio-group formControlName="readiness">
+        <mat-radio-button *ngFor="let level of levels" [value]="level">{{ level }}</mat-radio-button>
+      </mat-radio-group>
+    </div>
+  </div>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Strategy Description</mat-label>
+    <textarea matInput formControlName="strategyDescription" rows="4" required></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Team Description</mat-label>
+    <textarea matInput formControlName="teamDescription" rows="4" required></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Communication Description</mat-label>
+    <textarea matInput formControlName="communicationDescription" rows="4" required></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Resource Description</mat-label>
+    <textarea matInput formControlName="resourceDescription" rows="4" required></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Results Description</mat-label>
+    <textarea matInput formControlName="resultsDescription" rows="4" required></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Support Description</mat-label>
+    <textarea matInput formControlName="supportDescription" rows="4" required></textarea>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

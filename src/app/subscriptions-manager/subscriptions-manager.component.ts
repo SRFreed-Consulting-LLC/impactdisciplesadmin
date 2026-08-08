@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
+import { SectionTab } from '../shared/section-tabs/section-tabs.component';
 
 @Component({
     selector: 'app-subscriptions-manager',
@@ -8,15 +8,14 @@ import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
     standalone: false
 })
 export class SubscriptionsManagerComponent {
-  selectedIndex: number = 0;
   selectedTab: string = 'Newsletters';
 
-  tabs: Tab[] = [
-    { id: 0, text: 'Newsletters', template: 'Newsletters' },
-    { id: 1, text: 'Prayer Team', template: 'Prayer Team' }
+  tabs: SectionTab[] = [
+    { text: 'Newsletters', template: 'Newsletters' },
+    { text: 'Prayer Team', template: 'Prayer Team' }
   ];
 
-  selectTab(e) {
-    this.selectedTab = e.itemData.template;
+  selectTab(template: string) {
+    this.selectedTab = template;
   }
 }

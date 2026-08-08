@@ -1,223 +1,97 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE SEMINARS">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
+
+<div class="table-scroll">
+<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+<table mat-table [dataSource]="(seminars$ | async) ?? []" class="seminars-table">
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef>Date</th>
+    <td mat-cell *matCellDef="let item">{{ item.date | date }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="eventCoordinator">
+    <th mat-header-cell *matHeaderCellDef>Coordinator</th>
+    <td mat-cell *matCellDef="let item">{{ item.eventCoordinator }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="preferredLocationName">
+    <th mat-header-cell *matHeaderCellDef>Location Name</th>
+    <td mat-cell *matCellDef="let item">{{ item.preferredLocationName }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="requestedDate">
+    <th mat-header-cell *matHeaderCellDef>Requested Date</th>
+    <td mat-cell *matCellDef="let item">{{ item.requestedDate | date }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="requestedStartTime">
+    <th mat-header-cell *matHeaderCellDef>Start Time</th>
+    <td mat-cell *matCellDef="let item">{{ item.requestedStartTime | date: 'HH:mm' }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="requestedEndTime">
+    <th mat-header-cell *matHeaderCellDef>End Time</th>
+    <td mat-cell *matCellDef="let item">{{ item.requestedEndTime | date: 'HH:mm' }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="email">
+    <th mat-header-cell *matHeaderCellDef>Email</th>
+    <td mat-cell *matCellDef="let item">{{ item.email }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+    <td mat-cell *matCellDef="let item" class="actions-column">
+      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+  <ng-container matColumnDef="date-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('date', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="eventCoordinator-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('eventCoordinator', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="preferredLocationName-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('preferredLocationName', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="requestedDate-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('requestedDate', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="requestedStartTime-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <ng-container matColumnDef="requestedEndTime-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <ng-container matColumnDef="email-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('email', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="actions-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+</table>
 </div>
-
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
-
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-  <dxi-column dataField="date" [dataType]="'date'" [visible]="true" [sortOrder]="'desc'"></dxi-column>
-  <dxi-column dataField="eventCoordinator" [caption]="'Coordinator'"></dxi-column>
-  <dxi-column dataField="preferredLocationName" [caption]="'Location Name'"></dxi-column>
-  <dxi-column dataField="requestedDate" [dataType]="'date'" [caption]="'Date'"></dxi-column>
-  <dxi-column dataField="requestedStartTime" [dataType]="'time'" [caption]="'Start Time'" cellTemplate="startTimeCellTemplate"></dxi-column>
-  <dxi-column dataField="requestedEndTime" [dataType]="'time'" [caption]="'End Time'" cellTemplate="endTimeCellTemplate"></dxi-column>
-  <dxi-column dataField="email"></dxi-column>
-  <dxi-column dataField="preferredTrainer" [caption]="'Trainer'" [visible]="false"></dxi-column>
-  <dxi-column dataField="preferredLocation.address1" [caption]="'Address 1'" [visible]="false"></dxi-column>
-  <dxi-column dataField="preferredLocation.address2" [caption]="'Address 2'" [visible]="false"></dxi-column>
-  <dxi-column dataField="preferredLocation.city" [caption]="'City'" [visible]="false"></dxi-column>
-  <dxi-column dataField="preferredLocation.state" [caption]="'State'" [visible]="false">
-    <dxo-lookup [dataSource]="states"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="preferredLocation.zip" [caption]="'Zip'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.countryCode" [caption]="'Country Code'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.number" [caption]="'Number'" cellTemplate="phoneNumberCellTemplate" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.type" [caption]="'Type'" [visible]="false">
-    <dxo-lookup [dataSource]="phone_types"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="hasProjectingDevice" [visible]="false"></dxi-column>
-  <dxi-column dataField="volunteersAvailable" [visible]="false"></dxi-column>
-  <dxi-column dataField="isPrivateEvent" [visible]="false"></dxi-column>
-  <dxi-column dataField="isPersonalRegistration" [visible]="false"></dxi-column>
-  <dxi-column dataField="requestedTicketPrice" [visible]="false"></dxi-column>
-  <dxi-column dataField="isLunchProvided" [visible]="false"></dxi-column>
-  <dxi-column dataField="isLunchIncluded" [visible]="false"></dxi-column>
-  <dxi-column dataField="comments" [visible]="false"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-
-  <div *dxTemplate="let cell of 'phoneNumberCellTemplate'">
-    <div class="">
-      {{ (cell.data?.phone?.countryCode ? "+" + cell.data?.phone?.countryCode : '')}} {{cell.data.phone? ((cell.data.phone | phoneNumberMask : false)) : '' }}
-    </div>
-  </div>
-
-  <div *dxTemplate="let cell of 'startTimeCellTemplate'">
-    <div class="">
-      {{ cell.data.requestedStartTime | date : 'HH:mm'}}
-    </div>
-  </div>
-
-  <div *dxTemplate="let cell of 'endTimeCellTemplate'">
-    <div class="">
-      {{ cell.data.requestedEndTime | date : 'HH:mm'}}
-    </div>
-  </div>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'75%'"
-  [height]="'90%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <dx-scroll-view height="90%">
-        <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-          <dx-form
-            #addEditForm
-            [(formData)]="selectedItem"
-            [showColonAfterLabel]="false"
-            labelLocation="left">
-            <dxi-item
-              dataField="preferredTrainer"
-              editorType="dxAutocomplete"
-              [colSpan]="6"
-              [label]="{ text: 'Preferred Trainer' }"
-              [editorOptions]="{
-                items: coaches$ | async,
-                valueExpr: 'fullname',
-                displayExpr: 'fullname',
-                showClearButton: true,
-                searchExpr: ['fullname']
-              }">
-            </dxi-item>
-            <dxi-item itemType="group" caption="Information" [colCount]="3" [colSpan]="1">
-              <dxi-item
-                dataField="requestedDate"
-                editorType="dxDateBox"
-                [label]="{ text: 'Date' }"
-                isRequired="true"
-                [editorOptions]="{
-                  displayFormat: 'M/d/yyyy',
-                  type: 'date',
-                  useMaskBehavior: true
-                }">
-              </dxi-item>
-              <dxi-item
-                dataField="requestedStartTime"
-                editorType="dxDateBox"
-                [label]="{ text: 'Start Time' }"
-                isRequired="true"
-                [editorOptions]="{
-                  displayFormat: 'HH:mm',
-                  type: 'time',
-                  useMaskBehavior: true
-                }">
-              </dxi-item>
-              <dxi-item
-                dataField="requestedEndTime"
-                editorType="dxDateBox"
-                [label]="{ text: 'End Time' }"
-                isRequired="true"
-                [editorOptions]="{
-                  displayFormat: 'HH:mm',
-                  type: 'time',
-                  useMaskBehavior: true
-                }">
-              </dxi-item>
-            </dxi-item>
-            <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="1">
-              <dxi-item dataField="preferredLocationName" [colSpan]="6" [label]="{text: 'Location Name'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="preferredLocation.address1" [colSpan]="6" [label]="{text: 'Address1'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="preferredLocation.address2" [colSpan]="6" [label]="{text: 'Address2'}"></dxi-item>
-              <dxi-item dataField="preferredLocation.city" [colSpan]="3" [label]="{text: 'City'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="preferredLocation.state" [colSpan]="2" [label]="{text: 'State'}" [isRequired]="true">
-                <div *dxTemplate>
-                  <dx-lookup
-                    [showCancelButton]="false"
-                    [items]="states"
-                    [(value)]="selectedItem.preferredLocation.state">
-                  </dx-lookup>
-                </div>
-              </dxi-item>
-              <dxi-item dataField="preferredLocation.zip" [colSpan]="1" [label]="{text: 'Zip'}" [isRequired]="true"></dxi-item>
-            </dxi-item>
-            <dxi-item itemType="group" caption="Contact Information" [colCount]="6" [colSpan]="1">
-              <dxi-item dataField="eventCoordinator" [colSpan]="6" [label]="{text: 'Coordinator'}"></dxi-item>
-              <dxi-item dataField="email" [colSpan]="6"></dxi-item>
-              <dxi-item dataField="phone.countryCode" [colSpan]="2" [label]="{text: 'Countyr Code'}"></dxi-item>
-              <dxi-item dataField="phone.number" [colSpan]="2" [label]="{text: 'Number'}" [editorOptions]="phoneEditorOptions"></dxi-item>
-              <dxi-item dataField="phone.type" [colSpan]="2" [label]="{text: 'Type'}">
-                <div *dxTemplate>
-                  <dx-select-box [(value)]="selectedItem.phone.type" [dataSource]="phone_types"></dx-select-box>
-                </div>
-              </dxi-item>
-            </dxi-item>
-            <dxi-item itemType="group" [colCount]="4" [colSpan]="1">
-              <dxi-item dataField="hasProjectingDevice" [colSpan]="2" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }"></dxi-item>
-              <dxi-item dataField="volunteersAvailable" [colSpan]="2" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }"></dxi-item>
-              <dxi-item dataField="isPrivateEvent" [colSpan]="2" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }"></dxi-item>
-              <dxi-item dataField="isPersonalRegistration" [colSpan]="2" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }"></dxi-item>
-              <dxi-item dataField="requestedTicketPrice" [colSpan]="2"></dxi-item>
-              <dxi-item dataField="isLunchProvided" [colSpan]="2" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }"></dxi-item>
-              <dxi-item dataField="isLunchIncluded" [colSpan]="4" [editorType]="'dxSwitch'" [editorOptions]="{ switchedOnText: 'Yes', switchedOffText: 'No' }"></dxi-item>
-              <dxi-item dataField="comments" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-            </dxi-item>
-          </dx-form>
-        </div>
-      </dx-scroll-view>
-      <div class="add-item-modal__button-group" style="bottom: 10px; right: 10px; position: fixed;">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>

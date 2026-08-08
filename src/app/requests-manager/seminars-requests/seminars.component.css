@@ -1,0 +1,26 @@
+/* See admin-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.seminars-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.seminars-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

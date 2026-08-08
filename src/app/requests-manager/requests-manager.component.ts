@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
+import { SectionTab } from '../shared/section-tabs/section-tabs.component';
 
 @Component({
     selector: 'app-requests-manager',
@@ -8,17 +8,16 @@ import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
     standalone: false
 })
 export class RequestsManagerComponent {
-  selectedIndex: number = 0;
   selectedTab: string = 'Consultation Requests';
 
-  tabs: Tab[] = [
-    { id: 0, text: 'Consultation Requests', template: 'Consultation Requests' },
-    { id: 1, text: 'Consultation Surveys', template: 'Consultation Surveys' },
-    { id: 2, text: 'Lunch and Learn Requests', template: 'Lunch and Learn Requests' },
-    { id: 3, text: 'Seminar Requests', template: 'Seminar Requests' }
+  tabs: SectionTab[] = [
+    { text: 'Consultation Requests', template: 'Consultation Requests' },
+    { text: 'Consultation Surveys', template: 'Consultation Surveys' },
+    { text: 'Lunch and Learn Requests', template: 'Lunch and Learn Requests' },
+    { text: 'Seminar Requests', template: 'Seminar Requests' }
   ];
 
-  selectTab(e) {
-    this.selectedTab = e.itemData.template;
+  selectTab(template: string) {
+    this.selectedTab = template;
   }
 }

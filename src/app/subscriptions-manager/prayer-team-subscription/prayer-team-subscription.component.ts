@@ -1,23 +1,20 @@
-import { Timestamp } from 'firebase/firestore';
-import { Component, ViewChild } from '@angular/core';
-import ArrayStore from 'devextreme/data/array_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { PrayerTeamSubscriptionModel } from 'impactdisciplescommon/src/models/domain/prayer-team-subscription.model';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
-import { PrayerModel } from 'impactdisciplescommon/src/models/domain/prayer.model';
-import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
-import { environment } from 'src/environments/environment';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
-import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
+import { autoTable } from 'jspdf-autotable';
+import { PrayerTeamSubscriptionModel } from 'impactdisciplescommon/src/models/domain/prayer-team-subscription.model';
 import { PrayerTeamSubscriptionService } from 'impactdisciplescommon/src/services/data/prayer-team-subscription.service';
-import { PrayerService } from 'impactdisciplescommon/src/services/data/prayer.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
+import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { PrayerSubscriberDialogComponent } from './prayer-subscriber-dialog.component';
+import { SendPrayerDialogComponent } from './send-prayer-dialog.component';
+import { PrayerListDialogComponent } from './prayer-list-dialog.component';
 
 @Component({
     selector: 'app-prayer-team-subscription',
@@ -25,287 +22,168 @@ import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-au
     styleUrls: ['./prayer-team-subscription.component.css'],
     standalone: false
 })
-export class PrayerTeamSubscriptionComponent {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('prayerTeamGrid', { static: false }) prayerTeamGrid: DxDataGridComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: PrayerTeamSubscriptionModel
-  selectedRows: string[] = [];
-  selectedSubscribers: PrayerTeamSubscriptionModel[] = [];
-
-  selectedList: EmailList;
-  emailLists: EmailList[];
+export class PrayerTeamSubscriptionComponent implements OnInit {
+  subscribers$: Observable<PrayerTeamSubscriptionModel[]>;
+  displayedColumns = ['select', 'lastName', 'firstName', 'email', 'date', 'actions'];
+  filterColumns = ['select-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'date-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Prayer Team Subscription';
 
-  emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name', 'Date'];
+  emailLists: EmailList[] = [];
+  selectedList: EmailList | undefined;
+  selection = new SelectionModel<PrayerTeamSubscriptionModel>(true, []);
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isEditVisible$ = new BehaviorSubject<boolean>(false);
-  public isListVisible$ = new BehaviorSubject<boolean>(false);
-  public isPrayerVisible$ = new BehaviorSubject<boolean>(false);
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  prayer: PrayerModel;
+  // Stable field, not a getter - see customers.component.ts's own comment on
+  // why.
+  actions: ListHeaderAction[] = [];
 
-  constructor(private service: PrayerTeamSubscriptionService,
-    private emailService: EMailService,
-    private authService: AdminAuthService,
-    private prayerService: PrayerService,
-    private emailListService: EmailListService) {}
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private currentRows: PrayerTeamSubscriptionModel[] = [];
+  private allSubscribers: PrayerTeamSubscriptionModel[] = [];
 
-   async ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (data) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new ArrayStore({
-              key: 'id',
-              data
-          })
-        })
-      )
-    )
+  constructor(
+    private service: PrayerTeamSubscriptionService,
+    private emailListService: EmailListService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-    this.emailLists = await this.emailListService.getAllByValue('type', 'prayer')
+  async ngOnInit(): Promise<void> {
+    this.subscribers$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) => {
+        this.allSubscribers = items;
+        const filtered = items
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
+          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
+      tap(() => this.loading$.next(false))
+    );
+
+    this.emailLists = (await this.emailListService.getAllByValue('type', 'prayer')) ?? [];
+    this.refreshActions();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-    this.isEditVisible$.next(true);
-  }
-
-  showPrayerModal = () => {
-    this.prayer = {... new PrayerModel()};
-    this.prayer.date = Timestamp.now();
-    this.isPrayerVisible$.next(true);
-  }
-
-  showAddModal = () => {
-    this.isEditVisible$.next(true);
-  }
-
-  showListModal = () => {
-    this.selectedList = {... new EmailList()};
-    this.isListVisible$.next(true);
-  }
-
-  onListFilterChanged(event: any) {
-    if(event.value) {
-      this.selectedRows = [];
-
-      this.selectedList = this.emailLists.find(list => list.id === event.value) || null;
-
-      this.selectedList.list.forEach(item => {
-        this.selectedRows.push(item.id)
-      })
-    } else if(!event.value) {
-      this.selectedRows = [];
-      this.selectedList = null;
+  private refreshActions(): void {
+    const actions: ListHeaderAction[] = [
+      { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+      { label: 'Send Prayer Request', icon: 'volunteer_activism', onClick: () => this.showPrayerModal() },
+      { label: 'Create Prayer List', icon: 'view_list', onClick: () => this.showListModal() },
+      { label: 'Export Prayer List', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
+    ];
+    if (this.selectedList?.name) {
+      actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
+    this.actions = actions;
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  private matchesField(item: PrayerTeamSubscriptionModel, field: string, filter: ColumnFilterValue): boolean {
+    return matchesColumnFilter((item as any)[field], filter, field === 'date' ? 'date' : 'text');
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  onListFilterChanged(listId: string | null): void {
+    this.selection.clear();
+
+    if (listId) {
+      this.selectedList = this.emailLists.find((list) => list.id === listId);
+      const memberIds = new Set((this.selectedList?.list ?? []).map((s: PrayerTeamSubscriptionModel) => s.id));
+      this.allSubscribers.filter((s) => memberIds.has(s.id)).forEach((s) => this.selection.select(s));
+    } else {
+      this.selectedList = { ...new EmailList() };
+    }
+    this.refreshActions();
+  }
+
+  isAllSelected(): boolean {
+    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
+  }
+
+  masterToggle(): void {
+    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+  }
+
+  showAddModal(): void {
+    this.dialog.open(PrayerSubscriberDialogComponent, {
+      width: '500px',
+      data: { item: null }
+    });
+  }
+
+  showEditModal(item: PrayerTeamSubscriptionModel): void {
+    this.dialog.open(PrayerSubscriberDialogComponent, {
+      width: '500px',
+      data: { item }
+    });
+  }
+
+  showPrayerModal(): void {
+    this.dialog.open(SendPrayerDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { selectedList: this.selectedList }
+    });
+  }
+
+  showListModal(): void {
+    // Always starts a brand new list from whatever rows are currently
+    // checked - matches the original.
+    this.selectedList = { ...new EmailList() };
+    this.refreshActions();
+    const dialogRef = this.dialog.open(PrayerListDialogComponent, {
+      width: '480px',
+      data: { item: null, members: this.selection.selected }
+    });
+
+    dialogRef.afterClosed().subscribe(async (saved) => {
+      if (saved) {
+        this.emailLists = (await this.emailListService.getAllByValue('type', 'prayer')) ?? [];
       }
     });
   }
 
-  onSave(item: PrayerTeamSubscriptionModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
+  onListSave(): void {
+    if (!this.selectedList?.id) {
+      return;
+    }
+    this.emailListService.update(this.selectedList.id, { ...this.selectedList, list: this.selection.selected }).then((item) => {
+      if (item) {
+        this.snackbar.success('List Updated');
       } else {
-        this.service.createPrayerTeamSubscription(item.firstName, item.lastName, item.email).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-
-            this.service.sendConfirmationEmail(this.selectedItem);
-
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
+        this.snackbar.error('Some Error Occured');
       }
-    }
-  }
-
-  onListSave = () => {
-    this.inProgress$.next(true);
-    this.selectedList.list = this.selectedSubscribers;
-    this.selectedList.type = 'prayer';
-
-    if(this.selectedList.id) {
-      this.emailListService.update(this.selectedList.id, this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Updated',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        }
-      })
-    } else {
-      this.emailListService.add(this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Added',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.emailLists.push(item);
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'error'
-          });
-        }
-      })
-    }
-  }
-
-  sendPrayer(){
-    let user = this.authService.getLoggedInUser()
-    this.prayer.sender = user.firstName + ' ' + user.lastName
-    let html='';
-
-    let list: Promise<PrayerTeamSubscriptionModel[]>
-    if(this.selectedList){
-      list = Promise.resolve(this.selectedList.list);
-    } else {
-      list = this.service.getAll();
-    }
-
-    list.then(subscribers => {
-      subscribers.forEach(subscriber => {
-        let form = {};
-        form['firstName'] = subscriber.firstName;
-        form['lastName'] = subscriber.lastName;
-        form['email'] = subscriber.email;
-        form['date'] = subscriber;
-
-        html = this.prayer.html
-        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-        html = html.replace('{{Sender First Name}}', user.firstName);
-        html = html.replace('{{Sender Last Name}}', user.lastName);
-        html = html.replace('{{Date}}', (dateFromTimestamp(this.prayer.date) as Date).toLocaleString());
-        html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
-          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-          "&list=prayer_team_subscriptions'>here</a></b> to remove your address.</div>"
-
-        this.prayer.html = html;
-
-        this.emailService.sendHtmlEmail(subscriber.email, this.prayer.subject, this.prayer.html);
-      })
-    }).then(() => {
-      this.prayerService.add(this.prayer).then(prayer => {
-        notify({
-          message: 'Prayer Request Sent Successfully!',
-          position: 'top',
-          width: 600,
-          type: 'success'
-        });
-
-        this.isPrayerVisible$.next(false);
-      })
-    })
-
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isEditVisible$.next(false);
-  }
-
-  onPrayerCancel() {
-    this.prayer = null;
-    this.inProgress$.next(false);
-    this.isPrayerVisible$.next(false);
-  }
-
-  onListCancel() {
-    this.inProgress$.next(false);
-    this.isListVisible$.next(false);
-  }
-
-  selectRow(e){
-    this.selectedSubscribers = e.selectedRowsData;
-  }
-
-  exportGrids = () => {
-    const context = this;
-    const doc = new jsPDF();
-
-    exportDataGrid({
-      selectedRowsOnly: true,
-      jsPDFDocument: doc,
-      component: context.prayerTeamGrid.instance,
-      topLeft: { x: 7, y: 5 },
-      columnWidths: [20, 50, 50, 50],
-
-    }).then(() => {
-        doc.save('Prayer_team_subscribers.pdf');
     });
+  }
+
+  delete(item: PrayerTeamSubscriptionModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
+  }
+
+  // Exports whatever rows are currently checked - matches the original's
+  // exportDataGrid({ selectedRowsOnly: true }).
+  exportPdf(): void {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      startY: 12,
+      head: [['Last Name', 'First Name', 'Email', 'Date']],
+      body: this.selection.selected.map((row) => [row.lastName ?? '', row.firstName ?? '', row.email ?? '', row.date instanceof Date ? row.date.toLocaleDateString() : ''])
+    });
+    doc.save('Prayer_team_subscribers.pdf');
   }
 }

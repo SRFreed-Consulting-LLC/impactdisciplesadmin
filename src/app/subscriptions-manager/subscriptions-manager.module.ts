@@ -1,42 +1,59 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxFileUploaderModule, DxFormModule, DxHtmlEditorModule, DxLoadIndicatorModule, DxPopupModule, DxSelectBoxModule,
-  DxSwitchModule, DxTabsModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
 import { NewsletterSubscriptionComponent } from './newsletter-subscription/newsletter-subscription.component';
+import { NewsletterSubscriberDialogComponent } from './newsletter-subscription/newsletter-subscriber-dialog.component';
+import { SendNewsletterDialogComponent } from './newsletter-subscription/send-newsletter-dialog.component';
+import { NewsletterListDialogComponent } from './newsletter-subscription/newsletter-list-dialog.component';
 import { PrayerTeamSubscriptionComponent } from './prayer-team-subscription/prayer-team-subscription.component';
+import { PrayerSubscriberDialogComponent } from './prayer-team-subscription/prayer-subscriber-dialog.component';
+import { SendPrayerDialogComponent } from './prayer-team-subscription/send-prayer-dialog.component';
+import { PrayerListDialogComponent } from './prayer-team-subscription/prayer-list-dialog.component';
 import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
 import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
 import { SubscriptionsManagerComponent } from './subscriptions-manager.component';
-import { SharedModule } from "../shared/shared.module";
-import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { SharedModule } from '../shared/shared.module';
 import { SubscriptionsManagerRoutingModule } from './subscriptions-manager-routing.module';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { QuillModule } from 'ngx-quill';
 
 
 @NgModule({
   imports: [
     CommonModule,
     SubscriptionsManagerRoutingModule,
-    ImageUploaderModule,
-    DxContextMenuModule,
-    DxDataGridModule,
-    DxButtonModule,
-    DxFormModule,
-    DxFileUploaderModule,
-    DxHtmlEditorModule,
-    DxLoadIndicatorModule,
-    DxPopupModule,
-    DxSelectBoxModule,
-    DxSwitchModule,
-    DxTabsModule,
-    DxTextBoxModule,
-    DxToolbarModule,
     ImpactDisciplesCommonModule,
-    SharedModule
-],
+    SharedModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    QuillModule
+  ],
   declarations: [
     SubscriptionsManagerComponent,
     NewsletterSubscriptionComponent,
-    PrayerTeamSubscriptionComponent
+    NewsletterSubscriberDialogComponent,
+    SendNewsletterDialogComponent,
+    NewsletterListDialogComponent,
+    PrayerTeamSubscriptionComponent,
+    PrayerSubscriberDialogComponent,
+    SendPrayerDialogComponent,
+    PrayerListDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe

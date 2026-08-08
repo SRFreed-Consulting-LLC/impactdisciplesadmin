@@ -1,0 +1,87 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' SEMINAR REQUEST'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Preferred Trainer</mat-label>
+    <input matInput formControlName="preferredTrainer" [matAutocomplete]="trainerAuto">
+    <mat-autocomplete #trainerAuto="matAutocomplete">
+      <mat-option *ngFor="let name of filteredCoachNames$ | async" [value]="name">{{ name }}</mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+
+  <h3 class="section-title">Information</h3>
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="third-width">
+      <mat-label>Date</mat-label>
+      <input matInput [matDatepicker]="datePicker" formControlName="requestedDate" required>
+      <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+      <mat-datepicker #datePicker></mat-datepicker>
+      <mat-error *ngIf="form.get('requestedDate')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="third-width">
+      <mat-label>Start Time</mat-label>
+      <input matInput type="time" formControlName="requestedStartTime" required>
+      <mat-error *ngIf="form.get('requestedStartTime')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="third-width">
+      <mat-label>End Time</mat-label>
+      <input matInput type="time" formControlName="requestedEndTime" required>
+      <mat-error *ngIf="form.get('requestedEndTime')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <h3 class="section-title">Address</h3>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Location Name</mat-label>
+    <input matInput formControlName="preferredLocationName" required>
+    <mat-error *ngIf="form.get('preferredLocationName')?.hasError('required')">Required</mat-error>
+  </mat-form-field>
+  <app-address-field [group]="$any(form.get('preferredLocation'))"></app-address-field>
+
+  <h3 class="section-title">Contact Information</h3>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Coordinator</mat-label>
+    <input matInput formControlName="eventCoordinator">
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Email</mat-label>
+    <input matInput formControlName="email">
+  </mat-form-field>
+  <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+
+  <h3 class="section-title">Details</h3>
+  <div class="switch-row">
+    <mat-slide-toggle formControlName="hasProjectingDevice">Has Projecting Device?</mat-slide-toggle>
+    <mat-slide-toggle formControlName="volunteersAvailable">Volunteers Available?</mat-slide-toggle>
+    <mat-slide-toggle formControlName="isPrivateEvent">Private Event?</mat-slide-toggle>
+    <mat-slide-toggle formControlName="isPersonalRegistration">Personal Registration?</mat-slide-toggle>
+  </div>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Requested Ticket Price</mat-label>
+    <input matInput type="number" formControlName="requestedTicketPrice">
+  </mat-form-field>
+
+  <div class="switch-row">
+    <mat-slide-toggle formControlName="isLunchProvided">Lunch Provided?</mat-slide-toggle>
+    <mat-slide-toggle formControlName="isLunchIncluded">Lunch Included?</mat-slide-toggle>
+  </div>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Comments</mat-label>
+    <textarea matInput formControlName="comments" rows="4" required></textarea>
+    <mat-error *ngIf="form.get('comments')?.hasError('required')">Comments are required</mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

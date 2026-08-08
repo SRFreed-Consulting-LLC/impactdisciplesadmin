@@ -1,18 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import { PHONE_TYPES } from 'impactdisciplescommon/src/lists/phone_types.enum';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { SeminarModel } from 'impactdisciplescommon/src/models/domain/seminar.model';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
-import { CoachModel } from 'impactdisciplescommon/src/models/domain/coach.model';
-import { CoachService } from 'impactdisciplescommon/src/services/data/coach.service';
 import { SeminarService } from 'impactdisciplescommon/src/services/data/seminar.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { SeminarDialogComponent } from './seminar-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-seminars',
@@ -21,151 +16,76 @@ import { SeminarService } from 'impactdisciplescommon/src/services/data/seminar.
     standalone: false
 })
 export class SeminarsComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: SeminarModel;
+  seminars$: Observable<SeminarModel[]>;
+  displayedColumns = ['date', 'eventCoordinator', 'preferredLocationName', 'requestedDate', 'requestedStartTime', 'requestedEndTime', 'email', 'actions'];
+  filterColumns = ['date-filter', 'eventCoordinator-filter', 'preferredLocationName-filter', 'requestedDate-filter', 'requestedStartTime-filter', 'requestedEndTime-filter', 'email-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Seminar Request';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  coaches$: Observable<CoachModel[]>;
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  phone_types: PHONE_TYPES[];
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  public states: string[];
+  constructor(
+    private service: SeminarService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
-
-  constructor(private service: SeminarService, private coachService: CoachService) {}
-
-   ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
+  ngOnInit(): void {
+    this.seminars$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) => {
+              const type = field === 'date' || field === 'requestedDate' ? 'date' : 'text';
+              return matchesColumnFilter(item[field as keyof SeminarModel], filters[field], type);
             })
+          )
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return bTime - aTime;
           })
-      )
-    );
-
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateTypesAsArray();
-
-    this.coaches$ = this.coachService.streamAll().pipe(
-      map(coaches => {
-        coaches.forEach(coach => coach.fullname = coach.firstName + ' ' + coach.lastName)
-
-        return coaches;
-      })
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    if(!this.selectedItem.phone){
-      this.selectedItem.phone = {... new Phone()};
-    }
-
-    if(!this.selectedItem.preferredLocation){
-      this.selectedItem.preferredLocation = {... new Address()};
-    }
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new SeminarModel()};
-    this.selectedItem.phone = {... new Phone()};
-    this.selectedItem.preferredLocation = {... new Address()};
-
-    this.isVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(SeminarDialogComponent, {
+      width: '800px',
+      maxWidth: '95vw',
+      data: { item: null }
     });
   }
 
-  onSave(item: SeminarModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: SeminarModel): void {
+    this.dialog.open(SeminarDialogComponent, {
+      width: '800px',
+      maxWidth: '95vw',
+      data: { item }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: SeminarModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

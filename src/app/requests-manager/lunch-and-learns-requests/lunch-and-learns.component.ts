@@ -1,16 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import { PHONE_TYPES } from 'impactdisciplescommon/src/lists/phone_types.enum';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { LunchAndLearnModel } from 'impactdisciplescommon/src/models/domain/lunch-and-learn.model';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import notify from 'devextreme/ui/notify';
-import { DxFormComponent } from 'devextreme-angular';
-import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
 import { LunchAndLearnService } from 'impactdisciplescommon/src/services/data/lunch-and-learn.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { LunchAndLearnDialogComponent } from './lunch-and-learn-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-lunch-and-learns',
@@ -18,142 +15,77 @@ import { LunchAndLearnService } from 'impactdisciplescommon/src/services/data/lu
     styleUrls: ['./lunch-and-learns.component.css'],
     standalone: false
 })
-export class LunchAndLearnsComponent implements OnInit{
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: LunchAndLearnModel;
+export class LunchAndLearnsComponent implements OnInit {
+  requests$: Observable<LunchAndLearnModel[]>;
+  displayedColumns = ['date', 'coordinator', 'locationName', 'requestedDate', 'requestedStartTime', 'requestedEndTime', 'email', 'actions'];
+  filterColumns = ['date-filter', 'coordinator-filter', 'locationName-filter', 'requestedDate-filter', 'requestedStartTime-filter', 'requestedEndTime-filter', 'email-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Lunch and Learn Request';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  phone_types: PHONE_TYPES[];
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  public states: string[];
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
+  constructor(
+    private service: LunchAndLearnService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  constructor(private service: LunchAndLearnService) {}
-
-  ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
+  ngOnInit(): void {
+    this.requests$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) => {
+              const type = field === 'date' || field === 'requestedDate' ? 'date' : 'text';
+              return matchesColumnFilter(item[field as keyof LunchAndLearnModel], filters[field], type);
             })
+          )
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return bTime - aTime;
           })
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
-
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateTypesAsArray();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    if(!this.selectedItem.coordinatorPhone){
-      this.selectedItem.coordinatorPhone = {... new Phone()};
-    }
-
-    if(!this.selectedItem.locationAddress){
-      this.selectedItem.locationAddress = {... new Address()};
-    }
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new LunchAndLearnModel()};
-    this.selectedItem.coordinatorPhone = {... new Phone()};
-    this.selectedItem.locationAddress = {... new Address()};
-
-    this.isVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(LunchAndLearnDialogComponent, {
+      width: '800px',
+      maxWidth: '95vw',
+      data: { item: null }
     });
   }
 
-  onSave(item: LunchAndLearnModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: LunchAndLearnModel): void {
+    this.dialog.open(LunchAndLearnDialogComponent, {
+      width: '800px',
+      maxWidth: '95vw',
+      data: { item }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: LunchAndLearnModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

@@ -1,16 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { PHONE_TYPES } from 'impactdisciplescommon/src/lists/phone_types.enum';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { ConsultationSurveyModel } from 'impactdisciplescommon/src/models/domain/consultation-survey.model';
 import { ConsultationSurveyService } from 'impactdisciplescommon/src/services/data/consultation-survey.service';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ConsultationSurveyDialogComponent } from './consultation-survey-dialog.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-consultations-surveys',
@@ -19,141 +16,81 @@ import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.m
     standalone: false
 })
 export class ConsultationsSurveysComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: ConsultationSurveyModel;
+  surveys$: Observable<ConsultationSurveyModel[]>;
+  displayedColumns = ['date', 'lastName', 'firstName', 'email', 'churchName', 'phone', 'actions'];
+  filterColumns = ['date-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'churchName-filter', 'phone-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Consultation Survey';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  phone_types: PHONE_TYPES[];
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  public states: string[];
+  constructor(
+    private service: ConsultationSurveyService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  constructor(private service: ConsultationSurveyService) {}
-
-   async ngOnInit(): Promise<void> {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
+  ngOnInit(): void {
+    this.surveys$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return bTime - aTime;
           })
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
-
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateTypesAsArray();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    if(!this.selectedItem.location){
-      this.selectedItem.location = {... new Address()};
+  private matchesField(item: ConsultationSurveyModel, field: string, filter: ColumnFilterValue): boolean {
+    if (field === 'phone') {
+      return matchesColumnFilter(item.phone?.number, filter, 'text');
     }
-
-    if(!this.selectedItem.phone){
-      this.selectedItem.phone = {... new Phone()};
+    if (field === 'date') {
+      return matchesColumnFilter(item.date, filter, 'date');
     }
-
-    this.isVisible$.next(true);
+    return matchesColumnFilter((item as any)[field], filter, 'text');
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new ConsultationSurveyModel()};
-    this.selectedItem.location = {... new Address()};
-    this.selectedItem.phone = {... new Phone()};
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(ConsultationSurveyDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { item: null }
     });
   }
 
-  onSave(item: ConsultationSurveyModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: ConsultationSurveyModel): void {
+    this.dialog.open(ConsultationSurveyDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { item }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: ConsultationSurveyModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

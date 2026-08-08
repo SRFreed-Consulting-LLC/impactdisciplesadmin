@@ -1,188 +1,92 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE CONSULTATION SURVEYS">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
+
+<div class="table-scroll">
+<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+<table mat-table [dataSource]="(surveys$ | async) ?? []" class="surveys-table">
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef>Date</th>
+    <td mat-cell *matCellDef="let item">{{ item.date | date }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="lastName">
+    <th mat-header-cell *matHeaderCellDef>Last Name</th>
+    <td mat-cell *matCellDef="let item">{{ item.lastName }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="firstName">
+    <th mat-header-cell *matHeaderCellDef>First Name</th>
+    <td mat-cell *matCellDef="let item">{{ item.firstName }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="email">
+    <th mat-header-cell *matHeaderCellDef>Email</th>
+    <td mat-cell *matCellDef="let item">{{ item.email }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="churchName">
+    <th mat-header-cell *matHeaderCellDef>Church Name</th>
+    <td mat-cell *matCellDef="let item">{{ item.churchName }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="phone">
+    <th mat-header-cell *matHeaderCellDef>Number</th>
+    <td mat-cell *matCellDef="let item">
+      {{ item.phone?.countryCode ? '+' + item.phone.countryCode : '' }} {{ item.phone ? (item.phone | phoneNumberMask: false) : '' }}
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+    <td mat-cell *matCellDef="let item" class="actions-column">
+      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+  <ng-container matColumnDef="date-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('date', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="lastName-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('lastName', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="firstName-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('firstName', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="email-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('email', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="churchName-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('churchName', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="phone-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('phone', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="actions-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+</table>
 </div>
-
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
-
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-  <dxi-column dataField="date" [dataType]="'date'" [visible]="true" [sortOrder]="'desc'"></dxi-column>
-  <dxi-column dataField="lastName"></dxi-column>
-  <dxi-column dataField="firstName"></dxi-column>
-  <dxi-column dataField="email"></dxi-column>
-  <dxi-column dataField="phone.countryCode" [caption]="'Country Code'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.number" [caption]="'Number'" cellTemplate="phoneNumberCellTemplate"></dxi-column>
-  <dxi-column dataField="phone.type" [caption]="'Type'"  [visible]="false">
-    <dxo-lookup [dataSource]="phone_types"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="churchName"></dxi-column>
-  <dxi-column dataField="location.address1" [caption]="'Address 1'" [visible]="false"></dxi-column>
-  <dxi-column dataField="location.address2" [caption]="'Address 2'" [visible]="false"></dxi-column>
-  <dxi-column dataField="location.city" [caption]="'City'" [visible]="false"></dxi-column>
-  <dxi-column dataField="location.state" [caption]="'State'" [visible]="false">
-    <dxo-lookup [dataSource]="states"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="location.zip" [caption]="'Zip'" [visible]="false"></dxi-column>
-  <dxi-column dataField="location.country" [visible]="false"></dxi-column>
-  <dxi-column dataField="commitment" [dataType]="'number'" [visible]="false"></dxi-column>
-  <dxi-column dataField="readiness" [dataType]="'number'" [visible]="false"></dxi-column>
-  <dxi-column dataField="strategyDescription" [visible]="false"></dxi-column>
-  <dxi-column dataField="teamDescription" [visible]="false"></dxi-column>
-  <dxi-column dataField="communicationDescription" [visible]="false"></dxi-column>
-  <dxi-column dataField="resourceDescription" [visible]="false"></dxi-column>
-  <dxi-column dataField="resultsDescription" [visible]="false"></dxi-column>
-  <dxi-column dataField="supportDescription" [visible]="false"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-
-  <div *dxTemplate="let cell of 'phoneNumberCellTemplate'">
-    <div class="">
-      {{ (cell.data?.phone?.countryCode ? "+" + cell.data?.phone?.countryCode : '')}} {{cell.data.phone? ((cell.data.phone | phoneNumberMask : false)) : '' }}
-    </div>
-  </div>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'75%'"
-  [height]="'90%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <dx-scroll-view height="90%">
-        <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-          <dx-form
-            #addEditForm
-            [(formData)]="selectedItem"
-            [showColonAfterLabel]="false"
-            labelLocation="left"
-            [colCount]="1">
-            <dxi-item itemType="group" [colCount]="4" [colSpan]="1">
-              <dxi-item dataField="firstName" [colSpan]="2" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="lastName" [colSpan]="2" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="email" [colSpan]="4" [isRequired]="true"></dxi-item>
-            </dxi-item>
-            <dxi-item itemType="group" caption="Contact Information" [colCount]="6" [colSpan]="1">
-              <dxi-item dataField="phone.countryCode" [colSpan]="2" [label]="{text: 'Country Code'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="phone.number" [colSpan]="2" [label]="{text: 'Number'}" [editorOptions]="phoneEditorOptions" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="phone.type" [colSpan]="2" [label]="{text: 'Type'}">
-                <div *dxTemplate>
-                  <dx-select-box [value]="'phone.type'" [dataSource]="phone_types"></dx-select-box>
-                </div>
-              </dxi-item>
-            </dxi-item>
-            <dxi-item itemType="group" caption="Address" [colCount]="6" [colSpan]="1">
-              <dxi-item dataField="churchName" [colSpan]="6" [label]="{text: 'Church Name'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="location.address1" [colSpan]="6" [label]="{text: 'Address1'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="location.address2" [colSpan]="6" [label]="{text: 'Address2'}"></dxi-item>
-              <dxi-item dataField="location.city" [colSpan]="3" [label]="{text: 'City'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="location.state" [colSpan]="2" [label]="{text: 'State'}" [isRequired]="true">
-                <div *dxTemplate>
-                  <dx-lookup
-                    [showCancelButton]="false"
-                    [items]="states"
-                    [(value)]="selectedItem.location.state">
-                  </dx-lookup>
-                </div>
-              </dxi-item>
-              <dxi-item dataField="location.zip" [colSpan]="1" [label]="{text: 'Zip'}" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="location.country" [colSpan]="2" [label]="{text: 'Country'}" [isRequired]="true"></dxi-item>
-            </dxi-item>
-            <dxi-item itemType="group" [colCount]="4" [colSpan]="1">
-              <dxi-item
-                dataField="committment"
-                [isRequired]="true"
-                editorType="dxRadioGroup"
-                [label]="{ text: 'Committment Level?' }"
-                [editorOptions]="{
-                  items: [1, 2, 3, 4, 5],
-                  layout: 'horizontal'
-                }"
-                [colSpan]="2">
-              </dxi-item>
-              <dxi-item
-                dataField="readiness"
-                [isRequired]="true"
-                editorType="dxRadioGroup"
-                [label]="{ text: 'Readiness Level?' }"
-                [editorOptions]="{
-                  items: [1, 2, 3, 4, 5],
-                  layout: 'horizontal'
-                }"
-                [colSpan]="2">
-              </dxi-item>
-              <dxi-item dataField="strategyDescription" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="teamDescription" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="communicationDescription" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="resourceDescription" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="resultsDescription" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="supportDescription" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }" [isRequired]="true"></dxi-item>
-            </dxi-item>
-          </dx-form>
-        </div>
-      </dx-scroll-view>
-      <div class="add-item-modal__button-group" style="bottom: 10px; right: 10px; position: fixed;">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
-
-

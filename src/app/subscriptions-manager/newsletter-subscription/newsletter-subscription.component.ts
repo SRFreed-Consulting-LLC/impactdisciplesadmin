@@ -1,23 +1,20 @@
-import { Component, ViewChild } from '@angular/core';
-import ArrayStore from 'devextreme/data/array_store';
-import DataSource from 'devextreme/data/data_source';
-import { NewsletterSubscriptionModel } from 'impactdisciplescommon/src/models/domain/newsletter-subscription.model';
-import { BehaviorSubject, Observable, map, take } from 'rxjs';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
-import { Timestamp } from 'firebase/firestore';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
-import { NewsletterModel } from 'impactdisciplescommon/src/models/domain/newsletter.model';
-import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
-import { environment } from 'src/environments/environment';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
-import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
-import { NewsletterService } from 'impactdisciplescommon/src/services/data/newletter.service';
+import { autoTable } from 'jspdf-autotable';
+import { NewsletterSubscriptionModel } from 'impactdisciplescommon/src/models/domain/newsletter-subscription.model';
 import { NewsletterSubscriptionService } from 'impactdisciplescommon/src/services/data/newsletter-subscription.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
+import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { NewsletterSubscriberDialogComponent } from './newsletter-subscriber-dialog.component';
+import { SendNewsletterDialogComponent } from './send-newsletter-dialog.component';
+import { NewsletterListDialogComponent } from './newsletter-list-dialog.component';
 
 @Component({
     selector: 'app-newsletter-subscription',
@@ -25,285 +22,171 @@ import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-au
     styleUrls: ['./newsletter-subscription.component.scss'],
     standalone: false
 })
-export class NewsletterSubscriptionComponent {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('subscriptionGrid', { static: false }) subscriptionGrid: DxDataGridComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: NewsletterSubscriptionModel;
-  selectedRows: string[] = [];
-  selectedSubscribers: NewsletterSubscriptionModel[] = [];
-  selectedList: EmailList;
-  emailLists: EmailList[];
-
-  newsletter: NewsletterModel;
+export class NewsletterSubscriptionComponent implements OnInit {
+  subscribers$: Observable<NewsletterSubscriptionModel[]>;
+  displayedColumns = ['select', 'lastName', 'firstName', 'email', 'date', 'actions'];
+  filterColumns = ['select-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'date-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Newsletter Subscription';
 
-  emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name', 'Date'];
+  emailLists: EmailList[] = [];
+  selectedList: EmailList | undefined;
+  selection = new SelectionModel<NewsletterSubscriptionModel>(true, []);
 
-  freeEbookUrl = environment.freeEbookUrl;
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isListVisible$ = new BehaviorSubject<boolean>(false);
-  public isPrayerVisible$ = new BehaviorSubject<boolean>(false);
+  // Stable field, not a getter - see customers.component.ts's own comment on
+  // why: app-list-header's *ngFor keys off these action objects, and a
+  // getter re-creating them every change-detection cycle silently swallows
+  // clicks while a menu is open.
+  actions: ListHeaderAction[] = [];
 
-  gridFilter: any = null;
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private currentRows: NewsletterSubscriptionModel[] = [];
+  private allSubscribers: NewsletterSubscriptionModel[] = [];
 
-  constructor(private service: NewsletterSubscriptionService,
-    private emailService: EMailService,
-    private authService: AdminAuthService,
-    private newsletterService: NewsletterService,
-    private emailListService: EmailListService
+  constructor(
+    private service: NewsletterSubscriptionService,
+    private emailListService: EmailListService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
   ) {}
 
-  async ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (data) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new ArrayStore({
-              key: 'id',
-              data
-          })
-        })
-      )
-    )
+  async ngOnInit(): Promise<void> {
+    this.subscribers$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) => {
+        this.allSubscribers = items;
+        const filtered = items
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
+          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
+      tap(() => this.loading$.next(false))
+    );
 
-    this.emailLists = await this.emailListService.getAllByValue('type', 'newsletter')
+    this.emailLists = (await this.emailListService.getAllByValue('type', 'newsletter')) ?? [];
+    this.refreshActions();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-    this.isVisible$.next(true);
-  }
-
-  showNewletterModal = () => {
-    this.newsletter = {... new NewsletterModel()};
-    this.newsletter.date = Timestamp.now();
-    this.isPrayerVisible$.next(true);
-  }
-
-  showAddModal = () => {
-    this.isVisible$.next(true);
-
-    this.selectedList = {... new EmailList()};
-  }
-
-  showListModal = () => {
-    this.selectedList = {... new EmailList()};
-    this.isListVisible$.next(true);
-  }
-
-  onListFilterChanged(event: any) {
-    if(event.value) {
-      this.selectedRows = [];
-
-      this.selectedList = this.emailLists.find(list => list.id === event.value) || null;
-
-      this.selectedList.list.forEach(item => {
-        this.selectedRows.push(item.id)
-      })
-    } else if(!event.value) {
-      this.selectedList = {... new EmailList()};
-      this.selectedRows = [];
+  private refreshActions(): void {
+    const actions: ListHeaderAction[] = [
+      { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+      { label: 'Send Newsletter', icon: 'email', onClick: () => this.showNewsletterModal() },
+      { label: 'Create Subscriber List', icon: 'view_list', onClick: () => this.showListModal() },
+      { label: 'Export Subscriber List', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
+    ];
+    if (this.selectedList?.name) {
+      actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
+    this.actions = actions;
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  private matchesField(item: NewsletterSubscriptionModel, field: string, filter: ColumnFilterValue): boolean {
+    return matchesColumnFilter((item as any)[field], filter, field === 'date' ? 'date' : 'text');
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  onListFilterChanged(listId: string | null): void {
+    this.selection.clear();
+
+    if (listId) {
+      this.selectedList = this.emailLists.find((list) => list.id === listId);
+      const memberIds = new Set((this.selectedList?.list ?? []).map((s: NewsletterSubscriptionModel) => s.id));
+      this.allSubscribers.filter((s) => memberIds.has(s.id)).forEach((s) => this.selection.select(s));
+    } else {
+      this.selectedList = { ...new EmailList() };
+    }
+    this.refreshActions();
+  }
+
+  isAllSelected(): boolean {
+    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
+  }
+
+  masterToggle(): void {
+    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+  }
+
+  showAddModal(): void {
+    this.dialog.open(NewsletterSubscriberDialogComponent, {
+      width: '500px',
+      data: { item: null }
+    });
+  }
+
+  showEditModal(item: NewsletterSubscriptionModel): void {
+    this.dialog.open(NewsletterSubscriberDialogComponent, {
+      width: '500px',
+      data: { item }
+    });
+  }
+
+  showNewsletterModal(): void {
+    this.dialog.open(SendNewsletterDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { selectedList: this.selectedList }
+    });
+  }
+
+  showListModal(): void {
+    // Always starts a brand new list from whatever rows are currently
+    // checked - matches the original, which reset selectedList here
+    // regardless of any list currently active in the "Filter by List" filter.
+    this.selectedList = { ...new EmailList() };
+    this.refreshActions();
+    const dialogRef = this.dialog.open(NewsletterListDialogComponent, {
+      width: '480px',
+      data: { item: null, members: this.selection.selected }
+    });
+
+    dialogRef.afterClosed().subscribe(async (saved) => {
+      if (saved) {
+        this.emailLists = (await this.emailListService.getAllByValue('type', 'newsletter')) ?? [];
       }
     });
   }
 
-  onSave(item: NewsletterSubscriptionModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
+  onListSave(): void {
+    if (!this.selectedList?.id) {
+      return;
+    }
+    this.emailListService.update(this.selectedList.id, { ...this.selectedList, list: this.selection.selected }).then((item) => {
+      if (item) {
+        this.snackbar.success('List Updated');
       } else {
-        this.service.createNewsLetterSubscription(item.firstName, item.lastName, item.email).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-
-            this.service.sendConfirmationEmail(this.selectedItem);
-
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
+        this.snackbar.error('Some Error Occured');
       }
-    }
-  }
-
-  onListSave = () => {
-    this.inProgress$.next(true);
-    this.selectedList.list = this.selectedSubscribers;
-    this.selectedList.type = 'newsletter';
-
-    if(this.selectedList.id) {
-      this.emailListService.update(this.selectedList.id, this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Updated',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        }
-      })
-    } else {
-      this.emailListService.add(this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Added',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.emailLists.push(item);
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'error'
-          });
-        }
-      })
-    }
-  }
-
-  sendNewsletter(){
-    let user = this.authService.getLoggedInUser();
-    this.newsletter.sender = user.firstName + ' ' + user.lastName
-    let html='';
-
-    let list: Promise<NewsletterSubscriptionModel[]>
-    if(this.selectedList){
-      list = Promise.resolve(this.selectedList.list);
-    } else {
-      list = this.service.getAll();
-    }
-
-    list.then(subscribers => {
-      subscribers.forEach(subscriber => {
-        html = this.newsletter.html
-        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-        html = html.replace('{{Sender First Name}}', user.firstName);
-        html = html.replace('{{Sender Last Name}}', user.lastName);
-        html = html.replace('{{Date}}', (dateFromTimestamp(this.newsletter.date) as Date).toLocaleString());
-        html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
-          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
-        this.newsletter.html = html;
-
-        this.emailService.sendHtmlEmail(subscriber.email, this.newsletter.subject, this.newsletter.html);
-      })
-    }).then(() => {
-      this.newsletterService.add(this.newsletter).then(newsletter => {
-        notify({
-          message: 'Newsletter ("' + newsletter.subject + '") Sent Successfully!',
-          position: 'top',
-          width: 600,
-          type: 'success'
-        });
-
-        this.isPrayerVisible$.next(false);
-      })
-    })
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  onNewsletterCancel() {
-    this.newsletter = null;
-    this.inProgress$.next(false);
-    this.isPrayerVisible$.next(false);
-  }
-
-  onListCancel() {
-    this.inProgress$.next(false);
-    this.isListVisible$.next(false);
-  }
-
-  selectRow(e){
-    this.selectedSubscribers = e.selectedRowsData;
-  }
-
-  exportGrids = () => {
-    const context = this;
-    const doc = new jsPDF();
-
-    exportDataGrid({
-      selectedRowsOnly: true,
-      jsPDFDocument: doc,
-      component: context.subscriptionGrid.instance,
-      topLeft: { x: 7, y: 5 },
-      columnWidths: [20, 50, 50, 50],
-
-    }).then(() => {
-        doc.save('Newsletter_subscribers.pdf');
     });
+  }
+
+  delete(item: NewsletterSubscriptionModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
+  }
+
+  // Exports whatever rows are currently checked - matches the original's
+  // exportDataGrid({ selectedRowsOnly: true }).
+  exportPdf(): void {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      startY: 12,
+      head: [['Last Name', 'First Name', 'Email', 'Date']],
+      body: this.selection.selected.map((row) => [row.lastName ?? '', row.firstName ?? '', row.email ?? '', row.date instanceof Date ? row.date.toLocaleDateString() : ''])
+    });
+    doc.save('Newsletter_subscribers.pdf');
   }
 }
