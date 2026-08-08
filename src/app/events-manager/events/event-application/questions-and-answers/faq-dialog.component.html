@@ -1,0 +1,29 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' FAQ'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="order-field">
+      <mat-label>Sort Order</mat-label>
+      <input matInput type="number" formControlName="sortOrder">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Question</mat-label>
+      <input matInput formControlName="question" required>
+      <mat-error *ngIf="form.get('question')?.hasError('required')">Question is required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <label class="section-label">Answer</label>
+  <quill-editor formControlName="answer" [modules]="richTextModules"></quill-editor>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

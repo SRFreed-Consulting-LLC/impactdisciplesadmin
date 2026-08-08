@@ -1,0 +1,34 @@
+.full-width {
+  width: 100%;
+}
+
+.order-field {
+  width: 120px;
+  flex: 0 0 auto;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+  display: block;
+}
+
+quill-editor {
+  height: 280px;
+  display: block;
+}

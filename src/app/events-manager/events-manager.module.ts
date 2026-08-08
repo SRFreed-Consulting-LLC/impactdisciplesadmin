@@ -16,6 +16,7 @@ import { EventsManagerComponent } from './events-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { RoomComponent } from './locations/room/room.component';
 import { FAQComponent } from './events/event-application/questions-and-answers/faq.component';
+import { FaqDialogComponent } from './events/event-application/questions-and-answers/faq-dialog.component';
 import { AnnouncementsComponent } from './events/event-application/announcements/announcements.component';
 import { EventApplicationComponent } from './events/event-application/event-application.component';
 import { DetailsComponent } from './events/event-application/details/details.component';
@@ -42,6 +43,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -62,6 +64,7 @@ import { QuillModule } from 'ngx-quill';
       RoomComponent,
       RoomDialogComponent,
       FAQComponent,
+      FaqDialogComponent,
       AnnouncementsComponent,
       AnnouncementDialogComponent,
       EventApplicationComponent,
@@ -109,6 +112,7 @@ import { QuillModule } from 'ngx-quill';
       MatSelectModule,
       MatTabsModule,
       MatSlideToggleModule,
+      MatCheckboxModule,
       QuillModule
     ]
 })

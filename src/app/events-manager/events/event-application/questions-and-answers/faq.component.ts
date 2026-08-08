@@ -1,148 +1,126 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { SelectionModel } from '@angular/cdk/collections';
+import { MatDialog } from '@angular/material/dialog';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
 import { FAQModel } from 'impactdisciplescommon/src/models/utils/faq.model';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
 import { FAQService } from 'impactdisciplescommon/src/services/data/faq.service';
+import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../../../shared/snackbar.service';
+import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../../shared/column-filter/column-filter.model';
+import { FaqDialogComponent } from './faq-dialog.component';
 
+// Two concerns in one screen, matching the original: (a) a global FAQ
+// library (its own Firestore collection, plain add/edit/delete) and (b)
+// per-event membership (event.faqList) via checkbox selection on the same
+// table - mirrors NewsletterSubscriptionComponent's SelectionModel pattern
+// exactly (src/app/subscriptions-manager/newsletter-subscription).
 @Component({
     selector: 'app-faq',
     templateUrl: './faq.component.html',
-    styleUrls: ['./faq.component.css'],
+    styleUrls: ['./faq.component.scss'],
     standalone: false
 })
-export class FAQComponent implements OnInit {
+export class FAQComponent implements OnInit, OnChanges {
   @Input('event') event: EventModel;
 
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: FAQModel;
+  faqs$: Observable<FAQModel[]>;
+  displayedColumns = ['select', 'sortOrder', 'question', 'answer', 'actions'];
+  filterColumns = ['select-filter', 'sortOrder-filter', 'question-filter', 'answer-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'FAQ';
 
-  selectedRows: string[] = [];
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  selection = new SelectionModel<FAQModel>(true, []);
 
-  constructor(private service: FAQService) { }
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  ngOnInit() {
-    let that = this;
-    if(this.event?.id){
-      this.datasource$ = this.service.streamAll().pipe(
-        map(
-          (items) =>
-            new DataSource({
-              reshapeOnPush: true,
-              pushAggregationTimeout: 100,
-              store: new CustomStore({
-                key: 'id',
-                loadMode: 'raw',
-                load: function (loadOptions: any) {
-                  return items;
-                },
-                onLoaded: function(){
-                  if(!that.event.faqList){
-                    that.event.faqList = [];
-                  }
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private currentRows: FAQModel[] = [];
+  private selectionInitialized = false;
 
-                  that.selectedRows = that.event.faqList.map(faq => faq.id)
-                }
-              })
-            })
-        ),
-      );
+  constructor(
+    private service: FAQService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
+
+  ngOnInit(): void {
+    this.faqs$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], field === 'sortOrder' ? 'number' : 'text')))
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      ),
+      tap((items) => {
+        this.currentRows = items;
+        // Only pre-select once, the first time the library loads - after
+        // that, selection changes are user-driven and shouldn't be
+        // clobbered by every subsequent stream emission.
+        if (!this.selectionInitialized) {
+          this.selectionInitialized = true;
+          if (!this.event.faqList) {
+            this.event.faqList = [];
+          }
+          const memberIds = new Set(this.event.faqList.map((f) => f.id));
+          items.filter((item) => memberIds.has(item.id)).forEach((item) => this.selection.select(item));
+        }
+        this.loading$.next(false);
+      })
+    );
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['event'] && !changes['event'].firstChange) {
+      this.selectionInitialized = false;
     }
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    this.isVisible$.next(true);
+  isAllSelected(): boolean {
+    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new FAQModel()};
-
-    this.isVisible$.next(true);
+  masterToggle(): void {
+    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+    this.onSelectionChange();
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  toggleRow(item: FAQModel): void {
+    this.selection.toggle(item);
+    this.onSelectionChange();
+  }
+
+  private onSelectionChange(): void {
+    this.event.faqList = this.selection.selected;
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  showAddModal(): void {
+    this.dialog.open(FaqDialogComponent, { width: '700px', data: { item: null } });
+  }
+
+  showEditModal(item: FAQModel): void {
+    this.dialog.open(FaqDialogComponent, { width: '700px', data: { item } });
+  }
+
+  delete(item: FAQModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.selection.deselect(item);
+          this.onSelectionChange();
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
     });
-  }
-
-  onSave(item) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  selectRow(e){
-    this.event.faqList = e.selectedRowsData;
   }
 }

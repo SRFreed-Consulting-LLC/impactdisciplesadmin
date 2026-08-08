@@ -1,172 +1,64 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-faq-button" hint="MANAGE FAQ">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-faq-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header title="FAQ" [actions]="actions"></app-list-header>
+
+<div class="table-scroll">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+  <table mat-table [dataSource]="(faqs$ | async) ?? []" class="faq-table">
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef>
+        <mat-checkbox (change)="masterToggle()" [checked]="isAllSelected()"></mat-checkbox>
+      </th>
+      <td mat-cell *matCellDef="let item">
+        <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleRow(item)" [checked]="selection.isSelected(item)"></mat-checkbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="sortOrder">
+      <th mat-header-cell *matHeaderCellDef>Sort Order</th>
+      <td mat-cell *matCellDef="let item">{{ item.sortOrder }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="question">
+      <th mat-header-cell *matHeaderCellDef>Question</th>
+      <td mat-cell *matCellDef="let item">{{ item.question }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="answer">
+      <th mat-header-cell *matHeaderCellDef>Answer</th>
+      <td mat-cell *matCellDef="let item" class="answer-cell" [innerHTML]="item.answer"></td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- Filter row -->
+    <ng-container matColumnDef="select-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="sortOrder-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" type="number" (filterChange)="onFilterChange('sortOrder', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="question-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('question', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="answer-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+  </table>
 </div>
-
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'91%'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [(selectedRowKeys)]="selectedRows"
-  (onSelectionChanged)="selectRow($event)"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
-
-  <dxo-selection mode="multiple" ></dxo-selection>
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-  <dxi-column dataField="sortOrder" [width]="'15%'" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="question" [width]="'25%'"></dxi-column>
-  <dxi-column dataField="answer" [width]="'50%'"></dxi-column>
-  <dxi-column type="buttons" [width]="150" caption="Actions" [width]="100">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [height]="'60vh'"
-  [width]="'60vw'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left"
-          [colCount]="8">
-          <dxi-item dataField="sortOrder" [colSpan]="2">
-            <div *dxTemplate>
-              <dx-number-box [(value)]="selectedItem.sortOrder"></dx-number-box>
-            </div>
-          </dxi-item>
-          <dxi-item dataField="question" [colSpan]="6" [isRequired]="true"></dxi-item>
-          <dxi-item dataField="answer" [colSpan]="8" [template]="'answer_template'"></dxi-item>
-
-          <div *dxTemplate="let data of 'answer_template'">
-            <dx-html-editor
-              height="35vh"
-              [(value)]="selectedItem.answer">
-              <dxo-toolbar [multiline]="false">
-                <dxi-item name="undo"></dxi-item>
-                <dxi-item name="redo"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item
-                  name="size"
-                  [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-                  [options]="{ inputAttr: { 'aria-label': 'Font size' } }">
-                </dxi-item>
-                <dxi-item
-                  name="font"
-                  [acceptedValues]="[
-                    'Arial',
-                    'Courier New',
-                    'Georgia',
-                    'Impact',
-                    'Lucida Console',
-                    'Tahoma',
-                    'Times New Roman',
-                    'Verdana'
-                  ]"
-                  [options]="{ inputAttr: { 'aria-label': 'Font family' } }">
-                </dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="bold"></dxi-item>
-                <dxi-item name="italic"></dxi-item>
-                <dxi-item name="strike"></dxi-item>
-                <dxi-item name="underline"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="alignLeft"></dxi-item>
-                <dxi-item name="alignCenter"></dxi-item>
-                <dxi-item name="alignRight"></dxi-item>
-                <dxi-item name="alignJustify"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="orderedList"></dxi-item>
-                <dxi-item name="bulletList"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item
-                  name="header"
-                  [acceptedValues]="[false, 1, 2, 3, 4, 5]"
-                  [options]="{ inputAttr: { 'aria-label': 'Header' } }">
-                </dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="color"></dxi-item>
-                <dxi-item name="background"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="link"></dxi-item>
-                <dxi-item name="image"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="clear"></dxi-item>
-                <dxi-item name="codeBlock"></dxi-item>
-                <dxi-item name="blockquote"></dxi-item>
-                <dxi-item name="separator"></dxi-item>
-                <dxi-item name="insertTable"></dxi-item>
-                <dxi-item name="deleteTable"></dxi-item>
-                <dxi-item name="insertRowAbove"></dxi-item>
-                <dxi-item name="insertRowBelow"></dxi-item>
-                <dxi-item name="deleteRow"></dxi-item>
-                <dxi-item name="insertColumnLeft"></dxi-item>
-                <dxi-item name="insertColumnRight"></dxi-item>
-                <dxi-item name="deleteColumn"></dxi-item>
-              </dxo-toolbar>
-            </dx-html-editor>
-          </div>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
