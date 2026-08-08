@@ -1,36 +1,20 @@
-::ng-deep .button-with-indicator {
-  width: 150px;
-
-  &__content.dx-button-content {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: unset;
-  }
+.button-with-indicator {
+  min-width: 150px;
 
   &__content-container {
-    display: inline-block;
-    position: relative;
-    width: min-content;
-    margin: 0 auto;
-    padding: 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
   }
 
   &__title {
     white-space: nowrap;
   }
 
-  &__indicator.dx-loadindicator {
-    position: absolute;
-    display: block;
-    left: 10px;
-    top: 50%;
-    width: 22px;
-    height: 22px;
-    transform: translateY(-50%);
-
-    .dx-loadindicator-segment {
-      background: white;
+  &__indicator {
+    ::ng-deep circle {
+      stroke: currentColor;
     }
   }
 }

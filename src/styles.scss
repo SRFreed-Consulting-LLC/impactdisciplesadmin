@@ -1,5 +1,47 @@
+@use '@angular/material' as mat;
 @use './assets/theme/scss/main.scss';
 @use './assets/theme/scss/variables' as *;
+@use './assets/theme/scss/material-theme' as impact-material;
+
+// Angular Material coexists with DevExtreme's own theme (below) during the
+// incremental migration - see the DevExtreme -> Material migration plan.
+:root {
+  @include mat.core();
+  @include mat.all-component-themes(impact-material.$impact-theme);
+}
+
+// The site theme's header/nav partials (_header.scss, etc.) use z-index values
+// up to 9999, and DevExtreme's own overlays run high too. The CDK overlay
+// container (dialogs, menus, tooltips, snackbars) defaults to z-index 1000, so
+// without this it can render underneath the app chrome/grid instead of on top.
+.cdk-overlay-container {
+  z-index: 10000;
+}
+
+// House rule: no round/pill buttons anywhere in the Material migration.
+// Material 3's default button shape is a fully-rounded pill
+// (--mat-sys-corner-full, 9999px) and icon buttons default to a circular
+// container (50%). Flatten both to a small, consistent corner radius so every
+// current and future mat-button/mat-icon-button/mat-fab picks it up automatically.
+:root {
+  --mat-button-filled-container-shape: 4px;
+  --mat-button-outlined-container-shape: 4px;
+  --mat-button-protected-container-shape: 4px;
+  --mat-button-text-container-shape: 4px;
+  --mat-button-tonal-container-shape: 4px;
+  --mat-icon-button-container-shape: 4px;
+  --mat-fab-container-shape: 4px;
+  --mat-fab-small-container-shape: 4px;
+  --mat-fab-extended-container-shape: 4px;
+}
+
+// dx-popup rendered with square corners (border-radius: 0). Material 3
+// dialogs default to a large rounded corner - flatten to match the old
+// popup shape (kept at 4px rather than a literal 0 to stay consistent with
+// the button-shape flattening above).
+:root {
+  --mat-dialog-container-shape: 4px;
+}
 
 @import './assets/theme/css/fontAwesome5Pro.css';
 @import './assets/theme/css/ionicons.min.css';

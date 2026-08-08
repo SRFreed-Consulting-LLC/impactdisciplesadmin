@@ -1,13 +1,16 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
+import { Component, OnInit } from '@angular/core';
+import { map, Observable } from 'rxjs';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { PodCastCategoryDialogComponent } from './pod-cast-category-dialog.component';
 
+// Opened via MatDialog.open(PodCastCategoriesComponent, ...) from PodCastsComponent's
+// "Categories" menu item - there is no standalone route for this screen. Because it's
+// always dialog-hosted, its own title bar comes from mat-dialog-title rather than the
+// app-list-header primitive used by screens that render inline in the page.
 @Component({
     selector: 'app-pod-cast-categories',
     templateUrl: './pod-cast-categories.component.html',
@@ -15,115 +18,50 @@ import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/dat
     standalone: false
 })
 export class PodCastCategoriesComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: TagModel;
+  categories$: Observable<TagModel[]>;
+  displayedColumns = ['tag', 'actions'];
 
   itemType = 'Categories';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  constructor(
+    private service: PodCastCategoriesService,
+    private dialog: MatDialog,
+    private dialogRef: MatDialogRef<PodCastCategoriesComponent>,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  constructor(private service: PodCastCategoriesService) {}
-
-  ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
+  ngOnInit(): void {
+    this.categories$ = this.service.streamAll().pipe(
+      map((items) => items.slice().sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? '')))
     );
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    this.isVisible$.next(true);
+  onClose(): void {
+    this.dialogRef.close();
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new TagModel()};
-
-    this.isVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(PodCastCategoryDialogComponent, {
+      width: '400px',
+      data: { item: null }
     });
   }
 
-  onSave(item: TagModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: TagModel): void {
+    this.dialog.open(PodCastCategoryDialogComponent, {
+      width: '400px',
+      data: { item }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: TagModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

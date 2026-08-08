@@ -1,0 +1,22 @@
+// Mirrors dx-popup's default title bar: no border/background, just a label
+// on the left and a small close icon on the right.
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 4px;
+
+  &__title {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  &__spacer {
+    flex: 1 1 auto;
+  }
+
+  &__close {
+    flex-shrink: 0;
+  }
+}

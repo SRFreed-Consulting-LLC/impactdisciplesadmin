@@ -12,6 +12,8 @@ import { DxTagBoxTypes } from 'devextreme-angular/ui/tag-box';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
 import { PodCastTagsService } from 'impactdisciplescommon/src/services/data/pod-cast-tags.service';
+import { MatDialog } from '@angular/material/dialog';
+import { PodCastCategoriesComponent } from '../pod-cast-categories/pod-cast-categories.component';
 
 @Component({
     selector: 'app-pod-casts',
@@ -29,7 +31,6 @@ export class PodCastsComponent implements OnInit, OnDestroy {
 
   public inProgress$ = new BehaviorSubject<boolean>(false);
   public isEditVisible$ = new BehaviorSubject<boolean>(false);
-  public isCategoriesVisible$ = new BehaviorSubject<boolean>(false);
   public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
 
   podCastTags: TagModel[] = [];
@@ -38,7 +39,8 @@ export class PodCastsComponent implements OnInit, OnDestroy {
 
   constructor(private service: PodCastService,
     private podCastTagService: PodCastTagsService,
-    private podCastCategoriesService: PodCastCategoriesService) {}
+    private podCastCategoriesService: PodCastCategoriesService,
+    private dialog: MatDialog) {}
 
   async ngOnInit(): Promise<void> {
       this.datasource$ = this.service.streamAll().pipe(
@@ -79,7 +81,9 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   }
 
   showCategoriesModal = () => {
-    this.isCategoriesVisible$.next(true);
+    this.dialog.open(PodCastCategoriesComponent, {
+      width: '650px'
+    });
   }
 
   delete = ({ row: { data } }) => {
@@ -188,11 +192,6 @@ export class PodCastsComponent implements OnInit, OnDestroy {
     this.selectedItem = null;
     this.inProgress$.next(false);
     this.isEditVisible$.next(false);
-  }
-
-  onCategoriesCancel() {
-    this.inProgress$.next(false);
-    this.isCategoriesVisible$.next(false);
   }
 
   onCustomItemCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {

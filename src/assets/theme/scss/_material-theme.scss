@@ -1,0 +1,172 @@
+// Angular Material M3 theme, generated to match the admin app's *actual*
+// existing accent color rather than the marketing site's brand yellow:
+//   primary source:  #337ab7 (DevExtreme's default light-theme blue - what
+//                     every dx-button/dx-popup accent already looks like)
+//   neutral source:  $black-2  #323232 (see _variables.scss)
+//
+// (An earlier version seeded primary from the brand yellow #ffcc00, but M3
+// has to darken/desaturate yellow heavily to keep filled-button text
+// readable, which lands on a muddy brown - and the admin UI never actually
+// used yellow for buttons anyway. Blue matches the real dx-popup/dx-button
+// look this migration is trying to preserve.)
+//
+// The tonal ramps below were computed with Google's own
+// @material/material-color-utilities (HCT color space, the same engine
+// Material's official theme-builder tool uses) from those two source
+// hexes - not hand-picked - so the ramp is perceptually consistent the
+// way M3 expects. Regenerate by re-running the same generation script
+// against those two hexes if the seed colors ever change.
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+$impact-primary-palette: (
+  0: #000000,
+  10: #001d34,
+  20: #003256,
+  25: #003e67,
+  30: #004a79,
+  35: #00568c,
+  40: #00629f,
+  50: #2b7bbd,
+  60: #4c95d8,
+  70: #69b0f5,
+  80: #9bcbff,
+  90: #d0e4ff,
+  95: #e9f1ff,
+  98: #f8f9ff,
+  99: #fcfcff,
+  100: #ffffff,
+  secondary: (
+    0: #000000,
+    10: #0f1d2a,
+    20: #243240,
+    25: #2f3d4c,
+    30: #3b4857,
+    35: #465463,
+    40: #526070,
+    50: #6b7889,
+    60: #8492a4,
+    70: #9facbf,
+    80: #bac8db,
+    90: #d6e4f7,
+    95: #e9f1ff,
+    98: #f8f9ff,
+    99: #fcfcff,
+    100: #ffffff,
+  ),
+  neutral: (
+    0: #000000,
+    4: #0b0f0f,
+    6: #101415,
+    10: #191c1d,
+    12: #1d2021,
+    17: #272b2b,
+    20: #2e3132,
+    22: #323536,
+    24: #363a3a,
+    25: #393c3d,
+    30: #444748,
+    35: #505354,
+    40: #5c5f5f,
+    50: #747878,
+    60: #8e9192,
+    70: #a9acac,
+    80: #c4c7c7,
+    87: #d8dadb,
+    90: #e1e3e3,
+    92: #e6e8e9,
+    94: #eceeef,
+    95: #eff1f1,
+    96: #f2f4f4,
+    98: #f8fafa,
+    99: #fafdfd,
+    100: #ffffff,
+  ),
+  neutral-variant: (
+    0: #000000,
+    10: #141d1f,
+    20: #293234,
+    25: #343d3f,
+    30: #3f484a,
+    35: #4b5456,
+    40: #576062,
+    50: #6f797a,
+    60: #899294,
+    70: #a3adaf,
+    80: #bfc8ca,
+    90: #dbe4e6,
+    95: #e9f2f4,
+    98: #f2fbfd,
+    99: #f6feff,
+    100: #ffffff,
+  ),
+  error: (
+    0: #000000,
+    10: #410002,
+    20: #690005,
+    25: #7e0007,
+    30: #93000a,
+    35: #a80710,
+    40: #ba1a1a,
+    50: #de3730,
+    60: #ff5449,
+    70: #ff897d,
+    80: #ffb4ab,
+    90: #ffdad6,
+    95: #ffedea,
+    98: #fff8f7,
+    99: #fffbff,
+    100: #ffffff,
+  ),
+);
+
+// A secondary hue (primary hue + 60°) used only as the tertiary accent -
+// gives the theme a second, related color for things like informational
+// accents without introducing an unrelated brand color.
+// mat.define-theme() validates every palette map (primary or tertiary)
+// against the same full shape - 16 tones plus nested secondary/neutral/
+// neutral-variant/error maps - even though only the top-level tones end
+// up used for the tertiary color itself (the nested maps get stripped by
+// define-theme internally). Borrow primary's nested maps just to satisfy
+// that shape; they're never actually rendered as part of the tertiary hue.
+$impact-tertiary-palette: map.merge(
+  (
+    0: #000000,
+    10: #241532,
+    20: #3a2a48,
+    25: #453554,
+    30: #514060,
+    35: #5d4b6c,
+    40: #695779,
+    50: #837093,
+    60: #9d89ae,
+    70: #b9a3c9,
+    80: #d5bee5,
+    90: #f0dbff,
+    95: #faecff,
+    98: #fff7fe,
+    99: #fffbff,
+    100: #ffffff,
+  ),
+  (
+    secondary: map.get($impact-primary-palette, secondary),
+    neutral: map.get($impact-primary-palette, neutral),
+    neutral-variant: map.get($impact-primary-palette, neutral-variant),
+    error: map.get($impact-primary-palette, error),
+  )
+);
+
+$impact-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: $impact-primary-palette,
+    tertiary: $impact-tertiary-palette,
+  ),
+  typography: (
+    plain-family: 'Poppins, sans-serif',
+    brand-family: 'Poppins, sans-serif',
+  ),
+  density: (
+    scale: 0,
+  ),
+));

@@ -1,0 +1,27 @@
+mat-dialog-content {
+  padding: 8px 16px 16px;
+}
+
+.category-actions {
+  display: flex;
+  justify-content: flex-end;
+  --mat-icon-button-state-layer-size: 32px;
+  --mat-icon-button-icon-size: 20px;
+}
+
+.category-table {
+  width: 100%;
+  --mat-table-header-container-height: 40px;
+  --mat-table-row-item-container-height: 40px;
+  --mat-table-header-headline-size: 12px;
+  --mat-table-row-item-label-text-size: 13px;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.category-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

@@ -1,18 +1,24 @@
-<dx-button
-  type="default"
-  stylingMode="contained"
-  [hint]="hint"
-  [height]="height"
-  [width]="width"
-  [disabled]="isInProgress || disabled"
-  (onClick)="onClick.emit()"
-  class="button-with-indicator {{ cssClass }}"
->
-  <div *dxTemplate="let data of 'content'" class="button-with-indicator__content">
-    <div class="button-with-indicator__content-container">
-      <dx-load-indicator class="button-with-indicator__indicator" [visible]="isInProgress"></dx-load-indicator>
-      <span class="button-with-indicator__title dx-button-text">{{ title }}</span>
-    </div>
-  </div>
-</dx-button>
+<ng-container [ngSwitch]="stylingMode">
+  <button *ngSwitchCase="'text'" mat-button [ngClass]="cssClass" class="button-with-indicator"
+    [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
+    [disabled]="isInProgress || disabled" (click)="handleClick()">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </button>
+  <button *ngSwitchCase="'outlined'" mat-stroked-button [ngClass]="cssClass" class="button-with-indicator"
+    [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
+    [disabled]="isInProgress || disabled" (click)="handleClick()">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </button>
+  <button *ngSwitchDefault mat-raised-button color="primary" [ngClass]="cssClass" class="button-with-indicator"
+    [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
+    [disabled]="isInProgress || disabled" (click)="handleClick()">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </button>
+</ng-container>
 
+<ng-template #content>
+  <span class="button-with-indicator__content-container">
+    <mat-spinner *ngIf="isInProgress" class="button-with-indicator__indicator" diameter="18"></mat-spinner>
+    <span class="button-with-indicator__title">{{ title }}</span>
+  </span>
+</ng-template>

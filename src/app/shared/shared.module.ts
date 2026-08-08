@@ -4,16 +4,49 @@ import { DxButtonModule, DxFormModule, DxLoadIndicatorModule, DxPopupModule } fr
 import { CommonModule } from "@angular/common";
 import { LocationModalComponent } from './location-modal/location-modal.component';
 import { OrganizationModalComponent } from "./organization-modal/organization-modal.component";
+import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
+import { ListHeaderComponent } from './list-header/list-header.component';
+import { PopupHeaderComponent } from './popup-header/popup-header.component';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
 
 @NgModule({
-  declarations: [IndicatorButtonComponent, LocationModalComponent, OrganizationModalComponent],
+  declarations: [
+    IndicatorButtonComponent,
+    LocationModalComponent,
+    OrganizationModalComponent,
+    ConfirmDialogComponent,
+    ListHeaderComponent,
+    PopupHeaderComponent
+  ],
   imports: [
     CommonModule,
     DxButtonModule,
     DxLoadIndicatorModule,
     DxPopupModule,
-    DxFormModule
+    DxFormModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    MatToolbarModule,
+    MatMenuModule,
+    MatIconModule,
+    MatDividerModule
   ],
-  exports: [IndicatorButtonComponent, LocationModalComponent, OrganizationModalComponent]
+  exports: [
+    IndicatorButtonComponent,
+    LocationModalComponent,
+    OrganizationModalComponent,
+    ConfirmDialogComponent,
+    ListHeaderComponent,
+    PopupHeaderComponent
+  ]
 })
 export class SharedModule {}

@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { AppRoutingModule } from './app-routing.module';
@@ -33,7 +34,11 @@ import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/ad
   providers: [
     CookieService,
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideFirestore(() => getFirestore())
+    provideFirestore(() => getFirestore()),
+    // Function-based provider, not the BrowserAnimationsModule NgModule form -
+    // see the NG05100 fix history for why a root-only NgModule that re-exports
+    // BrowserModule internally is exactly the bug class to avoid here.
+    provideAnimations()
   ],
   bootstrap: [AppComponent]
 })

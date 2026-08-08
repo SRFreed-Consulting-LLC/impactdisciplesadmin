@@ -163,17 +163,6 @@
   </app-image-uploader>
 </ng-container>
 
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isCategoriesVisible$ | async"
-  [width]="'30%'"
-  [height]="'60%'"
-  [showCloseButton]="true"
-  (onHiding)="onCategoriesCancel()">
-  <app-pod-cast-categories (seriesSelectClosed)="onCategoriesCancel()"></app-pod-cast-categories>
-</dx-popup>
-
 <dx-load-panel
     #loadPanel
     shadingColor="rgba(0,0,0,0.4)"
