@@ -1,6 +1,4 @@
-<div class="content-block responsive-paddings">
-  <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
-</div>
+<app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 
 <div class="table-scroll">
   <table mat-table [dataSource]="(sales$ | async) ?? []" class="sales-table">

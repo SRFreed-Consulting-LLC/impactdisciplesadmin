@@ -1,10 +1,12 @@
 <dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
-<ng-template [ngIf]="selectedTab == 'Newsletters'">
-  <app-newsletter-subscription></app-newsletter-subscription>
-</ng-template>
+<div class="manager-content">
+  <ng-template [ngIf]="selectedTab == 'Newsletters'">
+    <app-newsletter-subscription></app-newsletter-subscription>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Prayer Team'">
-  <app-prayer-team-subscription></app-prayer-team-subscription>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Prayer Team'">
+    <app-prayer-team-subscription></app-prayer-team-subscription>
+  </ng-template>
+</div>
 

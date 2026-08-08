@@ -1,38 +1,22 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { BehaviorSubject, Observable, map, of } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
-import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { CustomerService } from 'impactdisciplescommon/src/services/data/customer.service';
-import { CustomerModel } from 'impactdisciplescommon/src/models/domain/utils/customer.model';
-import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
-import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { EventRegistrationModel } from 'impactdisciplescommon/src/models/domain/event-registration.model';
-import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
-import { OrganizationModel } from 'impactdisciplescommon/src/models/domain/organization.model';
-import { LocationModel } from 'impactdisciplescommon/src/models/domain/location.model';
-import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
-import { Timestamp } from 'firebase/firestore';
-import { CustomerEmailModel } from 'impactdisciplescommon/src/models/domain/customer-email.model';
-import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
-import { CustomerEmailService } from 'impactdisciplescommon/src/services/data/customer-email.service';
-import { environment } from 'src/environments/environment';
-import { CustomerNoteModel } from 'impactdisciplescommon/src/models/domain/utils/customer-note.model';
-import { AppUser } from 'impactdisciplescommon/src/models/admin/appuser.model';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
+import { CustomerModel } from 'impactdisciplescommon/src/models/domain/utils/customer.model';
+import { CustomerService } from 'impactdisciplescommon/src/services/data/customer.service';
+import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
 import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
-import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
+import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
 import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
-import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { CustomerDialogComponent } from './customer-dialog.component';
+import { SendEmailDialogComponent } from './send-email-dialog.component';
+import { EmailListDialogComponent } from './email-list-dialog.component';
 
 @Component({
     selector: 'app-customers',
@@ -41,493 +25,185 @@ import { LocationService } from 'impactdisciplescommon/src/services/data/locatio
     standalone: false
 })
 export class CustomersComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('customerGrid', { static: false }) customerGrid: DxDataGridComponent;
-
-  datasource$: Observable<DataSource>;
-  salesDatasource$: Observable<DataSource>;
-  eventsRegistrantsDatasource$: Observable<DataSource>;
-
-  public isSalesEditVisible$ = new BehaviorSubject<boolean>(false);
-  public isRegistrationEditVisible$ = new BehaviorSubject<boolean>(false);
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isListVisible$ = new BehaviorSubject<boolean>(false);
-  public isEmailVisible$ = new BehaviorSubject<boolean>(false);
-
-  user: AppUser
-  selectedItem: CustomerModel;
-  selectedPurchase: CheckoutForm;
-  selectedEvent: EventModel;
-  selectedRows: string[] = [];
-  selectedCustomers: CustomerModel[] = [];
-  selectedList: EmailList;
-  emailLists: EmailList[];
-  events: EventModel[];
-  email: CustomerEmailModel
-  public locations: LocationModel[];
-  public organizations: OrganizationModel[];
+  customers$: Observable<CustomerModel[]>;
+  displayedColumns = ['select', 'lastName', 'firstName', 'email', 'phone', 'actions'];
+  filterColumns = ['select-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'phone-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Customer';
 
-  emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name', 'Date'];
+  emailLists: EmailList[] = [];
+  selectedList: EmailList | undefined;
+  selection = new SelectionModel<CustomerModel>(true, []);
 
-  phoneEditorOptions = {
-    mask: '(X00) 000-0000',
-    maskRules: {
-      X: /[02-9]/,
-    },
-    maskInvalidMessage: 'The phone must have a correct USA phone format',
-    valueChangeEvent: 'keyup',
-  };
+  // A stable field, not a getter - app-list-header's *ngFor keys off these
+  // action objects, and a getter that returns a brand-new array (and brand
+  // new object literals) on every change-detection cycle makes Angular tear
+  // down and rebuild the menu-item buttons constantly, including while the
+  // menu is open. That churn is what was silently swallowing clicks: live-
+  // tested via Playwright, clicking "New" (or any menu action) did nothing.
+  // Reassigned only when what it should show actually changes (see
+  // refreshActions()).
+  actions: ListHeaderAction[] = [];
 
-  public states: string[];
-  public countries: string[];
-  public phone_types: string[];
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private currentRows: CustomerModel[] = [];
+  private allCustomers: CustomerModel[] = [];
+  private events: EventModel[] = [];
 
-  constructor(private service: CustomerService,
-    private salesService: PurchasesService,
+  constructor(
+    private service: CustomerService,
     private eventService: EventService,
-    private eventRegistrationService: EventRegistrationService,
-    private locationsService: LocationService,
-    private organizationsService: OrganizationService,
-    private authService: AdminAuthService,
     private emailListService: EmailListService,
-    private emailService: EMailService,
-    private customerEmailService: CustomerEmailService
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.user = this.authService.getLoggedInUser() as AppUser;
-
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
+    this.customers$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) => {
+        this.allCustomers = items;
+        const filtered = items
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
+          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      })
     );
 
     this.events = await this.eventService.getAll();
+    this.emailLists = (await this.emailListService.getAllByValue('type', 'customer')) ?? [];
+    this.refreshActions();
+  }
 
-    this.emailLists = await this.emailListService.getAllByValue('type', 'customer').then(list => {
-      if (list){
-        return list;
-      } else {
-        return [];
-      }
+  private refreshActions(): void {
+    const actions: ListHeaderAction[] = [
+      { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+      { label: 'Send Email', icon: 'email', onClick: () => this.showEmailModal() },
+      { label: 'Create Email List', icon: 'view_list', onClick: () => this.showListModal() },
+      { label: 'Export Customer List', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
+    ];
+    if (this.selectedList?.name) {
+      actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
+    }
+    this.actions = actions;
+  }
+
+  private matchesField(item: CustomerModel, field: string, filter: ColumnFilterValue): boolean {
+    if (field === 'phone') {
+      return matchesColumnFilter(item.phone?.number, filter, 'text');
+    }
+    return matchesColumnFilter((item as any)[field], filter, 'text');
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  onListFilterChanged(listId: string | null): void {
+    this.selection.clear();
+
+    if (listId) {
+      this.selectedList = this.emailLists.find((list) => list.id === listId);
+      const memberIds = new Set((this.selectedList?.list ?? []).map((c: CustomerModel) => c.id));
+      this.allCustomers.filter((c) => memberIds.has(c.id)).forEach((c) => this.selection.select(c));
+    } else {
+      this.selectedList = { ...new EmailList() };
+    }
+    this.refreshActions();
+  }
+
+  isAllSelected(): boolean {
+    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
+  }
+
+  masterToggle(): void {
+    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+  }
+
+  // Wide enough that the Purchases tab's 10 columns (Date/Status/Receipt/
+  // Coupon/Total/Taxes/Shipping/Charged/Refunded/Actions) fit without
+  // needing their own horizontal scroll on typical desktop widths.
+  private static readonly DIALOG_WIDTH = { width: '1200px', maxWidth: '95vw' };
+
+  showAddModal(): void {
+    this.dialog.open(CustomerDialogComponent, {
+      ...CustomersComponent.DIALOG_WIDTH,
+      data: { item: null, events: this.events }
+    });
+  }
+
+  showEditModal(item: CustomerModel): void {
+    this.dialog.open(CustomerDialogComponent, {
+      ...CustomersComponent.DIALOG_WIDTH,
+      data: { item, events: this.events }
+    });
+  }
+
+  showEmailModal(): void {
+    this.dialog.open(SendEmailDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { selectedList: this.selectedList }
+    });
+  }
+
+  showListModal(): void {
+    // Always starts a brand new list from whatever rows are currently
+    // checked - matches the original, which reset selectedList here
+    // regardless of any list currently active in the "Filter by List" filter.
+    this.selectedList = { ...new EmailList() };
+    this.refreshActions();
+    const dialogRef = this.dialog.open(EmailListDialogComponent, {
+      width: '480px',
+      data: { item: null, members: this.selection.selected }
     });
 
-    this.phone_types = EnumHelper.getPhoneTypesAsArray();
-    this.states = EnumHelper.getStateTypesAsArray();
-    this.countries = EnumHelper.getCountryTypesAsArray();
-  }
-
-  onListFilterChanged(event: any) {
-    if(event.value) {
-      this.selectedRows = [];
-
-      this.selectedList = this.emailLists.find(list => list.id === event.value) || null;
-
-      this.selectedList.list.forEach(item => {
-        this.selectedRows.push(item.id)
-      })
-    } else if(!event.value) {
-      this.selectedList = {... new EmailList()};
-      this.selectedRows = [];
-    }
-  }
-
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    if(!this.selectedItem.phone){
-      this.selectedItem.phone = {... new Phone()};
-    }
-
-    if(!this.selectedItem.shippingAddress){
-      this.selectedItem.shippingAddress = {... new Address()};
-    }
-
-    if(!this.selectedItem.billingAddress){
-      this.selectedItem.billingAddress = {... new Address()};
-    }
-
-    if(!this.selectedItem.notes){
-      this.selectedItem.notes = [];
-    }
-
-    this.salesDatasource$ = this.salesService.streamAllByValue("email", this.selectedItem.email).pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
-    );
-
-    this.eventsRegistrantsDatasource$ = this.eventRegistrationService.streamAllByValue("email", this.selectedItem.email).pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
-    );
-
-    this.isVisible$.next(true);
-  }
-
-  showAddModal = () => {
-    this.selectedItem = {... new CustomerModel()};
-    this.selectedItem.shippingAddress = {... new Address()};
-    this.selectedItem.billingAddress = {... new Address()};
-    this.selectedItem.phone = {... new Phone()};
-
-    this.salesDatasource$ = of([]).pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
-    );
-
-    this.eventsRegistrantsDatasource$ = of([]).pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
-    );
-
-    this.isVisible$.next(true);
-  }
-
-  showListModal = () => {
-    this.selectedList = {... new EmailList()};
-    this.isListVisible$.next(true);
-  }
-
-  showEmailModal = () => {
-    this.email = {... new CustomerEmailModel()};
-    this.email.date = Timestamp.now();
-    this.isEmailVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+    dialogRef.afterClosed().subscribe(async (saved) => {
+      if (saved) {
+        this.emailLists = (await this.emailListService.getAllByValue('type', 'customer')) ?? [];
       }
     });
   }
 
-  save() {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(this.selectedItem.id) {
-        this.service.update(this.selectedItem.id, this.selectedItem).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
+  onListSave(): void {
+    if (!this.selectedList?.id) {
+      return;
+    }
+    this.emailListService.update(this.selectedList.id, { ...this.selectedList, list: this.selection.selected }).then((item) => {
+      if (item) {
+        this.snackbar.success('List Updated');
       } else {
-        this.service.add(this.selectedItem).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
+        this.snackbar.error('Some Error Occured');
       }
-    }
+    });
   }
 
-  onListSave = () => {
-    this.inProgress$.next(true);
-    this.selectedList.list = this.selectedCustomers;
-    this.selectedList.type = 'customer';
-
-    if(this.selectedList.id) {
-      this.emailListService.update(this.selectedList.id, this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Updated',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        }
-      })
-    } else {
-      this.emailListService.add(this.selectedList).then((item) => {
-        if(item) {
-          notify({
-            message: 'List Added',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-
-          this.emailLists.push(item);
-          this.onListCancel();
-        } else {
-          this.inProgress$.next(false);
-          notify({
-            message: 'Some Error Occured',
-            position: 'top',
-            width: 600,
-            type: 'error'
-          });
-        }
-      })
-    }
-  }
-
-  onCancel() {
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  onEmailCancel() {
-    this.email = null;
-    this.inProgress$.next(false);
-    this.isEmailVisible$.next(false);
-  }
-
-  onListCancel() {
-    this.inProgress$.next(false);
-    this.isListVisible$.next(false);
-  }
-
-  showPurchasesEditModal = ({ row: { data } }) => {
-    this.selectedPurchase = (Object.assign({}, data));
-
-    this.isSalesEditVisible$.next(true);
-  }
-
-  showRegistrationsEditModal = async ({ row: { data } }) => {
-    if(!this.organizations){
-      this.organizations = await this.organizationsService.getAll();
-    }
-
-    if(!this.locations){
-      this.locations = await this.locationsService.getAll();
-    }
-
-    let registration: EventRegistrationModel = (Object.assign({}, data));
-
-    this.selectedEvent = this.events.find(event => event.id == registration.eventId);
-    this.selectedEvent.location = this.locations.find(location => location.id == this.selectedEvent.location);
-    this.selectedEvent.organization = this.organizations.find(organization => organization.id == this.selectedEvent.organization);
-
-    this.isRegistrationEditVisible$.next(true);
-  }
-
-  sendEmail(){
-    let user = this.authService.getLoggedInUser();
-    this.email.sender = user.firstName + ' ' + user.lastName
-    let html='';
-
-    let list: Promise<CustomerModel[]>
-    if(this.selectedList){
-      list = Promise.resolve(this.selectedList.list);
-    } else {
-      list = this.service.getAll();
-    }
-
-    list.then(subscribers => {
-      subscribers.forEach(subscriber => {
-        html = this.email.html
-        html = html.replace('{{Recipient First Name}}', subscriber.firstName);
-        html = html.replace('{{Recipient Last Name}}', subscriber.lastName);
-        html = html.replace('{{Sender First Name}}', user.firstName);
-        html = html.replace('{{Sender Last Name}}', user.lastName);
-        html = html.replace('{{Date}}', (dateFromTimestamp(this.email.date) as Date).toLocaleString());
-        html += "<br><br><br><div>If you believe you received this email by mistake, please click " +
-          "<b><a href='" + environment.unsubscribeUrl + "?email="+ subscriber.email +
-          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>"
-        this.email.html = html;
-
-        this.emailService.sendHtmlEmail(subscriber.email, this.email.subject, this.email.html);
-      })
-    }).then(() => {
-      this.customerEmailService.add(this.email).then(email => {
-        notify({
-          message: 'Email ("' + email.subject + '") Sent Successfully!',
-          position: 'top',
-          width: 600,
-          type: 'success'
-        });
-
-        this.isEmailVisible$.next(false);
-      })
-    })
-  }
-
-  getEventDate(cell){
-    return (dateFromTimestamp(this.events.find(event => event.id == cell.data.eventId).startDate) as Date).toLocaleDateString();
-  }
-
-  getDate(item){
-    return (dateFromTimestamp(item) as Date).toLocaleDateString();
-  }
-
-  selectRow(e){
-    this.selectedCustomers = e.selectedRowsData;
-  }
-
-  addCustomerNote(){
-    let user = this.authService.getLoggedInUser();
-
-    let note: CustomerNoteModel = {... new CustomerNoteModel()};
-    note.date = Timestamp.now();
-    note.addedBy = user.firstName + " " + user.lastName;
-    note.private = false;
-    note.id = this.generateRandomId();
-    this.selectedItem.notes.push(note);
-
-  }
-
-  deleteNote(index: number){
-    confirm('<i>Are you sure you want to delete this note?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.selectedItem.notes.splice(index, 1);
-
-        this.service.update(this.selectedItem.id, this.selectedItem).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      }
-    })
-  }
-
-  saveNote(){
-    this.service.update(this.selectedItem.id, this.selectedItem).then((item) => {
-      if(item) {
-        notify({
-          message: this.itemType + ' Updated',
-          position: 'top',
-          width: 600,
-          type: 'success'
+  delete(item: CustomerModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
         });
       }
-    })
+    });
   }
 
-  exportGrids = () => {
-    const context = this;
+  // Exports whatever rows are currently checked - matches the original's
+  // exportDataGrid({ selectedRowsOnly: true }).
+  exportPdf(): void {
     const doc = new jsPDF();
-
-    exportDataGrid({
-      selectedRowsOnly: true,
-      jsPDFDocument: doc,
-      component: context.customerGrid.instance,
-      topLeft: { x: 7, y: 5 },
-      columnWidths: [20, 50, 50, 50],
-
-    }).then(() => {
-        doc.save('customer_list.pdf');
+    autoTable(doc, {
+      startY: 12,
+      head: [['Last Name', 'First Name', 'Email', 'Number']],
+      body: this.selection.selected.map((row) => [
+        row.lastName ?? '',
+        row.firstName ?? '',
+        row.email ?? '',
+        row.phone?.number ? `${row.phone.countryCode ? '+' + row.phone.countryCode : ''} ${row.phone.number}` : ''
+      ])
     });
-  }
-
-  private generateRandomId() {
-    return 'xxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0,
-        v = c == 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
+    doc.save('customer_list.pdf');
   }
 }

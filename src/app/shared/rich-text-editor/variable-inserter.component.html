@@ -1,0 +1,9 @@
+<button mat-stroked-button type="button" class="variable-inserter-trigger" [matMenuTriggerFor]="menu" [disabled]="!variables.length">
+  <mat-icon>data_object</mat-icon>
+  Insert Variable
+</button>
+<mat-menu #menu="matMenu">
+  <button mat-menu-item *ngFor="let variable of variables" (click)="insert.emit(variable)">
+    {{ variable }}
+  </button>
+</mat-menu>

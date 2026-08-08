@@ -1,0 +1,25 @@
+/* See customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.email-templates-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.email-templates-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

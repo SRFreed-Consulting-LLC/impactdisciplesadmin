@@ -1,0 +1,33 @@
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' EMAIL TEMPLATE'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Subject</mat-label>
+      <input matInput formControlName="subject" required>
+      <mat-error *ngIf="form.get('subject')?.hasError('required')">Subject is required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <app-variable-inserter [variables]="emailVals" (insert)="insertVariable($event)"></app-variable-inserter>
+
+  <div class="editor-wrap">
+    <quill-editor formControlName="html" [modules]="richTextModules" (onEditorCreated)="onEditorCreated($event)"></quill-editor>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

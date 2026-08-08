@@ -1,29 +1,31 @@
 <dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
-<ng-template [ngIf]="selectedTab == 'Logs'">
-  <app-log-messages></app-log-messages>
-</ng-template>
+<div class="manager-content">
+  <ng-template [ngIf]="selectedTab == 'Logs'">
+    <app-log-messages></app-log-messages>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Notifications'">
-  <app-notifications></app-notifications>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Notifications'">
+    <app-notifications></app-notifications>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Users'">
-  <app-users></app-users>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Users'">
+    <app-users></app-users>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Customers'">
-  <app-customers></app-customers>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Customers'">
+    <app-customers></app-customers>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Web Config'">
-  <app-web-config></app-web-config>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Web Config'">
+    <app-web-config></app-web-config>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Email Templates'">
-  <app-email-templates></app-email-templates>
-</ng-template>
-<ng-template [ngIf]="selectedTab == 'Shipping Labels'">
-  <app-shipping-labels></app-shipping-labels>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Email Templates'">
+    <app-email-templates></app-email-templates>
+  </ng-template>
+  <ng-template [ngIf]="selectedTab == 'Shipping Labels'">
+    <app-shipping-labels></app-shipping-labels>
+  </ng-template>
+</div>
 

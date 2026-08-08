@@ -1,24 +1,26 @@
 <dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
-<ng-template [ngIf]="selectedTab == 'Disciple Making Minute'">
-  <app-dmms></app-dmms>
-</ng-template>
+<div class="manager-content">
+  <ng-template [ngIf]="selectedTab == 'Disciple Making Minute'">
+    <app-dmms></app-dmms>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Pod Casts'">
-  <app-pod-casts></app-pod-casts>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Pod Casts'">
+    <app-pod-casts></app-pod-casts>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Testimonials'">
-  <app-testimonials></app-testimonials>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Testimonials'">
+    <app-testimonials></app-testimonials>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Home Page Images'">
-  <app-home-page-images></app-home-page-images>
-</ng-template>
-<ng-template [ngIf]="selectedTab == 'Home Page Popups'">
-  <app-home-page-popups></app-home-page-popups>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Home Page Images'">
+    <app-home-page-images></app-home-page-images>
+  </ng-template>
+  <ng-template [ngIf]="selectedTab == 'Home Page Popups'">
+    <app-home-page-popups></app-home-page-popups>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Monthly Newsletter'">
-  <app-monthly-newsletters></app-monthly-newsletters>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Monthly Newsletter'">
+    <app-monthly-newsletters></app-monthly-newsletters>
+  </ng-template>
+</div>

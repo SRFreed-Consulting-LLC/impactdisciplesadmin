@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
 import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
@@ -9,7 +10,7 @@ import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-au
     styleUrls: ['./events-manager.component.css'],
     standalone: false
 })
-export class EventsManagerComponent implements OnInit {
+export class EventsManagerComponent implements OnInit, OnDestroy {
   selectedIndex: number = 0;
   selectedTab: string = 'Events';
 
@@ -24,14 +25,25 @@ export class EventsManagerComponent implements OnInit {
 
   secureTabs: Tab[] = [];
 
+  private ngUnsubscribe = new Subject<void>();
+
   constructor(private authService: AdminAuthService){}
 
   ngOnInit(): void {
-    let userRole = this.authService.getLoggedInUser().role;
+    // Was: this.authService.getLoggedInUser().role, which reads the
+    // "impact-disciples-user" cookie - see MainScreenComponent.ngOnInit for
+    // the full explanation of why that can be null (a valid Firebase
+    // session with a stale/expired cookie). dao.loggedInUser$ re-derives
+    // the AppUser from Firebase's own live auth state instead.
+    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+      this.secureTabs = this.tabs.filter(item => item.users.find(role => role == user?.role));
+      this.selectedTab = this.secureTabs[0]?.template ?? this.selectedTab;
+    });
+  }
 
-    this.secureTabs = this.tabs.filter(item => item.users.find(role => role == userRole));
-
-    this.selectedTab = this.secureTabs[0].template;
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   selectTab(e) {

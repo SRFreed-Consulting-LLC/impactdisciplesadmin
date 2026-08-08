@@ -1,0 +1,41 @@
+/* dx-tabs (Logs/Notifications/Users/...) fixed at the top, .manager-content
+   fills whatever's left and does the ONLY scrolling here - the reliable
+   "fixed chrome, one bounded scroll region" pattern used throughout every
+   dialog this session, applied at the module-root level too. This replaces
+   an earlier position: sticky attempt: sticky worked for dx-tabs itself,
+   but a sibling problem turned up one level down (see
+   list-header.component.scss / customers.component.css) - CDK Table's own
+   JS-driven sticky header/footer positioning silently never applied at
+   all (confirmed live: header rows carried no position, no sticky class,
+   and manually invoking MatTable's updateStickyHeaderRowStyles() had no
+   effect either), and .table-scroll's required overflow-x: auto forces
+   overflow-y to also compute to auto (CSS couples the two axes whenever
+   either isn't visible), turning it into an accidental "phantom" scroll
+   container - always exactly as tall as its own content, giving position:
+   sticky nothing to stick within. A real, explicitly-bounded scroll region
+   sidesteps all of that: each list screen (Customers, Users, etc, see
+   their own component CSS) is a flex column filling 100% of
+   .manager-content, with its own .table-scroll doing the real scrolling -
+   that requires .manager-content to have a genuinely resolved (non-auto)
+   height for the 100% to resolve against, which is what this file
+   provides. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+dx-tabs {
+  flex: 0 0 auto;
+}
+
+.manager-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* auto, not hidden: a safety net, not the primary scroll mechanism - each
+     screen inside here is sized/scrolled on its own (see above), so this
+     should normally never actually need to scroll. auto means a screen
+     that doesn't perfectly fill its space (e.g. Web Config's own vh-based
+     internal sizing) scrolls here instead of silently clipping. */
+  overflow: auto;
+}

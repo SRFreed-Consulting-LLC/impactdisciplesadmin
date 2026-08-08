@@ -15,17 +15,37 @@
   padding: 0 16px;
 }
 
-/* This is the actual bounded, scrolling region for every tab - a plain div
-   written directly in THIS component's own template, so it's reliably
-   reachable by these plain selectors with no encapsulation uncertainty.
-   (An earlier version tried to make Material's own internal
+/* Fixed-height flex column: .tab-content (scrollable fields/editor) above,
+   .save-row (always-visible footer) below. Previously .save-row lived
+   INSIDE .tab-content as position: sticky - that's the standard "sticky
+   footer" technique, but it only works safely when the scrollable content
+   never needs to render anything in the footer's own height range. The Info
+   tab's fields (787px) are taller than the 60vh viewport, so the sticky bar
+   was pinning itself directly on top of the last real fields (Zip/Instagram)
+   instead of appending after them - live-diagnosed via getComputedStyle/
+   getBoundingClientRect (columns.bottom far exceeded tab-content's own
+   bottom, and save-row's rect sat squarely over the still-visible tail of
+   the taller column). Moving .save-row OUTSIDE the scrolling region entirely
+   removes the overlap risk regardless of how tall the fields get in the
+   future - it's a true layout sibling now, not an overlay. */
+.tab-content-wrap {
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* This is the actual bounded, scrolling region for a tab's fields/editor -
+   a plain div written directly in THIS component's own template, so it's
+   reliably reachable by these plain selectors with no encapsulation
+   uncertainty. (An earlier version tried to make Material's own internal
    .mat-mdc-tab-body-wrapper/.mat-mdc-tab-body-content elements do this via
    plain selectors, on the assumption Material's structural classes aren't
    Angular-encapsulated - confirmed by live testing that assumption was
    wrong: those rules never matched anything, content just silently
    clipped past 70vh with no scrollbar at all instead of scrolling.) */
 .tab-content {
-  max-height: 60vh;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 4px;
@@ -34,23 +54,14 @@
   flex-direction: column;
 }
 
-/* The Privacy Policy / Terms of Use tabs: hard-lock this tab's content
-   region to exactly max-height (not just a cap it might stay under, like
-   the Info tab above) so quill-editor can flex-fill it and let its own
-   .ql-editor scroll internally for a long document, instead of this
-   container having spare overflow of its own to scroll. */
+/* The Privacy Policy / Terms of Use tabs: quill-editor handles its own
+   internal scroll (.ql-editor, global rule in styles.scss) - this container
+   must NOT also scroll, or you get two simultaneous scrollbars (the same
+   bug just fixed on the Email Template dialogs). */
 .tab-content--editor {
-  height: 60vh;
+  overflow: hidden;
 }
 
-/* flex-basis: 0 (not auto) is deliberate here: quill-editor also has its
-   own height: 100% (global rule, for when it's the sole/only child of a
-   bounded container elsewhere). With flex-basis: auto, that height: 100%
-   would win as the starting main-size and quill-editor would claim the
-   *entire* tab regardless of .save-row below it, pushing the button out
-   of view (the "Save button scrolls with the content" bug). flex-basis: 0
-   makes flexbox ignore that height and size this purely by sharing space
-   with save-row instead. */
 .tab-content--editor quill-editor {
   flex: 1 1 0;
   min-height: 0;
@@ -90,15 +101,12 @@
   margin: 8px 0 4px;
 }
 
-/* Stuck to the bottom of .tab-content's own scroll region - sticky
-   resolves against the nearest scrolling ancestor, which is .tab-content
-   itself now (its overflow-y: auto above), not some Material internal. */
+/* True layout sibling below .tab-content now, not a sticky overlay -
+   always visible, never overlaps scrolling content above it. */
 .save-row {
-  position: sticky;
-  bottom: 0;
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
-  padding: 12px 0 4px;
+  padding: 12px 4px 4px;
   background: #fff;
 }

@@ -1,12 +1,25 @@
 .list-header {
-  // Stuck at the top of the page's scroll region while the table beneath it
-  // scrolls - the "row of buttons stays put" rule applied to every list
-  // screen automatically, since they all use this shared component.
-  position: sticky;
-  top: 0;
+  // No longer position: sticky - every list screen using this component is
+  // now a flex column (list-header as a fixed-size flex item, .table-scroll
+  // as the flex:1 scrolling region below it - see e.g.
+  // customers.component.css), which keeps this fixed in place without
+  // needing sticky positioning at all. That flex approach replaced an
+  // earlier sticky-stacking attempt after live-testing turned up a second,
+  // deeper problem it couldn't solve: CDK Table's own sticky column/header
+  // positioning silently never applied to the table's own header row
+  // beneath this component (confirmed via computed style - no position,
+  // no sticky class - and manually invoking MatTable's
+  // updateStickyHeaderRowStyles() didn't change that either), because
+  // .table-scroll's required overflow-x: auto forces overflow-y to also
+  // compute to auto (the two axes are coupled whenever either isn't
+  // visible), making it an accidental scroll container that's always
+  // exactly as tall as its own content - position: sticky elements inside
+  // it have nowhere to actually stick. A genuinely bounded flex:1 region
+  // doesn't have that problem.
   z-index: 2;
   background: var(--mat-sys-surface, #fff);
   padding: 0;
+  flex: 0 0 auto;
 
   &__title {
     margin: 0;

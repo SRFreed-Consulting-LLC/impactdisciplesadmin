@@ -1,5 +1,17 @@
+/* See admin-manager/customers/customers.component.scss for the full
+   explanation. This screen's container (event-application.component.html's
+   .col-10) already has an explicit height: 60vh, so height: 100% here
+   resolves against that directly. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .table-scroll {
-  overflow-x: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .announcements-table {

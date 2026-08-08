@@ -1,148 +1,44 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE TEMPLATES">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
+
+<div class="table-scroll">
+  <table mat-table [dataSource]="(templates$ | async) ?? []" class="email-templates-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let item">{{ item.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="subject">
+      <th mat-header-cell *matHeaderCellDef>Subject</th>
+      <td mat-cell *matCellDef="let item">{{ item.subject }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="name-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('name', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="subject-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('subject', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+  </table>
 </div>
-
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
-
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-  <dxi-column dataField="name" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="subject"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [width]="'60%'"
-  [height]="'90%'"
-  [visible]="isVisible$ | async"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          class="pb-2"
-          [(formData)]="selectedItem"
-          [showColonAfterLabel]="false"
-          labelLocation="left">
-          <dxi-item dataField="name" [colSpan]="1" [isRequired]="true"></dxi-item>
-          <dxi-item dataField="subject" [colSpan]="1" [isRequired]="true"></dxi-item>
-        </dx-form>
-        <dx-html-editor height="100%" [(value)]="selectedItem.html">
-          <dxo-toolbar [multiline]="false">
-            <dxi-item name="undo"></dxi-item>
-            <dxi-item name="redo"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item
-              name="size"
-              [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-            ></dxi-item>
-            <dxi-item
-              name="font"
-              [acceptedValues]="[
-                'Arial',
-                'Courier New',
-                'Georgia',
-                'Impact',
-                'Lucida Console',
-                'Tahoma',
-                'Times New Roman',
-                'Verdana'
-              ]"
-            ></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="bold"></dxi-item>
-            <dxi-item name="italic"></dxi-item>
-            <dxi-item name="strike"></dxi-item>
-            <dxi-item name="underline"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="alignLeft"></dxi-item>
-            <dxi-item name="alignCenter"></dxi-item>
-            <dxi-item name="alignRight"></dxi-item>
-            <dxi-item name="alignJustify"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="orderedList"></dxi-item>
-            <dxi-item name="bulletList"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="header" [acceptedValues]="[false, 1, 2, 3, 4, 5]"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="color"></dxi-item>
-            <dxi-item name="background"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="link"></dxi-item>
-            <dxi-item name="image"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="clear"></dxi-item>
-            <dxi-item name="codeBlock"></dxi-item>
-            <dxi-item name="blockquote"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="variable"></dxi-item>
-          </dxo-toolbar>
-          <dxo-variables [dataSource]="emailVals" [escapeChar]="['{{', '}}']"> </dxo-variables>
-          <dxo-media-resizing [enabled]="true"> </dxo-media-resizing>
-        </dx-html-editor>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>

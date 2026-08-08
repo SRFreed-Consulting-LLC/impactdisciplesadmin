@@ -1,18 +1,20 @@
 <dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
-<ng-template [ngIf]="selectedTab == 'Consultation Requests'">
-  <app-consultations-requests></app-consultations-requests>
-</ng-template>
+<div class="manager-content">
+  <ng-template [ngIf]="selectedTab == 'Consultation Requests'">
+    <app-consultations-requests></app-consultations-requests>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Consultation Surveys'">
-  <app-consultations-surveys></app-consultations-surveys>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Consultation Surveys'">
+    <app-consultations-surveys></app-consultations-surveys>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Lunch and Learn Requests'">
-  <app-lunch-and-learns></app-lunch-and-learns>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Lunch and Learn Requests'">
+    <app-lunch-and-learns></app-lunch-and-learns>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Seminar Requests'">
-  <app-seminars></app-seminars>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Seminar Requests'">
+    <app-seminars></app-seminars>
+  </ng-template>
+</div>
 

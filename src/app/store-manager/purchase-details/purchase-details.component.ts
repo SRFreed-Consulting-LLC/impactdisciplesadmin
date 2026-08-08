@@ -1,4 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
 import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
@@ -13,20 +14,31 @@ import notify from 'devextreme/ui/notify';
     styleUrls: ['./purchase-details.component.css'],
     standalone: false
 })
-export class PurchaseDetailsComponent implements OnInit {
+export class PurchaseDetailsComponent implements OnInit, OnDestroy {
 
   @Input('selectedItem')selectedItem: CheckoutForm;
+
+  private ngUnsubscribe = new Subject<void>();
+  // Was read fresh via authService.getLoggedInUser().role on every
+  // isVisible() call - see events.component.ts for the full explanation
+  // (a stale/expired role cookie throwing on a valid Firebase session).
+  private currentUserRole?: string;
 
   constructor(public service: PurchasesService, private authService: AdminAuthService) { }
 
   ngOnInit() {
+    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+      this.currentUserRole = user?.role;
+    });
   }
 
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
+  }
 
   isVisible(roles: string[]): boolean {
-    let userRole = this.authService.getLoggedInUser().role;
-
-    return roles.filter(role => role == userRole).length > 0;
+    return roles.filter(role => role == this.currentUserRole).length > 0;
   }
 
 

@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogMessagesComponent } from './log-messages/log-messages.component';
 import { UsersComponent } from './users/users.component';
-import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule, DxFileUploaderModule, DxFormModule, DxHtmlEditorModule, DxListModule, DxLoadIndicatorModule,
+import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule, DxFileUploaderModule, DxFormModule, DxListModule, DxLoadIndicatorModule,
          DxLoadPanelModule,
          DxLookupModule,
          DxNumberBoxModule,
@@ -24,7 +24,11 @@ import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploa
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
 import { NotificationDialogComponent } from './notifications/notification-dialog.component';
 import { UserDialogComponent } from './users/user-dialog.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
+import { CustomerDialogComponent } from './customers/customer-dialog.component';
+import { SendEmailDialogComponent } from './customers/send-email-dialog.component';
+import { EmailListDialogComponent } from './customers/email-list-dialog.component';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -35,6 +39,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { QuillModule } from 'ngx-quill';
 
 
@@ -49,7 +56,6 @@ import { QuillModule } from 'ngx-quill';
     DxButtonModule,
     DxFormModule,
     DxFileUploaderModule,
-    DxHtmlEditorModule,
     DxLoadPanelModule,
     DxLookupModule,
     DxListModule,
@@ -67,6 +73,7 @@ import { QuillModule } from 'ngx-quill';
     DxValidatorModule,
     ImpactDisciplesCommonModule,
     SharedModule,
+    FormsModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -78,6 +85,9 @@ import { QuillModule } from 'ngx-quill';
     MatSelectModule,
     MatTabsModule,
     MatProgressSpinnerModule,
+    MatCheckboxModule,
+    MatMenuModule,
+    MatDividerModule,
     QuillModule
   ],
   declarations: [
@@ -88,8 +98,12 @@ import { QuillModule } from 'ngx-quill';
     UsersComponent,
     UserDialogComponent,
     CustomersComponent,
+    CustomerDialogComponent,
+    SendEmailDialogComponent,
+    EmailListDialogComponent,
     WebConfigComponent,
     EmailTemplatesComponent,
+    EmailTemplateDialogComponent,
     ShippingLabelsComponent,
     ShippingLabelListComponent
   ],

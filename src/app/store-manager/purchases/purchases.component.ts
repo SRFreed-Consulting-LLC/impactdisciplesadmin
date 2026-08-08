@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
@@ -7,7 +7,7 @@ import { confirm } from 'devextreme/ui/dialog';
 import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
 import { ProductModel } from 'impactdisciplescommon/src/models/utils/product.model';
 import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
-import { Observable, BehaviorSubject, map } from 'rxjs';
+import { Observable, BehaviorSubject, map, Subject, takeUntil } from 'rxjs';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { Timestamp } from 'firebase/firestore';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
@@ -22,9 +22,15 @@ import { exportGridToExcel } from '../../shared/grid-export.util';
     styleUrls: ['./purchases.component.css'],
     standalone: false
 })
-export class PurchasesComponent implements OnInit {
+export class PurchasesComponent implements OnInit, OnDestroy {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
   @ViewChild('purchasesGrid', { static: false }) purchasesGrid: DxDataGridComponent;
+
+  private ngUnsubscribe = new Subject<void>();
+  // Was read fresh via authService.getLoggedInUser().role on every
+  // isVisible() call - see events.component.ts for the full explanation
+  // (a stale/expired role cookie throwing on a valid Firebase session).
+  private currentUserRole?: string;
 
   datasource$: Observable<DataSource>;
   selectedItem: CheckoutForm;
@@ -56,6 +62,10 @@ export class PurchasesComponent implements OnInit {
   constructor(private service: PurchasesService, private authService: AdminAuthService) {}
 
   ngOnInit() {
+    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+      this.currentUserRole = user?.role;
+    });
+
     this.datasource$ = this.service.streamAll().pipe(
       map(
         (items) =>
@@ -359,9 +369,12 @@ export class PurchasesComponent implements OnInit {
   }
 
   isVisible(roles: string[]): boolean {
-    let userRole = this.authService.getLoggedInUser().role;
+    return roles.filter(role => role == this.currentUserRole).length > 0;
+  }
 
-    return roles.filter(role => role == userRole).length > 0;
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   showColumnChooser = () => {

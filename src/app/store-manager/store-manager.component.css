@@ -6,3 +6,22 @@
   letter-spacing: 1.2px;
   color: #fff;
 }
+
+/* See admin-manager.component.css for the full explanation - same pattern,
+   every "manager" module root has this identical dx-tabs-as-section-switcher
+   structure. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+dx-tabs {
+  flex: 0 0 auto;
+}
+
+.manager-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}

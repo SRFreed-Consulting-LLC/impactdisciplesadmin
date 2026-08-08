@@ -43,6 +43,16 @@ export class EventsComponent implements OnInit, OnDestroy {
   public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
 
   private ngUnsubscribe = new Subject<void>();
+  // Was read fresh via authService.getLoggedInUser().role on every
+  // isVisible() call (from the template, so many times per render) - that
+  // reads the "impact-disciples-user" cookie, which can be stale/missing
+  // while the underlying Firebase session is still valid (same root cause
+  // fixed on MainScreenComponent - see its ngOnInit for the full
+  // explanation). Cached here from dao.loggedInUser$'s live Firebase-backed
+  // value instead, once, so isVisible() itself can be a simple, safe,
+  // synchronous read - live-diagnosed via the exact "Cannot read properties
+  // of null (reading 'role')" crash this was throwing on a stale cookie.
+  private currentUserRole?: string;
 
   constructor(private authService: AdminAuthService,
     private store: Store,
@@ -53,6 +63,10 @@ export class EventsComponent implements OnInit, OnDestroy {
     private emailTemplateService: EMailTemplatesService){}
 
   async ngOnInit(): Promise<void> {
+    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+      this.currentUserRole = user?.role;
+    });
+
     this.organizations$ = this.organizationService.streamAll();
     this.locations$ = this.locationService.streamAll();
     this.datasource$ = this.eventService.streamAll().pipe(
@@ -200,8 +214,6 @@ export class EventsComponent implements OnInit, OnDestroy {
   }
 
   isVisible(roles: string[]): boolean {
-    let userRole = this.authService.getLoggedInUser().role;
-
-    return roles.filter(role => role == userRole).length > 0;
+    return roles.filter(role => role == this.currentUserRole).length > 0;
   }
 }

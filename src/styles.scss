@@ -18,6 +18,241 @@
   z-index: 10000;
 }
 
+// House rule: the browser page itself must never scroll - only intentional
+// regions inside the app (.portal-content, dialog contents, bounded tabs)
+// should. html/body had no height constraint at all, so anything that adds
+// height above/around <app-root> (e.g. DevExtreme's injected unlicensed-
+// trial-version banner, prepended directly to <body>) silently grows the
+// whole page taller than the viewport and gives it its own native
+// scrollbar - live-diagnosed via Playwright: every "manager" module's
+// internal dx-tabs bar (Logs/Notifications/Users/... within Admin Manager,
+// and the equivalent in every other manager module) drifted a few px on
+// every scroll, riding on top of .portal-content's own internal scroll
+// instead of staying fully fixed. Clipping any overflow at the body level
+// forces that extra height to eat into the app's own available space
+// instead of extending the page.
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+// Every one of this app's own components (selector prefix "app", per
+// angular.json) is a custom element with no display styling of its own, so
+// per the HTML spec it defaults to display: inline. That's invisible most
+// of the time, but it's exactly what silently broke position: sticky for
+// Admin Manager's list-header: browsers compute a sticky element's
+// containing block through its ancestor chain, and an inline ancestor
+// (app-customers, app-admin-manager, etc, all sitting between the sticky
+// .list-header and its intended scrolling ancestor .portal-content) can't
+// establish that properly - live-diagnosed via Playwright: .list-header had
+// position: sticky applied and a correctly-scrolling ancestor, and still
+// scrolled the full distance instead of sticking. Every "app-*" element
+// used as a structural container needs to be display: block for that
+// (and any other block-level layout assumption) to hold. This list is
+// mechanically generated from every current @Component selector in
+// src/app; a newly added component should add its own :host { display:
+// block; } rather than expecting this list to grow automatically.
+app-address-field,
+app-admin-manager,
+app-affiliate-sales,
+app-affilliatte-payments,
+app-announcement-dialog,
+app-announcements,
+app-boolean,
+app-button-component,
+app-card-body-view,
+app-card-divider,
+app-card-header-view,
+app-card-image-uploader,
+app-card-maker,
+app-card-manager,
+app-card-previewer,
+app-card-spacer,
+app-card-text-editor,
+app-carousel-component,
+app-category-modal,
+app-coaches,
+app-column-filter,
+app-component-header-view,
+app-confirm-dialog,
+app-consultation-request-dialog,
+app-consultations-requests,
+app-consultations-surveys,
+app-content-component,
+app-coupons,
+app-course-dialog,
+app-courses,
+app-custom-component,
+app-customer-dialog,
+app-customers,
+app-dashboard,
+app-date,
+app-date-time,
+app-details,
+app-dmms,
+app-dripicons,
+app-email-list-dialog,
+app-email-template-dialog,
+app-email-templates,
+app-event-agenda,
+app-event-application,
+app-event-attendees,
+app-event-breakouts,
+app-events,
+app-events-manager,
+app-faq,
+app-fontawesome,
+app-footer-button-view,
+app-footer-image-view,
+app-footer-link-view,
+app-footer-view,
+app-form-administration,
+app-form-body-view,
+app-form-header-view,
+app-form-maker,
+app-form-maker-component,
+app-form-results,
+app-form-viewer,
+app-gallery-component,
+app-home-page-images,
+app-home-page-popups,
+app-iframe-component,
+app-image-component,
+app-image-divider-component,
+app-indicator-button,
+app-location-dialog,
+app-location-modal,
+app-locations,
+app-log-messages,
+app-lunch-and-learns,
+app-macro-creator,
+app-main-screen,
+app-materialdesign,
+app-menu-administration,
+app-monthly-newsletter-dialog,
+app-monthly-newsletters,
+app-multiple-checkbox,
+app-newsletter-subscription,
+app-notification-dialog,
+app-notifications,
+app-number,
+app-organization-dialog,
+app-organization-modal,
+app-organizations,
+app-page-administration,
+app-page-header-view,
+app-page-manager,
+app-page-viewer,
+app-page-wizard,
+app-phone-field,
+app-pod-cast-categories,
+app-pod-cast-category-dialog,
+app-pod-casts,
+app-popup-header,
+app-prayer-team-subscription,
+app-product-categories,
+app-product-series,
+app-products,
+app-purchase-details,
+app-purchases,
+app-radio-buttons,
+app-remix,
+app-requests-manager,
+app-room,
+app-room-dialog,
+app-root,
+app-sale-dialog,
+app-sales,
+app-select,
+app-seminars,
+app-send-email-dialog,
+app-series-modal,
+app-shipping-labels,
+app-single-checkbox,
+app-splash-screen-admin,
+app-store-manager,
+app-subscriptions-manager,
+app-team-member-component,
+app-testimonial-component,
+app-testimonial-dialog,
+app-testimonials,
+app-text,
+app-textarea,
+app-user-dialog,
+app-users,
+app-variable-inserter,
+app-video-administration,
+app-video-component,
+app-videos,
+app-web-config,
+app-web-manager,
+app-year-end-message {
+  display: block;
+}
+
+// app-list-header is a pure structural wrapper - its own template is just
+// <mat-toolbar class="list-header">, nothing else - so display: block
+// (like every other component above) is actively wrong for it: sticky
+// positioning's "stuck" range is bounded by the sticky element's containing
+// block, and a block-level app-list-header inserts its OWN box (auto-sized
+// to exactly match its sticky child, since it has no other content) into
+// that chain. Once list-header "sticks", scrolling only has to move that
+// tiny matching box a few px before its bottom edge clears the sticky
+// threshold, and the sticky child has nowhere left to be rendered - it
+// scrolls away with its container instead of staying stuck. (dx-tabs, the
+// sticky bar above list-header in every manager module, doesn't have this
+// problem: it sits as a direct sibling of the actual scrollable content,
+// not wrapped alone in its own component.) display: contents removes
+// app-list-header's own box entirely, making its child's effective
+// containing block the real (tall) list screen underneath it instead -
+// live-diagnosed via Playwright: .list-header stayed fixed through a 400px
+// scroll only after this change, not with display: block.
+app-list-header {
+  display: contents;
+}
+
+// Every table in the app sets sticky: true on its *matHeaderRowDef, but
+// Angular Material's own JS-driven sticky positioning (CdkTable's
+// StickyStyler, toggling the mat-mdc-table-sticky class + inline offsets)
+// never actually applies it - live-diagnosed via Playwright, repeatedly,
+// including after fixing .table-scroll to be a genuinely bounded scroll
+// container (not the "phantom box" described below) and after manually
+// invoking MatTable's own updateStickyHeaderRowStyles(): the header rows
+// still came back with no sticky class and computed position: static every
+// time. Rather than keep chasing why CdkTable's own mechanism won't fire,
+// pure CSS sticky on its stable, non-encapsulated classes (mat-mdc-table,
+// mat-mdc-header-row - not custom components, safe to target globally) is
+// simpler and doesn't depend on it at all. Two stacked header rows
+// (columns, then a filter row) are typical (see e.g. users.component.html)
+// - the second is offset by the first's own rendered height (56px, this
+// app's consistent single-line header row height) so they stack instead of
+// overlapping; tables with only one header row (e.g. the Purchases/Events
+// Attended sub-tables in the Customer dialog) simply have no second row to
+// offset, :nth-of-type(2) never matches and nothing else is affected.
+//
+// This only works because .table-scroll is now a genuinely bounded scroll
+// container (see e.g. customers.component.scss) - sticky's "stuck" range
+// is bounded by its containing block, and when .table-scroll's own overflow
+// -x: auto forced overflow-y to also compute to auto (the two axes are
+// coupled whenever either isn't visible), it used to be an accidental
+// scroll container that was always exactly as tall as its own content,
+// giving sticky nothing to stick within (the exact same "phantom box"
+// problem app-list-header had - see above).
+table.mat-mdc-table tr.mat-mdc-header-row {
+  position: sticky;
+  z-index: 1;
+  background: var(--mat-sys-surface, #fff);
+
+  &:nth-of-type(1) {
+    top: 0;
+  }
+
+  &:nth-of-type(2) {
+    top: 56px;
+  }
+}
+
 // House rule: no round/pill buttons anywhere in the Material migration.
 // Material 3's default button shape is a fully-rounded pill
 // (--mat-sys-corner-full, 9999px) and icon buttons default to a circular

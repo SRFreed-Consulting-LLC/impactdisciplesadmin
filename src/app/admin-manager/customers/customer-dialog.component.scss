@@ -1,0 +1,100 @@
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+// mat-dialog-content's own default max-height/overflow-y: auto only looks
+// like a clean single scroll region until the numbers are actually
+// compared - live-diagnosed via getComputedStyle: .customer-tabs's height
+// (a coincidental 65vh) never exactly equals mat-dialog-content's real
+// available box (which also has to fit the popup header's height, dialog
+// padding, etc), so mat-dialog-content ends up needing a few px of scroll
+// of its own on EVERY tab, even short ones with nothing to scroll to - and
+// on the Purchases tab (71+ rows), that spurious outer scrollbar sits
+// alongside the real, necessary inner table scrollbar (a genuine double
+// scrollbar, same class of bug as Web Config's original one). Fixed the
+// same way as Web Config: stop trying to size the tab-group itself and
+// instead bound .tab-content directly (a plain div in THIS component's own
+// template, present on all 5 tabs) well under mat-dialog-content's natural
+// cap, so mat-dialog-content never has anything left to scroll.
+.tab-content {
+  max-height: 55vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 4px 4px;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}
+
+.save-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.sub-table {
+  width: 100%;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-weight: 600;
+  padding-bottom: 8px;
+
+  &__date {
+    flex: 2;
+  }
+  &__added-by {
+    flex: 2;
+  }
+  &__private {
+    flex: 1;
+  }
+}
+
+.note-row {
+  padding: 12px 0;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  &__date {
+    flex: 2;
+  }
+  &__added-by {
+    flex: 2;
+  }
+  &__private {
+    flex: 1;
+  }
+  &__save {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

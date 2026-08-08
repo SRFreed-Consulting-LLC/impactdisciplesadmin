@@ -1,12 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { Observable, BehaviorSubject, map } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { MailTemplateModel } from 'impactdisciplescommon/src/models/admin/mail.model';
+import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { EmailTemplateDialogComponent } from './email-template-dialog.component';
 
 @Component({
     selector: 'app-email-templates',
@@ -14,118 +15,60 @@ import { MailTemplateModel } from 'impactdisciplescommon/src/models/admin/mail.m
     styleUrls: ['./email-templates.component.css'],
     standalone: false
 })
-export class EmailTemplatesComponent implements OnInit{
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-
-  datasource$: Observable<DataSource>;
-  selectedItem: MailTemplateModel;
+export class EmailTemplatesComponent implements OnInit {
+  templates$: Observable<MailTemplateModel[]>;
+  displayedColumns = ['name', 'subject', 'actions'];
+  filterColumns = ['name-filter', 'subject-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Email Template';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  eventTags: any[] = [];
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name'];
+  constructor(
+    private service: EMailTemplatesService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  constructor(private service: EMailTemplatesService) {}
-
-  ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
+  ngOnInit(): void {
+    this.templates$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof MailTemplateModel], filters[field], 'text')))
+          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
       )
     );
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new MailTemplateModel()};
-    this.isVisible$.next(true);
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(EmailTemplateDialogComponent, {
+      width: '800px',
+      data: { item: null }
     });
   }
 
-  onSave(item: MailTemplateModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showEditModal(item: MailTemplateModel): void {
+    this.dialog.open(EmailTemplateDialogComponent, {
+      width: '800px',
+      data: { item }
+    });
   }
 
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
+  delete(item: MailTemplateModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

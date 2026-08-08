@@ -40,6 +40,7 @@
     "file-saver": "^2.0.5",
     "firebase": "^11.8.0",
     "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "ngx-cookie-service": "^20.1.1",
     "ngx-paypal": "^11.0.0",
     "ngx-quill": "^28.0.2",

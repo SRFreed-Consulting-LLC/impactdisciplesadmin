@@ -7,8 +7,17 @@
   color: #fff;
 }
 
+/* See admin-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .table-scroll {
-  overflow-x: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .newsletters-table {

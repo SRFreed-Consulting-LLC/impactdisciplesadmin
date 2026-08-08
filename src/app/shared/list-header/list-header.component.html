@@ -2,6 +2,10 @@
   <h2 class="list-header__title">{{ title }}</h2>
   <span class="list-header__spacer"></span>
 
+  <!-- Optional extra controls (e.g. a filter dropdown) between the title and
+       the actions menu - most screens project nothing here. -->
+  <ng-content></ng-content>
+
   <ng-container *ngIf="actions.length === 1">
     <button mat-raised-button color="primary" (click)="actions[0].onClick()">
       <mat-icon *ngIf="actions[0].icon">{{ actions[0].icon }}</mat-icon>

@@ -1,26 +1,28 @@
 <dx-tabs #apiTabs [dataSource]="tabs" [(selectedIndex)]="selectedIndex" (onItemClick)="selectTab($event)" ></dx-tabs>
 
-<ng-template [ngIf]="selectedTab == 'Cards'">
-  <app-card-manager></app-card-manager>
-</ng-template>
+<div class="manager-content">
+  <ng-template [ngIf]="selectedTab == 'Cards'">
+    <app-card-manager></app-card-manager>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Pages'">
-  <app-page-administration></app-page-administration>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Pages'">
+    <app-page-administration></app-page-administration>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Forms'">
-  <app-form-administration></app-form-administration>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Forms'">
+    <app-form-administration></app-form-administration>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Macros'">
-  <app-macro-creator></app-macro-creator>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Macros'">
+    <app-macro-creator></app-macro-creator>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Menu'">
-  <app-menu-administration></app-menu-administration>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Menu'">
+    <app-menu-administration></app-menu-administration>
+  </ng-template>
 
-<ng-template [ngIf]="selectedTab == 'Splash Screens'">
-  <app-splash-screen-admin></app-splash-screen-admin>
-</ng-template>
+  <ng-template [ngIf]="selectedTab == 'Splash Screens'">
+    <app-splash-screen-admin></app-splash-screen-admin>
+  </ng-template>
+</div>
 

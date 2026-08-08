@@ -2,92 +2,92 @@
   <mat-spinner diameter="80"></mat-spinner>
 </div>
 
-<div class="content-block responsive-paddings">
-  <app-list-header [title]="itemType"></app-list-header>
-</div>
+<app-list-header [title]="itemType"></app-list-header>
 
 <mat-tab-group [formGroup]="form" class="config-tabs">
   <mat-tab label="Info">
-    <div class="tab-content">
-      <div class="columns">
-        <div class="column">
-          <h3 class="section-title">Socials</h3>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Twitter</mat-label>
-            <input matInput formControlName="twitter">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Facebook</mat-label>
-            <input matInput formControlName="facebook">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Facebook Live</mat-label>
-            <input matInput formControlName="facebookLive">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Apple Pod Cast</mat-label>
-            <input matInput formControlName="applePodCast">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>LinkedIn</mat-label>
-            <input matInput formControlName="linkedIn">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Youtube</mat-label>
-            <input matInput formControlName="youtube">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Instagram</mat-label>
-            <input matInput formControlName="instagram">
-          </mat-form-field>
-
-          <div class="field-row">
+    <div class="tab-content-wrap">
+      <div class="tab-content">
+        <div class="columns">
+          <div class="column">
+            <h3 class="section-title">Socials</h3>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Inperson Seminar Cost</mat-label>
-              <span matTextPrefix>$&nbsp;</span>
-              <input matInput type="number" formControlName="inpersonSeminarCost">
+              <mat-label>Twitter</mat-label>
+              <input matInput formControlName="twitter">
             </mat-form-field>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Online Seminar Cost</mat-label>
+              <mat-label>Facebook</mat-label>
+              <input matInput formControlName="facebook">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Facebook Live</mat-label>
+              <input matInput formControlName="facebookLive">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Apple Pod Cast</mat-label>
+              <input matInput formControlName="applePodCast">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>LinkedIn</mat-label>
+              <input matInput formControlName="linkedIn">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Youtube</mat-label>
+              <input matInput formControlName="youtube">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Instagram</mat-label>
+              <input matInput formControlName="instagram">
+            </mat-form-field>
+
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Inperson Seminar Cost</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="inpersonSeminarCost">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Online Seminar Cost</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="onlineSeminarCost">
+              </mat-form-field>
+            </div>
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Equipping Group Total Cost</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="equippingGroupTotalCost">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Equipping Group Payment Cost</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="equippingGroupPaymentCost">
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Free Shipping Amount</mat-label>
               <span matTextPrefix>$&nbsp;</span>
-              <input matInput type="number" formControlName="onlineSeminarCost">
+              <input matInput type="number" formControlName="freeShippingAmount">
             </mat-form-field>
           </div>
-          <div class="field-row">
+
+          <div class="column">
+            <h3 class="section-title">Contact Information</h3>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Equipping Group Total Cost</mat-label>
-              <span matTextPrefix>$&nbsp;</span>
-              <input matInput type="number" formControlName="equippingGroupTotalCost">
+              <mat-label>Admin Email Address</mat-label>
+              <input matInput formControlName="adminEmailAddress">
             </mat-form-field>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Equipping Group Payment Cost</mat-label>
-              <span matTextPrefix>$&nbsp;</span>
-              <input matInput type="number" formControlName="equippingGroupPaymentCost">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email">
             </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Phone</mat-label>
+              <input matInput formControlName="phone" appPhoneMask>
+            </mat-form-field>
+
+            <app-address-field [group]="$any(form.get('address'))"></app-address-field>
           </div>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Free Shipping Amount</mat-label>
-            <span matTextPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="freeShippingAmount">
-          </mat-form-field>
-        </div>
-
-        <div class="column">
-          <h3 class="section-title">Contact Information</h3>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Admin Email Address</mat-label>
-            <input matInput formControlName="adminEmailAddress">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="email">
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Phone</mat-label>
-            <input matInput formControlName="phone" appPhoneMask>
-          </mat-form-field>
-
-          <app-address-field [group]="$any(form.get('address'))"></app-address-field>
         </div>
       </div>
 
@@ -98,8 +98,10 @@
   </mat-tab>
 
   <mat-tab label="Privacy Policy">
-    <div class="tab-content tab-content--editor">
-      <quill-editor formControlName="policy" [modules]="richTextModules"></quill-editor>
+    <div class="tab-content-wrap">
+      <div class="tab-content tab-content--editor">
+        <quill-editor formControlName="policy" [modules]="richTextModules"></quill-editor>
+      </div>
       <div class="save-row">
         <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (onClick)="save()"></app-indicator-button>
       </div>
@@ -107,8 +109,10 @@
   </mat-tab>
 
   <mat-tab label="Terms Of Use">
-    <div class="tab-content tab-content--editor">
-      <quill-editor formControlName="tos" [modules]="richTextModules"></quill-editor>
+    <div class="tab-content-wrap">
+      <div class="tab-content tab-content--editor">
+        <quill-editor formControlName="tos" [modules]="richTextModules"></quill-editor>
+      </div>
       <div class="save-row">
         <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (onClick)="save()"></app-indicator-button>
       </div>
