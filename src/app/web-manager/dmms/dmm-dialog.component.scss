@@ -1,0 +1,28 @@
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+// Same double-scrollbar fix as email-template-dialog.component.scss.
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  height: 65vh;
+  max-height: 65vh;
+  overflow: hidden;
+}
+
+.editor-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

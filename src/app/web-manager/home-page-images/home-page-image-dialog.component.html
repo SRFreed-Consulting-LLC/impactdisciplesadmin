@@ -1,0 +1,71 @@
+<app-popup-header [formGroup]="form" [title]="(isEdit ? 'EDIT' : 'ADD') + ' HOME PAGE IMAGE'" [showCloseButton]="true" (closed)="onCancel()">
+  <mat-slide-toggle popup-header-actions formControlName="isActive">Live</mat-slide-toggle>
+</app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Slide Background Image</mat-label>
+      <input matInput [value]="card.image?.name ?? ''" readonly>
+    </mat-form-field>
+    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">Upload Image</button>
+  </div>
+
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="half-width">
+      <mat-label>Order To Show</mat-label>
+      <input matInput type="number" formControlName="order" required>
+      <mat-error *ngIf="form.get('order')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Slide Title</mat-label>
+    <input matInput formControlName="title" required>
+    <mat-error *ngIf="form.get('title')?.hasError('required')">Title is required</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Button Title</mat-label>
+    <input matInput formControlName="ctaTitle" required>
+    <mat-error *ngIf="form.get('ctaTitle')?.hasError('required')">Button title is required</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Slide Description</mat-label>
+    <textarea matInput formControlName="text" rows="4"></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Button Destination</mat-label>
+    <mat-select formControlName="ctaDestination">
+      <mat-option *ngFor="let destination of destinations" [value]="destination.value">{{ destination.text }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('ctaDestination')?.value === 'external'">
+    <mat-label>Button External URL</mat-label>
+    <input matInput formControlName="ctaUrl">
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>
+
+<ng-container *ngIf="isImageUploaderVisible$ | async">
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+</ng-container>

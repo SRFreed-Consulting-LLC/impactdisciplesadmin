@@ -1,13 +1,16 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import DxPopup from 'devextreme/ui/popup';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { HomePagePopupModel } from 'impactdisciplescommon/src/models/domain/home-page-popup.model';
-import { Observable, BehaviorSubject, map } from 'rxjs';
 import { HomePagePopUpService } from 'impactdisciplescommon/src/services/data/home-page-popup.service';
-import CustomStore from 'devextreme/data/custom_store';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../shared/time-of-day.util';
+import { HomePagePopupPreviewDialogComponent } from './home-page-popup-preview-dialog.component';
 
 @Component({
     selector: 'app-home-page-popups',
@@ -16,132 +19,142 @@ import CustomStore from 'devextreme/data/custom_store';
     standalone: false
 })
 export class HomePagePopupsComponent implements OnInit {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
+  // No route/URL involved on purpose - see the edit view's own comment
+  // below. 'list' shows the grid, 'edit' swaps the same content area over
+  // to a full edit form (no popup), with a "Preview" button opening a real
+  // MatDialog of just the rendered popup itself.
+  mode: 'list' | 'edit' = 'list';
 
-  datasource$: Observable<DataSource>;
-  selectedItem: HomePagePopupModel;
+  popups$: Observable<HomePagePopupModel[]>;
+  displayedColumns = ['isActive', 'fromDate', 'toDate', 'title', 'width', 'height', 'bgColor', 'actions'];
+  filterColumns = ['isActive-filter', 'fromDate-filter', 'toDate-filter', 'title-filter', 'width-filter', 'height-filter', 'bgColor-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  numberOperators = NUMBER_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
-  itemType = 'Home Page Popup'
+  itemType = 'Home Page Popup';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isPreviewVisible$ = new BehaviorSubject<boolean>(false);
-  public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
-  constructor(private service: HomePagePopUpService) {}
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  async ngOnInit(): Promise<void> {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
+  form: FormGroup;
+  inProgress$ = new BehaviorSubject<boolean>(false);
+  isEdit = false;
+  richTextModules = RICH_TEXT_TOOLBAR;
+
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private editingItem: HomePagePopupModel | null = null;
+
+  constructor(
+    private service: HomePagePopUpService,
+    private fb: FormBuilder,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
+
+  ngOnInit(): void {
+    this.popups$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items.filter((item) =>
+          Object.keys(filters).every((field) => {
+            const type = field === 'fromDate' || field === 'toDate' ? 'date' : field === 'width' || field === 'height' ? 'number' : 'text';
+            return matchesColumnFilter(item[field as keyof HomePagePopupModel], filters[field], type);
           })
-      )
+        )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new HomePagePopupModel()};
-    this.selectedItem.text = '<div style="margin: 0px; padding: 0px; height: 100%; width:100%;"></div>'
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-    this.isVisible$.next(true);
+  showAddModal(): void {
+    this.editingItem = null;
+    this.isEdit = false;
+    this.buildForm(null);
+    this.mode = 'edit';
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  showEditModal(item: HomePagePopupModel): void {
+    this.editingItem = item;
+    this.isEdit = true;
+    this.buildForm(item);
+    this.mode = 'edit';
+  }
+
+  private buildForm(item: HomePagePopupModel | null): void {
+    this.form = this.fb.group({
+      isActive: [item?.isActive ?? false],
+      fromDate: [toDateTimeLocalValue(item?.fromDate), Validators.required],
+      toDate: [toDateTimeLocalValue(item?.toDate), Validators.required],
+      title: [item?.title ?? '', Validators.required],
+      width: [item?.width ?? null, Validators.required],
+      height: [item?.height ?? null, Validators.required],
+      bgColor: [item?.bgColor ?? '#000000', Validators.required],
+      // The original always seeded a brand new popup's body with this exact
+      // empty shell (a full-bleed, zero-margin div) rather than leaving it
+      // blank - matches showAddModal().
+      text: [item?.text ?? '<div style="margin: 0px; padding: 0px; height: 100%; width:100%;"></div>']
+    });
+  }
+
+  onCancel(): void {
+    this.inProgress$.next(false);
+    this.mode = 'list';
+  }
+
+  onSave(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.inProgress$.next(true);
+    const raw = this.form.value;
+    const value: HomePagePopupModel = {
+      ...this.editingItem,
+      ...raw,
+      fromDate: fromDateTimeLocalValue(raw.fromDate),
+      toDate: fromDateTimeLocalValue(raw.toDate)
+    };
+
+    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
+
+    request.then((result) => {
+      if (result) {
+        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        this.mode = 'list';
+        this.inProgress$.next(false);
+      } else {
+        this.inProgress$.next(false);
+        this.snackbar.error('Some Error Occured');
       }
     });
   }
 
-  onSave(item: HomePagePopupModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
+  showPreview(): void {
+    const raw = this.form.value;
+    this.dialog.open(HomePagePopupPreviewDialogComponent, {
+      width: `${raw.width || 400}px`,
+      height: `${raw.height || 300}px`,
+      panelClass: 'preview-dialog-panel',
+      data: { item: { ...this.editingItem, ...raw } as HomePagePopupModel }
+    });
+  }
 
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
+  delete(item: HomePagePopupModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
-    }
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  showPreview = (e) => {
-    this.isPreviewVisible$.next(true);
-  }
-
-  onCancelPreview() {
-    this.inProgress$.next(false);
-    this.isPreviewVisible$.next(false);
-  }
-
-  // devextreme-angular's DxPopupComponent no longer declares `elementAttr` as an
-  // Input (still supported by the underlying widget), so set it imperatively.
-  // (onInitialized) is typed as EventEmitter<Object> by devextreme-angular, hence `any` here.
-  onPreviewPopupInitialized(e: any) {
-    (e.component as DxPopup).option('elementAttr', { class: 'no-padding-popup' });
+    });
   }
 }

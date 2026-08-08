@@ -1,0 +1,17 @@
+.full-width {
+  width: 100%;
+}
+
+.half-width {
+  width: 50%;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}

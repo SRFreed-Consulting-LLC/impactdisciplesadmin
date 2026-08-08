@@ -7,7 +7,133 @@
   color: #fff;
 }
 
-.no-padding-popup .dx-popup-content {
-    padding: 0 !important;
-    margin: 0 !important;
+/* See admin-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.popups-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.popups-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.color-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+/* Full-page in-place edit view (no popup - see the component's own comment
+   on why) filling the same flex column the grid normally occupies. */
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor__header {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.editor__title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+.editor__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.editor__fields {
+  flex: 0 0 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editor__editor-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor__actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.color-row__label {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.color-row__swatch {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.color-row__hex {
+  flex: 1 1 auto;
 }

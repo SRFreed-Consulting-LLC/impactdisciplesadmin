@@ -1,150 +1,114 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE HOME PAGE IMAGES">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
+
+<div class="table-scroll">
+<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+<table mat-table [dataSource]="(images$ | async) ?? []" class="images-table">
+  <ng-container matColumnDef="isActive">
+    <th mat-header-cell *matHeaderCellDef>Live</th>
+    <td mat-cell *matCellDef="let item">
+      <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
+        {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
+      </span>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="order">
+    <th mat-header-cell *matHeaderCellDef>Order</th>
+    <td mat-cell *matCellDef="let item">{{ item.order }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="image">
+    <th mat-header-cell *matHeaderCellDef>Image</th>
+    <td mat-cell *matCellDef="let item">
+      <img *ngIf="item.image" width="100" [src]="item.image.url" [alt]="item.image.name">
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef>Date</th>
+    <td mat-cell *matCellDef="let item">{{ item.date | date }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="title">
+    <th mat-header-cell *matHeaderCellDef>Title</th>
+    <td mat-cell *matCellDef="let item">{{ item.title }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="ctaTitle">
+    <th mat-header-cell *matHeaderCellDef>Button Title</th>
+    <td mat-cell *matCellDef="let item">{{ item.ctaTitle }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="ctaDestination">
+    <th mat-header-cell *matHeaderCellDef>Button Internal Destination</th>
+    <td mat-cell *matCellDef="let item">{{ item.ctaDestination }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="ctaUrl">
+    <th mat-header-cell *matHeaderCellDef>Button External URL</th>
+    <td mat-cell *matCellDef="let item">{{ item.ctaUrl }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+    <td mat-cell *matCellDef="let item" class="actions-column">
+      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+  <ng-container matColumnDef="isActive-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <ng-container matColumnDef="order-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('order', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="image-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <ng-container matColumnDef="date-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('date', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="title-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="ctaTitle-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('ctaTitle', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="ctaDestination-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('ctaDestination', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="ctaUrl-filter">
+    <th mat-header-cell *matHeaderCellDef>
+      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('ctaUrl', $event)"></app-column-filter>
+    </th>
+  </ng-container>
+
+  <ng-container matColumnDef="actions-filter">
+    <th mat-header-cell *matHeaderCellDef></th>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+  <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+</table>
 </div>
-
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
-
-  <dxo-paging [pageSize]="10"></dxo-paging>
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-
-  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="order" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="image" [width]="120" cellTemplate="imageCellTemplate"></dxi-column>
-  <dxi-column dataField="date" [dataType]="'date'"></dxi-column>
-  <dxi-column dataField="title"></dxi-column>
-  <dxi-column dataField="text" [visible]="false"></dxi-column>
-  <dxi-column dataField="ctaTitle" [caption]="'Button Title'"></dxi-column>
-  <dxi-column dataField="ctaDestination" [caption]="'Button Internal Destination'">
-    <dxo-lookup [dataSource]="destinations" [valueExpr]="'value'" [displayExpr]="'text'"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="ctaUrl" [caption]="'Button External URL'"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-
-  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
-    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
-      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
-    </span>
-  </div>
-
-  <div *dxTemplate="let data of 'imageCellTemplate'">
-    <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-  </div>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'60%'"
-  [height]="'60%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()"
->
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async">
-    <div *dxTemplate>
-      <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form #addEditForm [colCount]="4" [(formData)]="selectedItem">
-          <dxi-item dataField="image.name" [caption]="'Slide Background Image'" [colSpan]="2" [isRequired]="true" disabled="true"></dxi-item>
-          <dxi-item>
-            <dx-button
-              text="Upload Image"
-              width="200px"
-              stylingMode="contained"
-              type="normal"
-              [disabled]="inProgress$ | async"
-              (onClick)="showSingleImageModal()">
-            </dx-button>
-          </dxi-item>
-          <dxi-item dataField="order" [caption]="'Order To Show'" [isRequired]="true">
-            <dx-number-box [(value)]="selectedItem.order" [showSpinButtons]="true"></dx-number-box>
-          </dxi-item>
-           <dxi-item dataField="title" [label]="{ text: 'Slide Title' }" [colSpan]="2"[isRequired]="true"></dxi-item>
-           <dxi-item dataField="ctaTitle" [label]="{ text: 'Button Title' }" [colSpan]="2" [isRequired]="true"></dxi-item>
-          <dxi-item dataField="text" [label]="{ text: 'Slide Description' }" [colSpan]="4" [editorType]="'dxTextArea'" [editorOptions]="{ height: 150 }"></dxi-item>
-          <dxi-item [label]="{ text: 'Button Destination' }" [colSpan]="2">
-            <div #dxTemplate>
-              <dx-select-box
-                [items]="destinations"
-                [(value)]="selectedItem.ctaDestination"
-                [valueExpr]="'value'" [displayExpr]="'text'">
-              </dx-select-box>
-            </div>
-          </dxi-item>
-          <dxi-item *ngIf="selectedItem.ctaDestination === 'external'" dataField="ctaUrl" [label]="{ text: 'Button External URL' }" [colSpan]="2"></dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group pb-2">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()"
-        ></dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)"
-        ></app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
-
-<ng-container *ngIf="isSingleImageVisible$ | async">
-  <app-image-uploader
-    [card]="selectedItem"
-    [isList]="false"
-    [field]="'image'"
-    [selectionMode]="'single'"
-    [imageSelectVisible]="isSingleImageVisible$ | async"
-    (imageSelectClosed)="closeSingleImageModal()">
-  </app-image-uploader>
-</ng-container>

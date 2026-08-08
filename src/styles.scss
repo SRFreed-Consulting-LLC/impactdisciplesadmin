@@ -661,3 +661,18 @@ quill-editor .ql-editor {
 .dx-switch.dx-state-focused .dx-switch-container {
   border-color: #fff;
 }
+
+// Home Page Popups' live-preview dialog (see
+// home-page-popup-preview-dialog.component) needs an edge-to-edge surface
+// with no default MatDialog padding/chrome - the Material equivalent of the
+// original's imperative dx-popup elementAttr override. Global + panelClass
+// is the standard way to reach a dialog's own overlay chrome from outside,
+// since it lives outside the dialog component's own view encapsulation.
+.preview-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface {
+  padding: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.preview-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface > * {
+  padding: 0;
+}

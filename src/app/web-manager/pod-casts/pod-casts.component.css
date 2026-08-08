@@ -6,3 +6,51 @@
   letter-spacing: 1.2px;
   color: #fff;
 }
+
+/* See admin-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.pod-casts-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.pod-casts-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Full-page blocking overlay for the YouTube sync - same
+   position: fixed shading pattern as shipping-batch-dialog.component.html's
+   spinner-overlay, just with a message under the spinner too. */
+.sync-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  z-index: 1000;
+  text-align: center;
+  padding: 0 24px;
+}

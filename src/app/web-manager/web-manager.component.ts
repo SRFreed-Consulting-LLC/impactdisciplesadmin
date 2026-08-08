@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
+import { SectionTab } from '../shared/section-tabs/section-tabs.component';
 
 @Component({
     selector: 'app-web-manager',
@@ -8,19 +8,18 @@ import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
     standalone: false
 })
 export class WebManagerComponent {
-  selectedIndex: number = 0;
   selectedTab: string = 'Disciple Making Minute';
 
-  tabs: Tab[] = [
-    { id: 0, text: 'Disciple Making Minute', template: 'Disciple Making Minute' },
-    { id: 1, text: 'Pod Casts', template: 'Pod Casts' },
-    { id: 2, text: 'Testimonials', template: 'Testimonials' },
-    { id: 3, text: 'Home Page Images', template: 'Home Page Images' },
-    { id: 4, text: 'Home Page Popups', template: 'Home Page Popups' },
-    { id: 5, text: 'Monthly Newsletter', template: 'Monthly Newsletter' },
+  tabs: SectionTab[] = [
+    { text: 'Disciple Making Minute', template: 'Disciple Making Minute' },
+    { text: 'Pod Casts', template: 'Pod Casts' },
+    { text: 'Testimonials', template: 'Testimonials' },
+    { text: 'Home Page Images', template: 'Home Page Images' },
+    { text: 'Home Page Popups', template: 'Home Page Popups' },
+    { text: 'Monthly Newsletter', template: 'Monthly Newsletter' },
   ];
 
-  selectTab(e) {
-    this.selectedTab = e.itemData.template;
+  selectTab(template: string) {
+    this.selectedTab = template;
   }
 }

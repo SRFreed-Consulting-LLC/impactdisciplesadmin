@@ -14,6 +14,7 @@ import { AddressFieldComponent } from './address-field/address-field.component';
 import { VariableInserterComponent } from './rich-text-editor/variable-inserter.component';
 import { SectionTabsComponent } from './section-tabs/section-tabs.component';
 import { TableLoadingOverlayComponent } from './table-loading-overlay/table-loading-overlay.component';
+import { TagChipsComponent } from './tag-chips/tag-chips.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -26,6 +27,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 @NgModule({
   declarations: [
@@ -41,7 +44,8 @@ import { MatSelectModule } from '@angular/material/select';
     AddressFieldComponent,
     VariableInserterComponent,
     SectionTabsComponent,
-    TableLoadingOverlayComponent
+    TableLoadingOverlayComponent,
+    TagChipsComponent
   ],
   imports: [
     CommonModule,
@@ -60,7 +64,9 @@ import { MatSelectModule } from '@angular/material/select';
     MatDividerModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule
+    MatSelectModule,
+    MatChipsModule,
+    MatAutocompleteModule
   ],
   exports: [
     IndicatorButtonComponent,
@@ -75,7 +81,8 @@ import { MatSelectModule } from '@angular/material/select';
     AddressFieldComponent,
     VariableInserterComponent,
     SectionTabsComponent,
-    TableLoadingOverlayComponent
+    TableLoadingOverlayComponent,
+    TagChipsComponent
   ]
 })
 export class SharedModule {}

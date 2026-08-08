@@ -1,234 +1,183 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE HOME PAGE POP UPS">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
-</div>
+<ng-container *ngIf="mode === 'list'">
+  <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
+  <div class="table-scroll">
+    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+    <table mat-table [dataSource]="(popups$ | async) ?? []" class="popups-table">
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef>Live</th>
+        <td mat-cell *matCellDef="let item">
+          <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
+            {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
+          </span>
+        </td>
+      </ng-container>
 
-  <dxo-paging [pageSize]="10"></dxo-paging>
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
+      <ng-container matColumnDef="fromDate">
+        <th mat-header-cell *matHeaderCellDef>From Date</th>
+        <td mat-cell *matCellDef="let item">{{ item.fromDate | date: 'short' }}</td>
+      </ng-container>
 
-  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="fromDate" [dataType]="'date'"></dxi-column>
-  <dxi-column dataField="toDate" [dataType]="'date'"></dxi-column>
-  <dxi-column dataField="title"></dxi-column>
-  <dxi-column dataField="width" [dataType]="'number'"></dxi-column>
-  <dxi-column dataField="height" [dataType]="'number'"></dxi-column>
-  <dxi-column dataField="bgColor"></dxi-column>
-  <dxi-column dataField="text" [visible]="false"></dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
+      <ng-container matColumnDef="toDate">
+        <th mat-header-cell *matHeaderCellDef>To Date</th>
+        <td mat-cell *matCellDef="let item">{{ item.toDate | date: 'short' }}</td>
+      </ng-container>
 
-  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
-    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
-      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
-    </span>
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Title</th>
+        <td mat-cell *matCellDef="let item">{{ item.title }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="width">
+        <th mat-header-cell *matHeaderCellDef>Width</th>
+        <td mat-cell *matCellDef="let item">{{ item.width }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="height">
+        <th mat-header-cell *matHeaderCellDef>Height</th>
+        <td mat-cell *matCellDef="let item">{{ item.height }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="bgColor">
+        <th mat-header-cell *matHeaderCellDef>Background Color</th>
+        <td mat-cell *matCellDef="let item">
+          <span class="color-swatch" [style.background-color]="item.bgColor"></span>
+          {{ item.bgColor }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+        <td mat-cell *matCellDef="let item" class="actions-column">
+          <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+      <ng-container matColumnDef="isActive-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="fromDate-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('fromDate', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="toDate-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('toDate', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="title-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="width-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('width', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="height-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('height', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="bgColor-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('bgColor', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="actions-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+    </table>
   </div>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'60%'"
-  [height]="'60%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async">
-    <div *dxTemplate>
-      <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="row">
-      <div class="col-3">
-        <div class="add-item-modal">
-          <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-            <dx-form #addEditForm [colCount]="2" [(formData)]="selectedItem">
-              <dxi-item
-                dataField="fromDate"
-                editorType="dxDateBox"
-                [label]="{ text: 'From Date' }"
-                [colSpan]="2"
-                [isRequired]="true"
-                [editorOptions]="{
-                  displayFormat: 'M/d/yyyy, HH:mm',
-                  type: 'datetime',
-                  dateSerializationFormat: 'yyyy-MM-ddTHH:mm:ss',
-                  useMaskBehavior: true
-                }">
-              </dxi-item>
-              <dxi-item
-                dataField="toDate"
-                editorType="dxDateBox"
-                [label]="{ text: 'To Date' }"
-                [colSpan]="2"
-                [isRequired]="true"
-                [editorOptions]="{
-                  displayFormat: 'M/d/yyyy, HH:mm',
-                  type: 'datetime',
-                  dateSerializationFormat: 'yyyy-MM-ddTHH:mm:ss',
-                  useMaskBehavior: true
-                }">
-              </dxi-item>
-              <dxi-item dataField="title" [label]="{ text: 'Title' }" [colSpan]="2" [isRequired]="true"></dxi-item>
-              <dxi-item dataField="width" [label]="{ text: 'Popup Width (px)' }" [colSpan]="2" [isRequired]="true" editorType="dxNumberBox"></dxi-item>
-              <dxi-item dataField="height" [label]="{ text: 'Popup Height (px)' }" [colSpan]="2" [isRequired]="true" editorType="dxNumberBox"></dxi-item>
-              <dxi-item dataField="bgColor" [label]="{ text: 'Background Color' }" [colSpan]="2" [isRequired]="true" editorType="dxColorBox"></dxi-item>
-              <dxi-item>
-                <app-indicator-button
-                  [isInProgress]="inProgress$ | async"
-                  [title]="'Preview'"
-                  [disabled]="inProgress$ | async"
-                  (onClick)="showPreview(selectedItem)"
-                ></app-indicator-button>
-              </dxi-item>
-            </dx-form>
-          </div>
-          <div class="add-item-modal__button-group pb-2">
-            <dx-button
-              text="CANCEL"
-              stylingMode="contained"
-              type="normal"
-              [disabled]="inProgress$ | async"
-              (onClick)="onCancel()"
-            ></dx-button>
-            <app-indicator-button
-              [isInProgress]="inProgress$ | async"
-              [title]="'SAVE'"
-              [disabled]="inProgress$ | async"
-              (onClick)="onSave(selectedItem)"
-            ></app-indicator-button>
-          </div>
-        </div>
-      </div>
-      <div class="col-9">
-        <ng-container *ngIf="selectedItem">
-          <dx-html-editor [height]="'450px'" [(value)]="selectedItem.text" []>
-            <dxo-toolbar [multiline]="false">
-              <dxi-item name="undo"></dxi-item>
-              <dxi-item name="redo"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item
-                name="size"
-                [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-                [options]="{ inputAttr: { 'aria-label': 'Font size' } }">
-              </dxi-item>
-              <dxi-item
-                name="font"
-                [acceptedValues]="[
-                  'Arial',
-                  'Courier New',
-                  'Georgia',
-                  'Impact',
-                  'Lucida Console',
-                  'Tahoma',
-                  'Times New Roman',
-                  'Verdana'
-                ]"
-                [options]="{ inputAttr: { 'aria-label': 'Font family' } }">
-              </dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="bold"></dxi-item>
-              <dxi-item name="italic"></dxi-item>
-              <dxi-item name="strike"></dxi-item>
-              <dxi-item name="underline"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="alignLeft"></dxi-item>
-              <dxi-item name="alignCenter"></dxi-item>
-              <dxi-item name="alignRight"></dxi-item>
-              <dxi-item name="alignJustify"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="orderedList"></dxi-item>
-              <dxi-item name="bulletList"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item
-                name="header"
-                [acceptedValues]="[false, 1, 2, 3, 4, 5]"
-                [options]="{ inputAttr: { 'aria-label': 'Header' } }">
-              </dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="color"></dxi-item>
-              <dxi-item name="background"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="link"></dxi-item>
-              <dxi-item name="image"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="clear"></dxi-item>
-              <dxi-item name="codeBlock"></dxi-item>
-              <dxi-item name="blockquote"></dxi-item>
-              <dxi-item name="separator"></dxi-item>
-              <dxi-item name="insertTable"></dxi-item>
-              <dxi-item name="deleteTable"></dxi-item>
-              <dxi-item name="insertRowAbove"></dxi-item>
-              <dxi-item name="insertRowBelow"></dxi-item>
-              <dxi-item name="deleteRow"></dxi-item>
-              <dxi-item name="insertColumnLeft"></dxi-item>
-              <dxi-item name="insertColumnRight"></dxi-item>
-              <dxi-item name="deleteColumn"></dxi-item>
-            </dxo-toolbar>
-          </dx-html-editor>
-        </ng-container>
-
-      </div>
-    </div>
-  </div>
-</dx-popup>
-
-<ng-container *ngIf="isPreviewVisible$ | async">
-  <dx-popup
-    [showTitle]="false"
-    [hideOnOutsideClick]="true"
-    [title]="selectedItem?.title"
-    [dragEnabled]="false"
-    [visible]="isPreviewVisible$ | async"
-    [width]="selectedItem?.width + 'px'"
-    [height]="selectedItem?.height + 'px'"
-    [showCloseButton]="true"
-    (onInitialized)="onPreviewPopupInitialized($event)"
-    (onHiding)="onCancelPreview()">
-      <div style="margin:0; padding:0; width: 100%; height: 100%; color: #fff; display:flex; align-items:center; justify-content:center;" [style.background-color]="selectedItem.bgColor">
-        <div style="margin:0; padding:0;" [innerHTML]="selectedItem?.text"></div>
-      </div>
-  </dx-popup>
 </ng-container>
 
+<ng-container *ngIf="mode === 'edit'">
+  <div class="editor" [formGroup]="form">
+    <mat-toolbar class="editor__header">
+      <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' HOME PAGE POPUP' }}</h2>
+      <span class="editor__spacer"></span>
+      <mat-slide-toggle formControlName="isActive">Live</mat-slide-toggle>
+    </mat-toolbar>
+
+    <div class="editor__body">
+      <div class="editor__fields">
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>From Date</mat-label>
+            <input matInput type="datetime-local" formControlName="fromDate" required>
+            <mat-error *ngIf="form.get('fromDate')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>To Date</mat-label>
+            <input matInput type="datetime-local" formControlName="toDate" required>
+            <mat-error *ngIf="form.get('toDate')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title" required>
+          <mat-error *ngIf="form.get('title')?.hasError('required')">Title is required</mat-error>
+        </mat-form-field>
+
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Popup Width (px)</mat-label>
+            <input matInput type="number" formControlName="width" required>
+            <mat-error *ngIf="form.get('width')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Popup Height (px)</mat-label>
+            <input matInput type="number" formControlName="height" required>
+            <mat-error *ngIf="form.get('height')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="color-row">
+          <label class="color-row__label">Background Color</label>
+          <input class="color-row__swatch" type="color" formControlName="bgColor">
+          <mat-form-field appearance="outline" class="color-row__hex">
+            <input matInput formControlName="bgColor" required>
+          </mat-form-field>
+        </div>
+
+        <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showPreview()">Preview</button>
+      </div>
+
+      <div class="editor__editor-wrap">
+        <quill-editor formControlName="text" [modules]="richTextModules"></quill-editor>
+      </div>
+    </div>
+
+    <div class="editor__actions">
+      <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+      <app-indicator-button
+        title="SAVE"
+        [isInProgress]="inProgress$ | async"
+        [disabled]="inProgress$ | async"
+        (onClick)="onSave()">
+      </app-indicator-button>
+    </div>
+  </div>
+</ng-container>

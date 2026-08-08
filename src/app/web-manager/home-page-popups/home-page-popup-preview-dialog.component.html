@@ -1,0 +1,6 @@
+<div class="preview" [style.background-color]="data.item.bgColor">
+  <button mat-icon-button class="preview__close" type="button" aria-label="Close" (click)="onClose()">
+    <mat-icon>close</mat-icon>
+  </button>
+  <div class="preview__content" [innerHTML]="data.item.text"></div>
+</div>

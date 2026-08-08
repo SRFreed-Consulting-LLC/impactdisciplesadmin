@@ -1,19 +1,17 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, Subject, takeUntil, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { PodCastModel } from 'impactdisciplescommon/src/models/domain/pod-cast.model';
 import { PodCastService } from 'impactdisciplescommon/src/services/data/pod-cast.service';
-import { BehaviorSubject, map, Observable, Subject, takeUntil } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import { Timestamp } from 'firebase/firestore';
-import { DxTagBoxTypes } from 'devextreme-angular/ui/tag-box';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
 import { PodCastTagsService } from 'impactdisciplescommon/src/services/data/pod-cast-tags.service';
-import { MatDialog } from '@angular/material/dialog';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { PodCastDialogComponent } from './pod-cast-dialog.component';
 import { PodCastCategoriesComponent } from '../pod-cast-categories/pod-cast-categories.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-pod-casts',
@@ -22,212 +20,157 @@ import { PodCastCategoriesComponent } from '../pod-cast-categories/pod-cast-cate
     standalone: false
 })
 export class PodCastsComponent implements OnInit, OnDestroy {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
+  podCasts$: Observable<PodCastModel[]>;
+  displayedColumns = ['isActive', 'thumbnail', 'date', 'title', 'category', 'actions'];
+  filterColumns = ['isActive-filter', 'thumbnail-filter', 'date-filter', 'title-filter', 'category-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  dateOperators = DATE_FILTER_OPERATORS;
 
-  datasource$: Observable<DataSource>;
-  selectedItem: PodCastModel;
+  itemType = 'Pod Cast';
+
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+    { label: 'Categories', icon: 'view_list', onClick: () => this.showCategoriesModal() },
+    { label: 'Synchronize', icon: 'refresh', onClick: () => this.syncPodcasts() }
+  ];
+
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+  // Separate from loading$: this one drives the full-page "syncing with
+  // YouTube, don't leave this page" overlay, matching the original's
+  // dx-load-panel - it's shown for the multi-second bulk sync, not for the
+  // table's own initial load.
+  syncing$ = new BehaviorSubject<boolean>(false);
+
   podCastCategories: TagModel[] = [];
-  itemType = 'Pod Cast'
-
-  public inProgress$ = new BehaviorSubject<boolean>(false);
-  public isEditVisible$ = new BehaviorSubject<boolean>(false);
-  public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
-
   podCastTags: TagModel[] = [];
 
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private service: PodCastService,
+  constructor(
+    private service: PodCastService,
     private podCastTagService: PodCastTagsService,
     private podCastCategoriesService: PodCastCategoriesService,
-    private dialog: MatDialog) {}
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
   async ngOnInit(): Promise<void> {
-      this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
+    this.podCasts$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) =>
+            Object.keys(filters).every((field) => {
+              const type = field === 'date' ? 'date' : 'text';
+              return matchesColumnFilter(this.fieldValue(item, field), filters[field], type);
             })
+          )
+          .sort((a, b) => {
+            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
+            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
+            return bTime - aTime;
           })
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
 
-    this.podCastTagService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(tags => {
+    this.podCastTagService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((tags) => {
       this.podCastTags = tags;
-    })
+    });
 
     this.podCastCategories = await this.podCastCategoriesService.getAll();
 
     this.service.getVideoInfo();
   }
 
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-    this.isEditVisible$.next(true);
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new PodCastModel()};
-    this.selectedItem.date = Timestamp.now().toDate();
-    this.isEditVisible$.next(true);
+  categoryName(item: PodCastModel): string {
+    return this.podCastCategories.find((category) => category.id === item.category)?.tag ?? '';
   }
 
-  showCategoriesModal = () => {
+  private fieldValue(item: PodCastModel, field: string): any {
+    if (field === 'category') {
+      return this.categoryName(item);
+    }
+    return (item as any)[field];
+  }
+
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  }
+
+  showAddModal(): void {
+    this.dialog.open(PodCastDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { item: null, categories: this.podCastCategories, tags: this.podCastTags }
+    });
+  }
+
+  showEditModal(item: PodCastModel): void {
+    this.dialog.open(PodCastDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { item, categories: this.podCastCategories, tags: this.podCastTags }
+    });
+  }
+
+  showCategoriesModal(): void {
     this.dialog.open(PodCastCategoriesComponent, {
       width: '650px'
     });
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
+  delete(item: PodCastModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
+  }
+
+  syncPodcasts(): void {
+    this.confirmService.confirm('<i>Are you sure you want to syncronize these records?</i>', 'Confirm').then((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.syncing$.next(true);
+
+      this.service.getVideoInfo().then((vids) => {
+        vids.forEach(async (video: any) => {
+          let podCast: PodCastModel = await this.service.getById(video.id);
+
+          if (!podCast) {
+            podCast = { ...new PodCastModel() };
+          }
+
+          podCast.id = video.id;
+          podCast.date = video.snippet.publishedAt;
+          podCast.isActive = true;
+          podCast.thumbnail = {};
+          podCast.thumbnail.name = video.snippet.title;
+          podCast.thumbnail.url = video.snippet.thumbnails.maxres ? video.snippet.thumbnails.maxres.url : video.snippet.thumbnails.high.url;
+          podCast.title = video.snippet.title;
+          podCast.videoId = video.contentDetails.videoId;
+          podCast.videoType = 'Youtube';
+          podCast.description = video.snippet.description;
+
+          await this.service.update(podCast.id, podCast).then(() => {
+            this.snackbar.success('Podcasts Synced up with Youtube');
+            this.syncing$.next(false);
           });
-        })
-      }
+        });
+      });
     });
-  }
-
-  syncPodcasts = () => {
-    confirm('<i>Are you sure you want to syncronize these records?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.inProgress$.next(true);
-
-        this.service.getVideoInfo().then(vids => {
-          vids.forEach(async video => {
-            let podCast: PodCastModel = await this.service.getById(video.id);
-
-            if(!podCast){
-              podCast = {... new PodCastModel()}
-            }
-
-            podCast.id = video.id;
-            podCast.date = video.snippet.publishedAt;
-            podCast.isActive = true;
-            podCast.thumbnail = {};
-            podCast.thumbnail.name = video.snippet.title;
-            podCast.thumbnail.url = video.snippet.thumbnails.maxres ? video.snippet.thumbnails.maxres.url : video.snippet.thumbnails.high.url;
-            podCast.title = video.snippet.title;
-            podCast.videoId = video.contentDetails.videoId;
-            podCast.videoType = "Youtube";
-            podCast.description = video.snippet.description;
-
-            await this.service.update(podCast.id, podCast).then(() => {
-              notify({
-                message: 'Podcasts Synced up with Youtube',
-                position: 'top',
-                width: 600,
-                type: 'success'
-              });
-              this.inProgress$.next(false);
-            });
-          })
-      })
-      }
-    });
-  }
-
-  onSave(item: PodCastModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
-
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
-  }
-
-  onCancel() {
-    this.selectedItem = null;
-    this.inProgress$.next(false);
-    this.isEditVisible$.next(false);
-  }
-
-  onCustomItemCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {
-    if(args.text){
-      let podCastTag: TagModel = {... new TagModel()}
-      podCastTag.tag = args.text;
-      podCastTag.id = this.generateRandomId();
-
-      const isItemInDataSource = this.podCastTags.some((item) => item.tag === podCastTag.tag);
-
-      if (!isItemInDataSource) {
-        this.podCastTagService.update(podCastTag.id, podCastTag)
-      }
-
-      args.customItem = podCastTag;
-    }
-  }
-
-  private generateRandomId() {
-    return 'xxxxxxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0,
-        v = c == 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
-
-  showSingleImageModal = () => {
-    this.isSingleImageVisible$.next(true);
-  }
-
-  closeSingleImageModal = () => {
-    this.isSingleImageVisible$.next(false);
-  }
-
-  ngOnDestroy(): void {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
   }
 }
