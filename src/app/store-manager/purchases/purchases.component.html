@@ -1,3 +1,4 @@
+<ng-container *ngIf="mode === 'list'">
 <app-list-header [title]="itemType + 's'">
   <button mat-stroked-button type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
     <mat-icon>view_column</mat-icon>
@@ -196,3 +197,72 @@
   <span>Charged: {{ sumOf('charged') | currency }}</span>
   <span>Refunded: {{ sumOf('refundAmount') | currency }}</span>
 </div>
+</ng-container>
+
+<ng-container *ngIf="mode === 'edit' && editingItem as item">
+  <div class="editor">
+    <mat-toolbar class="editor__header">
+      <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2 class="editor__title">EDIT PURCHASE</h2>
+      <span class="editor__spacer"></span>
+    </mat-toolbar>
+
+    <div class="editor__body">
+      <div class="readonly-summary">
+        <div class="readonly-summary__col">
+          <div class="readonly-row"><span>Date</span><span>{{ $any(item.dateProcessed) | date: 'short' }}</span></div>
+          <div class="readonly-row"><span>Name</span><span>{{ item.firstName }} {{ item.lastName }}</span></div>
+          <div class="readonly-row"><span>Email</span><span>{{ item.email }}</span></div>
+          <div class="readonly-row"><span>Order Status</span><span>{{ getOrderStatusDisplay(item) }}</span></div>
+          <div class="readonly-row"><span>Coupon</span><span>{{ item.couponCode || '—' }}</span></div>
+          <div class="readonly-row"><span>Item Count</span><span>{{ getOrderItemCount(item) }}</span></div>
+        </div>
+        <div class="readonly-summary__col">
+          <div class="readonly-row"><span>Item Total</span><span>{{ getProductTotalDisplayAmount(item) | currency }}</span></div>
+          <div class="readonly-row"><span>Taxes</span><span>{{ getTaxesDisplayAmount(item) | currency }}</span></div>
+          <div class="readonly-row"><span>Shipping</span><span>{{ getShippingDisplayAmount(item) | currency }}</span></div>
+          <div class="readonly-row"><span>Discount</span><span>-{{ getDiscountDisplayAmount(item) | currency }}</span></div>
+          <div class="readonly-row"><span>Shipping Discount</span><span>-{{ getShippingDiscountDisplayAmount(item) | currency }}</span></div>
+          <div class="readonly-row readonly-row--total"><span>Charged</span><span>{{ getChargedDisplayAmount(item) | currency }}</span></div>
+        </div>
+      </div>
+
+      <mat-tab-group class="purchase-tabs" [formGroup]="form">
+        <mat-tab label="Contact">
+          <div class="tab-content">
+            <mat-form-field appearance="outline" class="status-field">
+              <mat-label>Status</mat-label>
+              <mat-select formControlName="processedStatus">
+                <mat-option *ngFor="let status of statuses" [value]="status">{{ status }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <label class="section-label">Shipping Address</label>
+            <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
+
+            <label class="section-label">Phone Number</label>
+            <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Sale Details">
+          <div class="tab-content">
+            <app-purchase-details [selectedItem]="item"></app-purchase-details>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+
+    <div class="editor__actions">
+      <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+      <app-indicator-button
+        title="SAVE"
+        [isInProgress]="inProgress$ | async"
+        [disabled]="inProgress$ | async"
+        (onClick)="onSave()">
+      </app-indicator-button>
+    </div>
+  </div>
+</ng-container>

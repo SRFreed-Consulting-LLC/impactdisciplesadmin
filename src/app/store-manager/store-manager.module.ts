@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { StoreManagerComponent } from './store-manager.component';
 import { ProductsComponent } from './products/products.component';
 import { PurchasesComponent } from './purchases/purchases.component';
-import { PurchaseDialogComponent } from './purchases/purchase-dialog.component';
 import { SharedModule } from '../shared/shared.module';
 import { ProductCategoriesComponent } from './product-categories/product-categories.component';
 import { CategoryModalComponent } from './product-categories/category-modal/category-modal.component';
@@ -46,7 +45,6 @@ import { QuillModule } from 'ngx-quill';
     StoreManagerComponent,
     ProductsComponent,
     PurchasesComponent,
-    PurchaseDialogComponent,
     PurchaseDetailsComponent,
     CouponsComponent,
     CouponDialogComponent,

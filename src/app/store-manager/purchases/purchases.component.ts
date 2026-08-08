@@ -1,16 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { PaymentIntent } from '@stripe/stripe-js';
 import { CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
 import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { environment } from 'src/environments/environment';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
-import { PurchaseDialogComponent } from './purchase-dialog.component';
 
 interface ColumnDef {
   key: string;
@@ -18,6 +18,13 @@ interface ColumnDef {
   visible: boolean;
 }
 
+// Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
+// products.component.ts for the established precedent this mirrors) rather
+// than the MatDialog this screen started with. Edit-only, matching the
+// original: purchases are created by the storefront checkout, never by an
+// admin here. The original's dead showAddModal() (seeded selectedItem from
+// a ProductModel spread that didn't match CheckoutForm's shape, called by
+// no button) is not ported.
 @Component({
     selector: 'app-purchases',
     templateUrl: './purchases.component.html',
@@ -25,6 +32,9 @@ interface ColumnDef {
     standalone: false
 })
 export class PurchasesComponent implements OnInit {
+  mode: 'list' | 'edit' = 'list';
+
+  // ---- List state ----
   purchases$: Observable<CheckoutForm[]>;
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
@@ -67,10 +77,21 @@ export class PurchasesComponent implements OnInit {
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
+  // ---- Edit state ----
+  form: FormGroup;
+  inProgress$ = new BehaviorSubject<boolean>(false);
+  isRefunding$ = new BehaviorSubject<boolean>(false);
+
+  states = EnumHelper.getStateTypesAsArray();
+  phoneTypes = EnumHelper.getPhoneTypesAsArray();
+  statuses = ['NEW', 'COMPLETE', 'REFUNDED'];
+
+  editingItem: CheckoutForm | null = null;
+
   constructor(
     private service: PurchasesService,
     private authService: AdminAuthService,
-    private dialog: MatDialog,
+    private fb: FormBuilder,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
   ) {}
@@ -137,10 +158,9 @@ export class PurchasesComponent implements OnInit {
   }
 
   // Real dollar amounts come from the PayPal receipt when present, falling
-  // back to the Stripe-derived fields the storefront itself already wrote -
-  // see purchase-dialog.component.ts for the identical per-record logic
-  // (kept duplicated rather than shared, since it's this cheap and each
-  // call site already needs its own CheckoutForm instance).
+  // back to the Stripe-derived fields the storefront itself already wrote.
+  // Shared by both the list columns and the edit view's summary block
+  // (called there with editingItem).
   getProductTotalDisplayAmount(item: CheckoutForm): number {
     return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.breakdown.item_total.value) : (item.total ?? 0) > 0 ? item.total! : 0;
   }
@@ -161,8 +181,20 @@ export class PurchasesComponent implements OnInit {
     return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
   }
 
+  getShippingDiscountDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.shipping_discount.value) : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
+  }
+
   getChargedDisplayAmount(item: CheckoutForm): number {
     return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.value) : (item.total ?? 0) - (item.discount ?? 0) > 0 ? item.total! : 0;
+  }
+
+  getOrderStatusDisplay(item: CheckoutForm): string {
+    return item.payPalReceipt ? (item.payPalReceipt as any)?.status : (item.paymentIntent as PaymentIntent)?.status;
+  }
+
+  getOrderItemCount(item: CheckoutForm): number {
+    return (item.cartItems ?? []).map((cartItem) => cartItem.orderQuantity ?? 0).reduce((a, b) => a + b, 0);
   }
 
   // Yellow-row highlight when what the customer was actually charged
@@ -198,10 +230,6 @@ export class PurchasesComponent implements OnInit {
       }
     };
     return this.currentRows.reduce((sum, item) => sum + amount(item), 0);
-  }
-
-  showEditModal(item: CheckoutForm): void {
-    this.dialog.open(PurchaseDialogComponent, { width: '1000px', maxWidth: '95vw', data: { item } });
   }
 
   delete(item: CheckoutForm): void {
@@ -268,5 +296,90 @@ export class PurchasesComponent implements OnInit {
       value: (item) => this.fieldValue(item, c.key) ?? ''
     }));
     exportToExcel(this.currentRows, columns, 'purchases.xlsx');
+  }
+
+  // ---- Edit view ----
+
+  showEditModal(item: CheckoutForm): void {
+    this.editingItem = item;
+
+    this.form = this.fb.group({
+      processedStatus: [item.processedStatus ?? 'NEW'],
+      phone: this.fb.group({
+        countryCode: [item.phone?.countryCode ?? ''],
+        number: [item.phone?.number ?? ''],
+        type: [item.phone?.type ?? null]
+      }),
+      shippingAddress: this.fb.group({
+        address1: [item.shippingAddress?.address1 ?? ''],
+        address2: [item.shippingAddress?.address2 ?? ''],
+        city: [item.shippingAddress?.city ?? ''],
+        state: [item.shippingAddress?.state ?? ''],
+        zip: [item.shippingAddress?.zip ?? ''],
+        country: [item.shippingAddress?.country ?? '']
+      })
+    });
+
+    this.mode = 'edit';
+  }
+
+  onCancel(): void {
+    this.inProgress$.next(false);
+    this.mode = 'list';
+  }
+
+  onSave(): void {
+    this.inProgress$.next(true);
+    const value: CheckoutForm = { ...this.editingItem, ...this.form.value };
+
+    this.service.update(value.id!, value).then((result) => {
+      if (result) {
+        this.snackbar.success('Purchase Updated');
+        this.mode = 'list';
+        this.inProgress$.next(false);
+      } else {
+        this.inProgress$.next(false);
+        this.snackbar.error('Some Error Occured');
+      }
+    });
+  }
+
+  // Refunds move real money - this endpoint requires a verified staff
+  // Firebase ID token. The button that called this is commented out in the
+  // original UI (method still exists, just unreachable) - preserved
+  // exactly as-is here too: ported, but left unwired to any button, rather
+  // than either removing it or re-enabling it. Never triggered during my
+  // own live verification for that reason.
+  refundOrder(): void {
+    const item = this.editingItem!;
+    const amountToRefund = item.total ?? 0;
+
+    this.confirmService.confirm(`<i>Are you sure you want to refund amount $${amountToRefund.toFixed(2)}?</i>`, 'Confirm').then(async (confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.isRefunding$.next(true);
+
+      const request = { paymentIntent: (item.paymentIntent as PaymentIntent).id };
+      const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
+
+      const response = await fetch(environment.stripeRefundURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+        body: JSON.stringify(request)
+      });
+
+      const result = await response.json();
+
+      item.refundAmount = Number(amountToRefund.toFixed(2));
+      item.refundId = result.id;
+      item.processedStatus = 'REFUNDED';
+
+      this.service.update(item.id!, item).then(() => {
+        this.snackbar.success(`Order Refunded ($${amountToRefund.toFixed(2)})`);
+        this.isRefunding$.next(false);
+      });
+    });
   }
 }
