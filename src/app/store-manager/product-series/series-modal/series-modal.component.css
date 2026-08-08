@@ -1,0 +1,19 @@
+.full-width {
+  width: 100%;
+}
+
+.order-field {
+  width: 100px;
+  flex: 0 0 auto;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}

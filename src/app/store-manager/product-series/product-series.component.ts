@@ -1,80 +1,87 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Actions, ofActionDispatched, Store } from '@ngxs/store';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { SeriesModel } from 'impactdisciplescommon/src/models/utils/series.model';
 import { SeriesService } from 'impactdisciplescommon/src/services/data/series.service';
-import { BehaviorSubject, map, Observable, Subject, takeUntil } from 'rxjs';
-import { ShowProductSeriesModal } from './product-series-modal.actions';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { ShowSeriesModal } from './series-modal/series-modal.actions';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { SeriesModalComponent } from './series-modal/series-modal.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
+// Opened via MatDialog.open(ProductSeriesComponent, ...) from
+// ProductsComponent's "Series" menu item - same pattern as
+// ProductCategoriesComponent (itself modeled on web-manager's
+// pod-cast-categories.component). Replaces the old NGXS
+// ShowProductSeriesModal/ShowSeriesModal action-driven, always-mounted
+// pattern.
 @Component({
     selector: 'app-product-series',
     templateUrl: './product-series.component.html',
     styleUrls: ['./product-series.component.css'],
     standalone: false
 })
-export class ProductSeriesComponent implements OnInit, OnDestroy {
-  datasource$: Observable<DataSource>;
+export class ProductSeriesComponent implements OnInit {
+  series$: Observable<SeriesModel[]>;
+  displayedColumns = ['imageUrl', 'order', 'name', 'showInStore', 'actions'];
+  filterColumns = ['imageUrl-filter', 'order-filter', 'name-filter', 'showInStore-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  itemType = 'Series';
 
-  private ngUnsubscribe = new Subject<void>();
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  constructor(private service: SeriesService, private store: Store, private actions$: Actions) {}
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+
+  constructor(
+    private service: SeriesService,
+    private dialog: MatDialog,
+    private dialogRef: MatDialogRef<ProductSeriesComponent>,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
   ngOnInit(): void {
-    this.actions$.pipe(ofActionDispatched(ShowProductSeriesModal), takeUntil(this.ngUnsubscribe)).subscribe(() => {
-      this.isVisible$.next(true)
-    })
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
+    this.series$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof SeriesModel], filters[field], 'text')))
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 
-  showEditModal = (e) => {
-    this.store.dispatch(new ShowSeriesModal(e.data));
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.store.dispatch(new ShowSeriesModal());
+  onClose(): void {
+    this.dialogRef.close();
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: 'Series Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(SeriesModalComponent, {
+      width: '500px',
+      data: { item: null }
     });
   }
 
-  onCancel() {
-    this.isVisible$.next(false);
+  showEditModal(item: SeriesModel): void {
+    this.dialog.open(SeriesModalComponent, {
+      width: '500px',
+      data: { item }
+    });
   }
 
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+  delete(item: SeriesModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

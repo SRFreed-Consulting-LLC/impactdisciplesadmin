@@ -1,83 +1,88 @@
-import { CategoryModel } from '../../../../impactdisciplescommon/src/models/utils/categories.model';
-import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { BehaviorSubject, map, Observable, Subject, takeUntil } from 'rxjs';
-import notify from 'devextreme/ui/notify';
-import { confirm } from 'devextreme/ui/dialog';
-import { DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
+import { Component, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { ProductCategoriesService } from 'impactdisciplescommon/src/services/data/product-categories.service';
-import { Actions, ofActionDispatched, Store } from '@ngxs/store';
-import { ShowCategoryModal } from './category-modal/category-modal.actions';
-import { ShowProductCategoriesModal } from './product-categories-modal.actions';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { CategoryModalComponent } from './category-modal/category-modal.component';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
+// Opened via MatDialog.open(ProductCategoriesComponent, ...) from
+// ProductsComponent's "Categories" menu item - there is no standalone
+// route for this screen, same pattern as web-manager's
+// pod-cast-categories.component (the direct precedent this was built
+// from). Replaces the old NGXS ShowProductCategoriesModal/ShowCategoryModal
+// action-driven, always-mounted-in-template pattern - no other migrated
+// screen in this app invokes dialogs that way.
 @Component({
     selector: 'app-product-categories',
     templateUrl: './product-categories.component.html',
     styleUrls: ['./product-categories.component.css'],
     standalone: false
 })
-export class ProductCategoriesComponent implements OnInit, OnDestroy {
-  datasource$: Observable<DataSource>;
+export class ProductCategoriesComponent implements OnInit {
+  categories$: Observable<TagModel[]>;
+  displayedColumns = ['tag', 'showInStore', 'actions'];
+  filterColumns = ['tag-filter', 'showInStore-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
 
-  public isVisible$ = new BehaviorSubject<boolean>(false);
+  itemType = 'Category';
 
-  private ngUnsubscribe = new Subject<void>();
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  constructor(private service: ProductCategoriesService, private store: Store, private actions$: Actions) {}
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
-  ngOnInit() {
-    this.actions$.pipe(ofActionDispatched(ShowProductCategoriesModal), takeUntil(this.ngUnsubscribe)).subscribe(() => {
-      this.isVisible$.next(true)
-    })
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
+  constructor(
+    private service: ProductCategoriesService,
+    private dialog: MatDialog,
+    private dialogRef: MatDialogRef<ProductCategoriesComponent>,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
+
+  ngOnInit(): void {
+    this.categories$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) =>
+        items
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof TagModel], filters[field], 'text')))
+          .sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? ''))
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 
-  showEditModal = (e) => {
-    this.store.dispatch(new ShowCategoryModal(e.data));
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showAddModal = () => {
-    this.store.dispatch(new ShowCategoryModal());
+  onClose(): void {
+    this.dialogRef.close();
   }
 
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: 'Category Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
-      }
+  showAddModal(): void {
+    this.dialog.open(CategoryModalComponent, {
+      width: '400px',
+      data: { item: null }
     });
   }
 
-  onCancel() {
-    this.isVisible$.next(false);
+  showEditModal(item: TagModel): void {
+    this.dialog.open(CategoryModalComponent, {
+      width: '400px',
+      data: { item }
+    });
   }
 
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+  delete(item: TagModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
+      }
+    });
   }
 }

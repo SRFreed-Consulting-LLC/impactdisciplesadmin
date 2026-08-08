@@ -30,6 +30,7 @@ import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 export class TagChipsComponent implements ControlValueAccessor {
   @Input() options: TagModel[] = [];
   @Input() placeholder = 'Add a tag...';
+  @Input() label = 'Tags';
   @Output() createTag = new EventEmitter<string>();
 
   readonly separatorKeyCodes = [ENTER, COMMA];

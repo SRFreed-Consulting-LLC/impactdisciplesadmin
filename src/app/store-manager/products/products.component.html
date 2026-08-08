@@ -1,505 +1,328 @@
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s: <strong class="filter-type">{{ selectedCategory?.tag || selectedSeries?.name || 'All' }}</strong></h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-select-box
-          [dataSource]="productCategories"
-          [value]="selectedCategory?.id"
-          [valueExpr]="'id'"
-          [displayExpr]="'tag'"
-          [placeholder]="'Filter by Category...'"
-          [showClearButton]="true"
-          [width]="250"
-          (onValueChanged)="onCategoryFilterChanged($event)"
-        ></dx-select-box>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-select-box
-          [dataSource]="series"
-          [value]="selectedSeries?.id"
-          [valueExpr]="'id'"
-          [displayExpr]="'name'"
-          [placeholder]="'Filter by Series...'"
-          [showClearButton]="true"
-          [width]="250"
-          (onValueChanged)="onSeriesFilterChanged($event)"
-        ></dx-select-box>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE PRODUCTS">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
+<ng-container *ngIf="mode === 'list'">
+  <app-list-header [title]="itemType + 's'" [actions]="actions">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-filter">
+      <mat-label>Filter by Category</mat-label>
+      <mat-select [value]="selectedCategoryId" (selectionChange)="onCategoryFilterChanged($event.value)">
+        <mat-option [value]="null">(All Categories)</mat-option>
+        <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.tag }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-filter">
+      <mat-label>Filter by Series</mat-label>
+      <mat-select [value]="selectedSeriesId" (selectionChange)="onSeriesFilterChanged($event.value)">
+        <mat-option [value]="null">(All Series)</mat-option>
+        <mat-option *ngFor="let s of series" [value]="s.id">{{ s.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </app-list-header>
+
+  <div class="table-scroll">
+    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+    <table mat-table [dataSource]="(products$ | async) ?? []" class="products-table">
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef>Live</th>
+        <td mat-cell *matCellDef="let item">
+          <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
+            {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="imageUrl">
+        <th mat-header-cell *matHeaderCellDef>Image</th>
+        <td mat-cell *matCellDef="let item">
+          <img *ngIf="item.imageUrl" width="60" [src]="item.imageUrl.url" [alt]="item.imageUrl.name">
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Title</th>
+        <td mat-cell *matCellDef="let item">{{ item.title }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="cost">
+        <th mat-header-cell *matHeaderCellDef>Cost</th>
+        <td mat-cell *matCellDef="let item">{{ item.cost | currency }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="salePrice">
+        <th mat-header-cell *matHeaderCellDef>Sale Price</th>
+        <td mat-cell *matCellDef="let item">{{ item.salePrice | currency }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="category">
+        <th mat-header-cell *matHeaderCellDef>Category</th>
+        <td mat-cell *matCellDef="let item">{{ categoryName(item) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="series">
+        <th mat-header-cell *matHeaderCellDef>Series</th>
+        <td mat-cell *matCellDef="let item">{{ seriesName(item) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="isEBook">
+        <th mat-header-cell *matHeaderCellDef>eBook</th>
+        <td mat-cell *matCellDef="let item">{{ item.isEBook ? 'Yes' : 'No' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="isDigitalBook">
+        <th mat-header-cell *matHeaderCellDef>Digital Book</th>
+        <td mat-cell *matCellDef="let item">{{ item.isDigitalBook ? 'Yes' : 'No' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+        <td mat-cell *matCellDef="let item" class="actions-column">
+          <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+      <ng-container matColumnDef="isActive-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="imageUrl-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="title-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="cost-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('cost', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="salePrice-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('salePrice', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="category-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('category', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="series-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('series', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="isEBook-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="isDigitalBook-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="actions-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+    </table>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="mode === 'edit'">
+  <div class="editor" [formGroup]="form">
+    <mat-toolbar class="editor__header">
+      <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' PRODUCT' }}</h2>
+      <span class="editor__spacer"></span>
+      <mat-slide-toggle formControlName="isActive">Live</mat-slide-toggle>
+    </mat-toolbar>
+
+    <div class="editor__body">
+      <mat-tab-group class="product-tabs">
+        <mat-tab label="Dimensions">
+          <div class="tab-content">
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Image</mat-label>
+                <input matInput [value]="card.imageUrl?.name ?? ''" readonly required>
+                <mat-error *ngIf="!card.imageUrl?.name">Image is required</mat-error>
+              </mat-form-field>
+              <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+                {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
+              </button>
             </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-              <dxi-item text="Categories" icon="smalliconslayout" [onClick]="showProductCategoriesModal"></dxi-item>
-              <dxi-item text="Series" icon="contentlayout" [onClick]="showProductSeriesModal"></dxi-item>
-            </dx-context-menu>
+            <img *ngIf="card.imageUrl?.url" class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Weight</mat-label>
+                <input matInput type="number" formControlName="weight" required>
+                <mat-error *ngIf="form.get('weight')?.hasError('required')">Required</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>UOM</mat-label>
+                <mat-select formControlName="uom" required>
+                  <mat-option *ngFor="let uom of uoms" [value]="uom">{{ uom }}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="form.get('uom')?.hasError('required')">Required</mat-error>
+              </mat-form-field>
+            </div>
+
+            <app-tag-chips formControlName="sizes" label="Sizes" placeholder="Enter Sizes..." (createTag)="onCreateSizeTag($event)"></app-tag-chips>
+            <app-tag-chips formControlName="colors" label="Colors" placeholder="Enter Colors..." (createTag)="onCreateColorTag($event)"></app-tag-chips>
+            <app-tag-chips formControlName="languages" label="Languages" placeholder="Enter Languages..." (createTag)="onCreateLanguageTag($event)"></app-tag-chips>
           </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
-</div>
+        </mat-tab>
 
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [filterValue]="gridFilter"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
+        <mat-tab label="Details">
+          <div class="tab-content">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Product Name</mat-label>
+              <input matInput formControlName="title" required>
+              <mat-error *ngIf="form.get('title')?.hasError('required')">Product name is required</mat-error>
+            </mat-form-field>
 
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Cost</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="cost" required>
+                <mat-error *ngIf="form.get('cost')?.hasError('required')">Required</mat-error>
+              </mat-form-field>
 
-  <dxo-group-panel [visible]="true"></dxo-group-panel>
-  <dxo-grouping [autoExpandAll]="false"></dxo-grouping>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Sale Price</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="salePrice" required>
+                <mat-error *ngIf="form.get('salePrice')?.hasError('required')">Required</mat-error>
+              </mat-form-field>
+            </div>
 
-  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="imageUrl" [width]="150" cellTemplate="imageCellTemplate" [caption]="'Image'"></dxi-column>
-  <dxi-column dataField="title" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="cost" [width]="80" dataType="number" format="currency"></dxi-column>
-  <dxi-column dataField="salePrice" [width]="80" dataType="number" format="currency"></dxi-column>
-  <dxi-column dataField="series" [visible]="selectedSeries">
-    <dxo-lookup [dataSource]="series" [displayExpr]="'name'" [valueExpr]="'id'"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="category" [visible]="selectedCategory">
-    <dxo-lookup [dataSource]="productCategories" [displayExpr]="'tag'" [valueExpr]="'id'"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="isEBook" dataType="boolean"></dxi-column>
-  <dxi-column dataField="isDigitalBook" dataType="boolean"></dxi-column>
-  <dxi-column dataField="tags" [visible]="false">
-    <dxo-lookup [dataSource]="productTags" [displayExpr]="'tag'" [valueExpr]="'id'"></dxo-lookup>
-  </dxi-column>
-  <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
+            <div class="field-row">
+              <mat-checkbox formControlName="isEBook">Is this an eBook?</mat-checkbox>
+            </div>
+            <div class="field-row" *ngIf="form.get('isEBook')?.value">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>eBook File</mat-label>
+                <input matInput [value]="card.eBookUrl?.name ?? ''" readonly>
+              </mat-form-field>
+              <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showEBookUploader()">Upload</button>
+            </div>
 
-  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
-    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
-      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
-    </span>
-  </div>
+            <div class="field-row">
+              <mat-checkbox formControlName="isDigitalBook">Is this a Digital Book?</mat-checkbox>
+            </div>
+            <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('isDigitalBook')?.value">
+              <mat-label>Select Book</mat-label>
+              <mat-select formControlName="digitalBookId">
+                <mat-option *ngFor="let book of books" [value]="book.id">{{ book.title }}</mat-option>
+              </mat-select>
+            </mat-form-field>
 
-  <div *dxTemplate="let data of 'imageCellTemplate'">
-    <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-  </div>
-</dx-data-grid>
+            <label class="section-label">Description</label>
+            <div class="editor-wrap">
+              <quill-editor formControlName="description" [modules]="richTextModules"></quill-editor>
+            </div>
+            <mat-error class="description-error" *ngIf="form.get('description')?.hasError('required') && form.get('description')?.touched">
+              Description is required
+            </mat-error>
 
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'75%'"
-  [height]="'90%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()"
->
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div class="add-item-modal">
-    <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-      <div class="row">
-        <div class="col-xl-3">
-          <dx-switch class="switch-button" [(value)]="selectedItem.isActive" [switchedOnText]="'LIVE'" [switchedOffText]="'INACTIVE'" [width]="'100%'"></dx-switch>
-          <div class="add-image" [class.has-image]="selectedItem?.imageUrl?.name" (click)="showSingleImageModal()">
-            <ng-container *ngIf="!selectedItem?.imageUrl?.name; else imageTpl">
-              <i class="dx-icon-add"></i>
-              Click to Add Image
-            </ng-container>
-
-            <ng-template #imageTpl>
-              <div class="image-wrapper">
-                <img
-                  [src]="selectedItem?.imageUrl?.url"
-                  [alt]="selectedItem?.imageUrl?.name"
-                />
-                <div class="image-overlay">Click to Edit</div>
-              </div>
-            </ng-template>
+            <div class="field-row">
+              <mat-checkbox formControlName="sendFollowUpEmail">Send Follow Up Email?</mat-checkbox>
+            </div>
+            <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('sendFollowUpEmail')?.value">
+              <mat-label>Select Email</mat-label>
+              <mat-select formControlName="followUpEmailId">
+                <mat-option [value]="null">(None)</mat-option>
+                <mat-option *ngFor="let email of emails" [value]="email.id">{{ email.name }}</mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
+        </mat-tab>
 
-          <dx-form
-            #addEditForm
-            [(formData)]="selectedItem"
-            [showColonAfterLabel]="false"
-            labelLocation="left"
-            [colCount]="2"
-          >
-            <dxi-item [colSpan]="2">
-              <div *dxTemplate>
-                <div class="form-section">Product Dimensions</div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="2" dataField="imageUrl.name" [label]="{ text: 'Image Name' }" [disabled]="true" [isRequired]="true"></dxi-item>
-            <dxi-item [colSpan]="2" dataField="weight" [label]="{ text: 'Weight' }" [isRequired]="true">
-              <div *dxTemplate>
-                <dx-number-box [(value)]="selectedItem.weight"></dx-number-box>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="2" dataField="uom" [label]="{ text: 'UOM' }" [isRequired]="true">
-              <div *dxTemplate>
-                <dx-select-box [(value)]="selectedItem.uom" [items]="uoms"></dx-select-box>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="2" [label]="{ text: 'Sizes' }">
-              <dx-tag-box
-                [dataSource]="sizes"
-                [(value)]="selectedItem.sizes"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Enter Sizes..."
-                (onCustomItemCreating)="onSizesCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-            <dxi-item [colSpan]="2" [label]="{ text: 'Colors' }">
-              <dx-tag-box
-                [dataSource]="colors"
-                [(value)]="selectedItem.colors"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Enter Colors..."
-                (onCustomItemCreating)="onColorsCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-            <dxi-item [colSpan]="2" [label]="{ text: 'Languages' }">
-              <dx-tag-box
-                [dataSource]="colors"
-                [(value)]="selectedItem.languages"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Enter Languages..."
-                (onCustomItemCreating)="onLanguagesCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-          </dx-form>
-        </div>
-        <div class="col-xl-9">
-          <dx-form
-            #addEditForm
-            [(formData)]="selectedItem"
-            [showColonAfterLabel]="false"
-            labelLocation="left"
-            [colCount]="12"
-          >
-            <dxi-item [colSpan]="12">
-              <div *dxTemplate>
-                <div class="form-section">Product Details</div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="6" dataField="title" [label]="{ text: 'Product Name' }" [isRequired]="true"></dxi-item>
-            <dxi-item [colSpan]="3" dataField="cost"
-              editorType="dxNumberBox"
-              [label]="{ text: 'Cost' }"
-              [isRequired]="true"
-              [editorOptions]="{
-                format: { type: 'currency', currency: 'USD', precision: 2 },
-                min: 0
-              }">
-            </dxi-item>
-            <dxi-item [colSpan]="3" dataField="salePrice"
-              editorType="dxNumberBox"
-              [label]="{ text: 'Sale' }"
-              [isRequired]="true"
-              [editorOptions]="{
-                format: { type: 'currency', currency: 'USD', precision: 2 },
-                min: 0
-              }">
-            </dxi-item>
-            <dxi-item  [colSpan]="3"dataField="isEBook" [label]="{ text: 'Is this an eBook?' }">
-              <dx-check-box [(value)]="this.selectedItem.isEBook"></dx-check-box>
-            </dxi-item>
-            <dxi-item [colSpan]="7" dataField="eBookUrl.name" [label]="{ text: 'eBook' }" [disabled]="true"></dxi-item>
-            <dxi-item [colSpan]="2">
-              <div *dxTemplate>
-                <dx-button
-                  text="Upload"
-                  stylingMode="contained"
-                  type="normal"
-                  class="form-button"
-                  [disabled]="inProgress$ | async"
-                  (onClick)="showEBookModal()"
-                  [disabled]="!this.selectedItem.isEBook">
-                </dx-button>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="3" dataField="isDigitalBook" [label]="{ text: 'Is this a Digital Book?' }">
-              <dx-check-box [(value)]="this.selectedItem.isDigitalBook"></dx-check-box>
-            </dxi-item>
-            <dxi-item [colSpan]="9" dataField="digitalBookId" [label]="{ text: 'Select Book' }">
-              <dx-select-box
-                #digiatlBookDropbox
-                [disabled]="this.selectedItem.isDigitalBook != true"
-                [dataSource]="books"
-                [(value)]="selectedItem.digitalBookId"
-                [showDropDownButton]="true"
-                [openOnFieldClick]="true"
-                displayExpr="title"
-                valueExpr="id">
-              </dx-select-box>
-            </dxi-item>
-            <dxi-item [colSpan]="12" dataField="description" [isRequired]="true">
-              <div *dxTemplate>
-                <dx-html-editor [height]="'200px'" [(value)]="selectedItem.description">
-                  <dxo-toolbar [multiline]="false">
-                    <dxi-item name="undo"></dxi-item>
-                    <dxi-item name="redo"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item
-                      name="size"
-                      [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-                      [options]="{ inputAttr: { 'aria-label': 'Font size' } }">
-                    </dxi-item>
-                    <dxi-item
-                      name="font"
-                      [acceptedValues]="[
-                        'Arial',
-                        'Courier New',
-                        'Georgia',
-                        'Impact',
-                        'Lucida Console',
-                        'Tahoma',
-                        'Times New Roman',
-                        'Verdana'
-                      ]"
-                      [options]="{ inputAttr: { 'aria-label': 'Font family' } }">
-                    </dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="bold"></dxi-item>
-                    <dxi-item name="italic"></dxi-item>
-                    <dxi-item name="strike"></dxi-item>
-                    <dxi-item name="underline"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="alignLeft"></dxi-item>
-                    <dxi-item name="alignCenter"></dxi-item>
-                    <dxi-item name="alignRight"></dxi-item>
-                    <dxi-item name="alignJustify"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="orderedList"></dxi-item>
-                    <dxi-item name="bulletList"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item
-                      name="header"
-                      [acceptedValues]="[false, 1, 2, 3, 4, 5]"
-                      [options]="{ inputAttr: { 'aria-label': 'Header' } }">
-                    </dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="color"></dxi-item>
-                    <dxi-item name="background"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="link"></dxi-item>
-                    <dxi-item name="image"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="clear"></dxi-item>
-                    <dxi-item name="codeBlock"></dxi-item>
-                    <dxi-item name="blockquote"></dxi-item>
-                    <dxi-item name="separator"></dxi-item>
-                    <dxi-item name="insertTable"></dxi-item>
-                    <dxi-item name="deleteTable"></dxi-item>
-                    <dxi-item name="insertRowAbove"></dxi-item>
-                    <dxi-item name="insertRowBelow"></dxi-item>
-                    <dxi-item name="deleteRow"></dxi-item>
-                    <dxi-item name="insertColumnLeft"></dxi-item>
-                    <dxi-item name="insertColumnRight"></dxi-item>
-                    <dxi-item name="deleteColumn"></dxi-item>
-                  </dxo-toolbar>
-                </dx-html-editor>
-              </div>
-            </dxi-item>
+        <mat-tab label="Organization">
+          <div class="tab-content">
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Category</mat-label>
+                <mat-select formControlName="category" required>
+                  <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.tag }}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="form.get('category')?.hasError('required')">Category is required</mat-error>
+              </mat-form-field>
+              <button mat-stroked-button type="button" (click)="manageCategories()">Manage Categories</button>
+            </div>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Category Order</mat-label>
+              <input matInput type="number" formControlName="categoryOrder">
+            </mat-form-field>
 
-            <dxi-item [colSpan]="12">
-              <div *dxTemplate>
-                <div class="form-section">Product Organization</div>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="8" dataField="category" [label]="{ text: 'Category' }" [isRequired]="true">
-              <div *dxTemplate>
-                <dx-drop-down-box
-                  #categoryDropbox
-                  [dataSource]="productCategories"
-                  [(value)]="selectedItem.category"
-                  [showDropDownButton]="false"
-                  [openOnFieldClick]="true"
-                  displayExpr="tag"
-                  valueExpr="id">
-                  <dxi-button
-                    name="add"
-                    location="after"
-                    [options]="{
-                      icon: 'add',
-                      hint: 'ADD CATEGORY',
-                      type: 'default',
-                      stylingMode: 'outlined',
-                      onClick: showCategoriesModal,
-                      template: 'buttonTemplate',
-                      disabled: inProgress$ | async
-                    }">
-                    <div *dxTemplate="let data of 'buttonTemplate'">
-                      <i class="dx-icon dx-icon-add" *ngIf="(inProgress$ | async) === false"></i>
-                      <dx-load-indicator [visible]="inProgress$ | async" height="20" width="20"></dx-load-indicator>
-                    </div>
-                  </dxi-button>
-                  <div *dxTemplate="let data of 'content'">
-                    <dx-list
-                      keyExpr="id"
-                      displayExpr="tag"
-                      selectionMode="single"
-                      (onItemClick)="selectCategory($event)"
-                      [items]="productCategories">
-                    </dx-list>
-                  </div>
-                </dx-drop-down-box>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4" dataField="categoryOrder" [label]="{ text: 'Order' }">
-              <div *dxTemplate>
-                <dx-number-box [(value)]="selectedItem.categoryOrder"></dx-number-box>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="8" dataField="series" [label]="{ text: 'Series' }">
-              <div *dxTemplate>
-                <dx-drop-down-box
-                  #seriesDropbox
-                  [dataSource]="series"
-                  [(value)]="selectedItem.series"
-                  [showDropDownButton]="false"
-                  [openOnFieldClick]="true"
-                  displayExpr="name"
-                  valueExpr="id">
-                  <dxi-button
-                    name="add"
-                    location="after"
-                    [options]="{
-                      icon: 'add',
-                      hint: 'ADD SERIES',
-                      type: 'default',
-                      stylingMode: 'outlined',
-                      onClick: showSeriesModal,
-                      template: 'buttonTemplate',
-                      disabled: inProgress$ | async
-                    }">
-                    <div *dxTemplate="let data of 'buttonTemplate'">
-                      <i class="dx-icon dx-icon-add" *ngIf="(inProgress$ | async) === false"></i>
-                      <dx-load-indicator [visible]="inProgress$ | async" height="20" width="20"></dx-load-indicator>
-                    </div>
-                  </dxi-button>
-                  <div *dxTemplate="let data of 'content'">
-                    <dx-list
-                      keyExpr="id"
-                      displayExpr="name"
-                      selectionMode="single"
-                      (onItemClick)="selectSeries($event)"
-                      [items]="series">
-                    </dx-list>
-                  </div>
-                </dx-drop-down-box>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="4" dataField="seriesOrder" [label]="{ text: 'Order' }">
-              <div *dxTemplate>
-                <dx-number-box [(value)]="selectedItem.seriesOrder"></dx-number-box>
-              </div>
-            </dxi-item>
-            <dxi-item [colSpan]="12" [label]="{ text: 'Tags' }">
-              <dx-tag-box
-                [dataSource]="productTags"
-                [(value)]="selectedItem.tags"
-                [displayExpr]="'tag'"
-                [acceptCustomValue]="true"
-                [searchEnabled]="true"
-                [hideSelectedItems]="true"
-                placeholder="Tag this Product..."
-                (onCustomItemCreating)="onCustomItemCreating($event)">
-              </dx-tag-box>
-            </dxi-item>
-            <dxi-item [colSpan]="3" dataField="sendFollowUpEmail" [label]="{ text: 'Send Follow Up Email?' }">
-              <dx-check-box [(value)]="this.selectedItem.sendFollowUpEmail"></dx-check-box>
-            </dxi-item>
-            <dxi-item [colSpan]="9" dataField="followUpEmailId" [label]="{ text: 'Select Email' }">
-              <dx-select-box
-                #followUpEmailIdDropBox
-                [disabled]="this.selectedItem.sendFollowUpEmail != true"
-                [dataSource]="emails"
-                [showClearButton]="true"
-                [(value)]="selectedItem.followUpEmailId"
-                [showDropDownButton]="true"
-                [openOnFieldClick]="true"
-                [displayExpr]="'name'"
-                [valueExpr]="'id'">
-              </dx-select-box>
-            </dxi-item>
-          </dx-form>
-        </div>
-      </div>
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Series</mat-label>
+                <mat-select formControlName="series">
+                  <mat-option [value]="null">(None)</mat-option>
+                  <mat-option *ngFor="let s of series" [value]="s.id">{{ s.name }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-stroked-button type="button" (click)="manageSeries()">Manage Series</button>
+            </div>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Series Order</mat-label>
+              <input matInput type="number" formControlName="seriesOrder">
+            </mat-form-field>
+
+            <mat-checkbox formControlName="showInStore">Show In Store?</mat-checkbox>
+
+            <app-tag-chips formControlName="tags" [options]="productTags" label="Tags" placeholder="Tag this Product..." (createTag)="onCreateProductTag($event)"></app-tag-chips>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
-    <div class="add-item-modal__button-group">
-      <dx-button
-        text="CANCEL"
-        stylingMode="contained"
-        type="normal"
-        [disabled]="inProgress$ | async"
-        (onClick)="onCancel()">
-      </dx-button>
+
+    <div class="editor__actions">
+      <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
       <app-indicator-button
+        title="SAVE"
         [isInProgress]="inProgress$ | async"
-        [title]="'SAVE'"
         [disabled]="inProgress$ | async"
-        (onClick)="onSave(selectedItem)">
+        (onClick)="onSave()">
       </app-indicator-button>
     </div>
   </div>
-</dx-popup>
 
-<app-product-categories></app-product-categories>
-<app-category-modal></app-category-modal>
-<app-product-series></app-product-series>
-<app-series-modal></app-series-modal>
+  <ng-container *ngIf="isImageUploaderVisible$ | async">
+    <app-image-uploader
+      [card]="card"
+      [isList]="false"
+      [field]="'imageUrl'"
+      [selectionMode]="'single'"
+      [imageSelectVisible]="isImageUploaderVisible$ | async"
+      (imageSelectClosed)="closeImageUploader()">
+    </app-image-uploader>
+  </ng-container>
 
-<ng-container *ngIf="isSingleImageVisible$ | async">
-  <app-image-uploader
-    [card]="selectedItem"
-    [isList]="false"
-    [field]="'imageUrl'"
-    [selectionMode]="'single'"
-    [imageSelectVisible]="isSingleImageVisible$ | async"
-    (imageSelectClosed)="closeSingleImageModal()">
-  </app-image-uploader>
-</ng-container>
-
-<ng-container *ngIf="isEBookVisible$ | async">
-  <app-image-uploader
-    [card]="selectedItem"
-    [isList]="false"
-    [field]="'eBookUrl'"
-    [selectionMode]="'single'"
-    [imageSelectVisible]="isEBookVisible$ | async"
-    (imageSelectClosed)="closeEBookModal()">
-  </app-image-uploader>
+  <ng-container *ngIf="isEBookUploaderVisible$ | async">
+    <app-image-uploader
+      [card]="card"
+      [isList]="false"
+      [field]="'eBookUrl'"
+      [selectionMode]="'single'"
+      [imageSelectVisible]="isEBookUploaderVisible$ | async"
+      (imageSelectClosed)="closeEBookUploader()">
+    </app-image-uploader>
+  </ng-container>
 </ng-container>

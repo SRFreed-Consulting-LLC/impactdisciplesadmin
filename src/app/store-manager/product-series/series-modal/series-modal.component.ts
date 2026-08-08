@@ -1,11 +1,15 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Actions, ofActionDispatched } from '@ngxs/store';
-import { DxFormComponent } from 'devextreme-angular';
+import { Component, Inject } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { BehaviorSubject } from 'rxjs';
 import { SeriesModel } from 'impactdisciplescommon/src/models/utils/series.model';
 import { SeriesService } from 'impactdisciplescommon/src/services/data/series.service';
-import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
-import { ShowSeriesModal } from './series-modal.actions';
-import notify from 'devextreme/ui/notify';
+import { ImageModel } from 'impactdisciplescommon/src/models/utils/image.model';
+import { SnackbarService } from '../../../shared/snackbar.service';
+
+export interface SeriesModalData {
+  item: SeriesModel | null;
+}
 
 @Component({
     selector: 'app-series-modal',
@@ -13,93 +17,67 @@ import notify from 'devextreme/ui/notify';
     styleUrls: ['./series-modal.component.css'],
     standalone: false
 })
-export class SeriesModalComponent implements OnInit, OnDestroy {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
+export class SeriesModalComponent {
+  form: FormGroup;
+  inProgress$ = new BehaviorSubject<boolean>(false);
+  isEdit: boolean;
+  isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
-  public series: SeriesModel = {};
+  // Backs app-image-uploader's [card]/[field] inputs directly - see
+  // home-page-image-dialog.component.ts (web-manager) for the established
+  // explanation of this pattern.
+  card: { imageUrl?: ImageModel } = {};
 
-  public inProgress$ = new BehaviorSubject<boolean>(false);
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
+  private itemType = 'Series';
 
-  private ngUnsubscribe = new Subject<void>();
+  constructor(
+    private dialogRef: MatDialogRef<SeriesModalComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: SeriesModalData,
+    private fb: FormBuilder,
+    private service: SeriesService,
+    private snackbar: SnackbarService
+  ) {
+    this.isEdit = !!data.item?.id;
+    this.card.imageUrl = data.item?.imageUrl;
 
-  constructor(private actions$: Actions, private service: SeriesService) {}
-
-  ngOnInit(): void {
-    this.actions$.pipe(ofActionDispatched(ShowSeriesModal), takeUntil(this.ngUnsubscribe)).subscribe(({ series }) => {
-      if(series) {
-        this.series = series;
-      }
-      this.isVisible$.next(true)
-    })
+    this.form = this.fb.group({
+      order: [data.item?.order ?? null, Validators.required],
+      name: [data.item?.name ?? '', Validators.required],
+      showInStore: [data.item?.showInStore ?? false]
+    });
   }
 
-  onSave(item: SeriesModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
+  showImageUploader(): void {
+    this.isImageUploaderVisible$.next(true);
+  }
 
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: 'Category Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: 'Category Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
+  closeImageUploader(): void {
+    this.isImageUploaderVisible$.next(false);
+  }
+
+  onCancel(): void {
+    this.dialogRef.close(false);
+  }
+
+  onSave(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
-  }
 
-  showSingleImageModal = () => {
-    this.isSingleImageVisible$.next(true);
-  }
+    this.inProgress$.next(true);
+    const value: SeriesModel = { ...this.data.item, ...this.form.value, imageUrl: this.card.imageUrl };
 
-  closeSingleImageModal = () => {
-    this.isSingleImageVisible$.next(false);
-  }
+    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
 
-
-  onCancel() {
-    this.series = {};
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
-
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    request.then((result) => {
+      if (result) {
+        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        this.dialogRef.close(true);
+      } else {
+        this.inProgress$.next(false);
+        this.snackbar.error('Some Error Occured');
+      }
+    });
   }
 }

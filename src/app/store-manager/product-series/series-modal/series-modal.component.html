@@ -1,77 +1,48 @@
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="30%"
-  width="30%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ series?.id ? 'EDIT' : 'ADD' }} SERIES
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="series"
-          [showColonAfterLabel]="false"
-          labelLocation="left"
-          [colCount]="5">
-          <dxi-item dataField="order" [colSpan]="1" [isRequired]="true">
-            <div *dxTemplate>
-              <dx-number-box [(value)]="series.order"></dx-number-box>
-            </div>
-          </dxi-item>
-          <dxi-item dataField="name" [colSpan]="4" [isRequired]="true"></dxi-item>
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' SERIES'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
-          <dxi-item dataField="showInStore" editorType="dxCheckBox" [label]="{ text: 'Show In Store?' }" [colSpan]="2"></dxi-item>
-          <dxi-item dataField="imageUrl.name" [colSpan]="3" [disabled]="true"></dxi-item>
-          <dxi-item>
-            <div *dxTemplate>
-              <dx-button
-                text="Upload Image"
-                width="250px"
-                stylingMode="contained"
-                type="normal"
-                [disabled]="inProgress$ | async"
-                (onClick)="showSingleImageModal()">
-              </dx-button>
-            </div>
-          </dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(series)">
-        </app-indicator-button>
-      </div>
-    </div>
+<mat-dialog-content [formGroup]="form">
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="order-field">
+      <mat-label>Order</mat-label>
+      <input matInput type="number" formControlName="order" required>
+      <mat-error *ngIf="form.get('order')?.hasError('required')">Required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+    </mat-form-field>
   </div>
-</dx-popup>
 
-<ng-container *ngIf="isSingleImageVisible$ | async">
+  <mat-checkbox formControlName="showInStore">Show In Store?</mat-checkbox>
+
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Image</mat-label>
+      <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+    </mat-form-field>
+    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">Upload Image</button>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>
+
+<ng-container *ngIf="isImageUploaderVisible$ | async">
   <app-image-uploader
-    [card]="series"
+    [card]="card"
     [isList]="false"
     [field]="'imageUrl'"
     [selectionMode]="'single'"
-    [imageSelectVisible]="isSingleImageVisible$ | async"
-    (imageSelectClosed)="closeSingleImageModal()">
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
   </app-image-uploader>
 </ng-container>
-

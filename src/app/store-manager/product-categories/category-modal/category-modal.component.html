@@ -1,46 +1,21 @@
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="25%"
-  width="25%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ category?.id ? 'EDIT' : 'ADD' }} CATEGORY
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <dx-form
-          #addEditForm
-          [(formData)]="category"
-          [showColonAfterLabel]="false"
-          labelLocation="left"
-          [colCount]="2">
-          <dxi-item dataField="tag" [label]="{ text: 'Category Name' }" [colSpan]="2" [isRequired]="true"></dxi-item>
-          <dxi-item dataField="showInStore" editorType="dxCheckBox" [label]="{ text: 'Show In Store?' }" [colSpan]="2"></dxi-item>
-        </dx-form>
-      </div>
-      <div class="add-item-modal__button-group">
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(category)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' CATEGORY'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Category Name</mat-label>
+    <input matInput formControlName="tag" required>
+    <mat-error *ngIf="form.get('tag')?.hasError('required')">Category name is required</mat-error>
+  </mat-form-field>
+
+  <mat-checkbox formControlName="showInStore">Show In Store?</mat-checkbox>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

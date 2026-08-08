@@ -1,11 +1,14 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Actions, ofActionDispatched } from '@ngxs/store';
-import { ShowCategoryModal } from './category-modal.actions';
-import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
-import { DxFormComponent } from 'devextreme-angular';
+import { Component, Inject } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { BehaviorSubject } from 'rxjs';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { ProductCategoriesService } from 'impactdisciplescommon/src/services/data/product-categories.service';
-import notify from 'devextreme/ui/notify';
+import { SnackbarService } from '../../../shared/snackbar.service';
+
+export interface CategoryModalData {
+  item: TagModel | null;
+}
 
 @Component({
     selector: 'app-category-modal',
@@ -13,84 +16,50 @@ import notify from 'devextreme/ui/notify';
     styleUrls: ['./category-modal.component.css'],
     standalone: false
 })
-export class CategoryModalComponent implements OnInit, OnDestroy {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
+export class CategoryModalComponent {
+  form: FormGroup;
+  inProgress$ = new BehaviorSubject<boolean>(false);
+  isEdit: boolean;
 
-  public category: TagModel = {};
+  private itemType = 'Category';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false);
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-
-  private ngUnsubscribe = new Subject<void>();
-
-  constructor(private actions$: Actions, private service: ProductCategoriesService) {}
-
-  ngOnInit(): void {
-    this.actions$.pipe(ofActionDispatched(ShowCategoryModal), takeUntil(this.ngUnsubscribe)).subscribe(({ category }) => {
-      if(category) {
-        this.category = category;
-      }
-      this.isVisible$.next(true)
-    })
+  constructor(
+    private dialogRef: MatDialogRef<CategoryModalComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: CategoryModalData,
+    private fb: FormBuilder,
+    private service: ProductCategoriesService,
+    private snackbar: SnackbarService
+  ) {
+    this.isEdit = !!data.item?.id;
+    this.form = this.fb.group({
+      tag: [data.item?.tag ?? '', Validators.required],
+      showInStore: [data.item?.showInStore ?? false]
+    });
   }
 
-  onSave(item: TagModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
+  onCancel(): void {
+    this.dialogRef.close(false);
+  }
 
-      if(item.id) {
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: 'Category Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: 'Category Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
+  onSave(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
-  }
 
+    this.inProgress$.next(true);
+    const value: TagModel = { ...this.data.item, ...this.form.value };
 
-  onCancel() {
-    this.category = {};
-    this.inProgress$.next(false);
-    this.isVisible$.next(false);
-  }
+    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
 
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    request.then((result) => {
+      if (result) {
+        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        this.dialogRef.close(true);
+      } else {
+        this.inProgress$.next(false);
+        this.snackbar.error('Some Error Occured');
+      }
+    });
   }
 }

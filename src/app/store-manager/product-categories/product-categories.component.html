@@ -1,60 +1,52 @@
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="60%"
-  width="30%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        CATEGORIES
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <div class="content-block responsive-paddings">
-          <dx-toolbar class="py-2">
-            <dxi-item
-              location="after"
-              widget="dxButton"
-              [options]="{
-                hint: 'ADD CATEGORY',
-                type: 'default',
-                text: 'ADD CATEGORY',
-                stylingMode: 'contained',
-                onClick: showAddModal
-              }"
-            ></dxi-item>
-          </dx-toolbar>
-        </div>
+<app-popup-header title="CATEGORIES" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
 
-        <dx-data-grid
-          #grid
-          class="dx-card wide-card"
-          [dataSource]="datasource$ | async"
-          [height]="'40vh'"
-          [showBorders]="false"
-          [showColumnLines]="true"
-          [showColumnLines]="true"
-          [showRowLines]="true"
-          [focusedRowEnabled]="true"
-          [columnAutoWidth]="true"
-          (onRowDblClick)="showEditModal($event)">
-
-          <dxo-scrolling mode="virtual"></dxo-scrolling>
-          <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-          <dxi-column dataField="tag" [sortOrder]="'asc'"></dxi-column>
-          <dxi-column dataField="showInStore" dataType="boolean"></dxi-column>
-          <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-            <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-          </dxi-column>
-        </dx-data-grid>
-      </div>
-    </div>
+<mat-dialog-content>
+  <div class="category-actions">
+    <button mat-icon-button color="primary" matTooltip="New" (click)="showAddModal()">
+      <mat-icon>add</mat-icon>
+    </button>
   </div>
-</dx-popup>
+
+  <div class="table-scroll">
+    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+    <table mat-table [dataSource]="(categories$ | async) ?? []" class="category-table">
+      <ng-container matColumnDef="tag">
+        <th mat-header-cell *matHeaderCellDef>Tag</th>
+        <td mat-cell *matCellDef="let category">{{ category.tag }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="showInStore">
+        <th mat-header-cell *matHeaderCellDef>Show In Store</th>
+        <td mat-cell *matCellDef="let category">{{ category.showInStore ? 'Yes' : 'No' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+        <td mat-cell *matCellDef="let category" class="actions-column">
+          <button mat-icon-button matTooltip="DELETE" (click)="delete(category)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+      <ng-container matColumnDef="tag-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('tag', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="showInStore-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="actions-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+    </table>
+  </div>
+</mat-dialog-content>

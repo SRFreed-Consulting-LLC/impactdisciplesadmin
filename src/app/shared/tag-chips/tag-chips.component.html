@@ -1,5 +1,5 @@
 <mat-form-field appearance="outline" class="full-width">
-  <mat-label>Tags</mat-label>
+  <mat-label>{{ label }}</mat-label>
   <mat-chip-grid #chipGrid [disabled]="disabled">
     <mat-chip-row *ngFor="let tag of value" (removed)="removeTag(tag)">
       {{ tag.tag }}

@@ -1,28 +1,26 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { DxDropDownBoxComponent, DxFormComponent } from 'devextreme-angular';
-import CustomStore from 'devextreme/data/custom_store';
-import DataSource from 'devextreme/data/data_source';
-import notify from 'devextreme/ui/notify';
-import { Observable, BehaviorSubject, Subject, map, takeUntil } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { ProductModel } from 'impactdisciplescommon/src/models/utils/product.model';
 import { ProductService } from 'impactdisciplescommon/src/services/data/product.service';
-import { DxTagBoxTypes } from 'devextreme-angular/ui/tag-box';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { SeriesService } from 'impactdisciplescommon/src/services/data/series.service';
+import { ProductTagsService } from 'impactdisciplescommon/src/services/data/product-tags.service';
 import { ProductCategoriesService } from 'impactdisciplescommon/src/services/data/product-categories.service';
 import { SeriesModel } from 'impactdisciplescommon/src/models/utils/series.model';
-import { ShowProductCategoriesModal } from '../product-categories/product-categories-modal.actions';
-import { Store } from '@ngxs/store';
-import { ShowProductSeriesModal } from '../product-series/product-series-modal.actions';
-import { ShowSeriesModal } from '../product-series/series-modal/series-modal.actions';
-import { ShowCategoryModal } from '../product-categories/category-modal/category-modal.actions';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { ProductTagsService } from 'impactdisciplescommon/src/services/data/product-tags.service';
+import { SeriesService } from 'impactdisciplescommon/src/services/data/series.service';
+import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
 import { BookModel } from 'impactdisciplespwacommon/src/models/book.model';
 import { BookService } from 'impactdisciplespwacommon/src/services/book.service';
-import { MailTemplateModel } from 'impactdisciplescommon/src/models/admin/mail.model';
-import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
+import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
+import { ImageModel } from 'impactdisciplescommon/src/models/utils/image.model';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
+import { ProductCategoriesComponent } from '../product-categories/product-categories.component';
+import { ProductSeriesComponent } from '../product-series/product-series.component';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 @Component({
     selector: 'app-products',
@@ -30,319 +28,322 @@ import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/e
     styleUrls: ['./products.component.scss'],
     standalone: false
 })
-export class ProductsComponent implements OnInit, OnDestroy {
-  @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
-  @ViewChild('categoryDropbox', { static: false }) categoryDropbox: DxDropDownBoxComponent;
-  @ViewChild('seriesDropbox', { static: false }) seriesDropbox: DxDropDownBoxComponent;
+export class ProductsComponent implements OnInit {
+  // No route/URL involved on purpose - same "full in-page editor, no
+  // popup" treatment as Home Page Popups (web-manager), chosen here
+  // because this is the densest form in the app (~23 fields across 3
+  // tabs) and benefits the most from the full viewport width/height a
+  // dialog can't give it.
+  mode: 'list' | 'edit' = 'list';
 
-  datasource$: Observable<DataSource>;
-  selectedItem: ProductModel;
+  // ---- List state ----
+  products$: Observable<ProductModel[]>;
+  displayedColumns = ['isActive', 'imageUrl', 'title', 'cost', 'salePrice', 'category', 'series', 'isEBook', 'isDigitalBook', 'actions'];
+  filterColumns = ['isActive-filter', 'imageUrl-filter', 'title-filter', 'cost-filter', 'salePrice-filter', 'category-filter', 'series-filter', 'isEBook-filter', 'isDigitalBook-filter', 'actions-filter'];
+  textOperators = TEXT_FILTER_OPERATORS;
+  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Product';
 
-  public inProgress$ = new BehaviorSubject<boolean>(false)
-  public isVisible$ = new BehaviorSubject<boolean>(false);
-  public isSeriesVisible$ = new BehaviorSubject<boolean>(false);
-  public isCategoriesVisible$ = new BehaviorSubject<boolean>(false);
+  actions: ListHeaderAction[] = [
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
+    { label: 'Categories', icon: 'view_list', onClick: () => this.manageCategories() },
+    { label: 'Series', icon: 'collections_bookmark', onClick: () => this.manageSeries() }
+  ];
 
-  public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
-  public isEBookVisible$ = new BehaviorSubject<boolean>(false);
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
-  sizes: string[] = [];
-  colors: string[] = [];
-  languages: string[] = [];
-  productTags: TagModel[] = [];
-  productCategories: TagModel[] = [];
+  // Kept live for the whole lifetime of this component (not just while a
+  // filter/edit is open) - serves three purposes at once: the list
+  // header's Category/Series filter selects, the Category/Series column
+  // name lookups, and the edit form's own Category/Series selects. Since
+  // it's a live streamAll() subscription, adding a category/series via
+  // "Manage Categories"/"Manage Series" while the edit form is open shows
+  // up in that form's own select immediately, no manual refresh needed.
+  categories: TagModel[] = [];
   series: SeriesModel[] = [];
-  books: BookModel[] = [];
-  emails: any[] = []
-  selectedCategory: TagModel;
-  selectedSeries: SeriesModel;
-  gridFilter: any = null;
+  selectedCategoryId: string | null = null;
+  selectedSeriesId: string | null = null;
 
+  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private categoryFilter$ = new BehaviorSubject<string | null>(null);
+  private seriesFilter$ = new BehaviorSubject<string | null>(null);
+
+  // ---- Edit state ----
+  form: FormGroup;
+  inProgress$ = new BehaviorSubject<boolean>(false);
+  isEdit = false;
+  richTextModules = RICH_TEXT_TOOLBAR;
+
+  productTags: TagModel[] = [];
+  books: BookModel[] = [];
+  emails: { id: string; name: string }[] = [];
   uoms: string[] = EnumHelper.getUOMTypesAsArray();
 
-  private ngUnsubscribe = new Subject<void>();
+  isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
+  isEBookUploaderVisible$ = new BehaviorSubject<boolean>(false);
+
+  // Backs the two image fields directly, same pattern as every other
+  // migrated image-uploader call site (see home-page-image-dialog.component.ts).
+  card: { imageUrl?: ImageModel; eBookUrl?: ImageModel } = {};
+
+  private editingItem: ProductModel | null = null;
 
   constructor(
     private service: ProductService,
-    private bookService: BookService,
     private productTagService: ProductTagsService,
-    private seriesService: SeriesService,
     private productCategoriesService: ProductCategoriesService,
-    public emailTemplatesService: EMailTemplatesService,
-    private store: Store
+    private seriesService: SeriesService,
+    private emailTemplatesService: EMailTemplatesService,
+    private bookService: BookService,
+    private fb: FormBuilder,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
   ) {}
 
-  async ngOnInit() {
-    this.datasource$ = this.service.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          })
-      )
-    );
-
-    this.productTagService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(tags =>{
-      this.productTags = tags;
+  ngOnInit(): void {
+    this.productCategoriesService.streamAll().subscribe((categories) => {
+      this.categories = categories;
     });
-
-    this.productCategoriesService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(productCategories => {
-      this.productCategories = productCategories;
-    });
-
-    this.seriesService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(series => {
+    this.seriesService.streamAll().subscribe((series) => {
       this.series = series;
     });
-
-    this.emailTemplatesService.streamAll().pipe(
-      map(items => {
-        items.forEach(item => {
-          this.emails.push({id: item.id, name: item.name})
-        })
-      }),
-      takeUntil(this.ngUnsubscribe)
-    ).subscribe();
-
-    this.bookService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(books => {
+    this.productTagService.streamAll().subscribe((tags) => {
+      this.productTags = tags;
+    });
+    this.bookService.streamAll().subscribe((books) => {
       this.books = books;
     });
+    this.emailTemplatesService.streamAll().subscribe((templates) => {
+      this.emails = templates.map((t) => ({ id: t.id!, name: t.name }));
+    });
+
+    this.products$ = combineLatest([this.service.streamAll(), this.filters$, this.categoryFilter$, this.seriesFilter$]).pipe(
+      map(([items, filters, categoryId, seriesId]) =>
+        items
+          .filter((item) => !categoryId || item.category === categoryId)
+          .filter((item) => !seriesId || item.series === seriesId)
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
+          .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
+      ),
+      tap(() => this.loading$.next(false))
+    );
   }
 
-  ngOnDestroy(): void {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+  categoryName(item: ProductModel): string {
+    return this.categories.find((c) => c.id === item.category)?.tag ?? '';
   }
 
-  onCategoryFilterChanged(event: any) {
-    if(event.value) {
-      this.selectedSeries = null;
-      this.selectedCategory = this.productCategories.find(category => category.id === event.value) || null;
-      this.gridFilter = ['category', '=', this.selectedCategory.id];
-    } else if(!event.value && !this.selectedSeries) {
-      this.gridFilter = null;
+  seriesName(item: ProductModel): string {
+    return this.series.find((s) => s.id === item.series)?.name ?? '';
+  }
+
+  private matchesField(item: ProductModel, field: string, filter: ColumnFilterValue): boolean {
+    if (field === 'category') {
+      return matchesColumnFilter(this.categoryName(item), filter, 'text');
     }
-  }
-
-  onSeriesFilterChanged(event: any) {
-    if(event.value) {
-      this.selectedCategory = null;
-      this.selectedSeries = this.series.find(series => series.id === event.value) || null;
-      this.gridFilter = ['series', '=', this.selectedSeries.id];
-    } else if(!event.value && !this.selectedCategory) {
-      this.gridFilter = null;
+    if (field === 'series') {
+      return matchesColumnFilter(this.seriesName(item), filter, 'text');
     }
-  }
-
-  showEditModal = (e) => {
-    this.selectedItem = (Object.assign({}, e.data));
-
-    if(this.selectedItem.sizes && this.selectedItem.sizes.length > 0){
-      this.sizes = this.selectedItem?.sizes;
-    } else {
-      this.sizes = [];
+    if (field === 'cost' || field === 'salePrice') {
+      return matchesColumnFilter((item as any)[field], filter, 'number');
     }
-
-    if(this.selectedItem.colors && this.selectedItem.colors.length > 0){
-      this.colors = this.selectedItem?.colors;
-    } else {
-      this.colors = [];
-    }
-
-    this.isVisible$.next(true);
+    return matchesColumnFilter((item as any)[field], filter, 'text');
   }
 
-  showAddModal = () => {
-    this.selectedItem = {... new ProductModel()};
-
-    this.isVisible$.next(true);
+  onFilterChange(field: string, filter: ColumnFilterValue): void {
+    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
-  showProductSeriesModal = () => {
-    this.store.dispatch(new ShowProductSeriesModal());
+  onCategoryFilterChanged(categoryId: string | null): void {
+    this.selectedCategoryId = categoryId;
+    this.categoryFilter$.next(categoryId);
   }
 
-  showProductCategoriesModal = () => {
-    this.store.dispatch(new ShowProductCategoriesModal());
+  onSeriesFilterChanged(seriesId: string | null): void {
+    this.selectedSeriesId = seriesId;
+    this.seriesFilter$.next(seriesId);
   }
 
-  showSeriesModal = () => {
-    this.store.dispatch(new ShowSeriesModal());
+  manageCategories(): void {
+    this.dialog.open(ProductCategoriesComponent, { width: '600px' });
   }
 
-  showCategoriesModal = () => {
-    this.store.dispatch(new ShowCategoryModal());
+  manageSeries(): void {
+    this.dialog.open(ProductSeriesComponent, { width: '700px' });
   }
 
-  selectCategory(event: any) {
-    if (event && event.itemData) {
-      this.selectedItem.category = event.itemData.id;
-      this.categoryDropbox.instance.close();
-    }
-  }
-
-  selectSeries(event: any) {
-    if (event && event.itemData) {
-      this.selectedItem.series = event.itemData.id;
-      this.seriesDropbox.instance.close();
-    }
-  }
-
-  delete = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.service.delete(data.id).then(() => {
-          notify({
-            message: this.itemType + ' Deleted',
-            position: 'top',
-            width: 600,
-            type: 'success'
-          });
-        })
+  delete(item: ProductModel): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.service.delete(item.id!).then(() => {
+          this.snackbar.success(this.itemType + ' Deleted');
+        });
       }
     });
   }
 
-  onSave(item: ProductModel) {
-    if(this.addEditForm.instance.validate().isValid) {
-      this.inProgress$.next(true);
+  // ---- Edit view ----
 
-      if(item.id) {
-        item.sizes = this.selectedItem.sizes || [];
-        item.colors = this.selectedItem.colors || [];
-
-        this.service.update(item.id, item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Updated',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          }
-        })
-      } else {
-        this.service.add(item).then((item) => {
-          if(item) {
-            notify({
-              message: this.itemType + ' Added',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-            this.onCancel();
-          } else {
-            this.inProgress$.next(false);
-            notify({
-              message: 'Some Error Occured',
-              position: 'top',
-              width: 600,
-              type: 'error'
-            });
-          }
-        })
-      }
-    }
+  showAddModal(): void {
+    this.editingItem = null;
+    this.isEdit = false;
+    this.card = {};
+    this.buildForm(null);
+    this.mode = 'edit';
   }
 
-  onCancel() {
-    this.selectedItem = null;
+  showEditModal(item: ProductModel): void {
+    this.editingItem = item;
+    this.isEdit = true;
+    this.card = { imageUrl: item.imageUrl, eBookUrl: item.eBookUrl };
+    this.buildForm(item);
+    this.mode = 'edit';
+  }
+
+  private buildForm(item: ProductModel | null): void {
+    this.form = this.fb.group({
+      isActive: [item?.isActive ?? false],
+      // Dimensions
+      weight: [item?.weight ?? null, Validators.required],
+      uom: [item?.uom ?? null, Validators.required],
+      sizes: [this.toChips(item?.sizes)],
+      colors: [this.toChips(item?.colors)],
+      languages: [this.toChips(item?.languages)],
+      // Details
+      title: [item?.title ?? '', Validators.required],
+      cost: [item?.cost ?? 0, Validators.required],
+      salePrice: [item?.salePrice ?? 0, Validators.required],
+      isEBook: [item?.isEBook ?? false],
+      isDigitalBook: [item?.isDigitalBook ?? false],
+      digitalBookId: [item?.digitalBookId ?? null],
+      description: [item?.description ?? '', Validators.required],
+      sendFollowUpEmail: [item?.sendFollowUpEmail ?? false],
+      followUpEmailId: [item?.followUpEmailId ?? null],
+      // Organization
+      category: [item?.category ?? null, Validators.required],
+      categoryOrder: [item?.categoryOrder ?? null],
+      series: [item?.series ?? null],
+      seriesOrder: [item?.seriesOrder ?? null],
+      // Exists on the model but had no editor anywhere in the original UI -
+      // there was no admin path to ever set this real, persisted field.
+      showInStore: [item?.showInStore ?? false],
+      tags: [item?.tags ?? []]
+    });
+  }
+
+  showImageUploader(): void {
+    this.isImageUploaderVisible$.next(true);
+  }
+
+  closeImageUploader(): void {
+    this.isImageUploaderVisible$.next(false);
+  }
+
+  showEBookUploader(): void {
+    this.isEBookUploaderVisible$.next(true);
+  }
+
+  closeEBookUploader(): void {
+    this.isEBookUploaderVisible$.next(false);
+  }
+
+  // sizes/colors/languages have no persisted lookup collection of their own
+  // (confirmed: the original only ever built their suggestion lists
+  // in-memory, from whatever had already been typed this session) - so
+  // "creating" one of these just means adding the chip locally, no service
+  // call, matching that original behavior exactly.
+  onCreateSizeTag(text: string): void {
+    this.addLocalChip('sizes', text);
+  }
+
+  onCreateColorTag(text: string): void {
+    this.addLocalChip('colors', text);
+  }
+
+  onCreateLanguageTag(text: string): void {
+    this.addLocalChip('languages', text);
+  }
+
+  // Product Tags is the one tag field that IS persisted (its own Firestore
+  // collection) - mirrors PodCastDialogComponent.onCreateTag exactly.
+  onCreateProductTag(text: string): void {
+    const tag: TagModel = { ...new TagModel(), tag: text, id: this.generateRandomId() };
+    this.productTagService.update(tag.id!, tag);
+    this.productTags = [...this.productTags, tag];
+
+    const current: TagModel[] = this.form.value.tags ?? [];
+    this.form.patchValue({ tags: [...current, tag] });
+  }
+
+  onCancel(): void {
     this.inProgress$.next(false);
-    this.isVisible$.next(false);
+    this.mode = 'list';
   }
 
-  onCustomItemCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {
-    if(args.text){
-      let productTag: TagModel = {... new TagModel()}
-      productTag.tag = args.text;
-      productTag.id = this.generateRandomId();
-
-      const isItemInDataSource = this.productTags.some((item) => item.tag === productTag.tag);
-
-      if (!isItemInDataSource) {
-        this.productTagService.update(productTag.id, productTag)
-      }
-
-      args.customItem = productTag;
+  onSave(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
-  }
 
-  onSizesCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {
-    if(args.text){
-      const isItemInDataSource = this.sizes.some((item) => item === args.text);
+    this.inProgress$.next(true);
+    const raw = this.form.getRawValue();
+    const value: ProductModel = {
+      ...this.editingItem,
+      ...raw,
+      sizes: this.fromChips(raw.sizes),
+      colors: this.fromChips(raw.colors),
+      languages: this.fromChips(raw.languages),
+      imageUrl: this.card.imageUrl,
+      eBookUrl: this.card.eBookUrl
+    };
 
-      if (!isItemInDataSource) {
-        this.sizes.push(args.text);
+    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
+
+    request.then((result) => {
+      if (result) {
+        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        this.mode = 'list';
+        this.inProgress$.next(false);
+      } else {
+        this.inProgress$.next(false);
+        this.snackbar.error('Some Error Occured');
       }
-
-      args.customItem = args.text;
-    }
+    });
   }
 
-  onColorsCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {
-    if(args.text){
-
-      const isItemInDataSource = this.colors.some((item) => item === args.text);
-
-      if (!isItemInDataSource) {
-        this.colors.push(args.text);
-      }
-
-      args.customItem = args.text;
-    }
+  // app-tag-chips works in terms of TagModel[] (it's shared with screens
+  // that really do have TagModel-backed fields, e.g. Pod Casts) - sizes/
+  // colors/languages are plain string[] on ProductModel itself (not
+  // changing that), so these two helpers translate at the form boundary
+  // only: the FormGroup holds the wrapped TagModel[] shape the chips
+  // component needs, onSave() unwraps back to string[] right before it
+  // reaches the service.
+  private toChips(values: string[] | undefined): TagModel[] {
+    return (values ?? []).map((v) => ({ tag: v }) as TagModel);
   }
 
-  onLanguagesCreating(args: DxTagBoxTypes.CustomItemCreatingEvent) {
-    if(args.text){
-      const isItemInDataSource = this.languages.some((item) => item === args.text);
-
-      if (!isItemInDataSource) {
-        this.languages.push(args.text);
-      }
-
-      args.customItem = args.text;
-    }
+  private fromChips(values: TagModel[] | undefined): string[] {
+    return (values ?? []).map((t) => t.tag ?? '').filter((t) => !!t);
   }
 
-  private generateRandomId() {
-    return 'xxxxxxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0,
-        v = c == 'x' ? r : (r & 0x3) | 0x8;
+  private addLocalChip(field: 'sizes' | 'colors' | 'languages', text: string): void {
+    const current: TagModel[] = this.form.value[field] ?? [];
+    if (current.some((t) => t.tag === text)) {
+      return;
+    }
+    this.form.patchValue({ [field]: [...current, { tag: text } as TagModel] });
+  }
+
+  private generateRandomId(): string {
+    return 'xxxxxxxxxxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
-  }
-
-  showSingleImageModal = () => {
-    this.isSingleImageVisible$.next(true);
-  }
-
-  closeSingleImageModal = () => {
-    this.isSingleImageVisible$.next(false);
-  }
-
-  showEBookModal = () => {
-    this.isEBookVisible$.next(true);
-  }
-
-  closeEBookModal = () => {
-    this.isEBookVisible$.next(false);
   }
 }

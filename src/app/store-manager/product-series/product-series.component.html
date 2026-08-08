@@ -1,66 +1,72 @@
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  height="70%"
-  width="40%"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        SERIES
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-        <div class="content-block responsive-paddings">
-          <dx-toolbar class="py-2">
-            <dxi-item
-              location="after"
-              widget="dxButton"
-              [options]="{
-                hint: 'ADD SERIES',
-                type: 'default',
-                text: 'ADD SERIES',
-                stylingMode: 'contained',
-                onClick: showAddModal
-              }"
-            ></dxi-item>
-          </dx-toolbar>
-        </div>
-        <dx-data-grid class="dx-card wide-card"
-          #grid
-          [dataSource]="datasource$ | async"
-          [height]="'50vh'"
-          [showBorders]="false"
-          [showColumnLines]="true"
-          [showColumnLines]="true"
-          [showRowLines]="true"
-          [focusedRowEnabled]="true"
-          [columnAutoWidth]="true"
-          (onRowDblClick)="showEditModal($event)">
+<app-popup-header title="SERIES" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
 
-          <dxo-scrolling mode="virtual"></dxo-scrolling>
-          <dxo-filter-row [visible]="true"></dxo-filter-row>
-
-          <dxi-column dataField="imageUrl" cellTemplate="imageCellTemplate"></dxi-column>
-          <dxi-column dataField="order" dataType="number" [sortOrder]="'asc'"></dxi-column>
-          <dxi-column dataField="name"></dxi-column>
-          <dxi-column dataField="showInStore" dataType="boolean"></dxi-column>
-          <dxi-column type="buttons" caption="Actions" [allowReordering]="false">
-            <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-          </dxi-column>
-
-          <div *dxTemplate="let data of 'imageCellTemplate'">
-            <img *ngIf="data?.value" width="100" [src]="data?.value?.url" [alt]="data?.value?.name"/>
-          </div>
-        </dx-data-grid>
-
-      </div>
-    </div>
+<mat-dialog-content>
+  <div class="category-actions">
+    <button mat-icon-button color="primary" matTooltip="New" (click)="showAddModal()">
+      <mat-icon>add</mat-icon>
+    </button>
   </div>
-</dx-popup>
 
+  <div class="table-scroll">
+    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+    <table mat-table [dataSource]="(series$ | async) ?? []" class="series-table">
+      <ng-container matColumnDef="imageUrl">
+        <th mat-header-cell *matHeaderCellDef>Image</th>
+        <td mat-cell *matCellDef="let item">
+          <img *ngIf="item.imageUrl" width="60" [src]="item.imageUrl.url" [alt]="item.imageUrl.name">
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="order">
+        <th mat-header-cell *matHeaderCellDef>Order</th>
+        <td mat-cell *matCellDef="let item">{{ item.order }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let item">{{ item.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="showInStore">
+        <th mat-header-cell *matHeaderCellDef>Show In Store</th>
+        <td mat-cell *matCellDef="let item">{{ item.showInStore ? 'Yes' : 'No' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+        <td mat-cell *matCellDef="let item" class="actions-column">
+          <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
+      <ng-container matColumnDef="imageUrl-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="order-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="name-filter">
+        <th mat-header-cell *matHeaderCellDef>
+          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('name', $event)"></app-column-filter>
+        </th>
+      </ng-container>
+
+      <ng-container matColumnDef="showInStore-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <ng-container matColumnDef="actions-filter">
+        <th mat-header-cell *matHeaderCellDef></th>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+    </table>
+  </div>
+</mat-dialog-content>

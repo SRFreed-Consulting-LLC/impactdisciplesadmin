@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StoreManagerComponent } from './store-manager.component';
-import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule, DxDropDownBoxModule, DxFormModule, DxHtmlEditorModule, DxListModule, DxLoadIndicatorModule, DxLoadPanelModule, DxLookupModule, DxNumberBoxModule, DxPopupModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
+import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule, DxFormModule, DxListModule, DxLoadIndicatorModule, DxLoadPanelModule, DxLookupModule, DxNumberBoxModule, DxPopupModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
 import { ProductsComponent } from './products/products.component';
 import { PurchasesComponent } from './purchases/purchases.component';
 import { SharedModule } from '../shared/shared.module';
@@ -14,7 +14,12 @@ import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.compo
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 import { SalesComponent } from './sales/sales.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
-import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+// This app's own Material file browser, replacing the DevExtreme
+// dx-file-manager-backed app-image-uploader from impactdisciplescommon -
+// see src/app/shared/image-uploader/ for the full rationale (built during
+// the Web Manager migration). Products/Series are the last store-manager
+// screens still using it as of this migration pass.
+import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { StoreManagerRoutingModule } from './store-manager-routing.module';
 import { SaleDialogComponent } from './sales/sale-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -28,6 +33,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { QuillModule } from 'ngx-quill';
 
 @NgModule({
   declarations: [
@@ -49,11 +59,13 @@ import { MatNativeDateModule } from '@angular/material/core';
     CommonModule,
     StoreManagerRoutingModule,
     ImageUploaderModule,
+    // Still needed by Coupons/Purchases/Purchase Details/Affiliate Sales,
+    // not yet migrated in this pass - DxHtmlEditorModule and
+    // DxDropDownBoxModule were only ever used by Products, now removed.
     DxButtonModule,
     DxCheckBoxModule,
     DxDataGridModule,
     DxFormModule,
-    DxHtmlEditorModule,
     DxListModule,
     DxLoadPanelModule,
     DxLookupModule,
@@ -65,7 +77,6 @@ import { MatNativeDateModule } from '@angular/material/core';
     DxTagBoxModule,
     DxTextBoxModule,
     DxToolbarModule,
-    DxDropDownBoxModule,
     DxContextMenuModule,
     SharedModule,
     DxLoadIndicatorModule,
@@ -79,7 +90,12 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatTooltipModule,
     MatSlideToggleModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatTabsModule,
+    MatToolbarModule,
+    QuillModule
   ]
 })
 export class StoreManagerModule { }
