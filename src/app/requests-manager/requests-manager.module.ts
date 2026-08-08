@@ -12,6 +12,15 @@ import { RequestsManagerComponent } from './requests-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 import { RequestsManagerRoutingModule } from './requests-manager-routing.module';
+import { ConsultationRequestDialogComponent } from './consultations-requests/consultation-request-dialog.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 
 @NgModule({
@@ -36,11 +45,20 @@ import { RequestsManagerRoutingModule } from './requests-manager-routing.module'
     DxTextBoxModule,
     DxToolbarModule,
     ImpactDisciplesCommonModule,
-    SharedModule
+    SharedModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule
   ],
   declarations: [
     RequestsManagerComponent,
     ConsultationsRequestsComponent,
+    ConsultationRequestDialogComponent,
     ConsultationsSurveysComponent,
     LunchAndLearnsComponent,
     SeminarsComponent,
