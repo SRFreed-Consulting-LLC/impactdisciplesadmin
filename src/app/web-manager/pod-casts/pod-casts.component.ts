@@ -1,11 +1,11 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
 import { PodCastModel } from 'impactdisciplescommon/src/models/domain/pod-cast.model';
 import { PodCastService } from 'impactdisciplescommon/src/services/data/pod-cast.service';
-import { BehaviorSubject, map, Observable } from 'rxjs';
+import { BehaviorSubject, map, Observable, Subject, takeUntil } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import { Timestamp } from 'firebase/firestore';
 import { DxTagBoxTypes } from 'devextreme-angular/ui/tag-box';
@@ -19,7 +19,7 @@ import { PodCastTagsService } from 'impactdisciplescommon/src/services/data/pod-
     styleUrls: ['./pod-casts.component.css'],
     standalone: false
 })
-export class PodCastsComponent implements OnInit{
+export class PodCastsComponent implements OnInit, OnDestroy {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
 
   datasource$: Observable<DataSource>;
@@ -33,6 +33,8 @@ export class PodCastsComponent implements OnInit{
   public isSingleImageVisible$ = new BehaviorSubject<boolean>(false);
 
   podCastTags: TagModel[] = [];
+
+  private ngUnsubscribe = new Subject<void>();
 
   constructor(private service: PodCastService,
     private podCastTagService: PodCastTagsService,
@@ -56,7 +58,7 @@ export class PodCastsComponent implements OnInit{
       )
     );
 
-    this.podCastTagService.streamAll().subscribe(tags => {
+    this.podCastTagService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(tags => {
       this.podCastTags = tags;
     })
 
@@ -223,5 +225,10 @@ export class PodCastsComponent implements OnInit{
 
   closeSingleImageModal = () => {
     this.isSingleImageVisible$.next(false);
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 }

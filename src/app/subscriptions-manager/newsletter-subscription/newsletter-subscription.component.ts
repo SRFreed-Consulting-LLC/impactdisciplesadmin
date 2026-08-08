@@ -242,7 +242,6 @@ export class NewsletterSubscriptionComponent {
     }
 
     list.then(subscribers => {
-      console.log(subscribers)
       subscribers.forEach(subscriber => {
         html = this.newsletter.html
         html = html.replace('{{Recipient First Name}}', subscriber.firstName);

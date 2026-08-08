@@ -1,3 +1,6 @@
+@use "mixins";
+@use "variables";
+
 /*----------------------------------------*/
 /*  07. BLOG CSS START
 /*----------------------------------------*/
@@ -6,34 +9,34 @@
     &__area{}
     &__slider{
         & .owl-nav{
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 display: none;
             }
             & div{
                 position: absolute;
                 top: 50%;
                 left: 0;
-                @include transform(translate(-20%, -50%));
-                @include transition(.2s);
+                @include mixins.transform(translate(-20%, -50%));
+                @include mixins.transition(.2s);
                 visibility: hidden;
                 opacity: 0;
                 & button{
                     width: 55px;
                     height: 55px;
                     line-height: 58px;
-                    color: $white;
-                    background-color: $border;
+                    color: variables.$white;
+                    background-color: variables.$border;
                     font-size: 20px;
-                    @include border-radius(50%);
+                    @include mixins.border-radius(50%);
                     &:hover{
-                        color: $white;
-                        background-color: $theme-color;
+                        color: variables.$white;
+                        background-color: variables.$theme-color;
                     }
                 }
                 &.owl-next{
                     left: auto;
                     right: 0;
-                    @include transform(translate(20%, -50%));
+                    @include mixins.transform(translate(20%, -50%));
                 }
             }
         }
@@ -42,9 +45,9 @@
                 & div{
                     visibility: visible;
                     opacity: 1;
-                    @include transform(translate(-50%, -50%));
+                    @include mixins.transform(translate(-50%, -50%));
                     &.owl-next{
-                        @include transform(translate(50%, -50%));
+                        @include mixins.transform(translate(50%, -50%));
                     }
                 }
             }
@@ -86,15 +89,15 @@
                 border-radius: 50%;
                 border: 1px solid var(--vela-color-primary);
                 color: #fff;
-                background: $theme-2-color;
+                background: variables.$theme-2-color;
                 font-size: 0;
                 -webkit-transition: all 0.35s ease;
                 -o-transition: all 0.35s ease;
                 transition: all 0.35s ease;
                 &:hover{
-                  background: $black-2;
-                  color: $white;
-                  border-color: $white;
+                  background: variables.$black-2;
+                  color: variables.$white;
+                  border-color: variables.$white;
                 }
               }
               .owl-nav > div:before {
@@ -104,7 +107,7 @@
                 font-family: var(--vela-font-icon); }
               .owl-nav .owl-prev {
                 left: -15px;
-                @media #{$xs} {
+                @media #{variables.$xs} {
                     left: 0;
                   }
                 }
@@ -115,7 +118,7 @@
               }
               .owl-nav .owl-next {
                 right: -15px;
-                @media #{$xs} {
+                @media #{variables.$xs} {
                     right: 0;
                   }
                 }
@@ -151,15 +154,15 @@
                 border-radius: 50%;
                 border: 1px solid var(--vela-color-primary);
                 color: #fff;
-                background: $theme-2-color;
+                background: variables.$theme-2-color;
                 font-size: 0;
                 -webkit-transition: all 0.35s ease;
                 -o-transition: all 0.35s ease;
                 transition: all 0.35s ease;
                 &:hover{
-                  background: $black-2;
-                  color: $white;
-                  border-color: $white;
+                  background: variables.$black-2;
+                  color: variables.$white;
+                  border-color: variables.$white;
                 }
               }
               .owl-nav > div:before {
@@ -169,7 +172,7 @@
                 font-family: var(--vela-font-icon); }
               .owl-nav .owl-prev {
                 left: -15px;
-                @media #{$xs} {
+                @media #{variables.$xs} {
                     left: 0;
                   }
                 }
@@ -180,7 +183,7 @@
               }
               .owl-nav .owl-next {
                 right: -15px;
-                @media #{$xs} {
+                @media #{variables.$xs} {
                     right: 0;
                   }
                 }
@@ -221,7 +224,7 @@
                     }
                 }
                 & a.btn {
-                    background-color: $theme-2-color;
+                    background-color: variables.$theme-2-color;
                     border-radius: 50%;
                     bottom: 0;
                     color: #ffffff;
@@ -243,8 +246,8 @@
                     width: 55px;
                 }
                     & a.btn:hover {
-                    background-color: $black-2;
-                    color: $white;
+                    background-color: variables.$black-2;
+                    color: variables.$white;
                 }
             }
         }
@@ -253,7 +256,7 @@
         &:hover{
             & .blog__thumb{
                 & img{
-                    @include transform(scale(1.1));
+                    @include mixins.transform(scale(1.1));
                 }
             }
         }
@@ -263,32 +266,32 @@
         & h4{
             & a{
                 &:hover{
-                    color: $theme-color;
+                    color: variables.$theme-color;
                 }
             }
         }
         & p{
             margin-bottom: 25px;
-            color: $black-soft-2;
+            color: variables.$black-soft-2;
         }
     }
     &__meta{
         margin-bottom: 13px;
         & span{
             & a{
-                color: $theme-color;
+                color: variables.$theme-color;
             }
         }
     }
     &__border-bottom{
-        border-bottom: 1px solid $grey;
+        border-bottom: 1px solid variables.$grey;
     }
     &__title{
         font-size: 30px;
-        @media #{$sm}{
+        @media #{variables.$sm}{
             font-size: 25px;
         }
-        @media #{$sm}{
+        @media #{variables.$sm}{
             font-size: 20px;
         }
     }
@@ -298,9 +301,9 @@
             position: relative;
             margin: -70px 12% 0;
             text-align: center;
-            background-color: $black-2;
+            background-color: variables.$black-2;
             z-index: 2;
-            @media #{$xs} {
+            @media #{variables.$xs} {
                 padding: 20px 10px;
             }
         }
@@ -308,11 +311,11 @@
             font-size: 18px;
             font-weight: 500;
             line-height: 26px;
-            color: $white;
+            color: variables.$white;
             & a{
                 position: relative;
                 &::before{
-                    background-color: $theme-2-color;
+                    background-color: variables.$theme-2-color;
                     content: "";
                     height: 70px;
                     left: 0;
@@ -324,14 +327,14 @@
                 }
             }
             &:hover{
-                color: $theme-2-color;
+                color: variables.$theme-2-color;
             }
         }
     }
     &__wrapper{
         & .article{
             &-author{
-                color: $theme-2-color;
+                color: variables.$theme-2-color;
             }
             &-meta{
                 & span{
@@ -352,18 +355,18 @@
         height: 53px;
         padding: 0 15px;
         padding-right: 60px;
-        border: 1px solid $border;
+        border: 1px solid variables.$border;
         &::placeholder{
             color: #8c8c8c;
         }
         &:focus{
-            border-color: $black;
+            border-color: variables.$black;
         }
     }
     & button{
         position: absolute;
         top: 50%;
-        @include transform(translateY(-50%));
+        @include mixins.transform(translateY(-50%));
         right: 22px;
         background: transparent;
         color: #323232;
@@ -375,13 +378,13 @@
     &__title{
         & h1{
             margin-bottom: 25px;
-            @media #{$lg}{
+            @media #{variables.$lg}{
                 font-size: 35px;
             }
-            @media #{$sm}{
+            @media #{variables.$sm}{
                 font-size: 30px;
             }
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 font-size: 24px;
             }
         }
@@ -390,7 +393,7 @@
         & p{
             line-height: 30px;
             margin-bottom: 27px;
-            color: $black-soft-2;
+            color: variables.$black-soft-2;
         }
     }
     &__quote{
@@ -423,8 +426,8 @@
     &__share{
         padding: 15px 0;
         padding-bottom: 20px;
-        border-top: 1px solid $border;
-        border-bottom: 1px solid $border;
+        border-top: 1px solid variables.$border;
+        border-bottom: 1px solid variables.$border;
     }
     &__social{
         & span{
@@ -436,7 +439,7 @@
             & li{
                 display: inline-block;
                 & a{
-                    color: $black-soft;
+                    color: variables.$black-soft;
                     padding-right: 15px;
                     margin-right: 15px;
                     position: relative;
@@ -450,7 +453,7 @@
                         background: #eeeeee;
                     }
                     &:hover{
-                        color: $theme-color;
+                        color: variables.$theme-color;
                     }
                 }
                 &:last-child{
@@ -464,11 +467,11 @@
         }
     }
     &__tag{
-        @media #{$sm}{
+        @media #{variables.$sm}{
             margin-top: 10px;
             float: left;
         }
-        @media #{$xs}{
+        @media #{variables.$xs}{
             margin-top: 10px;
             float: left;
         }
@@ -477,9 +480,9 @@
             margin-right: 15px;
         }
         & a{
-            color: $black-soft;
+            color: variables.$black-soft;
             &:hover{
-                color: $theme-color;
+                color: variables.$theme-color;
             }
         }
     }
@@ -497,7 +500,7 @@
         }
     }
     &__line{
-        border-top: 1px solid $border;
+        border-top: 1px solid variables.$border;
     }
 }
 
@@ -507,7 +510,7 @@
             display: inline-block;
             & a{
                 &:hover{
-                    color: $black;
+                    color: variables.$black;
                 }
             }
         }
@@ -515,13 +518,13 @@
 }
 
 .post-comments {
-	border-bottom: 1px solid  $border;
+	border-bottom: 1px solid  variables.$border;
 	margin-bottom: 42px;
 	padding-bottom: 46px;
 }
 
 .comments-box {
-	border-top: 1px solid $border;
+	border-top: 1px solid variables.$border;
 	padding: 30px 0;
 }
 
@@ -534,7 +537,7 @@
     float: left;
     margin-right: 20px;
     & img{
-        @include border-radius(50%);
+        @include mixins.border-radius(50%);
     }
 }
 
@@ -546,7 +549,7 @@
 	font-size: 12px;
 }
 .comments-text p span{
-	color: $black-soft;
+	color: variables.$black-soft;
 }
 
 .avatar-name {
@@ -559,10 +562,10 @@
 	font-size: 14px;
     margin-bottom: 0px;
     display: inline-block;
-    color: $black;
+    color: variables.$black;
 }
 .avatar-name span {
-	color: $black-soft;
+	color: variables.$black-soft;
 	font-size: 12px;
 	text-transform: capitalize;
 }
@@ -577,11 +580,11 @@
 	position: absolute;
 	right: 0;
     top: 0;
-    color: $black-soft;
+    color: variables.$black-soft;
     &:hover{
-        color: $theme-color;
+        color: variables.$theme-color;
     }
-    @media #{$xs}{
+    @media #{variables.$xs}{
        position: static;
     }
 }
@@ -594,13 +597,13 @@
 
 .latest-comments li.children {
     margin-left: 100px;
-    @media #{$xs}{
+    @media #{variables.$xs}{
         margin-left: 15px;
     }
 }
 
 .load-comments{
-    color: $theme-color;
+    color: variables.$theme-color;
     font-weight: 500;
 }
 
@@ -613,10 +616,10 @@
 	width: 100%;
     font-size: 14px;
     &::placeholder{
-        color: $body-text-color;
+        color: variables.$body-text-color;
     }
     &:focus{
-        border-color: $theme-color;
+        border-color: variables.$theme-color;
     }
 }
 
@@ -629,10 +632,10 @@
     font-size: 14px;
     resize: none;
     &::placeholder{
-        color: $body-text-color;
+        color: variables.$body-text-color;
     }
     &:focus{
-        border-color: $theme-color;
+        border-color: variables.$theme-color;
     }
 }
 
@@ -647,16 +650,16 @@
         bottom: 0;
         width: 100%;
         height: 1px;
-        background: $black-soft-2;
+        background: variables.$black-soft-2;
     }
     &.theme{
-        color: $theme-color;
+        color: variables.$theme-color;
         &::after{
-            background: $theme-color;
+            background: variables.$theme-color;
         }
     }
     &.comment{
-        color: $theme-color;
+        color: variables.$theme-color;
         &::after{
             display: none;
         }
@@ -678,13 +681,13 @@
         &-content{
             & h6{
                 font-size: 14px;
-                color: $black-2;
+                color: variables.$black-2;
                 line-height: 36px;
                 font-weight: 400;
                 margin-bottom: 0;
                 & a{
                     &:hover{
-                        color: $theme-color;
+                        color: variables.$theme-color;
                     }
                 }
             }
@@ -695,7 +698,7 @@
             color: #8c8c8c;
             font-size: 12px;
             &:hover{
-                color: $theme-color;
+                color: variables.$theme-color;
             }
         }
     }
@@ -703,7 +706,7 @@
         &-content{
             & h6{
                 font-size: 14px;
-                color: $black-2;
+                color: variables.$black-2;
                 margin-bottom: 5px;
             }
             & p{

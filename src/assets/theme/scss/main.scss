@@ -30,27 +30,27 @@
     15. toaster CSS
 
 -----------------------------------------------------------------------------------*/
-@import 'spacing';
-@import 'variables';
-@import 'mixins';
-@import 'common';
-@import 'header';
-@import 'slider';
-@import 'banner';
-@import 'shop';
-@import 'client';
-@import 'blog';
-@import 'subscribe';
-@import 'testimonial';
-@import 'contact';
-@import 'error';
-@import 'login';
-@import 'profile';
-@import 'footer';
-@import 'compare';
-@import 'video-modal';
-@import 'toaster';
-@import 'mobile-menu';
+@use 'spacing';
+@use 'variables';
+@use 'mixins';
+@use 'common';
+@use 'header';
+@use 'slider';
+@use 'banner';
+@use 'shop';
+@use 'client';
+@use 'blog';
+@use 'subscribe';
+@use 'testimonial';
+@use 'contact';
+@use 'error';
+@use 'login';
+@use 'profile';
+@use 'footer';
+@use 'compare';
+@use 'video-modal';
+@use 'toaster';
+@use 'mobile-menu';
 
 
 

@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DxDropDownBoxComponent, DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
-import { Observable, BehaviorSubject, map } from 'rxjs';
+import { Observable, BehaviorSubject, Subject, map, takeUntil } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import { ProductModel } from 'impactdisciplescommon/src/models/utils/product.model';
 import { ProductService } from 'impactdisciplescommon/src/services/data/product.service';
@@ -30,7 +30,7 @@ import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/e
     styleUrls: ['./products.component.scss'],
     standalone: false
 })
-export class ProductsComponent implements OnInit {
+export class ProductsComponent implements OnInit, OnDestroy {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
   @ViewChild('categoryDropbox', { static: false }) categoryDropbox: DxDropDownBoxComponent;
   @ViewChild('seriesDropbox', { static: false }) seriesDropbox: DxDropDownBoxComponent;
@@ -62,6 +62,8 @@ export class ProductsComponent implements OnInit {
 
   uoms: string[] = EnumHelper.getUOMTypesAsArray();
 
+  private ngUnsubscribe = new Subject<void>();
+
   constructor(
     private service: ProductService,
     private bookService: BookService,
@@ -90,15 +92,15 @@ export class ProductsComponent implements OnInit {
       )
     );
 
-    this.productTagService.streamAll().subscribe(tags =>{
+    this.productTagService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(tags =>{
       this.productTags = tags;
     });
 
-    this.productCategoriesService.streamAll().subscribe(productCategories => {
+    this.productCategoriesService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(productCategories => {
       this.productCategories = productCategories;
     });
 
-    this.seriesService.streamAll().subscribe(series => {
+    this.seriesService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(series => {
       this.series = series;
     });
 
@@ -107,12 +109,18 @@ export class ProductsComponent implements OnInit {
         items.forEach(item => {
           this.emails.push({id: item.id, name: item.name})
         })
-      })
+      }),
+      takeUntil(this.ngUnsubscribe)
     ).subscribe();
 
-    this.bookService.streamAll().subscribe(books => {
+    this.bookService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe(books => {
       this.books = books;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   onCategoryFilterChanged(event: any) {

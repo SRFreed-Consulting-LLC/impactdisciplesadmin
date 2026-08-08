@@ -13,10 +13,8 @@ import { Timestamp } from 'firebase/firestore';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { PaymentIntent } from '@stripe/stripe-js';
-import { Workbook } from 'exceljs';
-import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
-import { saveAs } from 'file-saver';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { exportGridToExcel } from '../../shared/grid-export.util';
 
 @Component({
     selector: 'app-purchases',
@@ -81,7 +79,6 @@ export class PurchasesComponent implements OnInit {
 
   showEditModal = (e) => {
     this.selectedItem = (Object.assign({}, e.data));
-    console.log(this.selectedItem)
 
     this.isVisible$.next(true);
   }
@@ -168,8 +165,6 @@ export class PurchasesComponent implements OnInit {
       let response = await request.json();
 
       if(response.code == 400){
-        console.log(response);
-
         notify({
           message: response.error.message,
           position: 'top',
@@ -366,19 +361,6 @@ export class PurchasesComponent implements OnInit {
   }
 
   exportXLSGrid = () => {
-    const context = this;
-
-    const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet('Attendees');
-
-    exportXLSDataGrid({
-      component: context.purchasesGrid.instance,
-      worksheet,
-      autoFilterEnabled: true,
-    }).then(() => {
-      workbook.xlsx.writeBuffer().then((buffer) => {
-        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'purchases.xlsx');
-      });
-    });
+    exportGridToExcel(this.purchasesGrid.instance, 'purchases.xlsx');
   }
 }

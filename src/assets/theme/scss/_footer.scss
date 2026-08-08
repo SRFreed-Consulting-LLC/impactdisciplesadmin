@@ -1,17 +1,19 @@
+@use "variables";
+
 /*----------------------------------------*/
 /*  15. FOOTER CSS START
 /*----------------------------------------*/
 
 .footer{
     &__bottom{
-        border-top: 1px solid $border-2;
+        border-top: 1px solid variables.$border-2;
         padding: 45px 0;
         &.footer__bottom-2{
             border-top: none;
             padding: 0;
         }
         &-inner{
-            border-top: 1px solid $border;
+            border-top: 1px solid variables.$border;
             padding: 45px 0;
             &-2{
                 border-top-color: #c1c1c1;
@@ -24,14 +26,14 @@
     &__widget{}
     &__widget-title{
         & h5{
-            color: $white;
+            color: variables.$white;
             margin-top: 10px;
             margin-bottom: 20px;
             text-transform: capitalize;
         }
         &-2{
             & h5{
-                color: $black;
+                color: variables.$black;
             }
         }
     }
@@ -100,8 +102,8 @@
                 display: block;
                 width: 100%;
                 height: 44px;
-                color: $white;
-                background: $theme-2-color;
+                color: variables.$white;
+                background: variables.$theme-2-color;
             }
         }
     }
@@ -141,12 +143,12 @@
                         left: 0;
                         width: 100%;
                         height: 1px;
-                        background-color: $white;
+                        background-color: variables.$white;
                         visibility: hidden;
                         opacity: 0;
                     }
                     &:hover{
-                        color: $white;
+                        color: variables.$white;
                         &::after{
                             bottom: -2px;
                             visibility: visible;
@@ -162,10 +164,10 @@
                     & a{
                         color: #515151;
                         &::after{
-                            background: $black;
+                            background: variables.$black;
                         }
                         &:hover{
-                            color: $black;
+                            color: variables.$black;
                         }
                     }
                 }
@@ -176,20 +178,20 @@
         & p{
             margin-bottom: 0;
             color: #b4b3b3;
-            @media #{$md}{
+            @media #{variables.$md}{
                 margin-bottom: 30px;
             }
-            @media #{$sm}{
+            @media #{variables.$sm}{
                 margin-bottom: 30px;
             }
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 margin-bottom: 30px;
             }
             & a{
-                color: $theme-color;
+                color: variables.$theme-color;
             }
             & .link{
-                color: $theme-2-color;
+                color: variables.$theme-2-color;
             }
         }
         &-2{
@@ -199,42 +201,42 @@
         }
         &-3{
             & p{
-                @media #{$md,$sm,$xs}{
+                @media #{variables.$md,variables.$sm,variables.$xs}{
                     margin-bottom: 15px;
                 }
             }
         }
     }
     &__social{
-        @media #{$md}{
+        @media #{variables.$md}{
             float: left;
         }
-        @media #{$sm}{
+        @media #{variables.$sm}{
             float: left;
         }
-        @media #{$xs}{
+        @media #{variables.$xs}{
             float: left;
         }
         & ul{
             & li{
                 display: inline-block;
                 margin-left: 40px;
-                @media #{$md}{
+                @media #{variables.$md}{
                     margin-left: 0;
                     margin-right: 40px;
                 }
-                @media #{$sm}{
+                @media #{variables.$sm}{
                     margin-left: 0;
                     margin-right: 40px;
                 }
-                @media #{$xs}{
+                @media #{variables.$xs}{
                     margin-left: 0;
                     margin-right: 40px;
                 }
                 & a{
                     color: #b4b3b3;
                     &:hover{
-                        color: $theme-color;
+                        color: variables.$theme-color;
                     }
                 }
             }
@@ -254,14 +256,14 @@
                 border: 1px solid #464646;
                 display: flex;
                 margin-bottom: 0;
-                @media #{$xs} {
+                @media #{variables.$xs} {
                     display: block;
                 }
                 & li{
                     display: inline-block;
                     width: 50%;
                     border-left: 1px solid #464646;
-                    @media #{$xs} {
+                    @media #{variables.$xs} {
                         border-bottom: 1px solid #464646;
                         border-left: 0;
                         width: 100%;
@@ -270,7 +272,7 @@
                         border-left: 0;
                     }
                     &:last-child{
-                        @media #{$xs} {
+                        @media #{variables.$xs} {
                             border-bottom: 0;
                         }
                     }
@@ -284,7 +286,7 @@
                         display: block;
                         transition: .3s;
                         &:hover{
-                            color: $theme-2-color;
+                            color: variables.$theme-2-color;
                         }
                     }
                 }
@@ -293,7 +295,7 @@
     }
     &__payment{
         text-align: right;
-        @media #{$xs,$sm} {
+        @media #{variables.$xs,variables.$sm} {
             text-align: start;
         }
     }

@@ -1,3 +1,5 @@
+@use "variables";
+
 
 /*----------------------------------------*/
 /*  14.  LOGIN CSS START
@@ -90,11 +92,11 @@
   }
 
   .forgot-login a {
-    color: $black;
+    color: variables.$black;
   }
 
   .forgot-login a:hover {
-    color: $theme-color;
+    color: variables.$theme-color;
   }
 
   @media (max-width: 767px) {

@@ -1,11 +1,11 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DxFormComponent } from 'devextreme-angular';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import notify from 'devextreme/ui/notify';
 import { CouponModel } from 'impactdisciplescommon/src/models/utils/coupon.model';
 import { CouponService } from 'impactdisciplescommon/src/services/data/coupon.service';
-import { BehaviorSubject, Observable, map, merge } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, map, merge, takeUntil } from 'rxjs';
 import { confirm } from 'devextreme/ui/dialog';
 import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
@@ -18,7 +18,7 @@ import { EventService } from 'impactdisciplescommon/src/services/data/event.serv
     styleUrls: ['./coupons.component.css'],
     standalone: false
 })
-export class CouponsComponent implements OnInit{
+export class CouponsComponent implements OnInit, OnDestroy {
   @ViewChild('addEditForm', { static: false }) addEditForm: DxFormComponent;
 
   datasource$: Observable<DataSource>;
@@ -31,6 +31,7 @@ export class CouponsComponent implements OnInit{
 
   couponTags: TagModel[] = [];
 
+  private ngUnsubscribe = new Subject<void>();
 
   constructor(private service: CouponService,
     private eventService: EventService,
@@ -59,9 +60,14 @@ export class CouponsComponent implements OnInit{
       this.productService.streamAll()
     )
 
-    list.subscribe(items => {
+    list.pipe(takeUntil(this.ngUnsubscribe)).subscribe(items => {
       items.forEach(item => this.couponTags.push({id: item.id, tag: item.title? item.title : item.eventName}));
     });
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   showEditModal = (e) => {

@@ -1,14 +1,17 @@
+@use "mixins";
+@use "variables";
+
 /*----------------------------------------*/
 /*  02. HEADER CSS
 /*----------------------------------------*/
 
 /* logo */
 .logo{
-  @media #{$xs}{
+  @media #{variables.$xs}{
       text-align: center;
   }
   &__6{
-      @media #{$xs}{
+      @media #{variables.$xs}{
           padding-bottom: 15px;
       }
   }
@@ -16,14 +19,14 @@
 
 .header{
   &__area{
-      @media #{$xs}{
+      @media #{variables.$xs}{
           padding-top: 15px;
       }
   }
   &__top{
       &-2{
           padding-top: 33px;
-          @media #{$xs}{
+          @media #{variables.$xs}{
               padding-top: 0;
           }
       }
@@ -39,22 +42,22 @@
           position: static;
       }
       &-2{
-          @media #{$md} {
-              background: $white;
+          @media #{variables.$md} {
+              background: variables.$white;
           }
       }
   }
   &__welcome{
-      @media #{$sm}{
+      @media #{variables.$sm}{
           padding-bottom: 20px;
           text-align: center;
       }
-      @media #{$xs}{
+      @media #{variables.$xs}{
           text-align: center;
           padding-bottom: 15px;
       }
       & span{
-          color: $black;
+          color: variables.$black;
 
       }
   }
@@ -66,7 +69,7 @@
               position: relative;
               margin-left: 25px;
               & > a{
-                  color: $black-soft;
+                  color: variables.$black-soft;
                   position: relative;
                   display: inline-block;
                   padding: 27px 0;
@@ -76,7 +79,7 @@
                       margin-right: 0;
                   }
                   & i{
-                      color: $black-2;
+                      color: variables.$black-2;
                       margin-right: 3px;
                       font-size: 18px;
                   }
@@ -90,13 +93,13 @@
                       line-height: 14px;
                       padding: 3px;
                       border-radius: 90px;
-                      background: $theme-2-color;
-                      color: $white;
+                      background: variables.$theme-2-color;
+                      color: variables.$white;
                   }
               }
               &:hover{
                   & > a{
-                      color: $black-2;
+                      color: variables.$black-2;
                   }
                   & .mini-cart{
                       visibility: visible;
@@ -111,16 +114,16 @@
                   position: absolute;
                   right: 0;
                   top: 100%;
-                  background: $white;
+                  background: variables.$white;
                   padding: 25px;
                   width: 350px;
                   z-index: 9;
                   border: 1px solid #e1e1e1;
-                  @include box-shadow(0px 15px 30px 0px rgba(0, 3, 143, 0.1));
+                  @include mixins.box-shadow(0px 15px 30px 0px rgba(0, 3, 143, 0.1));
                   visibility: hidden;
                   opacity: 0;
-                  @include transition(.3s);
-                  @media #{$xs}{
+                  @include mixins.transition(.3s);
+                  @media #{variables.$xs}{
                       width: 280px;
                       right: -60%;
                   }
@@ -139,13 +142,13 @@
                        overflow-y: scroll;
                       }
                       overflow: hidden;
-                      @media #{$md}{
+                      @media #{variables.$md}{
                           height: 200px;
                       }
-                      @media #{$sm}{
+                      @media #{variables.$sm}{
                           height: 165px;
                       }
-                      @media #{$xs}{
+                      @media #{variables.$xs}{
                           height: 165px;
                       }
                       & li{
@@ -168,9 +171,9 @@
                                   font-size: 13px;
                                   font-weight: 500;
                                   & a{
-                                      color: $black-soft;
+                                      color: variables.$black-soft;
                                       &:hover{
-                                          color: $theme-color;
+                                          color: variables.$theme-color;
                                       }
                                   }
                               }
@@ -179,10 +182,10 @@
                   }
                   & .total-price{
                       padding-top: 22px;
-                      border-top: 1px solid $black;
+                      border-top: 1px solid variables.$black;
                       & span{
                           font-weight: 500;
-                          color: $black;
+                          color: variables.$black;
                       }
                   }
                   & .checkout-link{
@@ -199,7 +202,7 @@
                   position: absolute;
                   top: 100%;
                   right: 0;
-                  background-color: $white;
+                  background-color: variables.$white;
                   padding: 20px;
                   margin: 0;
                   min-width: 220px;
@@ -210,7 +213,7 @@
                   overflow: auto;
                   visibility: hidden;
                   opacity: 0;
-                  @include transition(.3s);
+                  @include mixins.transition(.3s);
                   & li{
                       display: block;
                       margin-left: 0;
@@ -228,7 +231,7 @@
                   & .extra-title{
                       & h5{
                           font-size: 14px;
-                          color: $black-2;
+                          color: variables.$black-2;
                           margin: 15px 0 10px;
                           text-transform: capitalize;
                       }
@@ -239,7 +242,7 @@
       &.header__action-2{
           & ul{
               & li{
-                  @media #{$xs}{
+                  @media #{variables.$xs}{
                       margin-left: 15px;
                   }
               }
@@ -255,12 +258,12 @@
       padding: 40px 0;
       visibility: hidden;
       opacity: 0;
-      @include transform(scale(.5));
+      @include mixins.transform(scale(.5));
       z-index: 9999;
-      @media #{$sm}{
+      @media #{variables.$sm}{
           min-height: 300px;
       }
-      @media #{$xs}{
+      @media #{variables.$xs}{
           padding-top: 30px;
           min-height: 300px;
       }
@@ -268,31 +271,31 @@
           top: 0;
           visibility: visible;
           opacity: 1;
-          @include transform(scale(1));
+          @include mixins.transform(scale(1));
       }
       &-btn{
           margin-bottom: 35px;
-          @media #{$sm}{
+          @media #{variables.$sm}{
               margin-bottom: 20px;
           }
-          @media #{$xs}{
+          @media #{variables.$xs}{
               margin-bottom: 20px;
           }
           &-close{
               font-size: 18px;
-              color: $theme-color;
+              color: variables.$theme-color;
           }
       }
       &-header{
           margin-bottom: 35px;
-          @media #{$sm}{
+          @media #{variables.$sm}{
               margin-bottom: 20px;
           }
-          @media #{$xs}{
+          @media #{variables.$xs}{
               margin-bottom: 20px;
           }
           & h3{
-              color: $black-2;
+              color: variables.$black-2;
               font-size: 30px;
           }
       }
@@ -303,22 +306,22 @@
                   display: inline-block;
                   & a{
                       font-size: 18px;
-                      color: $black-2;
+                      color: variables.$black-2;
                       padding: 0 30px;
                       &:hover{
-                          color: $theme-color;
+                          color: variables.$theme-color;
                       }
                       &.active{
-                          color: $theme-color;
+                          color: variables.$theme-color;
                       }
-                      @media #{$md}{
+                      @media #{variables.$md}{
                           padding: 0 15px;
                       }
-                      @media #{$sm}{
+                      @media #{variables.$sm}{
                           font-size: 16px;
                           padding: 0 5px;
                       }
-                      @media #{$xs}{
+                      @media #{variables.$xs}{
                           padding: 0 5px;
                           font-size: 14px;
                       }
@@ -333,12 +336,12 @@
               border: none;
               padding: 0 15px;
               padding-right: 30px;
-              border-bottom: 1px solid $border;
+              border-bottom: 1px solid variables.$border;
               &::placeholder{
-                  color: $black-soft;
+                  color: variables.$black-soft;
               }
               &:focus{
-                  border-bottom-color: $theme-color;
+                  border-bottom-color: variables.$theme-color;
               }
 
               &:focus-visible{
@@ -355,7 +358,7 @@
               text-align: center;
               font-size: 14px;
               background: transparent;
-              color: $black-2;
+              color: variables.$black-2;
           }
       }
   }
@@ -372,7 +375,7 @@ z-index: 999;
 -webkit-animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
 animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
 -webkit-box-shadow: 0 10px 15px rgba(25, 25, 25, 0.1);
-  background: $white !important;
+  background: variables.$white !important;
 }
 
 .main-menu{
@@ -382,12 +385,12 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
           margin-right: 40px;
           position: relative;
           text-align: left;
-          @media #{$lg}{
+          @media #{variables.$lg}{
               margin-right: 30px;
           }
           & a{
               display: block;
-              color: $black-soft;
+              color: variables.$black-soft;
               font-weight: 500;
               padding: 27px 0;
               padding-bottom: 30px;
@@ -395,7 +398,7 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
           }
           &.active{
               & a{
-                  color: $black-2;
+                  color: variables.$black-2;
               }
           }
           &.has-dropdown{
@@ -407,7 +410,7 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
                       content: '\f107';
                       right: 0;
                       top: 50%;
-                      @include transform(translateY(-50%));
+                      @include mixins.transform(translateY(-50%));
                       font-family: "Font Awesome 5 Pro";
                       font-size: 14px;
                   }
@@ -415,24 +418,24 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
           }
           &:hover{
               & a{
-                  color: $black-2;
+                  color: variables.$black-2;
               }
               & ul.submenu{
                   visibility: visible;
                   opacity: 1;
-                  @include transform(scaleY(1));
+                  @include mixins.transform(scaleY(1));
               }
           }
           & ul.submenu{
               position: absolute;
               top: 100%;
               left: 0;
-              background-color: $white;
+              background-color: variables.$white;
               min-width: 200px;
               padding: 15px 0;
-              @include transform(scaleY(0));
+              @include mixins.transform(scaleY(0));
               transform-origin: 0 0;
-              @include box-shadow(0px 15px 30px 0px rgba(0, 3, 143, 0.1));
+              @include mixins.box-shadow(0px 15px 30px 0px rgba(0, 3, 143, 0.1));
               opacity: 0;
               visibility: hidden;
               z-index: 11;
@@ -441,14 +444,14 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
                   display: block;
                   &.active{
                       & a{
-                          color: $black-2;
+                          color: variables.$black-2;
                       }
                   }
                   & a{
                       padding: 5px 20px;
-                      color: $black-soft;
+                      color: variables.$black-soft;
                       &:hover{
-                          color: $black-2;
+                          color: variables.$black-2;
                       }
                   }
               }
@@ -467,7 +470,7 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
                       display: block;
                       width: 25%;
                       & a{
-                          color: $black-2;
+                          color: variables.$black-2;
                           margin-bottom: 20px;
                           padding: 0;
                           &::after{
@@ -482,11 +485,11 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
                               padding-left: 0;
                               & a{
                                   font-size: 12px;
-                                  color: $black-soft;
+                                  color: variables.$black-soft;
                                   margin-bottom: 0;
                                   padding-bottom: 12px;
                                   &:hover{
-                                      color: $black-2;
+                                      color: variables.$black-2;
                                   }
                               }
                               &:last-child{
@@ -500,11 +503,11 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
               }
               &.mega-menu-2{
                   & ul.submenu{
-                      @media #{$lg}{
+                      @media #{variables.$lg}{
                           background: none;
                       }
                       & > li{
-                          @media #{$lg}{
+                          @media #{variables.$lg}{
                               width: 33.33%;
                           }
                       }
@@ -517,7 +520,7 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
       & ul{
           & li{
               margin: 0 20px;
-              @media #{$lg}{
+              @media #{variables.$lg}{
                   margin: 0 15px;
               }
           }
@@ -527,16 +530,16 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
       & ul{
           & li{
               &:hover > a{
-                  color: $theme-2-color;
+                  color: variables.$theme-2-color;
               }
               & ul.submenu li:hover a {
-                  color: $theme-2-color;
+                  color: variables.$theme-2-color;
               }
               // & .mega-menu ul.submenu li ul li:hover a {
               //     color: $theme-2-color;
               // }
               & .mega-menu ul.submenu li ul li a:hover {
-                  color: $theme-2-color;
+                  color: variables.$theme-2-color;
               }
           }
       }
@@ -547,7 +550,7 @@ animation: 300ms ease-in-out 0s normal none 1 running fadeInDown;
 .mobile-menu-btn{
   & a{
       font-size: 18px;
-      color: $black-2;
+      color: variables.$black-2;
   }
 }
 
@@ -573,10 +576,10 @@ opacity: 1;
 .extra__info{
   &-close{
       & a{
-          color: $black-2;
+          color: variables.$black-2;
           font-size: 18px;
           &:hover{
-              color: $theme-color;
+              color: variables.$theme-color;
           }
       }
   }
@@ -587,11 +590,11 @@ opacity: 1;
       padding: 30px;
       width: 350px;
       height: 100%;
-      background: $white;
+      background: variables.$white;
       -webkit-transition: all .3s cubic-bezier(0.785, 0.135, 0.15, 0.86);
       -moz-transition: all .3s cubic-bezier(0.785, 0.135, 0.15, 0.86);
       transition: all .3s cubic-bezier(0.785, 0.135, 0.15, 0.86);
-      @include box-shadow(-5px 0 20px -5px rgba(0, 0, 0, 0.5));
+      @include mixins.box-shadow(-5px 0 20px -5px rgba(0, 0, 0, 0.5));
       z-index: 9999;
   }
   &-logo{
@@ -601,14 +604,14 @@ opacity: 1;
   &-content{
       margin-bottom: 30px;
       & h4{
-          color: $white;
+          color: variables.$white;
           font-size: 20px;
           font-weight: 500;
           margin-bottom: 20px;
           text-transform: capitalize;
       }
       & p{
-          color: $white;
+          color: variables.$white;
           margin-bottom: 25px;
       }
 
@@ -619,13 +622,13 @@ opacity: 1;
               & .icon{
                   & i{
                       line-height: 27px;
-                      color: $white;
+                      color: variables.$white;
                       margin-right: 15px;
                   }
               }
               & .text{
                   & span{
-                      color: $white;
+                      color: variables.$white;
                   }
               }
           }
@@ -657,25 +660,25 @@ display: none;
     & > a {
       padding: 13px 0;
       display: block;
-      border-bottom: 1px solid rgba($color: $black-2, $alpha: .5);
+      border-bottom: 1px solid rgba($color: variables.$black-2, $alpha: .5);
       font-size: 16px;
-      color: $black-2;
+      color: variables.$black-2;
       font-weight: 500;
       text-transform: uppercase;
       position: relative;
 
       &:hover {
-        color: $theme-color;
+        color: variables.$theme-color;
         padding-left: 5px;
       }
     }
 
     & a[aria-expanded="true"] {
-      color: $black-2;
+      color: variables.$black-2;
 
       &:before {
-        background: $black-2;
-        border-color: $black-2;
+        background: variables.$black-2;
+        border-color: variables.$black-2;
       }
     }
 
@@ -688,12 +691,12 @@ display: none;
 
         &:hover {
           > a {
-            color: $theme-color;
+            color: variables.$theme-color;
             padding-left: 20px;
 
             &:before {
-              background: $black-2;
-              border-color: $black-2;
+              background: variables.$black-2;
+              border-color: variables.$black-2;
             }
           }
         }
@@ -712,7 +715,7 @@ display: none;
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            border: 2px solid $black;
+            border: 2px solid variables.$black;
             border-radius: 50%;
           }
         }

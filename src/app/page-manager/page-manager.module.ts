@@ -9,6 +9,7 @@ import { PagesAdminModule } from './page-administration/pages-admin.module';
 import { SplashScreenAdminModule } from './splash-screen-admin/splash-screen-admin.module';
 import { PageManagerComponent } from './page-manager.component';
 import { DxTabsModule } from 'devextreme-angular';
+import { PageManagerRoutingModule } from './page-manager-routing.module';
 
 
 
@@ -18,6 +19,7 @@ import { DxTabsModule } from 'devextreme-angular';
   ],
   imports: [
     CommonModule,
+    PageManagerRoutingModule,
     CardsAdminModule,
     ComponentAdminModule,
     FormsAdminModule,

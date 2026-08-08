@@ -21,11 +21,13 @@ import { CustomersComponent } from './customers/customers.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
 import { ShippingLabelListComponent } from './shipping-labels/shippingLabelList/shippingLabelList.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { AdminManagerRoutingModule } from './admin-manager-routing.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
+    AdminManagerRoutingModule,
     ImageUploaderModule,
     DxCheckBoxModule,
     DxContextMenuModule,

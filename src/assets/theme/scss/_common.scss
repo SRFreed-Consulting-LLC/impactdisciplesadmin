@@ -1,3 +1,6 @@
+@use "mixins";
+@use "variables";
+
 /*----------------------------------------*/
 /*  01. Theme default CSS
 /*----------------------------------------*/
@@ -10,10 +13,10 @@
 	box-sizing: border-box;
 }
  body {
-	font-family: $pop;
+	font-family: variables.$pop;
 	font-size: 14px;
 	font-weight: normal;
-	color: $body-text-color;
+	color: variables.$body-text-color;
 	line-height: 24px;
 }
 
@@ -58,7 +61,7 @@ h3,
 h4,
 h5,
 h6 {
-	@include transition(.3s);
+	@include mixins.transition(.3s);
 }
 a:focus,
 .button:focus {
@@ -99,12 +102,12 @@ h3,
 h4,
 h5,
 h6 {
-	font-family: $pop;
-	color: $heading-color;
+	font-family: variables.$pop;
+	color: variables.$heading-color;
 	margin-top: 0px;
 	font-weight: 500;
 	line-height: 1.2;
-	@include transition(.3s);
+	@include mixins.transition(.3s);
 }
 
 h1 {
@@ -133,27 +136,27 @@ li {
 	list-style: none;
 }
 p {
-	font-family: $pop;
+	font-family: variables.$pop;
 	font-size: 14px;
 	font-weight: normal;
-	color: $body-text-color;
+	color: variables.$body-text-color;
 	margin-bottom: 15px;
 	line-height: 24px;
 }
 
 *::-moz-selection {
-	background: $theme-color;
-	color: $white;
+	background: variables.$theme-color;
+	color: variables.$white;
 	text-shadow: none;
 }
 ::-moz-selection {
-	background: $theme-color;
-	color:$white;
+	background: variables.$theme-color;
+	color:variables.$white;
 	text-shadow: none;
 }
 ::selection {
-	background: $theme-color;
-	color: $white;
+	background: variables.$theme-color;
+	color: variables.$white;
 	text-shadow: none;
 }
 
@@ -161,12 +164,12 @@ p {
     - Input Placeholder
 -----------------------------------------*/
 *::-moz-placeholder {
-	color: $black;
+	color: variables.$black;
 	font-size: 14px;
 	opacity: 1;
 }
 *::placeholder {
-	color: $black;
+	color: variables.$black;
 	font-size: 14px;
 	opacity: 1;
 }
@@ -199,21 +202,21 @@ p {
     - Background color
 -----------------------------------------*/
 .grey-bg {
-	background: $grey;
+	background: variables.$grey;
 }
 
 .theme-bg {
-	background: $theme-color;
+	background: variables.$theme-color;
 }
 .white-bg {
-	background:$white;
+	background:variables.$white;
 }
 .black-bg {
-	background: $black;
+	background: variables.$black;
 }
 
 .footer-bg {
-	background: $footer-bg;
+	background: variables.$footer-bg;
 }
 
 
@@ -235,18 +238,18 @@ p {
 .text-white span,
 .text-white li,
 .text-white a {
-	color: $white !important;
+	color: variables.$white !important;
 }
 
 .white-color {
-	color: $white;
+	color: variables.$white;
 }
 
 .theme-color {
-	color: $theme-color !important;
+	color: variables.$theme-color !important;
 }
 .black-color {
-	color: $black;
+	color: variables.$black;
 }
 // .primary-color {
 // 	color: #222;
@@ -269,19 +272,19 @@ p {
 
 .pl-250{
 	padding-left: 250px;
-	@media #{$laptop}{
+	@media #{variables.$laptop}{
 		padding-left: 50px;
 	}
-	@media #{$lg}{
+	@media #{variables.$lg}{
 		padding-left: 25px;
 	}
-	@media #{$md}{
+	@media #{variables.$md}{
 		padding-left: 25px;
 	}
-	@media #{$sm}{
+	@media #{variables.$sm}{
 		padding-left: 25px;
 	}
-	@media #{$xs}{
+	@media #{variables.$xs}{
 		padding-left: 10px;
 	}
 }
@@ -291,11 +294,11 @@ p {
 .box-25{
 	padding-left: 25px;
 	padding-right: 25px;
-	@media #{$sm}{
+	@media #{variables.$sm}{
 		padding-left: 15px;
 		padding-right: 15px;
 	}
-	@media #{$xs}{
+	@media #{variables.$xs}{
 		padding-left: 0px;
 		padding-right: 0px;
 	}
@@ -304,18 +307,18 @@ p {
 .box-m-15{
 	margin-left: 15px;
 	margin-right: 15px;
-	@media #{$sm}{
+	@media #{variables.$sm}{
 		margin-left: 15px;
 		margin-right: 15px;
 	}
-	@media #{$xs}{
+	@media #{variables.$xs}{
 		margin-left: 15px;
 		margin-right: 15px;
 	}
 }
 
 .box-white{
-	@media #{$xs}{
+	@media #{variables.$xs}{
 		padding-top: 0;
 	}
 }
@@ -330,31 +333,31 @@ p {
 		width: calc(100% + 100px);
 		height: calc(100% + 30px);
 		background: #ffffff;
-		@media #{$laptop}{
+		@media #{variables.$laptop}{
 			top: -15px;
 			left: -15px;
 			width: calc(100% + 30px);
 			height: calc(100% + 30px);
 		}
-		@media #{$lg}{
+		@media #{variables.$lg}{
 			top: -30px;
 			left: -30px;
 			width: calc(100% + 60px);
 			height: calc(100% + 60px);
 		}
-		@media #{$md}{
+		@media #{variables.$md}{
 			top: -40px;
 			left: -35px;
 			width: calc(100% + 70px);
 			height: calc(100% + 80px);
 		}
-		@media #{$sm}{
+		@media #{variables.$sm}{
 			top: -20px;
 			left: -20px;
 			width: calc(100% + 40px);
 			height: calc(100% + 40px);
 		}
-		@media #{$xs}{
+		@media #{variables.$xs}{
 			top: -15px;
 			left: -15px;
 			width: calc(100% + 30px);
@@ -366,10 +369,10 @@ p {
 
 .box-pb-40{
 	padding-bottom: 40px;
-	@media #{$sm}{
+	@media #{variables.$sm}{
 		padding-bottom: 30px;
 	}
-	@media #{$xs}{
+	@media #{variables.$xs}{
 		padding-bottom: 15px;
 	}
 }
@@ -397,13 +400,13 @@ p {
 	height: 50px;
 	line-height: 46px;
 	padding: 0 42px;
-	border: 2px solid $border;
-	color: $black-2;
+	border: 2px solid variables.$border;
+	color: variables.$black-2;
 	background: transparent;
 	z-index: 1;
 	font-size: 12px;
 	& span{
-		color: $theme-color;
+		color: variables.$theme-color;
 	}
 	&::after{
 		position: absolute;
@@ -412,21 +415,21 @@ p {
 		left: 0;
 		width: 100%;
 		height: 0;
-		background-color: $theme-color;
+		background-color: variables.$theme-color;
 		z-index: -1;
 	}
 	&:hover{
-		color: $white;
-		border-color: $theme-color;
+		color: variables.$white;
+		border-color: variables.$theme-color;
 		&::after{
 			height: 100%;
 		}
 		& span{
-			color: $white;
+			color: variables.$white;
 		}
 	}
 	&-2{
-		border-color: $black-2;
+		border-color: variables.$black-2;
 	}
 	&-3{
 		padding: 0 77px;
@@ -437,24 +440,24 @@ p {
 		}
 	}
 	&-black{
-		color: $white;
-		background-color: $black-2;
-		border-color: $black-2;
+		color: variables.$white;
+		background-color: variables.$black-2;
+		border-color: variables.$black-2;
 		&::after{
-			background-color: $theme-color;
+			background-color: variables.$theme-color;
 		}
 		&:hover{
-			border-color: $theme-color;
+			border-color: variables.$theme-color;
 		}
 	}
 	&-white{
-		color: $white;
-		border-color: $white;
+		color: variables.$white;
+		border-color: variables.$white;
 		&:hover{
-			color: $black-2;
-			border-color: $white;
+			color: variables.$black-2;
+			border-color: variables.$white;
 			&::after{
-				background: $white;
+				background: variables.$white;
 			}
 		}
 	}
@@ -468,13 +471,13 @@ p {
 	height: 50px;
 	line-height: 46px;
 	padding: 0 42px;
-	border: 2px solid $black-2;
-	color: $black-2;
+	border: 2px solid variables.$black-2;
+	color: variables.$black-2;
 	background: transparent;
 	z-index: 1;
 	font-size: 12px;
 	& span{
-		color: $theme-color;
+		color: variables.$theme-color;
 	}
 	&::after{
 		position: absolute;
@@ -483,17 +486,17 @@ p {
 		left: 0;
 		width: 100%;
 		height: 0;
-		background-color: $theme-2-color;
+		background-color: variables.$theme-2-color;
 		z-index: -1;
 	}
 	&:hover{
-		color: $white;
-		border-color: $theme-2-color;
+		color: variables.$white;
+		border-color: variables.$theme-2-color;
 		&::after{
 			height: 100%;
 		}
 		& span{
-			color: $white;
+			color: variables.$white;
 		}
 	}
 }
@@ -506,13 +509,13 @@ p {
 	height: 50px;
 	line-height: 46px;
 	padding: 0 42px;
-	border: 2px solid $border;
-	color: $white;
+	border: 2px solid variables.$border;
+	color: variables.$white;
 	background: transparent;
 	z-index: 1;
 	font-size: 12px;
 	& span{
-		color: $theme-color;
+		color: variables.$theme-color;
 	}
 	&::after{
 		position: absolute;
@@ -521,38 +524,38 @@ p {
 		left: 0;
 		width: 100%;
 		height: 0;
-		background-color: $theme-2-color;
+		background-color: variables.$theme-2-color;
 		z-index: -1;
 	}
 	&:hover{
-		color: $white;
-		border-color: $theme-2-color;
+		color: variables.$white;
+		border-color: variables.$theme-2-color;
 		&::after{
 			height: 100%;
 		}
 		& span{
-			color: $white;
+			color: variables.$white;
 		}
 	}
 }
 .link-btn{
 	font-size: 12px;
-	color: $black-soft;
+	color: variables.$black-soft;
 	text-transform: capitalize;
 	font-weight: 500;
 	&:hover{
-		color: $theme-color;
+		color: variables.$theme-color;
 	}
 }
 .action-btn{
-	background: $black;
-	color: $white;
+	background: variables.$black;
+	color: variables.$white;
 	font-size: 14px;
 	padding: 15px 31.9px;
 	transition: .3s;
 	&:hover{
-		background: $theme-2-color;
-		color: $white;
+		background: variables.$theme-2-color;
+		color: variables.$white;
 	}
 }
 
@@ -561,7 +564,7 @@ p {
 	&__title{
 		position: relative;
 		&::after{
-			border-top: 1px solid $border;
+			border-top: 1px solid variables.$border;
 			content: "";
 			left: 0;
 			margin: 0;
@@ -576,13 +579,13 @@ p {
 			background: #fff none repeat scroll 0 0;
 			padding: 0 50px;
 			z-index: 1;
-			@media #{$xs}{
+			@media #{variables.$xs}{
 				font-size: 30px;
 				padding: 0 15px;
 			}
 		}
 		& p{
-			color: $black-soft-2;
+			color: variables.$black-soft-2;
 			margin-bottom: 0;
 		}
 		&-2{
@@ -590,12 +593,12 @@ p {
 			padding-right: 130px;
 			font-size: 24px;
 			text-transform: uppercase;
-			color: $black;
+			color: variables.$black;
 			font-weight: 700;
-			@media #{$sm,$xs} {
+			@media #{variables.$sm,variables.$xs} {
 				font-size: 20px;
 			}
-			@media #{$xs} {
+			@media #{variables.$xs} {
 				padding-right: 0;
 				padding-left: 0;
 			}
@@ -603,7 +606,7 @@ p {
 				padding: 0 70px;
 				display: inline-block;
 				position: relative;
-				@media #{$sm,$xs} {
+				@media #{variables.$sm,variables.$xs} {
 					padding: 0 30px;
 				}
 				&::before,&::after{
@@ -615,7 +618,7 @@ p {
 					top: 13px;
 					border-top: 1px solid #ebebeb;
 					border-bottom: 1px solid #ebebeb;
-					@media #{$xs} {
+					@media #{variables.$xs} {
 						display: none;
 					}
 				}
@@ -642,24 +645,24 @@ p {
 .page{
 	&__title{
 		height: 530px;
-		@include background();
-		@media #{$sm}{
+		@include mixins.background();
+		@media #{variables.$sm}{
 			height: 400px;
 		}
-		@media #{$xs}{
+		@media #{variables.$xs}{
 			height: 350px;
 		}
 		&-inner{
 			& h1{
 				font-size: 36px;
-				color: $black-2;
+				color: variables.$black-2;
 				text-transform: capitalize;
 				margin-bottom: 25px;
 			}
-			@media #{$sm}{
+			@media #{variables.$sm}{
 				margin-top: 100px;
 			}
-			@media #{$xs}{
+			@media #{variables.$xs}{
 				margin-top: 100px;
 			}
 		}
@@ -668,22 +671,22 @@ p {
 				background: transparent;
 				padding: 0;
 				margin-bottom: 0;
-				@include border-radius(0);
+				@include mixins.border-radius(0);
 			}
 			& .breadcrumb-item{
 				font-size: 12px;
 				text-transform: capitalize;
-				color: $black-soft;
+				color: variables.$black-soft;
 				font-weight: 500;
 				& a{
 					&:hover{
-						color: $theme-color;
+						color: variables.$theme-color;
 					}
 				}
 				&.active{
-					color: $black-2;
+					color: variables.$black-2;
 					&::before{
-						color: $black-soft;
+						color: variables.$black-soft;
 					}
 				}
 			}
@@ -700,7 +703,7 @@ p {
             display: inline-block;
             & span{
                 font-size: 10px;
-                color: $theme-color;
+                color: variables.$theme-color;
             }
         }
 	}
@@ -710,7 +713,7 @@ p {
 			& li{
 				& span{
 					font-size: 12px;
-					color: $theme-color;
+					color: variables.$theme-color;
 				}
 			}
 		}
@@ -722,7 +725,7 @@ p {
 			& ul{
 				& li{
 					& span{
-						color: $theme-2-color;
+						color: variables.$theme-2-color;
 					}
 				}
 			}
@@ -739,14 +742,14 @@ p {
 		content: '';
 		left: 0;
 		top: 50%;
-		@include transform(translateY(-50%));
+		@include mixins.transform(translateY(-50%));
 		height: 12px;
 		width: 1px;
 		background: #dcdcdc;
 	}
 	& a{
 		&:hover{
-			color: $theme-color;
+			color: variables.$theme-color;
 		}
 	}
 }
@@ -761,22 +764,22 @@ p {
 	line-height: 40px;
 	text-align: center;
 	font-size: 15px;
-	color:  $white;
+	color:  variables.$white;
 	list-style-type: none;
-	background: $theme-color;
+	background: variables.$theme-color;
 	margin-right: 20px;
-	border: 1px solid  $theme-color;
+	border: 1px solid  variables.$theme-color;
 	z-index: 999;
 }
 #scroll .scroll-link{
-	border: 1px solid  $theme-2-color;
-	background: $theme-2-color;
+	border: 1px solid  variables.$theme-2-color;
+	background: variables.$theme-2-color;
 }
 
 /* border bottom 1*/
 
 .border-top-1{
-	border-top: 1px solid $border;
+	border-top: 1px solid variables.$border;
 }
 
 
@@ -784,13 +787,13 @@ p {
 
 .sidebar{
 	&__wrapper{
-		@media #{$md}{
+		@media #{variables.$md}{
 			margin-top: 50px;
 		}
-		@media #{$sm}{
+		@media #{variables.$sm}{
 			margin-top: 50px;
 		}
-		@media #{$xs}{
+		@media #{variables.$xs}{
 			margin-top: 50px;
 		}
 	}
@@ -806,9 +809,9 @@ p {
 			& li{
 				margin-bottom: 8px;
 				& a{
-					color: $black-soft;
+					color: variables.$black-soft;
 					&:hover{
-						color: $black-2;
+						color: variables.$black-2;
 					}
 				}
 			}
@@ -830,23 +833,23 @@ p {
 			margin: 0 5px;
 			&.active{
 				& a{
-					border-color: $black;
+					border-color: variables.$black;
 				}
 			}
 			& a{
 				height: 35px;
 				width: 35px;
 				background: transparent;
-				color: $black;
+				color: variables.$black;
 				font-size: 12px;
 				font-weight: 500;
 				line-height: 31px;
 				margin: 0px;
 				display: inline-block;
 				text-align: center;
-				border: 2px solid $border;
+				border: 2px solid variables.$border;
 				&:hover{
-					border-color: $black;
+					border-color: variables.$black;
 				}
 			}
 		}

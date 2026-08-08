@@ -127,7 +127,7 @@
       [showNavButtons]="true">
       <div *dxTemplate="let galleryItem of 'item'">
         <div>
-          <img src="{{ galleryItem.item_url }}" height="{{  galleryItem.item_height }}" width="{{ galleryItem.item_width }}"/>
+          <img src="{{ galleryItem.item_url }}" height="{{  galleryItem.item_height }}" width="{{ galleryItem.item_width }}" alt="{{ galleryItem.item_name }}"/>
         </div>
       </div>
     </dx-gallery>

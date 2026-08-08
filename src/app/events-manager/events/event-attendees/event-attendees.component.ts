@@ -16,11 +16,9 @@ import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-tim
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
 import { environment } from 'src/environments/environment';
 import { exportDataGrid as exportPDFDataGrid} from 'devextreme/pdf_exporter';
-import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
 import jsPDF from 'jspdf';
-import { saveAs } from 'file-saver';
-import { Workbook } from 'exceljs';
 import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
+import { exportGridToExcel } from '../../../shared/grid-export.util';
 
 @Component({
     selector: 'app-event-attendees',
@@ -248,20 +246,7 @@ export class EventAttendeesComponent implements OnInit{
   }
 
   exportXLSGrid = () => {
-    const context = this;
-
-    const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet('Attendees');
-
-    exportXLSDataGrid({
-      component: context.attendeeGrid.instance,
-      worksheet,
-      autoFilterEnabled: true,
-    }).then(() => {
-      workbook.xlsx.writeBuffer().then((buffer) => {
-        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'attendee_list.xlsx');
-      });
-    });
+    exportGridToExcel(this.attendeeGrid.instance, 'attendee_list.xlsx');
   }
 
   showColumnChooser = () => {

@@ -78,7 +78,7 @@ export class FileManagerService {
       const newImageRef = ref(this.storage, item['parentPath'] + '/' + newName);
 
       return uploadBytes(newImageRef, b).then(result => {
-        return deleteObject(imagesRef).then(() => console.log('deleted'));
+        return deleteObject(imagesRef);
       })
     }).catch((error) => {
       console.error(error)

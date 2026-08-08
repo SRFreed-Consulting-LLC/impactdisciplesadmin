@@ -148,12 +148,10 @@ export class ShippingLabelListComponent implements OnInit {
   }
 
   startCustomLoading(){
-    console.log('loading')
     this.addressGrid.instance.beginCustomLoading("Requesting Shipping Estimates for Labels")
   }
 
   stopCustomLoading(){
-    console.log('stopping')
     this.addressGrid.instance.endCustomLoading();
   }
 }

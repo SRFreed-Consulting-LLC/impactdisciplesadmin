@@ -11,11 +11,13 @@ import { ConsultationsSurveysComponent } from './consultations-surveys/consultat
 import { RequestsManagerComponent } from './requests-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { RequestsManagerRoutingModule } from './requests-manager-routing.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
+    RequestsManagerRoutingModule,
     ImageUploaderModule,
     DxAutocompleteModule,
     DxContextMenuModule,

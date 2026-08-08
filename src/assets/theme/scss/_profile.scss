@@ -1,3 +1,6 @@
+@use "mixins";
+@use "variables";
+
 
 
 .profile{
@@ -8,13 +11,13 @@
             padding-right: 40px;
         }
         &-thumb{
-            @media #{$sm, $xs}{
+            @media #{variables.$sm, variables.$xs}{
                 margin-bottom: 20px;
             }
             & img{
                 width: 70px;
                 height: 70px;
-                @include border-radius(50%);
+                @include mixins.border-radius(50%);
                 border: 1px solid #e4e4e4;
             }
         }
@@ -40,7 +43,7 @@
             }
         }
         &-cart{
-            @media #{$sm, $xs}{
+            @media #{variables.$sm, variables.$xs}{
                 margin-top: 25px;
             }
             & .cart-info{
@@ -78,7 +81,7 @@
                 background-color: #bc8246;
                 color: #fff;
                 font-weight: 500;
-                @include border-radius(50%);
+                @include mixins.border-radius(50%);
 
             }
         }
@@ -144,7 +147,7 @@
             background-color: #fff;
             margin-bottom: 15px;
 
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding-left: 15px;
                 padding-right: 15px;
             }
@@ -176,7 +179,7 @@
         &-wrapper{
             padding: 0 70px;
 
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding-left: 15px;
                 padding-right: 15px;
             }
@@ -203,7 +206,7 @@
     &__edit{
         &-wrapper{
             padding: 40px 60px;
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding-left: 15px;
                 padding-right: 15px;
             }
@@ -222,7 +225,7 @@
                 line-height: 56px;
                 background: var(--tp-grey-2);
                 border: 1px solid #ececec;
-                @include border-radius(4px);
+                @include mixins.border-radius(4px);
                 padding-left: 30px;
                 padding-right: 45px;
                 &::placeholder{
@@ -264,7 +267,7 @@
             padding: 20px 70px;
             background-color: #fff;
             margin-bottom: 15px;
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding-left: 15px;
                 padding-right: 15px;
             }
@@ -317,12 +320,12 @@
     }
     &__list{
         padding: 35px 70px 5px;
-        @media #{$xs}{
+        @media #{variables.$xs}{
             padding-left: 15px;
             padding-right: 15px;
         }
         & .table{
-            @media #{$md, $sm, $xs}{
+            @media #{variables.$md, variables.$sm, variables.$xs}{
                 width: 600px;
             }
         }
@@ -390,7 +393,7 @@
             padding: 20px 70px;
             background-color: #fff;
             margin-bottom: 15px;
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding-left: 15px;
                 padding-right: 15px;
             }
@@ -420,7 +423,7 @@
         }
         &-wrapper{
             padding: 0 70px;
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding-left: 15px;
                 padding-right: 15px;
             }
@@ -446,7 +449,7 @@
     }
     &__form{
         padding: 35px 70px;
-        @media #{$xs}{
+        @media #{variables.$xs}{
             padding-left: 15px;
             padding-right: 15px;
         }
@@ -465,7 +468,7 @@
             line-height: 56px;
             background: var(--tp-grey-2);
             border: 1px solid #ececec;
-            @include border-radius(4px);
+            @include mixins.border-radius(4px);
             padding-left: 30px;
             padding-right: 45px;
             &::placeholder{

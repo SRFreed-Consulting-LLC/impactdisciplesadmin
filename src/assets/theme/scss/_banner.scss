@@ -1,3 +1,6 @@
+@use "mixins";
+@use "variables";
+
 /*----------------------------------------*/
 /*  04. BANNER CSS START
 /*----------------------------------------*/
@@ -6,7 +9,7 @@
     &__area{
         &-df{
             display: flex;
-            @media #{$lg,$md,$sm,$xs} {
+            @media #{variables.$lg,variables.$md,variables.$sm,variables.$xs} {
                 display: block;
             }
         }
@@ -19,27 +22,27 @@
             left: -20px;
             width: calc(100% + 40px);
             height: calc(100% + 40px);
-            background: $white;
-            @media #{$laptop}{
+            background: variables.$white;
+            @media #{variables.$laptop}{
                 width: calc(100% + 30px);
                 height: calc(100% + 30px);
                 top: -15px;
                 left: -15px;
             }
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 display: none;
             }
-            @media #{$sm}{
+            @media #{variables.$sm}{
                 display: none;
             }
         }
-        @media #{$md}{
+        @media #{variables.$md}{
             margin-top: 30px;
         }
-        @media #{$sm}{
+        @media #{variables.$sm}{
             margin-top: 30px;
         }
-        @media #{$xs}{
+        @media #{variables.$xs}{
             margin-top: 30px;
         }
     }
@@ -52,7 +55,7 @@
         &:hover{
             & .banner__thumb{
                 & img{
-                    @include transform(scale(1.1));
+                    @include mixins.transform(scale(1.1));
                 }
             }
             & .banner__content{
@@ -66,7 +69,7 @@
             &:hover{
                 & .banner__thumb{
                     & img{
-                        @include transform(scale(1.1));
+                        @include mixins.transform(scale(1.1));
                     }
                 }
             }
@@ -75,7 +78,7 @@
             position: relative;
             margin-right: 10px;
             width: 50%;
-            @media #{$lg,$md,$sm,$xs}{
+            @media #{variables.$lg,variables.$md,variables.$sm,variables.$xs}{
                 width: 100%;
             }
             &:last-child{
@@ -98,7 +101,7 @@
                 }
                 & img{
                     width: 100%;
-                    @media #{$xs,$sm} {
+                    @media #{variables.$xs,variables.$sm} {
                         height: 230px;
                     }
                 }
@@ -120,9 +123,9 @@
     &__content{
         top: 50%;
         left: 10%;
-        @include transform(translateY(-50%));
+        @include mixins.transform(translateY(-50%));
         & span{
-            color: $theme-color;
+            color: variables.$theme-color;
             margin-bottom: 15px;
         }
         & h5{
@@ -130,79 +133,79 @@
             line-height: 22px;
             & a{
                 &:hover{
-                    color: $theme-color;
+                    color: variables.$theme-color;
                 }
             }
         }
         &-2{
             top: 50%;
             left: 85px;
-            @include transform(translateY(-50%));
-            @media #{$lg}{
+            @include mixins.transform(translateY(-50%));
+            @media #{variables.$lg}{
                 left: 40px;
             }
-            @media #{$md}{
+            @media #{variables.$md}{
                 left: 40px;
             }
-            @media #{$sm}{
+            @media #{variables.$sm}{
                 left: 40px;
             }
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 left: 15px;
             }
             &.banner__content-2-right{
                 left: 100px;
-                @media #{$lg}{
+                @media #{variables.$lg}{
                     left: 55px;
                 }
-                @media #{$md}{
+                @media #{variables.$md}{
                     left: 40px;
                 }
-                @media #{$sm}{
+                @media #{variables.$sm}{
                     left: 40px;
                 }
-                @media #{$xs}{
+                @media #{variables.$xs}{
                     left: 15px;
                 }
             }
             & span{
-                color: $theme-color
+                color: variables.$theme-color
             }
             & h4{
                 font-size: 18px;
                 margin-bottom: 10px;
                 margin-bottom: 15px;
-                @media #{$laptop}{
+                @media #{variables.$laptop}{
                     margin-bottom: 25px;
                 }
-                @media #{$sm}{
+                @media #{variables.$sm}{
                     margin-bottom: 25px;
                 }
-                @media #{$xs}{
+                @media #{variables.$xs}{
                     margin-bottom: 25px;
                 }
                 & a{
                     &:hover{
-                        color: $theme-color;
+                        color: variables.$theme-color;
                     }
                 }
             }
             & p{
-                color: $black-soft;
+                color: variables.$black-soft;
                 margin-bottom: 37px;
-                @media #{$laptop}{
+                @media #{variables.$laptop}{
                     display: none;
                 }
-                @media #{$lg}{
+                @media #{variables.$lg}{
                     display: none;
                 }
-                @media #{$md}{
+                @media #{variables.$md}{
                     display: none;
                 }
-                @media #{$sm}{
+                @media #{variables.$sm}{
                     display: none;
                 }
-                @media #{$xs}{
+                @media #{variables.$xs}{
                     display: none;
                 }
             }
@@ -211,7 +214,7 @@
             left: 25px;
             &.banner__content-4-right{
                 left: 45px;
-                @media #{$xs}{
+                @media #{variables.$xs}{
                     left: 25px;
                 }
             }
@@ -230,11 +233,11 @@
             transition: .3s;
             & h5{
                 font-size: 18px;
-                color: $white;
+                color: variables.$white;
                 margin-bottom: 20px;
             }
             & p{
-                color: $white;
+                color: variables.$white;
                 margin-bottom: 30px;
                 padding: 0px 10px;
             }
@@ -243,25 +246,25 @@
 }
 .banner-right{
     padding-right: 15px;
-    @media #{$md}{
+    @media #{variables.$md}{
         padding-right: 0;
     }
-    @media #{$sm}{
+    @media #{variables.$sm}{
         padding-right: 0;
     }
-    @media #{$xs}{
+    @media #{variables.$xs}{
         padding-right: 0;
     }
 }
 .banner-left{
     padding-left: 15px;
-    @media #{$md}{
+    @media #{variables.$md}{
         padding-left: 0;
     }
-    @media #{$sm}{
+    @media #{variables.$sm}{
         padding-left: 0;
     }
-    @media #{$xs}{
+    @media #{variables.$xs}{
         padding-left: 0;
     }
 }
@@ -270,7 +273,7 @@
 .video{
     &__area{
         &-df{
-            @include background ();
+            @include mixins.background ();
             min-height: 565px;
             position: relative;
             z-index: 1;
@@ -294,10 +297,10 @@
         text-align: center;
         & p{
             font-size: 18px;
-            color: $white;
+            color: variables.$white;
             margin-bottom: 0;
         }
-        @media #{$xs,$sm} {
+        @media #{variables.$xs,variables.$sm} {
             padding: 0 30px;
         }
     }
@@ -307,22 +310,22 @@
             height: 60px;
             width: 60px;
             line-height: 56px;
-            border: 3px solid $white;
+            border: 3px solid variables.$white;
             border-radius: 50%;
-            color: $white;
+            color: variables.$white;
             font-size: 15px;
             &:hover{
-                border-color: $theme-2-color;
-                color: $theme-2-color;
+                border-color: variables.$theme-2-color;
+                color: variables.$theme-2-color;
             }
         }
     }
     &__title{
-        color: $white;
+        color: variables.$white;
         font-size: 40px;
         text-transform: uppercase;
         line-height: 48px;
-        @media #{$xs,$sm} {
+        @media #{variables.$xs,variables.$sm} {
             font-size: 30px;
         }
     }
@@ -354,7 +357,7 @@
                 opacity: 1;
             }
               .swiper-pagination-bullets .swiper-pagination-bullet-active {
-                background-color: $theme-2-color;
+                background-color: variables.$theme-2-color;
                 width: 30px;
             }
 
@@ -403,15 +406,15 @@
     border-radius: 50%;
     border: 1px solid var(--vela-color-primary);
     color: #fff;
-    background: $theme-2-color;
+    background: variables.$theme-2-color;
     font-size: 0;
     -webkit-transition: all 0.35s ease;
     -o-transition: all 0.35s ease;
     transition: all 0.35s ease;
     &:hover{
-      background: $black-2;
-      color: $white;
-      border-color: $white;
+      background: variables.$black-2;
+      color: variables.$white;
+      border-color: variables.$white;
     }
   }
   .owl-nav > div:before {
@@ -421,7 +424,7 @@
     font-family: var(--vela-font-icon); }
   .owl-nav .owl-prev {
     left: -15px;
-    @media #{$xs} {
+    @media #{variables.$xs} {
         left: 0;
       }
     }
@@ -432,7 +435,7 @@
   }
   .owl-nav .owl-next {
     right: -15px;
-    @media #{$xs} {
+    @media #{variables.$xs} {
         right: 0;
       }
     }

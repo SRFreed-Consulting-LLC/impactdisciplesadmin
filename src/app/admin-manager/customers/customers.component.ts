@@ -423,7 +423,6 @@ export class CustomersComponent implements OnInit {
     }
 
     list.then(subscribers => {
-      console.log(subscribers)
       subscribers.forEach(subscriber => {
         html = this.email.html
         html = html.replace('{{Recipient First Name}}', subscriber.firstName);

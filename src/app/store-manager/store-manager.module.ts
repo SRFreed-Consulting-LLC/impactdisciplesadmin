@@ -15,6 +15,7 @@ import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte
 import { SalesComponent } from './sales/sales.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { StoreManagerRoutingModule } from './store-manager-routing.module';
 
 @NgModule({
   declarations: [
@@ -33,6 +34,7 @@ import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploa
   ],
   imports: [
     CommonModule,
+    StoreManagerRoutingModule,
     ImageUploaderModule,
     DxButtonModule,
     DxCheckBoxModule,

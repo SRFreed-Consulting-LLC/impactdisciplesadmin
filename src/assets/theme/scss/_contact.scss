@@ -1,3 +1,5 @@
+@use "variables";
+
 /*----------------------------------------*/
 /*  12. CONTACT CSS START
 /*----------------------------------------*/
@@ -18,9 +20,9 @@
                 &:hover{
                     & .contact__info-icon{
                         & i{
-                            border-color: $black-2;
-                            background: $black-2;
-                            color: $white;
+                            border-color: variables.$black-2;
+                            background: variables.$black-2;
+                            color: variables.$white;
                         }
                     }
                 }
@@ -35,7 +37,7 @@
                 height: 53px;
                 line-height: 49px;
                 text-align: center;
-                border: 2px solid $border;
+                border: 2px solid variables.$border;
             }
         }
         &-content{
@@ -44,7 +46,7 @@
                 margin-bottom: 2px;
             }
             & span{
-                color: $black-soft-2;
+                color: variables.$black-soft-2;
             }
         }
     }
@@ -55,22 +57,22 @@
                 margin-right: 42px;
                 & a{
                     font-size: 18px;
-                    color: $black-soft-2;
+                    color: variables.$black-soft-2;
                     &:hover{
-                        color: $theme-color;
+                        color: variables.$theme-color;
                     }
                 }
             }
         }
     }
     &__form{
-        @media #{$md}{
+        @media #{variables.$md}{
             margin-top: 50px;
         }
-        @media #{$sm}{
+        @media #{variables.$sm}{
             margin-top: 50px;
         }
-        @media #{$xs}{
+        @media #{variables.$xs}{
             margin-top: 50px;
         }
         & h3{
@@ -98,7 +100,7 @@
             font-size: 14px;
             // margin-bottom: 22px;
             &:focus{
-                border-color: $theme-color;
+                border-color: variables.$theme-color;
             }
         }
         & textarea{

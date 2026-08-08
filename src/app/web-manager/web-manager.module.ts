@@ -16,10 +16,12 @@ import { HomePageImagesComponent } from './home-page-images/home-page-images.com
 import { MonthlyNewslettersComponent } from './monthly-newsletters/monthly-newsletters.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
 import { HomePagePopupsComponent } from './home-page-popups/home-page-popups.component';
+import { WebManagerRoutingModule } from './web-manager-routing.module';
 
 @NgModule({
   imports: [
     CommonModule,
+    WebManagerRoutingModule,
     DxDataGridModule,
     DxContextMenuModule,
     DxButtonModule,

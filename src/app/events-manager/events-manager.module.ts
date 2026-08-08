@@ -20,6 +20,7 @@ import { EventApplicationComponent } from './events/event-application/event-appl
 import { DetailsComponent } from './events/event-application/details/details.component';
 import { EventBreakoutsComponent } from './events/event-breakouts/event-breakouts.component';
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { EventsManagerRoutingModule } from './events-manager-routing.module';
 
 @NgModule({
     declarations: [
@@ -40,6 +41,7 @@ import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploa
     ],
     imports: [
       CommonModule,
+      EventsManagerRoutingModule,
       SharedModule,
       FormsModule,
       ImageUploaderModule,

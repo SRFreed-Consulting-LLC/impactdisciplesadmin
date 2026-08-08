@@ -1,3 +1,5 @@
+@use "variables";
+
 /*----------------------------------------*/
 /*  13. ERROR CSS START
 /*----------------------------------------*/
@@ -15,10 +17,10 @@
             font-size: 50px;
             font-weight: 500;
             margin-bottom: 32px;
-            @media #{$sm}{
+            @media #{variables.$sm}{
                 font-size: 45px;
             }
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 font-size: 25px;
             }
         }
@@ -31,10 +33,10 @@
             font-size: 300px;
             color: #e5e5e5;
             line-height: 1;
-            @media #{$sm}{
+            @media #{variables.$sm}{
                 font-size: 200px;
             }
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 font-size: 100px;
             }
         }
@@ -46,13 +48,13 @@
             padding: 0 15px;
             text-align: center;
             font-size: 14px;
-            border: 1px solid $border;
+            border: 1px solid variables.$border;
             margin-bottom: 50px;
             &::placeholder{
                 color: #8c8c8c;
             }
             &:focus{
-                border-color: $theme-color;
+                border-color: variables.$theme-color;
             }
         }
     }

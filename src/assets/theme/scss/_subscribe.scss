@@ -1,10 +1,12 @@
+@use "variables";
+
 /*----------------------------------------*/
 /*  08. SUBSCRIBE CSS START
 /*----------------------------------------*/
 
 .subscribe{
     &__inner{
-        border-top: 1px solid $border;
+        border-top: 1px solid variables.$border;
         &-2{
             border: none;
         }
@@ -17,7 +19,7 @@
         & p{
             padding: 0 60px;
             margin-bottom: 53px;
-            @media #{$xs}{
+            @media #{variables.$xs}{
                 padding: 0;
             }
         }
@@ -28,7 +30,7 @@
             height: 50px;
             line-height: 50px;
             padding: 0 20px;
-            color: $black;
+            color: variables.$black;
             font-size: 14px;
             border: none;
             border-bottom: 1px solid #c1c1c1;
@@ -36,7 +38,7 @@
             margin-bottom: 40px;
             background: transparent;
             &:focus{
-                border-color: $theme-color;
+                border-color: variables.$theme-color;
             }
             &::placeholder{
                 color: #8c8c8c;

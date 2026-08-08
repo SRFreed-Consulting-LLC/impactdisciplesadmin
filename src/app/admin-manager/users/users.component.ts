@@ -10,9 +10,7 @@ import { confirm } from 'devextreme/ui/dialog';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { Address } from 'impactdisciplescommon/src/models/domain/utils/address.model';
 import { Phone } from 'impactdisciplescommon/src/models/domain/utils/phone.model';
-import { Workbook } from 'exceljs';
-import { exportDataGrid as exportXLSDataGrid} from 'devextreme/excel_exporter';
-import { saveAs } from 'file-saver';
+import { exportGridToExcel } from '../../shared/grid-export.util';
 
 @Component({
     selector: 'app-users',
@@ -170,19 +168,6 @@ export class UsersComponent implements OnInit {
   }
 
   exportXLSGrid = () => {
-    const context = this;
-
-    const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet('Attendees');
-
-    exportXLSDataGrid({
-      component: context.userGrid.instance,
-      worksheet,
-      autoFilterEnabled: true,
-    }).then(() => {
-      workbook.xlsx.writeBuffer().then((buffer) => {
-        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'impact_users.xlsx');
-      });
-    });
+    exportGridToExcel(this.userGrid.instance, 'impact_users.xlsx');
   }
 }

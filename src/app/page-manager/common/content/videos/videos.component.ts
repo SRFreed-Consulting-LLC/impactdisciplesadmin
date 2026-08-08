@@ -1,4 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { Video } from '../../models/ui/video.model';
 import { QueryParam, WhereFilterOperandKeys } from 'impactdisciplescommon/src/dao/firebase.dao';
 import { VideoService } from '../../services/video.service';
@@ -8,11 +9,13 @@ import { VideoService } from '../../services/video.service';
     templateUrl: './videos.component.html',
     standalone: false
 })
-export class VideosComponent implements OnInit {
+export class VideosComponent implements OnInit, OnDestroy {
   @Input('video_type') videoType: string;
 
   allVideos: Video[] = [];
   currentVideo: Video = {... new Video()};
+
+  private ngUnsubscribe = new Subject<void>();
 
   constructor(private videoService: VideoService) {}
 
@@ -21,11 +24,16 @@ export class VideosComponent implements OnInit {
     qp.push(new QueryParam('video_year', WhereFilterOperandKeys.equal, new Date().getFullYear()));
     qp.push(new QueryParam('video_type', WhereFilterOperandKeys.equal, this.videoType));
 
-    this.videoService.queryAllStreamByMultiValue(qp).subscribe(videos => {
+    this.videoService.queryAllStreamByMultiValue(qp).pipe(takeUntil(this.ngUnsubscribe)).subscribe(videos => {
       this.allVideos = videos;
 
       this.currentVideo = this.allVideos[this.allVideos.length-1];
     })
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   changeCurrentRecord(e){

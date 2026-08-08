@@ -9,11 +9,13 @@ import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdis
 import { SubscriptionsManagerComponent } from './subscriptions-manager.component';
 import { SharedModule } from "../shared/shared.module";
 import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { SubscriptionsManagerRoutingModule } from './subscriptions-manager-routing.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
+    SubscriptionsManagerRoutingModule,
     ImageUploaderModule,
     DxContextMenuModule,
     DxDataGridModule,
