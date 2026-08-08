@@ -15,4 +15,9 @@ dx-tabs {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  /* Small breathing room so the tab's own content never touches the tab
+     strip above it or the window edges - a house rule applied identically
+     to every manager module's tab content area. */
+  padding: 16px;
+  box-sizing: border-box;
 }
