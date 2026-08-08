@@ -8,6 +8,7 @@ import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule,
 import { OrganizationsComponent } from './organizations/organizations.component';
 import { ImpactDisciplesCommonModule } from "../../../impactdisciplescommon/src/impactdisciples.common.module";
 import { CoachesComponent } from './coaches/coaches.component';
+import { CoachDialogComponent } from './coaches/coach-dialog.component';
 import { EventsComponent } from './events/events.component';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
 import { EventAgendaComponent } from './events/event-agenda/event-agenda.component';
@@ -19,7 +20,11 @@ import { AnnouncementsComponent } from './events/event-application/announcements
 import { EventApplicationComponent } from './events/event-application/event-application.component';
 import { DetailsComponent } from './events/event-application/details/details.component';
 import { EventBreakoutsComponent } from './events/event-breakouts/event-breakouts.component';
-import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+// This app's own Material file browser, replacing the DevExtreme
+// dx-file-manager-backed app-image-uploader from impactdisciplescommon -
+// see src/app/shared/image-uploader/ for the full rationale (built during
+// the Web Manager migration, reused throughout Store Manager).
+import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { EventsManagerRoutingModule } from './events-manager-routing.module';
 import { CourseDialogComponent } from './courses/course-dialog.component';
 import { RoomDialogComponent } from './locations/room/room-dialog.component';
@@ -35,6 +40,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { QuillModule } from 'ngx-quill';
 
 @NgModule({
     declarations: [
@@ -43,6 +51,7 @@ import { MatSelectModule } from '@angular/material/select';
       CoursesComponent,
       CourseDialogComponent,
       CoachesComponent,
+      CoachDialogComponent,
       LocationsComponent,
       LocationDialogComponent,
       OrganizationsComponent,
@@ -97,7 +106,10 @@ import { MatSelectModule } from '@angular/material/select';
       MatIconModule,
       MatButtonModule,
       MatTooltipModule,
-      MatSelectModule
+      MatSelectModule,
+      MatTabsModule,
+      MatSlideToggleModule,
+      QuillModule
     ]
 })
 export class EventsManagerModule { }

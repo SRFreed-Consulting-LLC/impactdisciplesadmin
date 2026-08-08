@@ -1,0 +1,35 @@
+.active-template {
+  padding: 5px 15px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #fff;
+}
+
+/* See admin-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.coaches-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.coaches-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

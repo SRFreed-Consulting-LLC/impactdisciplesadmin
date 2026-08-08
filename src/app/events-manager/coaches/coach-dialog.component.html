@@ -1,0 +1,102 @@
+<app-popup-header [formGroup]="form" [title]="(isEdit ? 'EDIT' : 'ADD') + ' COACH'" [showCloseButton]="true" (closed)="onCancel()">
+  <mat-slide-toggle popup-header-actions formControlName="isActive">Live</mat-slide-toggle>
+</app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-tab-group class="coach-tabs">
+    <mat-tab label="About">
+      <div class="tab-content">
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" required>
+            <mat-error *ngIf="form.get('firstName')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" required>
+            <mat-error *ngIf="form.get('lastName')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Title</mat-label>
+            <input matInput formControlName="title" required>
+            <mat-error *ngIf="form.get('title')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Organization</mat-label>
+            <mat-select formControlName="organization" required>
+              <mat-option *ngFor="let org of organizations$ | async" [value]="org.id">{{ org.name }}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.get('organization')?.hasError('required')">Required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Sort Order</mat-label>
+            <input matInput type="number" formControlName="sortOrder">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Team Page Sort Order</mat-label>
+            <input matInput type="number" formControlName="teamPageSortOrder">
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>URL</mat-label>
+          <input matInput formControlName="url">
+        </mat-form-field>
+
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Picture</mat-label>
+            <input matInput [value]="card.photoUrl?.name ?? ''" readonly>
+          </mat-form-field>
+          <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+            {{ card.photoUrl?.name ? 'Change Picture' : 'Upload Picture' }}
+          </button>
+        </div>
+        <img *ngIf="card.photoUrl?.url" class="image-preview" [src]="card.photoUrl.url" [alt]="card.photoUrl.name">
+
+        <label class="section-label">Shipping Address</label>
+        <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
+
+        <label class="section-label">Phone Number</label>
+        <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Biography">
+      <div class="tab-content">
+        <quill-editor formControlName="bio" [modules]="richTextModules"></quill-editor>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (onClick)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>
+
+<ng-container *ngIf="isImageUploaderVisible$ | async">
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'photoUrl'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+</ng-container>

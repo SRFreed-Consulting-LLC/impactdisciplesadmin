@@ -1,279 +1,103 @@
+<!-- "Coach" + 's' naive-pluralizes to "Coachs" - hardcoded here instead. -->
+<app-list-header title="Coaches" [actions]="actions"></app-list-header>
 
-<div class="content-block responsive-paddings">
-  <dx-toolbar class="content-list__header py-2 px-2">
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <h2 class="content-block responsive-paddings underline">{{itemType}}s</h2>
-      </div>
-    </dxi-item>
-    <dxi-item location="after">
-      <div *dxTemplate>
-        <dx-button class="icon-button manage-button" hint="MANAGE COACHES">
-          <div *dxTemplate="let data of 'content'">
-            <div class="d-flex">
-              <i class="dx-icon-preferences"></i>
-            </div>
-            <dx-context-menu
-              target=".manage-button"
-              showEvent="dxclick"
-              [position]="{ my: { x: 'center', y: 'top' }, at: 'left bottom' }">
-              <dxi-item text="New" icon="add" [onClick]="showAddModal"></dxi-item>
-            </dx-context-menu>
-          </div>
-        </dx-button>
-      </div>
-    </dxi-item>
-  </dx-toolbar>
+<div class="table-scroll">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+  <table mat-table [dataSource]="(coaches$ | async) ?? []" class="coaches-table">
+    <ng-container matColumnDef="isActive">
+      <th mat-header-cell *matHeaderCellDef>Live</th>
+      <td mat-cell *matCellDef="let item">
+        <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
+          {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
+        </span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="photoUrl">
+      <th mat-header-cell *matHeaderCellDef>Picture</th>
+      <td mat-cell *matCellDef="let item">
+        <img *ngIf="item.photoUrl" width="60" [src]="item.photoUrl.url" [alt]="item.firstName + ' ' + item.lastName">
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="sortOrder">
+      <th mat-header-cell *matHeaderCellDef>Sort Order</th>
+      <td mat-cell *matCellDef="let item">{{ item.sortOrder }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="teamPageSortOrder">
+      <th mat-header-cell *matHeaderCellDef>Team Page Sort Order</th>
+      <td mat-cell *matCellDef="let item">{{ item.teamPageSortOrder }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="lastName">
+      <th mat-header-cell *matHeaderCellDef>Last</th>
+      <td mat-cell *matCellDef="let item">{{ item.lastName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="firstName">
+      <th mat-header-cell *matHeaderCellDef>First</th>
+      <td mat-cell *matCellDef="let item">{{ item.firstName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="title">
+      <th mat-header-cell *matHeaderCellDef>Title</th>
+      <td mat-cell *matCellDef="let item">{{ item.title }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="organization">
+      <th mat-header-cell *matHeaderCellDef>Organization</th>
+      <td mat-cell *matCellDef="let item">{{ organizationName(item) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let item" class="actions-column">
+        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- Filter row -->
+    <ng-container matColumnDef="isActive-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="photoUrl-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="sortOrder-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="teamPageSortOrder-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+    <ng-container matColumnDef="lastName-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('lastName', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="firstName-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('firstName', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="title-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="organization-filter">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('organization', $event)"></app-column-filter>
+      </th>
+    </ng-container>
+    <ng-container matColumnDef="actions-filter">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+  </table>
 </div>
-<dx-data-grid class="dx-card wide-card"
-  #grid
-  [dataSource]="datasource$ | async"
-  [height]="'75vh'"
-  [showBorders]="false"
-  [showColumnLines]="true"
-  [showColumnLines]="true"
-  [showRowLines]="true"
-  [focusedRowEnabled]="true"
-  [columnAutoWidth]="true"
-  (onRowDblClick)="showEditModal($event)">
-
-  <dxo-filter-row [visible]="true"></dxo-filter-row>
-  <dxo-scrolling mode="virtual"></dxo-scrolling>
-
-  <dxi-column dataField="isActive" dataType="boolean" [caption]="'Live'" cellTemplate="isActiveCellTemplate" [width]="120"></dxi-column>
-  <dxi-column dataField="photoUrl" [width]="100" [caption]="'Picture'" [allowFiltering]="false" [allowSorting]="false" cellTemplate="imageCellTemplate"></dxi-column>
-  <dxi-column dataField="sortOrder" [sortOrder]="'asc'"></dxi-column>
-  <dxi-column dataField="teamPageSortOrder"></dxi-column>
-  <dxi-column dataField="lastName" [caption]="'Last'"></dxi-column>
-  <dxi-column dataField="firstName" [caption]="'First'"></dxi-column>
-  <dxi-column dataField="title" [caption]="'Title'"></dxi-column>
-  <dxi-column dataField="organization" [caption]="'Organization'">
-    <dxo-lookup [dataSource]="organizations" displayExpr="name" valueExpr="id" [allowClearing]="true"></dxo-lookup>
-  </dxi-column>
-  <dxi-column dataField="bio" [caption]="'Biography'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.countryCode" [caption]="'Country Code'" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.number" [caption]="'Number'" [editorOptions]="{ mask: '(000) 000-0000' }" cellTemplate="phoneNumberCellTemplate" [visible]="false"></dxi-column>
-  <dxi-column dataField="phone.type" [caption]="'Type'" [visible]="false">
-    <dxo-lookup [dataSource]="phone_types" [allowClearing]="true"></dxo-lookup>
-  </dxi-column>
-  <dxi-column type="buttons" [width]="150" caption="Actions">
-    <dxi-button icon="trash" hint="DELETE" [onClick]="delete"></dxi-button>
-  </dxi-column>
-
-  <div *dxTemplate="let cell of 'phoneNumberCellTemplate'">
-    <div class="">
-      {{ cell.data.phone | phoneNumberMask : false }}
-    </div>
-  </div>
-  <div *dxTemplate="let cell of 'imageCellTemplate'">
-    <img  width="100" [src]="cell.data?.photoUrl?.url" alt="Picture of {{ cell.data.firstName }} {{ cell.data.lastName }}"/>
-  </div>
-
-  <div *dxTemplate="let cell of 'isActiveCellTemplate'">
-    <span class="active-template" [style.background-color]="cell.data.isActive ? '#29d029' : 'red'">
-      {{ cell.data.isActive ? 'LIVE' : 'INACTIVE' }}
-    </span>
-  </div>
-</dx-data-grid>
-
-<dx-popup
-  [showTitle]="true"
-  [dragEnabled]="false"
-  [visible]="isVisible$ | async"
-  [width]="'60%'"
-  [height]="'80%'"
-  [showCloseButton]="true"
-  (onHiding)="onCancel()">
-  <dxi-toolbar-item toolbar="top" location="center">
-    <div *dxTemplate>
-      <p class="popup-title">
-        {{ selectedItem?.id ? 'EDIT' : 'ADD' }} {{itemType | uppercase}}
-      </p>
-    </div>
-  </dxi-toolbar-item>
-  <dxi-toolbar-item toolbar="top" location="after" *ngIf="isVisible$ | async">
-    <div *dxTemplate>
-      <dx-switch [(value)]="selectedItem.isActive" [switchedOnText]="'Live'" [switchedOffText]="'Hidden'" [width]="100"></dx-switch>
-    </div>
-  </dxi-toolbar-item>
-  <div *dxTemplate="let data of 'content'">
-    <div class="add-item-modal">
-      <dx-scroll-view [height]="'90%'">
-        <div class="add-item-modal__content" *ngIf="isVisible$ | async">
-          <dx-form
-            #addEditForm
-            [(formData)]="selectedItem"
-            [showColonAfterLabel]="false"
-            labelLocation="left">
-            <dxi-item itemType="tabbed">
-              <dxi-tab title="About">
-                <dxi-item itemType="group" caption="Coach" [colCount]="4" [colSpan]="1">
-                  <dxi-item dataField="firstName" [colSpan]="2" [isRequired]="true"></dxi-item>
-                  <dxi-item dataField="lastName" [colSpan]="2" [isRequired]="true"></dxi-item>
-                  <dxi-item dataField="title" [colSpan]="2"  [isRequired]="true"></dxi-item>
-                  <dxi-item dataField="organization" [colSpan]="2" [isRequired]="true">
-                    <div *dxTemplate>
-                      <dx-select-box [(value)]="selectedItem.organization" [dataSource]="organizations" [displayExpr]="'name'" [valueExpr]="'id'"></dx-select-box>
-                    </div>
-                  </dxi-item>
-                  <dxi-item dataField="sortOrder" [colSpan]="1">
-                    <div *dxTemplate>
-                      <dx-number-box [(value)]="selectedItem.sortOrder"></dx-number-box>
-                    </div>
-                  </dxi-item>
-                  <dxi-item dataField="teamPageSortOrder" [colSpan]="1">
-                    <div *dxTemplate>
-                      <dx-number-box [(value)]="selectedItem.teamPageSortOrder"></dx-number-box>
-                    </div>
-                  </dxi-item>
-                  <dxi-item dataField="url" [colSpan]="2"></dxi-item>
-                </dxi-item>
-                <dxi-item itemType="group" caption="Shipping Address" [colCount]="6" [colSpan]="1">
-                  <dxi-item dataField="shippingAddress.address1" [colSpan]="6" [label]="{ text: 'Address 1' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.address2" [colSpan]="6" [label]="{ text: 'Address 2' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.city" [colSpan]="3"  [label]="{ text: 'City' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.state" [colSpan]="2" [label]="{ text: 'State' }">
-                    <div *dxTemplate>
-                      <dx-lookup
-                        [showCancelButton]="false"
-                        [items]="states"
-                        [(value)]="selectedItem.shippingAddress.state">
-                      </dx-lookup>
-                    </div>
-                  </dxi-item>
-                  <dxi-item dataField="shippingAddress.zip" [colSpan]="1" [label]="{ text: 'Zip' }"></dxi-item>
-                  <dxi-item dataField="shippingAddress.country" [colSpan]="3" [label]="{ text: 'Country' }">
-                    <div *dxTemplate>
-                      <dx-lookup
-                        [showCancelButton]="false"
-                        [items]="countries"
-                        [(value)]="selectedItem.shippingAddress.country">
-                      </dx-lookup>
-                    </div>
-                  </dxi-item>
-                </dxi-item>
-                <dxi-item itemType="group" caption="Phone" [colCount]="4" [colSpan]="1">
-                  <dxi-item dataField="phone.countryCode" [colSpan]="1"  [label]="{ text: 'Country Code' }"></dxi-item>
-                  <dxi-item dataField="phone.number" [colSpan]="2" [label]="{ text: 'Number' }"></dxi-item>
-                  <dxi-item dataField="phone.type" [colSpan]="2" [label]="{text: 'Type'}">
-                    <div *dxTemplate>
-                      <dx-select-box [(value)]="selectedItem.phone.type" [dataSource]="phone_types"></dx-select-box>
-                    </div>
-                  </dxi-item>
-                </dxi-item>
-              </dxi-tab>
-              <dxi-tab title="Biography">
-                <dxi-item dataField="bio" [colSpan]="2" [template]="'bio_template'">
-                  <dxo-label [visible]="false" ></dxo-label>
-                </dxi-item>
-              </dxi-tab>
-            </dxi-item>
-
-            <div *dxTemplate="let data of 'bio_template'">
-              <dx-html-editor
-                height="50vh"
-                [(value)]="selectedItem.bio">
-                <dxo-toolbar [multiline]="false">
-                  <dxi-item name="undo"></dxi-item>
-                  <dxi-item name="redo"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item
-                    name="size"
-                    [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
-                    [options]="{ inputAttr: { 'aria-label': 'Font size' } }">
-                  </dxi-item>
-                  <dxi-item
-                    name="font"
-                    [acceptedValues]="[
-                      'Arial',
-                      'Courier New',
-                      'Georgia',
-                      'Impact',
-                      'Lucida Console',
-                      'Tahoma',
-                      'Times New Roman',
-                      'Verdana'
-                    ]"
-                    [options]="{ inputAttr: { 'aria-label': 'Font family' } }">
-                  </dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="bold"></dxi-item>
-                  <dxi-item name="italic"></dxi-item>
-                  <dxi-item name="strike"></dxi-item>
-                  <dxi-item name="underline"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="alignLeft"></dxi-item>
-                  <dxi-item name="alignCenter"></dxi-item>
-                  <dxi-item name="alignRight"></dxi-item>
-                  <dxi-item name="alignJustify"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="orderedList"></dxi-item>
-                  <dxi-item name="bulletList"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item
-                    name="header"
-                    [acceptedValues]="[false, 1, 2, 3, 4, 5]"
-                    [options]="{ inputAttr: { 'aria-label': 'Header' } }">
-                  </dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="color"></dxi-item>
-                  <dxi-item name="background"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="link"></dxi-item>
-                  <dxi-item name="image"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="clear"></dxi-item>
-                  <dxi-item name="codeBlock"></dxi-item>
-                  <dxi-item name="blockquote"></dxi-item>
-                  <dxi-item name="separator"></dxi-item>
-                  <dxi-item name="insertTable"></dxi-item>
-                  <dxi-item name="deleteTable"></dxi-item>
-                  <dxi-item name="insertRowAbove"></dxi-item>
-                  <dxi-item name="insertRowBelow"></dxi-item>
-                  <dxi-item name="deleteRow"></dxi-item>
-                  <dxi-item name="insertColumnLeft"></dxi-item>
-                  <dxi-item name="insertColumnRight"></dxi-item>
-                  <dxi-item name="deleteColumn"></dxi-item>
-                </dxo-toolbar>
-              </dx-html-editor>
-            </div>
-          </dx-form>
-        </div>
-      </dx-scroll-view>
-      <div class="add-item-modal__button-group" style="bottom: 10px; right: 10px; position: fixed;">
-        <dx-button
-          text="Upload Main Image"
-          width="250px"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="showSingleImageModal()">
-        </dx-button>
-        <dx-button
-          text="CANCEL"
-          stylingMode="contained"
-          type="normal"
-          [disabled]="inProgress$ | async"
-          (onClick)="onCancel()">
-        </dx-button>
-        <app-indicator-button
-          [isInProgress]="inProgress$ | async"
-          [title]="'SAVE'"
-          [disabled]="inProgress$ | async"
-          (onClick)="onSave(selectedItem)">
-        </app-indicator-button>
-      </div>
-    </div>
-  </div>
-</dx-popup>
-
-<ng-container *ngIf="isSingleImageVisible$ | async">
-  <app-image-uploader
-    [card]="selectedItem"
-    [isList]="false"
-    [field]="'photoUrl'"
-    [selectionMode]="'single'"
-    [imageSelectVisible]="isSingleImageVisible$ | async"
-    (imageSelectClosed)="closeSingleImageModal()">
-  </app-image-uploader>
-</ng-container>
