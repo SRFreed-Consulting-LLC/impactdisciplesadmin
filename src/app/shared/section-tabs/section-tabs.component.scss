@@ -1,0 +1,59 @@
+// Matches the original dx-tabs bar's appearance, measured via live
+// getComputedStyle()/getBoundingClientRect() + zoomed screenshots against
+// the actual running app: a light grey strip (bordered top/bottom), each
+// tab flex-equal-width with a thin right-hand divider, unselected tabs a
+// slightly lighter grey than the strip, the selected tab white with a
+// border on three sides whose bottom edge is erased (matched to white) so
+// it visually merges into the white content area directly below it.
+.section-tabs {
+  display: flex;
+  height: 41px;
+  background: #f2f2f2;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  box-sizing: border-box;
+}
+
+.section-tabs__tab {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 39px;
+  margin-top: 1px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f7;
+  border: none;
+  border-right: 1px solid #ddd;
+  color: #333;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover:not(&--selected) {
+    background: #eeeeee;
+  }
+
+  &--selected {
+    background: #fff;
+    border: 1px solid #ddd;
+    // Cancels the strip's own border-bottom for exactly this tab's width,
+    // so it reads as attached to (part of) the white content panel below
+    // it rather than boxed-in on all four sides.
+    border-bottom-color: #fff;
+    margin-top: 0;
+    margin-bottom: -1px;
+    height: 40px;
+  }
+}

@@ -49,8 +49,32 @@
   margin-top: 16px;
 }
 
+// Purchases/Events Attended: these tabs' sticky header row (no filter row,
+// just one) needs .table-scroll itself to be the genuinely bounded scroll
+// container, not the shared .tab-content above - the same "phantom box"
+// problem fixed on every top-level list screen (see e.g.
+// customers.component.scss), just never applied here since .tab-content's
+// own max-height + overflow-y: auto was already providing scrolling for
+// the OTHER (form-based) tabs. .table-scroll's required overflow-x: auto
+// forces overflow-y to also compute to auto (the two axes are coupled
+// whenever either isn't visible) - without an explicit bound of its own,
+// that makes it an accidental scroll container that's always exactly as
+// tall as its own content, leaving position: sticky nothing to stick
+// within.
+.tab-content--table {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .table-scroll {
   overflow-x: auto;
+}
+
+.tab-content--table .table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sub-table {

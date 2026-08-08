@@ -1,0 +1,11 @@
+<app-popup-header title="SHIPPING LABEL RESULTS" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
+
+<mat-dialog-content>
+  <div class="result-row">Total Requests Made: {{ data.results.length }}</div>
+  <div class="result-row">Total Successful: {{ getCount('CREATED') }}</div>
+  <div class="result-row">Total Failed: {{ getCount('FAILED') }}</div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-raised-button color="primary" type="button" (click)="onClose()">CLOSE</button>
+</mat-dialog-actions>

@@ -12,6 +12,7 @@ import { PhoneFieldComponent } from './phone-field/phone-field.component';
 import { PhoneMaskDirective } from './phone-field/phone-mask.directive';
 import { AddressFieldComponent } from './address-field/address-field.component';
 import { VariableInserterComponent } from './rich-text-editor/variable-inserter.component';
+import { SectionTabsComponent } from './section-tabs/section-tabs.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -37,7 +38,8 @@ import { MatSelectModule } from '@angular/material/select';
     PhoneFieldComponent,
     PhoneMaskDirective,
     AddressFieldComponent,
-    VariableInserterComponent
+    VariableInserterComponent,
+    SectionTabsComponent
   ],
   imports: [
     CommonModule,
@@ -69,7 +71,8 @@ import { MatSelectModule } from '@angular/material/select';
     PhoneFieldComponent,
     PhoneMaskDirective,
     AddressFieldComponent,
-    VariableInserterComponent
+    VariableInserterComponent,
+    SectionTabsComponent
   ]
 })
 export class SharedModule {}

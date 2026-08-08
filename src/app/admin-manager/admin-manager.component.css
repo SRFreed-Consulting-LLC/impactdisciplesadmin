@@ -1,9 +1,11 @@
-/* dx-tabs (Logs/Notifications/Users/...) fixed at the top, .manager-content
-   fills whatever's left and does the ONLY scrolling here - the reliable
-   "fixed chrome, one bounded scroll region" pattern used throughout every
-   dialog this session, applied at the module-root level too. This replaces
-   an earlier position: sticky attempt: sticky worked for dx-tabs itself,
-   but a sibling problem turned up one level down (see
+/* app-section-tabs (Logs/Notifications/Users/... - a from-scratch
+   replacement for DevExtreme's dx-tabs, styled to match it exactly, see
+   shared/section-tabs) fixed at the top, .manager-content fills whatever's
+   left and does the ONLY scrolling here - the reliable "fixed chrome, one
+   bounded scroll region" pattern used throughout every dialog this
+   session, applied at the module-root level too. This replaced an earlier
+   position: sticky attempt: sticky worked for the tab bar itself, but a
+   sibling problem turned up one level down (see
    list-header.component.scss / customers.component.css) - CDK Table's own
    JS-driven sticky header/footer positioning silently never applied at
    all (confirmed live: header rows carried no position, no sticky class,
@@ -25,7 +27,7 @@
   height: 100%;
 }
 
-dx-tabs {
+app-section-tabs {
   flex: 0 0 auto;
 }
 

@@ -2,14 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogMessagesComponent } from './log-messages/log-messages.component';
 import { UsersComponent } from './users/users.component';
-import { DxButtonModule, DxCheckBoxModule, DxContextMenuModule, DxDataGridModule, DxFileUploaderModule, DxFormModule, DxListModule, DxLoadIndicatorModule,
-         DxLoadPanelModule,
-         DxLookupModule,
-         DxNumberBoxModule,
-         DxPopupModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextAreaModule, DxTextBoxModule,
-         DxToolbarModule,
-         DxTreeListModule,
-         DxValidatorModule} from 'devextreme-angular';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { WebConfigComponent } from './web-config/web-config.component';
 import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
@@ -19,8 +11,10 @@ import { SharedModule } from '../shared/shared.module';
 import { EmailTemplatesComponent } from './email-templates/email-templates.component';
 import { CustomersComponent } from './customers/customers.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
-import { ShippingLabelListComponent } from './shipping-labels/shippingLabelList/shippingLabelList.component';
-import { ImageUploaderModule } from 'impactdisciplescommon/src/forms/image-uploader/image-uploader.module';
+import { ShippingBatchDialogComponent } from './shipping-labels/shipping-batch-dialog.component';
+import { ShippingLabelDialogComponent } from './shipping-labels/shipping-label-dialog.component';
+import { FromAddressDialogComponent } from './shipping-labels/from-address-dialog.component';
+import { ShippingResultsDialogComponent } from './shipping-labels/shipping-results-dialog.component';
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
 import { NotificationDialogComponent } from './notifications/notification-dialog.component';
 import { UserDialogComponent } from './users/user-dialog.component';
@@ -49,28 +43,6 @@ import { QuillModule } from 'ngx-quill';
   imports: [
     CommonModule,
     AdminManagerRoutingModule,
-    ImageUploaderModule,
-    DxCheckBoxModule,
-    DxContextMenuModule,
-    DxDataGridModule,
-    DxButtonModule,
-    DxFormModule,
-    DxFileUploaderModule,
-    DxLoadPanelModule,
-    DxLookupModule,
-    DxListModule,
-    DxLoadIndicatorModule,
-    DxNumberBoxModule,
-    DxPopupModule,
-    DxSelectBoxModule,
-    DxSwitchModule,
-    DxTabsModule,
-    DxTagBoxModule,
-    DxTextBoxModule,
-    DxTextAreaModule,
-    DxToolbarModule,
-    DxTreeListModule,
-    DxValidatorModule,
     ImpactDisciplesCommonModule,
     SharedModule,
     FormsModule,
@@ -105,7 +77,10 @@ import { QuillModule } from 'ngx-quill';
     EmailTemplatesComponent,
     EmailTemplateDialogComponent,
     ShippingLabelsComponent,
-    ShippingLabelListComponent
+    ShippingBatchDialogComponent,
+    ShippingLabelDialogComponent,
+    FromAddressDialogComponent,
+    ShippingResultsDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe

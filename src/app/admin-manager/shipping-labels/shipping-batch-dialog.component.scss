@@ -1,0 +1,55 @@
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 1000;
+}
+
+// Same bounded-scroll-region pattern as every other dialog this session
+// (e.g. email-template-dialog.component.scss): mat-dialog-content's own
+// default max-height/overflow-y: auto conflicts with .table-scroll's own
+// scroll, and .table-scroll needs a genuinely resolved height anyway for
+// the table's sticky header row to work (see styles.scss).
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  height: 65vh;
+  max-height: 65vh;
+  overflow: hidden;
+}
+
+.batch-actions {
+  flex: 0 0 auto;
+  padding-bottom: 8px;
+
+  mat-icon {
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+}
+
+.table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.labels-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.labels-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}

@@ -1,18 +1,14 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { ShippingLabelBatchRequest, ShippingLabelRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Observable, Subject, takeUntil } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { ShippingLabelBatchRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
 import { ShippingLabelBatchService } from 'impactdisciplescommon/src/services/data/shipping-label-batch.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
-import notify from 'devextreme/ui/notify';
-import DataSource from 'devextreme/data/data_source';
-import CustomStore from 'devextreme/data/custom_store';
 import { ShippingLabelService } from 'impactdisciplescommon/src/services/data/shipping-label.service';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
-import { WebConfigService } from 'impactdisciplescommon/src/services/data/web-config.service';
-import { WebConfigModel } from 'impactdisciplescommon/src/models/utils/web-config.model';
-import { ShippingFromAddress } from 'impactdisciplescommon/src/models/domain/shipment.model';
-import { ShippingLabelListComponent } from './shippingLabelList/shippingLabelList.component';
+import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ShippingBatchDialogComponent } from './shipping-batch-dialog.component';
 
 @Component({
     selector: 'app-shipping-labels',
@@ -20,182 +16,77 @@ import { ShippingLabelListComponent } from './shippingLabelList/shippingLabelLis
     styleUrls: ['./shipping-labels.component.css'],
     standalone: false
 })
-export class ShippingLabelsComponent implements OnInit {
-  @ViewChild('shippinglabellist', { static: false }) shippinglabellist: ShippingLabelListComponent;
-
-  batchDatasource$: Observable<DataSource>;
-
-  public isLabelsVisible$ = new BehaviorSubject<boolean>(false);
-  public isFromAddressVisible$ = new BehaviorSubject<boolean>(false);
-  public isResultsVisible$ = new BehaviorSubject<boolean>(false);
-
-  public inProgress$ = new BehaviorSubject<boolean>(false);
-
-  selectedBatch: ShippingLabelBatchRequest;
-
-  labelResults: ShippingLabelRequest[];
-
+export class ShippingLabelsComponent implements OnInit, OnDestroy {
+  batches$: Observable<ShippingLabelBatchRequest[]>;
+  displayedColumns = ['createdDate', 'createdBy', 'id', 'actions'];
 
   itemType = 'Shipping Label Batch';
 
-  public states: { key: string; value: string; }[];
-  public countries: { key: string; value: string; }[];
+  actions: ListHeaderAction[] = [{ label: 'Create Shipping Labels', icon: 'add', onClick: () => this.addBatch() }];
 
-  config: WebConfigModel;
+  private ngUnsubscribe = new Subject<void>();
+  // Was read fresh via authService.getLoggedInUser().email - see
+  // events.component.ts for the full explanation (a stale/expired role
+  // cookie throwing on a valid Firebase session).
+  private currentUserEmail?: string;
 
-  constructor(private authService: AdminAuthService,
+  constructor(
     private batchService: ShippingLabelBatchService,
     private labelService: ShippingLabelService,
-    private webConfigService: WebConfigService) { }
+    private authService: AdminAuthService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
-  ngOnInit() {
-    this.batchDatasource$ = this.batchService.streamAll().pipe(
-      map(
-        (items) =>
-          new DataSource({
-            reshapeOnPush: true,
-            pushAggregationTimeout: 100,
-            store: new CustomStore({
-              key: 'id',
-              loadMode: 'raw',
-              load: function (loadOptions: any) {
-                return items;
-              }
-            })
-          }
-        )
-      )
-    );
+  ngOnInit(): void {
+    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+      this.currentUserEmail = user?.email;
+    });
 
-    this.states = EnumHelper.getState2LetterTypesAsArray().map((k, v) => {return {key: k[0], value:k[1]}});
-    this.countries = EnumHelper.getCountry2LetterTypesAsArray().map((k, v) => {return {key: k[0], value:k[1]}});
+    this.batches$ = this.batchService.streamAll();
   }
 
-  addBatch = () => {
-    let batchRequest = {... new ShippingLabelBatchRequest()};
-    batchRequest.createdDate = new Date();
-    batchRequest.createdBy = this.authService.getLoggedInUser().email;
-
-    this.batchService.add(batchRequest).then(batch => {
-      this.selectedBatch = batch;
-
-      this.openBatchModal();
-    })
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
-  editBatch = (e) => {
-    this.selectedBatch = (Object.assign({}, e.data));
-    this.openBatchModal();
-  }
+  addBatch(): void {
+    const batchRequest: ShippingLabelBatchRequest = {
+      ...new ShippingLabelBatchRequest(),
+      createdDate: new Date(),
+      createdBy: this.currentUserEmail!
+    };
 
-  saveFromAddress(){
-    this.batchService.update(this.selectedBatch.id, this.selectedBatch).then(batch => {
-      notify({
-        message: 'From Address Saved',
-        position: 'top',
-        width: 600,
-        type: 'success'
-      });
-      this.isFromAddressVisible$.next(false);
-    })
-  }
-
-  deleteBatch = ({ row: { data } }) => {
-    confirm('<i>Are you sure you want to delete this batch?</i>', 'Confirm').then((dialogResult) => {
-      if (dialogResult) {
-        this.labelService.getAllByValue('batchId', data.id).then(labels => {
-          labels.forEach(async label => {
-            await this.labelService.delete(label.id)
-          })
-        }).then(() =>{
-          this.batchService.delete(data.id).then(() => {
-            notify({
-              message: this.itemType + ' Deleted',
-              position: 'top',
-              width: 600,
-              type: 'success'
-            });
-          })
-        })
-      }
+    this.batchService.add(batchRequest).then((batch) => {
+      this.openBatchDialog(batch);
     });
   }
 
-  openBatchModal() {
-    this.inProgress$.next(false);
-    this.isLabelsVisible$.next(true);
+  editBatch(batch: ShippingLabelBatchRequest): void {
+    this.openBatchDialog(batch);
   }
 
-  closeBatchModal() {
-    this.inProgress$.next(false);
-    this.isLabelsVisible$.next(false);
+  private openBatchDialog(batch: ShippingLabelBatchRequest): void {
+    this.dialog.open(ShippingBatchDialogComponent, {
+      width: '1300px',
+      maxWidth: '95vw',
+      data: { batch }
+    });
   }
 
-  openResultsModal() {
-    this.inProgress$.next(false);
-    this.isResultsVisible$.next(true);
-  }
-
-  closeResultsModal(){
-    this.inProgress$.next(false);
-    this.isResultsVisible$.next(false);
-  }
-
-  setFromAddress(){
-    this.webConfigService.getAll().then(configs => {
-      let shipFrom = {... new ShippingFromAddress()};
-      shipFrom.name = "Impact Disciples";
-      shipFrom.phone = configs[0].phone;
-      shipFrom.addressLine1 = configs[0].address.address1;
-      shipFrom.cityLocality = configs[0].address.city;
-      shipFrom.stateProvince = "GA";
-      shipFrom.postalCode = configs[0].address.zip;
-      shipFrom.countryCode = "US";
-      this.selectedBatch.shipFrom = shipFrom;
-
-      this.inProgress$.next(false);
-      this.isFromAddressVisible$.next(true);
-    })
-  }
-
-  closeFromAddressModal() {
-    this.inProgress$.next(false);
-    this.isFromAddressVisible$.next(false);
-  }
-
-  generateShippingLabels(){
-    if(!this.selectedBatch.shipFrom){
-      notify('Please verify the return address is correct before generating Shipping Labels')
-    } else {
-      confirm('<i>Are you sure you want to create these Shipping Labels?</i>', 'Confirm').then((dialogResult) => {
-        if (dialogResult) {
-          this.labelResults = [];
-
-          this.labelService.getAllByValue('batchId', this.selectedBatch.id).then(labels => {
-            this.shippinglabellist.startCustomLoading();
-            let promises: Promise<ShippingLabelRequest>[] = []
-
-            labels.forEach(async label => {
-              if(label.status == "NEW" || label.status == "FAILED"){
-                label.request.shipment.shipFrom = this.selectedBatch.shipFrom;
-
-                promises.push(this.labelService.createRequest(label));
-              }
-            })
-
-            Promise.all(promises).then((labels) => {
-              this.labelResults = labels;
-              this.shippinglabellist.stopCustomLoading();
-              this.openResultsModal()
-            })
-          })
-        }
-      });
-    }
-  }
-
-  getCount(results: ShippingLabelRequest[], status: string){
-    let statusResults = results.filter(label => label.status == status);
-    return statusResults? statusResults.length : 0;
+  deleteBatch(batch: ShippingLabelBatchRequest): void {
+    this.confirmService.confirm('<i>Are you sure you want to delete this batch?</i>', 'Confirm').then((confirmed) => {
+      if (confirmed) {
+        this.labelService.getAllByValue('batchId', batch.id).then((labels) => {
+          Promise.all(labels.map((label) => this.labelService.delete(label.id!))).then(() => {
+            this.batchService.delete(batch.id!).then(() => {
+              this.snackbar.success(this.itemType + ' Deleted');
+            });
+          });
+        });
+      }
+    });
   }
 }

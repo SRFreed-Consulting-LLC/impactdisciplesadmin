@@ -8,7 +8,6 @@ import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
     standalone: false
 })
 export class AdminManagerComponent {
-  selectedIndex: number = 0;
   selectedTab: string = 'Logs';
 
   tabs: Tab[] = [
@@ -21,8 +20,7 @@ export class AdminManagerComponent {
     { id: 5, text: 'Shipping Labels', template: 'Shipping Labels' }
   ];
 
-  selectTab(e) {
-    this.selectedTab = e.itemData.template;
-    this.selectedIndex = e.itemData.id;
+  selectTab(template: string) {
+    this.selectedTab = template;
   }
 }

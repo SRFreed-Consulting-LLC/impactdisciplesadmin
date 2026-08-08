@@ -1,0 +1,102 @@
+<div class="spinner-overlay" *ngIf="spinnerVisible">
+  <mat-spinner diameter="80"></mat-spinner>
+</div>
+
+<app-popup-header title="SHIPPING LABEL BATCH" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
+
+<mat-dialog-content>
+  <div class="batch-actions">
+    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showAddModal()">
+      <mat-icon>add</mat-icon>
+      New Recipient
+    </button>
+  </div>
+
+  <div class="table-scroll">
+    <table mat-table [dataSource]="(labels$ | async) ?? []" class="labels-table">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.shipment?.shipTo?.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="address">
+        <th mat-header-cell *matHeaderCellDef>Address</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.shipment?.shipTo?.addressLine1 }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="city">
+        <th mat-header-cell *matHeaderCellDef>City</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.shipment?.shipTo?.cityLocality }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="state">
+        <th mat-header-cell *matHeaderCellDef>State</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.shipment?.shipTo?.stateProvince }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="country">
+        <th mat-header-cell *matHeaderCellDef>Country</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.shipment?.shipTo?.countryCode }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="zip">
+        <th mat-header-cell *matHeaderCellDef>Zip</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.shipment?.shipTo?.postalCode }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="ounces">
+        <th mat-header-cell *matHeaderCellDef>Ounces</th>
+        <td mat-cell *matCellDef="let item">{{ item.request?.weight }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let item">{{ item.status }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="message">
+        <th mat-header-cell *matHeaderCellDef>Message</th>
+        <td mat-cell *matCellDef="let item">{{ item.message }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="requestedDate">
+        <th mat-header-cell *matHeaderCellDef>Label Requested Date</th>
+        <td mat-cell *matCellDef="let item">{{ item.requestedDate | date }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="purchasedDate">
+        <th mat-header-cell *matHeaderCellDef>Label Purchased Date</th>
+        <td mat-cell *matCellDef="let item">{{ item.purchasedDate | date }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="shippingRate">
+        <th mat-header-cell *matHeaderCellDef>Shipping Rate</th>
+        <td mat-cell *matCellDef="let item">{{ item.shippingRate | currency }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+        <td mat-cell *matCellDef="let item" class="actions-column">
+          <button mat-icon-button matTooltip="DOWNLOAD SHIPPING LABEL" *ngIf="isDownloadVisible(item)" (click)="getShippingLabel(item)">
+            <mat-icon>download</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="EDIT" (click)="showEditModal(item)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="DELETE" (click)="deleteLabel(item)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+    </table>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="setFromAddress()">SET 'FROM' ADDRESS</button>
+  <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="generateShippingLabels()">GENERATE LABELS</button>
+  <button mat-raised-button color="primary" type="button" [disabled]="inProgress$ | async" (click)="onClose()">CLOSE</button>
+</mat-dialog-actions>

@@ -1,0 +1,12 @@
+<div class="section-tabs" role="tablist">
+  <button
+    type="button"
+    role="tab"
+    class="section-tabs__tab"
+    *ngFor="let tab of tabs"
+    [class.section-tabs__tab--selected]="tab.template === selectedTab"
+    [attr.aria-selected]="tab.template === selectedTab"
+    (click)="tabChange.emit(tab.template)">
+    {{ tab.text }}
+  </button>
+</div>
