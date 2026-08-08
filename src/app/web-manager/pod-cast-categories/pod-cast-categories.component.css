@@ -10,6 +10,7 @@ mat-dialog-content {
 }
 
 .table-scroll {
+  position: relative;
   overflow-x: auto;
 }
 

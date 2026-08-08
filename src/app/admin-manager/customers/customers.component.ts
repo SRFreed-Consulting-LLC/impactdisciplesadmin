@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
@@ -36,6 +36,12 @@ export class CustomersComponent implements OnInit {
   selectedList: EmailList | undefined;
   selection = new SelectionModel<CustomerModel>(true, []);
 
+  // House rule: every data table shows a loading spinner until its data
+  // has actually arrived (see app-table-loading-overlay) - starts true,
+  // flips to false the moment the stream first emits (even an empty
+  // array), never on a timer.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   // A stable field, not a getter - app-list-header's *ngFor keys off these
   // action objects, and a getter that returns a brand-new array (and brand
   // new object literals) on every change-detection cycle makes Angular tear
@@ -69,7 +75,8 @@ export class CustomersComponent implements OnInit {
           .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
         this.currentRows = filtered;
         return filtered;
-      })
+      }),
+      tap(() => this.loading$.next(false))
     );
 
     this.events = await this.eventService.getAll();

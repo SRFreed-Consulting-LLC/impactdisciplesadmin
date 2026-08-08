@@ -1,6 +1,7 @@
 <app-list-header [title]="itemType"></app-list-header>
 
 <div class="table-scroll">
+<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
 <table mat-table [dataSource]="(notifications$ | async) ?? []" class="notifications-table">
   <ng-container matColumnDef="id">
     <th mat-header-cell *matHeaderCellDef>Id</th>

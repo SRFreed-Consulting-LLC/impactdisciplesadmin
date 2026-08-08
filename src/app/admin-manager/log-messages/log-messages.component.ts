@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { LogMessage } from 'impactdisciplescommon/src/models/utils/log-message.model';
 import { LoggerService } from 'impactdisciplescommon/src/services/data/logger.service';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
@@ -21,6 +21,10 @@ export class LogMessagesComponent implements OnInit {
 
   itemType = 'Logs';
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(private service: LoggerService) {}
@@ -40,7 +44,8 @@ export class LogMessagesComponent implements OnInit {
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
           })
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

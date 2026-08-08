@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { CourseModel } from 'impactdisciplescommon/src/models/domain/course.model';
 import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -31,6 +31,10 @@ export class CoursesComponent implements OnInit {
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -50,7 +54,8 @@ export class CoursesComponent implements OnInit {
             )
           )
           .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

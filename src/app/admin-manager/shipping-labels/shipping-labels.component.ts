@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ShippingLabelBatchRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
 import { ShippingLabelBatchService } from 'impactdisciplescommon/src/services/data/shipping-label-batch.service';
@@ -19,6 +19,10 @@ import { ShippingBatchDialogComponent } from './shipping-batch-dialog.component'
 export class ShippingLabelsComponent implements OnInit, OnDestroy {
   batches$: Observable<ShippingLabelBatchRequest[]>;
   displayedColumns = ['createdDate', 'createdBy', 'id', 'actions'];
+
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
 
   itemType = 'Shipping Label Batch';
 
@@ -44,7 +48,7 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
       this.currentUserEmail = user?.email;
     });
 
-    this.batches$ = this.batchService.streamAll();
+    this.batches$ = this.batchService.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   ngOnDestroy(): void {

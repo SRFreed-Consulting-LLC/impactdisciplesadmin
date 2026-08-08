@@ -51,6 +51,7 @@
     <mat-tab label="Purchases">
       <div class="tab-content tab-content--table">
         <div class="table-scroll">
+          <app-table-loading-overlay [loading]="purchasesLoading$ | async"></app-table-loading-overlay>
           <table mat-table [dataSource]="(purchases$ | async) ?? []" class="sub-table">
             <ng-container matColumnDef="dateProcessed">
               <th mat-header-cell *matHeaderCellDef>Date</th>
@@ -107,6 +108,7 @@
     <mat-tab label="Events Attended">
       <div class="tab-content tab-content--table">
         <div class="table-scroll">
+          <app-table-loading-overlay [loading]="registrationsLoading$ | async"></app-table-loading-overlay>
           <table mat-table [dataSource]="(eventRegistrations$ | async) ?? []" class="sub-table">
             <ng-container matColumnDef="startDate">
               <th mat-header-cell *matHeaderCellDef>Date</th>

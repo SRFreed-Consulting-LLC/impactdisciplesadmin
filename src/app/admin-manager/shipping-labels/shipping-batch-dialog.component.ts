@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { ShippingLabelBatchRequest, ShippingLabelRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
 import { ShippingFromAddress } from 'impactdisciplescommon/src/models/domain/shipment.model';
 import { ShippingLabelBatchService } from 'impactdisciplescommon/src/services/data/shipping-label-batch.service';
@@ -35,6 +35,10 @@ export class ShippingBatchDialogComponent {
   inProgress$ = new BehaviorSubject<boolean>(false);
   spinnerVisible = false;
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   constructor(
     private dialogRef: MatDialogRef<ShippingBatchDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ShippingBatchDialogData,
@@ -47,7 +51,7 @@ export class ShippingBatchDialogComponent {
     private snackbar: SnackbarService
   ) {
     this.batch = data.batch;
-    this.labels$ = this.labelService.streamAllByValue('batchId', this.batch.id);
+    this.labels$ = this.labelService.streamAllByValue('batchId', this.batch.id).pipe(tap(() => this.loading$.next(false)));
   }
 
   onClose(): void {

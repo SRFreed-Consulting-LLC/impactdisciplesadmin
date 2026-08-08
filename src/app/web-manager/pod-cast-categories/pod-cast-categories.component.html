@@ -8,6 +8,7 @@
   </div>
 
   <div class="table-scroll">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
   <table mat-table [dataSource]="(categories$ | async) ?? []" class="category-table">
     <ng-container matColumnDef="tag">
       <th mat-header-cell *matHeaderCellDef>Tag</th>

@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { AnnouncementModel } from 'impactdisciplescommon/src/models/domain/announcement.model.ts';
 import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { BehaviorSubject, combineLatest, map, Observable, of } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, of, tap } from 'rxjs';
 import { EventAnnouncementService } from 'impactdisciplescommon/src/services/data/event-announcement.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
@@ -30,6 +30,10 @@ export class AnnouncementsComponent implements OnInit {
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -55,7 +59,8 @@ export class AnnouncementsComponent implements OnInit {
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return aTime - bTime;
           })
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

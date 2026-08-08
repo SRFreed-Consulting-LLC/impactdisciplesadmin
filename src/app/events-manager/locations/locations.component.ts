@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { LocationModel } from 'impactdisciplescommon/src/models/domain/location.model';
 import { OrganizationModel } from 'impactdisciplescommon/src/models/domain/organization.model';
 import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
@@ -32,6 +32,10 @@ export class LocationsComponent implements OnInit {
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -53,7 +57,8 @@ export class LocationsComponent implements OnInit {
             Object.keys(filters).every((field) => this.matchesField(item, field, filters[field]))
           )
           .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

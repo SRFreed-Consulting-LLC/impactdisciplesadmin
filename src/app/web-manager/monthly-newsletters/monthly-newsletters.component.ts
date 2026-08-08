@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MonthlyNewsletterModel } from 'impactdisciplescommon/src/models/domain/monthly-newsletter.model';
 import { MonthlyNewletterService } from 'impactdisciplescommon/src/services/data/monthly-newsletter.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -36,6 +36,10 @@ export class MonthlyNewslettersComponent implements OnInit {
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -57,7 +61,8 @@ export class MonthlyNewslettersComponent implements OnInit {
             )
           )
         )
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

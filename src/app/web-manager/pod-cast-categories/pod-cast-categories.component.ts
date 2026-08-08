@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
 import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -29,6 +29,10 @@ export class PodCastCategoriesComponent implements OnInit {
 
   itemType = 'Categories';
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -49,7 +53,8 @@ export class PodCastCategoriesComponent implements OnInit {
             )
           )
           .sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? ''))
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

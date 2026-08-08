@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { CustomerModel } from 'impactdisciplescommon/src/models/domain/utils/customer.model';
@@ -43,6 +43,13 @@ export class CustomerDialogComponent {
   purchases$: Observable<CheckoutForm[]>;
   eventRegistrations$: Observable<EventRegistrationModel[]>;
   events: EventModel[];
+
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation. Two independent flags
+  // since the Purchases and Events Attended tabs are two independent
+  // sub-tables backed by two independent streams.
+  purchasesLoading$ = new BehaviorSubject<boolean>(true);
+  registrationsLoading$ = new BehaviorSubject<boolean>(true);
 
   purchasesColumns = ['dateProcessed', 'processedStatus', 'receipt', 'couponCode', 'total', 'taxes', 'shipping', 'charged', 'refunded', 'actions'];
   registrationsColumns = ['startDate', 'eventId', 'email', 'receipt', 'registrationDate', 'actions'];
@@ -95,10 +102,13 @@ export class CustomerDialogComponent {
       })
     });
 
-    this.purchases$ = data.item?.email ? this.purchasesService.streamAllByValue('email', data.item.email) : of([]);
-    this.eventRegistrations$ = data.item?.email
+    this.purchases$ = (data.item?.email ? this.purchasesService.streamAllByValue('email', data.item.email) : of([])).pipe(
+      tap(() => this.purchasesLoading$.next(false))
+    );
+    this.eventRegistrations$ = (data.item?.email
       ? this.eventRegistrationService.streamAllByValue('email', data.item.email)
-      : of([]);
+      : of([])
+    ).pipe(tap(() => this.registrationsLoading$.next(false)));
   }
 
   onCancel(): void {

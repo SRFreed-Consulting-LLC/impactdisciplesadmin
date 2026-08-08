@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { NotificationRegistrationModel } from 'impactdisciplescommon/src/models/admin/notification-registration.model';
 import { NotificationRegistrationService } from 'impactdisciplescommon/src/services/data/notification-registration.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -26,6 +26,10 @@ export class NotificationsComponent implements OnInit {
 
   itemType = 'Notifications';
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -42,7 +46,8 @@ export class NotificationsComponent implements OnInit {
             return matchesColumnFilter(item[field as keyof NotificationRegistrationModel], filters[field], type);
           })
         )
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

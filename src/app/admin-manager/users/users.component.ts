@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { AppUser } from 'impactdisciplescommon/src/models/admin/appuser.model';
 import { AppUserService } from 'impactdisciplescommon/src/services/data/user.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -29,6 +29,10 @@ export class UsersComponent implements OnInit {
     { label: 'Export To Excel', icon: 'file_download', onClick: () => this.exportXLSGrid() }
   ];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private currentRows: AppUser[] = [];
 
@@ -49,7 +53,8 @@ export class UsersComponent implements OnInit {
       map((rows) => {
         this.currentRows = rows;
         return rows;
-      })
+      }),
+      tap(() => this.loading$.next(false))
     );
   }
 

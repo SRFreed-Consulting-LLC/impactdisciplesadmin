@@ -13,6 +13,7 @@
   </div>
 
   <div class="table-scroll">
+    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
     <table mat-table [dataSource]="(labels$ | async) ?? []" class="labels-table">
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef>Name</th>

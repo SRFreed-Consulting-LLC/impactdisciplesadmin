@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { ConsultationRequestModel } from 'impactdisciplescommon/src/models/domain/consultation-request.model';
 import { ConsultationRequestService } from 'impactdisciplescommon/src/services/data/consultation-request.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -30,6 +30,10 @@ export class ConsultationsRequestsComponent implements OnInit {
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -57,7 +61,8 @@ export class ConsultationsRequestsComponent implements OnInit {
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
           })
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 

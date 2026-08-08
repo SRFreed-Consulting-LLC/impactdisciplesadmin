@@ -9,6 +9,7 @@
 </app-list-header>
 
 <div class="table-scroll">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
   <table mat-table [dataSource]="(customers$ | async) ?? []" class="customers-table">
     <ng-container matColumnDef="select">
       <th mat-header-cell *matHeaderCellDef>

@@ -1,6 +1,7 @@
 <app-list-header [title]="itemType + 's'" [actions]="actions"></app-list-header>
 
 <div class="table-scroll">
+<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
 <table mat-table [dataSource]="(announcements$ | async) ?? []" class="announcements-table">
   <ng-container matColumnDef="date">
     <th mat-header-cell *matHeaderCellDef>Date</th>

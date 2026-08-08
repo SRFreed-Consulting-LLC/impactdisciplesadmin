@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MailTemplateModel } from 'impactdisciplescommon/src/models/admin/mail.model';
 import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
@@ -25,6 +25,10 @@ export class EmailTemplatesComponent implements OnInit {
 
   actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
+  // House rule: loading spinner shown until first emission - see
+  // customers.component.ts for the full explanation.
+  loading$ = new BehaviorSubject<boolean>(true);
+
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
@@ -40,7 +44,8 @@ export class EmailTemplatesComponent implements OnInit {
         items
           .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof MailTemplateModel], filters[field], 'text')))
           .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
-      )
+      ),
+      tap(() => this.loading$.next(false))
     );
   }
 
