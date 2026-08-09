@@ -1,11 +1,26 @@
 import { Injectable } from '@angular/core';
 import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where } from '@angular/fire/firestore';
 import { Firestore, collection } from '@angular/fire/firestore';
-import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, of, timer } from 'rxjs';
+import { catchError, map, retry } from 'rxjs/operators';
 import { DocumentData, onSnapshot, QueryConstraint, QuerySnapshot } from 'firebase/firestore';
 import { BaseModel } from '../models/base.model';
 import { Unsubscribe } from 'firebase/auth';
+
+// Live-diagnosed: attaching several onSnapshot listeners in the same tick
+// (e.g. a component's ngOnInit firing off streamAll() for half a dozen
+// collections at once) can spuriously fail a subset of the very first batch
+// with a FirebaseError the SDK labels 'permission-denied' - actually a
+// WebChannel handshake race on the freshly-opened connection, not a real
+// rules rejection (confirmed live: rules allow the read, and re-subscribing
+// to the exact same query outside that initial burst succeeds every time).
+// A fixed short retry delay isn't enough on its own: every listener caught
+// in the same collision retries on the same clock, so they just collide
+// again. Randomized, growing-with-attempt-count jitter spreads the retries
+// out so they stop landing in lockstep.
+function retryDelay(_error: unknown, retryCount: number) {
+  return timer(retryCount * 400 + Math.random() * 900);
+}
 
 @Injectable({
   providedIn: 'root'
@@ -93,11 +108,13 @@ export class FirebaseDAO<T extends BaseModel> {
       map(docs => {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
-      // Without this, a failed/offline/permission-denied listener just
-      // errors the observable silently -- no error callback is registered
-      // at most call sites, so the UI is left showing stale/empty data
-      // forever with no visible sign anything went wrong. Log it and fall
-      // back to an empty list instead.
+      // See retryDelay()'s comment at the top of this file.
+      retry({ count: 4, delay: retryDelay }),
+      // Without this, a failure that survives the retries above just errors
+      // the observable silently -- no error callback is registered at most
+      // call sites, so the UI is left showing stale/empty data forever with
+      // no visible sign anything went wrong. Log it and fall back to an
+      // empty list instead.
       catchError(err => {
         console.error(`FirebaseDAO.streamAll('${table}') failed:`, err);
         return of([]);
@@ -113,6 +130,8 @@ export class FirebaseDAO<T extends BaseModel> {
       map(docs => {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
+      // See streamAll()'s comment above - same spurious-first-batch issue.
+      retry({ count: 4, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.streamByValue('${table}', '${field}') failed:`, err);
         return of([]);
@@ -139,6 +158,8 @@ export class FirebaseDAO<T extends BaseModel> {
       map(docs => {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
+      // See streamAll()'s comment in this file - same spurious-first-batch issue.
+      retry({ count: 4, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.queryStreamByValue('${table}', '${field}') failed:`, err);
         return of([]);
@@ -156,6 +177,8 @@ export class FirebaseDAO<T extends BaseModel> {
       map(docs => {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
+      // See streamAll()'s comment in this file - same spurious-first-batch issue.
+      retry({ count: 4, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.queryAllStreamByMultiValue('${table}') failed:`, err);
         return of([]);
