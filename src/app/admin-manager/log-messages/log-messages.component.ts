@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { LogMessage } from 'src/app/common/models/utils/log-message.model';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { PagedCollectionSource } from '../../shared/paged-collection-source';
 
 interface ColumnDef {
   key: string;
@@ -13,6 +14,13 @@ interface ColumnDef {
 
 // Read-only, matching the original - no add/edit/delete existed for logs,
 // just a filterable list.
+//
+// Paginated instead of streamAll() - this table can grow large fast (every
+// error anywhere in the app writes here) and nobody needs the whole history
+// live in the browser just to look at recent entries. See
+// PagedCollectionSource for the accumulator/infinite-scroll mechanics; the
+// filter row below only ever searches rows already loaded, same trade-off
+// as Products/Customers.
 @Component({
     selector: 'app-log-messages',
     templateUrl: './log-messages.component.html',
@@ -22,6 +30,7 @@ interface ColumnDef {
 export class LogMessagesComponent implements OnInit {
   logs$: Observable<LogMessage[]>;
   currentRows: LogMessage[] = [];
+  loadedCount = 0;
   columns: ColumnDef[] = [
     { key: 'date', label: 'Date', visible: true },
     { key: 'type', label: 'Type', visible: true },
@@ -34,33 +43,50 @@ export class LogMessagesComponent implements OnInit {
   itemType = 'Logs';
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
+  // customers.component.ts for the full explanation. loading$/loadingMore$/
+  // hasMore$ are the paged source's own subjects, reused directly rather
+  // than mirrored, so the template can bind to them as-is.
+  loading$: BehaviorSubject<boolean>;
+  loadingMore$: BehaviorSubject<boolean>;
+  hasMore$: BehaviorSubject<boolean>;
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private paged: PagedCollectionSource<LogMessage>;
 
-  constructor(private service: LoggerService) {}
+  constructor(private service: LoggerService) {
+    this.paged = new PagedCollectionSource<LogMessage>(
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'date', 'desc'),
+      50
+    );
+    this.loading$ = this.paged.loading$;
+    this.loadingMore$ = this.paged.loadingMore$;
+    this.hasMore$ = this.paged.hasMore$;
+  }
 
   ngOnInit(): void {
-    this.logs$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+    // Each page already comes back ordered by date desc from Firestore, and
+    // pages are appended in fetch order - no client-side re-sort needed
+    // (unlike the old streamAll()-based version, which had to sort itself
+    // since a live collection snapshot has no inherent order).
+    this.logs$ = combineLatest([this.paged.rows$, this.filters$]).pipe(
       map(([items, filters]) => {
-        const filtered = items
-          .filter((item) =>
-            Object.keys(filters).every((field) => {
-              const type = field === 'date' ? 'date' : 'text';
-              return matchesColumnFilter(item[field as keyof LogMessage], filters[field], type);
-            })
-          )
-          .sort((a, b) => {
-            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-            return bTime - aTime;
-          });
+        const filtered = items.filter((item) =>
+          Object.keys(filters).every((field) => {
+            const type = field === 'date' ? 'date' : 'text';
+            return matchesColumnFilter(item[field as keyof LogMessage], filters[field], type);
+          })
+        );
         this.currentRows = filtered;
+        this.loadedCount = items.length;
         return filtered;
-      }),
-      tap(() => this.loading$.next(false))
+      })
     );
+
+    this.paged.loadFirstPage();
+  }
+
+  loadMore(): void {
+    this.paged.loadNextPage();
   }
 
   get displayedColumns(): string[] {

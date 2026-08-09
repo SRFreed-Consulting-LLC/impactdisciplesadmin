@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Unsubscribe } from 'firebase/firestore';
-import { FirebaseDAO, WhereFilterOperandKeys, QueryParam } from 'src/app/common/dao/firebase.dao';
+import { DocumentData, OrderByDirection, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
+import { FirebaseDAO, PagedResult, WhereFilterOperandKeys, QueryParam } from 'src/app/common/dao/firebase.dao';
 import { BaseModel } from 'src/app/common/models/base.model';
-import { from, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -34,6 +34,13 @@ export class BaseService<T extends BaseModel> {
 
   getById(id: string): Promise<T>{
     return this.dao.getById(id, this.table, this.fromFirestore);
+  }
+
+  // See FirebaseDAO.getPage()'s comment - one-time paged fetch, not a live
+  // subscription, for list screens backed by PagedCollectionSource instead
+  // of streamAll().
+  getPage(pageSize: number, cursor: QueryDocumentSnapshot<DocumentData> | null, orderByField: string, orderDirection: OrderByDirection = 'asc'): Promise<PagedResult<T>>{
+    return this.dao.getPage(this.table, pageSize, cursor, orderByField, orderDirection, this.fromFirestore);
   }
 
   streamAll(limitCount?: number): Observable<T[]>{

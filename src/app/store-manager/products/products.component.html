@@ -16,7 +16,7 @@
     </button>
   </app-list-header>
 
-  <div class="table-scroll">
+  <div class="table-scroll" appInfiniteScroll (scrolledToBottom)="loadMore()">
     <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
     <table mat-table [dataSource]="(products$ | async) ?? []" class="products-table">
       <ng-container matColumnDef="isActive">
@@ -134,6 +134,11 @@
       <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
     </table>
+    <app-paged-table-footer
+      [loadedCount]="loadedCount"
+      [loadingMore]="loadingMore$ | async"
+      [hasMore]="hasMore$ | async">
+    </app-paged-table-footer>
   </div>
 </ng-container>
 

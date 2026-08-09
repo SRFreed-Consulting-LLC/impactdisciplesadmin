@@ -1,11 +1,22 @@
 import { Injectable } from '@angular/core';
-import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where } from '@angular/fire/firestore';
+import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter, where } from '@angular/fire/firestore';
 import { Firestore, collection } from '@angular/fire/firestore';
 import { Observable, of, timer } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
-import { DocumentData, onSnapshot, QueryConstraint, QuerySnapshot } from 'firebase/firestore';
+import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
 import { BaseModel } from '../models/base.model';
 import { Unsubscribe } from 'firebase/auth';
+
+// One page of a getPage() call. cursor is the raw QueryDocumentSnapshot for
+// the last row in this page - pass it back into the next getPage() call's
+// `cursor` param to fetch the next page (Firestore's own startAfter()
+// cursor, not an offset - offset-based paging re-reads every prior page on
+// each call, which is exactly the read-volume problem this exists to avoid).
+export interface PagedResult<T> {
+  items: T[];
+  cursor: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}
 
 // Live-diagnosed: attaching several onSnapshot listeners in the same tick
 // (e.g. a component's ngOnInit firing off streamAll() for half a dozen
@@ -67,6 +78,36 @@ export class FirebaseDAO<T extends BaseModel> {
     return getDocs(query(collection(this.fs, '/' + table), ...queryConstraints)).then(docs => {
       return this.getDocListFromPromise(docs, fromFirestore);
     });
+  }
+
+  // One-time (not live) fetch of a single page, ordered by orderByField, cursoring
+  // via startAfter(cursor) rather than an offset. Used by list screens with large
+  // collections (e.g. Products, Customers, Log Messages) instead of streamAll()'s
+  // "subscribe to the entire collection forever" - see PagedCollectionSource for
+  // the client-side accumulator this is meant to be driven by.
+  public async getPage(
+    table: string,
+    pageSize: number,
+    cursor: QueryDocumentSnapshot<DocumentData> | null,
+    orderByField: string,
+    orderDirection: OrderByDirection = 'asc',
+    fromFirestore?
+  ): Promise<PagedResult<T>> {
+    const constraints: QueryConstraint[] = [orderBy(orderByField, orderDirection)];
+    if (cursor) constraints.push(startAfter(cursor));
+    constraints.push(limit(pageSize));
+
+    const snap = await getDocs(query(collection(this.fs, '/' + table), ...constraints));
+    const items = this.getDocListFromPromise(snap, fromFirestore);
+    const lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+
+    return {
+      items,
+      cursor: lastDoc,
+      // Exactly pageSize docs came back -> there's likely a next page.
+      // Fewer than pageSize -> this was the tail of the collection.
+      hasMore: snap.docs.length === pageSize
+    };
   }
 
   public getById(id: string, table: string, fromFirestore?): Promise<T>{

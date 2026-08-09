@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ProductModel } from 'src/app/common/models/utils/product.model';
 import { ProductService } from 'src/app/common/services/data/product.service';
@@ -22,6 +22,7 @@ import { ProductSeriesComponent } from '../product-series/product-series.compone
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { PagedCollectionSource } from '../../shared/paged-collection-source';
 
 interface ColumnDef {
   key: string;
@@ -46,6 +47,7 @@ export class ProductsComponent implements OnInit {
   // ---- List state ----
   products$: Observable<ProductModel[]>;
   currentRows: ProductModel[] = [];
+  loadedCount = 0;
   columns: ColumnDef[] = [
     { key: 'isActive', label: 'Live', visible: true },
     { key: 'imageUrl', label: 'Image', visible: true },
@@ -69,8 +71,11 @@ export class ProductsComponent implements OnInit {
   ];
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
+  // customers.component.ts for the full explanation. loading$/loadingMore$/
+  // hasMore$ are the paged source's own subjects, reused directly.
+  loading$: BehaviorSubject<boolean>;
+  loadingMore$: BehaviorSubject<boolean>;
+  hasMore$: BehaviorSubject<boolean>;
 
   // Kept live for the whole lifetime of this component (not just while a
   // filter/edit is open) - serves three purposes at once: the Category/
@@ -78,11 +83,15 @@ export class ProductsComponent implements OnInit {
   // lookups, and the edit form's own Category/Series selects. Since it's a
   // live streamAll() subscription, adding a category/series via "Manage
   // Categories"/"Manage Series" while the edit form is open shows up in
-  // that form's own select immediately, no manual refresh needed.
+  // that form's own select immediately, no manual refresh needed. These are
+  // small reference collections, not the main product list, so they stay
+  // on streamAll() - only the (potentially large) product list itself below
+  // is paginated.
   categories: TagModel[] = [];
   series: SeriesModel[] = [];
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
+  private paged: PagedCollectionSource<ProductModel>;
 
   // ---- Edit state ----
   form: FormGroup;
@@ -115,7 +124,15 @@ export class ProductsComponent implements OnInit {
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.paged = new PagedCollectionSource<ProductModel>(
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'title', 'asc'),
+      50
+    );
+    this.loading$ = this.paged.loading$;
+    this.loadingMore$ = this.paged.loadingMore$;
+    this.hasMore$ = this.paged.hasMore$;
+  }
 
   ngOnInit(): void {
     this.productCategoriesService.streamAll().subscribe((categories) => {
@@ -134,16 +151,23 @@ export class ProductsComponent implements OnInit {
       this.emails = templates.map((t) => ({ id: t.id!, name: t.name }));
     });
 
-    this.products$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+    // Each page already comes back ordered by title asc from Firestore, and
+    // pages are appended in fetch order - no client-side re-sort needed.
+    this.products$ = combineLatest([this.paged.rows$, this.filters$]).pipe(
       map(([items, filters]) => {
         const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
+          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])));
         this.currentRows = filtered;
+        this.loadedCount = items.length;
         return filtered;
-      }),
-      tap(() => this.loading$.next(false))
+      })
     );
+
+    this.paged.loadFirstPage();
+  }
+
+  loadMore(): void {
+    this.paged.loadNextPage();
   }
 
   get displayedColumns(): string[] {

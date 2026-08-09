@@ -12,6 +12,8 @@ import { VariableInserterComponent } from './rich-text-editor/variable-inserter.
 import { SectionTabsComponent } from './section-tabs/section-tabs.component';
 import { TableLoadingOverlayComponent } from './table-loading-overlay/table-loading-overlay.component';
 import { TagChipsComponent } from './tag-chips/tag-chips.component';
+import { InfiniteScrollDirective } from './infinite-scroll.directive';
+import { PagedTableFooterComponent } from './paged-table-footer/paged-table-footer.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -40,7 +42,9 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     VariableInserterComponent,
     SectionTabsComponent,
     TableLoadingOverlayComponent,
-    TagChipsComponent
+    TagChipsComponent,
+    InfiniteScrollDirective,
+    PagedTableFooterComponent
   ],
   imports: [
     CommonModule,
@@ -71,7 +75,9 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     VariableInserterComponent,
     SectionTabsComponent,
     TableLoadingOverlayComponent,
-    TagChipsComponent
+    TagChipsComponent,
+    InfiniteScrollDirective,
+    PagedTableFooterComponent
   ]
 })
 export class SharedModule {}

@@ -15,7 +15,7 @@ import { ColumnFilterValue, FilterOperator, FilterOperatorOption, TEXT_FILTER_OP
 export class ColumnFilterComponent implements OnInit {
   @Input() operators: FilterOperatorOption[] = TEXT_FILTER_OPERATORS;
   @Input() type: 'text' | 'number' | 'date' = 'text';
-  @Input() placeholder = 'Filter...';
+  @Input() placeholder = '';
   @Output() filterChange = new EventEmitter<ColumnFilterValue>();
 
   operator: FilterOperator = 'contains';

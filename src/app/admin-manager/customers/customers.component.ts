@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
@@ -15,6 +15,7 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { CustomerDialogComponent } from './customer-dialog.component';
 import { SendEmailDialogComponent } from './send-email-dialog.component';
 import { EmailListDialogComponent } from './email-list-dialog.component';
@@ -33,6 +34,7 @@ interface ColumnDef {
 })
 export class CustomersComponent implements OnInit {
   customers$: Observable<CustomerModel[]>;
+  loadedCount = 0;
   columns: ColumnDef[] = [
     { key: 'lastName', label: 'Last Name', visible: true },
     { key: 'firstName', label: 'First Name', visible: true },
@@ -50,8 +52,11 @@ export class CustomersComponent implements OnInit {
   // House rule: every data table shows a loading spinner until its data
   // has actually arrived (see app-table-loading-overlay) - starts true,
   // flips to false the moment the stream first emits (even an empty
-  // array), never on a timer.
-  loading$ = new BehaviorSubject<boolean>(true);
+  // array), never on a timer. loading$/loadingMore$/hasMore$ are the paged
+  // source's own subjects, reused directly.
+  loading$: BehaviorSubject<boolean>;
+  loadingMore$: BehaviorSubject<boolean>;
+  hasMore$: BehaviorSubject<boolean>;
 
   // A stable field, not a getter - app-list-header's *ngFor keys off these
   // action objects, and a getter that returns a brand-new array (and brand
@@ -65,8 +70,17 @@ export class CustomersComponent implements OnInit {
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private currentRows: CustomerModel[] = [];
+  // Deliberately NOT sourced from the paged grid (paged.rows$ only ever has
+  // whatever's been scrolled into view) - Filter by List's "Save List" writes
+  // exactly whatever's in `selection.selected` back to the email list, so
+  // this has to be the true full set or saving a list while only a few pages
+  // are loaded would silently drop every member the admin hadn't scrolled to
+  // yet. One-time getAll() (not a live streamAll() subscription) is still a
+  // real improvement over the old behavior - just not paginated, since
+  // correctness here matters more than the read-count savings.
   private allCustomers: CustomerModel[] = [];
   private events: EventModel[] = [];
+  private paged: PagedCollectionSource<CustomerModel>;
 
   constructor(
     private service: CustomerService,
@@ -75,20 +89,32 @@ export class CustomersComponent implements OnInit {
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.paged = new PagedCollectionSource<CustomerModel>(
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'lastName', 'asc'),
+      50
+    );
+    this.loading$ = this.paged.loading$;
+    this.loadingMore$ = this.paged.loadingMore$;
+    this.hasMore$ = this.paged.hasMore$;
+  }
 
   async ngOnInit(): Promise<void> {
-    this.customers$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+    // Each page already comes back ordered by lastName asc from Firestore,
+    // and pages are appended in fetch order - no client-side re-sort needed.
+    this.customers$ = combineLatest([this.paged.rows$, this.filters$]).pipe(
       map(([items, filters]) => {
-        this.allCustomers = items;
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
+        const filtered = items.filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])));
         this.currentRows = filtered;
+        this.loadedCount = items.length;
         return filtered;
-      }),
-      tap(() => this.loading$.next(false))
+      })
     );
+    this.paged.loadFirstPage();
+
+    this.service.getAll().then((customers) => {
+      this.allCustomers = customers;
+    });
 
     this.events = await this.eventService.getAll();
     this.emailLists = (await this.emailListService.getAllByValue('type', 'customer')) ?? [];
@@ -106,6 +132,10 @@ export class CustomersComponent implements OnInit {
       actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
     this.actions = actions;
+  }
+
+  loadMore(): void {
+    this.paged.loadNextPage();
   }
 
   get displayedColumns(): string[] {
