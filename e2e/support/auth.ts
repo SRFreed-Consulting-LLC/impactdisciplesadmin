@@ -6,21 +6,15 @@ import { Page } from '@playwright/test';
 const ADMIN_EMAIL = 'shane.freed@gmail.com';
 const ADMIN_PASSWORD = 'password';
 
-// The app's login flow is two screens (src/app/auth, backed by
-// AdminAuthService/AuthGuardService from src/app/common/forms/admin):
-// enter an email on capture-username-form, get routed to
-// capture-password-form, enter a password there. This targets the plain
-// input[type=email]/input[type=password] elements directly and drives
-// the submit via Enter, which triggers the same native form submit
-// Angular's (submit)/(ngSubmit) handler listens for on both screens.
+// The app's login flow is a single email+password form
+// (src/app/common/forms/admin/login), backed by
+// AdminAuthService/AuthGuardService - a fresh Playwright context has no
+// session, so AuthGuardService should always redirect '/' to '/login' here.
 export async function loginAsAdmin(page: Page): Promise<void> {
   await page.goto('/');
 
-  // A fresh Playwright context has no session, so AuthGuardService should
-  // always redirect to the login flow here - if it doesn't (e.g. a future
-  // storageState-reuse setup), there's nothing left to do.
   const isLoggedOut = await page
-    .waitForURL(/capture-username-form/, { timeout: 15000 })
+    .waitForURL(/\/login/, { timeout: 15000 })
     .then(() => true)
     .catch(() => false);
 
@@ -28,20 +22,12 @@ export async function loginAsAdmin(page: Page): Promise<void> {
     return;
   }
 
-  const emailInput = page.locator('input[type="email"]');
-  await emailInput.waitFor({ state: 'visible' });
-  await emailInput.fill(ADMIN_EMAIL);
-  await emailInput.press('Enter');
-
-  await page.waitForURL(/capture-password-form/, { timeout: 15000 });
-
-  const passwordInput = page.locator('input[type="password"]');
-  await passwordInput.waitFor({ state: 'visible' });
-  await passwordInput.fill(ADMIN_PASSWORD);
-  await passwordInput.press('Enter');
+  await page.locator('input[type="email"]').fill(ADMIN_EMAIL);
+  await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
+  await page.getByRole('button', { name: 'Sign In' }).click();
 
   // Successful login lands back on the dashboard shell (MainScreenComponent
-  // at '/' or '/home') - wait for the login routes to clear rather than for
+  // at '/' or '/home') - wait for the login route to clear rather than for
   // one specific landing URL.
-  await page.waitForURL((url) => !/capture-(username|password)-form/.test(url.pathname), { timeout: 20000 });
+  await page.waitForURL((url) => !/\/login/.test(url.pathname), { timeout: 20000 });
 }

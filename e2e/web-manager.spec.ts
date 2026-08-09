@@ -1,12 +1,20 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// Web Manager is a single route (WebManagerComponent) that tab-switches
-// between screens client-side via app-section-tabs, not a per-screen route -
-// see web-manager-routing.module.ts.
+// Web Manager is a single route (WebManagerComponent) that switches between
+// screens client-side via the left nav's ?tab= query param (see
+// nav-config.ts), not a per-screen route or a tab bar - see
+// web-manager-routing.module.ts. Slugs here must match nav-config.ts's
+// 'web-manager' group.
+const TAB_SLUGS: Record<string, string> = {
+  'Disciple Making Minute': 'disciple-making-minute',
+  'Pod Casts': 'pod-casts',
+  'Home Page Images': 'home-page-images',
+  'Home Page Popups': 'home-page-popups'
+};
+
 async function openWebManagerTab(page: import('@playwright/test').Page, tabName: string) {
-  await page.goto('/web-manager');
-  await page.getByRole('tab', { name: tabName }).click();
+  await page.goto(`/web-manager?tab=${TAB_SLUGS[tabName]}`);
 }
 
 test.describe('Web Manager - read-only smoke checks', () => {

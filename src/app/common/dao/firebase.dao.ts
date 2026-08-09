@@ -29,7 +29,13 @@ export interface PagedResult<T> {
 // in the same collision retries on the same clock, so they just collide
 // again. Randomized, growing-with-attempt-count jitter spreads the retries
 // out so they stop landing in lockstep.
-function retryDelay(_error: unknown, retryCount: number) {
+//
+// Exported - FireAuthDao.loggedInUser$ hits the exact same race on a cold
+// page load (several components' streamAll() calls plus its own one-time
+// getAllByValue() all firing in the same tick) and needs the identical
+// treatment; see that file's own comment for why it didn't have this until
+// e2e testing this session's left-nav work reproduced it live.
+export function retryDelay(_error: unknown, retryCount: number) {
   return timer(retryCount * 400 + Math.random() * 900);
 }
 
