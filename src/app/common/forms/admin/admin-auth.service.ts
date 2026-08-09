@@ -5,11 +5,9 @@ import { FireAuthDao } from '../../dao/fireauth.dao';
 import { AppUser } from '../../models/admin/appuser.model';
 import { CookieService } from 'ngx-cookie-service';
 import { catchError, from, map, Observable, of, switchMap, take } from 'rxjs';
-import { Store } from '@ngxs/store';
 import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model';
 import { environment } from 'src/environments/environment';
 import { notify } from 'src/app/common/utils/notify.util';
-import { UserAuthenticated } from 'src/app/common/services/actions/authentication.actions';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { AppUserService } from 'src/app/common/services/data/user.service';
 
@@ -25,7 +23,6 @@ export class AdminAuthService {
 
   constructor(
     private router: Router,
-    private store: Store,
     public dao: FireAuthDao,
     public userService: AppUserService,
     private cookieService: CookieService,
@@ -85,7 +82,6 @@ export class AdminAuthService {
 
                     this.cookieService.set(COOKIE_NAME, JSON.stringify(this.user), { expires: this.user['cookie_expiration_time'] });
 
-                    this.store.dispatch(new UserAuthenticated(this.user))
                     return {
                       isOk: true,
                       data: this.user,

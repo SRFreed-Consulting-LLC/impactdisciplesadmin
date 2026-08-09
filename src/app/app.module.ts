@@ -9,7 +9,6 @@ import { environment } from 'src/environments/environment';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { CoreModule } from './core/core.module';
 import { CookieService } from 'ngx-cookie-service';
-import { NgxsModule } from '@ngxs/store';
 import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './auth/auth.module';
 
@@ -20,7 +19,6 @@ import { AuthModule } from './auth/auth.module';
   imports: [
     BrowserModule,
     AppRoutingModule,
-    NgxsModule.forRoot([], { developmentMode: !environment.production }),
     // admin-manager, events-manager, requests-manager, subscriptions-manager,
     // web-manager and store-manager are lazy-loaded via app-routing.module.ts's
     // loadChildren - they must NOT be imported here eagerly, or the bundler
