@@ -10,8 +10,8 @@ import { ProductCategoriesService } from 'impactdisciplescommon/src/services/dat
 import { SeriesModel } from 'impactdisciplescommon/src/models/utils/series.model';
 import { SeriesService } from 'impactdisciplescommon/src/services/data/series.service';
 import { EMailTemplatesService } from 'impactdisciplescommon/src/services/data/email-templates.service';
-import { BookModel } from 'impactdisciplespwacommon/src/models/book.model';
-import { BookService } from 'impactdisciplespwacommon/src/services/book.service';
+import { BookModel } from 'impactdisciplescommon/src/models/domain/book.model';
+import { BookService } from 'impactdisciplescommon/src/services/data/book.service';
 import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
 import { ImageModel } from 'impactdisciplescommon/src/models/utils/image.model';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
