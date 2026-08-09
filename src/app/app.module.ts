@@ -22,9 +22,9 @@ import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/ad
     AppRoutingModule,
     NgxsModule.forRoot([], { developmentMode: !environment.production }),
     // admin-manager, events-manager, requests-manager, subscriptions-manager,
-    // web-manager, store-manager and page-manager are lazy-loaded via
-    // app-routing.module.ts's loadChildren - they must NOT be imported here
-    // eagerly, or the bundler would pull them back into the main chunk.
+    // web-manager and store-manager are lazy-loaded via app-routing.module.ts's
+    // loadChildren - they must NOT be imported here eagerly, or the bundler
+    // would pull them back into the main chunk.
     CoreModule,
     ImpactDisciplesCommonModule,
     ImpactAdminFormsModule,

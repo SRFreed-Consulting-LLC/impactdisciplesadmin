@@ -22,7 +22,7 @@
             ],
             "allowedCommonJsDependencies": [
               "jszip", "devexpress-diagram", "devexpress-gantt", "devextreme-quill", "lodash",
-              "raf", "rgbcolor", "dompurify", "html2canvas", "parchment", "exceljs", "file-saver", "quill-delta",
+              "raf", "rgbcolor", "html2canvas", "exceljs", "file-saver", "quill-delta",
               "core-js/modules/es.array.index-of.js", "core-js/modules/es.array.iterator.js",
               "core-js/modules/es.array.reduce.js", "core-js/modules/es.array.reverse.js",
               "core-js/modules/es.promise.js", "core-js/modules/es.regexp.to-string.js",

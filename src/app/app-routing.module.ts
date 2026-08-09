@@ -51,11 +51,6 @@ const routes: Routes = [
         canActivate: [ AuthGuardService ]
       },
       {
-        path: 'page-manager',
-        loadChildren: () => import('./page-manager/page-manager.module').then(m => m.PageManagerModule),
-        canActivate: [ AuthGuardService ]
-      },
-      {
         path: 'store-manager',
         loadChildren: () => import('./store-manager/store-manager.module').then(m => m.StoreManagerModule),
         canActivate: [ AuthGuardService ]
