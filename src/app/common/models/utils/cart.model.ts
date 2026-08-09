@@ -83,4 +83,9 @@ export class CheckoutForm extends BaseModel {
 
   refundAmount?: number = 0;
   refundId?: string;
+
+  // Distinct from processedStatus above (payment/fulfillment state) - this
+  // tracks the new-record alert badge instead. See
+  // EventRegistrationModel.newRecordStatus for what sets/clears it.
+  newRecordStatus?: 'new' | 'seen';
 }

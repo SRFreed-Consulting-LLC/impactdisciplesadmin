@@ -15,6 +15,7 @@ import { SnackbarService } from '../../../shared/snackbar.service';
 import { ListHeaderAction } from '../../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../../shared/table-export.util';
+import { NewRecordTracker } from '../../../shared/new-record-tracking.util';
 import { EventAttendeeDialogComponent } from './event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './event-email-dialog.component';
 
@@ -58,18 +59,26 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private unsub?: Unsubscribe;
 
+  // See new-record-tracking.util.ts - marks newly-arrived registrations for
+  // THIS event seen the moment it's opened, and keeps them highlighted for
+  // this page view.
+  tracker: NewRecordTracker<EventRegistrationModel>;
+
   constructor(
     private service: EventRegistrationService,
     private emailService: EMailService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.tracker = new NewRecordTracker(this.service);
+  }
 
   ngOnInit(): void {
     const source$ = this.event?.id ? this.service.streamAllByValue('eventId', this.event.id) : of([]);
 
     this.attendees$ = combineLatest([source$, this.filters$]).pipe(
+      tap(([items]) => this.tracker.capture(items)),
       map(([items, filters]) => {
         const filtered = items
           .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], 'text')))

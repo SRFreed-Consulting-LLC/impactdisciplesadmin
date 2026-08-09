@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { Role } from 'src/app/common/lists/roles.enum';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -13,6 +14,12 @@ import { SectionTab } from '../shared/section-tabs/section-tabs.component';
 interface RoleGatedTab extends SectionTab {
   users: Role[];
 }
+
+// See requests-manager.component.ts's TAB_SLUGS for the matching half of
+// this - the new-record-alerts bell only ever needs to reach Purchases here.
+const TAB_SLUGS: Record<string, string> = {
+  purchases: 'Purchases'
+};
 
 @Component({
     selector: 'app-store-manager',
@@ -35,9 +42,12 @@ export class StoreManagerComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private authService: AdminAuthService){}
+  constructor(private authService: AdminAuthService, private route: ActivatedRoute){}
 
   ngOnInit(): void {
+    const slug = this.route.snapshot.queryParamMap.get('tab');
+    const requestedTab = slug ? TAB_SLUGS[slug] : undefined;
+
     // Was: this.authService.getLoggedInUser().role, which reads the
     // "impact-disciples-user" cookie - see MainScreenComponent.ngOnInit for
     // the full explanation of why that can be null (a valid Firebase
@@ -45,7 +55,12 @@ export class StoreManagerComponent implements OnInit, OnDestroy {
     // the AdminUser from Firebase's own live auth state instead.
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
       this.secureTabs = this.tabs.filter(item => item.users.find(role => role == user?.role));
-      this.selectedTab = this.secureTabs[0]?.template ?? this.selectedTab;
+
+      // Only honor the query param if that tab is actually visible to this
+      // user's role - otherwise fall back to today's default-first-tab
+      // behavior.
+      const requestedTabIsVisible = requestedTab && this.secureTabs.some(t => t.template === requestedTab);
+      this.selectedTab = requestedTabIsVisible ? requestedTab : (this.secureTabs[0]?.template ?? this.selectedTab);
     });
   }
 

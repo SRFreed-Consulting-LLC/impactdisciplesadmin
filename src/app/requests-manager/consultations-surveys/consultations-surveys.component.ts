@@ -9,6 +9,7 @@ import { ConsultationSurveyDialogComponent } from './consultation-survey-dialog.
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 
 interface ColumnDef {
   key: string;
@@ -46,15 +47,22 @@ export class ConsultationsSurveysComponent implements OnInit {
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
+  // See new-record-tracking.util.ts - marks newly-arrived surveys seen the
+  // moment this screen loads, and keeps them highlighted for this page view.
+  tracker: NewRecordTracker<ConsultationSurveyModel>;
+
   constructor(
     private service: ConsultationSurveyService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.tracker = new NewRecordTracker(this.service);
+  }
 
   ngOnInit(): void {
     this.surveys$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      tap(([items]) => this.tracker.capture(items)),
       map(([items, filters]) => {
         const filtered = items
           .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))

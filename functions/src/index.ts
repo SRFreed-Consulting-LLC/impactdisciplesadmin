@@ -26,3 +26,17 @@ exports.get_youtube_keys = youtube.get_youtube_keys;
 const adminUsers = require("./admin-users.functions");
 exports.createAdminUser = adminUsers.createAdminUser;
 exports.deleteAdminUser = adminUsers.deleteAdminUser;
+
+const alerts = require("./new-record-alerts.functions");
+exports.onEventRegistrationCreated = alerts.onEventRegistrationCreated;
+exports.onEventRegistrationUpdated = alerts.onEventRegistrationUpdated;
+exports.onConsultationRequestCreated = alerts.onConsultationRequestCreated;
+exports.onConsultationRequestUpdated = alerts.onConsultationRequestUpdated;
+exports.onConsultationSurveyCreated = alerts.onConsultationSurveyCreated;
+exports.onConsultationSurveyUpdated = alerts.onConsultationSurveyUpdated;
+exports.onLunchAndLearnCreated = alerts.onLunchAndLearnCreated;
+exports.onLunchAndLearnUpdated = alerts.onLunchAndLearnUpdated;
+exports.onSeminarCreated = alerts.onSeminarCreated;
+exports.onSeminarUpdated = alerts.onSeminarUpdated;
+exports.onPurchaseCreated = alerts.onPurchaseCreated;
+exports.onPurchaseUpdated = alerts.onPurchaseUpdated;

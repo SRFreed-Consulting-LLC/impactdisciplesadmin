@@ -19,4 +19,6 @@ export class LunchAndLearnModel extends BaseModel{
   locationAddress: Address;
   coordinator: string;
   coordinatorPhone: Phone;
+  // See EventRegistrationModel.newRecordStatus for what sets/clears this.
+  newRecordStatus?: 'new' | 'seen';
 }

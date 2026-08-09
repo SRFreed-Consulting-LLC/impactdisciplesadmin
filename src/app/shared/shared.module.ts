@@ -14,6 +14,7 @@ import { TableLoadingOverlayComponent } from './table-loading-overlay/table-load
 import { TagChipsComponent } from './tag-chips/tag-chips.component';
 import { InfiniteScrollDirective } from './infinite-scroll.directive';
 import { PagedTableFooterComponent } from './paged-table-footer/paged-table-footer.component';
+import { NewRecordAlertsComponent } from './new-record-alerts/new-record-alerts.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +29,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatBadgeModule } from '@angular/material/badge';
 
 @NgModule({
   declarations: [
@@ -44,7 +46,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     TableLoadingOverlayComponent,
     TagChipsComponent,
     InfiniteScrollDirective,
-    PagedTableFooterComponent
+    PagedTableFooterComponent,
+    NewRecordAlertsComponent
   ],
   imports: [
     CommonModule,
@@ -61,7 +64,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     MatInputModule,
     MatSelectModule,
     MatChipsModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    MatBadgeModule
   ],
   exports: [
     IndicatorButtonComponent,
@@ -77,7 +81,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     TableLoadingOverlayComponent,
     TagChipsComponent,
     InfiniteScrollDirective,
-    PagedTableFooterComponent
+    PagedTableFooterComponent,
+    NewRecordAlertsComponent
   ]
 })
 export class SharedModule {}

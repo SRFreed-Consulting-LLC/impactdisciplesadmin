@@ -9,6 +9,7 @@ import { LunchAndLearnDialogComponent } from './lunch-and-learn-dialog.component
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 
 interface ColumnDef {
   key: string;
@@ -47,15 +48,22 @@ export class LunchAndLearnsComponent implements OnInit {
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
+  // See new-record-tracking.util.ts - marks newly-arrived requests seen the
+  // moment this screen loads, and keeps them highlighted for this page view.
+  tracker: NewRecordTracker<LunchAndLearnModel>;
+
   constructor(
     private service: LunchAndLearnService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.tracker = new NewRecordTracker(this.service);
+  }
 
   ngOnInit(): void {
     this.requests$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      tap(([items]) => this.tracker.capture(items)),
       map(([items, filters]) => {
         const filtered = items
           .filter((item) =>

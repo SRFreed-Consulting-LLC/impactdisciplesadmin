@@ -26,4 +26,6 @@ export class SeminarModel extends BaseModel{
   isLunchProvided: boolean;
   isLunchIncluded: boolean;
   comments: string | null;
+  // See EventRegistrationModel.newRecordStatus for what sets/clears this.
+  newRecordStatus?: 'new' | 'seen';
 }

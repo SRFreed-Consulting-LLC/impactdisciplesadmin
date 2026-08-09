@@ -13,4 +13,8 @@ export class EventRegistrationModel extends BaseModel{
   receiptEmailId?: string;
   receiptEmailStatus: string;
   receiptEmailDate: Timestamp | any;
+  // Set by the new-record-alert Cloud Function trigger on creation ('new'),
+  // flipped to 'seen' by new-record-tracking.util.ts the first time an admin
+  // views this record - see functions/src/new-record-alerts.functions.ts.
+  newRecordStatus?: 'new' | 'seen';
 }

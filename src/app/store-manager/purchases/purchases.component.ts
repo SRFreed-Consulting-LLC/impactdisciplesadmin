@@ -11,6 +11,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 
 interface ColumnDef {
   key: string;
@@ -77,6 +78,10 @@ export class PurchasesComponent implements OnInit {
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
+  // See new-record-tracking.util.ts - marks newly-arrived purchases seen the
+  // moment this screen loads, and keeps them highlighted for this page view.
+  tracker: NewRecordTracker<CheckoutForm>;
+
   // ---- Edit state ----
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
@@ -94,7 +99,9 @@ export class PurchasesComponent implements OnInit {
     private fb: FormBuilder,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.tracker = new NewRecordTracker(this.service);
+  }
 
   ngOnInit(): void {
     this.authService.dao.loggedInUser$.subscribe((user) => {
@@ -102,6 +109,7 @@ export class PurchasesComponent implements OnInit {
     });
 
     this.purchases$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      tap(([items]) => this.tracker.capture(items)),
       map(([items, filters]) => {
         const filtered = items
           .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(this.fieldValue(item, field), filters[field], this.fieldType(field))))

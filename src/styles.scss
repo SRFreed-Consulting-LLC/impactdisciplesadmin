@@ -245,6 +245,19 @@ table.mat-mdc-table tr.mat-mdc-header-row:nth-of-type(2) {
   background-color: #f0f0f0;
 }
 
+// New-record alert highlight (see new-record-tracking.util.ts) - applied via
+// [class.row--new] on <tr mat-row> in every list screen the new-record-
+// alerts bell can link to (the 4 Requests Manager tables, Purchases, Event
+// Attendees). Global rather than a component style for the same reason as
+// the sticky-header rules above: it targets Material's own stable,
+// non-encapsulated row class (mat-mdc-row) alongside the app-defined
+// row--new class, and needs to look identical across 6 different components
+// rather than being duplicated into each one's own encapsulated styles.
+table.mat-mdc-table tr.mat-mdc-row.row--new {
+  background-color: var(--mat-sys-primary-container, #e8f0fe);
+  box-shadow: inset 4px 0 0 var(--mat-sys-primary, #1a73e8);
+}
+
 // House rule: any thumbnail/image shown directly in a data table cell
 // (Pod Casts' thumbnail column, Home Page Images' image column, and any
 // future screen following the same pattern) gets vertical breathing room.

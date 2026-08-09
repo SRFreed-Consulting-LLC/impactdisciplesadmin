@@ -20,5 +20,7 @@ export class ConsultationSurveyModel extends BaseModel{
   resourceDescription?: string;
   resultsDescription?: string;
   supportDescription?: string;
-  date: Timestamp
+  date: Timestamp;
+  // See EventRegistrationModel.newRecordStatus for what sets/clears this.
+  newRecordStatus?: 'new' | 'seen';
 }

@@ -7,4 +7,6 @@ export class ConsultationRequestModel extends BaseModel {
   email: string;
   message: string | null;
   date: Timestamp;
+  // See EventRegistrationModel.newRecordStatus for what sets/clears this.
+  newRecordStatus?: 'new' | 'seen';
 }

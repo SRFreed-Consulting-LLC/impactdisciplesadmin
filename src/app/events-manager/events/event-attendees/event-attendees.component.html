@@ -105,6 +105,6 @@
 
     <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
     <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.row--new]="tracker.newIds.has(row.id)" (dblclick)="showEditModal(row)"></tr>
   </table>
 </div>
