@@ -96,4 +96,32 @@ test.describe('Settings - Themes', () => {
     await page.getByRole('button', { name: 'Default' }).click();
     await expect(html).not.toHaveClass(/theme-forest/);
   });
+
+  test('a chosen theme survives real navigation, not just the settings page', async ({ page }) => {
+    // Regression test for a live-diagnosed bug: FireAuthDao.loggedInUser$ is
+    // a one-time Firestore read cached forever via shareReplay(1) - it never
+    // refetches after ThemeService's own persist() writes a change. Without
+    // ThemeService's remoteSyncLocked guard, that permanently-stale cached
+    // snapshot would silently overwrite a just-applied local theme change
+    // the moment ANY later emission of it landed - "I switched themes and
+    // saw no difference" was this: the theme was applied for a moment, then
+    // immediately reverted. Uses real routerLink clicks (not page.goto(),
+    // which does a hard reload) to match how an admin actually navigates.
+    const html = page.locator('html');
+
+    await page.getByRole('button', { name: 'Forest' }).click();
+    await expect(html).toHaveClass(/theme-forest/);
+
+    await page.getByRole('link', { name: 'HOME' }).click();
+    await expect(html).toHaveClass(/theme-forest/);
+
+    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
+    await page.getByRole('link', { name: 'Purchases' }).click();
+    await expect(html).toHaveClass(/theme-forest/);
+
+    // Reset back to Default so no test data/preference lingers.
+    await page.goto('/settings');
+    await page.getByRole('button', { name: 'Default' }).click();
+    await expect(html).not.toHaveClass(/theme-forest/);
+  });
 });

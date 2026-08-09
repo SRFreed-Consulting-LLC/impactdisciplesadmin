@@ -18,6 +18,11 @@ export const COLOR_THEMES: readonly { id: string; label: string }[] = [
   { id: 'sunset', label: 'Sunset' }
 ];
 
+// Module-scope, not per-instance - see the comment on the loggedInUser$
+// subscription below for why this has to survive across every ThemeService
+// instance for the rest of this page load, not just one.
+let remoteSyncLocked = false;
+
 // App-wide dark mode + accent color toggle, persisted per-admin (see
 // AdminUser.darkMode/colorTheme) so it follows them across devices. A
 // deliberately simplified take on impact-discipleship-library-manager-
@@ -65,7 +70,26 @@ export class ThemeService {
 
     // Once the signed-in admin's own saved preferences load, they override
     // the localStorage bootstrap value above and follow them to any device.
+    //
+    // Live-diagnosed bug this guarded against: FireAuthDao.loggedInUser$ is
+    // a ONE-TIME Firestore read (getAllByValue, not a live onSnapshot
+    // listener) wrapped in shareReplay(1) - once it has emitted for this
+    // page load, that snapshot is cached FOREVER and never refetches, even
+    // though setColorTheme/setDarkMode's own persist() call keeps writing
+    // real updates to the same Firestore doc. Without this guard, calling
+    // setColorTheme() and then having this subscription's (possibly still
+    // in-flight, or simply late-scheduled) callback fire afterward would
+    // silently overwrite the just-applied local change with that stale
+    // cached snapshot - which is exactly what "I switched themes and saw
+    // no difference" turned out to be: the theme WAS applied for a moment,
+    // then immediately reverted. remoteSyncLocked is set the instant the
+    // admin makes any local change, for the rest of this page load (a real
+    // page reload resets it, which is exactly when re-checking the remote
+    // value for cross-device sync is wanted again).
     this.authService.dao.loggedInUser$.subscribe((user) => {
+      if (remoteSyncLocked) {
+        return;
+      }
       if (user?.darkMode !== undefined) {
         this.darkMode.set(user.darkMode);
       }
@@ -76,11 +100,13 @@ export class ThemeService {
   }
 
   setDarkMode(value: boolean): void {
+    remoteSyncLocked = true;
     this.darkMode.set(value);
     this.persist({ darkMode: value });
   }
 
   setColorTheme(value: string): void {
+    remoteSyncLocked = true;
     this.colorTheme.set(value);
     this.persist({ colorTheme: value });
   }
