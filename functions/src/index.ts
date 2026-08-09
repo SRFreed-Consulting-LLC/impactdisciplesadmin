@@ -22,3 +22,7 @@ exports.unsubscribe_from_email_list = subscriptions.unsubscribe_from_email_list;
 
 const youtube = require("./youtube.functions");
 exports.get_youtube_keys = youtube.get_youtube_keys;
+
+const adminUsers = require("./admin-users.functions");
+exports.createAdminUser = adminUsers.createAdminUser;
+exports.deleteAdminUser = adminUsers.deleteAdminUser;

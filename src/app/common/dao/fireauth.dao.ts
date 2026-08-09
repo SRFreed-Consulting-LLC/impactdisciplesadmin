@@ -117,7 +117,7 @@ export class FireAuthDao {
 
   public async logOut() {
     try {
-      await this.router.navigate(['/capture-username-form']);
+      await this.router.navigate(['/login']);
       await signOut(this.auth);
     } catch (error) {
       console.error('Error in Auth Service.', error);

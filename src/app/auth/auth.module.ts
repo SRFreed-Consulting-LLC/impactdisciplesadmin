@@ -3,10 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
 import { AuthCardComponent } from './auth-card/auth-card.component';
-import { CaptureUsernameComponent } from './capture-username/capture-username.component';
-import { CapturePasswordComponent } from './capture-password/capture-password.component';
-import { CreateAccountComponent } from './create-account/create-account.component';
+import { LoginComponent } from '../common/forms/admin/login/login.component';
+import { AnimatedLogoComponent } from '../common/forms/admin/login/animated-logo.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { ChangePasswordComponent } from './change-password/change-password.component';
 
@@ -17,12 +20,18 @@ import { ChangePasswordComponent } from './change-password/change-password.compo
 // AdminAuthService, AuthGuardService, AdminUserService, LoggerService - are
 // still reused, since those aren't DevExtreme/UI and are shared for good
 // reason across every app built on this submodule).
+//
+// LoginComponent/AnimatedLogoComponent live physically under
+// common/forms/admin/login/ (alongside AdminAuthService) rather than here,
+// but are still declared/exported by this module like every other auth
+// screen - file location and NgModule declaration are independent in
+// Angular, and AdminAuthService's own location is the existing precedent
+// for "common" business logic vs. "auth" screens using it.
 @NgModule({
   declarations: [
     AuthCardComponent,
-    CaptureUsernameComponent,
-    CapturePasswordComponent,
-    CreateAccountComponent,
+    LoginComponent,
+    AnimatedLogoComponent,
     ResetPasswordComponent,
     ChangePasswordComponent
   ],
@@ -30,12 +39,14 @@ import { ChangePasswordComponent } from './change-password/change-password.compo
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule
   ],
   exports: [
-    CaptureUsernameComponent,
-    CapturePasswordComponent,
-    CreateAccountComponent,
+    LoginComponent,
     ResetPasswordComponent,
     ChangePasswordComponent
   ]

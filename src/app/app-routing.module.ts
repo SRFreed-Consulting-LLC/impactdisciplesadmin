@@ -1,9 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { CapturePasswordComponent } from './auth/capture-password/capture-password.component';
-import { CaptureUsernameComponent } from './auth/capture-username/capture-username.component';
+import { LoginComponent } from './common/forms/admin/login/login.component';
 import { ChangePasswordComponent } from './auth/change-password/change-password.component';
-import { CreateAccountComponent } from './auth/create-account/create-account.component';
 import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
@@ -58,18 +56,8 @@ const routes: Routes = [
     ]
   },
   {
-    path: 'capture-username-form',
-    component: CaptureUsernameComponent,
-    canActivate: [ AuthGuardService ]
-  },
-  {
-    path: 'capture-password-form',
-    component: CapturePasswordComponent,
-    canActivate: [ AuthGuardService ]
-  },
-  {
-    path: 'create-auth-form',
-    component: CreateAccountComponent,
+    path: 'login',
+    component: LoginComponent,
     canActivate: [ AuthGuardService ]
   },
   {

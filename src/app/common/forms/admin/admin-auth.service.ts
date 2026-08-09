@@ -5,7 +5,6 @@ import { FireAuthDao } from '../../dao/fireauth.dao';
 import { AdminUser } from '../../models/admin/admin-user.model';
 import { CookieService } from 'ngx-cookie-service';
 import { catchError, from, map, Observable, of, switchMap, take } from 'rxjs';
-import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model';
 import { environment } from 'src/environments/environment';
 import { notify } from 'src/app/common/utils/notify.util';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
@@ -18,6 +17,14 @@ const COOKIE_NAME = "impact-disciples-user"
 @Injectable({
   providedIn: 'root'
 })
+// NOTE: no code path in this app creates a new Admin User's Firebase Auth
+// account anymore - the old self-service "Create Account" screen (findUser()
+// routing to it when an admin_users record had no firebaseUID yet) was
+// removed in favor of a single-step login screen, matching
+// impact-discipleship-library-manager-new. A newly-added Admin User
+// currently has no way to set their first password themselves; provisioning
+// their Firebase Auth account (e.g. via the Firebase Console) is an open
+// follow-up, not handled by this app.
 export class AdminAuthService {
   public user: AdminUser;
 
@@ -28,32 +35,6 @@ export class AdminAuthService {
     private cookieService: CookieService,
     public loggerService: LoggerService,
   ) { }
-
-  findUser(email: string): Observable<AdminUser> {
-    const user$ = this.userService.getAllByValue('email', email.toLowerCase());
-
-    return from(user$).pipe(
-      switchMap(user => {
-        if (user.length == 1){
-          return of(user[0]);
-        } else if(user.length > 1){
-          return this.loggerService.logMessage('LOGIN', email, 'More than 1 account was found with the email address (' + email + ')', []).pipe(
-            switchMap((ec: any) => {
-              notify({
-                message: 'More than 1 account was found with this email address (' + email +').' +
-                'Correct the Email Address and Try again. If the problem continues, please contact your Admin for assistance with this code: ' + ec,
-                position: 'top',
-                type: 'error'
-              });
-              return of(null);
-            })
-          );
-        } else {
-          return of(null);
-        }
-      })
-    );
-  }
 
   logIn(email: string, password: string): Observable<any> {
     this.cookieService.delete(COOKIE_NAME);
@@ -219,39 +200,6 @@ export class AdminAuthService {
     return user;
   }
 
-  createAccount(email: string, password: string): Promise<any> {
-    return this.dao.register(email.toLowerCase(), password).then(async result => {
-      if(result.user){
-        const user$ = this.userService.getAllByValue('email', email.toLowerCase());
-
-        return await user$.then(async user => {
-          if(user && user.length == 1){
-            const u: AdminUser | CustomerModel = user[0];
-
-            u.firebaseUID = result.user.uid;
-
-            await this.userService.update(u.id, u as AdminUser);
-
-            return {
-              isOk: true,
-              message: "Account Successfully Created"
-            };
-          } else {
-            return {
-              isOk: false,
-              message: "More than 1 User Account was found for this email address"
-            };
-          }
-        });
-      } else {
-        return Promise.reject({
-          isOk: false,
-          message: "Failed to create account: "
-        });
-      }
-    })
-  }
-
   resetPassword(email: string): Observable<any> {
     try {
       // Send request
@@ -275,10 +223,10 @@ export class AdminAuthService {
     // Was missing the actual Firebase Auth sign-out - AuthGuardService's
     // canActivate check is based on the real Firebase auth state (see the
     // SECURITY comment on that guard), not this cookie, so navigating to
-    // capture-username-form without signing out first just gets bounced
-    // straight back to '/' by the guard, making Log Off look like a no-op.
+    // /login without signing out first just gets bounced straight back to
+    // '/' by the guard, making Log Off look like a no-op.
     signOut(this.dao.auth).finally(() => {
-      this.router.navigate(['capture-username-form']);
+      this.router.navigate(['login']);
     });
   }
 
@@ -331,12 +279,9 @@ export class AuthGuardService implements CanActivate {
   // display purposes, but it is not trusted here as proof of authentication.
   canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
     const isAuthForm = [
+      'login',
       'reset-password',
-      'create-account',
-      'change-password/:recoveryCode',
-      'capture-username-form',
-      'capture-password-form',
-      'create-auth-form'
+      'change-password/:recoveryCode'
     ].includes(route.routeConfig?.path || defaultPath);
 
     return this.authService.dao.currentUser$.pipe(
@@ -362,7 +307,7 @@ export class AuthGuardService implements CanActivate {
 
         if (!isLoggedIn && !isAuthForm) {
           console.log('not logged in via Authguard');
-          this.router.navigate(['/capture-username-form']);
+          this.router.navigate(['/login']);
         }
 
         if (isLoggedIn) {

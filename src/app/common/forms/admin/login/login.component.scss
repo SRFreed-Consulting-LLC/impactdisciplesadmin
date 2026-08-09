@@ -1,0 +1,53 @@
+// Adapted from impact-discipleship-library-manager-new's login.component.scss.
+// This app has no dark-mode/Matrix theme to reset (that repo's version
+// included a shared guest-page-theme-reset mixin for exactly that reason -
+// not applicable here).
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f2f4f8;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 32px 40px;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.login-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 500;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  button[type='submit'] {
+    margin-top: 12px;
+    height: 44px;
+  }
+}
+
+.login-form__link {
+  text-align: center;
+  font-size: 14px;
+
+  a {
+    text-decoration: none;
+    color: var(--mat-sys-primary, #337ab7);
+  }
+}
