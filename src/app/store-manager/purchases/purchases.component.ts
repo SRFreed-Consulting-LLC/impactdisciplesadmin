@@ -254,45 +254,12 @@ export class PurchasesComponent implements OnInit {
     return (item.shippingRate ?? 0) > 0;
   }
 
-  // Purchasing a shipping label costs real postage - this endpoint requires
-  // a verified staff Firebase ID token. Never triggered during my own live
-  // verification.
-  async getShippingLabel(item: CheckoutForm): Promise<void> {
-    if (!item.shippingLabel) {
-      const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
-
-      const request = await fetch(environment.shippingLabelUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
-        body: JSON.stringify({ shipId: item.shippingRateId.rateId })
-      });
-
-      const response = await request.json();
-
-      if (response.code === 400) {
-        this.snackbar.error(response.error.message);
-        item.shippingLabel = response;
-      } else {
-        item.shippingLabel = response;
-        this.service.update(item.id!, item).then((saved) => {
-          this.downloadShippingLabel(saved!.shippingLabel.labelDownload.pdf);
-        });
-      }
-    } else if (item.shippingLabel?.code) {
-      this.snackbar.error(item.shippingLabel.error.message);
-    } else {
-      this.downloadShippingLabel(item.shippingLabel.labelDownload.pdf);
-    }
-  }
-
-  private downloadShippingLabel(pdf: string): void {
-    const link = document.createElement('a');
-    link.setAttribute('target', '_blank');
-    link.setAttribute('href', pdf);
-    link.setAttribute('download', 'shipping-label.pdf');
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  // Moved into PurchasesService (getShippingLabel/downloadShippingLabel) so
+  // the Fulfillment screen can trigger the exact same real action - this is
+  // now a thin delegate. Purchasing a shipping label costs real postage;
+  // never triggered during my own live verification.
+  getShippingLabel(item: CheckoutForm): Promise<void> {
+    return this.service.getShippingLabel(item);
   }
 
   // Exports whatever's currently on screen (after filters) - matches the

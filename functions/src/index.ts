@@ -40,3 +40,7 @@ exports.onSeminarCreated = alerts.onSeminarCreated;
 exports.onSeminarUpdated = alerts.onSeminarUpdated;
 exports.onPurchaseCreated = alerts.onPurchaseCreated;
 exports.onPurchaseUpdated = alerts.onPurchaseUpdated;
+
+const fulfillment = require("./purchase-fulfillment.functions");
+exports.onPurchaseFulfillmentEligible =
+  fulfillment.onPurchaseFulfillmentEligible;

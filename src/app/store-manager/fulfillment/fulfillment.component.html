@@ -1,0 +1,76 @@
+<app-list-header title="Fulfillment"></app-list-header>
+
+<div class="fulfillment-content">
+  <div class="loading-row" *ngIf="loading$ | async">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+
+  <div class="error-state" *ngIf="loadFailed$ | async">
+    Couldn't load orders - this is a connection issue, not an empty list.
+    <button mat-stroked-button type="button" (click)="retry()">Retry</button>
+  </div>
+
+  <ng-container *ngIf="(loadFailed$ | async) === false && orders$ | async as orders">
+    <div class="empty-state" *ngIf="orders.length === 0 && (loading$ | async) === false">
+      Nothing waiting on fulfillment right now.
+    </div>
+
+    <div class="order-card" [class.order-card--new]="isNew(item)" *ngFor="let item of orders">
+      <div class="order-card__header">
+        <div>
+          <div class="order-card__id">
+            <span class="new-badge" *ngIf="isNew(item)">NEW</span>
+            Order {{ item.receipt || item.id }}
+          </div>
+          <div class="order-card__customer">{{ customerName(item) }} &mdash; {{ itemSummary(item) }}</div>
+        </div>
+        <div class="order-card__date">{{ $any(item.dateProcessed) | date: 'short' }}</div>
+      </div>
+
+      <div class="segbar">
+        <div class="segbar__seg" *ngFor="let step of steps; let i = index" [class]="'segbar__seg--' + segmentState(item, i)"></div>
+      </div>
+      <div class="segbar__labels">
+        <span *ngFor="let step of steps" class="segbar__label">{{ step.statusLabel }}</span>
+      </div>
+
+      <div class="order-card__actions" [ngSwitch]="item.fulfillmentStatus">
+        <ng-container *ngSwitchCase="'new'">
+          <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder(item)">
+            <mat-icon>check_circle</mat-icon>
+            Acknowledge Order
+          </button>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'received'">
+          <button
+            mat-raised-button
+            color="primary"
+            type="button"
+            [disabled]="printingIds.has(item.id!)"
+            (click)="printShippingLabel(item)">
+            <mat-icon>local_shipping</mat-icon>
+            Print Shipping Label
+          </button>
+          <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp(item)">
+            Mark as Picked Up / Delivered
+          </button>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'shipping_label_printed'">
+          <button mat-raised-button color="primary" type="button" (click)="markPackaged(item)">
+            <mat-icon>inventory_2</mat-icon>
+            Mark as Packaged
+          </button>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'awaiting_shipping'">
+          <button mat-raised-button color="primary" type="button" (click)="markShipped(item)">
+            <mat-icon>local_shipping</mat-icon>
+            Mark as Shipped
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+</div>

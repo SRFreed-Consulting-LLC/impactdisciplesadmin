@@ -83,6 +83,8 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Products', slug: 'products', roles: [Role.ADMIN] },
       // Slug load-bearing - see NavLeaf.slug.
       { label: 'Purchases', slug: 'purchases', roles: [Role.ADMIN, Role.EMPLOYEE] },
+      // Operational (packing/shipping), same role gating as Purchases.
+      { label: 'Fulfillment', slug: 'fulfillment', roles: [Role.ADMIN, Role.EMPLOYEE] },
       { label: 'Coupons', slug: 'coupons', roles: [Role.ADMIN] },
       { label: 'Sales', slug: 'sales', roles: [Role.ADMIN] }
     ]

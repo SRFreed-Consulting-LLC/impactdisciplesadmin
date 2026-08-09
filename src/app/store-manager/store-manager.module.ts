@@ -14,6 +14,7 @@ import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.compo
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 import { SalesComponent } from './sales/sales.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
+import { FulfillmentComponent } from './fulfillment/fulfillment.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
 // see src/app/shared/image-uploader/ for the full rationale (built during
@@ -38,6 +39,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -46,6 +48,7 @@ import { QuillModule } from 'ngx-quill';
     ProductsComponent,
     PurchasesComponent,
     PurchaseDetailsComponent,
+    FulfillmentComponent,
     CouponsComponent,
     CouponDialogComponent,
     AffiliateSalesComponent,
@@ -78,6 +81,7 @@ import { QuillModule } from 'ngx-quill';
     MatTabsModule,
     MatToolbarModule,
     MatMenuModule,
+    MatProgressSpinnerModule,
     QuillModule
   ]
 })

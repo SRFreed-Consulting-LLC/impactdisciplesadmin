@@ -7,6 +7,10 @@
     <app-purchases></app-purchases>
   </ng-template>
 
+  <ng-template [ngIf]="selectedTab === 'Fulfillment'">
+    <app-fulfillment></app-fulfillment>
+  </ng-template>
+
   <ng-template [ngIf]="selectedTab === 'Coupons'">
     <app-coupons></app-coupons>
   </ng-template>
