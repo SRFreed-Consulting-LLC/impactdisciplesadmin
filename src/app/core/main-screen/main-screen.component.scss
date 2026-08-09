@@ -1,9 +1,17 @@
-// Brand chrome (dark charcoal panel + yellow hover/selected) preserved
-// pixel-for-pixel from the DevExtreme version - this is the app's one
-// distinctive, highly-visible piece of branding, not incidental DevExtreme
-// styling, so it's kept rather than reset to generic Material.
+// Brand chrome (dark charcoal panel + yellow hover) preserved pixel-for-
+// pixel from the DevExtreme version - this is the app's one distinctive,
+// highly-visible piece of branding, not incidental DevExtreme styling, so
+// it's kept rather than reset to generic Material.
 $panel-bg: #252525;
 $accent: #ffcc00;
+// "You are here" color for the selected/active row - deliberately NOT the
+// hover yellow above: hover is transient mouse feedback, active is a
+// standing "current location" indicator, and sharing one color made them
+// indistinguishable. This is the app's own real Material primary color
+// (see _material-theme.scss's seed comment) - already what every button/
+// link elsewhere in the app uses, so "selected" reads as this app's normal
+// accent rather than an arbitrary new color.
+$selected: #337ab7;
 
 :host {
   display: block;
@@ -44,21 +52,24 @@ $accent: #ffcc00;
 
   .mat-mdc-list-item {
     height: auto;
-    // The mockup's own .nrow padding (10px 18px) rendered taller here than
-    // in the mockup itself: mat-icon defaults to 24px, well above the
-    // mockup's 17px inline SVGs, so identical padding adds up to a visibly
-    // taller row (measured 44px here vs. the mockup's ~37px). Trimmed
-    // vertical padding to compensate and land back around that same
-    // overall row height instead of matching the padding number literally.
-    padding: 6px 18px;
+    // Went narrower than the mockup's own .nrow padding (10px 18px) at
+    // first to compensate for mat-icon defaulting to 24px vs. the mockup's
+    // 17px inline SVGs (identical padding renders taller here than in the
+    // mockup) - landed too short. Settled here by feel across a few rounds
+    // of feedback rather than by matching either number literally.
+    padding: 9px 18px;
   }
+}
+
+// Positioning context for .impact-drawer__chevron, which sits outside the
+// button itself - see the template comment on this wrapper for why.
+.impact-drawer__group-header {
+  position: relative;
 }
 
 .impact-drawer__link {
   text-decoration: none;
   color: #fff;
-  // Positioning context for .impact-drawer__chevron below.
-  position: relative;
 
   // Manager group headers are a real <button> (they toggle expand/collapse,
   // not navigate) rather than an <a> - mat-list-item's own theme resets most
@@ -80,8 +91,9 @@ $accent: #ffcc00;
   // panel. `!important` is the only override that reliably wins here
   // regardless of which internal Material selector is currently matching.
   &-text {
-    // Matches the reviewed mockup's .nrow font-size exactly.
-    font-size: 13.5px;
+    // Bumped up from the mockup's own .nrow value (13.5px) on feedback -
+    // matching it exactly read as too small in the real app.
+    font-size: 15px;
     color: inherit !important;
     // Reserve room for the absolutely-positioned chevron (longer labels
     // like "REQUESTS MANAGER" otherwise run right under it) and truncate
@@ -97,14 +109,32 @@ $accent: #ffcc00;
     color: #fff !important;
   }
 
-  &:hover,
-  &--active {
+  &:hover {
     background-color: $accent;
     color: $panel-bg;
     font-weight: 600;
 
     mat-icon {
       color: $panel-bg;
+    }
+  }
+
+  // Deliberately its own color, not $accent - see $selected's own comment.
+  // Nested &:hover on top gives the current selection a distinct (still
+  // blue-family, not a jump to the hover yellow) response of its own when
+  // you mouse over it, rather than either doing nothing or flashing to the
+  // same yellow every unselected row uses.
+  &--active {
+    background-color: $selected;
+    color: #fff;
+    font-weight: 600;
+
+    mat-icon {
+      color: #fff;
+    }
+
+    &:hover {
+      background-color: color-mix(in srgb, #{$selected} 85%, white);
     }
   }
 }
@@ -125,11 +155,29 @@ $accent: #ffcc00;
   right: 20px;
   transform: translateY(-50%);
   opacity: 0.65;
+  color: #fff;
   transition: transform 0.15s ease;
 
   &--open {
     transform: translateY(-50%) rotate(180deg);
   }
+}
+
+// The chevron is a sibling of .impact-drawer__link now, not a child of it,
+// so it can't pick up color from that button's own :hover/&--active rules
+// (or its "mat-icon { color: #fff !important; }") - these general-sibling
+// selectors mirror the same conditions directly. Order matters here the
+// same way it does on .impact-drawer__link itself: :hover and --active are
+// a specificity tie, so --active:hover (both, later in source) has to come
+// last to correctly win over plain :hover when a selected row is hovered.
+.impact-drawer__link:hover ~ .impact-drawer__chevron {
+  color: $panel-bg;
+}
+.impact-drawer__link--active ~ .impact-drawer__chevron {
+  color: #fff;
+}
+.impact-drawer__link--active:hover ~ .impact-drawer__chevron {
+  color: #fff;
 }
 
 .impact-drawer__sublist {
@@ -160,10 +208,20 @@ $accent: #ffcc00;
     color: #fff;
   }
 
+  // Same $selected choice, same reason, as .impact-drawer__link--active
+  // above - and the same specificity note: &:hover above and &--active
+  // here compile to an equal-specificity selector pair, so &--active:hover
+  // has to come last (it does) to correctly win when the selected sub-item
+  // is also being hovered, rather than falling back to the plain :hover
+  // treatment above.
   &--active {
-    background-color: $accent;
-    color: $panel-bg;
+    background-color: $selected;
+    color: #fff;
     font-weight: 600;
+
+    &:hover {
+      background-color: color-mix(in srgb, #{$selected} 85%, white);
+    }
   }
 }
 
