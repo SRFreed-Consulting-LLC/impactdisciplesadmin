@@ -18,7 +18,12 @@
   // doesn't have that problem.
   z-index: 2;
   background: var(--mat-sys-surface, #fff);
-  padding: 0;
+  // Right padding specifically so the last action button (often "Export to
+  // Excel" or a kebab menu - not every screen has a trailing "New" button
+  // after it, e.g. Purchases) always has its own breathing room before the
+  // window edge, independent of whatever padding happens to exist further
+  // up the ancestor chain (varies per screen).
+  padding: 0 20px 0 0;
   flex: 0 0 auto;
   gap: 12px;
 
