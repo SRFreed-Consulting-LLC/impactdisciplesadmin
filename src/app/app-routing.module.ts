@@ -1,10 +1,10 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { CapturePasswordFormComponent } from 'impactdisciplescommon/src/forms/admin/capture-password-form/capture-password-form.component';
-import { CaptureUsernameFormComponent } from 'impactdisciplescommon/src/forms/admin/capture-username-form/capture-username-form.component';
-import { ChangePasswordFormComponent } from 'impactdisciplescommon/src/forms/admin/change-password-form/change-password-form.component';
-import { CreateAuthFormComponent } from 'impactdisciplescommon/src/forms/admin/create-auth-form/create-auth-form.component';
-import { ResetPasswordFormComponent } from 'impactdisciplescommon/src/forms/admin/reset-password-form/reset-password-form.component';
+import { CapturePasswordComponent } from './auth/capture-password/capture-password.component';
+import { CaptureUsernameComponent } from './auth/capture-username/capture-username.component';
+import { ChangePasswordComponent } from './auth/change-password/change-password.component';
+import { CreateAccountComponent } from './auth/create-account/create-account.component';
+import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
 import { AuthGuardService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
@@ -59,27 +59,27 @@ const routes: Routes = [
   },
   {
     path: 'capture-username-form',
-    component: CaptureUsernameFormComponent,
+    component: CaptureUsernameComponent,
     canActivate: [ AuthGuardService ]
   },
   {
     path: 'capture-password-form',
-    component: CapturePasswordFormComponent,
+    component: CapturePasswordComponent,
     canActivate: [ AuthGuardService ]
   },
   {
     path: 'create-auth-form',
-    component: CreateAuthFormComponent,
+    component: CreateAccountComponent,
     canActivate: [ AuthGuardService ]
   },
   {
     path: 'reset-password',
-    component: ResetPasswordFormComponent,
+    component: ResetPasswordComponent,
     canActivate: [ AuthGuardService ]
   },
   {
     path: 'change-password/:recoveryCode',
-    component: ChangePasswordFormComponent,
+    component: ChangePasswordComponent,
     canActivate: [ AuthGuardService ]
   },
 ];

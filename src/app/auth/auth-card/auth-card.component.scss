@@ -1,0 +1,65 @@
+// Values below were measured directly off the live DevExtreme dx-card/
+// single-card rendering (computed styles + bounding boxes), not guessed -
+// see the auth screens migration for how they were extracted.
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 50px;
+  background-color: #fff;
+}
+
+.auth-card {
+  width: 330px;
+  margin: 0;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+
+  @media (max-width: 599.98px) {
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    border: 0;
+    margin: 0;
+  }
+
+  &__header {
+    margin-bottom: 30px;
+  }
+
+  &__logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+
+    img {
+      width: 80%;
+      height: auto;
+    }
+  }
+
+  &__title {
+    color: #333;
+    display: flex;
+    justify-content: center;
+    line-height: 28px;
+    font-weight: 500;
+    font-size: 24px;
+  }
+
+  &__description {
+    color: rgba(51, 51, 51, 0.7);
+    line-height: 18px;
+  }
+}

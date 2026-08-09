@@ -11,7 +11,7 @@ import { CoreModule } from './core/core.module';
 import { CookieService } from 'ngx-cookie-service';
 import { NgxsModule } from '@ngxs/store';
 import { SharedModule } from './shared/shared.module';
-import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/admin-forms.module';
+import { AuthModule } from './auth/auth.module';
 
 @NgModule({
   declarations: [
@@ -27,7 +27,7 @@ import { ImpactAdminFormsModule } from 'impactdisciplescommon/src/forms/admin/ad
     // would pull them back into the main chunk.
     CoreModule,
     ImpactDisciplesCommonModule,
-    ImpactAdminFormsModule,
+    AuthModule,
     SharedModule
 
   ],

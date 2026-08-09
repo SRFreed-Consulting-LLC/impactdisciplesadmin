@@ -1,0 +1,143 @@
+// Shared field/button/link styling for every auth screen, extracted by
+// measuring the live DevExtreme dx-form rendering it replaces (computed
+// colors, border-radius, heights, spacing) rather than approximated -
+// intentionally NOT using mat-form-field/mat-button's own chrome, since
+// their default look is a different visual language than DevExtreme's
+// filled textbox + flat button and fighting that would be more fragile
+// than just styling plain elements to match exactly.
+$auth-text: #333;
+$auth-text-muted: rgba(51, 51, 51, 0.7);
+$auth-primary: #337ab7;
+$auth-primary-hover: #296293;
+$auth-primary-active: #193d5b;
+$auth-fill-bg: rgba(51, 51, 51, 0.05);
+$auth-border: #ddd;
+$auth-danger: #d9534f;
+$auth-danger-bg: rgba(217, 83, 79, 0.1);
+$auth-radius: 4px;
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-form__intro {
+  color: $auth-text;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.auth-form__field {
+  position: relative;
+}
+
+.auth-form__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  padding: 0 32px 0 9px;
+  border: 1px solid transparent;
+  border-radius: $auth-radius;
+  background-color: $auth-fill-bg;
+  color: $auth-text;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, background-color 0.15s;
+
+  &::placeholder {
+    color: #999;
+  }
+
+  &:focus {
+    border-color: $auth-primary;
+  }
+
+  &.ng-invalid.ng-touched {
+    background-color: $auth-danger-bg;
+
+    &:focus {
+      border-color: $auth-danger;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.7;
+  }
+}
+
+// The small red "!" badge DevExtreme shows inside an invalid field, at
+// rest (unfocused). Only the resting state is replicated - DevExtreme's
+// own focused-state error bubble absolutely-positions itself over
+// whatever sits below it (here, the submit button), which reads as a
+// rendering quirk rather than something worth preserving faithfully.
+.auth-form__invalid-badge {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: $auth-danger;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.auth-form__error {
+  color: $auth-danger;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.auth-form__submit {
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  border: none;
+  border-radius: $auth-radius;
+  background-color: $auth-primary;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+
+  &:hover:not(:disabled) {
+    background-color: $auth-primary-hover;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $auth-primary-active;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  ::ng-deep .mat-mdc-progress-spinner circle {
+    stroke: #fff;
+  }
+}
+
+.auth-form__link {
+  text-align: center;
+  font-size: 16px;
+  font-style: normal;
+
+  a {
+    text-decoration: none;
+    color: $auth-text;
+
+    &.auth-form__link--accent {
+      color: $auth-primary;
+    }
+  }
+}
