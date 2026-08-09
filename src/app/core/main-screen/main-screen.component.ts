@@ -1,21 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
-import { Role } from 'src/app/common/lists/roles.enum';
-import { SecureMenuItem } from 'src/app/common/models/utils/secure-menu-item.model';
+import { NavigationEnd, Router } from '@angular/router';
+import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-
-// Material icon ligatures, keyed by path since two nav entries shared the
-// same DevExtreme icon name ("user") for genuinely different things - a
-// copy-paste artifact (Store Manager) fixed here rather than ported.
-const NAV_ICONS: Record<string, string> = {
-  home: 'home',
-  'admin-manager': 'admin_panel_settings',
-  'events-manager': 'event',
-  'requests-manager': 'notifications_none',
-  'store-manager': 'storefront',
-  'subscriptions-manager': 'mail',
-  'web-manager': 'handyman'
-};
+import { NAV_CONFIG, NavGroup } from './nav-config';
 
 @Component({
     selector: 'app-main-screen',
@@ -24,40 +11,49 @@ const NAV_ICONS: Record<string, string> = {
     standalone: false
 })
 export class MainScreenComponent implements OnInit, OnDestroy {
-  navigation: SecureMenuItem[] = [
-    { id: 0, text: "HOME", icon: "home", path:"home", users:[Role.ADMIN] },
-    { id: 1, text: "ADMIN MANAGER", icon: "user", path: "admin-manager", users:[Role.ADMIN] },
-    { id: 2, text: "EVENTS MANAGER", icon: "event", path: "events-manager", users:[Role.ADMIN, Role.EMPLOYEE] },
-    { id: 3, text: "REQUESTS MANAGER", icon: "belloutline", path: "requests-manager", users:[Role.ADMIN] },
-    { id: 4, text: "STORE MANAGER", icon: "user", path: "store-manager", users:[Role.ADMIN, Role.EMPLOYEE] },
-    { id: 5, text: "SUBSCRIPTIONS MANAGER", icon: "message", path: "subscriptions-manager", users:[Role.ADMIN] },
-    { id: 6, text: "WEB MANAGER", icon: "toolbox", path: "web-manager", users:[Role.ADMIN] }
-  ]
+  secureNav: NavGroup[] = [];
 
-  secureNav: SecureMenuItem[] = [];
+  // Which manager groups are currently open - multiple can be open at once
+  // (no accordion-exclusive behavior). A group is also auto-added here
+  // whenever navigation lands on it (left nav click, the new-record-alerts
+  // bell, or a bookmarked URL), so arriving at a manager always shows its
+  // own sub-items without an extra click.
+  expanded = new Set<string>();
+
+  // Derived from the current URL - drives active-state highlighting for
+  // both a group's own row and its sub-items. Computed manually here rather
+  // than via routerLinkActive, which doesn't cleanly express "active only
+  // when this specific ?tab= matches" alongside "active because this is the
+  // open group with no sub-item selected yet".
+  activeGroupId: string | null = null;
+  activeSlug: string | null = null;
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private authService: AdminAuthService){}
+  constructor(private authService: AdminAuthService, private router: Router) {}
 
   ngOnInit(): void {
     // Was: this.authService.getLoggedInUser().role, which reads the
-    // "impact-disciples-user" cookie. That cookie's expiration is hard-set
-    // to the Firebase ID token's expiration (~1hr) at login time and is
-    // never proactively refreshed, while the Firebase session itself
-    // silently refreshes far longer than that - so a long-lived session can
-    // end up with a valid Firebase auth state (AuthGuardService lets the
-    // route through) but a stale/expired cookie. getLoggedInUser() then
-    // returns null, `.role` throws mid-ngOnInit, and secureNav is silently
-    // left at its empty-array default - an empty nav with everything else
-    // (logo, toolbar) still rendering normally.
-    //
-    // dao.loggedInUser$ re-derives the AdminUser record from Firebase's own
-    // live auth state on every emission (see FireAuthDao) - no cookie
-    // involved, so it can't go stale the same way.
+    // "impact-disciples-user" cookie - see this component's git history for
+    // the full explanation of why that can be null (a valid Firebase
+    // session with a stale/expired cookie). dao.loggedInUser$ re-derives
+    // the AdminUser from Firebase's own live auth state instead.
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
-      this.secureNav = this.navigation.filter(item => item.users.find(role => role == user?.role));
+      this.secureNav = NAV_CONFIG
+        .filter((group) => group.roles.some((role) => role === user?.role))
+        .map((group) => ({
+          ...group,
+          items: group.items?.filter((item) => !item.roles || item.roles.some((role) => role === user?.role))
+        }));
     });
+
+    this.syncActiveFromUrl(this.router.url);
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntil(this.ngUnsubscribe)
+      )
+      .subscribe((event) => this.syncActiveFromUrl(event.urlAfterRedirects));
   }
 
   ngOnDestroy(): void {
@@ -65,11 +61,32 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
-  iconFor(item: SecureMenuItem): string {
-    return NAV_ICONS[item.path] ?? 'circle';
+  toggleGroup(id: string): void {
+    if (this.expanded.has(id)) {
+      this.expanded.delete(id);
+    } else {
+      this.expanded.add(id);
+    }
   }
 
   logOff(): void {
     this.authService.logOut();
+  }
+
+  private syncActiveFromUrl(url: string): void {
+    const [path, queryString] = url.split('?');
+    const segment = path.split('/').filter(Boolean)[0] ?? '';
+    const group = NAV_CONFIG.find((g) => g.id === segment);
+
+    this.activeGroupId = group ? group.id : null;
+
+    if (group?.items) {
+      this.activeSlug = new URLSearchParams(queryString ?? '').get('tab');
+      if (this.activeGroupId) {
+        this.expanded.add(this.activeGroupId);
+      }
+    } else {
+      this.activeSlug = null;
+    }
   }
 }

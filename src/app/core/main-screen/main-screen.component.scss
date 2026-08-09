@@ -49,6 +49,16 @@ $accent: #ffcc00;
   text-decoration: none;
   color: #fff;
 
+  // Manager group headers are a real <button> (they toggle expand/collapse,
+  // not navigate) rather than an <a> - mat-list-item's own theme resets most
+  // button chrome already, this covers what it doesn't.
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+
   // Material's own list-item theme sets an explicit `color` on
   // `.mdc-list-item__primary-text` (the class matListItemTitle stamps onto
   // this span), which beats plain inheritance from the parent link
@@ -72,6 +82,50 @@ $accent: #ffcc00;
     mat-icon {
       color: $panel-bg;
     }
+  }
+}
+
+.impact-drawer__chevron {
+  margin-left: auto;
+  opacity: 0.65;
+  transition: transform 0.15s ease;
+
+  &--open {
+    transform: rotate(180deg);
+  }
+}
+
+.impact-drawer__sublist {
+  display: flex;
+  flex-direction: column;
+  // Slightly recessed so the group/sub-item hierarchy reads at a glance
+  // without a full tree-indent guideline - matches the reviewed mockup's
+  // "Pinned + Collapsible" treatment.
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+// .impact-drawer__list .mat-mdc-list-item's own padding rule above is
+// (0,2,0)-specific - matching that prefix here (rather than a bare
+// `.impact-drawer__sublink`, which would lose to it) is what actually lets
+// this override take effect.
+.impact-drawer__list .impact-drawer__sublink {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13.5px;
+  padding: 9px 20px 9px 50px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  &--active {
+    background-color: $accent;
+    color: $panel-bg;
+    font-weight: 600;
   }
 }
 
@@ -106,3 +160,4 @@ $accent: #ffcc00;
   overflow-y: auto;
   overflow-x: hidden;
 }
+

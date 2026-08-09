@@ -9,7 +9,6 @@ import { PhoneFieldComponent } from './phone-field/phone-field.component';
 import { PhoneMaskDirective } from './phone-field/phone-mask.directive';
 import { AddressFieldComponent } from './address-field/address-field.component';
 import { VariableInserterComponent } from './rich-text-editor/variable-inserter.component';
-import { SectionTabsComponent } from './section-tabs/section-tabs.component';
 import { TableLoadingOverlayComponent } from './table-loading-overlay/table-loading-overlay.component';
 import { TagChipsComponent } from './tag-chips/tag-chips.component';
 import { InfiniteScrollDirective } from './infinite-scroll.directive';
@@ -42,7 +41,6 @@ import { MatBadgeModule } from '@angular/material/badge';
     PhoneMaskDirective,
     AddressFieldComponent,
     VariableInserterComponent,
-    SectionTabsComponent,
     TableLoadingOverlayComponent,
     TagChipsComponent,
     InfiniteScrollDirective,
@@ -77,7 +75,6 @@ import { MatBadgeModule } from '@angular/material/badge';
     PhoneMaskDirective,
     AddressFieldComponent,
     VariableInserterComponent,
-    SectionTabsComponent,
     TableLoadingOverlayComponent,
     TagChipsComponent,
     InfiniteScrollDirective,

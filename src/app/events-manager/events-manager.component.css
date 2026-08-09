@@ -7,10 +7,6 @@
   height: 100%;
 }
 
-app-section-tabs {
-  flex: 0 0 auto;
-}
-
 .manager-content {
   flex: 1 1 auto;
   min-height: 0;

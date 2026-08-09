@@ -5,15 +5,43 @@
     </div>
 
     <mat-nav-list class="impact-drawer__list">
-      <a
-        mat-list-item
-        *ngFor="let item of secureNav"
-        [routerLink]="['/', item.path]"
-        routerLinkActive="impact-drawer__link--active"
-        class="impact-drawer__link">
-        <mat-icon matListItemIcon>{{ iconFor(item) }}</mat-icon>
-        <span matListItemTitle class="impact-drawer__link-text">{{ item.text }}</span>
-      </a>
+      <ng-container *ngFor="let group of secureNav">
+        <!-- Home - no sub-items, plain link -->
+        <a
+          *ngIf="!group.items"
+          mat-list-item
+          [routerLink]="['/', group.id]"
+          class="impact-drawer__link"
+          [class.impact-drawer__link--active]="activeGroupId === group.id">
+          <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
+          <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
+        </a>
+
+        <!-- Manager group - header toggles expand/collapse, doesn't navigate itself -->
+        <button
+          *ngIf="group.items"
+          type="button"
+          mat-list-item
+          (click)="toggleGroup(group.id)"
+          class="impact-drawer__link"
+          [class.impact-drawer__link--active]="activeGroupId === group.id && !activeSlug">
+          <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
+          <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
+          <mat-icon class="impact-drawer__chevron" [class.impact-drawer__chevron--open]="expanded.has(group.id)">expand_more</mat-icon>
+        </button>
+
+        <div class="impact-drawer__sublist" *ngIf="group.items && expanded.has(group.id)">
+          <a
+            *ngFor="let item of group.items"
+            mat-list-item
+            [routerLink]="['/', group.id]"
+            [queryParams]="{ tab: item.slug }"
+            class="impact-drawer__sublink"
+            [class.impact-drawer__sublink--active]="activeGroupId === group.id && activeSlug === item.slug">
+            {{ item.label }}
+          </a>
+        </div>
+      </ng-container>
     </mat-nav-list>
   </mat-sidenav>
 

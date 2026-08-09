@@ -2,6 +2,11 @@
 @use './assets/theme/scss/main.scss';
 @use './assets/theme/scss/variables' as *;
 @use './assets/theme/scss/material-theme' as impact-material;
+// Dark mode + curated accent classes for the Settings > Themes page (see
+// ThemeService) - a separate partial from material-theme.scss since it
+// only ever adds override classes on top of that file's root theme, never
+// touches it.
+@use './assets/theme/scss/theme-accents';
 // angular-calendar (Event Agenda tab, events-manager) ships plain CSS, not
 // an @use-able module - a bare @import (must come after every @use, per
 // Sass's own module-ordering rule) is still how the library's own docs
@@ -120,7 +125,6 @@ app-room-dialog,
 app-root,
 app-sale-dialog,
 app-sales,
-app-section-tabs,
 app-seminars,
 app-send-email-dialog,
 app-series-modal,
