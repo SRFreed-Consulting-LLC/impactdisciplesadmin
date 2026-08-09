@@ -9,6 +9,13 @@ import { SnackbarService } from '../../../../shared/snackbar.service';
 import { AnnouncementDialogComponent } from './announcement-dialog.component';
 import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-announcements',
@@ -20,8 +27,12 @@ export class AnnouncementsComponent implements OnInit {
   @Input() event: EventModel;
 
   announcements$: Observable<AnnouncementModel[]>;
-  displayedColumns = ['date', 'sentBy', 'announcement', 'actions'];
-  filterColumns = ['date-filter', 'sentBy-filter', 'announcement-filter', 'actions-filter'];
+  currentRows: AnnouncementModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'sentBy', label: 'Sent By', visible: true },
+    { key: 'announcement', label: 'Announcement', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Event Announcement';
@@ -47,8 +58,8 @@ export class AnnouncementsComponent implements OnInit {
     const source$ = this.event?.id ? this.service.streamAllByValue('eventId', this.event.id) : of([]);
 
     this.announcements$ = combineLatest([source$, this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) =>
               matchesColumnFilter(item[field as keyof AnnouncementModel], filters[field], 'text')
@@ -58,10 +69,33 @@ export class AnnouncementsComponent implements OnInit {
             const aTime = a.date instanceof Date ? a.date.getTime() : 0;
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return aTime - bTime;
-          })
-      ),
+          });
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<AnnouncementModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'event_announcements.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

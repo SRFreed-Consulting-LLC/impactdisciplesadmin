@@ -21,6 +21,13 @@ import { ProductCategoriesComponent } from '../product-categories/product-catego
 import { ProductSeriesComponent } from '../product-series/product-series.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-products',
@@ -38,8 +45,18 @@ export class ProductsComponent implements OnInit {
 
   // ---- List state ----
   products$: Observable<ProductModel[]>;
-  displayedColumns = ['isActive', 'imageUrl', 'title', 'cost', 'salePrice', 'category', 'series', 'isEBook', 'isDigitalBook', 'actions'];
-  filterColumns = ['isActive-filter', 'imageUrl-filter', 'title-filter', 'cost-filter', 'salePrice-filter', 'category-filter', 'series-filter', 'isEBook-filter', 'isDigitalBook-filter', 'actions-filter'];
+  currentRows: ProductModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'imageUrl', label: 'Image', visible: true },
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'cost', label: 'Cost', visible: true },
+    { key: 'salePrice', label: 'Sale Price', visible: true },
+    { key: 'category', label: 'Category', visible: true },
+    { key: 'series', label: 'Series', visible: true },
+    { key: 'isEBook', label: 'eBook', visible: true },
+    { key: 'isDigitalBook', label: 'Digital Book', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
 
@@ -56,20 +73,16 @@ export class ProductsComponent implements OnInit {
   loading$ = new BehaviorSubject<boolean>(true);
 
   // Kept live for the whole lifetime of this component (not just while a
-  // filter/edit is open) - serves three purposes at once: the list
-  // header's Category/Series filter selects, the Category/Series column
-  // name lookups, and the edit form's own Category/Series selects. Since
-  // it's a live streamAll() subscription, adding a category/series via
-  // "Manage Categories"/"Manage Series" while the edit form is open shows
-  // up in that form's own select immediately, no manual refresh needed.
+  // filter/edit is open) - serves three purposes at once: the Category/
+  // Series column-filter matching, the Category/Series column name
+  // lookups, and the edit form's own Category/Series selects. Since it's a
+  // live streamAll() subscription, adding a category/series via "Manage
+  // Categories"/"Manage Series" while the edit form is open shows up in
+  // that form's own select immediately, no manual refresh needed.
   categories: TagModel[] = [];
   series: SeriesModel[] = [];
-  selectedCategoryId: string | null = null;
-  selectedSeriesId: string | null = null;
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
-  private categoryFilter$ = new BehaviorSubject<string | null>(null);
-  private seriesFilter$ = new BehaviorSubject<string | null>(null);
 
   // ---- Edit state ----
   form: FormGroup;
@@ -121,16 +134,51 @@ export class ProductsComponent implements OnInit {
       this.emails = templates.map((t) => ({ id: t.id!, name: t.name }));
     });
 
-    this.products$ = combineLatest([this.service.streamAll(), this.filters$, this.categoryFilter$, this.seriesFilter$]).pipe(
-      map(([items, filters, categoryId, seriesId]) =>
-        items
-          .filter((item) => !categoryId || item.category === categoryId)
-          .filter((item) => !seriesId || item.series === seriesId)
+    this.products$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
-      ),
+          .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  // Exports whatever's currently on screen (after filters), matching every
+  // other table's exportExcel() - see purchases.component.ts.
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<ProductModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'products.xlsx');
+  }
+
+  private fieldValue(item: ProductModel, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      case 'category': return this.categoryName(item);
+      case 'series': return this.seriesName(item);
+      case 'isEBook': return item.isEBook ? 'Yes' : 'No';
+      case 'isDigitalBook': return item.isDigitalBook ? 'Yes' : 'No';
+      case 'imageUrl': return item.imageUrl?.name ?? '';
+      default: return (item as any)[field];
+    }
   }
 
   categoryName(item: ProductModel): string {
@@ -156,16 +204,6 @@ export class ProductsComponent implements OnInit {
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {
     this.filters$.next({ ...this.filters$.value, [field]: filter });
-  }
-
-  onCategoryFilterChanged(categoryId: string | null): void {
-    this.selectedCategoryId = categoryId;
-    this.categoryFilter$.next(categoryId);
-  }
-
-  onSeriesFilterChanged(seriesId: string | null): void {
-    this.selectedSeriesId = seriesId;
-    this.seriesFilter$.next(seriesId);
   }
 
   manageCategories(): void {

@@ -15,8 +15,15 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { LocationsComponent } from '../locations/locations.component';
 import { OrganizationsComponent } from '../organizations/organizations.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts (store-manager) for the established precedent) -
@@ -32,8 +39,17 @@ export class EventsComponent implements OnInit {
 
   // ---- List state ----
   events$: Observable<EventModel[]>;
-  displayedColumns = ['isActive', 'startDate', 'endDate', 'costInDollars', 'isSummit', 'eventName', 'organization', 'location', 'actions'];
-  filterColumns = ['isActive-filter', 'startDate-filter', 'endDate-filter', 'costInDollars-filter', 'isSummit-filter', 'eventName-filter', 'organization-filter', 'location-filter', 'actions-filter'];
+  currentRows: EventModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'startDate', label: 'From', visible: true },
+    { key: 'endDate', label: 'To', visible: true },
+    { key: 'costInDollars', label: 'Cost', visible: true },
+    { key: 'isSummit', label: 'Summit?', visible: true },
+    { key: 'eventName', label: 'Event Name', visible: true },
+    { key: 'organization', label: 'Organization', visible: true },
+    { key: 'location', label: 'Location', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
 
@@ -111,13 +127,51 @@ export class EventsComponent implements OnInit {
     });
 
     this.events$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => this.toMillis(b.startDate) - this.toMillis(a.startDate))
-      ),
+          .sort((a, b) => this.toMillis(b.startDate) - this.toMillis(a.startDate));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: EventModel, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      case 'isSummit': return item.isSummit ? 'Yes' : 'No';
+      case 'organization': return this.organizationName(item);
+      case 'location': return this.locationName(item);
+      case 'startDate':
+      case 'endDate': {
+        const value = (item as any)[field];
+        return value instanceof Date ? value : value ? new Date(value) : '';
+      }
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<EventModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'events.xlsx');
   }
 
   isVisible(roles: string[]): boolean {

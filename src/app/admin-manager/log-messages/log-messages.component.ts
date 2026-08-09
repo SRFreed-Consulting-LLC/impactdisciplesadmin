@@ -3,6 +3,13 @@ import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { LogMessage } from 'src/app/common/models/utils/log-message.model';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 // Read-only, matching the original - no add/edit/delete existed for logs,
 // just a filterable list.
@@ -14,8 +21,13 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class LogMessagesComponent implements OnInit {
   logs$: Observable<LogMessage[]>;
-  displayedColumns = ['date', 'type', 'error_code', 'message'];
-  filterColumns = ['date-filter', 'type-filter', 'error_code-filter', 'message-filter'];
+  currentRows: LogMessage[] = [];
+  columns: ColumnDef[] = [
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'type', label: 'Type', visible: true },
+    { key: 'error_code', label: 'Error Code', visible: true },
+    { key: 'message', label: 'Message', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -31,8 +43,8 @@ export class LogMessagesComponent implements OnInit {
 
   ngOnInit(): void {
     this.logs$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) => {
               const type = field === 'date' ? 'date' : 'text';
@@ -43,10 +55,33 @@ export class LogMessagesComponent implements OnInit {
             const aTime = a.date instanceof Date ? a.date.getTime() : 0;
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
-          })
-      ),
+          });
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return this.columns.filter((c) => c.visible).map((c) => c.key);
+  }
+
+  get filterColumns(): string[] {
+    return this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`);
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<LogMessage>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'log_messages.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

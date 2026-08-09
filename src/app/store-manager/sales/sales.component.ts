@@ -8,11 +8,18 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { SaleDialogComponent } from './sale-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { parseSaleDate } from './sale-date.util';
 
 interface SaleRow extends SaleModel {
   startDateParsed: Date | null;
   endDateParsed: Date | null;
+}
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
 }
 
 @Component({
@@ -23,8 +30,18 @@ interface SaleRow extends SaleModel {
 })
 export class SalesComponent implements OnInit {
   sales$: Observable<SaleRow[]>;
-  displayedColumns = ['isActive', 'name', 'startDate', 'endDate', 'percentOff', 'amountOff', 'isProducts', 'isEvents', 'isShipping', 'actions'];
-  filterColumns = ['isActive-filter', 'name-filter', 'startDate-filter', 'endDate-filter', 'percentOff-filter', 'amountOff-filter', 'isProducts-filter', 'isEvents-filter', 'isShipping-filter', 'actions-filter'];
+  currentRows: SaleRow[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'name', label: 'Name', visible: true },
+    { key: 'startDate', label: 'From', visible: true },
+    { key: 'endDate', label: 'To', visible: true },
+    { key: 'percentOff', label: 'Percent Off', visible: true },
+    { key: 'amountOff', label: 'Amount Off', visible: true },
+    { key: 'isProducts', label: 'Products', visible: true },
+    { key: 'isEvents', label: 'Events', visible: true },
+    { key: 'isShipping', label: 'Shipping', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
@@ -50,8 +67,8 @@ export class SalesComponent implements OnInit {
 
   ngOnInit(): void {
     this.sales$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .map((item) => ({
             ...item,
             startDateParsed: parseSaleDate(item.startDate),
@@ -68,10 +85,45 @@ export class SalesComponent implements OnInit {
               const type = field === 'percentOff' || field === 'amountOff' ? 'number' : 'text';
               return matchesColumnFilter(item[field as keyof SaleModel], filters[field], type);
             })
-          )
-      ),
+          );
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: SaleRow, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      case 'startDate': return item.startDateParsed;
+      case 'endDate': return item.endDateParsed;
+      case 'isProducts': return item.isProducts ? 'Yes' : 'No';
+      case 'isEvents': return item.isEvents ? 'Yes' : 'No';
+      case 'isShipping': return item.isShipping ? 'Yes' : 'No';
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<SaleRow>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'sales.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

@@ -8,6 +8,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { MonthlyNewsletterDialogComponent } from './monthly-newsletter-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 // Previously an inline-editable dx-data-grid (dxo-editing mode="row") with no
 // separate add/edit popup at all. Material has no inline-row-edit equivalent
@@ -21,12 +28,13 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class MonthlyNewslettersComponent implements OnInit {
   newsletters$: Observable<MonthlyNewsletterModel[]>;
-  displayedColumns = ['isActive', 'date', 'title', 'url', 'actions'];
-  // Second header row of per-column filters, mirroring dx-data-grid's
-  // dxo-filter-row. The original grid here didn't have a filter row, but
-  // it's added for consistency with every other migrated table. No filter
-  // on isActive - it's a status badge, not free text.
-  filterColumns = ['isActive-filter', 'date-filter', 'title-filter', 'url-filter', 'actions-filter'];
+  currentRows: MonthlyNewsletterModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'url', label: 'Url', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -51,8 +59,8 @@ export class MonthlyNewslettersComponent implements OnInit {
 
   ngOnInit(): void {
     this.newsletters$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items.filter((item) =>
+      map(([items, filters]) => {
+        const filtered = items.filter((item) =>
           Object.keys(filters).every((field) =>
             matchesColumnFilter(
               item[field as keyof MonthlyNewsletterModel],
@@ -60,10 +68,40 @@ export class MonthlyNewslettersComponent implements OnInit {
               field === 'date' ? 'date' : 'text'
             )
           )
-        )
-      ),
+        );
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: MonthlyNewsletterModel, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<MonthlyNewsletterModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'monthly_newsletters.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

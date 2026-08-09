@@ -8,6 +8,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { ConsultationSurveyDialogComponent } from './consultation-survey-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-consultations-surveys',
@@ -17,8 +24,15 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class ConsultationsSurveysComponent implements OnInit {
   surveys$: Observable<ConsultationSurveyModel[]>;
-  displayedColumns = ['date', 'lastName', 'firstName', 'email', 'churchName', 'phone', 'actions'];
-  filterColumns = ['date-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'churchName-filter', 'phone-filter', 'actions-filter'];
+  currentRows: ConsultationSurveyModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'churchName', label: 'Church Name', visible: true },
+    { key: 'phone', label: 'Phone', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -41,17 +55,47 @@ export class ConsultationsSurveysComponent implements OnInit {
 
   ngOnInit(): void {
     this.surveys$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
           .sort((a, b) => {
             const aTime = a.date instanceof Date ? a.date.getTime() : 0;
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
-          })
-      ),
+          });
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: ConsultationSurveyModel, field: string): any {
+    switch (field) {
+      case 'phone': return item.phone?.number ?? '';
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<ConsultationSurveyModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'consultation_surveys.xlsx');
   }
 
   private matchesField(item: ConsultationSurveyModel, field: string, filter: ColumnFilterValue): boolean {

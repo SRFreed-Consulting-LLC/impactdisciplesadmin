@@ -10,6 +10,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { LocationDialogComponent } from './location-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-locations',
@@ -19,8 +26,16 @@ import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '.
 })
 export class LocationsComponent implements OnInit {
   locations$: Observable<LocationModel[]>;
-  displayedColumns = ['name', 'contactName', 'organization', 'city', 'state', 'phone', 'phoneType', 'actions'];
-  filterColumns = ['name-filter', 'contactName-filter', 'organization-filter', 'city-filter', 'state-filter', 'phone-filter', 'phoneType-filter', 'actions-filter'];
+  currentRows: LocationModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'name', label: 'Name', visible: true },
+    { key: 'contactName', label: 'Contact Name', visible: true },
+    { key: 'organization', label: 'Organization', visible: true },
+    { key: 'city', label: 'City', visible: true },
+    { key: 'state', label: 'State', visible: true },
+    { key: 'phone', label: 'Phone', visible: true },
+    { key: 'phoneType', label: 'Phone Type', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Location';
@@ -51,15 +66,49 @@ export class LocationsComponent implements OnInit {
     this.organizationsById = Object.fromEntries(this.organizations.map((org) => [org.id, org]));
 
     this.locations$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) => this.matchesField(item, field, filters[field]))
           )
-          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
-      ),
+          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: LocationModel, field: string): any {
+    switch (field) {
+      case 'organization': return this.organizationName(item);
+      case 'city': return item.address?.city ?? '';
+      case 'state': return item.address?.state ?? '';
+      case 'phone': return item.phone?.number ?? '';
+      case 'phoneType': return item.phone?.type ?? '';
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<LocationModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'locations.xlsx');
   }
 
   organizationName(item: LocationModel): string {

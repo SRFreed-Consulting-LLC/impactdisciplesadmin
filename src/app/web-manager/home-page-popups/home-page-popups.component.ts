@@ -11,6 +11,13 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, NUMBER_F
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../shared/time-of-day.util';
 import { HomePagePopupPreviewDialogComponent } from './home-page-popup-preview-dialog.component';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-home-page-popups',
@@ -26,8 +33,16 @@ export class HomePagePopupsComponent implements OnInit {
   mode: 'list' | 'edit' = 'list';
 
   popups$: Observable<HomePagePopupModel[]>;
-  displayedColumns = ['isActive', 'fromDate', 'toDate', 'title', 'width', 'height', 'bgColor', 'actions'];
-  filterColumns = ['isActive-filter', 'fromDate-filter', 'toDate-filter', 'title-filter', 'width-filter', 'height-filter', 'bgColor-filter', 'actions-filter'];
+  currentRows: HomePagePopupModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'fromDate', label: 'From Date', visible: true },
+    { key: 'toDate', label: 'To Date', visible: true },
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'width', label: 'Width', visible: true },
+    { key: 'height', label: 'Height', visible: true },
+    { key: 'bgColor', label: 'Background Color', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
@@ -58,16 +73,46 @@ export class HomePagePopupsComponent implements OnInit {
 
   ngOnInit(): void {
     this.popups$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items.filter((item) =>
+      map(([items, filters]) => {
+        const filtered = items.filter((item) =>
           Object.keys(filters).every((field) => {
             const type = field === 'fromDate' || field === 'toDate' ? 'date' : field === 'width' || field === 'height' ? 'number' : 'text';
             return matchesColumnFilter(item[field as keyof HomePagePopupModel], filters[field], type);
           })
-        )
-      ),
+        );
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: HomePagePopupModel, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<HomePagePopupModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'home_page_popups.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

@@ -12,6 +12,13 @@ import { PodCastDialogComponent } from './pod-cast-dialog.component';
 import { PodCastCategoriesComponent } from '../pod-cast-categories/pod-cast-categories.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-pod-casts',
@@ -21,8 +28,14 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class PodCastsComponent implements OnInit, OnDestroy {
   podCasts$: Observable<PodCastModel[]>;
-  displayedColumns = ['isActive', 'thumbnail', 'date', 'title', 'category', 'actions'];
-  filterColumns = ['isActive-filter', 'thumbnail-filter', 'date-filter', 'title-filter', 'category-filter', 'actions-filter'];
+  currentRows: PodCastModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'thumbnail', label: 'Thumbnail', visible: true },
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'category', label: 'Category', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -60,8 +73,8 @@ export class PodCastsComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.podCasts$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) => {
               const type = field === 'date' ? 'date' : 'text';
@@ -72,8 +85,10 @@ export class PodCastsComponent implements OnInit, OnDestroy {
             const aTime = a.date instanceof Date ? a.date.getTime() : 0;
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
-          })
-      ),
+          });
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
 
@@ -99,7 +114,34 @@ export class PodCastsComponent implements OnInit, OnDestroy {
     if (field === 'category') {
       return this.categoryName(item);
     }
+    if (field === 'isActive') {
+      return item.isActive ? 'LIVE' : 'INACTIVE';
+    }
+    if (field === 'thumbnail') {
+      return (item as any).thumbnail?.name ?? '';
+    }
     return (item as any)[field];
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<PodCastModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'pod_casts.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

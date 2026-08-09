@@ -8,7 +8,14 @@ import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service'
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { ShippingBatchDialogComponent } from './shipping-batch-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-shipping-labels',
@@ -18,7 +25,12 @@ import { ShippingBatchDialogComponent } from './shipping-batch-dialog.component'
 })
 export class ShippingLabelsComponent implements OnInit, OnDestroy {
   batches$: Observable<ShippingLabelBatchRequest[]>;
-  displayedColumns = ['createdDate', 'createdBy', 'id', 'actions'];
+  currentRows: ShippingLabelBatchRequest[] = [];
+  columns: ColumnDef[] = [
+    { key: 'createdDate', label: 'Created Date', visible: true },
+    { key: 'createdBy', label: 'Created By', visible: true },
+    { key: 'id', label: 'Id', visible: true }
+  ];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -48,12 +60,34 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
       this.currentUserEmail = user?.email;
     });
 
-    this.batches$ = this.batchService.streamAll().pipe(tap(() => this.loading$.next(false)));
+    this.batches$ = this.batchService.streamAll().pipe(
+      tap((batches) => {
+        this.currentRows = batches;
+        this.loading$.next(false);
+      })
+    );
   }
 
   ngOnDestroy(): void {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<ShippingLabelBatchRequest>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'shipping_label_batches.xlsx');
   }
 
   addBatch(): void {

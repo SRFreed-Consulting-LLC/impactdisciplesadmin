@@ -9,7 +9,14 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { CoachDialogComponent } from './coach-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-coaches',
@@ -19,8 +26,17 @@ import { CoachDialogComponent } from './coach-dialog.component';
 })
 export class CoachesComponent implements OnInit {
   coaches$: Observable<CoachModel[]>;
-  displayedColumns = ['isActive', 'photoUrl', 'sortOrder', 'teamPageSortOrder', 'lastName', 'firstName', 'title', 'organization', 'actions'];
-  filterColumns = ['isActive-filter', 'photoUrl-filter', 'sortOrder-filter', 'teamPageSortOrder-filter', 'lastName-filter', 'firstName-filter', 'title-filter', 'organization-filter', 'actions-filter'];
+  currentRows: CoachModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'photoUrl', label: 'Photo', visible: true },
+    { key: 'sortOrder', label: 'Sort Order', visible: true },
+    { key: 'teamPageSortOrder', label: 'Team Page Sort Order', visible: true },
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'organization', label: 'Organization', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Coach';
@@ -51,11 +67,13 @@ export class CoachesComponent implements OnInit {
     });
 
     this.coaches$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-      ),
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
   }
@@ -70,6 +88,36 @@ export class CoachesComponent implements OnInit {
       return matchesColumnFilter(this.organizationName(item), filter, 'text');
     }
     return matchesColumnFilter((item as any)[field], filter, 'text');
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: CoachModel, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      case 'photoUrl': return (item as any).photoUrl?.name ?? '';
+      case 'organization': return this.organizationName(item);
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<CoachModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'coaches.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

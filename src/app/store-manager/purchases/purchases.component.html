@@ -1,6 +1,6 @@
 <ng-container *ngIf="mode === 'list'">
 <app-list-header [title]="itemType + 's'">
-  <button mat-stroked-button type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
     <mat-icon>view_column</mat-icon>
     Columns
   </button>
@@ -10,7 +10,7 @@
     </button>
   </mat-menu>
 
-  <button mat-stroked-button type="button" (click)="exportExcel()">
+  <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
     <mat-icon>file_download</mat-icon>
     Export to Excel
   </button>

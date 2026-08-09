@@ -23,6 +23,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatMenuModule } from '@angular/material/menu';
 import { QuillModule } from 'ngx-quill';
 
 
@@ -42,6 +43,7 @@ import { QuillModule } from 'ngx-quill';
     MatTooltipModule,
     MatSelectModule,
     MatCheckboxModule,
+    MatMenuModule,
     QuillModule
   ],
   declarations: [

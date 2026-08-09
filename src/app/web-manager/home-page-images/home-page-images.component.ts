@@ -8,6 +8,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { HomePageImageDialogComponent } from './home-page-image-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-home-page-images',
@@ -17,8 +24,17 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, NUMBER_F
 })
 export class HomePageImagesComponent implements OnInit {
   images$: Observable<HomePageImageModel[]>;
-  displayedColumns = ['isActive', 'order', 'image', 'date', 'title', 'ctaTitle', 'ctaDestination', 'ctaUrl', 'actions'];
-  filterColumns = ['isActive-filter', 'order-filter', 'image-filter', 'date-filter', 'title-filter', 'ctaTitle-filter', 'ctaDestination-filter', 'ctaUrl-filter', 'actions-filter'];
+  currentRows: HomePageImageModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'order', label: 'Order', visible: true },
+    { key: 'image', label: 'Image', visible: true },
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'ctaTitle', label: 'Button Title', visible: true },
+    { key: 'ctaDestination', label: 'Button Internal Destination', visible: true },
+    { key: 'ctaUrl', label: 'Button External URL', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
@@ -42,18 +58,49 @@ export class HomePageImagesComponent implements OnInit {
 
   ngOnInit(): void {
     this.images$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) => {
               const type = field === 'order' ? 'number' : field === 'date' ? 'date' : 'text';
               return matchesColumnFilter(item[field as keyof HomePageImageModel], filters[field], type);
             })
           )
-          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      ),
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private fieldValue(item: HomePageImageModel, field: string): any {
+    switch (field) {
+      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
+      case 'image': return (item as any).image?.name ?? '';
+      default: return (item as any)[field];
+    }
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<HomePageImageModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => this.fieldValue(item, c.key) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'home_page_images.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

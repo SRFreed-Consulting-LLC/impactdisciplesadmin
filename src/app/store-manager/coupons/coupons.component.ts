@@ -7,7 +7,14 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { CouponDialogComponent } from './coupon-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-coupons',
@@ -17,8 +24,13 @@ import { CouponDialogComponent } from './coupon-dialog.component';
 })
 export class CouponsComponent implements OnInit {
   coupons$: Observable<CouponModel[]>;
-  displayedColumns = ['isActive', 'code', 'percentOff', 'affilliateName', 'actions'];
-  filterColumns = ['isActive-filter', 'code-filter', 'percentOff-filter', 'affilliateName-filter', 'actions-filter'];
+  currentRows: CouponModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'isActive', label: 'Live', visible: true },
+    { key: 'code', label: 'Code', visible: true },
+    { key: 'percentOff', label: 'Percent Off', visible: true },
+    { key: 'affilliateName', label: 'Affiliate Name', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   numberOperators = NUMBER_FILTER_OPERATORS;
 
@@ -41,13 +53,36 @@ export class CouponsComponent implements OnInit {
 
   ngOnInit(): void {
     this.coupons$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], field === 'percentOff' ? 'number' : 'text')))
-          .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''))
-      ),
+          .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<CouponModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (c.key === 'isActive' ? (item.isActive ? 'LIVE' : 'INACTIVE') : (item as any)[c.key]) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'coupons.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

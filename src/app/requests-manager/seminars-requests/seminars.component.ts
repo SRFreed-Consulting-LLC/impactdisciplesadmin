@@ -8,6 +8,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { SeminarDialogComponent } from './seminar-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-seminars',
@@ -17,8 +24,16 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class SeminarsComponent implements OnInit {
   seminars$: Observable<SeminarModel[]>;
-  displayedColumns = ['date', 'eventCoordinator', 'preferredLocationName', 'requestedDate', 'requestedStartTime', 'requestedEndTime', 'email', 'actions'];
-  filterColumns = ['date-filter', 'eventCoordinator-filter', 'preferredLocationName-filter', 'requestedDate-filter', 'requestedStartTime-filter', 'requestedEndTime-filter', 'email-filter', 'actions-filter'];
+  currentRows: SeminarModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'eventCoordinator', label: 'Coordinator', visible: true },
+    { key: 'preferredLocationName', label: 'Location Name', visible: true },
+    { key: 'requestedDate', label: 'Requested Date', visible: true },
+    { key: 'requestedStartTime', label: 'Start Time', visible: true },
+    { key: 'requestedEndTime', label: 'End Time', visible: true },
+    { key: 'email', label: 'Email', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -41,8 +56,8 @@ export class SeminarsComponent implements OnInit {
 
   ngOnInit(): void {
     this.seminars$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) => {
               const type = field === 'date' || field === 'requestedDate' ? 'date' : 'text';
@@ -53,10 +68,33 @@ export class SeminarsComponent implements OnInit {
             const aTime = a.date instanceof Date ? a.date.getTime() : 0;
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
-          })
-      ),
+          });
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<SeminarModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'seminars.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

@@ -1,20 +1,19 @@
 <ng-container *ngIf="mode === 'list'">
   <app-list-header [title]="itemType + 's'" [actions]="actions">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-filter">
-      <mat-label>Filter by Category</mat-label>
-      <mat-select [value]="selectedCategoryId" (selectionChange)="onCategoryFilterChanged($event.value)">
-        <mat-option [value]="null">(All Categories)</mat-option>
-        <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.tag }}</mat-option>
-      </mat-select>
-    </mat-form-field>
+    <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+      <mat-icon>view_column</mat-icon>
+      Columns
+    </button>
+    <mat-menu #columnsMenu="matMenu">
+      <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
+        <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+      </button>
+    </mat-menu>
 
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-filter">
-      <mat-label>Filter by Series</mat-label>
-      <mat-select [value]="selectedSeriesId" (selectionChange)="onSeriesFilterChanged($event.value)">
-        <mat-option [value]="null">(All Series)</mat-option>
-        <mat-option *ngFor="let s of series" [value]="s.id">{{ s.name }}</mat-option>
-      </mat-select>
-    </mat-form-field>
+    <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
+      <mat-icon>file_download</mat-icon>
+      Export to Excel
+    </button>
   </app-list-header>
 
   <div class="table-scroll">

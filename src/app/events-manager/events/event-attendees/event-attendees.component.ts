@@ -96,8 +96,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   actions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
     { label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() },
-    { label: 'Export to PDF', icon: 'picture_as_pdf', onClick: () => this.exportPdf() },
-    { label: 'Export to Excel', icon: 'grid_on', onClick: () => this.exportExcel() }
+    { label: 'Export to PDF', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
   ];
 
   toggleColumn(column: ColumnDef): void {

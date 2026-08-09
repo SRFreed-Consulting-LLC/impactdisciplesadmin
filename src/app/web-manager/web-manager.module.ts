@@ -39,6 +39,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -62,6 +64,8 @@ import { QuillModule } from 'ngx-quill';
     MatNativeDateModule,
     MatToolbarModule,
     MatProgressSpinnerModule,
+    MatMenuModule,
+    MatCheckboxModule,
     QuillModule
   ],
   declarations: [

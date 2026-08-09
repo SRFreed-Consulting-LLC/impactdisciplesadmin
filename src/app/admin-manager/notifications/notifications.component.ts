@@ -5,6 +5,13 @@ import { NotificationRegistrationService } from 'src/app/common/services/data/no
 import { MatDialog } from '@angular/material/dialog';
 import { NotificationDialogComponent } from './notification-dialog.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 // Only the grid's "Send Notification" row action opens the dialog here,
 // matching the original - there's no page-level "New" action and no delete
@@ -19,8 +26,14 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class NotificationsComponent implements OnInit {
   notifications$: Observable<NotificationRegistrationModel[]>;
-  displayedColumns = ['id', 'email', 'dateRegistered', 'dateRemoved', 'fcmId', 'actions'];
-  filterColumns = ['id-filter', 'email-filter', 'dateRegistered-filter', 'dateRemoved-filter', 'fcmId-filter', 'actions-filter'];
+  currentRows: NotificationRegistrationModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'id', label: 'Id', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'dateRegistered', label: 'Date Registered', visible: true },
+    { key: 'dateRemoved', label: 'Date Removed', visible: true },
+    { key: 'fcmId', label: 'FCM Id', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -39,16 +52,39 @@ export class NotificationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.notifications$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items.filter((item) =>
+      map(([items, filters]) => {
+        const filtered = items.filter((item) =>
           Object.keys(filters).every((field) => {
             const type = field === 'dateRegistered' || field === 'dateRemoved' ? 'date' : 'text';
             return matchesColumnFilter(item[field as keyof NotificationRegistrationModel], filters[field], type);
           })
-        )
-      ),
+        );
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<NotificationRegistrationModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'notifications.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

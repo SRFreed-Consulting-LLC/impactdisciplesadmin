@@ -14,9 +14,16 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { CustomerDialogComponent } from './customer-dialog.component';
 import { SendEmailDialogComponent } from './send-email-dialog.component';
 import { EmailListDialogComponent } from './email-list-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-customers',
@@ -26,8 +33,12 @@ import { EmailListDialogComponent } from './email-list-dialog.component';
 })
 export class CustomersComponent implements OnInit {
   customers$: Observable<CustomerModel[]>;
-  displayedColumns = ['select', 'lastName', 'firstName', 'email', 'phone', 'actions'];
-  filterColumns = ['select-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'phone-filter', 'actions-filter'];
+  columns: ColumnDef[] = [
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'phone', label: 'Number', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Customer';
@@ -95,6 +106,27 @@ export class CustomersComponent implements OnInit {
       actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
     this.actions = actions;
+  }
+
+  get displayedColumns(): string[] {
+    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<CustomerModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (row) => (c.key === 'phone' ? row.phone?.number : (row as any)[c.key]) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'customers.xlsx');
   }
 
   private matchesField(item: CustomerModel, field: string, filter: ColumnFilterValue): boolean {

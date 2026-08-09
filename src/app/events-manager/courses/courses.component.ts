@@ -8,6 +8,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { CourseDialogComponent } from './course-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-courses',
@@ -17,12 +24,12 @@ import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '.
 })
 export class CoursesComponent implements OnInit {
   courses$: Observable<CourseModel[]>;
-  displayedColumns = ['title', 'resources', 'length', 'actions'];
-  // Second header row of per-column filters, mirroring the original
-  // dx-data-grid's dxo-filter-row - see the "-filter" matColumnDefs in the
-  // template. One entry per filterable column above, plus 'actions-filter'
-  // for the empty cell under Actions.
-  filterColumns = ['title-filter', 'resources-filter', 'length-filter', 'actions-filter'];
+  currentRows: CourseModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'title', label: 'Title', visible: true },
+    { key: 'resources', label: 'Resources', visible: true },
+    { key: 'length', label: 'Length', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Course';
@@ -46,17 +53,40 @@ export class CoursesComponent implements OnInit {
 
   ngOnInit(): void {
     this.courses$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) =>
               matchesColumnFilter(item[field as keyof CourseModel], filters[field], 'text')
             )
           )
-          .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
-      ),
+          .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<CourseModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'courses.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

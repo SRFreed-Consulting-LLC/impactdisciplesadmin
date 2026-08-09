@@ -1,5 +1,5 @@
 <app-list-header [title]="itemType + 's'" [actions]="actions">
-  <button mat-stroked-button type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
     <mat-icon>view_column</mat-icon>
     Columns
   </button>
@@ -8,6 +8,11 @@
       <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
     </button>
   </mat-menu>
+
+  <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
 </app-list-header>
 
 <div class="table-scroll">

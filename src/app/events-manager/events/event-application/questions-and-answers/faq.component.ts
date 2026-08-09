@@ -9,7 +9,14 @@ import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.servic
 import { SnackbarService } from '../../../../shared/snackbar.service';
 import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../../../shared/table-export.util';
 import { FaqDialogComponent } from './faq-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 // Two concerns in one screen, matching the original: (a) a global FAQ
 // library (its own Firestore collection, plain add/edit/delete) and (b)
@@ -26,8 +33,11 @@ export class FAQComponent implements OnInit, OnChanges {
   @Input() event: EventModel;
 
   faqs$: Observable<FAQModel[]>;
-  displayedColumns = ['select', 'sortOrder', 'question', 'answer', 'actions'];
-  filterColumns = ['select-filter', 'sortOrder-filter', 'question-filter', 'answer-filter', 'actions-filter'];
+  columns: ColumnDef[] = [
+    { key: 'sortOrder', label: 'Sort Order', visible: true },
+    { key: 'question', label: 'Question', visible: true },
+    { key: 'answer', label: 'Answer', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'FAQ';
@@ -80,6 +90,31 @@ export class FAQComponent implements OnInit, OnChanges {
     if (changes['event'] && !changes['event'].firstChange) {
       this.selectionInitialized = false;
     }
+  }
+
+  get displayedColumns(): string[] {
+    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<FAQModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (c.key === 'answer' ? this.stripHtml((item as any).answer) : (item as any)[c.key]) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'faqs.xlsx');
+  }
+
+  private stripHtml(html: string): string {
+    return html ? html.replace(/<[^>]*>/g, '') : '';
   }
 
   isAllSelected(): boolean {

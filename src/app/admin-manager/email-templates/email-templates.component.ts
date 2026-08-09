@@ -7,7 +7,14 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { EmailTemplateDialogComponent } from './email-template-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-email-templates',
@@ -17,8 +24,11 @@ import { EmailTemplateDialogComponent } from './email-template-dialog.component'
 })
 export class EmailTemplatesComponent implements OnInit {
   templates$: Observable<MailTemplateModel[]>;
-  displayedColumns = ['name', 'subject', 'actions'];
-  filterColumns = ['name-filter', 'subject-filter', 'actions-filter'];
+  currentRows: MailTemplateModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'name', label: 'Name', visible: true },
+    { key: 'subject', label: 'Subject', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Email Template';
@@ -40,13 +50,36 @@ export class EmailTemplatesComponent implements OnInit {
 
   ngOnInit(): void {
     this.templates$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof MailTemplateModel], filters[field], 'text')))
-          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
-      ),
+          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<MailTemplateModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'email_templates.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

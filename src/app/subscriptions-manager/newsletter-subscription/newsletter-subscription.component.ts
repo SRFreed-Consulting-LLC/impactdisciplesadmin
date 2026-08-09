@@ -12,9 +12,16 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { NewsletterSubscriberDialogComponent } from './newsletter-subscriber-dialog.component';
 import { SendNewsletterDialogComponent } from './send-newsletter-dialog.component';
 import { NewsletterListDialogComponent } from './newsletter-list-dialog.component';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-newsletter-subscription',
@@ -24,8 +31,12 @@ import { NewsletterListDialogComponent } from './newsletter-list-dialog.componen
 })
 export class NewsletterSubscriptionComponent implements OnInit {
   subscribers$: Observable<NewsletterSubscriptionModel[]>;
-  displayedColumns = ['select', 'lastName', 'firstName', 'email', 'date', 'actions'];
-  filterColumns = ['select-filter', 'lastName-filter', 'firstName-filter', 'email-filter', 'date-filter', 'actions-filter'];
+  columns: ColumnDef[] = [
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'date', label: 'Date', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Newsletter Subscription';
@@ -45,7 +56,7 @@ export class NewsletterSubscriptionComponent implements OnInit {
   actions: ListHeaderAction[] = [];
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
-  private currentRows: NewsletterSubscriptionModel[] = [];
+  currentRows: NewsletterSubscriptionModel[] = [];
   private allSubscribers: NewsletterSubscriptionModel[] = [];
 
   constructor(
@@ -88,6 +99,27 @@ export class NewsletterSubscriptionComponent implements OnInit {
 
   private matchesField(item: NewsletterSubscriptionModel, field: string, filter: ColumnFilterValue): boolean {
     return matchesColumnFilter((item as any)[field], filter, field === 'date' ? 'date' : 'text');
+  }
+
+  get displayedColumns(): string[] {
+    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<NewsletterSubscriptionModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'newsletter_subscribers.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

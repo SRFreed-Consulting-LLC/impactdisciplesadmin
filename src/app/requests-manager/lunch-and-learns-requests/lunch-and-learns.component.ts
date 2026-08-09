@@ -8,6 +8,13 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { LunchAndLearnDialogComponent } from './lunch-and-learn-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
     selector: 'app-lunch-and-learns',
@@ -17,8 +24,16 @@ import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FIL
 })
 export class LunchAndLearnsComponent implements OnInit {
   requests$: Observable<LunchAndLearnModel[]>;
-  displayedColumns = ['date', 'coordinator', 'locationName', 'requestedDate', 'requestedStartTime', 'requestedEndTime', 'email', 'actions'];
-  filterColumns = ['date-filter', 'coordinator-filter', 'locationName-filter', 'requestedDate-filter', 'requestedStartTime-filter', 'requestedEndTime-filter', 'email-filter', 'actions-filter'];
+  currentRows: LunchAndLearnModel[] = [];
+  columns: ColumnDef[] = [
+    { key: 'date', label: 'Date', visible: true },
+    { key: 'coordinator', label: 'Coordinator', visible: true },
+    { key: 'locationName', label: 'Location Name', visible: true },
+    { key: 'requestedDate', label: 'Requested Date', visible: true },
+    { key: 'requestedStartTime', label: 'Start Time', visible: true },
+    { key: 'requestedEndTime', label: 'End Time', visible: true },
+    { key: 'email', label: 'Email', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
   dateOperators = DATE_FILTER_OPERATORS;
 
@@ -41,8 +56,8 @@ export class LunchAndLearnsComponent implements OnInit {
 
   ngOnInit(): void {
     this.requests$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
+      map(([items, filters]) => {
+        const filtered = items
           .filter((item) =>
             Object.keys(filters).every((field) => {
               const type = field === 'date' || field === 'requestedDate' ? 'date' : 'text';
@@ -53,10 +68,33 @@ export class LunchAndLearnsComponent implements OnInit {
             const aTime = a.date instanceof Date ? a.date.getTime() : 0;
             const bTime = b.date instanceof Date ? b.date.getTime() : 0;
             return bTime - aTime;
-          })
-      ),
+          });
+        this.currentRows = filtered;
+        return filtered;
+      }),
       tap(() => this.loading$.next(false))
     );
+  }
+
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<LunchAndLearnModel>[] = visible.map((c) => ({
+      header: c.label,
+      value: (item) => (item as any)[c.key] ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'lunch_and_learns.xlsx');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

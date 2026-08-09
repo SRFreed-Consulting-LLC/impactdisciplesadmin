@@ -227,9 +227,22 @@ table.mat-mdc-table tr.mat-mdc-header-row {
     top: 0;
   }
 
+  // The filter row's own height is independent of this offset - it's
+  // anchored to row 1's height (unchanged, still 56px), not row 2's own,
+  // so shrinking row 2 below doesn't disturb the sticky math this whole
+  // block depends on.
   &:nth-of-type(2) {
     top: 56px;
   }
+}
+
+// Filter row (every table's 2nd header row, one app-column-filter per
+// filterable column) - shorter and visually distinct from both the
+// column-label row above it and the white data rows below, so it reads as
+// its own filter strip rather than blending into either.
+table.mat-mdc-table tr.mat-mdc-header-row:nth-of-type(2) {
+  height: 40px;
+  background-color: #f0f0f0;
 }
 
 // House rule: any thumbnail/image shown directly in a data table cell
