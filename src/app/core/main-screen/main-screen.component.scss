@@ -1,45 +1,25 @@
-::ng-deep .impact-drawer {
+// Brand chrome (dark charcoal panel + yellow hover/selected) preserved
+// pixel-for-pixel from the DevExtreme version - this is the app's one
+// distinctive, highly-visible piece of branding, not incidental DevExtreme
+// styling, so it's kept rather than reset to generic Material.
+$panel-bg: #252525;
+$accent: #ffcc00;
+
+:host {
+  display: block;
   height: 100vh;
-  background-color: #f3f3f3;
-  .dx-list-item-content {
-    padding: 20px;
-  }
-  .dx-drawer-panel-content {
-    background-color: #252525;
-  }
- .dx-state-hover, .dx-list-item-selected {
-    .dx-list-item-content {
-      background-color: #ffcc00;
-    }
-    .impact-drawer__link {
-      color: #252525;
-      font-weight: 600;
-    }
-    .dx-icon, .dx-list-item-icon {
-      color: #252525 !important;
-    }
-  }
-  dx-list {
-    border-top: 1px solid #ffffff4d;
-  }
-  &__link {
-    text-decoration: none;
-    color: #fff;
-    &-text {
-      font-size: 15px;
-    }
-  }
-  .header-container {
-    height: 60px;
-    margin-bottom: 20px;
-    .dx-toolbar .dx-toolbar-items-container {
-      height: 60px;
-      border-bottom: 1px solid #d9d9d9;
-    }
-  }
-  .logout {
-    padding-right: 20px !important;
-  }
+}
+
+.impact-shell {
+  height: 100%;
+}
+
+.impact-drawer {
+  width: 260px;
+  background-color: $panel-bg;
+  border-right: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .drawer-logo {
@@ -48,18 +28,67 @@
   justify-content: center;
 }
 
-// DevExtreme's dx-drawer wraps this in a .dx-drawer-content that sets
-// overflow: hidden + height: 100% - any content taller than the viewport
-// silently gets clipped, with no scrollbar. Every DevExtreme screen has
-// always avoided this by self-limiting its own height ([height]="'75vh'"
-// etc.); Material screens don't do that, so #view/.portal-content need to
-// be the actual bounded, scrolling region instead. Purely additive for
-// existing DevExtreme screens - they already fit within the available
-// space, so this scroll capacity is just unused headroom for them.
-#view {
+.impact-drawer__list {
+  border-top: 1px solid #ffffff4d;
+  padding-top: 0;
+
+  .mat-mdc-list-item {
+    height: auto;
+    padding: 12px 20px;
+  }
+}
+
+.impact-drawer__link {
+  text-decoration: none;
+  color: #fff;
+
+  // Material's own list-item theme sets an explicit `color` on
+  // `.mdc-list-item__primary-text` (the class matListItemTitle stamps onto
+  // this span), which beats plain inheritance from the parent link
+  // regardless of selector specificity - so the text color needs to be
+  // declared here explicitly too, not just on the containing link.
+  &-text {
+    font-size: 15px;
+    color: inherit;
+  }
+
+  mat-icon {
+    color: #fff;
+  }
+
+  &:hover,
+  &--active {
+    background-color: $accent;
+    color: $panel-bg;
+    font-weight: 600;
+
+    mat-icon {
+      color: $panel-bg;
+    }
+  }
+}
+
+// mat-sidenav-content scrolls by default (CDK Scrollable) - .portal-content
+// needs to be the app's *only* scrolling region (every migrated screen's own
+// internal scroll-region assumptions, e.g. `.table-scroll { overflow: auto }`,
+// depend on this), so the content area itself is fixed/clipped and lays its
+// header + scrollable body out with flex instead.
+.impact-shell__content {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+}
+
+.impact-header {
+  height: 60px;
+  min-height: 60px;
+  border-bottom: 1px solid #d9d9d9;
+  flex: 0 0 auto;
+}
+
+.impact-header__spacer {
+  flex: 1 1 auto;
 }
 
 .portal-content {
@@ -69,33 +98,4 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-}
-#Impact-Logo {
-  padding-right: 20px;
-  width: 10%;
-}
-
-#Impact-Title {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-}
-
-.titlebar {
-  display: inline-flex;
-  width: 100%;
-  text-align: center;
-}
-
-
-.app-container{
-  margin: 25px;
-}
-
-
-.footer-container {
-  position: absolute;
-  bottom: 0px;
-  left: 0px;
-  width: 100vw;
 }

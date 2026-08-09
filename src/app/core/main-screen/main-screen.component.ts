@@ -1,11 +1,21 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { DxButtonTypes } from 'devextreme-angular/ui/button';
 import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
 import { SecureMenuItem } from 'impactdisciplescommon/src/models/utils/secure-menu-item.model';
 import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { TopNavService } from 'impactdisciplescommon/src/services/utils/top-nav.service';
+
+// Material icon ligatures, keyed by path since two nav entries shared the
+// same DevExtreme icon name ("user") for genuinely different things - a
+// copy-paste artifact (Store Manager) fixed here rather than ported.
+const NAV_ICONS: Record<string, string> = {
+  home: 'home',
+  'admin-manager': 'admin_panel_settings',
+  'events-manager': 'event',
+  'requests-manager': 'notifications_none',
+  'store-manager': 'storefront',
+  'subscriptions-manager': 'mail',
+  'web-manager': 'handyman'
+};
 
 @Component({
     selector: 'app-main-screen',
@@ -26,24 +36,9 @@ export class MainScreenComponent implements OnInit, OnDestroy {
 
   secureNav: SecureMenuItem[] = [];
 
-  isDrawerOpen: boolean = false;
-  buttonOptions: any = {
-      icon: "menu",
-      onClick: () => {
-          this.isDrawerOpen = !this.isDrawerOpen;
-      }
-  }
-
-  logOffButtonOptions: DxButtonTypes.Properties = {
-    text: 'Log Off',
-    onClick: () => {
-      this.authService.logOut()
-    },
-  };
-
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(public topNavService: TopNavService, private authService: AdminAuthService, private router: Router){}
+  constructor(private authService: AdminAuthService){}
 
   ngOnInit(): void {
     // Was: this.authService.getLoggedInUser().role, which reads the
@@ -70,11 +65,11 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
-  tabClicked(e :any){
-    this.topNavService.navigate(e.itemData)
+  iconFor(item: SecureMenuItem): string {
+    return NAV_ICONS[item.path] ?? 'circle';
   }
 
-  menuItemClicked(e){
-    this.router.navigate(['/', e.itemData.path]);
+  logOff(): void {
+    this.authService.logOut();
   }
 }

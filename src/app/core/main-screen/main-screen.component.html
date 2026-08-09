@@ -1,46 +1,30 @@
-<dx-drawer
-  position="left"
-  template="template"
-  [opened]="true"
-  [closeOnOutsideClick]="false"
-  class="impact-drawer"
->
-  <div *dxTemplate="let data of 'template'">
+<mat-sidenav-container class="impact-shell">
+  <mat-sidenav class="impact-drawer" mode="side" [opened]="true" disableClose>
     <div class="drawer-logo">
-      <span><img src="../../../assets/Impact-Logo_Light.png" height="120px" alt="Impact Disciples logo"></span>
+      <img src="assets/Impact-Logo_Light.png" height="120px" alt="Impact Disciples logo">
     </div>
-    <dx-list
-      [items]="secureNav"
-      [width]="250"
-      selectionMode="single"
-      (onSelectionChanged)="this.isDrawerOpen = false"
-      itemTemplate="links"
-      (onItemClick)="menuItemClicked($event)">
-      <div *dxTemplate="let link of 'links'">
-        <a class="impact-drawer__link">
-          <div>
-            <div class="dx-list-item-icon-container">
-              <i class="dx-icon dx-list-item-icon dx-icon-{{link.icon}}"></i>
-            </div>
-            <span class="impact-drawer__link-text">{{ link.text }}</span>
-          </div>
-        </a>
-      </div>
-    </dx-list>
-  </div>
-  <div id="view">
-    <div class="header-container">
-      <dx-toolbar>
-        <dxi-item
-          location="after"
-          widget="dxButton"
-          cssClass="logout"
-          [options]="logOffButtonOptions">
-        </dxi-item>
-      </dx-toolbar>
-    </div>
+
+    <mat-nav-list class="impact-drawer__list">
+      <a
+        mat-list-item
+        *ngFor="let item of secureNav"
+        [routerLink]="['/', item.path]"
+        routerLinkActive="impact-drawer__link--active"
+        class="impact-drawer__link">
+        <mat-icon matListItemIcon>{{ iconFor(item) }}</mat-icon>
+        <span matListItemTitle class="impact-drawer__link-text">{{ item.text }}</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="impact-shell__content">
+    <mat-toolbar class="impact-header">
+      <span class="impact-header__spacer"></span>
+      <button mat-button type="button" (click)="logOff()">Log Off</button>
+    </mat-toolbar>
+
     <div class="portal-content">
       <router-outlet></router-outlet>
     </div>
-  </div>
-</dx-drawer>
+  </mat-sidenav-content>
+</mat-sidenav-container>
