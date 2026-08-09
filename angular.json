@@ -21,7 +21,7 @@
               "zone.js"
             ],
             "allowedCommonJsDependencies": [
-              "jszip", "devexpress-diagram", "devexpress-gantt", "devextreme-quill", "lodash",
+              "jszip", "lodash",
               "raf", "rgbcolor", "html2canvas", "exceljs", "file-saver", "quill-delta",
               "core-js/modules/es.array.index-of.js", "core-js/modules/es.array.iterator.js",
               "core-js/modules/es.array.reduce.js", "core-js/modules/es.array.reverse.js",
@@ -37,7 +37,6 @@
               "src/assets"
             ],
             "styles": [
-              "node_modules/devextreme/dist/css/dx.light.css",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/quill/dist/quill.snow.css",
               "src/styles.scss"
@@ -129,7 +128,6 @@
               "src/assets"
             ],
             "styles": [
-              "node_modules/devextreme/dist/css/dx.light.css",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/quill/dist/quill.snow.css",
               "src/styles.scss"
