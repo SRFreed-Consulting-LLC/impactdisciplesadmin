@@ -3,11 +3,11 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject, map, Observable, startWith } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { SeminarModel } from 'impactdisciplescommon/src/models/domain/seminar.model';
-import { SeminarService } from 'impactdisciplescommon/src/services/data/seminar.service';
-import { CoachModel } from 'impactdisciplescommon/src/models/domain/coach.model';
-import { CoachService } from 'impactdisciplescommon/src/services/data/coach.service';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { SeminarModel } from 'src/app/common/models/domain/seminar.model';
+import { SeminarService } from 'src/app/common/services/data/seminar.service';
+import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { CoachService } from 'src/app/common/services/data/coach.service';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { timeStringToTimestamp, timestampToTimeString } from '../../shared/time-of-day.util';
 

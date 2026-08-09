@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Tab } from 'impactdisciplescommon/src/models/utils/tab.model';
+import { Tab } from 'src/app/common/models/utils/tab.model';
 
 @Component({
     selector: 'app-admin-manager',

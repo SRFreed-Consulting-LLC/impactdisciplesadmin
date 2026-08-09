@@ -2,8 +2,8 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { FAQModel } from 'impactdisciplescommon/src/models/utils/faq.model';
-import { FAQService } from 'impactdisciplescommon/src/services/data/faq.service';
+import { FAQModel } from 'src/app/common/models/utils/faq.model';
+import { FAQService } from 'src/app/common/services/data/faq.service';
 import { RICH_TEXT_TOOLBAR } from '../../../../shared/rich-text-editor/quill-toolbar.config';
 import { SnackbarService } from '../../../../shared/snackbar.service';
 

@@ -3,10 +3,10 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { HomePageImageModel } from 'impactdisciplescommon/src/models/domain/home-page-image.model';
-import { HomePageImageService } from 'impactdisciplescommon/src/services/data/home-page-images.service';
-import { ImageModel } from 'impactdisciplescommon/src/models/utils/image.model';
-import menuData from 'impactdisciplescommon/src/services/data/nav-menu-data';
+import { HomePageImageModel } from 'src/app/common/models/domain/home-page-image.model';
+import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
+import { ImageModel } from 'src/app/common/models/utils/image.model';
+import menuData from 'src/app/common/services/data/nav-menu-data';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface HomePageImageDialogData {

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { NotificationRegistrationModel } from 'impactdisciplescommon/src/models/admin/notification-registration.model';
-import { NotificationRegistrationService } from 'impactdisciplescommon/src/services/data/notification-registration.service';
+import { NotificationRegistrationModel } from 'src/app/common/models/admin/notification-registration.model';
+import { NotificationRegistrationService } from 'src/app/common/services/data/notification-registration.service';
 import { MatDialog } from '@angular/material/dialog';
 import { NotificationDialogComponent } from './notification-dialog.component';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';

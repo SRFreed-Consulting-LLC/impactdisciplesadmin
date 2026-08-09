@@ -1,6 +1,6 @@
 import { Component, HostBinding } from '@angular/core';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { ScreenService } from 'impactdisciplescommon/src/services/utils/screen.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { ScreenService } from 'src/app/common/services/utils/screen.service';
 
 @Component({
     selector: 'app-root',

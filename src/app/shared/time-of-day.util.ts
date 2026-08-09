@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 
 // Lunch and Learn / Seminar requests store requestedStartTime/EndTime as full
 // Timestamps, but every screen only ever displays and edits the time-of-day

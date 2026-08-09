@@ -2,8 +2,8 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
+import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { PodCastCategoriesService } from 'src/app/common/services/data/pod-cast-categories.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface PodCastCategoryDialogData {

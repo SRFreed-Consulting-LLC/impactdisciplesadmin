@@ -7,7 +7,7 @@ import { CreateAccountComponent } from './auth/create-account/create-account.com
 import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
-import { AuthGuardService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { AuthGuardService } from 'src/app/common/forms/admin/admin-auth.service';
 
 const routes: Routes = [
   {

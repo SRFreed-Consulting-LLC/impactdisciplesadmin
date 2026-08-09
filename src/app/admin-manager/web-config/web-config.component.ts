@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { WebConfigModel } from 'impactdisciplescommon/src/models/utils/web-config.model';
-import { WebConfigService } from 'impactdisciplescommon/src/services/data/web-config.service';
+import { WebConfigModel } from 'src/app/common/models/utils/web-config.model';
+import { WebConfigService } from 'src/app/common/services/data/web-config.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 

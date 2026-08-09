@@ -23,27 +23,6 @@
   z-index: 10000;
 }
 
-// A handful of still-DevExtreme screens (Events, Coaches, Products,
-// Product Series - impactdisciplescommon's own app-image-uploader) can
-// open a DevExtreme dx-popup from a button inside an already-open Material
-// dialog - a nested-overlay case the rule above didn't anticipate.
-// DevExtreme's own overlay stacking has no awareness of Angular CDK's, so
-// once .cdk-overlay-container was raised to 10000 to sit above the app
-// chrome, a plain DevExtreme popup (its normal z-index tops out under
-// 10000) could never stack above a Material dialog that opened it. Forcing
-// every DevExtreme overlay above 10000 fixes this the same direction it's
-// needed everywhere this migration currently has it (DevExtreme popup
-// nested inside a Material dialog) - there's no screen today that opens a
-// Material dialog from inside a DevExtreme popup, so this is a safe
-// blanket rule for as long as any DevExtreme dialog still exists anywhere
-// in the app. Web Manager itself no longer needs this - its own file
-// picker (src/app/shared/image-uploader) is plain Material and manages
-// its own stacking (see that component's own z-index, one tier above
-// this one, in image-uploader.component.scss).
-.dx-overlay-wrapper {
-  z-index: 10500 !important;
-}
-
 // House rule: the browser page itself must never scroll - only intentional
 // regions inside the app (.portal-content, dialog contents, bounded tabs)
 // should. html/body had no height constraint at all, so anything that adds

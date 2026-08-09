@@ -1,9 +1,9 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, of } from 'rxjs';
-import { CourseModel } from 'impactdisciplescommon/src/models/domain/course.model';
-import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
-import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
+import { CourseModel } from 'src/app/common/models/domain/course.model';
+import { EventModel } from 'src/app/common/models/domain/event.model';
+import { CourseService } from 'src/app/common/services/data/course.service';
+import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/column-filter/column-filter.model';
 
 export class BreakOutStudent {

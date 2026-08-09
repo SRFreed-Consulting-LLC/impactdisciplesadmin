@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { LogMessage } from 'impactdisciplescommon/src/models/utils/log-message.model';
-import { LoggerService } from 'impactdisciplescommon/src/services/data/logger.service';
+import { LogMessage } from 'src/app/common/models/utils/log-message.model';
+import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 
 // Read-only, matching the original - no add/edit/delete existed for logs,

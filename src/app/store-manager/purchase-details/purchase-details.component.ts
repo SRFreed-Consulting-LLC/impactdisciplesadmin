@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
-import { CartItem, CheckoutForm } from 'impactdisciplescommon/src/models/utils/cart.model';
-import { PurchasesService } from 'impactdisciplescommon/src/services/data/purchases.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { CartItem, CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { ProductCategoriesService } from 'impactdisciplescommon/src/services/data/product-categories.service';
+import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { ProductCategoriesService } from 'src/app/common/services/data/product-categories.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { CategoryModalComponent } from './category-modal/category-modal.component';

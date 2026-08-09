@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { FileItem } from 'impactdisciplescommon/src/models/utils/file-item.model';
+import { FileItem } from 'src/app/common/models/utils/file-item.model';
 import { FileBrowserStorageService } from './file-browser-storage.service';
 
 export interface FolderPickerDialogData {

@@ -2,8 +2,8 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { ConsultationRequestModel } from 'impactdisciplescommon/src/models/domain/consultation-request.model';
-import { ConsultationRequestService } from 'impactdisciplescommon/src/services/data/consultation-request.service';
+import { ConsultationRequestModel } from 'src/app/common/models/domain/consultation-request.model';
+import { ConsultationRequestService } from 'src/app/common/services/data/consultation-request.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface ConsultationRequestDialogData {

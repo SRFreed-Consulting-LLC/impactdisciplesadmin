@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { CoachModel } from 'impactdisciplescommon/src/models/domain/coach.model';
-import { CoachService } from 'impactdisciplescommon/src/services/data/coach.service';
-import { OrganizationModel } from 'impactdisciplescommon/src/models/domain/organization.model';
-import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
+import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { CoachService } from 'src/app/common/services/data/coach.service';
+import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
+import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';

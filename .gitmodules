@@ -1,5 +1,1 @@
 
-[submodule "impactdisciplescommon"]
-	path = impactdisciplescommon
-	url = https://github.com/SRFreed-Consulting-LLC/impactdisciplescommon.git
-	branch = development

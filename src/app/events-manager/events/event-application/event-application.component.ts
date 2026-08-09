@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
+import { EventModel } from 'src/app/common/models/domain/event.model';
 import { RICH_TEXT_TOOLBAR } from '../../../shared/rich-text-editor/quill-toolbar.config';
 
 interface ApplicationTab {

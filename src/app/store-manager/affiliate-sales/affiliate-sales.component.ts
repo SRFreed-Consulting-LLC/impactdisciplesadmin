@@ -1,11 +1,11 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Timestamp } from 'firebase/firestore';
-import { AffilliatePaymentModel } from 'impactdisciplescommon/src/models/utils/affilliate-payment.model';
-import { AffilliateSaleModel } from 'impactdisciplescommon/src/models/utils/affilliate-sale.model';
-import { AffilliatePaymentsService } from 'impactdisciplescommon/src/services/data/affiliate-payment.service';
-import { AffilliateSalesService } from 'impactdisciplescommon/src/services/data/affiliate-sales.service';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { AffilliatePaymentModel } from 'src/app/common/models/utils/affilliate-payment.model';
+import { AffilliateSaleModel } from 'src/app/common/models/utils/affilliate-sale.model';
+import { AffilliatePaymentsService } from 'src/app/common/services/data/affiliate-payment.service';
+import { AffilliateSalesService } from 'src/app/common/services/data/affiliate-sales.service';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';
 import { SnackbarService } from '../../shared/snackbar.service';
 

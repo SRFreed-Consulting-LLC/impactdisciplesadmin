@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
-import { TrainingRoomModel } from 'impactdisciplescommon/src/models/domain/training-room.model';
+import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { RoomDialogComponent } from './room-dialog.component';

@@ -2,10 +2,10 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { AppUser } from 'impactdisciplescommon/src/models/admin/appuser.model';
-import { AppUserService } from 'impactdisciplescommon/src/services/data/user.service';
-import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
+import { AppUser } from 'src/app/common/models/admin/appuser.model';
+import { AppUserService } from 'src/app/common/services/data/user.service';
+import { Role } from 'src/app/common/lists/roles.enum';
+import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface UserDialogData {

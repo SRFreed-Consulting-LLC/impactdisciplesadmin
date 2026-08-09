@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { PHONE_TYPES } from 'impactdisciplescommon/src/lists/phone_types.enum';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
+import { PHONE_TYPES } from 'src/app/common/lists/phone_types.enum';
+import { EnumHelper } from 'src/app/common/utils/enum_helper';
 
 // Reusable "Phone" sub-form fragment (Country Code / Number / Type), the
 // Material equivalent of the dx-form "Phone" group repeated across

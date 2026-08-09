@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { LocationModel } from 'impactdisciplescommon/src/models/domain/location.model';
-import { OrganizationModel } from 'impactdisciplescommon/src/models/domain/organization.model';
-import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
-import { OrganizationService } from 'impactdisciplescommon/src/services/data/organization.service';
+import { LocationModel } from 'src/app/common/models/domain/location.model';
+import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
+import { LocationService } from 'src/app/common/services/data/location.service';
+import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';

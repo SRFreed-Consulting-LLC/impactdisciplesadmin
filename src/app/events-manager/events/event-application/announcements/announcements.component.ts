@@ -1,8 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { AnnouncementModel } from 'impactdisciplescommon/src/models/domain/announcement.model.ts';
-import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
+import { AnnouncementModel } from 'src/app/common/models/domain/announcement.model.ts';
+import { EventModel } from 'src/app/common/models/domain/event.model';
 import { BehaviorSubject, combineLatest, map, Observable, of, tap } from 'rxjs';
-import { EventAnnouncementService } from 'impactdisciplescommon/src/services/data/event-announcement.service';
+import { EventAnnouncementService } from 'src/app/common/services/data/event-announcement.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../../shared/snackbar.service';

@@ -1,8 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
-import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
-import { SecureMenuItem } from 'impactdisciplescommon/src/models/utils/secure-menu-item.model';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { Role } from 'src/app/common/lists/roles.enum';
+import { SecureMenuItem } from 'src/app/common/models/utils/secure-menu-item.model';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 
 // Material icon ligatures, keyed by path since two nav entries shared the
 // same DevExtreme icon name ("user") for genuinely different things - a

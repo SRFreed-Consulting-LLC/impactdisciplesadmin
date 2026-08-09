@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { SaleModel } from 'impactdisciplescommon/src/models/utils/sale.model';
-import { SalesService } from 'impactdisciplescommon/src/services/data/sales.service';
+import { SaleModel } from 'src/app/common/models/utils/sale.model';
+import { SalesService } from 'src/app/common/services/data/sales.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';

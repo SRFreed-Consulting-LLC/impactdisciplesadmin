@@ -6,7 +6,7 @@ import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { environment } from 'src/environments/environment';
-import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { CoreModule } from './core/core.module';
 import { CookieService } from 'ngx-cookie-service';
 import { NgxsModule } from '@ngxs/store';

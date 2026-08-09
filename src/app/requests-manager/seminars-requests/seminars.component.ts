@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { SeminarModel } from 'impactdisciplescommon/src/models/domain/seminar.model';
-import { SeminarService } from 'impactdisciplescommon/src/services/data/seminar.service';
+import { SeminarModel } from 'src/app/common/models/domain/seminar.model';
+import { SeminarService } from 'src/app/common/services/data/seminar.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { SeminarDialogComponent } from './seminar-dialog.component';

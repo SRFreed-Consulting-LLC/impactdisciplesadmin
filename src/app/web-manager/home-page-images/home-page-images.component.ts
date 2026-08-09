@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { HomePageImageModel } from 'impactdisciplescommon/src/models/domain/home-page-image.model';
-import { HomePageImageService } from 'impactdisciplescommon/src/services/data/home-page-images.service';
+import { HomePageImageModel } from 'src/app/common/models/domain/home-page-image.model';
+import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { HomePageImageDialogComponent } from './home-page-image-dialog.component';

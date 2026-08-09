@@ -1,11 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { PodCastModel } from 'impactdisciplescommon/src/models/domain/pod-cast.model';
-import { PodCastService } from 'impactdisciplescommon/src/services/data/pod-cast.service';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { PodCastCategoriesService } from 'impactdisciplescommon/src/services/data/pod-cast-categories.service';
-import { PodCastTagsService } from 'impactdisciplescommon/src/services/data/pod-cast-tags.service';
+import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
+import { PodCastService } from 'src/app/common/services/data/pod-cast.service';
+import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { PodCastCategoriesService } from 'src/app/common/services/data/pod-cast-categories.service';
+import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PodCastDialogComponent } from './pod-cast-dialog.component';

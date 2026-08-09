@@ -12,7 +12,7 @@ import {
   uploadBytes,
   uploadString
 } from 'firebase/storage';
-import { FileItem } from 'impactdisciplescommon/src/models/utils/file-item.model';
+import { FileItem } from 'src/app/common/models/utils/file-item.model';
 
 // Firebase Storage has no real "directory" objects - a folder only exists
 // as long as at least one real file sits under that path prefix. Every

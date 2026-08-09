@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
-import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
+import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { DMMServiceComponent } from './dmms/dmms.component';
 import { DMMDialogComponent } from './dmms/dmm-dialog.component';
 import { PodCastsComponent } from './pod-casts/pod-casts.component';

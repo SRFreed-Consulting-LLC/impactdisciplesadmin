@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { CouponModel } from 'impactdisciplescommon/src/models/utils/coupon.model';
-import { CouponService } from 'impactdisciplescommon/src/services/data/coupon.service';
+import { CouponModel } from 'src/app/common/models/utils/coupon.model';
+import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';

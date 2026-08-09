@@ -2,9 +2,9 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { EmailList } from 'impactdisciplescommon/src/models/utils/email-list.model';
-import { CustomerModel } from 'impactdisciplescommon/src/models/domain/utils/customer.model';
-import { EmailListService } from 'impactdisciplescommon/src/services/data/email-list.service';
+import { EmailList } from 'src/app/common/models/utils/email-list.model';
+import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model';
+import { EmailListService } from 'src/app/common/services/data/email-list.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface EmailListDialogData {

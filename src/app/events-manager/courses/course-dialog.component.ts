@@ -2,8 +2,8 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { CourseModel } from 'impactdisciplescommon/src/models/domain/course.model';
-import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
+import { CourseModel } from 'src/app/common/models/domain/course.model';
+import { CourseService } from 'src/app/common/services/data/course.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface CourseDialogData {

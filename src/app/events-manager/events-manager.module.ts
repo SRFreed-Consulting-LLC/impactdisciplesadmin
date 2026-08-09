@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CoursesComponent } from './courses/courses.component';
 import { LocationsComponent } from './locations/locations.component';
 import { OrganizationsComponent } from './organizations/organizations.component';
-import { ImpactDisciplesCommonModule } from "../../../impactdisciplescommon/src/impactdisciples.common.module";
+import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { CoachesComponent } from './coaches/coaches.component';
 import { CoachDialogComponent } from './coaches/coach-dialog.component';
 import { EventsComponent } from './events/events.component';

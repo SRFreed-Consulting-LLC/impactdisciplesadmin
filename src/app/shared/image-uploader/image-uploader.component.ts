@@ -1,6 +1,6 @@
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { FileItem } from 'impactdisciplescommon/src/models/utils/file-item.model';
+import { FileItem } from 'src/app/common/models/utils/file-item.model';
 import { FileBrowserStorageService } from './file-browser-storage.service';
 import { NewFolderDialogComponent } from './new-folder-dialog.component';
 import { RenameDialogComponent } from './rename-dialog.component';

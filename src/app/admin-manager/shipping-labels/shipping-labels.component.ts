@@ -1,10 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { ShippingLabelBatchRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
-import { ShippingLabelBatchService } from 'impactdisciplescommon/src/services/data/shipping-label-batch.service';
-import { ShippingLabelService } from 'impactdisciplescommon/src/services/data/shipping-label.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { ShippingLabelBatchRequest } from 'src/app/common/models/domain/shipment-label-batch-request.model';
+import { ShippingLabelBatchService } from 'src/app/common/services/data/shipping-label-batch.service';
+import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';

@@ -1,10 +1,10 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { AgendaItem } from 'impactdisciplescommon/src/models/domain/utils/agenda-item.model';
-import { CourseModel } from 'impactdisciplescommon/src/models/domain/course.model';
-import { CoachModel } from 'impactdisciplescommon/src/models/domain/coach.model';
-import { TrainingRoomModel } from 'impactdisciplescommon/src/models/domain/training-room.model';
+import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { CourseModel } from 'src/app/common/models/domain/course.model';
+import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 
 export interface AgendaItemDialogData {
   item: AgendaItem | null;

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { LunchAndLearnModel } from 'impactdisciplescommon/src/models/domain/lunch-and-learn.model';
-import { LunchAndLearnService } from 'impactdisciplescommon/src/services/data/lunch-and-learn.service';
+import { LunchAndLearnModel } from 'src/app/common/models/domain/lunch-and-learn.model';
+import { LunchAndLearnService } from 'src/app/common/services/data/lunch-and-learn.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { LunchAndLearnDialogComponent } from './lunch-and-learn-dialog.component';

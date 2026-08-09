@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { EnumHelper } from 'impactdisciplescommon/src/utils/enum_helper';
+import { EnumHelper } from 'src/app/common/utils/enum_helper';
 
 // Reusable "Address" sub-form fragment, the Material equivalent of the
 // dx-form "Address" group repeated across Organizations, Locations, and

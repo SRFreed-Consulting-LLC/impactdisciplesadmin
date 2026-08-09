@@ -8,8 +8,8 @@ import { PrayerTeamSubscriptionComponent } from './prayer-team-subscription/pray
 import { PrayerSubscriberDialogComponent } from './prayer-team-subscription/prayer-subscriber-dialog.component';
 import { SendPrayerDialogComponent } from './prayer-team-subscription/send-prayer-dialog.component';
 import { PrayerListDialogComponent } from './prayer-team-subscription/prayer-list-dialog.component';
-import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
-import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
+import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { SubscriptionsManagerComponent } from './subscriptions-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { SubscriptionsManagerRoutingModule } from './subscriptions-manager-routing.module';

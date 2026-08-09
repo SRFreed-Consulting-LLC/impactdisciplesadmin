@@ -3,12 +3,12 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { PodCastModel } from 'impactdisciplescommon/src/models/domain/pod-cast.model';
-import { PodCastService } from 'impactdisciplescommon/src/services/data/pod-cast.service';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { PodCastTagsService } from 'impactdisciplescommon/src/services/data/pod-cast-tags.service';
-import { ImageModel } from 'impactdisciplescommon/src/models/utils/image.model';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
+import { PodCastService } from 'src/app/common/services/data/pod-cast.service';
+import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
+import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface PodCastDialogData {

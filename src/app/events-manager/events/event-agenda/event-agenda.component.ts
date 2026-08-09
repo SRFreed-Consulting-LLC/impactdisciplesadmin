@@ -2,15 +2,15 @@ import { Component, Input, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { CalendarEvent, CalendarEventTimesChangedEvent, CalendarView } from 'angular-calendar';
 import { EventColor } from 'calendar-utils';
-import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { AgendaItem } from 'impactdisciplescommon/src/models/domain/utils/agenda-item.model';
-import { CourseModel } from 'impactdisciplescommon/src/models/domain/course.model';
-import { CoachModel } from 'impactdisciplescommon/src/models/domain/coach.model';
-import { TrainingRoomModel } from 'impactdisciplescommon/src/models/domain/training-room.model';
-import { CoachService } from 'impactdisciplescommon/src/services/data/coach.service';
-import { CourseService } from 'impactdisciplescommon/src/services/data/course.service';
-import { LocationService } from 'impactdisciplescommon/src/services/data/location.service';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { EventModel } from 'src/app/common/models/domain/event.model';
+import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { CourseModel } from 'src/app/common/models/domain/course.model';
+import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
+import { CoachService } from 'src/app/common/services/data/coach.service';
+import { CourseService } from 'src/app/common/services/data/course.service';
+import { LocationService } from 'src/app/common/services/data/location.service';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { AgendaItemDialogComponent, AgendaItemDialogResult } from './agenda-item-dialog.component';
 
 // Replaces DevExtreme's dx-scheduler. Deliberate, documented deviations

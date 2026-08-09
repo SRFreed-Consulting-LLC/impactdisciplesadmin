@@ -2,7 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 
 // Material replacement for the impactdisciplescommon submodule's
 // CaptureUsernameFormComponent (DevExtreme dx-form based) - first screen

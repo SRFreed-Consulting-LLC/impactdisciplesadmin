@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { DMMModel } from 'impactdisciplescommon/src/models/domain/dmm.model';
-import { DMMService } from 'impactdisciplescommon/src/services/data/dmm.service';
+import { DMMModel } from 'src/app/common/models/domain/dmm.model';
+import { DMMService } from 'src/app/common/services/data/dmm.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DMMDialogComponent } from './dmm-dialog.component';

@@ -3,9 +3,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { AnnouncementModel } from 'impactdisciplescommon/src/models/domain/announcement.model.ts';
-import { EventAnnouncementService } from 'impactdisciplescommon/src/services/data/event-announcement.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { AnnouncementModel } from 'src/app/common/models/domain/announcement.model.ts';
+import { EventAnnouncementService } from 'src/app/common/services/data/event-announcement.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SnackbarService } from '../../../../shared/snackbar.service';
 
 export interface AnnouncementDialogData {

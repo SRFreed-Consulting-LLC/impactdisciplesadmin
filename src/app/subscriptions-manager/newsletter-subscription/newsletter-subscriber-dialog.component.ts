@@ -2,8 +2,8 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { NewsletterSubscriptionModel } from 'impactdisciplescommon/src/models/domain/newsletter-subscription.model';
-import { NewsletterSubscriptionService } from 'impactdisciplescommon/src/services/data/newsletter-subscription.service';
+import { NewsletterSubscriptionModel } from 'src/app/common/models/domain/newsletter-subscription.model';
+import { NewsletterSubscriptionService } from 'src/app/common/services/data/newsletter-subscription.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface NewsletterSubscriberDialogData {

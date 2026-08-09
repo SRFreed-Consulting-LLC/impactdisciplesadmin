@@ -1,12 +1,12 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { ShippingLabelBatchRequest, ShippingLabelRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
-import { ShippingFromAddress } from 'impactdisciplescommon/src/models/domain/shipment.model';
-import { ShippingLabelBatchService } from 'impactdisciplescommon/src/services/data/shipping-label-batch.service';
-import { ShippingLabelService } from 'impactdisciplescommon/src/services/data/shipping-label.service';
-import { WebConfigService } from 'impactdisciplescommon/src/services/data/web-config.service';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { ShippingLabelBatchRequest, ShippingLabelRequest } from 'src/app/common/models/domain/shipment-label-batch-request.model';
+import { ShippingFromAddress } from 'src/app/common/models/domain/shipment.model';
+import { ShippingLabelBatchService } from 'src/app/common/services/data/shipping-label-batch.service';
+import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
+import { WebConfigService } from 'src/app/common/services/data/web-config.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { environment } from 'src/environments/environment';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';

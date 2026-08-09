@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
-import { Role } from 'impactdisciplescommon/src/lists/roles.enum';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
+import { Role } from 'src/app/common/lists/roles.enum';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SectionTab } from '../shared/section-tabs/section-tabs.component';
 
 // SectionTab itself has no role field (role-filtering already happens here,

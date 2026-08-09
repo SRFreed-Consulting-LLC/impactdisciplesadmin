@@ -6,16 +6,13 @@ import { Page } from '@playwright/test';
 const ADMIN_EMAIL = 'shane.freed@gmail.com';
 const ADMIN_PASSWORD = 'password';
 
-// The app's login flow is two screens (AdminAuthService / AuthGuardService,
-// see impactdisciplescommon/src/forms/admin): enter an email on
-// capture-username-form, get routed to capture-password-form, enter a
-// password there. Both screens still run their own dx-form internally (out
-// of scope for this migration), so this targets the underlying
-// input[type=email]/input[type=password] elements directly rather than any
-// DevExtreme-generated wrapper markup, and drives the submit via Enter
-// (both screens' dx-form submit button has useSubmitBehavior: true, so
-// Enter in the field triggers the same native form submit Angular's
-// (submit) handler listens for).
+// The app's login flow is two screens (src/app/auth, backed by
+// AdminAuthService/AuthGuardService from src/app/common/forms/admin):
+// enter an email on capture-username-form, get routed to
+// capture-password-form, enter a password there. This targets the plain
+// input[type=email]/input[type=password] elements directly and drives
+// the submit via Enter, which triggers the same native form submit
+// Angular's (submit)/(ngSubmit) handler listens for on both screens.
 export async function loginAsAdmin(page: Page): Promise<void> {
   await page.goto('/');
 

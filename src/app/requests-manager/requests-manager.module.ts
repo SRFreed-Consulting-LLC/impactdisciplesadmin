@@ -4,8 +4,8 @@ import { LunchAndLearnsComponent } from './lunch-and-learns-requests/lunch-and-l
 import { LunchAndLearnDialogComponent } from './lunch-and-learns-requests/lunch-and-learn-dialog.component';
 import { SeminarsComponent } from './seminars-requests/seminars.component';
 import { SeminarDialogComponent } from './seminars-requests/seminar-dialog.component';
-import { PhoneNumberMaskPipe } from 'impactdisciplescommon/src/pipes/phone-number.pipe';
-import { ImpactDisciplesCommonModule } from 'impactdisciplescommon/src/impactdisciples.common.module';
+import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
+import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { ConsultationsRequestsComponent } from './consultations-requests/consultations-requests.component';
 import { ConsultationsSurveysComponent } from './consultations-surveys/consultations-surveys.component';
 import { ConsultationSurveyDialogComponent } from './consultations-surveys/consultation-survey-dialog.component';

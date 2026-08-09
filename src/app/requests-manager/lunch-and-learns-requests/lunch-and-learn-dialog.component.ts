@@ -3,9 +3,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { LunchAndLearnModel } from 'impactdisciplescommon/src/models/domain/lunch-and-learn.model';
-import { LunchAndLearnService } from 'impactdisciplescommon/src/services/data/lunch-and-learn.service';
-import { dateFromTimestamp } from 'impactdisciplescommon/src/utils/date-from-timestamp';
+import { LunchAndLearnModel } from 'src/app/common/models/domain/lunch-and-learn.model';
+import { LunchAndLearnService } from 'src/app/common/services/data/lunch-and-learn.service';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { timeStringToTimestamp, timestampToTimeString } from '../../shared/time-of-day.util';
 

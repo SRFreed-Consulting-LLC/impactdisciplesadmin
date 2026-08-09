@@ -2,9 +2,9 @@ import { Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { AdminAuthService } from 'impactdisciplescommon/src/forms/admin/admin-auth.service';
-import { AppUserService } from 'impactdisciplescommon/src/services/data/user.service';
-import { LoggerService } from 'impactdisciplescommon/src/services/data/logger.service';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { AppUserService } from 'src/app/common/services/data/user.service';
+import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 
 // Material replacement for the impactdisciplescommon submodule's

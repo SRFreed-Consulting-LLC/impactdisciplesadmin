@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { HomePagePopupModel } from 'impactdisciplescommon/src/models/domain/home-page-popup.model';
+import { HomePagePopupModel } from 'src/app/common/models/domain/home-page-popup.model';
 
 export interface HomePagePopupPreviewDialogData {
   item: HomePagePopupModel;

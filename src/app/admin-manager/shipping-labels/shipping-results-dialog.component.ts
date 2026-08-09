@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { ShippingLabelRequest } from 'impactdisciplescommon/src/models/domain/shipment-label-batch-request.model';
+import { ShippingLabelRequest } from 'src/app/common/models/domain/shipment-label-batch-request.model';
 
 export interface ShippingResultsDialogData {
   results: ShippingLabelRequest[];

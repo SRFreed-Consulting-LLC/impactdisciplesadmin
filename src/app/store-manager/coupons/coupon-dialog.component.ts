@@ -2,11 +2,11 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject, merge } from 'rxjs';
-import { CouponModel } from 'impactdisciplescommon/src/models/utils/coupon.model';
-import { CouponService } from 'impactdisciplescommon/src/services/data/coupon.service';
-import { TagModel } from 'impactdisciplescommon/src/models/domain/tag.model';
-import { ProductService } from 'impactdisciplescommon/src/services/data/product.service';
-import { EventService } from 'impactdisciplescommon/src/services/data/event.service';
+import { CouponModel } from 'src/app/common/models/utils/coupon.model';
+import { CouponService } from 'src/app/common/services/data/coupon.service';
+import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { ProductService } from 'src/app/common/services/data/product.service';
+import { EventService } from 'src/app/common/services/data/event.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface CouponDialogData {

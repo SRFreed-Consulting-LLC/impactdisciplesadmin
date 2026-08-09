@@ -2,9 +2,9 @@ import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/cor
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { EventModel } from 'impactdisciplescommon/src/models/domain/event.model';
-import { FAQModel } from 'impactdisciplescommon/src/models/utils/faq.model';
-import { FAQService } from 'impactdisciplescommon/src/services/data/faq.service';
+import { EventModel } from 'src/app/common/models/domain/event.model';
+import { FAQModel } from 'src/app/common/models/utils/faq.model';
+import { FAQService } from 'src/app/common/services/data/faq.service';
 import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../../shared/snackbar.service';
 import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';

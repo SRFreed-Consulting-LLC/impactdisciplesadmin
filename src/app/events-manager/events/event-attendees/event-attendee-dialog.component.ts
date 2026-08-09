@@ -2,9 +2,9 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { EventRegistrationModel } from 'impactdisciplescommon/src/models/domain/event-registration.model';
-import { EventRegistrationService } from 'impactdisciplescommon/src/services/data/event-registration.service';
-import { EMailService } from 'impactdisciplescommon/src/services/data/email.service';
+import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
+import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
+import { EMailService } from 'src/app/common/services/data/email.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 
 export interface EventAttendeeDialogData {

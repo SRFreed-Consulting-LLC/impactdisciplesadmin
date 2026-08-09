@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { SeriesModel } from 'impactdisciplescommon/src/models/utils/series.model';
-import { SeriesService } from 'impactdisciplescommon/src/services/data/series.service';
+import { SeriesModel } from 'src/app/common/models/utils/series.model';
+import { SeriesService } from 'src/app/common/services/data/series.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { SeriesModalComponent } from './series-modal/series-modal.component';

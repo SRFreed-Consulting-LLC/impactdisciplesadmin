@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Functions, getFunctions, HttpsCallable, httpsCallable } from 'firebase/functions';
-import { NotificationRegistrationModel } from 'impactdisciplescommon/src/models/admin/notification-registration.model';
+import { NotificationRegistrationModel } from 'src/app/common/models/admin/notification-registration.model';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface NotificationDialogData {

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FileItem } from 'impactdisciplescommon/src/models/utils/file-item.model';
+import { FileItem } from 'src/app/common/models/utils/file-item.model';
 import { FileBrowserStorageService } from './file-browser-storage.service';
 
 // One row of the left-hand folder tree (see image-uploader.component) - a

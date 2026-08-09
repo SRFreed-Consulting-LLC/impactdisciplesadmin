@@ -136,20 +136,6 @@
           }
         }
       }
-    },
-    "impactdisciplescommon": {
-      "projectType": "library",
-      "root": "impactdisciplescommon",
-      "sourceRoot": "impactdisciplescommoncommon/src",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-ng-packagr:build",
-          "options": {
-            "tsConfig": "impactdisciplescommon/tsconfig.lib.json",
-            "project": "impactdisciplescommon/ng-package.json"
-          }
-        }
-      }
     }
   },
   "schematics": {

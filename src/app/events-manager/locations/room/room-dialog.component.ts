@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { TrainingRoomModel } from 'impactdisciplescommon/src/models/domain/training-room.model';
+import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 
 export interface RoomDialogData {
   item: TrainingRoomModel | null;
