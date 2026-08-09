@@ -161,3 +161,44 @@ $accent: #ffcc00;
   overflow-x: hidden;
 }
 
+.impact-header__user {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: none;
+  color: #444;
+}
+
+.impact-header__user-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.impact-header__user-caret {
+  margin-left: -2px;
+  opacity: 0.7;
+}
+
+// First block inside the user menu (email + role) - deliberately not a
+// mat-menu-item, just identity context. No click handling needed: MatMenu
+// only closes on a mat-menu-item's own click or the backdrop, not on plain
+// content inside the panel.
+.user-menu__identity {
+  padding: 10px 16px 8px;
+  cursor: default;
+}
+
+.user-menu__email {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.user-menu__role {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}

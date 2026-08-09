@@ -1,0 +1,70 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.settings-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.settings-card {
+  max-width: 520px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &--column {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.accent-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.accent-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: inherit;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container, rgba(0, 0, 0, 0.04));
+  }
+
+  &--selected {
+    border-color: var(--mat-sys-primary);
+    border-width: 2px;
+    padding: 7px 11px; // -1px to offset the wider border, keeps size stable
+  }
+}

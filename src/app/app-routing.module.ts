@@ -5,6 +5,7 @@ import { ChangePasswordComponent } from './auth/change-password/change-password.
 import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
+import { ThemesComponent } from './core/settings/themes.component';
 import { AuthGuardService } from 'src/app/common/forms/admin/admin-auth.service';
 
 const routes: Routes = [
@@ -21,6 +22,11 @@ const routes: Routes = [
       {
         path: 'home',
         component: DashboardComponent,
+        canActivate: [ AuthGuardService ]
+      },
+      {
+        path: 'settings',
+        component: ThemesComponent,
         canActivate: [ AuthGuardService ]
       },
       {

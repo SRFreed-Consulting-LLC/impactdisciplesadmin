@@ -3,17 +3,23 @@ import { CommonModule } from '@angular/common';
 import { MainScreenComponent } from './main-screen/main-screen.component';
 import { RouterModule } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { ThemesComponent } from './settings/themes.component';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatCardModule } from '@angular/material/card';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   declarations: [
     MainScreenComponent,
-    DashboardComponent
+    DashboardComponent,
+    ThemesComponent
   ],
   imports: [
     CommonModule,
@@ -23,6 +29,10 @@ import { SharedModule } from '../shared/shared.module';
     MatListModule,
     MatIconModule,
     MatButtonModule,
+    MatMenuModule,
+    MatDividerModule,
+    MatCardModule,
+    MatSlideToggleModule,
     SharedModule
   ]
 })

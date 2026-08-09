@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { NAV_CONFIG, NavGroup } from './nav-config';
 
 @Component({
@@ -12,6 +13,11 @@ import { NAV_CONFIG, NavGroup } from './nav-config';
 })
 export class MainScreenComponent implements OnInit, OnDestroy {
   secureNav: NavGroup[] = [];
+
+  // Backs the user menu (name/email/role + Settings + Log Off) in the
+  // toolbar - set from the same loggedInUser$ emission secureNav is built
+  // from, no separate subscription needed.
+  currentUser: AdminUser | null = null;
 
   // Which manager groups are currently open - multiple can be open at once
   // (no accordion-exclusive behavior). A group is also auto-added here
@@ -39,6 +45,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // session with a stale/expired cookie). dao.loggedInUser$ re-derives
     // the AdminUser from Firebase's own live auth state instead.
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
+      this.currentUser = user;
       this.secureNav = NAV_CONFIG
         .filter((group) => group.roles.some((role) => role === user?.role))
         .map((group) => ({
@@ -71,6 +78,11 @@ export class MainScreenComponent implements OnInit, OnDestroy {
 
   logOff(): void {
     this.authService.logOut();
+  }
+
+  get displayName(): string {
+    const name = [this.currentUser?.firstName, this.currentUser?.lastName].filter(Boolean).join(' ');
+    return name || this.currentUser?.email || '';
   }
 
   private syncActiveFromUrl(url: string): void {
