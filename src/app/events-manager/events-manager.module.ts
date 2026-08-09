@@ -3,8 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CoursesComponent } from './courses/courses.component';
 import { LocationsComponent } from './locations/locations.component';
-import { DxButtonModule, DxContextMenuModule, DxDataGridModule, DxDateBoxModule, DxDraggableModule, DxDropDownBoxModule, DxFileManagerModule, DxFormModule, DxHtmlEditorModule,
-  DxListModule, DxLoadIndicatorModule, DxLoadPanelModule, DxLookupModule, DxNumberBoxModule, DxPopupModule, DxSchedulerModule, DxScrollViewModule, DxSelectBoxModule, DxSwitchModule, DxTabsModule, DxTagBoxModule, DxTextAreaModule, DxTextBoxModule, DxToolbarModule } from 'devextreme-angular';
 import { OrganizationsComponent } from './organizations/organizations.component';
 import { ImpactDisciplesCommonModule } from "../../../impactdisciplescommon/src/impactdisciples.common.module";
 import { CoachesComponent } from './coaches/coaches.component';
@@ -98,30 +96,6 @@ import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
       SharedModule,
       FormsModule,
       ImageUploaderModule,
-      DxButtonModule,
-      DxContextMenuModule,
-      DxDataGridModule,
-      DxDateBoxModule,
-      DxDraggableModule,
-      DxFormModule,
-      DxFileManagerModule,
-      DxHtmlEditorModule,
-      DxLookupModule,
-      DxLoadPanelModule,
-      DxListModule,
-      DxNumberBoxModule,
-      DxPopupModule,
-      DxSchedulerModule,
-      DxScrollViewModule,
-      DxSwitchModule,
-      DxTabsModule,
-      DxTagBoxModule,
-      DxTextAreaModule,
-      DxTextBoxModule,
-      DxToolbarModule,
-      DxSelectBoxModule,
-      DxDropDownBoxModule,
-      DxLoadIndicatorModule,
       ImpactDisciplesCommonModule,
       ReactiveFormsModule,
       MatDialogModule,

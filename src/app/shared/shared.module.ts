@@ -1,9 +1,6 @@
 import { NgModule } from "@angular/core";
 import { IndicatorButtonComponent } from "./indicator-button/indicator-button.component";
-import { DxButtonModule, DxFormModule, DxLoadIndicatorModule, DxPopupModule } from "devextreme-angular";
 import { CommonModule } from "@angular/common";
-import { LocationModalComponent } from './location-modal/location-modal.component';
-import { OrganizationModalComponent } from "./organization-modal/organization-modal.component";
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { ListHeaderComponent } from './list-header/list-header.component';
 import { PopupHeaderComponent } from './popup-header/popup-header.component';
@@ -33,8 +30,6 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 @NgModule({
   declarations: [
     IndicatorButtonComponent,
-    LocationModalComponent,
-    OrganizationModalComponent,
     ConfirmDialogComponent,
     ListHeaderComponent,
     PopupHeaderComponent,
@@ -49,10 +44,6 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
   ],
   imports: [
     CommonModule,
-    DxButtonModule,
-    DxLoadIndicatorModule,
-    DxPopupModule,
-    DxFormModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
@@ -70,8 +61,6 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
   ],
   exports: [
     IndicatorButtonComponent,
-    LocationModalComponent,
-    OrganizationModalComponent,
     ConfirmDialogComponent,
     ListHeaderComponent,
     PopupHeaderComponent,
