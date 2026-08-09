@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { Functions, getFunctions, HttpsCallable, httpsCallable } from 'firebase/functions';
+import { Functions, HttpsCallable, httpsCallable } from '@angular/fire/functions';
 import { NotificationRegistrationModel } from 'src/app/common/models/admin/notification-registration.model';
 import { SnackbarService } from '../../shared/snackbar.service';
 
@@ -44,14 +44,18 @@ export class NotificationDialogComponent {
     private dialogRef: MatDialogRef<NotificationDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: NotificationDialogData,
     private fb: FormBuilder,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    functions: Functions
   ) {
     this.isEdit = !!data.item?.id;
     this.form = this.fb.group({
       title: [''],
       body: ['']
     });
-    this.functions = getFunctions();
+    // Injected, not a raw getFunctions() call - see app.module.ts's
+    // provideFunctions() / FireAuthDao's own Auth for why (same "Calling
+    // Firebase APIs outside of an Injection context" fix).
+    this.functions = functions;
     this.addMessageFunction = httpsCallable(this.functions, 'sendNotification');
   }
 

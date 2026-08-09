@@ -77,16 +77,18 @@ export class ProductsComponent implements OnInit {
   loadingMore$: BehaviorSubject<boolean>;
   hasMore$: BehaviorSubject<boolean>;
 
-  // Kept live for the whole lifetime of this component (not just while a
-  // filter/edit is open) - serves three purposes at once: the Category/
-  // Series column-filter matching, the Category/Series column name
-  // lookups, and the edit form's own Category/Series selects. Since it's a
-  // live streamAll() subscription, adding a category/series via "Manage
-  // Categories"/"Manage Series" while the edit form is open shows up in
-  // that form's own select immediately, no manual refresh needed. These are
-  // small reference collections, not the main product list, so they stay
-  // on streamAll() - only the (potentially large) product list itself below
-  // is paginated.
+  // One-time getAll() fetches, not live streamAll() subscriptions - these
+  // are small reference collections that rarely change mid-session, and a
+  // cold load already fires this component's 5 reference-data reads plus
+  // the paginated product fetch all in the same tick; that many onSnapshot
+  // listeners attaching at once is exactly the WebChannel handshake race
+  // documented on retryDelay() in firebase.dao.ts (occasionally exhausting
+  // even the 4-attempt jittered retry there). getDocs()-backed getAll()
+  // doesn't open a standing listener, so it isn't part of that race.
+  // Trade-off: adding a category/series via "Manage Categories"/"Manage
+  // Series" while this screen is open no longer shows up here until the
+  // next reload - acceptable for reference data that changes rarely, not
+  // worth reintroducing 5 standing listeners to avoid.
   categories: TagModel[] = [];
   series: SeriesModel[] = [];
 
@@ -135,19 +137,19 @@ export class ProductsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.productCategoriesService.streamAll().subscribe((categories) => {
+    this.productCategoriesService.getAll().then((categories) => {
       this.categories = categories;
     });
-    this.seriesService.streamAll().subscribe((series) => {
+    this.seriesService.getAll().then((series) => {
       this.series = series;
     });
-    this.productTagService.streamAll().subscribe((tags) => {
+    this.productTagService.getAll().then((tags) => {
       this.productTags = tags;
     });
-    this.bookService.streamAll().subscribe((books) => {
+    this.bookService.getAll().then((books) => {
       this.books = books;
     });
-    this.emailTemplatesService.streamAll().subscribe((templates) => {
+    this.emailTemplatesService.getAll().then((templates) => {
       this.emails = templates.map((t) => ({ id: t.id!, name: t.name }));
     });
 

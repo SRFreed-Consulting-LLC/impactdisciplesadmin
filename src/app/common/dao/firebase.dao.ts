@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector, runInInjectionContext } from '@angular/core';
 import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter, where } from '@angular/fire/firestore';
 import { Firestore, collection } from '@angular/fire/firestore';
 import { Observable, of, timer } from 'rxjs';
@@ -30,13 +30,59 @@ export interface PagedResult<T> {
 // again. Randomized, growing-with-attempt-count jitter spreads the retries
 // out so they stop landing in lockstep.
 //
+// Widened from an original 4-attempt/~400ms-per-step curve after a live
+// refresh into Store Manager > Fulfillment still exhausted all 4 attempts
+// (several components' listeners cold-starting at once, on top of whatever
+// the browser itself is doing setting up its very first WebChannel
+// connection of the page) - 4 attempts topping out around ~2.5s wasn't
+// always enough. 6 attempts reaching further out trades a slightly longer
+// worst-case recovery for meaningfully fewer total failures; this only
+// costs anything in the rare collision case - a normal load never retries
+// at all.
+//
 // Exported - FireAuthDao.loggedInUser$ hits the exact same race on a cold
 // page load (several components' streamAll() calls plus its own one-time
 // getAllByValue() all firing in the same tick) and needs the identical
 // treatment; see that file's own comment for why it didn't have this until
 // e2e testing this session's left-nav work reproduced it live.
 export function retryDelay(_error: unknown, retryCount: number) {
-  return timer(retryCount * 400 + Math.random() * 900);
+  return timer(retryCount * 500 + Math.random() * 1200);
+}
+
+export const FIRESTORE_RETRY_COUNT = 6;
+
+// Promise-flavored equivalent of retryDelay()/retry({count:4, delay:
+// retryDelay}) above, for the one-time getDocs() reads (getAll/getAllByValue/
+// queryByValue/queryAllByMultiValue/getPage) that had no retry at all until
+// now - live-diagnosed as the missing half of the same cold-load race: a
+// hard page load fires several components' worth of these one-time reads
+// (e.g. a paginated list's first getPage() call) in the same tick as every
+// streamAll() subscription, so they're just as exposed to the WebChannel
+// handshake collision, but unlike streamAll()/loggedInUser$ they had no
+// resilience against it - a single unlucky tick left the screen (e.g.
+// Products right after a refresh) rendering nothing, with no retry and no
+// visible error.
+//
+// Takes an Injector and re-enters it via runInInjectionContext() on every
+// attempt - AngularFire's modular functions (getDocs() included) assert
+// they're being called within an Angular injection context and warn
+// ("Calling Firebase APIs outside of an Injection context") otherwise. The
+// `await new Promise(setTimeout)` delay between retries crosses an async
+// boundary Angular doesn't track, so a bare retried getDocs() call loses
+// that context even though the very first attempt (called synchronously
+// from wherever this DAO method was invoked) usually still has it.
+async function retryGetDocs<T>(injector: Injector, fn: () => Promise<T>, retriesLeft = FIRESTORE_RETRY_COUNT): Promise<T> {
+  try {
+    return await runInInjectionContext(injector, fn);
+  } catch (err) {
+    if (retriesLeft <= 0) {
+      throw err;
+    }
+    const attempt = FIRESTORE_RETRY_COUNT + 1 - retriesLeft;
+    const delayMs = attempt * 500 + Math.random() * 1200;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return retryGetDocs(injector, fn, retriesLeft - 1);
+  }
 }
 
 @Injectable({
@@ -44,7 +90,9 @@ export function retryDelay(_error: unknown, retryCount: number) {
 })
 export class FirebaseDAO<T extends BaseModel> {
 
-  constructor(public fs: Firestore ) {}
+  // Injector kept only for retryGetDocs() - see its own comment on why a
+  // retried getDocs() call needs to explicitly re-enter injection context.
+  constructor(public fs: Firestore, private injector: Injector) {}
 
   // limitCount is optional and defaults to unbounded (existing behavior) --
   // pass it to cap how many documents a page pulls back instead of the
@@ -52,7 +100,7 @@ export class FirebaseDAO<T extends BaseModel> {
   public getAll(table: string, fromFirestore?, limitCount?: number): Promise<T[]>{
     const constraints: QueryConstraint[] = limitCount ? [limit(limitCount)] : [];
 
-    return getDocs(query(collection(this.fs, '/' + table), ...constraints)).then(docs => {
+    return retryGetDocs(this.injector, () => getDocs(query(collection(this.fs, '/' + table), ...constraints))).then(docs => {
       return this.getDocListFromPromise(docs, fromFirestore);
     });
   }
@@ -61,7 +109,7 @@ export class FirebaseDAO<T extends BaseModel> {
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));
 
-    return getDocs(query(collection(this.fs, '/' + table), ...constraints)).then(docs => {
+    return retryGetDocs(this.injector, () => getDocs(query(collection(this.fs, '/' + table), ...constraints))).then(docs => {
       return this.getDocListFromPromise(docs, fromFirestore);
     });
   }
@@ -70,7 +118,7 @@ export class FirebaseDAO<T extends BaseModel> {
     const constraints: QueryConstraint[] = [where(field, opStr, value)];
     if (limitCount) constraints.push(limit(limitCount));
 
-    return getDocs(query(collection(this.fs, '/' + table), ...constraints)).then(docs => {
+    return retryGetDocs(this.injector, () => getDocs(query(collection(this.fs, '/' + table), ...constraints))).then(docs => {
       return this.getDocListFromPromise(docs, fromFirestore);
     });
   }
@@ -81,7 +129,7 @@ export class FirebaseDAO<T extends BaseModel> {
     );
     if (limitCount) queryConstraints.push(limit(limitCount));
 
-    return getDocs(query(collection(this.fs, '/' + table), ...queryConstraints)).then(docs => {
+    return retryGetDocs(this.injector, () => getDocs(query(collection(this.fs, '/' + table), ...queryConstraints))).then(docs => {
       return this.getDocListFromPromise(docs, fromFirestore);
     });
   }
@@ -103,7 +151,7 @@ export class FirebaseDAO<T extends BaseModel> {
     if (cursor) constraints.push(startAfter(cursor));
     constraints.push(limit(pageSize));
 
-    const snap = await getDocs(query(collection(this.fs, '/' + table), ...constraints));
+    const snap = await retryGetDocs(this.injector, () => getDocs(query(collection(this.fs, '/' + table), ...constraints)));
     const items = this.getDocListFromPromise(snap, fromFirestore);
     const lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
 
@@ -148,7 +196,18 @@ export class FirebaseDAO<T extends BaseModel> {
     return deleteDoc(doc(this.fs, '/' + table + '/' + id));
   }
 
-  public streamAll(table: string, fromFirestore?, limitCount?: number): Observable<T[]>{
+  // onError is optional and purely a side-channel signal - the returned
+  // Observable's own contract (Observable<T[]>, never itself erroring)
+  // doesn't change, so every existing call site is unaffected. Callers that
+  // want to distinguish "genuinely empty" from "failed to load" (the
+  // catchError fallback below is otherwise indistinguishable from a real
+  // empty collection) can pass one; see FulfillmentComponent for the
+  // reference usage. IMPORTANT for callers that do: once this fires, the
+  // returned Observable has already fallen back to of([]), which completes
+  // - the live listener is gone, not paused, so recovering means calling
+  // streamAll() again fresh (a brand new subscription), not waiting on this
+  // one.
+  public streamAll(table: string, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = limitCount ? [limit(limitCount)] : [];
 
     return collectionData(query(collection(this.fs, '/' + table), ...constraints), {idField: 'id'}).pipe(
@@ -156,7 +215,7 @@ export class FirebaseDAO<T extends BaseModel> {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
       // See retryDelay()'s comment at the top of this file.
-      retry({ count: 4, delay: retryDelay }),
+      retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       // Without this, a failure that survives the retries above just errors
       // the observable silently -- no error callback is registered at most
       // call sites, so the UI is left showing stale/empty data forever with
@@ -164,6 +223,7 @@ export class FirebaseDAO<T extends BaseModel> {
       // empty list instead.
       catchError(err => {
         console.error(`FirebaseDAO.streamAll('${table}') failed:`, err);
+        onError?.(err);
         return of([]);
       })
     );
@@ -178,7 +238,7 @@ export class FirebaseDAO<T extends BaseModel> {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
       // See streamAll()'s comment above - same spurious-first-batch issue.
-      retry({ count: 4, delay: retryDelay }),
+      retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.streamByValue('${table}', '${field}') failed:`, err);
         return of([]);
@@ -206,7 +266,7 @@ export class FirebaseDAO<T extends BaseModel> {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
       // See streamAll()'s comment in this file - same spurious-first-batch issue.
-      retry({ count: 4, delay: retryDelay }),
+      retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.queryStreamByValue('${table}', '${field}') failed:`, err);
         return of([]);
@@ -225,7 +285,7 @@ export class FirebaseDAO<T extends BaseModel> {
         return this.getDocListFromStream(docs, fromFirestore);
       }),
       // See streamAll()'s comment in this file - same spurious-first-batch issue.
-      retry({ count: 4, delay: retryDelay }),
+      retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.queryAllStreamByMultiValue('${table}') failed:`, err);
         return of([]);

@@ -43,8 +43,9 @@ export class BaseService<T extends BaseModel> {
     return this.dao.getPage(this.table, pageSize, cursor, orderByField, orderDirection, this.fromFirestore);
   }
 
-  streamAll(limitCount?: number): Observable<T[]>{
-    return this.dao.streamAll(this.table, this.fromFirestore, limitCount)
+  // onError - see FirebaseDAO.streamAll()'s own comment.
+  streamAll(limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+    return this.dao.streamAll(this.table, this.fromFirestore, limitCount, onError)
   }
 
   streamAllByValue(field: string, value: any, limitCount?: number): Observable<T[]>{

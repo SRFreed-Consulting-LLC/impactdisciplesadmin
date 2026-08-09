@@ -1,16 +1,19 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
-import { Auth, browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, getAuth, sendEmailVerification, sendPasswordResetEmail,
+// Auth comes from @angular/fire/auth (an injectable DI-provided instance,
+// see app.module.ts's provideAuth()), not a raw getAuth() call - see this
+// class's constructor for why.
+import { Auth } from '@angular/fire/auth';
+import { browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
   setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut, updatePassword, User, UserCredential } from 'firebase/auth';
-import { BehaviorSubject, Observable, fromEventPattern } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, fromEventPattern } from 'rxjs';
 import { UserPermissionService } from '../services/data/user-permissions.service';
-import { Firestore } from '@angular/fire/firestore';
-import { map, mergeMap, retry, shareReplay } from 'rxjs/operators';
+import { map, mergeMap, share, shareReplay } from 'rxjs/operators';
 import { UserPermission } from '../models/admin/user-permission.model';
 import { AdminUser } from '../models/admin/admin-user.model';
 import { AdminUserService } from '../services/data/admin-user.service';
 import { CookieService } from 'ngx-cookie-service';
-import { QueryParam, WhereFilterOperandKeys, retryDelay } from './firebase.dao';
+import { QueryParam, WhereFilterOperandKeys } from './firebase.dao';
 import { notify } from '../utils/notify.util';
 
 const AUTH_COOKIE_NAME = 'crm_auth';
@@ -21,7 +24,6 @@ const ID_TOKEN_COOKIE_NAME = 'crm_token';
   providedIn: 'root'
 })
 export class FireAuthDao {
-  public auth: Auth;
   public authSate$ = new BehaviorSubject<boolean>(false);
   public currentUser$: Observable<User>;
   public loggedInUser$: Observable<AdminUser>;
@@ -30,23 +32,36 @@ export class FireAuthDao {
   public currentAgent$ = new BehaviorSubject<AdminUser>(undefined);
 
   constructor(
-    public fs: Firestore,
+    public auth: Auth,
     public router: Router,
     public ngZone: NgZone,
     public userService: AdminUserService,
     private cookieService: CookieService,
     private userPermissionService: UserPermissionService
   ) {
-    this.auth = getAuth(this.fs.app);
     this.authSate$.next(this.cookieService.check(ID_TOKEN_COOKIE_NAME));
 
-    this.currentUser$ = fromEventPattern(
+    // shareReplay(1), not share() - a raw Firebase auth-state change never
+    // itself "errors" (onAuthStateChanged's callback doesn't throw), so
+    // there's no error-caching risk here the way there was on loggedInUser$
+    // below; this should just be one single, permanent, app-wide
+    // subscription. That matters for a subtle but real bug this used to
+    // have: without a share operator here, currentUser$ is a cold
+    // observable - every subscriber (re)registers its own onAuthStateChanged
+    // listener with Firebase. loggedInUser$'s own retry() used to sit AFTER
+    // mergeMap in the pipe below, so every retry attempt resubscribed to
+    // this WHOLE chain, including currentUser$ - tearing down and
+    // re-registering a brand new onAuthStateChanged listener (which fires
+    // immediately with the current state) on every single retry. Live-
+    // diagnosed as the "auth state changed!" log firing 5 times on one
+    // page load: that log actually sits in fromEventPattern's *unsubscribe*
+    // callback below, so 5 firings meant 5 teardown/reattach cycles, not 5
+    // real auth changes. Sharing this stream fixes it at the root - see the
+    // retry removed from loggedInUser$'s own pipe for the other half.
+    this.currentUser$ = fromEventPattern<User>(
       (handler) => this.auth.onAuthStateChanged(handler),
-      (_handler, unsubscribe) => {
-        console.log('auth state changed!')
-        unsubscribe();
-      }
-    );
+      (_handler, unsubscribe) => unsubscribe()
+    ).pipe(shareReplay(1));
 
     this.loggedInUser$ = this.currentUser$.pipe(
       mergeMap((user: User) => {
@@ -55,23 +70,15 @@ export class FireAuthDao {
         if (user) {
           qp.push(new QueryParam('email', WhereFilterOperandKeys.equal, user.email));
         }
+        // No retry() here anymore - FirebaseDAO.getAllByValue() (which this
+        // calls into) already retries the read itself with the same
+        // jittered backoff, entirely inside this one Promise, without
+        // touching currentUser$ at all. A retry() at this pipe level used
+        // to duplicate that (redundant on top of the DAO's own retries) and
+        // caused the resubscription storm explained above - see this
+        // constructor's currentUser$ comment.
         return this.userService.getAllByValue('email', user.email);
       }),
-      // Live-diagnosed via this session's e2e work: a hard page load that
-      // lands directly on a route with several components' own streamAll()
-      // calls firing in the same tick (e.g. Products' 5 reference-data
-      // streams) can catch this getAllByValue() in the exact same
-      // WebChannel handshake race documented on retryDelay() in
-      // firebase.dao.ts - the SDK mislabels it 'permission-denied', it is
-      // not a real rules rejection. Unlike streamAll()/streamByValue(),
-      // this one-time read had no retry at all until now, so a single
-      // unlucky tick permanently broke role-based nav/tab rendering for the
-      // rest of the page's life (shareReplay(1) never retries an errored
-      // source). Placed before map() so only the Firestore fetch itself
-      // retries - map()'s own "No Record Found" branch is a real,
-      // deterministic outcome (and already calls logOut() as a side
-      // effect), not a transient race, and shouldn't be retried.
-      retry({ count: 4, delay: retryDelay }),
       map((users) => {
         if (!Array.isArray(users) || users?.length > 1) {
           throw new Error('More than 1 user found with this email address');
@@ -87,7 +94,21 @@ export class FireAuthDao {
 
         return users[0];
       }),
-      shareReplay(1)
+      // share(), not shareReplay(1) - shareReplay caches an error
+      // permanently (its ReplaySubject completes with error and is never
+      // replaced), so if getAllByValue()'s own internal retry (see
+      // FirebaseDAO.getAllByValue/retryGetDocs) still exhausts under a bad
+      // enough cold-load collision, every subscriber for the rest of that
+      // page's life - every nav render, every route guard, every manager
+      // screen - gets that same stale error forever, with no way to recover
+      // short of a full reload. resetOnError tears the connector down on
+      // error so the next subscriber re-subscribes to the source fresh
+      // (getting its own fresh getAllByValue() call, with its own fresh
+      // internal retries) instead of replaying a dead result. Since
+      // currentUser$ above is its own separately-shared stream now, this
+      // reset only re-runs the mergeMap/map stage, not the whole auth
+      // listener - no more resubscription storm.
+      share({ connector: () => new ReplaySubject(1), resetOnError: true, resetOnComplete: false, resetOnRefCountZero: false })
     );
 
     this.userPermissions$ = this.loggedInUser$.pipe(
