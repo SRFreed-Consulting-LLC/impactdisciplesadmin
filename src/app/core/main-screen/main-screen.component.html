@@ -38,7 +38,7 @@
             [queryParams]="{ tab: item.slug }"
             class="impact-drawer__sublink"
             [class.impact-drawer__sublink--active]="activeGroupId === group.id && activeSlug === item.slug">
-            {{ item.label }}
+            <span matListItemTitle class="impact-drawer__sublink-text">{{ item.label }}</span>
           </a>
         </div>
       </ng-container>

@@ -48,6 +48,8 @@ $accent: #ffcc00;
 .impact-drawer__link {
   text-decoration: none;
   color: #fff;
+  // Positioning context for .impact-drawer__chevron below.
+  position: relative;
 
   // Manager group headers are a real <button> (they toggle expand/collapse,
   // not navigate) rather than an <a> - mat-list-item's own theme resets most
@@ -67,6 +69,14 @@ $accent: #ffcc00;
   &-text {
     font-size: 15px;
     color: inherit;
+    // Reserve room for the absolutely-positioned chevron (longer labels
+    // like "REQUESTS MANAGER" otherwise run right under it) and truncate
+    // gracefully instead of overlapping.
+    display: block;
+    padding-right: 22px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   mat-icon {
@@ -86,12 +96,25 @@ $accent: #ffcc00;
 }
 
 .impact-drawer__chevron {
-  margin-left: auto;
+  // mat-list-item lays its content out via a CSS grid with named areas for
+  // matListItemIcon/matListItemTitle/matListItemMeta - a plain extra
+  // <mat-icon> with none of those directives falls into the default
+  // content area instead (stacking on its own line, centered under the
+  // label) rather than a trailing column. matListItemMeta itself was tried
+  // and rejected: its grid cell assumes short text/badge content and broke
+  // the icon font's ligature rendering (showed literal "expand_more" text)
+  // as well as squeezing the label. Absolute positioning sidesteps the
+  // grid entirely - simplest reliable way to pin this to the row's right
+  // edge regardless of how Material lays out everything else.
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
   opacity: 0.65;
   transition: transform 0.15s ease;
 
   &--open {
-    transform: rotate(180deg);
+    transform: translateY(-50%) rotate(180deg);
   }
 }
 
@@ -127,6 +150,15 @@ $accent: #ffcc00;
     color: $panel-bg;
     font-weight: 600;
   }
+}
+
+// Same fix as .impact-drawer__link-text above, same reason: matListItemTitle
+// stamps .mdc-list-item__primary-text onto this span, and Material's own
+// list-item theme sets an explicit color on that class which otherwise beats
+// plain inheritance from .impact-drawer__sublink - this was rendering the
+// sublist almost unreadable (near-black text on a near-black row).
+.impact-drawer__sublink-text {
+  color: inherit;
 }
 
 // mat-sidenav-content scrolls by default (CDK Scrollable) - .portal-content
