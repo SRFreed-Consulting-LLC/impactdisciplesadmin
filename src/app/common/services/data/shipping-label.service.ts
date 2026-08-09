@@ -28,20 +28,20 @@ export class ShippingLabelService extends BaseService<ShippingLabelRequest>{
   };
 
   public async createRequest(shippingLabel: ShippingLabelRequest){
-    let shippingRequest = shippingLabel.request;
+    const shippingRequest = shippingLabel.request;
 
-    let rateOptions = {... new RateOptions()};
+    const rateOptions = {... new RateOptions()};
     rateOptions.carrierIds = environment.shippingCarriers;
     shippingRequest.rateOptions = rateOptions;
 
-    let shipment = {... new ShippingModel()};
+    const shipment = {... new ShippingModel()};
     shipment.validateAddress = "no_validation";
     shipment.packages = [];
     shipment.shipFrom = shippingLabel.request.shipment.shipFrom
     shipment.shipTo = shippingLabel.request.shipment.shipTo
     shippingRequest.shipment = shipment;
 
-    let pkg: Package = {... new Package()};
+    const pkg: Package = {... new Package()};
     pkg.weight = {...new WeightDetail()};
     pkg.weight.unit = UNIT_OF_MEASURE.OUNCE;
     pkg.weight.value = shippingLabel.request.weight? shippingLabel.request.weight : 0;

@@ -24,7 +24,7 @@ export class PrayerTeamSubscriptionService extends BaseService<PrayerTeamSubscri
   };
 
   createPrayerTeamSubscription(firstName: string, lastName: string, email: string){
-    let qp: QueryParam[] = [
+    const qp: QueryParam[] = [
       new QueryParam('email', WhereFilterOperandKeys.equal, email),
       new QueryParam('lastName', WhereFilterOperandKeys.equal, lastName),
       new QueryParam('firstName', WhereFilterOperandKeys.equal, firstName)
@@ -32,7 +32,7 @@ export class PrayerTeamSubscriptionService extends BaseService<PrayerTeamSubscri
 
     return this.queryAllByMultiValue(qp).then(item => {
       if(!item || item.length == 0){
-        let subscriber: PrayerTeamSubscriptionModel = {...new PrayerTeamSubscriptionModel()};
+        const subscriber: PrayerTeamSubscriptionModel = {...new PrayerTeamSubscriptionModel()};
         subscriber.firstName = firstName;
         subscriber.lastName = lastName;
         subscriber.email = email;
@@ -45,7 +45,7 @@ export class PrayerTeamSubscriptionService extends BaseService<PrayerTeamSubscri
   }
 
   sendConfirmationEmail(subscriber: PrayerTeamSubscriptionModel){
-    let subject = 'Thank you for Joining our Prayer Team! ';
+    const subject = 'Thank you for Joining our Prayer Team! ';
     let text = 'Dear ' + subscriber.firstName + '.\n\n'
     text += 'Your email address was successfully added to our Prayer Team List! (' + subscriber.email +')\n\n'
     text +='God Bless! - Impact Disciples Ministry'

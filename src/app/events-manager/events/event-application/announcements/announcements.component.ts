@@ -17,7 +17,7 @@ import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '.
     standalone: false
 })
 export class AnnouncementsComponent implements OnInit {
-  @Input('event') event: EventModel;
+  @Input() event: EventModel;
 
   announcements$: Observable<AnnouncementModel[]>;
   displayedColumns = ['date', 'sentBy', 'announcement', 'actions'];

@@ -27,7 +27,7 @@ export class FireAuthDao {
   public loggedInUser$: Observable<AppUser>;
   public readonly userPermissions$: Observable<UserPermission[]>;
 
-  public currentAgent$: BehaviorSubject<AppUser> = new BehaviorSubject(undefined);
+  public currentAgent$ = new BehaviorSubject<AppUser>(undefined);
 
   constructor(
     public fs: Firestore,
@@ -52,7 +52,7 @@ export class FireAuthDao {
       mergeMap((user: User) => {
         const qp: QueryParam[] = [];
 
-        if (!!user) {
+        if (user) {
           qp.push(new QueryParam('email', WhereFilterOperandKeys.equal, user.email));
         }
         return this.userService.getAllByValue('email', user.email);
@@ -129,7 +129,7 @@ export class FireAuthDao {
   }
 
   public resetPassword(newPassword: string) {
-    let that = this;
+    const that = this;
 
     if(this.auth.currentUser){
       updatePassword(this.auth.currentUser, newPassword).then(() => {

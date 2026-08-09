@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges } from '@angular/core';
 import { FileItem } from 'src/app/common/models/utils/file-item.model';
 import { FileBrowserStorageService } from './file-browser-storage.service';
 
@@ -12,7 +12,7 @@ import { FileBrowserStorageService } from './file-browser-storage.service';
     styleUrls: ['./file-tree-node.component.scss'],
     standalone: false
 })
-export class FileTreeNodeComponent {
+export class FileTreeNodeComponent implements OnChanges {
   @Input() folderPath = '';
   @Input() folderName = 'Files';
   @Input() depth = 0;

@@ -22,7 +22,7 @@ interface RoleGatedTab extends SectionTab {
     standalone: false
 })
 export class EventsManagerComponent implements OnInit, OnDestroy {
-  selectedTab: string = 'Events';
+  selectedTab = 'Events';
 
   tabs: RoleGatedTab[] = [
     { text: 'Events', template: 'Events', users: [Role.ADMIN] },

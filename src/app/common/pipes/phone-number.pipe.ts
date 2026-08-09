@@ -6,7 +6,7 @@ import { Phone } from '../models/domain/utils/phone.model';
     standalone: false
 })
 export class PhoneNumberMaskPipe implements PipeTransform {
-  transform(phoneNumber: Phone, showExtension: boolean = true): string {
+  transform(phoneNumber: Phone, showExtension = true): string {
     if (!phoneNumber || !phoneNumber?.number) {
       return '';
     }

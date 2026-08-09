@@ -5,10 +5,10 @@ export class SaleModel extends BaseModel {
   name: string;
   startDate: Timestamp | string;
   endDate: Timestamp | string;
-  isActive: boolean = false;
+  isActive = false;
   percentOff: number | null;
-  isEvents: boolean = false;
-  isProducts: boolean = false;
-  isShipping: boolean = false;
+  isEvents = false;
+  isProducts = false;
+  isShipping = false;
 }
 

@@ -8,7 +8,7 @@ import { SectionTab } from '../shared/section-tabs/section-tabs.component';
     standalone: false
 })
 export class RequestsManagerComponent {
-  selectedTab: string = 'Consultation Requests';
+  selectedTab = 'Consultation Requests';
 
   tabs: SectionTab[] = [
     { text: 'Consultation Requests', template: 'Consultation Requests' },

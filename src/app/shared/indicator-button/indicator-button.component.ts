@@ -19,7 +19,7 @@ export class IndicatorButtonComponent {
   // Name kept as-is (rather than the Angular-idiomatic `click`) so every
   // existing `(onClick)="..."` call site keeps working unchanged - this
   // component's whole point is being a drop-in replacement.
-  @Output() public onClick: EventEmitter<void> = new EventEmitter();
+  @Output() public onClick = new EventEmitter<void>();
 
   handleClick(): void {
     if (!this.isInProgress && !this.disabled) {

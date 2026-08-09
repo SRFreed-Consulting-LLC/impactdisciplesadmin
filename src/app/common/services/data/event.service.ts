@@ -30,7 +30,7 @@ export class EventService extends BaseService<EventModel>{
   }
 
   public async isSummitPosted(): Promise<boolean> {
-        let qp: QueryParam[] = [];
+        const qp: QueryParam[] = [];
         qp.push(new QueryParam('isActive', WhereFilterOperandKeys.equal, true));
         qp.push(new QueryParam('isSummit', WhereFilterOperandKeys.equal, true));
 

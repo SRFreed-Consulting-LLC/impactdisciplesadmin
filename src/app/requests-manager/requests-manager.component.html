@@ -1,19 +1,19 @@
 <app-section-tabs [tabs]="tabs" [selectedTab]="selectedTab" (tabChange)="selectTab($event)"></app-section-tabs>
 
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab == 'Consultation Requests'">
+  <ng-template [ngIf]="selectedTab === 'Consultation Requests'">
     <app-consultations-requests></app-consultations-requests>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Consultation Surveys'">
+  <ng-template [ngIf]="selectedTab === 'Consultation Surveys'">
     <app-consultations-surveys></app-consultations-surveys>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Lunch and Learn Requests'">
+  <ng-template [ngIf]="selectedTab === 'Lunch and Learn Requests'">
     <app-lunch-and-learns></app-lunch-and-learns>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Seminar Requests'">
+  <ng-template [ngIf]="selectedTab === 'Seminar Requests'">
     <app-seminars></app-seminars>
   </ng-template>
 </div>

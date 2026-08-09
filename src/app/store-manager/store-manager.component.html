@@ -1,19 +1,19 @@
 <app-section-tabs [tabs]="secureTabs" [selectedTab]="selectedTab" (tabChange)="selectTab($event)"></app-section-tabs>
 
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab == 'Products'">
+  <ng-template [ngIf]="selectedTab === 'Products'">
     <app-products></app-products>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Purchases'">
+  <ng-template [ngIf]="selectedTab === 'Purchases'">
     <app-purchases></app-purchases>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Coupons'">
+  <ng-template [ngIf]="selectedTab === 'Coupons'">
     <app-coupons></app-coupons>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Sales'">
+  <ng-template [ngIf]="selectedTab === 'Sales'">
     <app-sales></app-sales>
   </ng-template>
 </div>

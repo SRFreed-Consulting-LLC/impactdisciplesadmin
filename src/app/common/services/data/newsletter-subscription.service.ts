@@ -25,7 +25,7 @@ export class NewsletterSubscriptionService extends BaseService<NewsletterSubscri
   };
 
   createNewsLetterSubscription(firstName: string, lastName: string, email: string){
-    let qp: QueryParam[] = [
+    const qp: QueryParam[] = [
       new QueryParam('email', WhereFilterOperandKeys.equal, email),
       new QueryParam('lastName', WhereFilterOperandKeys.equal, lastName),
       new QueryParam('firstName', WhereFilterOperandKeys.equal, firstName)
@@ -33,7 +33,7 @@ export class NewsletterSubscriptionService extends BaseService<NewsletterSubscri
 
     return this.queryAllByMultiValue(qp).then(item => {
       if(!item || item.length == 0){
-        let subscriber: NewsletterSubscriptionModel = {...new NewsletterSubscriptionModel()};
+        const subscriber: NewsletterSubscriptionModel = {...new NewsletterSubscriptionModel()};
         subscriber.firstName = firstName;
         subscriber.lastName = lastName;
         subscriber.email = email;
@@ -46,7 +46,7 @@ export class NewsletterSubscriptionService extends BaseService<NewsletterSubscri
   }
 
   sendConfirmationEmail(subscription: NewsletterSubscriptionModel){
-    let subject = 'Thank you for Subscribing to the Impact Disciples Newletter!';
+    const subject = 'Thank you for Subscribing to the Impact Disciples Newletter!';
     let text = '<div>Dear ' + subscription.firstName + '.</div><br><br>'
     text += '<div>Your email address was successfully added to our Newletter Subsciption List! (' + subscription.email +')</div><br><br>'
     text += '<div>Please accept this free <a href="' + environment.freeEbookUrl +'" download>EBook</a> as a small token of our appreciation.</div><br><br>'

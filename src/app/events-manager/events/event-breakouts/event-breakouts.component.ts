@@ -32,7 +32,7 @@ type BreakoutRow =
     standalone: false
 })
 export class EventBreakoutsComponent implements OnInit {
-  @Input('event') event: EventModel;
+  @Input() event: EventModel;
 
   rows$: Observable<BreakoutRow[]>;
   totalRegistered$: Observable<number>;

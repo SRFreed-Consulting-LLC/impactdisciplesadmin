@@ -10,6 +10,9 @@
     "start-prod": "ng serve --configuration=production",
     "build-prod": "ng build --configuration=production",
     "build-deploy-prod": "ng build --configuration=production && firebase use impactdisciples-a82a8 && firebase deploy --only hosting:production",
+    "lint": "ng lint",
+    "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
     "e2e": "playwright test"
   },
   "private": true,
@@ -49,12 +52,17 @@
     "@material/material-color-utilities": "^0.4.0",
     "@playwright/test": "^1.62.1",
     "@types/jasmine": "~4.3.0",
+    "angular-eslint": "^21.0.1",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
     "jasmine-core": "~4.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.8.3"
+    "prettier": "^3.9.6",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.46.4"
   }
 }

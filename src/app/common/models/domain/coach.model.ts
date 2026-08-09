@@ -2,7 +2,7 @@ import { OrganizationModel } from "./organization.model";
 import { Person } from "./utils/person.model";
 
 export class CoachModel extends Person {
-  isActive: boolean = false;
+  isActive = false;
   sortOrder: number;
   teamPageSortOrder: number;
   fullname: string;

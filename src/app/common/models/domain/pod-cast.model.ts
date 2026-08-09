@@ -3,7 +3,7 @@ import { BaseModel } from "../base.model";
 import { TagModel } from "./tag.model";
 
 export class PodCastModel extends BaseModel{
-  isActive: boolean = false;
+  isActive = false;
   date: Timestamp | Date;
   title: string;
   category?: string;

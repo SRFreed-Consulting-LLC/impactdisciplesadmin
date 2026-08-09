@@ -36,7 +36,7 @@ export class PodCastService extends BaseService<PodCastModel>{
       throw new Error('Failed to fetch client secret');
     }
 
-    let keysResult = await keysResponse.json();
+    const keysResult = await keysResponse.json();
 
     this.API_KEY = keysResult.api_key;
     this.PLAY_LIST_ID = keysResult.playlist_key
@@ -65,7 +65,7 @@ export class PodCastService extends BaseService<PodCastModel>{
       throw new Error('Failed to fetch client secret');
     }
 
-    let result = await response.json();
+    const result = await response.json();
 
     videos.push(...result.items);
 

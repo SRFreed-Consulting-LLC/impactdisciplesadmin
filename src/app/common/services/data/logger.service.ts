@@ -24,8 +24,8 @@ export class LoggerService extends BaseService<LogMessage> {
 
   logMessage(type: string, created_by: string, message: string, data?: any): Observable<any> {
     try {
-      let ec = this.generateErrorCode();
-      let logMessage: LogMessage = { ...new LogMessage(type, created_by, message, ec, data) };
+      const ec = this.generateErrorCode();
+      const logMessage: LogMessage = { ...new LogMessage(type, created_by, message, ec, data) };
       logMessage.id = this.generateErrorCode();
 
       return from(this.add(logMessage)).pipe(
@@ -42,7 +42,7 @@ export class LoggerService extends BaseService<LogMessage> {
 
   private generateErrorCode() {
     return 'xxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0,
+      const r = (Math.random() * 16) | 0,
         v = c == 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });

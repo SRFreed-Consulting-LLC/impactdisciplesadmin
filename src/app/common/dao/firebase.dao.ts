@@ -57,7 +57,7 @@ export class FirebaseDAO<T extends BaseModel> {
   public getById(id: string, table: string, fromFirestore?): Promise<T>{
     return getDoc(doc(this.fs, '/' + table + '/' + id)).then(async doc => {
       if(doc.exists()){
-        let retval: T = doc.data() as T;
+        const retval: T = doc.data() as T;
         retval.id = doc.id;
         return fromFirestore? fromFirestore(retval) : retval;
       }
@@ -66,7 +66,7 @@ export class FirebaseDAO<T extends BaseModel> {
 
   public add(value: T, table: string, fromFirestore?): Promise<T>{
     return addDoc(collection(this.fs, '/' + table), value).then(async doc => {
-      let retval = await this.getById(doc.id, table, fromFirestore);
+      const retval = await this.getById(doc.id, table, fromFirestore);
       retval.id = doc.id;
       return retval;
     });
@@ -74,7 +74,7 @@ export class FirebaseDAO<T extends BaseModel> {
 
   public async update(id: string, value: T, table: string, fromFirestore?): Promise<T>{
     await setDoc(doc(this.fs, '/' + table + '/' + id), value).then(async () => {
-      let retval = await this.getById(id, table, fromFirestore);
+      const retval = await this.getById(id, table, fromFirestore);
       retval.id = id;
       return retval;
     });
@@ -178,10 +178,10 @@ export class FirebaseDAO<T extends BaseModel> {
   }
 
   private getDocListFromStream(docs: (DocumentData | (DocumentData & {id: string}))[], fromFirestore){
-    let retval: T[] = [];
+    const retval: T[] = [];
 
     docs.forEach(doc => {
-      let val: T = doc as T;
+      const val: T = doc as T;
       val.id = doc.id;
       retval.push(fromFirestore? fromFirestore(val) :val);
     })
@@ -190,10 +190,10 @@ export class FirebaseDAO<T extends BaseModel> {
   }
 
   private getDocListFromPromise(docs: QuerySnapshot<DocumentData, DocumentData>, fromFirestore){
-    let retval: T[] = [];
+    const retval: T[] = [];
 
     docs.forEach(doc => {
-      let val: T = doc.data() as T;
+      const val: T = doc.data() as T;
       val.id = doc.id;
       retval.push(fromFirestore? fromFirestore(val) :val);
     })
@@ -202,7 +202,7 @@ export class FirebaseDAO<T extends BaseModel> {
   }
 
   private getDoc(doc: (DocumentData | (DocumentData & {id: string})), fromFirestore){
-    let val: T = doc as T;
+    const val: T = doc as T;
     val.id = doc.id;
     return fromFirestore? fromFirestore(val) : val;
   }

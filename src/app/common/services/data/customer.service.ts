@@ -22,12 +22,12 @@ export class CustomerService extends BaseService<CustomerModel>{
   async createCustomerAccount(checkoutForm: CheckoutForm){
     return await this.getAllByValue('email', checkoutForm.email).then(async users => {
       if(users && users.length == 0){
-        let newUser: CustomerModel = {... new CustomerModel()};
+        const newUser: CustomerModel = {... new CustomerModel()};
         newUser.firstName = checkoutForm.firstName;
         newUser.lastName = checkoutForm.lastName;
         newUser.email = checkoutForm.email;
 
-        let billingAddress = {... new Address()};
+        const billingAddress = {... new Address()};
         billingAddress.address1 = checkoutForm.billingAddress.address1;
         billingAddress.address2 = checkoutForm.billingAddress.address2 ? checkoutForm.billingAddress.address2 :  '';
         billingAddress.city = checkoutForm.billingAddress.city;
@@ -37,7 +37,7 @@ export class CustomerService extends BaseService<CustomerModel>{
 
         newUser.billingAddress = billingAddress;
 
-        let shippingAddress = {... new Address()};
+        const shippingAddress = {... new Address()};
         shippingAddress.address1 = checkoutForm.shippingAddress.address1;
         shippingAddress.address2 = checkoutForm.shippingAddress.address2 ? checkoutForm.billingAddress.address2 :  '';
         shippingAddress.city = checkoutForm.shippingAddress.city;
@@ -48,7 +48,7 @@ export class CustomerService extends BaseService<CustomerModel>{
         if(checkoutForm.isShippingSameAsBilling){
           newUser.shippingAddress = billingAddress;
         } else {
-          let shippingAddress = {... new Address()};
+          const shippingAddress = {... new Address()};
           shippingAddress.address1 = checkoutForm.shippingAddress.address1;
           shippingAddress.address2 = checkoutForm.shippingAddress.address2 ? checkoutForm.billingAddress.address2 :  '';
           shippingAddress.city = checkoutForm.shippingAddress.city;
@@ -59,7 +59,7 @@ export class CustomerService extends BaseService<CustomerModel>{
           newUser.shippingAddress = shippingAddress;
         }
 
-        let phone = {... new Phone()}
+        const phone = {... new Phone()}
         phone.countryCode = '1';
         phone.number = checkoutForm.phone.number;
         phone.extension = PHONE_TYPES.CELL;

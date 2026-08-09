@@ -8,7 +8,7 @@ import { SectionTab } from '../shared/section-tabs/section-tabs.component';
     standalone: false
 })
 export class WebManagerComponent {
-  selectedTab: string = 'Disciple Making Minute';
+  selectedTab = 'Disciple Making Minute';
 
   tabs: SectionTab[] = [
     { text: 'Disciple Making Minute', template: 'Disciple Making Minute' },

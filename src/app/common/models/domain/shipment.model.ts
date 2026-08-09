@@ -7,7 +7,7 @@ export class ShippingRequest {
   weight: number;
 }
 export class ShippingModel extends BaseModel {
-  validateAddress: string = "no_validation";
+  validateAddress = "no_validation";
   shipTo: ShippingToAddress = {... new ShippingToAddress()};
   shipFrom: ShippingFromAddress = {... new ShippingFromAddress()};
   packages: Package[] = [];

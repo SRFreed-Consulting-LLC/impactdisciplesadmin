@@ -30,7 +30,7 @@ export class AdminAuthService {
   ) { }
 
   findUser(email: string): Observable<AppUser> {
-    let user$ = this.userService.getAllByValue('email', email.toLowerCase());
+    const user$ = this.userService.getAllByValue('email', email.toLowerCase());
 
     return from(user$).pipe(
       switchMap(user => {
@@ -61,7 +61,7 @@ export class AdminAuthService {
     return from(this.dao.signIn(email.toLowerCase(), password)).pipe(
       switchMap((result: UserCredential) => {
         if(result.user){
-          let user$ = this.userService.getAllByValue('email', email);
+          const user$ = this.userService.getAllByValue('email', email);
 
           return from(user$).pipe(
             switchMap(user => {
@@ -184,7 +184,7 @@ export class AdminAuthService {
 
     try {
       if (cookieValue) {
-        let currentUser = JSON.parse(cookieValue);
+        const currentUser = JSON.parse(cookieValue);
 
         this.cookieService.set(COOKIE_NAME, JSON.stringify(user), { expires: currentUser['cookie_expiration_time'] });
 
@@ -222,11 +222,11 @@ export class AdminAuthService {
   createAccount(email: string, password: string): Promise<any> {
     return this.dao.register(email.toLowerCase(), password).then(async result => {
       if(result.user){
-        let user$ = this.userService.getAllByValue('email', email.toLowerCase());
+        const user$ = this.userService.getAllByValue('email', email.toLowerCase());
 
         return await user$.then(async user => {
           if(user && user.length == 1){
-            let u: AppUser | CustomerModel = user[0];
+            const u: AppUser | CustomerModel = user[0];
 
             u.firebaseUID = result.user.uid;
 
@@ -277,10 +277,10 @@ export class AdminAuthService {
 
   get loggedIn(): boolean {
     if(this.cookieService.check(COOKIE_NAME)){
-      let user: AppUser =  this.getLoggedInUser()
+      const user: AppUser =  this.getLoggedInUser()
 
       if(user){
-        let expiration: number = user['cookie_expiration_time'];
+        const expiration: number = user['cookie_expiration_time'];
 
         if(expiration - Date.now() < (1000 * 60 * 60)){
           user['cookie_expiration_time'] = expiration + (1000 * 60 * 60);

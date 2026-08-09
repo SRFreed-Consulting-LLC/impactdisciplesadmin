@@ -1,11 +1,11 @@
 <app-section-tabs [tabs]="tabs" [selectedTab]="selectedTab" (tabChange)="selectTab($event)"></app-section-tabs>
 
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab == 'Newsletters'">
+  <ng-template [ngIf]="selectedTab === 'Newsletters'">
     <app-newsletter-subscription></app-newsletter-subscription>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Prayer Team'">
+  <ng-template [ngIf]="selectedTab === 'Prayer Team'">
     <app-prayer-team-subscription></app-prayer-team-subscription>
   </ng-template>
 </div>

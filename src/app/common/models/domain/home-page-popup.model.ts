@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import { BaseModel } from '../base.model';
 
 export class HomePagePopupModel extends BaseModel {
-  isActive: boolean = false;
+  isActive = false;
   fromDate?: Timestamp | Date | string;
   toDate?: Timestamp | Date | string;
   title: string;

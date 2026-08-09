@@ -23,7 +23,7 @@ import { FaqDialogComponent } from './faq-dialog.component';
     standalone: false
 })
 export class FAQComponent implements OnInit, OnChanges {
-  @Input('event') event: EventModel;
+  @Input() event: EventModel;
 
   faqs$: Observable<FAQModel[]>;
   displayedColumns = ['select', 'sortOrder', 'question', 'answer', 'actions'];

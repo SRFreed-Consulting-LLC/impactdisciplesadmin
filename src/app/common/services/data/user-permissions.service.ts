@@ -15,7 +15,7 @@ export class UserPermissionService extends BaseService<UserPermission> {
 
   isUserPermittedinCRM(): Promise<boolean>{
     return this.getAll().then(permissions => {
-      let p = permissions.filter(permission => permission.application == IMPACT_APPLICATIONS.CRM_APP)
+      const p = permissions.filter(permission => permission.application == IMPACT_APPLICATIONS.CRM_APP)
 
       if(p.length == 1 && p[0].isEnabled){
         return true;
@@ -27,7 +27,7 @@ export class UserPermissionService extends BaseService<UserPermission> {
 
   isUserPermittedinAdminApp(): Promise<boolean>{
     return this.getAll().then(permissions => {
-      let p = permissions.filter(permission => permission.application == IMPACT_APPLICATIONS.ADMIN_APP)
+      const p = permissions.filter(permission => permission.application == IMPACT_APPLICATIONS.ADMIN_APP)
 
       if(p.length == 1 && p[0].isEnabled){
         return true;

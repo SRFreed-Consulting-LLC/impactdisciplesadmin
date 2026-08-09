@@ -80,7 +80,7 @@ export class EventEmailDialogComponent {
 
     this.service.getAllByValue('eventId', this.data.eventId).then((subscribers) => {
       subscribers.forEach((subscriber) => {
-        let html = template
+        const html = template
           .replace('{{Recipient First Name}}', subscriber.firstName)
           .replace('{{Recipient Last Name}}', subscriber.lastName)
           .replace('{{Sender First Name}}', user.firstName)

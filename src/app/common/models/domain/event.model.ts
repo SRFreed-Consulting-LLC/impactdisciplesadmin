@@ -7,7 +7,7 @@ import { AgendaItem } from './utils/agenda-item.model';
 import { FAQModel } from '../utils/faq.model';
 
 export class EventModel extends BaseModel {
-  isActive: boolean = false;
+  isActive = false;
   eventName?: string;
   organization?: string | OrganizationModel;
   startDate?: Timestamp | Date | string;

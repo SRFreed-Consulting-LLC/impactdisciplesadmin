@@ -27,13 +27,13 @@ export class PurchasesService extends BaseService<CheckoutForm>{
       return cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
   }
   calculateItemTotalAmount(cartItem, selectedItem){
-    let totalPrice = cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
-    let quantity = cartItem.data.orderQuantity;
-    let discount = cartItem.data.discount ? cartItem.data.discount : 0;
-    let shippingAmount = cartItem.data.isEvent? 0 : this.calculateItemShippingAmount(cartItem, selectedItem);
-    let taxAmount = this.calculateItemTaxableAmount(cartItem, selectedItem);
+    const totalPrice = cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
+    const quantity = cartItem.data.orderQuantity;
+    const discount = cartItem.data.discount ? cartItem.data.discount : 0;
+    const shippingAmount = cartItem.data.isEvent? 0 : this.calculateItemShippingAmount(cartItem, selectedItem);
+    const taxAmount = this.calculateItemTaxableAmount(cartItem, selectedItem);
 
-    let amountToRefund: number  = ((totalPrice - discount) * quantity) + (shippingAmount? shippingAmount : 0) + (taxAmount ? taxAmount : 0);
+    const amountToRefund: number  = ((totalPrice - discount) * quantity) + (shippingAmount? shippingAmount : 0) + (taxAmount ? taxAmount : 0);
 
     return amountToRefund;
   }
@@ -58,14 +58,14 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   }
 
   calculateItemDiscountAmount(cartItem){
-    let discountAmount = (cartItem.data.price - cartItem.data.discountPrice) * cartItem.data.orderQuantity
+    const discountAmount = (cartItem.data.price - cartItem.data.discountPrice) * cartItem.data.orderQuantity
 
     return discountAmount && discountAmount > 0 ? discountAmount : 0;
   }
 
   calculateOrderRefundedAmount(selectedItem){
-    let refundedItems = selectedItem.cartItems.filter(item => item.processedStatus == "REFUNDED");
-    let totalRefundedList: number[] = refundedItems.map(item => this.calculateItemTotalAmount({data: item}, selectedItem));
+    const refundedItems = selectedItem.cartItems.filter(item => item.processedStatus == "REFUNDED");
+    const totalRefundedList: number[] = refundedItems.map(item => this.calculateItemTotalAmount({data: item}, selectedItem));
 
     if(totalRefundedList && totalRefundedList.length > 0){
       return Number(totalRefundedList.reduce((a,b) => a + b).toFixed(2));

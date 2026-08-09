@@ -8,7 +8,7 @@ import { from, Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class BaseService<T extends BaseModel> {
-  public table: string = '';
+  public table = '';
   public fromFirestore;
 
   constructor(public dao: FirebaseDAO<T>) {}

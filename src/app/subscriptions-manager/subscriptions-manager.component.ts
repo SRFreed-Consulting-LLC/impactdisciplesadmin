@@ -8,7 +8,7 @@ import { SectionTab } from '../shared/section-tabs/section-tabs.component';
     standalone: false
 })
 export class SubscriptionsManagerComponent {
-  selectedTab: string = 'Newsletters';
+  selectedTab = 'Newsletters';
 
   tabs: SectionTab[] = [
     { text: 'Newsletters', template: 'Newsletters' },

@@ -8,7 +8,7 @@ import { Tab } from 'src/app/common/models/utils/tab.model';
     standalone: false
 })
 export class AdminManagerComponent {
-  selectedTab: string = 'Logs';
+  selectedTab = 'Logs';
 
   tabs: Tab[] = [
     { id: 0, text: 'Logs', template: 'Logs' },

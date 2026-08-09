@@ -8,7 +8,7 @@ export class AffilliateSaleModel extends BaseModel {
   receipt: any;
   totalBeforeDiscount: number | null;
   totalAfterDiscount: number | null;
-  isPayed: boolean = false;
+  isPayed = false;
   amountPayed: number | null;
   paymentReceipt: string;
 }

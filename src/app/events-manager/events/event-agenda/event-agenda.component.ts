@@ -44,7 +44,7 @@ const AGENDA_COLOR: EventColor = { primary: '#546e7a', secondary: '#eceff1' };
     standalone: false
 })
 export class EventAgendaComponent implements OnInit {
-  @Input('event') event: EventModel;
+  @Input() event: EventModel;
 
   CalendarView = CalendarView;
   view: CalendarView = CalendarView.Week;

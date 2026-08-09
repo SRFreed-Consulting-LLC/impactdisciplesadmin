@@ -31,7 +31,7 @@ interface ColumnDef {
     standalone: false
 })
 export class EventAttendeesComponent implements OnInit, OnDestroy {
-  @Input('event') event: EventModel;
+  @Input() event: EventModel;
 
   attendees$: Observable<EventRegistrationModel[]>;
   textOperators = TEXT_FILTER_OPERATORS;

@@ -14,7 +14,7 @@ interface ApplicationTab {
     standalone: false
 })
 export class EventApplicationComponent {
-  @Input('event') event: EventModel;
+  @Input() event: EventModel;
 
   selectedTab = 'announcements';
   richTextModules = RICH_TEXT_TOOLBAR;

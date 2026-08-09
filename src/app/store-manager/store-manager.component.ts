@@ -22,7 +22,7 @@ interface RoleGatedTab extends SectionTab {
 })
 export class StoreManagerComponent implements OnInit, OnDestroy {
 
-  selectedTab: string = 'Products';
+  selectedTab = 'Products';
 
   tabs: RoleGatedTab[] = [
     { text: 'Products', template: 'Products', users: [Role.ADMIN] },

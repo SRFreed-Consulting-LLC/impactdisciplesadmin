@@ -1,23 +1,23 @@
 <app-section-tabs [tabs]="secureTabs" [selectedTab]="selectedTab" (tabChange)="selectTab($event)"></app-section-tabs>
 
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab == 'Events'">
+  <ng-template [ngIf]="selectedTab === 'Events'">
     <app-events></app-events>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Coaches'">
+  <ng-template [ngIf]="selectedTab === 'Coaches'">
     <app-coaches></app-coaches>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Courses'">
+  <ng-template [ngIf]="selectedTab === 'Courses'">
     <app-courses></app-courses>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Locations'">
+  <ng-template [ngIf]="selectedTab === 'Locations'">
     <app-locations></app-locations>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab == 'Organizations'">
+  <ng-template [ngIf]="selectedTab === 'Organizations'">
     <app-organizations></app-organizations>
   </ng-template>
 </div>
