@@ -50,6 +50,14 @@ export class LoginComponent implements OnDestroy {
 
     const { email, password } = this.form.value;
     this.isLoading = true;
+    // Disable via the FormGroup itself, not a template [disabled] binding on
+    // the formControlName inputs - Angular reactive forms owns the disabled
+    // state of a control tied to formControlName, and a competing template
+    // binding on the same element triggers its "disabled attribute with a
+    // reactive form directive" warning (and risks the two getting out of
+    // sync). The submit button isn't a reactive-form-directive element, so
+    // its own [disabled]="isLoading" binding is unaffected.
+    this.form.disable();
 
     this.authService.logIn(email.toLowerCase(), password).pipe(takeUntil(this.ngUnsubscribe)).subscribe((result) => {
       if (!result.isOk) {
@@ -57,6 +65,7 @@ export class LoginComponent implements OnDestroy {
       }
 
       this.isLoading = false;
+      this.form.enable();
     });
   }
 
