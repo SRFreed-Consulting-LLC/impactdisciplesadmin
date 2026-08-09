@@ -1,6 +1,6 @@
 import { LocationModel } from './location.model';
 import { BaseModel } from "../base.model";
-import { AppUser } from '../admin/appuser.model';
+import { AdminUser } from '../admin/admin-user.model';
 import { Timestamp } from 'firebase/firestore';
 import { OrganizationModel } from './organization.model';
 import { AgendaItem } from './utils/agenda-item.model';
@@ -13,7 +13,7 @@ export class EventModel extends BaseModel {
   startDate?: Timestamp | Date | string;
   endDate?: Timestamp | Date | string;
   location?: string | LocationModel;
-  attendees?: AppUser[];
+  attendees?: AdminUser[];
   agendaItems?: AgendaItem[];
   description?: string;
   costInDollars?: number;

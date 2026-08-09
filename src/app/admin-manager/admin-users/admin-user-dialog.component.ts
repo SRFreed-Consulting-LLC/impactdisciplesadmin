@@ -2,35 +2,35 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { AppUser } from 'src/app/common/models/admin/appuser.model';
-import { AppUserService } from 'src/app/common/services/data/user.service';
+import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
+import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { Role } from 'src/app/common/lists/roles.enum';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { SnackbarService } from '../../shared/snackbar.service';
 
-export interface UserDialogData {
-  item: AppUser | null;
+export interface AdminUserDialogData {
+  item: AdminUser | null;
 }
 
 @Component({
-    selector: 'app-user-dialog',
-    templateUrl: './user-dialog.component.html',
-    styleUrls: ['./user-dialog.component.scss'],
+    selector: 'app-admin-user-dialog',
+    templateUrl: './admin-user-dialog.component.html',
+    styleUrls: ['./admin-user-dialog.component.scss'],
     standalone: false
 })
-export class UserDialogComponent {
+export class AdminUserDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
   roles: Role[] = EnumHelper.getRoleTypesAsArray();
 
-  private itemType = 'User';
+  private itemType = 'Admin User';
 
   constructor(
-    private dialogRef: MatDialogRef<UserDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: UserDialogData,
+    private dialogRef: MatDialogRef<AdminUserDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: AdminUserDialogData,
     private fb: FormBuilder,
-    private service: AppUserService,
+    private service: AdminUserService,
     private snackbar: SnackbarService
   ) {
     this.isEdit = !!data.item?.id;
@@ -75,7 +75,7 @@ export class UserDialogComponent {
     }
 
     this.inProgress$.next(true);
-    const value: AppUser = { ...this.data.item, ...this.form.getRawValue() };
+    const value: AdminUser = { ...this.data.item, ...this.form.getRawValue() };
 
     const request = this.isEdit
       ? this.service.update(value.id!, value)

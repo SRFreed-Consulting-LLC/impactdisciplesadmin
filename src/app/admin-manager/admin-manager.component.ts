@@ -13,7 +13,7 @@ export class AdminManagerComponent {
   tabs: Tab[] = [
     { id: 0, text: 'Logs', template: 'Logs' },
     { id: 1, text: 'Notifications', template: 'Notifications' },
-    { id: 2, text: 'Users', template: 'Users' },
+    { id: 2, text: 'Admin Users', template: 'Admin Users' },
     { id: 3, text: 'Customers', template: 'Customers' },
     { id: 4, text: 'Web Config', template: 'Web Config' },
     { id: 5, text: 'Email Templates', template: 'Email Templates' },

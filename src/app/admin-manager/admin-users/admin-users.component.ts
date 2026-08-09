@@ -1,32 +1,43 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
-import { AppUser } from 'src/app/common/models/admin/appuser.model';
-import { AppUserService } from 'src/app/common/services/data/user.service';
+import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
+import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { UserDialogComponent } from './user-dialog.component';
+import { AdminUserDialogComponent } from './admin-user-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { exportToExcel } from '../../shared/table-export.util';
+import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  visible: boolean;
+}
 
 @Component({
-    selector: 'app-users',
-    templateUrl: './users.component.html',
-    styleUrls: ['./users.component.scss'],
+    selector: 'app-admin-users',
+    templateUrl: './admin-users.component.html',
+    styleUrls: ['./admin-users.component.scss'],
     standalone: false
 })
-export class UsersComponent implements OnInit {
-  users$: Observable<AppUser[]>;
-  displayedColumns = ['lastName', 'firstName', 'email', 'role', 'phone', 'actions'];
-  filterColumns = ['lastName-filter', 'firstName-filter', 'email-filter', 'role-filter', 'phone-filter', 'actions-filter'];
+export class AdminUsersComponent implements OnInit {
+  users$: Observable<AdminUser[]>;
+  currentRows: AdminUser[] = [];
+  columns: ColumnDef[] = [
+    { key: 'lastName', label: 'Last Name', visible: true },
+    { key: 'firstName', label: 'First Name', visible: true },
+    { key: 'email', label: 'Email', visible: true },
+    { key: 'role', label: 'Role', visible: true },
+    { key: 'phone', label: 'Number', visible: true }
+  ];
   textOperators = TEXT_FILTER_OPERATORS;
 
-  itemType = 'User';
+  itemType = 'Admin User';
 
   actions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-    { label: 'Export To Excel', icon: 'file_download', onClick: () => this.exportXLSGrid() }
+    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
   ];
 
   // House rule: loading spinner shown until first emission - see
@@ -34,10 +45,9 @@ export class UsersComponent implements OnInit {
   loading$ = new BehaviorSubject<boolean>(true);
 
   private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
-  private currentRows: AppUser[] = [];
 
   constructor(
-    private service: AppUserService,
+    private service: AdminUserService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -58,11 +68,23 @@ export class UsersComponent implements OnInit {
     );
   }
 
-  private matchesField(item: AppUser, field: string, filter: ColumnFilterValue): boolean {
+  get displayedColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
+  }
+
+  get filterColumns(): string[] {
+    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
+  }
+
+  toggleColumn(column: ColumnDef): void {
+    column.visible = !column.visible;
+  }
+
+  private matchesField(item: AdminUser, field: string, filter: ColumnFilterValue): boolean {
     if (field === 'phone') {
       return matchesColumnFilter(item.phone?.number, filter, 'text');
     }
-    return matchesColumnFilter(item[field as keyof AppUser], filter, 'text');
+    return matchesColumnFilter(item[field as keyof AdminUser], filter, 'text');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {
@@ -70,20 +92,20 @@ export class UsersComponent implements OnInit {
   }
 
   showAddModal(): void {
-    this.dialog.open(UserDialogComponent, {
+    this.dialog.open(AdminUserDialogComponent, {
       width: '800px',
       data: { item: null }
     });
   }
 
-  showEditModal(item: AppUser): void {
-    this.dialog.open(UserDialogComponent, {
+  showEditModal(item: AdminUser): void {
+    this.dialog.open(AdminUserDialogComponent, {
       width: '800px',
       data: { item }
     });
   }
 
-  delete(item: AppUser): void {
+  delete(item: AdminUser): void {
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
@@ -96,21 +118,12 @@ export class UsersComponent implements OnInit {
   // Exports whatever's currently filtered/visible in currentRows, matching
   // the original's grid export (which exported the grid's current state -
   // DevExtreme's exportDataGrid also respects active filters).
-  exportXLSGrid(): void {
-    exportToExcel(
-      this.currentRows,
-      [
-        { header: 'Last Name', value: (row) => row.lastName },
-        { header: 'First Name', value: (row) => row.firstName },
-        { header: 'Email', value: (row) => row.email },
-        { header: 'UID', value: (row) => row.firebaseUID },
-        { header: 'Role', value: (row) => row.role },
-        { header: 'Country Code', value: (row) => row.phone?.countryCode },
-        { header: 'Number', value: (row) => row.phone?.number },
-        { header: 'Type', value: (row) => row.phone?.type }
-      ],
-      'impact_users.xlsx',
-      'Users'
-    );
+  exportExcel(): void {
+    const visible = this.columns.filter((c) => c.visible);
+    const excelColumns: ExcelColumn<AdminUser>[] = visible.map((c) => ({
+      header: c.label,
+      value: (row) => (c.key === 'phone' ? row.phone?.number : (row as any)[c.key]) ?? ''
+    }));
+    exportToExcel(this.currentRows, excelColumns, 'admin_users.xlsx', 'Admin Users');
   }
 }

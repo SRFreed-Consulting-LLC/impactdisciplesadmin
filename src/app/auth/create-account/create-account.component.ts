@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { AppUserService } from 'src/app/common/services/data/user.service';
+import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 
@@ -30,7 +30,7 @@ export class CreateAccountComponent implements OnDestroy {
   constructor(
     private fb: FormBuilder,
     private authService: AdminAuthService,
-    private userService: AppUserService,
+    private userService: AdminUserService,
     private router: Router,
     private loggerService: LoggerService,
     private snackbar: SnackbarService

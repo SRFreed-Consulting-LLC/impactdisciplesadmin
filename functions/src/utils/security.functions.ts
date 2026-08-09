@@ -45,8 +45,9 @@ export const restrictedCors = require("cors")({
 
 /**
  * Verifies the caller sent a valid Firebase Auth ID token belonging to a
- * recognized staff user (has an AppUser record in the "users" collection).
- * Throws if the token is missing, invalid/expired, or the user isn't staff.
+ * recognized staff user (has an AdminUser record in the "admin_users"
+ * collection). Throws if the token is missing, invalid/expired, or the
+ * user isn't staff.
  *
  * Use this to gate functions that must only be callable from the
  * authenticated admin app (refunds, shipping label purchases, etc). Do NOT
@@ -70,7 +71,7 @@ export async function requireStaffAuth(
   const decoded = await admin.auth().verifyIdToken(match[1]);
 
   const users = await admin.firestore()
-    .collection("users")
+    .collection("admin_users")
     .where("email", "==", decoded.email)
     .limit(1)
     .get();

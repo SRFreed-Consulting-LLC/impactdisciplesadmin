@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogMessagesComponent } from './log-messages/log-messages.component';
-import { UsersComponent } from './users/users.component';
+import { AdminUsersComponent } from './admin-users/admin-users.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { WebConfigComponent } from './web-config/web-config.component';
 import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
@@ -17,7 +17,7 @@ import { FromAddressDialogComponent } from './shipping-labels/from-address-dialo
 import { ShippingResultsDialogComponent } from './shipping-labels/shipping-results-dialog.component';
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
 import { NotificationDialogComponent } from './notifications/notification-dialog.component';
-import { UserDialogComponent } from './users/user-dialog.component';
+import { AdminUserDialogComponent } from './admin-users/admin-user-dialog.component';
 import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { CustomerDialogComponent } from './customers/customer-dialog.component';
 import { SendEmailDialogComponent } from './customers/send-email-dialog.component';
@@ -67,8 +67,8 @@ import { QuillModule } from 'ngx-quill';
     LogMessagesComponent,
     NotificationsComponent,
     NotificationDialogComponent,
-    UsersComponent,
-    UserDialogComponent,
+    AdminUsersComponent,
+    AdminUserDialogComponent,
     CustomersComponent,
     CustomerDialogComponent,
     SendEmailDialogComponent,

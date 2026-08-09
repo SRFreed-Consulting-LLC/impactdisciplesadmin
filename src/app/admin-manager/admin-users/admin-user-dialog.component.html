@@ -1,7 +1,7 @@
-<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' USER'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' ADMIN USER'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
-  <mat-tab-group class="user-tabs">
+  <mat-tab-group class="admin-user-tabs">
     <mat-tab label="Info">
       <div class="tab-content">
         <div class="field-row">

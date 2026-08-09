@@ -42,7 +42,7 @@ export class StoreManagerComponent implements OnInit, OnDestroy {
     // "impact-disciples-user" cookie - see MainScreenComponent.ngOnInit for
     // the full explanation of why that can be null (a valid Firebase
     // session with a stale/expired cookie). dao.loggedInUser$ re-derives
-    // the AppUser from Firebase's own live auth state instead.
+    // the AdminUser from Firebase's own live auth state instead.
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
       this.secureTabs = this.tabs.filter(item => item.users.find(role => role == user?.role));
       this.selectedTab = this.secureTabs[0]?.template ?? this.selectedTab;

@@ -14,7 +14,7 @@ import { ChangePasswordComponent } from './change-password/change-password.compo
 // ImpactAdminFormsModule (DevExtreme-based) - kept entirely within this
 // admin project so the app's auth screens no longer depend on any UI
 // components from the shared submodules (their business-logic services -
-// AdminAuthService, AuthGuardService, AppUserService, LoggerService - are
+// AdminAuthService, AuthGuardService, AdminUserService, LoggerService - are
 // still reused, since those aren't DevExtreme/UI and are shared for good
 // reason across every app built on this submodule).
 @NgModule({

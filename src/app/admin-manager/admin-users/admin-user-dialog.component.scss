@@ -11,7 +11,7 @@
   flex: 1 1 0;
 }
 
-// A fixed height on .user-tabs looked right (fields/SAVE stayed reachable
+// A fixed height on .admin-user-tabs looked right (fields/SAVE stayed reachable
 // in earlier testing) but was never actually correct: live-diagnosed on the
 // near-identical Customer dialog that a coincidental vh value on the
 // tab-group doesn't exactly match mat-dialog-content's real available box,

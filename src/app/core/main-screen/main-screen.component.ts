@@ -52,7 +52,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // left at its empty-array default - an empty nav with everything else
     // (logo, toolbar) still rendering normally.
     //
-    // dao.loggedInUser$ re-derives the AppUser record from Firebase's own
+    // dao.loggedInUser$ re-derives the AdminUser record from Firebase's own
     // live auth state on every emission (see FireAuthDao) - no cookie
     // involved, so it can't go stale the same way.
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {

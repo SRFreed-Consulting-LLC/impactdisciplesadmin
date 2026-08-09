@@ -13,7 +13,7 @@ import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { AppUser } from 'src/app/common/models/admin/appuser.model';
+import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -55,7 +55,7 @@ export class CustomerDialogComponent {
   registrationsColumns = ['startDate', 'eventId', 'email', 'receipt', 'registrationDate', 'actions'];
 
   notes: CustomerNoteModel[];
-  user: AppUser;
+  user: AdminUser;
 
   private itemType = 'Customer';
 
@@ -72,7 +72,7 @@ export class CustomerDialogComponent {
   ) {
     this.isEdit = !!data.item?.id;
     this.events = data.events;
-    this.user = this.authService.getLoggedInUser() as AppUser;
+    this.user = this.authService.getLoggedInUser() as AdminUser;
     this.notes = data.item?.notes ? [...data.item.notes] : [];
 
     this.form = this.fb.group({

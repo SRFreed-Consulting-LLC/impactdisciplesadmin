@@ -12,7 +12,7 @@
   overflow: auto;
 }
 
-.users-table {
+.admin-users-table {
   width: 100%;
 }
 
@@ -20,7 +20,7 @@
   text-align: right;
 }
 
-.users-table .mat-mdc-row:hover {
+.admin-users-table .mat-mdc-row:hover {
   cursor: pointer;
   background-color: rgba(0, 0, 0, 0.04);
 }

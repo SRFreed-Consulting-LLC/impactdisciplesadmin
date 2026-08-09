@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Router, ActivatedRouteSnapshot, CanActivate } from '@angular/router';
-import { UserCredential } from 'firebase/auth';
+import { signOut, UserCredential } from 'firebase/auth';
 import { FireAuthDao } from '../../dao/fireauth.dao';
-import { AppUser } from '../../models/admin/appuser.model';
+import { AdminUser } from '../../models/admin/admin-user.model';
 import { CookieService } from 'ngx-cookie-service';
 import { catchError, from, map, Observable, of, switchMap, take } from 'rxjs';
 import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model';
 import { environment } from 'src/environments/environment';
 import { notify } from 'src/app/common/utils/notify.util';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
-import { AppUserService } from 'src/app/common/services/data/user.service';
+import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 
 const defaultPath = '/';
 
@@ -19,17 +19,17 @@ const COOKIE_NAME = "impact-disciples-user"
   providedIn: 'root'
 })
 export class AdminAuthService {
-  public user: AppUser;
+  public user: AdminUser;
 
   constructor(
     private router: Router,
     public dao: FireAuthDao,
-    public userService: AppUserService,
+    public userService: AdminUserService,
     private cookieService: CookieService,
     public loggerService: LoggerService,
   ) { }
 
-  findUser(email: string): Observable<AppUser> {
+  findUser(email: string): Observable<AdminUser> {
     const user$ = this.userService.getAllByValue('email', email.toLowerCase());
 
     return from(user$).pipe(
@@ -179,7 +179,7 @@ export class AdminAuthService {
 
   }
 
-  setUser(user: AppUser): Observable<AppUser> {
+  setUser(user: AdminUser): Observable<AdminUser> {
     const cookieValue = this.cookieService.get(COOKIE_NAME);
 
     try {
@@ -201,10 +201,10 @@ export class AdminAuthService {
     return of(user);
   }
 
-  getLoggedInUser(): AppUser {
+  getLoggedInUser(): AdminUser {
     const cookieValue = this.cookieService.get(COOKIE_NAME);
 
-    let user: AppUser = null;
+    let user: AdminUser = null;
 
     try {
       if (cookieValue) {
@@ -226,11 +226,11 @@ export class AdminAuthService {
 
         return await user$.then(async user => {
           if(user && user.length == 1){
-            const u: AppUser | CustomerModel = user[0];
+            const u: AdminUser | CustomerModel = user[0];
 
             u.firebaseUID = result.user.uid;
 
-            await this.userService.update(u.id, u as AppUser);
+            await this.userService.update(u.id, u as AdminUser);
 
             return {
               isOk: true,
@@ -272,12 +272,19 @@ export class AdminAuthService {
     this.user = null;
     this.cookieService.delete(COOKIE_NAME);
 
-    this.router.navigate(['capture-username-form']);
+    // Was missing the actual Firebase Auth sign-out - AuthGuardService's
+    // canActivate check is based on the real Firebase auth state (see the
+    // SECURITY comment on that guard), not this cookie, so navigating to
+    // capture-username-form without signing out first just gets bounced
+    // straight back to '/' by the guard, making Log Off look like a no-op.
+    signOut(this.dao.auth).finally(() => {
+      this.router.navigate(['capture-username-form']);
+    });
   }
 
   get loggedIn(): boolean {
     if(this.cookieService.check(COOKIE_NAME)){
-      const user: AppUser =  this.getLoggedInUser()
+      const user: AdminUser =  this.getLoggedInUser()
 
       if(user){
         const expiration: number = user['cookie_expiration_time'];

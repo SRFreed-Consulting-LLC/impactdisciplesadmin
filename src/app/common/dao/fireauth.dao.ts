@@ -7,8 +7,8 @@ import { UserPermissionService } from '../services/data/user-permissions.service
 import { Firestore } from '@angular/fire/firestore';
 import { map, mergeMap, shareReplay } from 'rxjs/operators';
 import { UserPermission } from '../models/admin/user-permission.model';
-import { AppUser } from '../models/admin/appuser.model';
-import { AppUserService } from '../services/data/user.service';
+import { AdminUser } from '../models/admin/admin-user.model';
+import { AdminUserService } from '../services/data/admin-user.service';
 import { CookieService } from 'ngx-cookie-service';
 import { QueryParam, WhereFilterOperandKeys } from './firebase.dao';
 import { notify } from '../utils/notify.util';
@@ -24,16 +24,16 @@ export class FireAuthDao {
   public auth: Auth;
   public authSate$ = new BehaviorSubject<boolean>(false);
   public currentUser$: Observable<User>;
-  public loggedInUser$: Observable<AppUser>;
+  public loggedInUser$: Observable<AdminUser>;
   public readonly userPermissions$: Observable<UserPermission[]>;
 
-  public currentAgent$ = new BehaviorSubject<AppUser>(undefined);
+  public currentAgent$ = new BehaviorSubject<AdminUser>(undefined);
 
   constructor(
     public fs: Firestore,
     public router: Router,
     public ngZone: NgZone,
-    public userService: AppUserService,
+    public userService: AdminUserService,
     private cookieService: CookieService,
     private userPermissionService: UserPermissionService
   ) {
