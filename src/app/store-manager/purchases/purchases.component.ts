@@ -6,6 +6,7 @@ import { PurchasesService } from 'src/app/common/services/data/purchases.service
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from 'src/app/common/lists/roles.enum';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
+import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
@@ -111,7 +112,7 @@ export class PurchasesComponent implements OnInit {
       map(([items, filters]) => {
         const filtered = items
           .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(this.fieldValue(item, field), filters[field], this.fieldType(field))))
-          .sort((a, b) => this.toMillis(b.dateProcessed) - this.toMillis(a.dateProcessed));
+          .sort((a, b) => toMillis(b.dateProcessed) - toMillis(a.dateProcessed));
         this.currentRows = filtered;
         return filtered;
       }),
@@ -156,11 +157,6 @@ export class PurchasesComponent implements OnInit {
       case 'charged': return this.getChargedDisplayAmount(item);
       default: return (item as any)[field];
     }
-  }
-
-  private toMillis(value: any): number {
-    if (!value) return 0;
-    return value instanceof Date ? value.getTime() : 0;
   }
 
   // Real dollar amounts come from the PayPal receipt when present, falling

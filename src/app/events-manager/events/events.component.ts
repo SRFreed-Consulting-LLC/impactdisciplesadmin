@@ -11,6 +11,7 @@ import { LocationService } from 'src/app/common/services/data/location.service';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from 'src/app/common/lists/roles.enum';
+import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -131,7 +132,7 @@ export class EventsComponent implements OnInit {
       map(([items, filters]) => {
         const filtered = items
           .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => this.toMillis(b.startDate) - this.toMillis(a.startDate));
+          .sort((a, b) => toMillis(b.startDate) - toMillis(a.startDate));
         this.currentRows = filtered;
         return filtered;
       }),
@@ -200,15 +201,9 @@ export class EventsComponent implements OnInit {
       return matchesColumnFilter(item.costInDollars, filter, 'number');
     }
     if (field === 'startDate' || field === 'endDate') {
-      return matchesColumnFilter(this.toMillis((item as any)[field]), filter, 'date');
+      return matchesColumnFilter(toMillis((item as any)[field]), filter, 'date');
     }
     return matchesColumnFilter((item as any)[field], filter, 'text');
-  }
-
-  private toMillis(value: any): number {
-    if (!value) return 0;
-    const d = value instanceof Date ? value : new Date(value);
-    return isNaN(d.getTime()) ? 0 : d.getTime();
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

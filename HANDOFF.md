@@ -125,3 +125,16 @@ warning. `ng build` clean.
   data conventions exist in dev only; prod rollout is a deliberate separate
   step Shane hasn't asked for yet.
 - **firebase-functions SDK** is 5.0.1; deploy warns it's outdated.
+- **Some `purchases` documents store `dateProcessed` as a plain
+  `{seconds, nanoseconds}` map, not a real Firestore `Timestamp`** (no
+  `.toDate()`, and `orderBy()` sorts a map field by comparing its keys
+  alphabetically - `nanoseconds` before `seconds` - not chronologically,
+  which is what originally made `orderBy('dateProcessed')` come back
+  scrambled). Whatever writes these documents (the storefront,
+  `impactdisciples-web` - a separate repo, out of reach from here) is
+  sometimes serializing a Timestamp incorrectly before writing. This app
+  can only defend against it on read, not fix it at the source - see
+  `toMillis()`/`dateFromTimestamp()` (`date-from-timestamp.ts`), the
+  canonical helper for coercing any of {real Timestamp, that malformed
+  map shape, Date, date string} into a sortable number. Worth flagging to
+  whoever owns the storefront repo.

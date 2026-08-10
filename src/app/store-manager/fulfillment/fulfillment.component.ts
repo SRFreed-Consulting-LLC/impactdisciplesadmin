@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { FULFILLMENT_STEPS, completedStepCount, segmentState } from './fulfillment-steps';
 
@@ -62,7 +63,7 @@ export class FulfillmentComponent implements OnInit {
         // status - see fulfillment-steps.ts), then oldest-first within
         // each group so nothing already in progress gets buried by a
         // newer arrival.
-        .sort((a, b) => this.newRank(a) - this.newRank(b) || this.toMillis(a.dateProcessed) - this.toMillis(b.dateProcessed))
+        .sort((a, b) => this.newRank(a) - this.newRank(b) || toMillis(a.dateProcessed) - toMillis(b.dateProcessed))
       ),
       tap(() => this.loading$.next(false))
     );
@@ -118,10 +119,6 @@ export class FulfillmentComponent implements OnInit {
 
   markShipped(item: CheckoutForm): void {
     this.service.markShipped(item).then(() => this.snackbar.success('Marked as shipped - order closed'));
-  }
-
-  private toMillis(date: unknown): number {
-    return date instanceof Date ? date.getTime() : 0;
   }
 
   private newRank(item: CheckoutForm): number {
