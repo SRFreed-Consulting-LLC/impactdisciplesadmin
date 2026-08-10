@@ -355,9 +355,29 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   }
 
   // See displayValue()'s own comment on why this goes through
-  // dateFromTimestamp() rather than a bare `new Date(value)`.
+  // dateFromTimestamp() rather than a bare `new Date(value)` first.
   private toDate(value: unknown): Date | null {
     const result = dateFromTimestamp(value);
-    return result instanceof Date ? result : null;
+    if (result instanceof Date) {
+      return result;
+    }
+    // dateFromTimestamp()'s string branch has a known bug (see toMillis()'s
+    // own comment in date-from-timestamp.ts): a plain ISO date string like
+    // "2026-01-30T02:00:00" that isn't wrapped in a real Timestamp falls
+    // through unparsed (returned as-is) rather than becoming a Date -
+    // confirmed live against real `events` documents, most of which store
+    // startDate/endDate exactly that way. Same guard-at-the-call-site fix
+    // toMillis() and CustomerDialogComponent.getEventDate() already apply,
+    // not touching the shared utility itself (too many other fromFirestore
+    // hooks depend on its current behavior) - without it, every 'date'
+    // column in the grid would render these as a raw technical string
+    // instead of a formatted date.
+    if (typeof value === 'string' || typeof value === 'number') {
+      const fallback = new Date(value);
+      if (!isNaN(fallback.getTime())) {
+        return fallback;
+      }
+    }
+    return null;
   }
 }

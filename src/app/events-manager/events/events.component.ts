@@ -36,13 +36,11 @@ export class EventsComponent implements OnInit {
   events$: Observable<EventModel[]>;
   columns: DataGridColumn<EventModel>[] = [
     { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
-    { key: 'startDate', label: 'From', type: 'date', dateFormat: 'short', filterable: false, sortFn: (a, b) => toMillis(a.startDate) - toMillis(b.startDate) },
-    { key: 'endDate', label: 'To', type: 'date', dateFormat: 'short', filterable: false, sortFn: (a, b) => toMillis(a.endDate) - toMillis(b.endDate) },
+    { key: 'startDate', label: 'From', type: 'date', dateFormat: 'MMM d, y, h:mm a', filterable: false, sortFn: (a, b) => toMillis(a.startDate) - toMillis(b.startDate) },
+    { key: 'endDate', label: 'To', type: 'date', dateFormat: 'MMM d, y, h:mm a', filterable: false, sortFn: (a, b) => toMillis(a.endDate) - toMillis(b.endDate) },
     { key: 'costInDollars', label: 'Cost', type: 'currency' },
-    { key: 'isSummit', label: 'Summit?', filterable: false, value: (item) => (item.isSummit ? 'Yes' : 'No') },
     { key: 'eventName', label: 'Event Name' },
-    { key: 'organization', label: 'Organization', value: (item) => this.organizationName(item) },
-    { key: 'location', label: 'Location', value: (item) => this.locationName(item) }
+    { key: 'organization', label: 'Organization', value: (item) => this.organizationName(item) }
   ];
 
   itemType = 'Event';
@@ -127,11 +125,6 @@ export class EventsComponent implements OnInit {
   organizationName(item: EventModel): string {
     const id = typeof item.organization === 'string' ? item.organization : item.organization?.id;
     return this.organizations.find((o) => o.id === id)?.name ?? '';
-  }
-
-  locationName(item: EventModel): string {
-    const id = typeof item.location === 'string' ? item.location : item.location?.id;
-    return this.locations.find((l) => l.id === id)?.name ?? '';
   }
 
   delete(item: EventModel): void {
@@ -226,9 +219,20 @@ export class EventsComponent implements OnInit {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  private toTimeValue(date: unknown): string {
-    if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date as string | number);
+  // checkIn is actually persisted as a plain "HH:mm" string (see onSave() -
+  // unlike startDate/endDate it's never converted to a Date, despite
+  // EventModel typing the field as Timestamp), which is already exactly
+  // the shape <input type="time"> wants back - returning it directly here
+  // was the missing piece. Without this, a saved check-in time appeared to
+  // work (the string really was written) but silently failed to redisplay
+  // on the next edit: `new Date("14:30")` alone isn't a valid date, so the
+  // old code always fell through to returning ''.
+  private toTimeValue(value: unknown): string {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{2}:\d{2}$/.test(value)) {
+      return value;
+    }
+    const d = value instanceof Date ? value : new Date(value as string | number);
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;

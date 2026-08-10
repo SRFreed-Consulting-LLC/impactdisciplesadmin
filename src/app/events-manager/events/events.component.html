@@ -34,20 +34,22 @@
       <mat-tab-group class="event-tabs" [formGroup]="form">
         <mat-tab label="Info" *ngIf="isVisible(['Admin'])">
           <div class="tab-content">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Event Name</mat-label>
-              <input matInput formControlName="eventName" required>
-              <mat-error *ngIf="form.get('eventName')?.hasError('required')">Event name is required</mat-error>
-            </mat-form-field>
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Event Name</mat-label>
+                <input matInput formControlName="eventName" required>
+                <mat-error *ngIf="form.get('eventName')?.hasError('required')">Event name is required</mat-error>
+              </mat-form-field>
 
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Email Template</mat-label>
-              <mat-select formControlName="emailTemplate">
-                <mat-option [value]="null">(None)</mat-option>
-                <mat-option *ngFor="let template of emailTemplates" [value]="template">{{ template }}</mat-option>
-              </mat-select>
-              <mat-error *ngIf="form.get('emailTemplate')?.hasError('required')">Required for in-person events</mat-error>
-            </mat-form-field>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email Template</mat-label>
+                <mat-select formControlName="emailTemplate">
+                  <mat-option [value]="null">(None)</mat-option>
+                  <mat-option *ngFor="let template of emailTemplates" [value]="template">{{ template }}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="form.get('emailTemplate')?.hasError('required')">Required for in-person events</mat-error>
+              </mat-form-field>
+            </div>
 
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
@@ -110,9 +112,7 @@
                 <mat-error *ngIf="form.get('location')?.hasError('required')">Required for in-person events</mat-error>
               </mat-form-field>
               <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
-            </div>
 
-            <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Organization</mat-label>
                 <mat-select formControlName="organization">

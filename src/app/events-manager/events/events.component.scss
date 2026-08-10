@@ -76,7 +76,10 @@ app-data-grid {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 900px;
+  // Widened from 900px - the Info tab pairs several fields per row (see
+  // events.component.html), so more width means fewer stacked rows and a
+  // shorter tab overall rather than just wider single-column fields.
+  max-width: 1200px;
 }
 
 // The Application/Agenda/Attendees/Break Outs tabs each manage their own
