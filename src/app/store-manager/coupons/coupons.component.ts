@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { CouponModel } from 'src/app/common/models/utils/coupon.model';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -27,8 +28,10 @@ export class CouponsComponent implements OnInit {
 
   itemType = 'Coupon';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<CouponModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'store-manager.coupons';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<CouponModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -36,6 +39,7 @@ export class CouponsComponent implements OnInit {
 
   constructor(
     private service: CouponService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -43,17 +47,28 @@ export class CouponsComponent implements OnInit {
 
   ngOnInit(): void {
     this.coupons$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CouponDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
   }
 
   showEditModal(item: CouponModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CouponDialogComponent, { width: '900px', maxWidth: '95vw', data: { item } });
   }
 
   delete(item: CouponModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

@@ -8,6 +8,7 @@ import { ShippingLabelBatchService } from 'src/app/common/services/data/shipping
 import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { environment } from 'src/environments/environment';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -52,8 +53,10 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
 
   itemType = 'Shipping Label Batch';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.addBatch() }];
-  rowActions: DataGridRowAction<ShippingLabelBatchRequest>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteBatch(item) }];
+  private readonly screenKey = 'admin-manager.shipping-labels';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<ShippingLabelBatchRequest>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteBatch(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // ---- Edit state: the 3-step batch wizard ----
   batch: ShippingLabelBatchRequest;
@@ -86,8 +89,8 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
 
   labelRowActions: DataGridRowAction<ShippingLabelRequest>[] = [
     { icon: 'download', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.isDownloadVisible(item) },
-    { icon: 'edit', tooltip: 'EDIT', onClick: (item) => this.showEditModal(item) },
-    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteLabel(item) }
+    { icon: 'edit', tooltip: 'EDIT', onClick: (item) => this.showEditModal(item), visible: () => this.permissionService.canEdit(this.screenKey) },
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteLabel(item), visible: () => this.permissionService.canDelete(this.screenKey) }
   ];
 
   addressForm: FormGroup;
@@ -112,6 +115,7 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
     private labelService: ShippingLabelService,
     private webConfigService: WebConfigService,
     private authService: AdminAuthService,
+    private permissionService: PermissionService,
     private fb: FormBuilder,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -124,6 +128,8 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
     });
 
     this.batches$ = this.batchService.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.addBatch() }] : [];
   }
 
   ngOnDestroy(): void {
@@ -132,6 +138,9 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
   }
 
   addBatch(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     const batchRequest: ShippingLabelBatchRequest = {
       ...new ShippingLabelBatchRequest(),
       createdDate: new Date(),
@@ -144,12 +153,18 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
   }
 
   editBatch(batch: ShippingLabelBatchRequest): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.openBatch(batch);
   }
 
   // ---- Step 1: Add Recipients ----
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(ShippingLabelDialogComponent, {
       width: '700px',
       maxWidth: '95vw',
@@ -158,6 +173,9 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
   }
 
   showEditModal(item: ShippingLabelRequest): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(ShippingLabelDialogComponent, {
       width: '700px',
       maxWidth: '95vw',
@@ -166,6 +184,9 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
   }
 
   deleteLabel(item: ShippingLabelRequest): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.labelService.delete(item.id!).then(() => {
@@ -369,6 +390,9 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
   }
 
   deleteBatch(batch: ShippingLabelBatchRequest): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this batch?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.labelService.getAllByValue('batchId', batch.id).then((labels) => {

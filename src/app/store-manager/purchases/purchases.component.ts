@@ -3,8 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
-import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { hasRole } from 'src/app/common/lists/roles.enum';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -59,13 +58,11 @@ export class PurchasesComponent implements OnInit {
   ];
 
   rowActions: DataGridRowAction<CheckoutForm>[] = [
-    { icon: 'local_shipping', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.isVisible(['Admin']) && this.isShippingButtonVisible(item) },
-    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.isVisible(['Admin']) }
+    { icon: 'local_shipping', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.permissionService.canEdit(this.screenKey) && this.isShippingButtonVisible(item) },
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }
   ];
 
-  // Was read fresh via authService.getLoggedInUser().role on every
-  // isVisible() call - see events.component.ts for the full explanation.
-  currentUserRole?: string;
+  private readonly screenKey = 'store-manager.purchases';
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -92,7 +89,7 @@ export class PurchasesComponent implements OnInit {
 
   constructor(
     private service: PurchasesService,
-    private authService: AdminAuthService,
+    private permissionService: PermissionService,
     private fb: FormBuilder,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -101,18 +98,10 @@ export class PurchasesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.authService.dao.loggedInUser$.subscribe((user) => {
-      this.currentUserRole = user?.role;
-    });
-
     this.purchases$ = this.service.streamAll().pipe(
       tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
-  }
-
-  isVisible(roles: string[]): boolean {
-    return hasRole(this.currentUserRole, roles);
   }
 
   // Backs the Admin-only summary row - the grid now owns filtering/sorting,
@@ -198,6 +187,13 @@ export class PurchasesComponent implements OnInit {
     return (item.shippingRate ?? 0) > 0;
   }
 
+  // Backs the summary row's *ngIf - was Admin-only before this system
+  // existed (same as the download-shipping-label row action above), now
+  // maps to edit permission on this screen.
+  canEdit(): boolean {
+    return this.permissionService.canEdit(this.screenKey);
+  }
+
   // Moved into PurchasesService (getShippingLabel/downloadShippingLabel) so
   // the Fulfillment screen can trigger the exact same real action - this is
   // now a thin delegate. Purchasing a shipping label costs real postage;
@@ -209,6 +205,9 @@ export class PurchasesComponent implements OnInit {
   // ---- Edit view ----
 
   showEditModal(item: CheckoutForm): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.editingItem = item;
 
     this.form = this.fb.group({

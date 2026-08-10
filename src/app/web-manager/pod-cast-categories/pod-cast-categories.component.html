@@ -1,7 +1,7 @@
 <app-popup-header title="Categories" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
 
 <mat-dialog-content>
-  <div class="category-actions">
+  <div class="category-actions" *ngIf="permissionService.canEdit('web-manager.pod-casts')">
     <button mat-icon-button color="primary" matTooltip="New" (click)="showAddModal()">
       <mat-icon>add</mat-icon>
     </button>

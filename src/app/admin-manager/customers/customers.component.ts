@@ -4,6 +4,7 @@ import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -27,9 +28,11 @@ export class CustomersComponent implements OnInit {
 
   itemType = 'Customer';
 
-  rowActions: DataGridRowAction<CustomerModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'admin-manager.customers';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<CustomerModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
+
+  headerActions: ListHeaderAction[] = [];
 
   paged: PagedCollectionSource<CustomerModel>;
 
@@ -38,6 +41,7 @@ export class CustomersComponent implements OnInit {
   constructor(
     private service: CustomerService,
     private eventService: EventService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -54,6 +58,8 @@ export class CustomersComponent implements OnInit {
     this.paged.loadFirstPage();
 
     this.events = await this.eventService.getAll();
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   // Wide enough that the Purchases tab's 10 columns (Date/Status/Receipt/
@@ -62,6 +68,9 @@ export class CustomersComponent implements OnInit {
   private static readonly DIALOG_WIDTH = { width: '1200px', maxWidth: '95vw' };
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CustomerDialogComponent, {
       ...CustomersComponent.DIALOG_WIDTH,
       data: { item: null, events: this.events }
@@ -69,6 +78,9 @@ export class CustomersComponent implements OnInit {
   }
 
   showEditModal(item: CustomerModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CustomerDialogComponent, {
       ...CustomersComponent.DIALOG_WIDTH,
       data: { item, events: this.events }
@@ -76,6 +88,9 @@ export class CustomersComponent implements OnInit {
   }
 
   delete(item: CustomerModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

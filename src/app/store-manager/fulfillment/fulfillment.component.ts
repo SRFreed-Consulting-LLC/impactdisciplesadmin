@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { FULFILLMENT_STEPS, completedStepCount, segmentState } from './fulfillment-steps';
@@ -43,7 +44,17 @@ export class FulfillmentComponent implements OnInit {
   // that needs its own per-row disabled state.
   printingIds = new Set<string>();
 
-  constructor(private service: PurchasesService, private snackbar: SnackbarService) {}
+  private readonly screenKey = 'store-manager.fulfillment';
+
+  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService) {}
+
+  // Every action on this screen (acknowledge/print label/mark packaged,
+  // shipped, or picked up) mutates an existing purchase's fulfillment
+  // status - there's no add/delete concept here, just one "can I work this
+  // workflow" edit permission the whole screen's action buttons share.
+  canEdit(): boolean {
+    return this.permissionService.canEdit(this.screenKey);
+  }
 
   ngOnInit(): void {
     this.loadOrders();
@@ -78,6 +89,9 @@ export class FulfillmentComponent implements OnInit {
   }
 
   acknowledgeOrder(item: CheckoutForm): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.service.acknowledgeOrder(item).then(() => this.snackbar.success('Order acknowledged'));
   }
 
@@ -101,6 +115,9 @@ export class FulfillmentComponent implements OnInit {
   }
 
   async printShippingLabel(item: CheckoutForm): Promise<void> {
+    if (!this.canEdit()) {
+      return;
+    }
     this.printingIds.add(item.id!);
     try {
       await this.service.getShippingLabel(item);
@@ -110,14 +127,23 @@ export class FulfillmentComponent implements OnInit {
   }
 
   markPickedUp(item: CheckoutForm): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.service.markPickedUp(item).then(() => this.snackbar.success('Marked as picked up / delivered - order closed'));
   }
 
   markPackaged(item: CheckoutForm): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.service.markPackaged(item).then(() => this.snackbar.success('Marked as packaged'));
   }
 
   markShipped(item: CheckoutForm): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.service.markShipped(item).then(() => this.snackbar.success('Marked as shipped - order closed'));
   }
 

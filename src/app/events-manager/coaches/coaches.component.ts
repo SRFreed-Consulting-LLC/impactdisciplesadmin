@@ -5,6 +5,7 @@ import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -33,8 +34,10 @@ export class CoachesComponent implements OnInit {
 
   itemType = 'Coach';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<CoachModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'events-manager.coaches';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<CoachModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -47,6 +50,7 @@ export class CoachesComponent implements OnInit {
   constructor(
     private service: CoachService,
     private organizationService: OrganizationService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -58,6 +62,8 @@ export class CoachesComponent implements OnInit {
     });
 
     this.coaches$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   organizationName(item: CoachModel): string {
@@ -66,14 +72,23 @@ export class CoachesComponent implements OnInit {
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
   }
 
   showEditModal(item: CoachModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item } });
   }
 
   delete(item: CoachModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

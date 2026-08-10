@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MonthlyNewsletterModel } from 'src/app/common/models/domain/monthly-newsletter.model';
 import { MonthlyNewletterService } from 'src/app/common/services/data/monthly-newsletter.service';
 import { MatDialog } from '@angular/material/dialog';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { MonthlyNewsletterDialogComponent } from './monthly-newsletter-dialog.component';
@@ -31,8 +32,10 @@ export class MonthlyNewslettersComponent implements OnInit {
 
   itemType = 'Monthly Newletter';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<MonthlyNewsletterModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'web-manager.monthly-newsletter';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<MonthlyNewsletterModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -40,6 +43,7 @@ export class MonthlyNewslettersComponent implements OnInit {
 
   constructor(
     private service: MonthlyNewletterService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -47,9 +51,14 @@ export class MonthlyNewslettersComponent implements OnInit {
 
   ngOnInit(): void {
     this.newsletters$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(MonthlyNewsletterDialogComponent, {
       width: '500px',
       data: { item: null }
@@ -57,6 +66,9 @@ export class MonthlyNewslettersComponent implements OnInit {
   }
 
   showEditModal(item: MonthlyNewsletterModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(MonthlyNewsletterDialogComponent, {
       width: '500px',
       data: { item }
@@ -64,6 +76,9 @@ export class MonthlyNewslettersComponent implements OnInit {
   }
 
   delete(item: MonthlyNewsletterModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

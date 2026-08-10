@@ -1,12 +1,20 @@
 import { Role } from "../../lists/roles.enum";
 import { OrganizationModel } from "../domain/organization.model";
 import { Person } from "../domain/utils/person.model";
+import { ScreenPermission } from "./screen-permission.model";
 
 export class AdminUser extends Person {
     email: string;
     firebaseUID: string;
     company: OrganizationModel;
     role: Role;
+
+    // Only meaningful when role === Role.EMPLOYEE - see PermissionService.
+    // undefined means "not yet migrated" (a pre-existing Employee account
+    // from before this system existed - see PermissionMigrationService),
+    // [] means "deliberately zero grants" (a brand-new Employee, or an
+    // existing one an Admin has revoked everything from).
+    permissions?: ScreenPermission[];
 
     // Appearance preferences, set from the Settings page (see ThemeService) -
     // persisted per-admin so they follow this person across devices/sessions,

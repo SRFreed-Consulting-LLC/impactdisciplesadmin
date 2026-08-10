@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { MatDialog } from '@angular/material/dialog';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { OrganizationDialogComponent } from './organization-dialog.component';
@@ -29,8 +30,10 @@ export class OrganizationsComponent implements OnInit {
 
   itemType = 'Organization';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<OrganizationModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'events-manager.organizations';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<OrganizationModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -38,6 +41,7 @@ export class OrganizationsComponent implements OnInit {
 
   constructor(
     public service: OrganizationService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -45,9 +49,14 @@ export class OrganizationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.organizations$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(OrganizationDialogComponent, {
       width: '700px',
       data: { item: null }
@@ -55,6 +64,9 @@ export class OrganizationsComponent implements OnInit {
   }
 
   showEditModal(item: OrganizationModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(OrganizationDialogComponent, {
       width: '700px',
       data: { item }
@@ -62,6 +74,9 @@ export class OrganizationsComponent implements OnInit {
   }
 
   delete(item: OrganizationModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

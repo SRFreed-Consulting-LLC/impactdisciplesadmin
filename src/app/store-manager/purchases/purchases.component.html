@@ -14,7 +14,7 @@
   (visibleRowsChange)="onVisibleRowsChange($event)">
 </app-data-grid>
 
-<div class="summary-row" *ngIf="isVisible(['Admin'])">
+<div class="summary-row" *ngIf="canEdit()">
   <span>{{ currentRows.length }} orders</span>
   <span>Total: {{ sumOf('totalBeforeDiscount') | currency }}</span>
   <span>Discount: {{ sumOf('discount') | currency }}</span>

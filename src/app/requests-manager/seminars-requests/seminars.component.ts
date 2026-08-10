@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SeminarModel } from 'src/app/common/models/domain/seminar.model';
 import { SeminarService } from 'src/app/common/services/data/seminar.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { SeminarDialogComponent } from './seminar-dialog.component';
@@ -32,8 +33,10 @@ export class SeminarsComponent implements OnInit {
 
   itemType = 'Seminar Request';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<SeminarModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'requests-manager.seminars';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<SeminarModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -45,6 +48,7 @@ export class SeminarsComponent implements OnInit {
 
   constructor(
     private service: SeminarService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -57,11 +61,16 @@ export class SeminarsComponent implements OnInit {
       tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   rowClass = (row: SeminarModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(SeminarDialogComponent, {
       width: '800px',
       maxWidth: '95vw',
@@ -70,6 +79,9 @@ export class SeminarsComponent implements OnInit {
   }
 
   showEditModal(item: SeminarModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(SeminarDialogComponent, {
       width: '800px',
       maxWidth: '95vw',
@@ -78,6 +90,9 @@ export class SeminarsComponent implements OnInit {
   }
 
   delete(item: SeminarModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

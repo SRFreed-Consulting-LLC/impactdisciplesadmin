@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { TestimonialModel } from 'src/app/common/models/domain/testimonial.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { MatDialog } from '@angular/material/dialog';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { TestimonialDialogComponent } from './testimonial-dialog.component';
@@ -28,8 +29,10 @@ export class TestimonialsComponent implements OnInit {
 
   itemType = 'Testimonial';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<TestimonialModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'web-manager.testimonials';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<TestimonialModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -37,6 +40,7 @@ export class TestimonialsComponent implements OnInit {
 
   constructor(
     private service: TestimonialService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -44,9 +48,14 @@ export class TestimonialsComponent implements OnInit {
 
   ngOnInit(): void {
     this.testimonials$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(TestimonialDialogComponent, {
       width: '600px',
       data: { item: null }
@@ -54,6 +63,9 @@ export class TestimonialsComponent implements OnInit {
   }
 
   showEditModal(item: TestimonialModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(TestimonialDialogComponent, {
       width: '600px',
       data: { item }
@@ -61,6 +73,9 @@ export class TestimonialsComponent implements OnInit {
   }
 
   delete(item: TestimonialModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

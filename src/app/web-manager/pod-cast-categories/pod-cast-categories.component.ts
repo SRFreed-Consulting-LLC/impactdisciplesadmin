@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { TagModel } from 'src/app/common/models/domain/tag.model';
 import { PodCastCategoriesService } from 'src/app/common/services/data/pod-cast-categories.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -21,7 +22,13 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 export class PodCastCategoriesComponent implements OnInit {
   categories$: Observable<TagModel[]>;
   columns: DataGridColumn<TagModel>[] = [{ key: 'tag', label: 'Tag' }];
-  rowActions: DataGridRowAction<TagModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+
+  // Not its own registry entry - a nested reference-data management dialog
+  // reached only from Pod Casts' "Categories" button (already edit-gated
+  // there), so it shares that screen's key.
+  private readonly screenKey = 'web-manager.pod-casts';
+
+  rowActions: DataGridRowAction<TagModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canEdit(this.screenKey) }];
 
   itemType = 'Categories';
 
@@ -31,6 +38,7 @@ export class PodCastCategoriesComponent implements OnInit {
 
   constructor(
     private service: PodCastCategoriesService,
+    public permissionService: PermissionService,
     private dialog: MatDialog,
     private dialogRef: MatDialogRef<PodCastCategoriesComponent>,
     private confirmService: ConfirmService,
@@ -46,6 +54,9 @@ export class PodCastCategoriesComponent implements OnInit {
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PodCastCategoryDialogComponent, {
       width: '400px',
       data: { item: null }
@@ -53,6 +64,9 @@ export class PodCastCategoriesComponent implements OnInit {
   }
 
   showEditModal(item: TagModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PodCastCategoryDialogComponent, {
       width: '400px',
       data: { item }
@@ -60,6 +74,9 @@ export class PodCastCategoriesComponent implements OnInit {
   }
 
   delete(item: TagModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

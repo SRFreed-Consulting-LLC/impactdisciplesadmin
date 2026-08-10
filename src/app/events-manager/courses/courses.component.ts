@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CourseService } from 'src/app/common/services/data/course.service';
 import { MatDialog } from '@angular/material/dialog';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { CourseDialogComponent } from './course-dialog.component';
@@ -26,8 +27,10 @@ export class CoursesComponent implements OnInit {
 
   itemType = 'Course';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<CourseModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'events-manager.courses';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<CourseModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -35,6 +38,7 @@ export class CoursesComponent implements OnInit {
 
   constructor(
     public service: CourseService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -42,9 +46,14 @@ export class CoursesComponent implements OnInit {
 
   ngOnInit(): void {
     this.courses$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CourseDialogComponent, {
       width: '600px',
       data: { item: null }
@@ -52,6 +61,9 @@ export class CoursesComponent implements OnInit {
   }
 
   showEditModal(item: CourseModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(CourseDialogComponent, {
       width: '600px',
       data: { item }
@@ -59,6 +71,9 @@ export class CoursesComponent implements OnInit {
   }
 
   delete(item: CourseModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

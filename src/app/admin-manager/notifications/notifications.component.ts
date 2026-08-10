@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { NotificationRegistrationModel } from 'src/app/common/models/admin/notification-registration.model';
 import { NotificationRegistrationService } from 'src/app/common/services/data/notification-registration.service';
 import { MatDialog } from '@angular/material/dialog';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { NotificationDialogComponent } from './notification-dialog.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
@@ -30,7 +31,9 @@ export class NotificationsComponent implements OnInit {
 
   itemType = 'Notifications';
 
-  rowActions: DataGridRowAction<NotificationRegistrationModel>[] = [{ icon: 'comment', tooltip: 'Send Notification', onClick: (item) => this.showEditModal(item) }];
+  private readonly screenKey = 'admin-manager.notifications';
+
+  rowActions: DataGridRowAction<NotificationRegistrationModel>[] = [{ icon: 'comment', tooltip: 'Send Notification', onClick: (item) => this.showEditModal(item), visible: () => this.permissionService.canEdit(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -38,6 +41,7 @@ export class NotificationsComponent implements OnInit {
 
   constructor(
     private service: NotificationRegistrationService,
+    private permissionService: PermissionService,
     private dialog: MatDialog
   ) {}
 
@@ -46,6 +50,9 @@ export class NotificationsComponent implements OnInit {
   }
 
   showEditModal(item: NotificationRegistrationModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(NotificationDialogComponent, {
       width: '600px',
       data: { item }

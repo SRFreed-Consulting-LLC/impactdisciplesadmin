@@ -1,19 +1,135 @@
-<app-data-grid
-  [showColumnsButton]="false"
-  [showExportButton]="false"
-  [title]="itemType + 's'"
-  [headerActions]="headerActions"
-  [columns]="columns"
-  [rowActions]="rowActions"
-  [rows]="(users$ | async) ?? []"
-  [loading]="(loading$ | async) ?? false"
-  tableClass="admin-users-table"
-  initialSortKey="lastName"
-  initialSortDirection="asc"
-  exportFileName="admin_users.xlsx"
-  exportWorksheetName="Admin Users"
-  (rowDoubleClick)="showEditModal($event)">
-  <ng-template appDataGridCell="phone" let-row>
-    {{ row.phone?.countryCode ? '+' + row.phone.countryCode : '' }} {{ row.phone ? (row.phone | phoneNumberMask: false) : '' }}
-  </ng-template>
-</app-data-grid>
+<ng-container *ngIf="mode === 'list'">
+  <app-data-grid
+    [showColumnsButton]="false"
+    [showExportButton]="false"
+    [title]="itemType + 's'"
+    [headerActions]="headerActions"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [rows]="(users$ | async) ?? []"
+    [loading]="(loading$ | async) ?? false"
+    tableClass="admin-users-table"
+    initialSortKey="lastName"
+    initialSortDirection="asc"
+    exportFileName="admin_users.xlsx"
+    exportWorksheetName="Admin Users"
+    (rowDoubleClick)="showEditModal($event)">
+    <ng-template appDataGridCell="phone" let-row>
+      {{ row.phone?.countryCode ? '+' + row.phone.countryCode : '' }} {{ row.phone ? (row.phone | phoneNumberMask: false) : '' }}
+    </ng-template>
+  </app-data-grid>
+</ng-container>
+
+<ng-container *ngIf="mode === 'edit'">
+  <div class="editor">
+    <mat-toolbar class="editor__header">
+      <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' ADMIN USER' }}</h2>
+      <span class="editor__spacer"></span>
+    </mat-toolbar>
+
+    <div class="editor__body">
+      <mat-tab-group class="admin-user-tabs" [formGroup]="form">
+        <mat-tab label="Info">
+          <div class="tab-content">
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>First Name</mat-label>
+                <input matInput formControlName="firstName" required>
+                <mat-error *ngIf="form.get('firstName')?.hasError('required')">First name is required</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Last Name</mat-label>
+                <input matInput formControlName="lastName" required>
+                <mat-error *ngIf="form.get('lastName')?.hasError('required')">Last name is required</mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email" required>
+                <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Role</mat-label>
+                <mat-select formControlName="role" required>
+                  <mat-option *ngFor="let r of roles" [value]="r">{{ r }}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="form.get('role')?.hasError('required')">Role is required</mat-error>
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Firebase UID</mat-label>
+              <input matInput formControlName="firebaseUID">
+            </mat-form-field>
+
+            <h3 class="section-title">Phone Number</h3>
+            <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Addresses">
+          <div class="tab-content">
+            <h3 class="section-title">Shipping Address</h3>
+            <app-address-field [group]="$any(form.get('shippingAddress'))" [showCountry]="true"></app-address-field>
+
+            <h3 class="section-title">Billing Address</h3>
+            <app-address-field [group]="$any(form.get('billingAddress'))" [showCountry]="true"></app-address-field>
+          </div>
+        </mat-tab>
+
+        <!-- Only Employee accounts have anything to configure here -
+             Admin/Root always have full access (PermissionService.
+             isFullAccess()), so this tab doesn't even offer them a table
+             that would be entirely irrelevant. -->
+        <mat-tab label="Permissions" *ngIf="isEmployeeRole">
+          <div class="tab-content tab-content--flush permissions-tab">
+            <p class="permissions-hint">
+              Checking a box on a tab makes its parent screen reachable in the left nav, even when the parent's own
+              row has nothing checked - but only the boxes checked here are ever actually granted. Add/Edit/Delete
+              never propagate upward, only View does.
+            </p>
+            <div class="table-scroll">
+              <table class="permission-table">
+                <thead>
+                  <tr>
+                    <th class="row-label-col">Screen</th>
+                    <th>View</th>
+                    <th>Add</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of permissionRows" [class.permission-row--manager]="row.depth === 0">
+                    <td class="row-label-col" [style.paddingLeft.px]="16 + row.depth * 20">{{ row.label }}</td>
+                    <td><mat-checkbox [checked]="row.view" (change)="toggle(row, 'view', $event.checked)"></mat-checkbox></td>
+                    <td><mat-checkbox [checked]="row.add" (change)="toggle(row, 'add', $event.checked)"></mat-checkbox></td>
+                    <td><mat-checkbox [checked]="row.edit" (change)="toggle(row, 'edit', $event.checked)"></mat-checkbox></td>
+                    <td><mat-checkbox [checked]="row.delete" (change)="toggle(row, 'delete', $event.checked)"></mat-checkbox></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+
+    <div class="editor__actions">
+      <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+      <app-indicator-button
+        title="SAVE"
+        [isInProgress]="inProgress$ | async"
+        [disabled]="inProgress$ | async"
+        (clicked)="onSave()">
+      </app-indicator-button>
+    </div>
+  </div>
+</ng-container>

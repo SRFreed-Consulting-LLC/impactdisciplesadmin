@@ -6,6 +6,7 @@ import { Unsubscribe } from 'firebase/firestore';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { EMailModel } from 'src/app/common/models/admin/mail.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
@@ -45,6 +46,8 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
+  private readonly screenKey = 'events-manager.events.attendees';
+
   private unsub?: Unsubscribe;
 
   // See new-record-tracking.util.ts - marks newly-arrived registrations for
@@ -54,6 +57,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
 
   constructor(
     private service: EventRegistrationService,
+    private permissionService: PermissionService,
     private emailService: EMailService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -69,6 +73,14 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
       tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
+
+    this.headerActions = [
+      ...(this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : []),
+      // Not really an "add" action (sends to already-registered users), so
+      // gated by edit instead - matches "acts on existing records" better
+      // than the New button's create-semantics.
+      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() }] : [])
+    ];
   }
 
   ngOnDestroy(): void {
@@ -77,21 +89,24 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
 
   rowClass = (row: EventRegistrationModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
-  headerActions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-    { label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() }
-  ];
+  headerActions: ListHeaderAction[] = [];
 
   rowActions: DataGridRowAction<EventRegistrationModel>[] = [
     { icon: 'forward_to_inbox', tooltip: 'RESEND EMAIL', onClick: (item) => this.resendConfirmationEmail(item), visible: (item) => !!item.receiptEmailId },
-    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }
   ];
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(EventAttendeeDialogComponent, { width: '700px', data: { item: null, eventId: this.event?.id } });
   }
 
   showEditModal(item: EventRegistrationModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.unsub?.();
     if (item.receiptEmailId) {
       this.unsub = this.emailService.streamRecord(item.receiptEmailId, (mail: EMailModel) => {
@@ -108,10 +123,16 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   }
 
   showEmailModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(EventEmailDialogComponent, { width: '900px', maxWidth: '95vw', data: { eventId: this.event?.id } });
   }
 
   delete(item: EventRegistrationModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

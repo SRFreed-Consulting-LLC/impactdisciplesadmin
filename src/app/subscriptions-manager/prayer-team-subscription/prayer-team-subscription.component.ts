@@ -8,6 +8,7 @@ import { PrayerTeamSubscriptionModel } from 'src/app/common/models/domain/prayer
 import { PrayerTeamSubscriptionService } from 'src/app/common/services/data/prayer-team-subscription.service';
 import { EmailList } from 'src/app/common/models/utils/email-list.model';
 import { EmailListService } from 'src/app/common/services/data/email-list.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -33,7 +34,9 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
 
   itemType = 'Prayer Team Subscription';
 
-  rowActions: DataGridRowAction<PrayerTeamSubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'subscriptions-manager.prayer-team';
+
+  rowActions: DataGridRowAction<PrayerTeamSubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   emailLists: EmailList[] = [];
   selectedList: EmailList | undefined;
@@ -53,6 +56,7 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   constructor(
     private service: PrayerTeamSubscriptionService,
     private emailListService: EmailListService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -69,13 +73,20 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   private refreshActions(): void {
+    const canAdd = this.permissionService.canAdd(this.screenKey);
+    const canEdit = this.permissionService.canEdit(this.screenKey);
+
     const actions: ListHeaderAction[] = [
-      { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-      { label: 'Send Prayer Request', icon: 'volunteer_activism', onClick: () => this.showPrayerModal() },
-      { label: 'Create Prayer List', icon: 'view_list', onClick: () => this.showListModal() },
+      ...(canAdd ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : []),
+      // Sending a prayer request and building/saving a list both mutate
+      // existing data rather than create a subscriber record, so they're
+      // gated by edit rather than add. Exporting is a read-only client-side
+      // dump of what's already on screen - no extra gate.
+      ...(canEdit ? [{ label: 'Send Prayer Request', icon: 'volunteer_activism', onClick: () => this.showPrayerModal() }] : []),
+      ...(canEdit ? [{ label: 'Create Prayer List', icon: 'view_list', onClick: () => this.showListModal() }] : []),
       { label: 'Export Prayer List', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
     ];
-    if (this.selectedList?.name) {
+    if (this.selectedList?.name && canEdit) {
       actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
     this.headerActions = actions;
@@ -101,6 +112,9 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PrayerSubscriberDialogComponent, {
       width: '500px',
       data: { item: null }
@@ -108,6 +122,9 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   showEditModal(item: PrayerTeamSubscriptionModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PrayerSubscriberDialogComponent, {
       width: '500px',
       data: { item }
@@ -115,6 +132,9 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   showPrayerModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(SendPrayerDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -123,6 +143,9 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   showListModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     // Always starts a brand new list from whatever rows are currently
     // checked - matches the original.
     this.selectedList = { ...new EmailList() };
@@ -140,7 +163,7 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   onListSave(): void {
-    if (!this.selectedList?.id) {
+    if (!this.selectedList?.id || !this.permissionService.canEdit(this.screenKey)) {
       return;
     }
     this.emailListService.update(this.selectedList.id, { ...this.selectedList, list: this.selection.selected }).then((item) => {
@@ -153,6 +176,9 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   }
 
   delete(item: PrayerTeamSubscriptionModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

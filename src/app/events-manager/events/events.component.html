@@ -32,12 +32,12 @@
       </button>
       <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' EVENT' }}</h2>
       <span class="editor__spacer"></span>
-      <mat-slide-toggle *ngIf="isVisible(['Admin'])" [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
+      <mat-slide-toggle *ngIf="permissionService.canEdit('events-manager.events.info')" [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
     </mat-toolbar>
 
     <div class="editor__body">
       <mat-tab-group class="event-tabs" [formGroup]="form">
-        <mat-tab label="Info" *ngIf="isVisible(['Admin'])">
+        <mat-tab label="Info" *ngIf="permissionService.canView('events-manager.events.info')">
           <div class="tab-content">
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
@@ -155,7 +155,7 @@
              - matTabContent defers creation until a tab is actually
              selected, matching the original's real behavior instead of
              firing all four at once on every single Add/Edit open. -->
-        <mat-tab label="Application" *ngIf="isVisible(['Admin'])">
+        <mat-tab label="Application" *ngIf="permissionService.canView('events-manager.events.application')">
           <ng-template matTabContent>
             <div class="tab-content tab-content--flush">
               <app-event-application [event]="item"></app-event-application>
@@ -163,7 +163,7 @@
           </ng-template>
         </mat-tab>
 
-        <mat-tab label="Agenda" *ngIf="isVisible(['Admin'])">
+        <mat-tab label="Agenda" *ngIf="permissionService.canView('events-manager.events.agenda')">
           <ng-template matTabContent>
             <div class="tab-content tab-content--flush">
               <app-event-agenda [event]="item"></app-event-agenda>
@@ -171,7 +171,7 @@
           </ng-template>
         </mat-tab>
 
-        <mat-tab *ngIf="isVisible(['Admin', 'Employee'])">
+        <mat-tab *ngIf="permissionService.canView('events-manager.events.attendees')">
           <ng-template mat-tab-label>
             Attendees
             <span class="new-badge tab-badge" *ngIf="newAttendeeEventIds.has(item.id)">NEW</span>
@@ -183,7 +183,7 @@
           </ng-template>
         </mat-tab>
 
-        <mat-tab label="Break Outs" *ngIf="isVisible(['Admin'])">
+        <mat-tab label="Break Outs" *ngIf="permissionService.canView('events-manager.events.breakouts')">
           <ng-template matTabContent>
             <div class="tab-content tab-content--flush">
               <app-event-breakouts [event]="item"></app-event-breakouts>

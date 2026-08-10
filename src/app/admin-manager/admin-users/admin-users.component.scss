@@ -13,3 +13,142 @@ app-data-grid {
   display: flex;
   flex-direction: column;
 }
+
+/* Full-page in-place edit view (no popup - see events.component.ts/
+   products.component.ts for the established precedent this mirrors)
+   filling the same flex column the grid normally occupies. */
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor__header {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.editor__title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+// Single scrolling region for the whole tab body - mat-tab-group's
+// internal body wrapper is Material's own structural element and can't
+// reliably be targeted for flex/height sizing through view encapsulation
+// (see products.component.scss for the fuller explanation).
+.editor__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.admin-user-tabs {
+  width: 100%;
+  height: 100%;
+}
+
+.editor__actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+
+.tab-content {
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 900px;
+}
+
+// The Permissions tab's table needs more width than the form tabs (5
+// columns, Manager/Screen/Tab rows) - no point capping it the same as a
+// 2-field-per-row form.
+.tab-content--flush {
+  padding: 16px;
+  max-width: none;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}
+
+// ---- Permissions tab ----
+
+.permissions-hint {
+  font-size: 12.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0 0 12px;
+  max-width: 700px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.permission-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 640px;
+
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: rgba(0, 0, 0, 0.5);
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  td {
+    padding: 4px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .row-label-col {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
+
+// Manager rows (depth 0) - a bolder anchor row above their Screen/Tab
+// children, matching the left nav's own group/item visual hierarchy.
+.permission-row--manager {
+  .row-label-col {
+    font-weight: 700;
+  }
+  background: rgba(0, 0, 0, 0.025);
+}

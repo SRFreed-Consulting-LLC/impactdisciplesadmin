@@ -11,7 +11,7 @@ import { LocationModel } from 'src/app/common/models/domain/location.model';
 import { LocationService } from 'src/app/common/services/data/location.service';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { hasRole } from 'src/app/common/lists/roles.enum';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -47,13 +47,10 @@ export class EventsComponent implements OnInit {
 
   itemType = 'Event';
 
-  // Was read fresh via authService.getLoggedInUser().role on every
-  // isVisible() call - see events-manager's other migrated screens for the
-  // full explanation.
-  currentUserRole?: string;
+  private readonly screenKey = 'events-manager.events';
 
   headerActions: ListHeaderAction[] = [];
-  rowActions: DataGridRowAction<EventModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.isVisible(['Admin']) }];
+  rowActions: DataGridRowAction<EventModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -107,6 +104,7 @@ export class EventsComponent implements OnInit {
     private locationService: LocationService,
     private emailTemplateService: EMailTemplatesService,
     private authService: AdminAuthService,
+    public permissionService: PermissionService,
     private fb: FormBuilder,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -114,9 +112,8 @@ export class EventsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.dao.loggedInUser$.subscribe((user) => {
-      this.currentUserRole = user?.role;
-      this.headerActions = this.isVisible(['Admin']) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+    this.authService.dao.loggedInUser$.subscribe(() => {
+      this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
     });
 
     this.organizationService.streamAll().subscribe((organizations) => {
@@ -136,16 +133,15 @@ export class EventsComponent implements OnInit {
     });
   }
 
-  isVisible(roles: string[]): boolean {
-    return hasRole(this.currentUserRole, roles);
-  }
-
   organizationName(item: EventModel): string {
     const id = typeof item.organization === 'string' ? item.organization : item.organization?.id;
     return this.organizations.find((o) => o.id === id)?.name ?? '';
   }
 
   delete(item: EventModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
@@ -166,6 +162,9 @@ export class EventsComponent implements OnInit {
   // ---- Edit view ----
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.editingItem = { ...new EventModel() };
     this.isEdit = false;
     this.card = {};
@@ -174,6 +173,9 @@ export class EventsComponent implements OnInit {
   }
 
   showEditModal(item: EventModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.editingItem = { ...item };
     this.isEdit = true;
     this.card = { imageUrl: item.imageUrl };

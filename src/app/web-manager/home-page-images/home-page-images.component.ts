@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { HomePageImageModel } from 'src/app/common/models/domain/home-page-image.model';
 import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { HomePageImageDialogComponent } from './home-page-image-dialog.component';
@@ -31,8 +32,10 @@ export class HomePageImagesComponent implements OnInit {
 
   itemType = 'Home Page Image';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<HomePageImageModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'web-manager.home-page-images';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<HomePageImageModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -40,6 +43,7 @@ export class HomePageImagesComponent implements OnInit {
 
   constructor(
     private service: HomePageImageService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -47,9 +51,14 @@ export class HomePageImagesComponent implements OnInit {
 
   ngOnInit(): void {
     this.images$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(HomePageImageDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -58,6 +67,9 @@ export class HomePageImagesComponent implements OnInit {
   }
 
   showEditModal(item: HomePageImageModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(HomePageImageDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -66,6 +78,9 @@ export class HomePageImagesComponent implements OnInit {
   }
 
   delete(item: HomePageImageModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

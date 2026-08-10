@@ -3,7 +3,11 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
-import { hasRole } from 'src/app/common/lists/roles.enum';
+import { PermissionService } from 'src/app/common/services/permission.service';
+// Injected purely to trigger its construction (providedIn: 'root' alone
+// doesn't instantiate it) - see that service's own comment on why the
+// shell is where this belongs.
+import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
 import { NAV_CONFIG, NavGroup } from './nav-config';
 
 @Component({
@@ -37,7 +41,12 @@ export class MainScreenComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private authService: AdminAuthService, private router: Router) {}
+  constructor(
+    private authService: AdminAuthService,
+    private permissionService: PermissionService,
+    private permissionMigrationService: PermissionMigrationService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     // Was: this.authService.getLoggedInUser().role, which reads the
@@ -47,11 +56,17 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // the AdminUser from Firebase's own live auth state instead.
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
       this.currentUser = user;
+      // Admin/Root: unchanged, still driven by NAV_CONFIG's own `roles`.
+      // Employee: fully permission-driven now (see PermissionService) - a
+      // manager only shows once it (or something under it) has been
+      // granted; `roles` no longer factors in for them at all, and
+      // group.roles itself is left alone here since PermissionService's own
+      // isFullAccess() check already short-circuits Admin/Root.
       this.secureNav = NAV_CONFIG
-        .filter((group) => hasRole(user?.role, group.roles))
+        .filter((group) => this.permissionService.isFullAccess() || this.permissionService.canView(group.id))
         .map((group) => ({
           ...group,
-          items: group.items?.filter((item) => !item.roles || hasRole(user?.role, item.roles))
+          items: group.items?.filter((item) => this.permissionService.canViewNavItem(group, item))
         }));
     });
 

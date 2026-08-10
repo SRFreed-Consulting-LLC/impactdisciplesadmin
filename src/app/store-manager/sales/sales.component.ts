@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { SaleModel } from 'src/app/common/models/utils/sale.model';
 import { SalesService } from 'src/app/common/services/data/sales.service';
 import { MatDialog } from '@angular/material/dialog';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { SaleDialogComponent } from './sale-dialog.component';
@@ -33,8 +34,10 @@ export class SalesComponent implements OnInit {
 
   itemType = 'Sale';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<SaleModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'store-manager.sales';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<SaleModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -42,6 +45,7 @@ export class SalesComponent implements OnInit {
 
   constructor(
     private service: SalesService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -49,9 +53,14 @@ export class SalesComponent implements OnInit {
 
   ngOnInit(): void {
     this.sales$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(SaleDialogComponent, {
       width: '600px',
       data: { item: null }
@@ -59,6 +68,9 @@ export class SalesComponent implements OnInit {
   }
 
   showEditModal(item: SaleModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(SaleDialogComponent, {
       width: '600px',
       data: { item }
@@ -66,6 +78,9 @@ export class SalesComponent implements OnInit {
   }
 
   delete(item: SaleModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

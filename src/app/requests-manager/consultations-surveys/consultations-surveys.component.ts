@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ConsultationSurveyModel } from 'src/app/common/models/domain/consultation-survey.model';
 import { ConsultationSurveyService } from 'src/app/common/services/data/consultation-survey.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConsultationSurveyDialogComponent } from './consultation-survey-dialog.component';
@@ -30,8 +31,10 @@ export class ConsultationsSurveysComponent implements OnInit {
 
   itemType = 'Consultation Survey';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<ConsultationSurveyModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'requests-manager.consultation-surveys';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<ConsultationSurveyModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -43,6 +46,7 @@ export class ConsultationsSurveysComponent implements OnInit {
 
   constructor(
     private service: ConsultationSurveyService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -55,11 +59,16 @@ export class ConsultationsSurveysComponent implements OnInit {
       tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   rowClass = (row: ConsultationSurveyModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(ConsultationSurveyDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -68,6 +77,9 @@ export class ConsultationsSurveysComponent implements OnInit {
   }
 
   showEditModal(item: ConsultationSurveyModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(ConsultationSurveyDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -76,6 +88,9 @@ export class ConsultationsSurveysComponent implements OnInit {
   }
 
   delete(item: ConsultationSurveyModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

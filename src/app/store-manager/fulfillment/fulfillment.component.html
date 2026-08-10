@@ -36,7 +36,7 @@
 
       <div class="order-card__actions" [ngSwitch]="item.fulfillmentStatus">
         <ng-container *ngSwitchCase="'new'">
-          <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder(item)">
+          <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="acknowledgeOrder(item)">
             <mat-icon>check_circle</mat-icon>
             Acknowledge Order
           </button>
@@ -47,25 +47,25 @@
             mat-raised-button
             color="primary"
             type="button"
-            [disabled]="printingIds.has(item.id!)"
+            [disabled]="printingIds.has(item.id!) || !canEdit()"
             (click)="printShippingLabel(item)">
             <mat-icon>local_shipping</mat-icon>
             Print Shipping Label
           </button>
-          <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp(item)">
+          <button mat-stroked-button type="button" [disabled]="!canEdit()" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp(item)">
             Mark as Picked Up / Delivered
           </button>
         </ng-container>
 
         <ng-container *ngSwitchCase="'shipping_label_printed'">
-          <button mat-raised-button color="primary" type="button" (click)="markPackaged(item)">
+          <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="markPackaged(item)">
             <mat-icon>inventory_2</mat-icon>
             Mark as Packaged
           </button>
         </ng-container>
 
         <ng-container *ngSwitchCase="'awaiting_shipping'">
-          <button mat-raised-button color="primary" type="button" (click)="markShipped(item)">
+          <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="markShipped(item)">
             <mat-icon>local_shipping</mat-icon>
             Mark as Shipped
           </button>

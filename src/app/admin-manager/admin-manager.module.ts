@@ -14,7 +14,6 @@ import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.compo
 import { ShippingLabelDialogComponent } from './shipping-labels/shipping-label-dialog.component';
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
 import { NotificationDialogComponent } from './notifications/notification-dialog.component';
-import { AdminUserDialogComponent } from './admin-users/admin-user-dialog.component';
 import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { CustomerDialogComponent } from './customers/customer-dialog.component';
 import { AddCustomerNoteDialogComponent } from './customers/add-customer-note-dialog.component';
@@ -66,7 +65,6 @@ import { QuillModule } from 'ngx-quill';
     NotificationsComponent,
     NotificationDialogComponent,
     AdminUsersComponent,
-    AdminUserDialogComponent,
     CustomersComponent,
     CustomerDialogComponent,
     AddCustomerNoteDialogComponent,

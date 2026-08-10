@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -25,8 +26,10 @@ export class EmailTemplatesComponent implements OnInit {
 
   itemType = 'Email Template';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<MailTemplateModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'admin-manager.email-templates';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<MailTemplateModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -34,6 +37,7 @@ export class EmailTemplatesComponent implements OnInit {
 
   constructor(
     private service: EMailTemplatesService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -41,9 +45,14 @@ export class EmailTemplatesComponent implements OnInit {
 
   ngOnInit(): void {
     this.templates$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(EmailTemplateDialogComponent, {
       width: '800px',
       data: { item: null }
@@ -51,6 +60,9 @@ export class EmailTemplatesComponent implements OnInit {
   }
 
   showEditModal(item: MailTemplateModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(EmailTemplateDialogComponent, {
       width: '800px',
       data: { item }
@@ -58,6 +70,9 @@ export class EmailTemplatesComponent implements OnInit {
   }
 
   delete(item: MailTemplateModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

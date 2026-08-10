@@ -6,6 +6,7 @@ import { PodCastService, YoutubePlaylistItem } from 'src/app/common/services/dat
 import { TagModel } from 'src/app/common/models/domain/tag.model';
 import { PodCastCategoriesService } from 'src/app/common/services/data/pod-cast-categories.service';
 import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PodCastDialogComponent } from './pod-cast-dialog.component';
@@ -32,12 +33,10 @@ export class PodCastsComponent implements OnInit, OnDestroy {
 
   itemType = 'Pod Cast';
 
-  headerActions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-    { label: 'Categories', icon: 'view_list', onClick: () => this.showCategoriesModal() },
-    { label: 'Synchronize', icon: 'refresh', onClick: () => this.syncPodcasts() }
-  ];
-  rowActions: DataGridRowAction<PodCastModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'web-manager.pod-casts';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<PodCastModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -57,6 +56,7 @@ export class PodCastsComponent implements OnInit, OnDestroy {
     private service: PodCastService,
     private podCastTagService: PodCastTagsService,
     private podCastCategoriesService: PodCastCategoriesService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -72,6 +72,15 @@ export class PodCastsComponent implements OnInit, OnDestroy {
     this.podCastCategories = await this.podCastCategoriesService.getAll();
 
     this.service.getVideoInfo();
+
+    this.headerActions = [
+      ...(this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : []),
+      // Managing categories and re-pulling from YouTube both mutate this
+      // screen's data rather than add a single new podcast, so both are
+      // gated by edit rather than add.
+      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Categories', icon: 'view_list', onClick: () => this.showCategoriesModal() }] : []),
+      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Synchronize', icon: 'refresh', onClick: () => this.syncPodcasts() }] : [])
+    ];
   }
 
   ngOnDestroy(): void {
@@ -84,6 +93,9 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PodCastDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -92,6 +104,9 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   }
 
   showEditModal(item: PodCastModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PodCastDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -100,12 +115,18 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   }
 
   showCategoriesModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(PodCastCategoriesComponent, {
       width: '650px'
     });
   }
 
   delete(item: PodCastModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
@@ -116,6 +137,9 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   }
 
   syncPodcasts(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to syncronize these records?</i>', 'Confirm').then((confirmed) => {
       if (!confirmed) {
         return;

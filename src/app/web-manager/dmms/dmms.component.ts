@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { DMMModel } from 'src/app/common/models/domain/dmm.model';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DMMDialogComponent } from './dmm-dialog.component';
@@ -33,9 +34,11 @@ export class DMMServiceComponent implements OnInit {
     { key: 'title', label: 'Title' }
   ];
 
-  rowActions: DataGridRowAction<DMMModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'web-manager.disciple-making-minute';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<DMMModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
+
+  headerActions: ListHeaderAction[] = [];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -43,6 +46,7 @@ export class DMMServiceComponent implements OnInit {
 
   constructor(
     private service: DMMService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -50,9 +54,14 @@ export class DMMServiceComponent implements OnInit {
 
   ngOnInit(): void {
     this.dmms$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(DMMDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -61,6 +70,9 @@ export class DMMServiceComponent implements OnInit {
   }
 
   showEditModal(item: DMMModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(DMMDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -69,6 +81,9 @@ export class DMMServiceComponent implements OnInit {
   }
 
   delete(item: DMMModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

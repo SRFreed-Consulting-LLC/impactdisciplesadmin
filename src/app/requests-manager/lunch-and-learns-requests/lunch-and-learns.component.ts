@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { LunchAndLearnModel } from 'src/app/common/models/domain/lunch-and-learn.model';
 import { LunchAndLearnService } from 'src/app/common/services/data/lunch-and-learn.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { LunchAndLearnDialogComponent } from './lunch-and-learn-dialog.component';
@@ -32,8 +33,10 @@ export class LunchAndLearnsComponent implements OnInit {
 
   itemType = 'Lunch and Learn Request';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<LunchAndLearnModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'requests-manager.lunch-and-learns';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<LunchAndLearnModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -45,6 +48,7 @@ export class LunchAndLearnsComponent implements OnInit {
 
   constructor(
     private service: LunchAndLearnService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -57,11 +61,16 @@ export class LunchAndLearnsComponent implements OnInit {
       tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   rowClass = (row: LunchAndLearnModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(LunchAndLearnDialogComponent, {
       width: '800px',
       maxWidth: '95vw',
@@ -70,6 +79,9 @@ export class LunchAndLearnsComponent implements OnInit {
   }
 
   showEditModal(item: LunchAndLearnModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(LunchAndLearnDialogComponent, {
       width: '800px',
       maxWidth: '95vw',
@@ -78,6 +90,9 @@ export class LunchAndLearnsComponent implements OnInit {
   }
 
   delete(item: LunchAndLearnModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

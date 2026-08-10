@@ -14,6 +14,7 @@ import { BookModel } from 'src/app/common/models/domain/book.model';
 import { BookService } from 'src/app/common/services/data/book.service';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
@@ -52,13 +53,11 @@ export class ProductsComponent implements OnInit {
 
   itemType = 'Product';
 
-  headerActions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-    { label: 'Categories', icon: 'view_list', onClick: () => this.manageCategories() },
-    { label: 'Series', icon: 'collections_bookmark', onClick: () => this.manageSeries() }
-  ];
+  private readonly screenKey = 'store-manager.products';
 
-  rowActions: DataGridRowAction<ProductModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  headerActions: ListHeaderAction[] = [];
+
+  rowActions: DataGridRowAction<ProductModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   paged: PagedCollectionSource<ProductModel>;
 
@@ -104,6 +103,7 @@ export class ProductsComponent implements OnInit {
     private seriesService: SeriesService,
     private emailTemplatesService: EMailTemplatesService,
     private bookService: BookService,
+    private permissionService: PermissionService,
     private fb: FormBuilder,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -135,6 +135,15 @@ export class ProductsComponent implements OnInit {
     // Each page already comes back ordered by title asc from Firestore, and
     // pages are appended in fetch order - no client-side re-sort needed.
     this.paged.loadFirstPage();
+
+    this.headerActions = [
+      ...(this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : []),
+      // Categories/Series management is reference-data upkeep for this
+      // screen, not a separate registry entry - gated by edit rather than
+      // add/view since it's mutating shared lookup data, not this list.
+      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Categories', icon: 'view_list', onClick: () => this.manageCategories() }] : []),
+      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Series', icon: 'collections_bookmark', onClick: () => this.manageSeries() }] : [])
+    ];
   }
 
   categoryName(item: ProductModel): string {
@@ -154,6 +163,9 @@ export class ProductsComponent implements OnInit {
   }
 
   delete(item: ProductModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
@@ -166,6 +178,9 @@ export class ProductsComponent implements OnInit {
   // ---- Edit view ----
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.editingItem = null;
     this.isEdit = false;
     this.card = {};
@@ -174,6 +189,9 @@ export class ProductsComponent implements OnInit {
   }
 
   showEditModal(item: ProductModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.editingItem = item;
     this.isEdit = true;
     this.card = { imageUrl: item.imageUrl, eBookUrl: item.eBookUrl };

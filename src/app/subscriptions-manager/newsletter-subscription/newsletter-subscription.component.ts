@@ -8,6 +8,7 @@ import { NewsletterSubscriptionModel } from 'src/app/common/models/domain/newsle
 import { NewsletterSubscriptionService } from 'src/app/common/services/data/newsletter-subscription.service';
 import { EmailList } from 'src/app/common/models/utils/email-list.model';
 import { EmailListService } from 'src/app/common/services/data/email-list.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -33,7 +34,9 @@ export class NewsletterSubscriptionComponent implements OnInit {
 
   itemType = 'Newsletter Subscription';
 
-  rowActions: DataGridRowAction<NewsletterSubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'subscriptions-manager.newsletters';
+
+  rowActions: DataGridRowAction<NewsletterSubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   emailLists: EmailList[] = [];
   selectedList: EmailList | undefined;
@@ -55,6 +58,7 @@ export class NewsletterSubscriptionComponent implements OnInit {
   constructor(
     private service: NewsletterSubscriptionService,
     private emailListService: EmailListService,
+    private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -71,13 +75,20 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   private refreshActions(): void {
+    const canAdd = this.permissionService.canAdd(this.screenKey);
+    const canEdit = this.permissionService.canEdit(this.screenKey);
+
     const actions: ListHeaderAction[] = [
-      { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-      { label: 'Send Newsletter', icon: 'email', onClick: () => this.showNewsletterModal() },
-      { label: 'Create Subscriber List', icon: 'view_list', onClick: () => this.showListModal() },
+      ...(canAdd ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : []),
+      // Sending a newsletter and building/saving a subscriber list both
+      // mutate existing data rather than create a subscriber record, so
+      // they're gated by edit rather than add. Exporting is a read-only
+      // client-side dump of what's already on screen - no extra gate.
+      ...(canEdit ? [{ label: 'Send Newsletter', icon: 'email', onClick: () => this.showNewsletterModal() }] : []),
+      ...(canEdit ? [{ label: 'Create Subscriber List', icon: 'view_list', onClick: () => this.showListModal() }] : []),
       { label: 'Export Subscriber List', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
     ];
-    if (this.selectedList?.name) {
+    if (this.selectedList?.name && canEdit) {
       actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
     this.headerActions = actions;
@@ -103,6 +114,9 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.dialog.open(NewsletterSubscriberDialogComponent, {
       width: '500px',
       data: { item: null }
@@ -110,6 +124,9 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   showEditModal(item: NewsletterSubscriptionModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(NewsletterSubscriberDialogComponent, {
       width: '500px',
       data: { item }
@@ -117,6 +134,9 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   showNewsletterModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.dialog.open(SendNewsletterDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -125,6 +145,9 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   showListModal(): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     // Always starts a brand new list from whatever rows are currently
     // checked - matches the original, which reset selectedList here
     // regardless of any list currently active in the "Filter by List" filter.
@@ -143,7 +166,7 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   onListSave(): void {
-    if (!this.selectedList?.id) {
+    if (!this.selectedList?.id || !this.permissionService.canEdit(this.screenKey)) {
       return;
     }
     this.emailListService.update(this.selectedList.id, { ...this.selectedList, list: this.selection.selected }).then((item) => {
@@ -156,6 +179,9 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   delete(item: NewsletterSubscriptionModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

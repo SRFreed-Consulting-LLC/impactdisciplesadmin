@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { HomePagePopupModel } from 'src/app/common/models/domain/home-page-popup.model';
 import { HomePagePopUpService } from 'src/app/common/services/data/home-page-popup.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -39,8 +40,10 @@ export class HomePagePopupsComponent implements OnInit {
 
   itemType = 'Home Page Popup';
 
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<HomePagePopupModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  private readonly screenKey = 'web-manager.home-page-popups';
+
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<HomePagePopupModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -55,6 +58,7 @@ export class HomePagePopupsComponent implements OnInit {
 
   constructor(
     private service: HomePagePopUpService,
+    private permissionService: PermissionService,
     private fb: FormBuilder,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -63,9 +67,14 @@ export class HomePagePopupsComponent implements OnInit {
 
   ngOnInit(): void {
     this.popups$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
   }
 
   showAddModal(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
     this.editingItem = null;
     this.isEdit = false;
     this.buildForm(null);
@@ -73,6 +82,9 @@ export class HomePagePopupsComponent implements OnInit {
   }
 
   showEditModal(item: HomePagePopupModel): void {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
     this.editingItem = item;
     this.isEdit = true;
     this.buildForm(item);
@@ -140,6 +152,9 @@ export class HomePagePopupsComponent implements OnInit {
   }
 
   delete(item: HomePagePopupModel): void {
+    if (!this.permissionService.canDelete(this.screenKey)) {
+      return;
+    }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {

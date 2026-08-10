@@ -10,6 +10,21 @@ import { Role } from 'src/app/common/lists/roles.enum';
 // `label` on a NavLeaf must exactly match the string that manager's own
 // `selectedTab` / template *ngIf checks use - it's the same identifier,
 // just sourced from one place now instead of two.
+//
+// This tree also doubles as the granular permission registry (see
+// PermissionService) - a NavGroup/NavLeaf/NavTab's id/slug/key together
+// form the dot-path "screenKey" a ScreenPermission grant is keyed by,
+// instead of maintaining a second, parallel registry that could drift.
+
+// An internal edit-view tab within a screen (e.g. Events' Info/Application/
+// Agenda/Attendees/Break Outs mat-tab-group) - only Events has these today.
+// `key` combines with its parent NavLeaf's own key to form a permission
+// registry key, see PermissionService's comment on key construction.
+export interface NavTab {
+  key: string;
+  label: string;
+}
+
 export interface NavLeaf {
   label: string;
   // ?tab= query param value used to deep-link here from outside the
@@ -18,9 +33,21 @@ export interface NavLeaf {
   // using these exact slugs, don't rename them without updating that too.
   slug: string;
   // Omit to inherit no extra restriction beyond the group's own `roles` -
-  // matches today's behavior for Admin/Requests/Subscriptions/Web Manager,
-  // none of which gate individual tabs, only the group itself.
+  // this still means "Admin/Root only" everywhere it appears; Employee
+  // visibility no longer goes through `roles` at all, see PermissionService.
   roles?: Role[];
+  // Internal edit-view tabs this screen has, if any - part of the
+  // permission registry (PermissionService.buildPermissionTree()) alongside
+  // this screen itself. Omit for screens with no internal tabs (everything
+  // except Events today).
+  tabs?: NavTab[];
+  // false = hard-blocked from the granular permission system entirely -
+  // never appears in the permissions-editing tree, never viewable by an
+  // Employee no matter what's granted. Defaults to true (omit for every
+  // normal screen). Currently only Admin Users sets this, to close off
+  // self-escalation (an Employee who could edit Admin Users could grant
+  // themselves anything) - see PermissionService.canView().
+  employeeGrantable?: boolean;
 }
 
 export interface NavGroup {
@@ -41,7 +68,10 @@ export const NAV_CONFIG: NavGroup[] = [
     items: [
       { label: 'Logs', slug: 'logs' },
       { label: 'Notifications', slug: 'notifications' },
-      { label: 'Admin Users', slug: 'admin-users' },
+      // Never grantable to an Employee - see NavLeaf.employeeGrantable's own
+      // comment. Admin/Root-only forever, regardless of the permission
+      // system this field otherwise plugs into everywhere else.
+      { label: 'Admin Users', slug: 'admin-users', employeeGrantable: false },
       { label: 'Customers', slug: 'customers' },
       { label: 'Web Config', slug: 'web-config' },
       { label: 'Email Templates', slug: 'email-templates' },
@@ -52,9 +82,20 @@ export const NAV_CONFIG: NavGroup[] = [
     id: 'events-manager',
     label: 'EVENTS MANAGER',
     icon: 'event',
-    roles: [Role.ADMIN, Role.EMPLOYEE],
+    roles: [Role.ADMIN],
     items: [
-      { label: 'Events', slug: 'events', roles: [Role.ADMIN] },
+      {
+        label: 'Events', slug: 'events', roles: [Role.ADMIN],
+        // events.component.html's mat-tab-group - the one screen in the app
+        // with internal edit-view tabs today.
+        tabs: [
+          { key: 'info', label: 'Info' },
+          { key: 'application', label: 'Application' },
+          { key: 'agenda', label: 'Agenda' },
+          { key: 'attendees', label: 'Attendees' },
+          { key: 'breakouts', label: 'Break Outs' }
+        ]
+      },
       { label: 'Courses', slug: 'courses', roles: [Role.ADMIN] },
       { label: 'Coaches', slug: 'coaches', roles: [Role.ADMIN] },
       { label: 'Locations', slug: 'locations', roles: [Role.ADMIN] },
@@ -78,13 +119,13 @@ export const NAV_CONFIG: NavGroup[] = [
     id: 'store-manager',
     label: 'STORE MANAGER',
     icon: 'storefront',
-    roles: [Role.ADMIN, Role.EMPLOYEE],
+    roles: [Role.ADMIN],
     items: [
       { label: 'Products', slug: 'products', roles: [Role.ADMIN] },
       // Slug load-bearing - see NavLeaf.slug.
-      { label: 'Purchases', slug: 'purchases', roles: [Role.ADMIN, Role.EMPLOYEE] },
+      { label: 'Purchases', slug: 'purchases', roles: [Role.ADMIN] },
       // Operational (packing/shipping), same role gating as Purchases.
-      { label: 'Fulfillment', slug: 'fulfillment', roles: [Role.ADMIN, Role.EMPLOYEE] },
+      { label: 'Fulfillment', slug: 'fulfillment', roles: [Role.ADMIN] },
       { label: 'Coupons', slug: 'coupons', roles: [Role.ADMIN] },
       { label: 'Sales', slug: 'sales', roles: [Role.ADMIN] }
     ]

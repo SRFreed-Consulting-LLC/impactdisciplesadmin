@@ -62,7 +62,7 @@
       </div>
 
       <div class="save-row">
-        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (clicked)="save()"></app-indicator-button>
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
       </div>
     </div>
   </mat-tab>
@@ -105,7 +105,7 @@
       </div>
 
       <div class="save-row">
-        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (clicked)="save()"></app-indicator-button>
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
       </div>
     </div>
   </mat-tab>
@@ -116,7 +116,7 @@
         <quill-editor formControlName="policy" [modules]="richTextModules"></quill-editor>
       </div>
       <div class="save-row">
-        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (clicked)="save()"></app-indicator-button>
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
       </div>
     </div>
   </mat-tab>
@@ -127,7 +127,7 @@
         <quill-editor formControlName="tos" [modules]="richTextModules"></quill-editor>
       </div>
       <div class="save-row">
-        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (clicked)="save()"></app-indicator-button>
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
       </div>
     </div>
   </mat-tab>

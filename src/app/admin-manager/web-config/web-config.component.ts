@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { WebConfigModel } from 'src/app/common/models/utils/web-config.model';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 
@@ -22,10 +23,13 @@ export class WebConfigComponent implements OnInit {
 
   itemType = 'Web Configuration';
 
+  private readonly screenKey = 'admin-manager.web-config';
+
   private selectedItem: WebConfigModel;
 
   constructor(
     private service: WebConfigService,
+    private permissionService: PermissionService,
     private fb: FormBuilder,
     private snackbar: SnackbarService
   ) {
@@ -69,7 +73,14 @@ export class WebConfigComponent implements OnInit {
     this.spinnerVisible = false;
   }
 
+  canEdit(): boolean {
+    return this.permissionService.canEdit(this.screenKey);
+  }
+
   async save(): Promise<void> {
+    if (!this.canEdit()) {
+      return;
+    }
     this.spinnerVisible = true;
     const value: WebConfigModel = { ...this.selectedItem, ...this.form.value };
 
