@@ -3,6 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { hasRole } from 'src/app/common/lists/roles.enum';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -32,7 +33,7 @@ export class PurchaseDetailsComponent {
   }
 
   isVisible(roles: string[]): boolean {
-    return roles.some((role) => role === this.currentUserRole);
+    return hasRole(this.currentUserRole, roles);
   }
 
   // costRow()/calcRow() wrap a CartItem back into the {data: item} shape

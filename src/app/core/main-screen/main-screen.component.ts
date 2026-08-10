@@ -3,6 +3,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
+import { hasRole } from 'src/app/common/lists/roles.enum';
 import { NAV_CONFIG, NavGroup } from './nav-config';
 
 @Component({
@@ -47,10 +48,10 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe((user) => {
       this.currentUser = user;
       this.secureNav = NAV_CONFIG
-        .filter((group) => group.roles.some((role) => role === user?.role))
+        .filter((group) => hasRole(user?.role, group.roles))
         .map((group) => ({
           ...group,
-          items: group.items?.filter((item) => !item.roles || item.roles.some((role) => role === user?.role))
+          items: group.items?.filter((item) => !item.roles || hasRole(user?.role, item.roles))
         }));
     });
 

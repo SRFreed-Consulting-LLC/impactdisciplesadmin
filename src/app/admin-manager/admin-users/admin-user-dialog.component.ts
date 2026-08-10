@@ -24,8 +24,15 @@ export class AdminUserDialogComponent {
   // Admin Users can only ever be Admin or Employee - EnumHelper.
   // getRoleTypesAsArray() returns every Role value including Customer,
   // which doesn't belong on this screen (it's shared with CustomerModel's
-  // own default role).
-  roles: Role[] = [Role.ADMIN, Role.EMPLOYEE];
+  // own default role). Root is deliberately excluded too - it's a single,
+  // manually-assigned account (shane.freed@gmail.com) with every
+  // permission Admin has (see roles.enum.ts's hasRole()), not something
+  // assignable from this dropdown. The one exception: if the record being
+  // edited is already Root, it's added to the list in the constructor so
+  // the field shows its real value instead of rendering blank - still
+  // editable (e.g. to correct a mistake), just not offered to every other
+  // user.
+  roles: Role[];
 
   private itemType = 'Admin User';
 
@@ -37,6 +44,7 @@ export class AdminUserDialogComponent {
     private snackbar: SnackbarService
   ) {
     this.isEdit = !!data.item?.id;
+    this.roles = data.item?.role === Role.ROOT ? [Role.ADMIN, Role.EMPLOYEE, Role.ROOT] : [Role.ADMIN, Role.EMPLOYEE];
     // Email is the real Firebase Auth sign-in identity once an account is
     // linked (firebaseUID set) - editing it here would only change the
     // Firestore copy and desync it from what the person actually signs in

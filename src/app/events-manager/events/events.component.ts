@@ -10,6 +10,7 @@ import { LocationModel } from 'src/app/common/models/domain/location.model';
 import { LocationService } from 'src/app/common/services/data/location.service';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { hasRole } from 'src/app/common/lists/roles.enum';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -175,7 +176,7 @@ export class EventsComponent implements OnInit {
   }
 
   isVisible(roles: string[]): boolean {
-    return roles.some((role) => role === this.currentUserRole);
+    return hasRole(this.currentUserRole, roles);
   }
 
   organizationName(item: EventModel): string {

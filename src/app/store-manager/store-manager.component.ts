@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, combineLatest, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { hasRole } from 'src/app/common/lists/roles.enum';
 import { NAV_CONFIG, NavLeaf } from 'src/app/core/main-screen/nav-config';
 
 @Component({
@@ -35,7 +36,7 @@ export class StoreManagerComponent implements OnInit, OnDestroy {
     combineLatest([this.authService.dao.loggedInUser$, this.route.queryParamMap])
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(([user, params]) => {
-        this.secureItems = this.items.filter((item) => !item.roles || item.roles.some((role) => role === user?.role));
+        this.secureItems = this.items.filter((item) => !item.roles || hasRole(user?.role, item.roles));
         const requested = this.secureItems.find((item) => item.slug === params.get('tab'));
         this.selectedTab = requested?.label ?? this.secureItems[0]?.label ?? this.selectedTab;
       });
