@@ -18,6 +18,9 @@
         {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
       </span>
     </ng-template>
+    <ng-template appDataGridCell="newAttendees" let-row>
+      <span class="new-badge" *ngIf="newAttendeeEventIds.has(row.id)">NEW</span>
+    </ng-template>
   </app-data-grid>
 </ng-container>
 
@@ -168,7 +171,11 @@
           </ng-template>
         </mat-tab>
 
-        <mat-tab label="Attendees" *ngIf="isVisible(['Admin', 'Employee'])">
+        <mat-tab *ngIf="isVisible(['Admin', 'Employee'])">
+          <ng-template mat-tab-label>
+            Attendees
+            <span class="new-badge tab-badge" *ngIf="newAttendeeEventIds.has(item.id)">NEW</span>
+          </ng-template>
           <ng-template matTabContent>
             <div class="tab-content tab-content--flush">
               <app-event-attendees [event]="item"></app-event-attendees>

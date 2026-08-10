@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
+import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { LocationModel } from 'src/app/common/models/domain/location.model';
@@ -36,6 +37,7 @@ export class EventsComponent implements OnInit {
   events$: Observable<EventModel[]>;
   columns: DataGridColumn<EventModel>[] = [
     { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'newAttendees', label: 'New', filterable: false, sortable: false, value: (item) => this.newAttendeeEventIds.has(item.id!) },
     { key: 'startDate', label: 'From', type: 'date', dateFormat: 'MMM d, y, h:mm a', filterable: false, sortFn: (a, b) => toMillis(a.startDate) - toMillis(b.startDate) },
     { key: 'endDate', label: 'To', type: 'date', dateFormat: 'MMM d, y, h:mm a', filterable: false, sortFn: (a, b) => toMillis(a.endDate) - toMillis(b.endDate) },
     { key: 'costInDollars', label: 'Cost', type: 'currency' },
@@ -66,6 +68,17 @@ export class EventsComponent implements OnInit {
   locations: LocationModel[] = [];
   emailTemplates: string[] = [];
 
+  // Live-updated set of event IDs with at least one not-yet-seen attendee
+  // registration - drives both the "New" list-column badge and the
+  // Attendees tab badge in the edit view (see events.component.html). Just
+  // one extra standing listener for the whole screen, scoped to the
+  // (normally small) still-unseen subset via the newRecordStatus == 'new'
+  // filter, not a listener per event. Recomputes itself for free the
+  // moment NewRecordTracker (inside event-attendees.component.ts) flips a
+  // registration to 'seen' - that write no longer matches the filter, so
+  // it drops out of this same live query.
+  newAttendeeEventIds = new Set<string>();
+
   // ---- Edit state ----
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
@@ -89,6 +102,7 @@ export class EventsComponent implements OnInit {
 
   constructor(
     private service: EventService,
+    private registrationService: EventRegistrationService,
     private organizationService: OrganizationService,
     private locationService: LocationService,
     private emailTemplateService: EMailTemplatesService,
@@ -116,6 +130,10 @@ export class EventsComponent implements OnInit {
     });
 
     this.events$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+
+    this.registrationService.streamAllByValue('newRecordStatus', 'new').subscribe((registrations) => {
+      this.newAttendeeEventIds = new Set(registrations.map((r) => r.eventId).filter((id): id is string => !!id));
+    });
   }
 
   isVisible(roles: string[]): boolean {

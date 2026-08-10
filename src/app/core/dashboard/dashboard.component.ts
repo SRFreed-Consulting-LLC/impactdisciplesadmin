@@ -24,6 +24,7 @@ interface DashboardEventRow {
   isOnline: boolean;
   isOngoing: boolean; // startDate has passed but the event hasn't ended yet
   registeredCount: number | null; // null = enrichment read failed, hide rather than show 0
+  newRegisteredCount: number | null; // same null convention - unseen (newRecordStatus === 'new') signups
 }
 
 type RequestType = 'consultation-request' | 'consultation-survey' | 'lunch-and-learn' | 'seminar';
@@ -174,10 +175,19 @@ export class DashboardComponent implements OnInit {
       const registrations = registrationsResult.status === 'fulfilled' ? registrationsResult.value : null;
 
       const countByEventId = new Map<string, number>();
+      // Unseen-signup count per event - same source data as countByEventId
+      // above, just narrowed to newRecordStatus === 'new' (see
+      // new-record-tracking.util.ts). Drives the "+N NEW" badge below;
+      // clears itself once an admin opens that event's Attendees tab, same
+      // as every other new-record indicator in the app.
+      const newCountByEventId = new Map<string, number>();
       if (registrations) {
         registrations.forEach((r) => {
           if (!r.eventId) return;
           countByEventId.set(r.eventId, (countByEventId.get(r.eventId) ?? 0) + 1);
+          if (r.newRecordStatus === 'new') {
+            newCountByEventId.set(r.eventId, (newCountByEventId.get(r.eventId) ?? 0) + 1);
+          }
         });
       }
 
@@ -198,7 +208,8 @@ export class DashboardComponent implements OnInit {
             location: this.locationName(e, locations),
             isOnline: !!e.isOnline,
             isOngoing: startDateMs <= now && endDateMs >= now,
-            registeredCount: registrations ? (countByEventId.get(e.id!) ?? 0) : null
+            registeredCount: registrations ? (countByEventId.get(e.id!) ?? 0) : null,
+            newRegisteredCount: registrations ? (newCountByEventId.get(e.id!) ?? 0) : null
           };
         })
         // Future events AND events happening right now - anything whose

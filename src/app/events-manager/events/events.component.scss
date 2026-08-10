@@ -7,6 +7,24 @@
   color: #fff;
 }
 
+// Same "new" token as dashboard.component.scss's $new (#c0392b) - duplicated
+// rather than shared (this codebase has no shared-SCSS-partial convention),
+// see that file's own comment on the pattern. Drives both the list's "New"
+// column badge and the Attendees tab-label badge below.
+.new-badge {
+  background: #c0392b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.tab-badge {
+  margin-left: 6px;
+}
+
 /* See admin-manager/customers/customers.component.scss for the full explanation. */
 :host {
   display: flex;

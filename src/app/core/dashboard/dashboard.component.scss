@@ -250,6 +250,16 @@ $live-tint: #fef3c7;
   white-space: nowrap;
 }
 
+// LIVE NOW and +N NEW are independent conditions (an ongoing event can also
+// have unseen signups) - stack them instead of letting two inline badges
+// collide in the narrow status cell.
+.status-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
 .event-row--live {
   background: $live-tint;
 }
