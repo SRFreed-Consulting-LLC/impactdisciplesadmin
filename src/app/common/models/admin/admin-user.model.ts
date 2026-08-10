@@ -25,6 +25,13 @@ export class AdminUser extends Person {
     darkMode?: boolean;
     colorTheme?: string;
 
+    // Left-nav "pin to top" shortcuts - dot-path screen keys (same scheme as
+    // ScreenPermission.screenKey, e.g. 'events-manager.coaches'), in the
+    // order the user pinned them. Persisted per-admin like the theme fields
+    // above, not per-browser, so pins follow this person across devices. See
+    // MainScreenComponent.togglePin()/rebuildPinnedItems().
+    pinnedScreens?: string[];
+
     constructor(){
       super();
     }

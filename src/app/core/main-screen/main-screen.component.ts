@@ -3,12 +3,18 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
+import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 // Injected purely to trigger its construction (providedIn: 'root' alone
 // doesn't instantiate it) - see that service's own comment on why the
 // shell is where this belongs.
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
-import { NAV_CONFIG, NavGroup } from './nav-config';
+import { NAV_CONFIG, NavGroup, NavLeaf } from './nav-config';
+
+interface PinnedNavItem {
+  group: NavGroup;
+  item: NavLeaf;
+}
 
 @Component({
     selector: 'app-main-screen',
@@ -23,6 +29,14 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   // toolbar - set from the same loggedInUser$ emission secureNav is built
   // from, no separate subscription needed.
   currentUser: AdminUser | null = null;
+
+  // "Pin to top" shortcuts - screens the user has pinned, in their own
+  // chosen order, filtered through the same canViewNavItem() check as
+  // secureNav so a pinned screen an Employee later loses access to just
+  // quietly stops appearing rather than dangling as a broken link. Rebuilt
+  // any time currentUser changes (login, or a pin toggle - see
+  // togglePin()/rebuildPinnedItems()).
+  pinnedItems: PinnedNavItem[] = [];
 
   // Which manager groups are currently open - multiple can be open at once
   // (no accordion-exclusive behavior). A group is also auto-added here
@@ -45,6 +59,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     private authService: AdminAuthService,
     private permissionService: PermissionService,
     private permissionMigrationService: PermissionMigrationService,
+    private adminUserService: AdminUserService,
     private router: Router
   ) {}
 
@@ -68,6 +83,8 @@ export class MainScreenComponent implements OnInit, OnDestroy {
           ...group,
           items: group.items?.filter((item) => this.permissionService.canViewNavItem(group, item))
         }));
+
+      this.rebuildPinnedItems();
     });
 
     this.syncActiveFromUrl(this.router.url);
@@ -90,6 +107,64 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     } else {
       this.expanded.add(id);
     }
+  }
+
+  isPinned(group: NavGroup, item: NavLeaf): boolean {
+    return (this.currentUser?.pinnedScreens ?? []).includes(this.pinKey(group, item));
+  }
+
+  // Toggles a screen's pin state - optimistic (updates the nav immediately)
+  // with a revert on write failure, since loggedInUser$ is a one-time read
+  // per auth-state change (see FireAuthDao), not a live Firestore listener -
+  // nothing will re-pull the new pinnedScreens value on its own the way a
+  // streamed subscription would.
+  togglePin(group: NavGroup, item: NavLeaf): void {
+    if (!this.currentUser?.id) {
+      return;
+    }
+
+    const key = this.pinKey(group, item);
+    const current = this.currentUser.pinnedScreens ?? [];
+    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+
+    const previousUser = this.currentUser;
+    this.currentUser = { ...this.currentUser, pinnedScreens: next };
+    this.rebuildPinnedItems();
+
+    // Full record, not a partial {pinnedScreens} - update() is a full
+    // setDoc under the hood (no merge), same reason every other write in
+    // this app spreads the previous record first.
+    this.adminUserService.update(this.currentUser.id, this.currentUser).catch((err) => {
+      console.error('Failed to save pinned screens:', err);
+      this.currentUser = previousUser;
+      this.rebuildPinnedItems();
+    });
+  }
+
+  private pinKey(group: NavGroup, item: NavLeaf): string {
+    return `${group.id}.${item.slug}`;
+  }
+
+  private rebuildPinnedItems(): void {
+    const pinned = this.currentUser?.pinnedScreens ?? [];
+    if (pinned.length === 0) {
+      this.pinnedItems = [];
+      return;
+    }
+
+    const items: PinnedNavItem[] = [];
+    for (const group of NAV_CONFIG) {
+      for (const item of group.items ?? []) {
+        if (pinned.includes(this.pinKey(group, item)) && this.permissionService.canViewNavItem(group, item)) {
+          items.push({ group, item });
+        }
+      }
+    }
+
+    // Preserve the order the user pinned them in, not NAV_CONFIG's own
+    // manager-by-manager order.
+    items.sort((a, b) => pinned.indexOf(this.pinKey(a.group, a.item)) - pinned.indexOf(this.pinKey(b.group, b.item)));
+    this.pinnedItems = items;
   }
 
   logOff(): void {

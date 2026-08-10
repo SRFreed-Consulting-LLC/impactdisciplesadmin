@@ -5,6 +5,35 @@
     </div>
 
     <mat-nav-list class="impact-drawer__list">
+      <!-- Pinned shortcuts, above Home - same wrapper-div-as-sibling
+           structure as .impact-drawer__group-header below (see its own
+           comment): the unpin button sits next to the link, not inside it,
+           so it doesn't trip the same "third projected element doubles the
+           row height" issue. Hidden entirely (not just empty) when nothing
+           is pinned, rather than showing an empty section header. -->
+      <ng-container *ngIf="pinnedItems.length > 0">
+        <div class="impact-drawer__pinned-row" *ngFor="let pinned of pinnedItems">
+          <a
+            mat-list-item
+            [routerLink]="['/', pinned.group.id]"
+            [queryParams]="{ tab: pinned.item.slug }"
+            class="impact-drawer__link"
+            [class.impact-drawer__link--active]="activeGroupId === pinned.group.id && activeSlug === pinned.item.slug">
+            <mat-icon matListItemIcon>{{ pinned.group.icon }}</mat-icon>
+            <span matListItemTitle class="impact-drawer__link-text">{{ pinned.item.label }}</span>
+          </a>
+          <button
+            type="button"
+            mat-icon-button
+            class="impact-drawer__pin-toggle impact-drawer__pin-toggle--pinned"
+            matTooltip="Unpin"
+            (click)="togglePin(pinned.group, pinned.item)">
+            <mat-icon>push_pin</mat-icon>
+          </button>
+        </div>
+        <mat-divider class="impact-drawer__pinned-divider"></mat-divider>
+      </ng-container>
+
       <ng-container *ngFor="let group of secureNav">
         <!-- Home - no sub-items, plain link -->
         <a
@@ -41,15 +70,28 @@
         </div>
 
         <div class="impact-drawer__sublist" *ngIf="group.items && expanded.has(group.id)">
-          <a
-            *ngFor="let item of group.items"
-            mat-list-item
-            [routerLink]="['/', group.id]"
-            [queryParams]="{ tab: item.slug }"
-            class="impact-drawer__sublink"
-            [class.impact-drawer__sublink--active]="activeGroupId === group.id && activeSlug === item.slug">
-            <span matListItemTitle class="impact-drawer__sublink-text">{{ item.label }}</span>
-          </a>
+          <!-- Same wrapper-div-as-sibling structure as the pinned rows/
+               group-header above - the pin-toggle button sits next to the
+               link, not projected inside it. -->
+          <div class="impact-drawer__subitem" *ngFor="let item of group.items">
+            <a
+              mat-list-item
+              [routerLink]="['/', group.id]"
+              [queryParams]="{ tab: item.slug }"
+              class="impact-drawer__sublink"
+              [class.impact-drawer__sublink--active]="activeGroupId === group.id && activeSlug === item.slug">
+              <span matListItemTitle class="impact-drawer__sublink-text">{{ item.label }}</span>
+            </a>
+            <button
+              type="button"
+              mat-icon-button
+              class="impact-drawer__pin-toggle"
+              [class.impact-drawer__pin-toggle--pinned]="isPinned(group, item)"
+              [matTooltip]="isPinned(group, item) ? 'Unpin' : 'Pin to top'"
+              (click)="togglePin(group, item)">
+              <mat-icon>push_pin</mat-icon>
+            </button>
+          </div>
         </div>
       </ng-container>
     </mat-nav-list>

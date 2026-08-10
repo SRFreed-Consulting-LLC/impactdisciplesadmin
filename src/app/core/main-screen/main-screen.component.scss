@@ -180,6 +180,61 @@ $selected: #337ab7;
   color: #fff;
 }
 
+// Pinned shortcuts (above Home) and each sub-item row inside an expanded
+// group both pair a nav link with a separate pin-toggle button - flex
+// instead of the chevron's absolute positioning (§.impact-drawer__chevron's
+// own comment) since here there are two real interactive elements sharing
+// the row, not one link plus a purely decorative indicator.
+.impact-drawer__pinned-row,
+.impact-drawer__subitem {
+  display: flex;
+  align-items: stretch;
+
+  .impact-drawer__link,
+  .impact-drawer__sublink {
+    flex: 1 1 auto;
+    // Without this a flex child won't shrink below its content's natural
+    // width, so the link's own text-overflow:ellipsis never actually
+    // triggers - it just pushes the pin button out past the drawer's edge
+    // instead of truncating.
+    min-width: 0;
+  }
+}
+
+.impact-drawer__pin-toggle {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-right: 6px;
+
+  mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    line-height: 15px;
+    color: rgba(255, 255, 255, 0.35);
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+
+  &:hover mat-icon {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  // Filled-in accent color + a slight tilt reads as "pinned" at a glance,
+  // distinct from the plain hover state above.
+  &--pinned mat-icon {
+    color: $accent;
+    transform: rotate(45deg);
+  }
+}
+
+.impact-drawer__pinned-divider {
+  border-top-color: rgba(255, 255, 255, 0.15);
+  margin: 4px 0;
+}
+
 .impact-drawer__sublist {
   display: flex;
   flex-direction: column;
