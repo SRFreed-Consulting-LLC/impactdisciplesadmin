@@ -32,6 +32,12 @@ $selected: #337ab7;
   border-radius: 0;
   display: flex;
   flex-direction: column;
+  // Belt-and-suspenders against the pinned section's horizontal-scrollbar
+  // bug (see .impact-drawer__pin-toggle's own comment on the actual fix) -
+  // this is a fixed-width column, nothing in it should ever need to scroll
+  // sideways, so clip rather than let a future stray sub-pixel rounding
+  // (mat-divider, etc.) reopen the same symptom.
+  overflow-x: hidden;
 }
 
 .drawer-logo {
@@ -181,33 +187,30 @@ $selected: #337ab7;
 }
 
 // Pinned shortcuts (above Home) and each sub-item row inside an expanded
-// group both pair a nav link with a separate pin-toggle button - flex
-// instead of the chevron's absolute positioning (§.impact-drawer__chevron's
-// own comment) since here there are two real interactive elements sharing
-// the row, not one link plus a purely decorative indicator.
+// group both pair a nav link with a separate pin-toggle button. Tried flex
+// first (link + button as flex siblings) - live-diagnosed as wrong: the
+// mat-list-item link doesn't actually shrink to make room for its sibling
+// the way flex: 1 1 0 + min-width: 0 imply it should (Material's own
+// internal list-item layout wins), so the row's total content width ends
+// up a few px wider than the fixed-width drawer, showing a horizontal
+// scrollbar. Absolute positioning - the same technique
+// .impact-drawer__chevron already uses, see its own comment - sidesteps
+// this entirely: the button is removed from normal flow, so it can never
+// add to the row's content width no matter what Material does internally.
 .impact-drawer__pinned-row,
 .impact-drawer__subitem {
-  display: flex;
-  align-items: stretch;
-
-  .impact-drawer__link,
-  .impact-drawer__sublink {
-    flex: 1 1 auto;
-    // Without this a flex child won't shrink below its content's natural
-    // width, so the link's own text-overflow:ellipsis never actually
-    // triggers - it just pushes the pin button out past the drawer's edge
-    // instead of truncating.
-    min-width: 0;
-  }
+  position: relative;
 }
 
 .impact-drawer__pin-toggle {
-  flex: 0 0 auto;
-  align-self: center;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
   width: 30px;
   height: 30px;
   padding: 0;
-  margin-right: 6px;
+  z-index: 1;
 
   mat-icon {
     font-size: 15px;
@@ -235,6 +238,14 @@ $selected: #337ab7;
   margin: 4px 0;
 }
 
+// Pinned rows have no chevron, just the pin-toggle button - the base
+// .impact-drawer__link-text's 22px reservation (sized for the chevron,
+// which sits further from the edge) isn't quite enough room for this
+// button, which sits closer in at right: 8px.
+.impact-drawer__pinned-row .impact-drawer__link-text {
+  padding-right: 40px;
+}
+
 .impact-drawer__sublist {
   display: flex;
   flex-direction: column;
@@ -251,9 +262,12 @@ $selected: #337ab7;
 .impact-drawer__list .impact-drawer__sublink {
   text-decoration: none;
   color: rgba(255, 255, 255, 0.75);
-  // Matches the reviewed mockup's .subrow exactly.
+  // Matches the reviewed mockup's .subrow exactly, except the right side -
+  // widened from the mockup's own 18px to leave room for the absolutely-
+  // positioned .impact-drawer__pin-toggle button so it truncates the label
+  // instead of sitting on top of it.
   font-size: 12.5px;
-  padding: 8px 18px 8px 50px;
+  padding: 8px 36px 8px 50px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
