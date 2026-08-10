@@ -1,21 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { DMMModel } from 'src/app/common/models/domain/dmm.model';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DMMDialogComponent } from './dmm-dialog.component';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
-
+// Proof-of-concept conversion to <app-data-grid> (see shared/data-grid/) -
+// this screen used to hand-roll its own filter/sort pipeline, Columns menu,
+// export, and mat-table markup (see git history for the pre-conversion
+// version); all of that now lives once in the shared grid instead.
 @Component({
     selector: 'app-dmms',
     templateUrl: './dmms.component.html',
@@ -24,24 +21,25 @@ interface ColumnDef {
 })
 export class DMMServiceComponent implements OnInit {
   dmms$: Observable<DMMModel[]>;
-  currentRows: DMMModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'date', label: 'Date', visible: true },
-    { key: 'title', label: 'Title', visible: true }
-  ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Disciple Making Minute';
 
-  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  columns: DataGridColumn<DMMModel>[] = [
+    // No filter for isActive (matches the original - filtering a computed
+    // LIVE/INACTIVE label by text doesn't map cleanly to the operator set),
+    // but it IS sortable - by the underlying boolean, not the label text.
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'title', label: 'Title' }
+  ];
+
+  rowActions: DataGridRowAction<DMMModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: DMMService,
@@ -51,56 +49,7 @@ export class DMMServiceComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.dmms$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) =>
-            Object.keys(filters).every((field) =>
-              matchesColumnFilter(item[field as keyof DMMModel], filters[field], field === 'date' ? 'date' : 'text')
-            )
-          )
-          .sort((a, b) => {
-            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-            return bTime - aTime;
-          });
-        this.currentRows = filtered;
-        return filtered;
-      }),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  private fieldValue(item: DMMModel, field: string): unknown {
-    switch (field) {
-      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      default: return (item as unknown as Record<string, unknown>)[field];
-    }
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<DMMModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'dmms.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.dmms$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   showAddModal(): void {

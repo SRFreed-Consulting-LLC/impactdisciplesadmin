@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { ConsultationRequestModel } from 'src/app/common/models/domain/consultation-request.model';
 import { ConsultationRequestService } from 'src/app/common/services/data/consultation-request.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,15 +7,8 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConsultationRequestDialogComponent } from './consultation-request-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 @Component({
     selector: 'app-consultations-requests',
@@ -25,28 +18,23 @@ interface ColumnDef {
 })
 export class ConsultationsRequestsComponent implements OnInit {
   requests$: Observable<ConsultationRequestModel[]>;
-  currentRows: ConsultationRequestModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'date', label: 'Date', visible: true },
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'message', label: 'Message', visible: true }
+
+  columns: DataGridColumn<ConsultationRequestModel>[] = [
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'message', label: 'Message', cellClass: 'message-cell' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Consultation Request';
 
-  actions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
-  ];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<ConsultationRequestModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   // See new-record-tracking.util.ts - marks newly-arrived requests seen the
   // moment this screen loads, and keeps them highlighted for this page view.
@@ -62,55 +50,13 @@ export class ConsultationsRequestsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.requests$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      tap(([items]) => this.tracker.capture(items)),
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) =>
-            Object.keys(filters).every((field) =>
-              matchesColumnFilter(
-                item[field as keyof ConsultationRequestModel],
-                filters[field],
-                field === 'date' ? 'date' : 'text'
-              )
-            )
-          )
-          .sort((a, b) => {
-            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-            return bTime - aTime;
-          });
-        this.currentRows = filtered;
-        return filtered;
-      }),
+    this.requests$ = this.service.streamAll().pipe(
+      tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
   }
 
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<ConsultationRequestModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => ((item as unknown as Record<string, unknown>)[c.key] as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'consultation_requests.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
-  }
+  rowClass = (row: ConsultationRequestModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   showAddModal(): void {
     this.dialog.open(ConsultationRequestDialogComponent, {

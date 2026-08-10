@@ -14,29 +14,11 @@
   height: 100%;
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-}
-
-.products-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.products-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.list-filter {
-  width: 200px;
-  margin-right: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Full-page in-place edit view (no popup - see home-page-popups.component.ts

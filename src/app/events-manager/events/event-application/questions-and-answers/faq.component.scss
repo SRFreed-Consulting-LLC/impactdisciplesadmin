@@ -4,29 +4,19 @@
   height: 100%;
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.faq-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.answer-cell {
+/* ::ng-deep - .answer-cell is applied to a <td> rendered inside
+   app-data-grid's own template (a different component's view), so
+   emulated encapsulation needs piercing to reach it. */
+:host ::ng-deep .answer-cell {
   max-width: 400px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.faq-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
 }

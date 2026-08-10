@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { LunchAndLearnModel } from 'src/app/common/models/domain/lunch-and-learn.model';
 import { LunchAndLearnService } from 'src/app/common/services/data/lunch-and-learn.service';
@@ -7,15 +7,9 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { LunchAndLearnDialogComponent } from './lunch-and-learn-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
+import { timestampToTimeString } from '../../shared/time-of-day.util';
 
 @Component({
     selector: 'app-lunch-and-learns',
@@ -25,28 +19,25 @@ interface ColumnDef {
 })
 export class LunchAndLearnsComponent implements OnInit {
   requests$: Observable<LunchAndLearnModel[]>;
-  currentRows: LunchAndLearnModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'date', label: 'Date', visible: true },
-    { key: 'coordinator', label: 'Coordinator', visible: true },
-    { key: 'locationName', label: 'Location Name', visible: true },
-    { key: 'requestedDate', label: 'Requested Date', visible: true },
-    { key: 'requestedStartTime', label: 'Start Time', visible: true },
-    { key: 'requestedEndTime', label: 'End Time', visible: true },
-    { key: 'email', label: 'Email', visible: true }
+
+  columns: DataGridColumn<LunchAndLearnModel>[] = [
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'coordinator', label: 'Coordinator' },
+    { key: 'locationName', label: 'Location Name' },
+    { key: 'requestedDate', label: 'Requested Date', type: 'date' },
+    { key: 'requestedStartTime', label: 'Start Time', filterable: false, value: (item) => timestampToTimeString(item.requestedStartTime) },
+    { key: 'requestedEndTime', label: 'End Time', filterable: false, value: (item) => timestampToTimeString(item.requestedEndTime) },
+    { key: 'email', label: 'Email' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Lunch and Learn Request';
 
-  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<LunchAndLearnModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   // See new-record-tracking.util.ts - marks newly-arrived requests seen the
   // moment this screen loads, and keeps them highlighted for this page view.
@@ -62,52 +53,13 @@ export class LunchAndLearnsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.requests$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      tap(([items]) => this.tracker.capture(items)),
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) =>
-            Object.keys(filters).every((field) => {
-              const type = field === 'date' || field === 'requestedDate' ? 'date' : 'text';
-              return matchesColumnFilter(item[field as keyof LunchAndLearnModel], filters[field], type);
-            })
-          )
-          .sort((a, b) => {
-            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-            return bTime - aTime;
-          });
-        this.currentRows = filtered;
-        return filtered;
-      }),
+    this.requests$ = this.service.streamAll().pipe(
+      tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
   }
 
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<LunchAndLearnModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => ((item as unknown as Record<string, unknown>)[c.key] as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'lunch_and_learns.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
-  }
+  rowClass = (row: LunchAndLearnModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   showAddModal(): void {
     this.dialog.open(LunchAndLearnDialogComponent, {

@@ -91,8 +91,27 @@ mat-form-field {
   margin-bottom: 8px;
 }
 
-.table-scroll {
+.results-wrap {
   overflow: auto;
+}
+
+// app-data-grid defaults to flex-filling its parent's height (see
+// data-grid.component.scss's :host) - right for the full-page list screens
+// it was designed for, wrong here: this report's table grows naturally
+// within .report-content (the page's real scroll region), it doesn't sit in
+// its own flex column. Cancel that, and override its own internal
+// .table-scroll (::ng-deep - a different component's view) to match:
+// horizontal-only scroll for wide column sets, no imposed height.
+app-data-grid {
+  display: block;
+  height: auto;
+}
+
+:host ::ng-deep .table-scroll {
+  flex: none;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .report-table {

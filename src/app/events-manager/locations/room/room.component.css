@@ -1,16 +1,4 @@
-.table-scroll {
-  overflow-x: auto;
-}
-
-.rooms-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.rooms-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
+app-data-grid {
+  display: flex;
+  flex-direction: column;
 }

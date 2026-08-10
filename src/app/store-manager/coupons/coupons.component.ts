@@ -1,20 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { CouponModel } from 'src/app/common/models/utils/coupon.model';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { CouponDialogComponent } from './coupon-dialog.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 @Component({
     selector: 'app-coupons',
@@ -24,25 +17,22 @@ interface ColumnDef {
 })
 export class CouponsComponent implements OnInit {
   coupons$: Observable<CouponModel[]>;
-  currentRows: CouponModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'code', label: 'Code', visible: true },
-    { key: 'percentOff', label: 'Percent Off', visible: true },
-    { key: 'affilliateName', label: 'Affiliate Name', visible: true }
+
+  columns: DataGridColumn<CouponModel>[] = [
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'code', label: 'Code' },
+    { key: 'percentOff', label: 'Percent Off', type: 'number' },
+    { key: 'affilliateName', label: 'Affiliate Name' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Coupon';
 
-  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<CouponModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: CouponService,
@@ -52,41 +42,7 @@ export class CouponsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.coupons$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filters[field], field === 'percentOff' ? 'number' : 'text')))
-          .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''));
-        this.currentRows = filtered;
-        return filtered;
-      }),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<CouponModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => ((c.key === 'isActive' ? (item.isActive ? 'LIVE' : 'INACTIVE') : (item as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'coupons.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.coupons$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   showAddModal(): void {

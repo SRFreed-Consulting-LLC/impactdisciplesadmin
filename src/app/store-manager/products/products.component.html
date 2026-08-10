@@ -1,145 +1,22 @@
 <ng-container *ngIf="mode === 'list'">
-  <app-list-header [title]="itemType + 's'" [actions]="actions">
-    <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
-      <mat-icon>view_column</mat-icon>
-      Columns
-    </button>
-    <mat-menu #columnsMenu="matMenu">
-      <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
-        <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
-      </button>
-    </mat-menu>
-
-    <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
-      <mat-icon>file_download</mat-icon>
-      Export to Excel
-    </button>
-  </app-list-header>
-
-  <div class="table-scroll" appInfiniteScroll (scrolledToBottom)="loadMore()">
-    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-    <table mat-table [dataSource]="(products$ | async) ?? []" class="products-table">
-      <ng-container matColumnDef="isActive">
-        <th mat-header-cell *matHeaderCellDef>Live</th>
-        <td mat-cell *matCellDef="let item">
-          <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
-            {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
-          </span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="imageUrl">
-        <th mat-header-cell *matHeaderCellDef>Image</th>
-        <td mat-cell *matCellDef="let item">
-          <img *ngIf="item.imageUrl" width="60" [src]="item.imageUrl.url" [alt]="item.imageUrl.name">
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="title">
-        <th mat-header-cell *matHeaderCellDef>Title</th>
-        <td mat-cell *matCellDef="let item">{{ item.title }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="cost">
-        <th mat-header-cell *matHeaderCellDef>Cost</th>
-        <td mat-cell *matCellDef="let item">{{ item.cost | currency }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="salePrice">
-        <th mat-header-cell *matHeaderCellDef>Sale Price</th>
-        <td mat-cell *matCellDef="let item">{{ item.salePrice | currency }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="category">
-        <th mat-header-cell *matHeaderCellDef>Category</th>
-        <td mat-cell *matCellDef="let item">{{ categoryName(item) }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="series">
-        <th mat-header-cell *matHeaderCellDef>Series</th>
-        <td mat-cell *matCellDef="let item">{{ seriesName(item) }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="isEBook">
-        <th mat-header-cell *matHeaderCellDef>eBook</th>
-        <td mat-cell *matCellDef="let item">{{ item.isEBook ? 'Yes' : 'No' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="isDigitalBook">
-        <th mat-header-cell *matHeaderCellDef>Digital Book</th>
-        <td mat-cell *matCellDef="let item">{{ item.isDigitalBook ? 'Yes' : 'No' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-        <td mat-cell *matCellDef="let item" class="actions-column">
-          <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
-      <ng-container matColumnDef="isActive-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <ng-container matColumnDef="imageUrl-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <ng-container matColumnDef="title-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-
-      <ng-container matColumnDef="cost-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('cost', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-
-      <ng-container matColumnDef="salePrice-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('salePrice', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-
-      <ng-container matColumnDef="category-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('category', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-
-      <ng-container matColumnDef="series-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('series', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-
-      <ng-container matColumnDef="isEBook-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <ng-container matColumnDef="isDigitalBook-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <ng-container matColumnDef="actions-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
-    </table>
-    <app-paged-table-footer
-      [loadedCount]="loadedCount"
-      [loadingMore]="loadingMore$ | async"
-      [hasMore]="hasMore$ | async">
-    </app-paged-table-footer>
-  </div>
+  <app-data-grid
+    [title]="itemType + 's'"
+    [headerActions]="headerActions"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [pagedSource]="paged"
+    tableClass="products-table"
+    exportFileName="products.xlsx"
+    (rowDoubleClick)="showEditModal($event)">
+    <ng-template appDataGridCell="isActive" let-row>
+      <span class="active-template" [style.background-color]="row.isActive ? '#29d029' : 'red'">
+        {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
+      </span>
+    </ng-template>
+    <ng-template appDataGridCell="imageUrl" let-row>
+      <img *ngIf="row.imageUrl" width="60" [src]="row.imageUrl.url" [alt]="row.imageUrl.name">
+    </ng-template>
+  </app-data-grid>
 </ng-container>
 
 <ng-container *ngIf="mode === 'edit'">

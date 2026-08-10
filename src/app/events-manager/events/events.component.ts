@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -16,16 +16,9 @@ import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { LocationsComponent } from '../locations/locations.component';
 import { OrganizationsComponent } from '../organizations/organizations.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts (store-manager) for the established precedent) -
@@ -41,19 +34,16 @@ export class EventsComponent implements OnInit {
 
   // ---- List state ----
   events$: Observable<EventModel[]>;
-  currentRows: EventModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'startDate', label: 'From', visible: true },
-    { key: 'endDate', label: 'To', visible: true },
-    { key: 'costInDollars', label: 'Cost', visible: true },
-    { key: 'isSummit', label: 'Summit?', visible: true },
-    { key: 'eventName', label: 'Event Name', visible: true },
-    { key: 'organization', label: 'Organization', visible: true },
-    { key: 'location', label: 'Location', visible: true }
+  columns: DataGridColumn<EventModel>[] = [
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'startDate', label: 'From', type: 'date', dateFormat: 'short', filterable: false, sortFn: (a, b) => toMillis(a.startDate) - toMillis(b.startDate) },
+    { key: 'endDate', label: 'To', type: 'date', dateFormat: 'short', filterable: false, sortFn: (a, b) => toMillis(a.endDate) - toMillis(b.endDate) },
+    { key: 'costInDollars', label: 'Cost', type: 'currency' },
+    { key: 'isSummit', label: 'Summit?', filterable: false, value: (item) => (item.isSummit ? 'Yes' : 'No') },
+    { key: 'eventName', label: 'Event Name' },
+    { key: 'organization', label: 'Organization', value: (item) => this.organizationName(item) },
+    { key: 'location', label: 'Location', value: (item) => this.locationName(item) }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Event';
 
@@ -62,7 +52,8 @@ export class EventsComponent implements OnInit {
   // full explanation.
   currentUserRole?: string;
 
-  actions: ListHeaderAction[] = [];
+  headerActions: ListHeaderAction[] = [];
+  rowActions: DataGridRowAction<EventModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.isVisible(['Admin']) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -76,8 +67,6 @@ export class EventsComponent implements OnInit {
   organizations: OrganizationModel[] = [];
   locations: LocationModel[] = [];
   emailTemplates: string[] = [];
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   // ---- Edit state ----
   form: FormGroup;
@@ -115,7 +104,7 @@ export class EventsComponent implements OnInit {
   ngOnInit(): void {
     this.authService.dao.loggedInUser$.subscribe((user) => {
       this.currentUserRole = user?.role;
-      this.actions = this.isVisible(['Admin']) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+      this.headerActions = this.isVisible(['Admin']) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
     });
 
     this.organizationService.streamAll().subscribe((organizations) => {
@@ -128,52 +117,7 @@ export class EventsComponent implements OnInit {
       this.emailTemplates = templates.map((t) => t.name);
     });
 
-    this.events$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => toMillis(b.startDate) - toMillis(a.startDate));
-        this.currentRows = filtered;
-        return filtered;
-      }),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  private fieldValue(item: EventModel, field: string): unknown {
-    switch (field) {
-      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      case 'isSummit': return item.isSummit ? 'Yes' : 'No';
-      case 'organization': return this.organizationName(item);
-      case 'location': return this.locationName(item);
-      case 'startDate':
-      case 'endDate': {
-        const value = (item as unknown as Record<string, unknown>)[field];
-        return value instanceof Date ? value : value ? new Date(value as string | number) : '';
-      }
-      default: return (item as unknown as Record<string, unknown>)[field];
-    }
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<EventModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'events.xlsx');
+    this.events$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   isVisible(roles: string[]): boolean {
@@ -188,26 +132,6 @@ export class EventsComponent implements OnInit {
   locationName(item: EventModel): string {
     const id = typeof item.location === 'string' ? item.location : item.location?.id;
     return this.locations.find((l) => l.id === id)?.name ?? '';
-  }
-
-  private matchesField(item: EventModel, field: string, filter: ColumnFilterValue): boolean {
-    if (field === 'organization') {
-      return matchesColumnFilter(this.organizationName(item), filter, 'text');
-    }
-    if (field === 'location') {
-      return matchesColumnFilter(this.locationName(item), filter, 'text');
-    }
-    if (field === 'costInDollars') {
-      return matchesColumnFilter(item.costInDollars, filter, 'number');
-    }
-    if (field === 'startDate' || field === 'endDate') {
-      return matchesColumnFilter(toMillis((item as unknown as Record<string, unknown>)[field]), filter, 'date');
-    }
-    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   delete(item: EventModel): void {

@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { SeriesModel } from 'src/app/common/models/utils/series.model';
 import { SeriesService } from 'src/app/common/services/data/series.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { SeriesModalComponent } from './series-modal/series-modal.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
 // Opened via MatDialog.open(ProductSeriesComponent, ...) from
 // ProductsComponent's "Series" menu item - same pattern as
@@ -22,17 +22,20 @@ import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '.
 })
 export class ProductSeriesComponent implements OnInit {
   series$: Observable<SeriesModel[]>;
-  displayedColumns = ['imageUrl', 'order', 'name', 'showInStore', 'actions'];
-  filterColumns = ['imageUrl-filter', 'order-filter', 'name-filter', 'showInStore-filter', 'actions-filter'];
-  textOperators = TEXT_FILTER_OPERATORS;
+
+  columns: DataGridColumn<SeriesModel>[] = [
+    { key: 'imageUrl', label: 'Image', filterable: false, sortable: false, value: (item) => item.imageUrl?.name ?? '' },
+    { key: 'order', label: 'Order', type: 'number', filterable: false },
+    { key: 'name', label: 'Name' },
+    { key: 'showInStore', label: 'Show In Store', filterable: false, value: (item) => (item.showInStore ? 'Yes' : 'No') }
+  ];
+  rowActions: DataGridRowAction<SeriesModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   itemType = 'Series';
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: SeriesService,
@@ -43,18 +46,7 @@ export class ProductSeriesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.series$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof SeriesModel], filters[field], 'text')))
-          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      ),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.series$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   onClose(): void {

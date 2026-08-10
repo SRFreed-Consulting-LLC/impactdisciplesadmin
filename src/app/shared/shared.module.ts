@@ -1,6 +1,6 @@
 import { NgModule } from "@angular/core";
 import { IndicatorButtonComponent } from "./indicator-button/indicator-button.component";
-import { CommonModule } from "@angular/common";
+import { CommonModule, CurrencyPipe, DatePipe } from "@angular/common";
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { ListHeaderComponent } from './list-header/list-header.component';
 import { PopupHeaderComponent } from './popup-header/popup-header.component';
@@ -15,6 +15,8 @@ import { InfiniteScrollDirective } from './infinite-scroll.directive';
 import { PagedTableFooterComponent } from './paged-table-footer/paged-table-footer.component';
 import { NewRecordAlertsComponent } from './new-record-alerts/new-record-alerts.component';
 import { OrderWorkflowDialogComponent } from './order-workflow-dialog/order-workflow-dialog.component';
+import { DataGridComponent } from './data-grid/data-grid.component';
+import { DataGridCellDirective } from './data-grid/data-grid-cell.directive';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +32,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatTableModule } from '@angular/material/table';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @NgModule({
   declarations: [
@@ -47,7 +51,9 @@ import { MatBadgeModule } from '@angular/material/badge';
     InfiniteScrollDirective,
     PagedTableFooterComponent,
     NewRecordAlertsComponent,
-    OrderWorkflowDialogComponent
+    OrderWorkflowDialogComponent,
+    DataGridComponent,
+    DataGridCellDirective
   ],
   imports: [
     CommonModule,
@@ -65,7 +71,9 @@ import { MatBadgeModule } from '@angular/material/badge';
     MatSelectModule,
     MatChipsModule,
     MatAutocompleteModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MatTableModule,
+    MatCheckboxModule
   ],
   exports: [
     IndicatorButtonComponent,
@@ -82,7 +90,15 @@ import { MatBadgeModule } from '@angular/material/badge';
     InfiniteScrollDirective,
     PagedTableFooterComponent,
     NewRecordAlertsComponent,
-    OrderWorkflowDialogComponent
-  ]
+    OrderWorkflowDialogComponent,
+    DataGridComponent,
+    DataGridCellDirective
+  ],
+  // DatePipe/CurrencyPipe aren't auto-registered for DI just by importing
+  // CommonModule (that only makes the `| date`/`| currency` template pipes
+  // usable) - DataGridComponent injects them directly to format date/
+  // currency-type columns in TS (see its own comment on why), which needs
+  // this explicit provider.
+  providers: [DatePipe, CurrencyPipe]
 })
 export class SharedModule {}

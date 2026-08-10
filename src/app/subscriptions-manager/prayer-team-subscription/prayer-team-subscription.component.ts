@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
@@ -11,17 +11,10 @@ import { EmailListService } from 'src/app/common/services/data/email-list.servic
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PrayerSubscriberDialogComponent } from './prayer-subscriber-dialog.component';
 import { SendPrayerDialogComponent } from './send-prayer-dialog.component';
 import { PrayerListDialogComponent } from './prayer-list-dialog.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 @Component({
     selector: 'app-prayer-team-subscription',
@@ -31,15 +24,16 @@ interface ColumnDef {
 })
 export class PrayerTeamSubscriptionComponent implements OnInit {
   subscribers$: Observable<PrayerTeamSubscriptionModel[]>;
-  columns: ColumnDef[] = [
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'date', label: 'Date', visible: true }
+  columns: DataGridColumn<PrayerTeamSubscriptionModel>[] = [
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'date', label: 'Date', type: 'date', filterable: false }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Prayer Team Subscription';
+
+  rowActions: DataGridRowAction<PrayerTeamSubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   emailLists: EmailList[] = [];
   selectedList: EmailList | undefined;
@@ -51,9 +45,8 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
 
   // Stable field, not a getter - see customers.component.ts's own comment on
   // why.
-  actions: ListHeaderAction[] = [];
+  headerActions: ListHeaderAction[] = [];
 
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   currentRows: PrayerTeamSubscriptionModel[] = [];
   private allSubscribers: PrayerTeamSubscriptionModel[] = [];
 
@@ -66,15 +59,8 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.subscribers$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        this.allSubscribers = items;
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
-        this.currentRows = filtered;
-        return filtered;
-      }),
+    this.subscribers$ = this.service.streamAll().pipe(
+      tap((items) => (this.allSubscribers = items)),
       tap(() => this.loading$.next(false))
     );
 
@@ -92,36 +78,13 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
     if (this.selectedList?.name) {
       actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
-    this.actions = actions;
+    this.headerActions = actions;
   }
 
-  private matchesField(item: PrayerTeamSubscriptionModel, field: string, filter: ColumnFilterValue): boolean {
-    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, field === 'date' ? 'date' : 'text');
-  }
-
-  get displayedColumns(): string[] {
-    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<PrayerTeamSubscriptionModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => ((item as unknown as Record<string, unknown>)[c.key] as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'prayer_team_subscribers.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  // Backs "Export Prayer List" (selected-only PDF) - kept in sync via
+  // (visibleRowsChange) since the grid now owns filtering/sorting.
+  onVisibleRowsChange(rows: PrayerTeamSubscriptionModel[]): void {
+    this.currentRows = rows;
   }
 
   onListFilterChanged(listId: string | null): void {
@@ -135,18 +98,6 @@ export class PrayerTeamSubscriptionComponent implements OnInit {
       this.selectedList = { ...new EmailList() };
     }
     this.refreshActions();
-  }
-
-  isAllSelected(): boolean {
-    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
-  }
-
-  masterToggle(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
-      this.currentRows.forEach((row) => this.selection.select(row));
-    }
   }
 
   showAddModal(): void {

@@ -1,22 +1,15 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatDialog } from '@angular/material/dialog';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { FAQModel } from 'src/app/common/models/utils/faq.model';
 import { FAQService } from 'src/app/common/services/data/faq.service';
 import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../../shared/snackbar.service';
 import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../../../shared/data-grid/data-grid.model';
 import { FaqDialogComponent } from './faq-dialog.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 // Two concerns in one screen, matching the original: (a) a global FAQ
 // library (its own Firestore collection, plain add/edit/delete) and (b)
@@ -33,16 +26,17 @@ export class FAQComponent implements OnInit, OnChanges {
   @Input() event: EventModel;
 
   faqs$: Observable<FAQModel[]>;
-  columns: ColumnDef[] = [
-    { key: 'sortOrder', label: 'Sort Order', visible: true },
-    { key: 'question', label: 'Question', visible: true },
-    { key: 'answer', label: 'Answer', visible: true }
+
+  columns: DataGridColumn<FAQModel>[] = [
+    { key: 'sortOrder', label: 'Sort Order', type: 'number' },
+    { key: 'question', label: 'Question' },
+    { key: 'answer', label: 'Answer', filterable: false, cellClass: 'answer-cell', exportValue: (item) => this.stripHtml(item.answer ?? '') }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'FAQ';
 
-  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<FAQModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   selection = new SelectionModel<FAQModel>(true, []);
 
@@ -50,8 +44,7 @@ export class FAQComponent implements OnInit, OnChanges {
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
-  private currentRows: FAQModel[] = [];
+  private allFaqs: FAQModel[] = [];
   private selectionInitialized = false;
 
   constructor(
@@ -62,14 +55,9 @@ export class FAQComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
-    this.faqs$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filters[field], field === 'sortOrder' ? 'number' : 'text')))
-          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-      ),
+    this.faqs$ = this.service.streamAll().pipe(
       tap((items) => {
-        this.currentRows = items;
+        this.allFaqs = items;
         // Only pre-select once, the first time the library loads - after
         // that, selection changes are user-driven and shouldn't be
         // clobbered by every subsequent stream emission.
@@ -92,55 +80,12 @@ export class FAQComponent implements OnInit, OnChanges {
     }
   }
 
-  get displayedColumns(): string[] {
-    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<FAQModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => ((c.key === 'answer' ? this.stripHtml(item.answer ?? '') : (item as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'faqs.xlsx');
-  }
-
   private stripHtml(html: string): string {
     return html ? html.replace(/<[^>]*>/g, '') : '';
   }
 
-  isAllSelected(): boolean {
-    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
-  }
-
-  masterToggle(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
-      this.currentRows.forEach((row) => this.selection.select(row));
-    }
-    this.onSelectionChange();
-  }
-
-  toggleRow(item: FAQModel): void {
-    this.selection.toggle(item);
-    this.onSelectionChange();
-  }
-
-  private onSelectionChange(): void {
+  onSelectionChange(): void {
     this.event.faqList = this.selection.selected;
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   showAddModal(): void {

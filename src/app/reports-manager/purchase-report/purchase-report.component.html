@@ -90,25 +90,15 @@
   <ng-container *ngIf="!loading && generated">
     <div class="empty-state" *ngIf="results.length === 0">No purchases matched these criteria.</div>
 
-    <div class="table-scroll" *ngIf="results.length > 0">
+    <div class="results-wrap" *ngIf="results.length > 0">
       <div class="result-count">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</div>
-      <table mat-table [dataSource]="results" class="report-table">
-        <ng-container *ngFor="let key of displayedColumns" [matColumnDef]="key">
-          <th mat-header-cell *matHeaderCellDef>{{ columnLabel(key) }}</th>
-          <td mat-cell *matCellDef="let row">
-            <ng-container [ngSwitch]="key">
-              <span *ngSwitchCase="'dateProcessed'">{{ row.dateProcessed | date: 'short' }}</span>
-              <span *ngSwitchCase="'lastPurchaseDate'">{{ row.lastPurchaseDate | date: 'short' }}</span>
-              <span *ngSwitchCase="'total'">{{ row.total | currency }}</span>
-              <span *ngSwitchCase="'totalSpent'">{{ row.totalSpent | currency }}</span>
-              <span *ngSwitchDefault>{{ $any(row)[key] }}</span>
-            </ng-container>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
+      <app-data-grid
+        [showHeader]="false"
+        [showFilterRow]="false"
+        [columns]="gridColumns"
+        [rows]="results"
+        tableClass="report-table">
+      </app-data-grid>
     </div>
   </ng-container>
 </div>

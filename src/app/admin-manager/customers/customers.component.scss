@@ -1,33 +1,17 @@
-// See customer-dialog.component.scss / list-header.component.scss for why:
-// .table-scroll needs a genuinely resolved (non-auto) height for CDK
-// Table's sticky header row to actually stay stuck - a flex column with
-// list-header fixed above and this flex: 1 region below is what provides
-// that, replacing an app-list-header position: sticky attempt that only
-// solved half the problem.
+// See shared/data-grid/data-grid.component.scss's own comment - the grid
+// needs a resolved (non-auto) height from its host for CDK Table's sticky
+// header to actually stay stuck.
 :host {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-}
-
-.customers-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.customers-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
 }
 
 .list-filter {

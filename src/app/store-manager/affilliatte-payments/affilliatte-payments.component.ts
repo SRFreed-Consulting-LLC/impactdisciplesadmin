@@ -4,6 +4,7 @@ import { AffilliatePaymentModel } from 'src/app/common/models/utils/affilliate-p
 import { AffilliatePaymentsService } from 'src/app/common/services/data/affiliate-payment.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Embedded (not a dialog) inside CouponDialogComponent, alongside
 // AffiliateSalesComponent - see its own comment for why this is now
@@ -18,6 +19,12 @@ export class AffilliattePaymentsComponent implements OnChanges {
   @Input() code: string;
 
   affiliatePayments$: Observable<AffilliatePaymentModel[]>;
+
+  columns: DataGridColumn<AffilliatePaymentModel>[] = [
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'receipt', label: 'Receipt' },
+    { key: 'amountPayed', label: 'Payed Amount', type: 'currency' }
+  ];
 
   constructor(private affilliatePaymentService: AffilliatePaymentsService) {}
 

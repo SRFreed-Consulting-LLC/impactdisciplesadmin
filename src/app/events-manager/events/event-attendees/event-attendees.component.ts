@@ -1,5 +1,5 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
@@ -14,17 +14,10 @@ import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { ListHeaderAction } from '../../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../../shared/new-record-tracking.util';
 import { EventAttendeeDialogComponent } from './event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './event-email-dialog.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 @Component({
     selector: 'app-event-attendees',
@@ -36,17 +29,16 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   @Input() event: EventModel;
 
   attendees$: Observable<EventRegistrationModel[]>;
-  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Registered User';
 
-  columns: ColumnDef[] = [
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'registrationDate', label: 'Registration Date', visible: true },
-    { key: 'loggedIn', label: 'Logged In', visible: true },
-    { key: 'receipt', label: 'Receipt', visible: true }
+  columns: DataGridColumn<EventRegistrationModel>[] = [
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'registrationDate', label: 'Registration Date', type: 'date', dateFormat: 'short', filterable: false },
+    { key: 'loggedIn', label: 'Logged In', filterable: false, value: (item) => (item.loggedIn ? 'Yes' : 'No') },
+    { key: 'receipt', label: 'Receipt' }
   ];
 
   selection = new SelectionModel<EventRegistrationModel>(true, []);
@@ -57,7 +49,6 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
 
   currentRows: EventRegistrationModel[] = [];
 
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private unsub?: Unsubscribe;
 
   // See new-record-tracking.util.ts - marks newly-arrived registrations for
@@ -78,15 +69,8 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const source$ = this.event?.id ? this.service.streamAllByValue('eventId', this.event.id) : of([]);
 
-    this.attendees$ = combineLatest([source$, this.filters$]).pipe(
-      tap(([items]) => this.tracker.capture(items)),
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filters[field], 'text')))
-          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
-        this.currentRows = filtered;
-        return filtered;
-      }),
+    this.attendees$ = source$.pipe(
+      tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
   }
@@ -95,38 +79,21 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
     this.unsub?.();
   }
 
-  get displayedColumns(): string[] {
-    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
+  rowClass = (row: EventRegistrationModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
-  get filterColumns(): string[] {
-    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  actions: ListHeaderAction[] = [
+  headerActions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
     { label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() },
     { label: 'Export to PDF', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
   ];
 
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
+  rowActions: DataGridRowAction<EventRegistrationModel>[] = [
+    { icon: 'forward_to_inbox', tooltip: 'RESEND EMAIL', onClick: (item) => this.resendConfirmationEmail(item), visible: (item) => !!item.receiptEmailId },
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }
+  ];
 
-  isAllSelected(): boolean {
-    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
-  }
-
-  masterToggle(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
-      this.currentRows.forEach((row) => this.selection.select(row));
-    }
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+  onVisibleRowsChange(rows: EventRegistrationModel[]): void {
+    this.currentRows = rows;
   }
 
   showAddModal(): void {
@@ -191,17 +158,5 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
       ])
     });
     doc.save('attendee_list.pdf');
-  }
-
-  exportExcel(): void {
-    const columns: ExcelColumn<EventRegistrationModel>[] = [
-      { header: 'Last Name', value: (r) => r.lastName ?? '' },
-      { header: 'First Name', value: (r) => r.firstName ?? '' },
-      { header: 'Email', value: (r) => r.email ?? '' },
-      { header: 'Registration Date', value: (r) => (r.registrationDate instanceof Date ? r.registrationDate : '') },
-      { header: 'Logged In', value: (r) => (r.loggedIn ? 'Yes' : 'No') },
-      { header: 'Receipt', value: (r) => r.receipt ?? '' }
-    ];
-    exportToExcel(this.currentRows, columns, 'attendee_list.xlsx');
   }
 }

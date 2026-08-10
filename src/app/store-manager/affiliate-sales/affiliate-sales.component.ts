@@ -8,6 +8,7 @@ import { AffilliateSalesService } from 'src/app/common/services/data/affiliate-s
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Embedded (not a dialog) inside CouponDialogComponent, shown only for
 // affiliate coupons that already have a code to query by - see
@@ -28,7 +29,14 @@ export class AffiliateSalesComponent implements OnChanges {
   selection = new SelectionModel<AffilliateSaleModel>(true, []);
   inProgress = false;
 
-  private currentRows: AffilliateSaleModel[] = [];
+  columns: DataGridColumn<AffilliateSaleModel>[] = [
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'email', label: 'Email' },
+    { key: 'totalBeforeDiscount', label: 'Total', type: 'currency' },
+    { key: 'totalAfterDiscount', label: 'Discounted Total', type: 'currency' },
+    { key: 'amountPayed', label: 'Payed Amount', type: 'currency' },
+    { key: 'isPayed', label: 'Paid', value: (item) => (item.isPayed ? 'Yes' : 'No') }
+  ];
 
   constructor(
     private affiliateSalesService: AffilliateSalesService,
@@ -42,22 +50,9 @@ export class AffiliateSalesComponent implements OnChanges {
       this.affiliateSales$ = this.affiliateSalesService.streamAllByValue('code', this.code).pipe(
         map((sales) => {
           sales.forEach((sale) => (sale.date = dateFromTimestamp(sale.date as Timestamp) as unknown as Timestamp));
-          this.currentRows = sales;
           return sales;
         })
       );
-    }
-  }
-
-  isAllSelected(): boolean {
-    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
-  }
-
-  masterToggle(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
-      this.currentRows.forEach((row) => this.selection.select(row));
     }
   }
 

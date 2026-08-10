@@ -5,29 +5,18 @@
   height: 100%;
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.purchases-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
+// ::ng-deep - .actions-column is app-data-grid's own internal cell class
+// (a different component's view); two action buttons need to stay on one
+// line here, unlike the single-button default elsewhere.
+:host ::ng-deep .actions-column {
   white-space: nowrap;
-}
-
-.purchases-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.columns-button {
-  margin-right: 8px;
 }
 
 .summary-row {

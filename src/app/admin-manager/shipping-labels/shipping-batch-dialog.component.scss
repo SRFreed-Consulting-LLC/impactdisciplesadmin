@@ -13,9 +13,9 @@
 
 // Same bounded-scroll-region pattern as every other dialog this session
 // (e.g. email-template-dialog.component.scss): mat-dialog-content's own
-// default max-height/overflow-y: auto conflicts with .table-scroll's own
-// scroll, and .table-scroll needs a genuinely resolved height anyway for
-// the table's sticky header row to work (see styles.scss).
+// default max-height/overflow-y: auto conflicts with the grid's own
+// internal scroll, and that scroll region needs a genuinely resolved
+// height anyway for the table's sticky header row to work (see styles.scss).
 mat-dialog-content {
   display: flex;
   flex-direction: column;
@@ -34,23 +34,16 @@ mat-dialog-content {
   }
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.labels-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
+/* ::ng-deep - .actions-column is rendered inside app-data-grid's own
+   template (a different component's view); this table has 3 row action
+   buttons, so it needs the no-wrap the grid's own baseline doesn't set. */
+:host ::ng-deep .labels-table .actions-column {
   white-space: nowrap;
-}
-
-.labels-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
 }

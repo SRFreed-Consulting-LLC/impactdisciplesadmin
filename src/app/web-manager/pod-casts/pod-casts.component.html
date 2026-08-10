@@ -1,99 +1,24 @@
-<app-list-header [title]="itemType + 's'" [actions]="actions">
-  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
-    <mat-icon>view_column</mat-icon>
-    Columns
-  </button>
-  <mat-menu #columnsMenu="matMenu">
-    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
-      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
-    </button>
-  </mat-menu>
-
-  <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
-    <mat-icon>file_download</mat-icon>
-    Export to Excel
-  </button>
-</app-list-header>
-
-<div class="table-scroll">
-<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-<table mat-table [dataSource]="(podCasts$ | async) ?? []" class="pod-casts-table">
-  <ng-container matColumnDef="isActive">
-    <th mat-header-cell *matHeaderCellDef>Live</th>
-    <td mat-cell *matCellDef="let item">
-      <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
-        {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
-      </span>
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="thumbnail">
-    <th mat-header-cell *matHeaderCellDef>Thumbnail</th>
-    <td mat-cell *matCellDef="let item">
-      <img *ngIf="item.thumbnail" width="100" [src]="item.thumbnail.url" [alt]="item.thumbnail.name">
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="date">
-    <th mat-header-cell *matHeaderCellDef>Date</th>
-    <td mat-cell *matCellDef="let item">{{ item.date | date }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="title">
-    <th mat-header-cell *matHeaderCellDef>Title</th>
-    <td mat-cell *matCellDef="let item">{{ item.title }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="category">
-    <th mat-header-cell *matHeaderCellDef>Category</th>
-    <td mat-cell *matCellDef="let item">{{ categoryName(item) }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="actions">
-    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-    <td mat-cell *matCellDef="let item" class="actions-column">
-      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </td>
-  </ng-container>
-
-  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
-  <ng-container matColumnDef="isActive-filter">
-    <th mat-header-cell *matHeaderCellDef></th>
-  </ng-container>
-
-  <ng-container matColumnDef="thumbnail-filter">
-    <th mat-header-cell *matHeaderCellDef></th>
-  </ng-container>
-
-  <ng-container matColumnDef="date-filter">
-    <th mat-header-cell *matHeaderCellDef>
-      <app-column-filter [operators]="dateOperators" type="date" (filterChange)="onFilterChange('date', $event)"></app-column-filter>
-    </th>
-  </ng-container>
-
-  <ng-container matColumnDef="title-filter">
-    <th mat-header-cell *matHeaderCellDef>
-      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
-    </th>
-  </ng-container>
-
-  <ng-container matColumnDef="category-filter">
-    <th mat-header-cell *matHeaderCellDef>
-      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('category', $event)"></app-column-filter>
-    </th>
-  </ng-container>
-
-  <ng-container matColumnDef="actions-filter">
-    <th mat-header-cell *matHeaderCellDef></th>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-  <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
-</table>
-</div>
+<app-data-grid
+  [title]="itemType + 's'"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="(podCasts$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  tableClass="pod-casts-table"
+  initialSortKey="date"
+  initialSortDirection="desc"
+  exportFileName="pod_casts.xlsx"
+  (rowDoubleClick)="showEditModal($event)">
+  <ng-template appDataGridCell="isActive" let-row>
+    <span class="active-template" [style.background-color]="row.isActive ? '#29d029' : 'red'">
+      {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
+    </span>
+  </ng-template>
+  <ng-template appDataGridCell="thumbnail" let-row>
+    <img *ngIf="row.thumbnail" width="100" [src]="row.thumbnail.url" [alt]="row.thumbnail.name">
+  </ng-template>
+</app-data-grid>
 
 <div class="sync-overlay" *ngIf="syncing$ | async">
   <mat-spinner diameter="56"></mat-spinner>

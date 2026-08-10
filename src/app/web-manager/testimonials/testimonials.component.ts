@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { TestimonialModel } from 'src/app/common/models/domain/testimonial.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,14 +7,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { TestimonialDialogComponent } from './testimonial-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
 @Component({
     selector: 'app-testimonials',
@@ -24,28 +17,23 @@ interface ColumnDef {
 })
 export class TestimonialsComponent implements OnInit {
   testimonials$: Observable<TestimonialModel[]>;
-  currentRows: TestimonialModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'author', label: 'Author', visible: true },
-    { key: 'date', label: 'Date', visible: true },
-    { key: 'title', label: 'Title', visible: true },
-    { key: 'type', label: 'Testimonial Type', visible: true }
+
+  columns: DataGridColumn<TestimonialModel>[] = [
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'author', label: 'Author' },
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'title', label: 'Title' },
+    { key: 'type', label: 'Testimonial Type' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Testimonial';
 
-  actions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
-  ];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<TestimonialModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: TestimonialService,
@@ -55,60 +43,7 @@ export class TestimonialsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.testimonials$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) =>
-            Object.keys(filters).every((field) =>
-              matchesColumnFilter(
-                item[field as keyof TestimonialModel],
-                filters[field],
-                field === 'date' ? 'date' : 'text'
-              )
-            )
-          )
-          .sort((a, b) => {
-            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-            return bTime - aTime;
-          });
-        this.currentRows = filtered;
-        return filtered;
-      }),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  private fieldValue(item: TestimonialModel, field: string): unknown {
-    switch (field) {
-      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      default: return (item as unknown as Record<string, unknown>)[field];
-    }
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<TestimonialModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'testimonials.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.testimonials$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   showAddModal(): void {

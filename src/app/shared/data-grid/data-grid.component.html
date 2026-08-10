@@ -1,0 +1,82 @@
+<app-list-header *ngIf="showHeader" [title]="title" [actions]="headerActions">
+  <ng-content select="[dataGridHeaderExtra]"></ng-content>
+
+  <button *ngIf="showColumnsButton" mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+    <mat-icon>view_column</mat-icon>
+    Columns
+  </button>
+  <mat-menu #columnsMenu="matMenu">
+    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
+      <mat-checkbox [checked]="column.visible !== false" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+    </button>
+  </mat-menu>
+
+  <button *ngIf="showExportButton" mat-raised-button color="primary" type="button" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="table-scroll" appInfiniteScroll (scrolledToBottom)="loadMore()">
+  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
+
+  <table mat-table [dataSource]="visibleRows" class="data-grid-table" [ngClass]="tableClass">
+    <ng-container matColumnDef="select" *ngIf="selection">
+      <th mat-header-cell *matHeaderCellDef>
+        <mat-checkbox (change)="masterToggle()" [checked]="isAllSelected()"></mat-checkbox>
+      </th>
+      <td mat-cell *matCellDef="let row">
+        <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleRow(row)" [checked]="selection!.isSelected(row)"></mat-checkbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="select-filter" *ngIf="selection">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <ng-container *ngFor="let column of visibleColumns" [matColumnDef]="column.key">
+      <th mat-header-cell *matHeaderCellDef [class.sortable]="column.sortable !== false" (click)="onHeaderClick(column)">
+        {{ column.label }}
+        <mat-icon *ngIf="sortKey === column.key" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+      </th>
+      <td mat-cell *matCellDef="let row" [ngClass]="column.cellClass">
+        <ng-container *ngIf="cellTemplateFor(column.key) as tpl; else defaultCell">
+          <ng-container *ngTemplateOutlet="tpl; context: { $implicit: row }"></ng-container>
+        </ng-container>
+        <ng-template #defaultCell>{{ displayValue(column, row) }}</ng-template>
+      </td>
+    </ng-container>
+
+    <ng-container *ngFor="let column of visibleColumns" [matColumnDef]="column.key + '-filter'">
+      <th mat-header-cell *matHeaderCellDef>
+        <app-column-filter *ngIf="column.filterable !== false" [operators]="operatorsFor(column)" [type]="filterTypeFor(column)" (filterChange)="onFilterChange(column.key, $event)"></app-column-filter>
+      </th>
+    </ng-container>
+
+    <ng-container matColumnDef="actions" *ngIf="rowActions.length">
+      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+      <td mat-cell *matCellDef="let row" class="actions-column">
+        <button mat-icon-button *ngFor="let action of visibleActionsFor(row)" [matTooltip]="action.tooltip" (click)="action.onClick(row)">
+          <mat-icon>{{ action.icon }}</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions-filter" *ngIf="rowActions.length">
+      <th mat-header-cell *matHeaderCellDef></th>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumnKeys; sticky: true"></tr>
+    <ng-container *ngIf="showFilterRow">
+      <tr mat-header-row *matHeaderRowDef="filterColumnKeys; sticky: true"></tr>
+    </ng-container>
+    <tr mat-row *matRowDef="let row; columns: displayedColumnKeys;" [class]="rowClass ? rowClass(row) : ''" (dblclick)="onRowDoubleClick(row)"></tr>
+  </table>
+
+  <app-paged-table-footer
+    *ngIf="pagedSource"
+    [loadedCount]="visibleRows.length"
+    [loadingMore]="loadingMore$ | async"
+    [hasMore]="hasMore$ | async">
+  </app-paged-table-footer>
+</div>

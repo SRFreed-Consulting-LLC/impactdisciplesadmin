@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, Subject, takeUntil, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
 import { PodCastService, YoutubePlaylistItem } from 'src/app/common/services/data/pod-cast.service';
@@ -11,14 +11,7 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { PodCastDialogComponent } from './pod-cast-dialog.component';
 import { PodCastCategoriesComponent } from '../pod-cast-categories/pod-cast-categories.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
 @Component({
     selector: 'app-pod-casts',
@@ -28,24 +21,23 @@ interface ColumnDef {
 })
 export class PodCastsComponent implements OnInit, OnDestroy {
   podCasts$: Observable<PodCastModel[]>;
-  currentRows: PodCastModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'thumbnail', label: 'Thumbnail', visible: true },
-    { key: 'date', label: 'Date', visible: true },
-    { key: 'title', label: 'Title', visible: true },
-    { key: 'category', label: 'Category', visible: true }
+
+  columns: DataGridColumn<PodCastModel>[] = [
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'thumbnail', label: 'Thumbnail', filterable: false, sortable: false, value: (item) => item.thumbnail?.name ?? '' },
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'title', label: 'Title' },
+    { key: 'category', label: 'Category', value: (item) => this.categoryName(item) }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Pod Cast';
 
-  actions: ListHeaderAction[] = [
+  headerActions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
     { label: 'Categories', icon: 'view_list', onClick: () => this.showCategoriesModal() },
     { label: 'Synchronize', icon: 'refresh', onClick: () => this.syncPodcasts() }
   ];
+  rowActions: DataGridRowAction<PodCastModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -59,7 +51,6 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   podCastCategories: TagModel[] = [];
   podCastTags: TagModel[] = [];
 
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private ngUnsubscribe = new Subject<void>();
 
   constructor(
@@ -72,25 +63,7 @@ export class PodCastsComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.podCasts$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) =>
-            Object.keys(filters).every((field) => {
-              const type = field === 'date' ? 'date' : 'text';
-              return matchesColumnFilter(this.fieldValue(item, field), filters[field], type);
-            })
-          )
-          .sort((a, b) => {
-            const aTime = a.date instanceof Date ? a.date.getTime() : 0;
-            const bTime = b.date instanceof Date ? b.date.getTime() : 0;
-            return bTime - aTime;
-          });
-        this.currentRows = filtered;
-        return filtered;
-      }),
-      tap(() => this.loading$.next(false))
-    );
+    this.podCasts$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
 
     this.podCastTagService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((tags) => {
       this.podCastTags = tags;
@@ -108,44 +81,6 @@ export class PodCastsComponent implements OnInit, OnDestroy {
 
   categoryName(item: PodCastModel): string {
     return this.podCastCategories.find((category) => category.id === item.category)?.tag ?? '';
-  }
-
-  private fieldValue(item: PodCastModel, field: string): unknown {
-    if (field === 'category') {
-      return this.categoryName(item);
-    }
-    if (field === 'isActive') {
-      return item.isActive ? 'LIVE' : 'INACTIVE';
-    }
-    if (field === 'thumbnail') {
-      return item.thumbnail?.name ?? '';
-    }
-    return (item as unknown as Record<string, unknown>)[field];
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<PodCastModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'pod_casts.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   showAddModal(): void {

@@ -10,6 +10,7 @@ import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service'
 import { environment } from 'src/environments/environment';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { ShippingLabelDialogComponent } from './shipping-label-dialog.component';
 import { FromAddressDialogComponent } from './from-address-dialog.component';
 import { ShippingResultsDialogComponent } from './shipping-results-dialog.component';
@@ -27,9 +28,26 @@ export interface ShippingBatchDialogData {
 export class ShippingBatchDialogComponent {
   batch: ShippingLabelBatchRequest;
   labels$: Observable<ShippingLabelRequest[]>;
-  displayedColumns = [
-    'name', 'address', 'city', 'state', 'country', 'zip', 'ounces',
-    'status', 'message', 'requestedDate', 'purchasedDate', 'shippingRate', 'actions'
+
+  columns: DataGridColumn<ShippingLabelRequest>[] = [
+    { key: 'name', label: 'Name', value: (item) => item.request?.shipment?.shipTo?.name },
+    { key: 'address', label: 'Address', value: (item) => item.request?.shipment?.shipTo?.addressLine1 },
+    { key: 'city', label: 'City', value: (item) => item.request?.shipment?.shipTo?.cityLocality },
+    { key: 'state', label: 'State', value: (item) => item.request?.shipment?.shipTo?.stateProvince },
+    { key: 'country', label: 'Country', value: (item) => item.request?.shipment?.shipTo?.countryCode },
+    { key: 'zip', label: 'Zip', value: (item) => item.request?.shipment?.shipTo?.postalCode },
+    { key: 'ounces', label: 'Ounces', value: (item) => item.request?.weight },
+    { key: 'status', label: 'Status' },
+    { key: 'message', label: 'Message' },
+    { key: 'requestedDate', label: 'Label Requested Date', type: 'date' },
+    { key: 'purchasedDate', label: 'Label Purchased Date', type: 'date' },
+    { key: 'shippingRate', label: 'Shipping Rate', type: 'currency' }
+  ];
+
+  rowActions: DataGridRowAction<ShippingLabelRequest>[] = [
+    { icon: 'download', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.isDownloadVisible(item) },
+    { icon: 'edit', tooltip: 'EDIT', onClick: (item) => this.showEditModal(item) },
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteLabel(item) }
   ];
 
   inProgress$ = new BehaviorSubject<boolean>(false);

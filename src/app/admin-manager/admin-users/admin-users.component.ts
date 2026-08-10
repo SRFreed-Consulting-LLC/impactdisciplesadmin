@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -8,14 +8,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { AdminUserDialogComponent } from './admin-user-dialog.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
 @Component({
     selector: 'app-admin-users',
@@ -25,21 +18,19 @@ interface ColumnDef {
 })
 export class AdminUsersComponent implements OnInit {
   users$: Observable<AdminUser[]>;
-  currentRows: AdminUser[] = [];
-  columns: ColumnDef[] = [
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'role', label: 'Role', visible: true },
-    { key: 'phone', label: 'Number', visible: true }
+
+  columns: DataGridColumn<AdminUser>[] = [
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'role', label: 'Role' },
+    { key: 'phone', label: 'Number', value: (item) => item.phone?.number ?? '' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Admin User';
 
-  actions: ListHeaderAction[] = [
-    { label: 'New', icon: 'add', onClick: () => this.showAddModal() }
-  ];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<AdminUser>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: (item) => !this.isSelf(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -50,8 +41,6 @@ export class AdminUsersComponent implements OnInit {
   // catching it client-side avoids a confusing failed-request round trip
   // for an action that was never going to succeed.
   private currentUserFirebaseUID: string | undefined;
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: AdminUserService,
@@ -66,41 +55,7 @@ export class AdminUsersComponent implements OnInit {
       this.currentUserFirebaseUID = user?.firebaseUID;
     });
 
-    this.users$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
-          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])))
-          .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''))
-      ),
-      map((rows) => {
-        this.currentRows = rows;
-        return rows;
-      }),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  private matchesField(item: AdminUser, field: string, filter: ColumnFilterValue): boolean {
-    if (field === 'phone') {
-      return matchesColumnFilter(item.phone?.number, filter, 'text');
-    }
-    return matchesColumnFilter(item[field as keyof AdminUser], filter, 'text');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.users$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   showAddModal(): void {
@@ -131,17 +86,5 @@ export class AdminUsersComponent implements OnInit {
         });
       }
     });
-  }
-
-  // Exports whatever's currently filtered/visible in currentRows, matching
-  // the original's grid export (which exported the grid's current state -
-  // DevExtreme's exportDataGrid also respects active filters).
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<AdminUser>[] = visible.map((c) => ({
-      header: c.label,
-      value: (row) => ((c.key === 'phone' ? row.phone?.number : (row as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'admin_users.xlsx', 'Admin Users');
   }
 }

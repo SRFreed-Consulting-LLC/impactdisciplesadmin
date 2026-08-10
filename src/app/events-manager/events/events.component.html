@@ -1,119 +1,22 @@
 <ng-container *ngIf="mode === 'list'">
-  <app-list-header [title]="itemType + 's'" [actions]="actions">
-    <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
-      <mat-icon>view_column</mat-icon>
-      Columns
-    </button>
-    <mat-menu #columnsMenu="matMenu">
-      <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
-        <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
-      </button>
-    </mat-menu>
-
-    <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
-      <mat-icon>file_download</mat-icon>
-      Export to Excel
-    </button>
-  </app-list-header>
-
-  <div class="table-scroll">
-    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-    <table mat-table [dataSource]="(events$ | async) ?? []" class="events-table">
-      <ng-container matColumnDef="isActive">
-        <th mat-header-cell *matHeaderCellDef>Live</th>
-        <td mat-cell *matCellDef="let item">
-          <span class="active-template" [style.background-color]="item.isActive ? '#29d029' : 'red'">
-            {{ item.isActive ? 'LIVE' : 'INACTIVE' }}
-          </span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="startDate">
-        <th mat-header-cell *matHeaderCellDef>From</th>
-        <td mat-cell *matCellDef="let item">{{ $any(item.startDate) | date: 'short' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="endDate">
-        <th mat-header-cell *matHeaderCellDef>To</th>
-        <td mat-cell *matCellDef="let item">{{ $any(item.endDate) | date: 'short' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="costInDollars">
-        <th mat-header-cell *matHeaderCellDef>Cost</th>
-        <td mat-cell *matCellDef="let item">{{ item.costInDollars | currency }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="isSummit">
-        <th mat-header-cell *matHeaderCellDef>Summit?</th>
-        <td mat-cell *matCellDef="let item">{{ item.isSummit ? 'Yes' : 'No' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="eventName">
-        <th mat-header-cell *matHeaderCellDef>Event Name</th>
-        <td mat-cell *matCellDef="let item">{{ item.eventName }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="organization">
-        <th mat-header-cell *matHeaderCellDef>Organization</th>
-        <td mat-cell *matCellDef="let item">{{ organizationName(item) }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="location">
-        <th mat-header-cell *matHeaderCellDef>Location</th>
-        <td mat-cell *matCellDef="let item">{{ locationName(item) }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-        <td mat-cell *matCellDef="let item" class="actions-column">
-          <button mat-icon-button matTooltip="DELETE" *ngIf="isVisible(['Admin'])" (click)="delete(item)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <!-- Filter row -->
-      <ng-container matColumnDef="isActive-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-      <ng-container matColumnDef="startDate-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-      <ng-container matColumnDef="endDate-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-      <ng-container matColumnDef="costInDollars-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="numberOperators" type="number" (filterChange)="onFilterChange('costInDollars', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-      <ng-container matColumnDef="isSummit-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-      <ng-container matColumnDef="eventName-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('eventName', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-      <ng-container matColumnDef="organization-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('organization', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-      <ng-container matColumnDef="location-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('location', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-      <ng-container matColumnDef="actions-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
-    </table>
-  </div>
+  <app-data-grid
+    [title]="itemType + 's'"
+    [headerActions]="headerActions"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [rows]="(events$ | async) ?? []"
+    [loading]="(loading$ | async) ?? false"
+    tableClass="events-table"
+    initialSortKey="startDate"
+    initialSortDirection="desc"
+    exportFileName="events.xlsx"
+    (rowDoubleClick)="showEditModal($event)">
+    <ng-template appDataGridCell="isActive" let-row>
+      <span class="active-template" [style.background-color]="row.isActive ? '#29d029' : 'red'">
+        {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
+      </span>
+    </ng-template>
+  </app-data-grid>
 </ng-container>
 
 <ng-container *ngIf="mode === 'edit' && editingItem as item">

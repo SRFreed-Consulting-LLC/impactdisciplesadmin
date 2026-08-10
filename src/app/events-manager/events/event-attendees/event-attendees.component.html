@@ -1,110 +1,16 @@
-<app-list-header [title]="itemType + 's'" [actions]="actions">
-  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
-    <mat-icon>view_column</mat-icon>
-    Columns
-  </button>
-  <mat-menu #columnsMenu="matMenu">
-    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
-      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
-    </button>
-  </mat-menu>
-
-  <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
-    <mat-icon>file_download</mat-icon>
-    Export to Excel
-  </button>
-</app-list-header>
-
-<div class="table-scroll">
-  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-  <table mat-table [dataSource]="(attendees$ | async) ?? []" class="attendees-table">
-    <ng-container matColumnDef="select">
-      <th mat-header-cell *matHeaderCellDef>
-        <mat-checkbox (change)="masterToggle()" [checked]="isAllSelected()"></mat-checkbox>
-      </th>
-      <td mat-cell *matCellDef="let item">
-        <mat-checkbox (click)="$event.stopPropagation()" (change)="selection.toggle(item)" [checked]="selection.isSelected(item)"></mat-checkbox>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="lastName">
-      <th mat-header-cell *matHeaderCellDef>Last Name</th>
-      <td mat-cell *matCellDef="let item">{{ item.lastName }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="firstName">
-      <th mat-header-cell *matHeaderCellDef>First Name</th>
-      <td mat-cell *matCellDef="let item">{{ item.firstName }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="email">
-      <th mat-header-cell *matHeaderCellDef>Email</th>
-      <td mat-cell *matCellDef="let item">{{ item.email }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="registrationDate">
-      <th mat-header-cell *matHeaderCellDef>Registration Date</th>
-      <td mat-cell *matCellDef="let item">{{ $any(item.registrationDate) | date: 'short' }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="loggedIn">
-      <th mat-header-cell *matHeaderCellDef>Logged In</th>
-      <td mat-cell *matCellDef="let item">{{ item.loggedIn ? 'Yes' : 'No' }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="receipt">
-      <th mat-header-cell *matHeaderCellDef>Receipt</th>
-      <td mat-cell *matCellDef="let item">{{ item.receipt }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="actions">
-      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-      <td mat-cell *matCellDef="let item" class="actions-column">
-        <button mat-icon-button matTooltip="RESEND EMAIL" *ngIf="item.receiptEmailId" (click)="resendConfirmationEmail(item)">
-          <mat-icon>forward_to_inbox</mat-icon>
-        </button>
-        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
-          <mat-icon>delete</mat-icon>
-        </button>
-      </td>
-    </ng-container>
-
-    <!-- Filter row -->
-    <ng-container matColumnDef="select-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-    <ng-container matColumnDef="lastName-filter">
-      <th mat-header-cell *matHeaderCellDef>
-        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('lastName', $event)"></app-column-filter>
-      </th>
-    </ng-container>
-    <ng-container matColumnDef="firstName-filter">
-      <th mat-header-cell *matHeaderCellDef>
-        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('firstName', $event)"></app-column-filter>
-      </th>
-    </ng-container>
-    <ng-container matColumnDef="email-filter">
-      <th mat-header-cell *matHeaderCellDef>
-        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('email', $event)"></app-column-filter>
-      </th>
-    </ng-container>
-    <ng-container matColumnDef="registrationDate-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-    <ng-container matColumnDef="loggedIn-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-    <ng-container matColumnDef="receipt-filter">
-      <th mat-header-cell *matHeaderCellDef>
-        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('receipt', $event)"></app-column-filter>
-      </th>
-    </ng-container>
-    <ng-container matColumnDef="actions-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.row--new]="tracker.newIds.has(row.id)" (dblclick)="showEditModal(row)"></tr>
-  </table>
-</div>
+<app-data-grid
+  [title]="itemType + 's'"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="(attendees$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  [selection]="selection"
+  [rowClass]="rowClass"
+  tableClass="attendees-table"
+  initialSortKey="lastName"
+  initialSortDirection="asc"
+  exportFileName="attendee_list.xlsx"
+  (visibleRowsChange)="onVisibleRowsChange($event)"
+  (rowDoubleClick)="showEditModal($event)">
+</app-data-grid>

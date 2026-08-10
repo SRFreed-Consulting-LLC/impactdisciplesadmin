@@ -1,26 +1,15 @@
-/* See admin-manager/customers/customers.component.scss for the full explanation. */
+/* See shared/data-grid/data-grid.component.scss's own comment - the grid
+   needs a resolved (non-auto) height from its host for CDK Table's sticky
+   header to actually stay stuck. */
 :host {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-}
-
-.locations-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.locations-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
 }

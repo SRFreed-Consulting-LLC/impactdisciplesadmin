@@ -12,13 +12,17 @@
   margin: 0;
 }
 
-.table-scroll {
+/* ::ng-deep - .table-scroll is app-data-grid's own internal scroll
+   container (a different component's view); this embedded panel needs a
+   bounded height + visible border instead of the grid's default full-flex
+   sizing. */
+:host ::ng-deep .table-scroll {
   max-height: 240px;
   overflow: auto;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px;
 }
 
-.sales-table {
+:host ::ng-deep .sales-table {
   width: 100%;
 }

@@ -7,46 +7,15 @@
     </button>
   </div>
 
-  <div class="table-scroll">
-    <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-    <table mat-table [dataSource]="(categories$ | async) ?? []" class="category-table">
-      <ng-container matColumnDef="tag">
-        <th mat-header-cell *matHeaderCellDef>Tag</th>
-        <td mat-cell *matCellDef="let category">{{ category.tag }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="showInStore">
-        <th mat-header-cell *matHeaderCellDef>Show In Store</th>
-        <td mat-cell *matCellDef="let category">{{ category.showInStore ? 'Yes' : 'No' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-        <td mat-cell *matCellDef="let category" class="actions-column">
-          <button mat-icon-button matTooltip="DELETE" (click)="delete(category)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
-      <ng-container matColumnDef="tag-filter">
-        <th mat-header-cell *matHeaderCellDef>
-          <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('tag', $event)"></app-column-filter>
-        </th>
-      </ng-container>
-
-      <ng-container matColumnDef="showInStore-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <ng-container matColumnDef="actions-filter">
-        <th mat-header-cell *matHeaderCellDef></th>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
-    </table>
-  </div>
+  <app-data-grid
+    [showHeader]="false"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [rows]="(categories$ | async) ?? []"
+    [loading]="(loading$ | async) ?? false"
+    tableClass="category-table"
+    initialSortKey="tag"
+    initialSortDirection="asc"
+    (rowDoubleClick)="showEditModal($event)">
+  </app-data-grid>
 </mat-dialog-content>

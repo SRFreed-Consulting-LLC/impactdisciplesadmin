@@ -9,24 +9,19 @@ mat-dialog-content {
   --mat-icon-button-icon-size: 20px;
 }
 
-.table-scroll {
-  position: relative;
-  overflow-x: auto;
+app-data-grid {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
-.series-table {
+/* ::ng-deep - .series-table is a <table> rendered inside app-data-grid's
+   own template (a different component's view), so emulated encapsulation
+   needs piercing to reach it. */
+:host ::ng-deep .series-table {
   width: 100%;
   --mat-table-header-container-height: 40px;
   --mat-table-row-item-container-height: 40px;
   --mat-table-header-headline-size: 12px;
   --mat-table-row-item-label-text-size: 13px;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.series-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
 }

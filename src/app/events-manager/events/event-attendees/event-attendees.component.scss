@@ -4,27 +4,16 @@
   height: 50vh;
 }
 
-.table-scroll {
-  position: relative;
+app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.attendees-table {
-  width: 100%;
-}
-
-.actions-column {
-  text-align: right;
+/* ::ng-deep - .actions-column is rendered inside app-data-grid's own
+   template (a different component's view); this table has 2 row action
+   buttons, so it needs the no-wrap the grid's own baseline doesn't set. */
+:host ::ng-deep .attendees-table .actions-column {
   white-space: nowrap;
-}
-
-.attendees-table .mat-mdc-row:hover {
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.columns-button {
-  margin-right: 8px;
 }

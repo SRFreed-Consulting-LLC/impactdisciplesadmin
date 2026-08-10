@@ -1,23 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { HomePagePopupModel } from 'src/app/common/models/domain/home-page-popup.model';
 import { HomePagePopUpService } from 'src/app/common/services/data/home-page-popup.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../shared/time-of-day.util';
 import { HomePagePopupPreviewDialogComponent } from './home-page-popup-preview-dialog.component';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
 @Component({
     selector: 'app-home-page-popups',
@@ -33,23 +26,21 @@ export class HomePagePopupsComponent implements OnInit {
   mode: 'list' | 'edit' = 'list';
 
   popups$: Observable<HomePagePopupModel[]>;
-  currentRows: HomePagePopupModel[] = [];
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'fromDate', label: 'From Date', visible: true },
-    { key: 'toDate', label: 'To Date', visible: true },
-    { key: 'title', label: 'Title', visible: true },
-    { key: 'width', label: 'Width', visible: true },
-    { key: 'height', label: 'Height', visible: true },
-    { key: 'bgColor', label: 'Background Color', visible: true }
+
+  columns: DataGridColumn<HomePagePopupModel>[] = [
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'fromDate', label: 'From Date', type: 'date', dateFormat: 'short' },
+    { key: 'toDate', label: 'To Date', type: 'date', dateFormat: 'short' },
+    { key: 'title', label: 'Title' },
+    { key: 'width', label: 'Width', type: 'number' },
+    { key: 'height', label: 'Height', type: 'number' },
+    { key: 'bgColor', label: 'Background Color' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  numberOperators = NUMBER_FILTER_OPERATORS;
-  dateOperators = DATE_FILTER_OPERATORS;
 
   itemType = 'Home Page Popup';
 
-  actions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
+  rowActions: DataGridRowAction<HomePagePopupModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -60,7 +51,6 @@ export class HomePagePopupsComponent implements OnInit {
   isEdit = false;
   richTextModules = RICH_TEXT_TOOLBAR;
 
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
   private editingItem: HomePagePopupModel | null = null;
 
   constructor(
@@ -72,51 +62,7 @@ export class HomePagePopupsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.popups$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items.filter((item) =>
-          Object.keys(filters).every((field) => {
-            const type = field === 'fromDate' || field === 'toDate' ? 'date' : field === 'width' || field === 'height' ? 'number' : 'text';
-            return matchesColumnFilter(item[field as keyof HomePagePopupModel], filters[field], type);
-          })
-        );
-        this.currentRows = filtered;
-        return filtered;
-      }),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  private fieldValue(item: HomePagePopupModel, field: string): unknown {
-    switch (field) {
-      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      default: return (item as unknown as Record<string, unknown>)[field];
-    }
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<HomePagePopupModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'home_page_popups.xlsx');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.popups$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   showAddModal(): void {

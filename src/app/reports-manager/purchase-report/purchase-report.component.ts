@@ -6,6 +6,7 @@ import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 interface ColumnDef {
   key: string;
@@ -145,6 +146,27 @@ export class PurchaseReportComponent {
 
   columnLabel(key: string): string {
     return this.columns.find((c) => c.key === key)?.label ?? key;
+  }
+
+  // Feeds app-data-grid (rendering only - Columns/Export/the criteria form
+  // stay this component's own hand-rolled app-list-header above, since this
+  // screen's column visibility is two-layered: the user's own toggle AND
+  // groupByUser hiding aggregate-only columns, which doesn't fit the grid's
+  // single mutable Column.visible flag. Always pre-filtered to exactly what
+  // should show, so [showHeader]="false" never needs to toggle these itself.
+  get gridColumns(): DataGridColumn<ReportRow>[] {
+    return this.displayedColumns.map((key) => this.toGridColumn(key));
+  }
+
+  private toGridColumn(key: string): DataGridColumn<ReportRow> {
+    const label = this.columnLabel(key);
+    if (key === 'dateProcessed' || key === 'lastPurchaseDate') {
+      return { key, label, type: 'date', dateFormat: 'short', sortable: false };
+    }
+    if (key === 'total' || key === 'totalSpent') {
+      return { key, label, type: 'currency', sortable: false };
+    }
+    return { key, label, sortable: false };
   }
 
   async generateReport(): Promise<void> {

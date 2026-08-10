@@ -1,72 +1,13 @@
-<app-list-header [title]="itemType + 's'" [actions]="actions">
-  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
-    <mat-icon>view_column</mat-icon>
-    Columns
-  </button>
-  <mat-menu #columnsMenu="matMenu">
-    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
-      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
-    </button>
-  </mat-menu>
-
-  <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
-    <mat-icon>file_download</mat-icon>
-    Export to Excel
-  </button>
-</app-list-header>
-
-<div class="table-scroll">
-<app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-<table mat-table [dataSource]="(courses$ | async) ?? []" class="courses-table">
-  <ng-container matColumnDef="title">
-    <th mat-header-cell *matHeaderCellDef>Title</th>
-    <td mat-cell *matCellDef="let item">{{ item.title }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="resources">
-    <th mat-header-cell *matHeaderCellDef>Resources</th>
-    <td mat-cell *matCellDef="let item">{{ item.resources }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="length">
-    <th mat-header-cell *matHeaderCellDef>Length</th>
-    <td mat-cell *matCellDef="let item">{{ item.length }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="actions">
-    <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-    <td mat-cell *matCellDef="let item" class="actions-column">
-      <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </td>
-  </ng-container>
-
-  <!-- Filter row: one operator+value filter per filterable column, mirroring dxo-filter-row -->
-  <ng-container matColumnDef="title-filter">
-    <th mat-header-cell *matHeaderCellDef>
-      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('title', $event)"></app-column-filter>
-    </th>
-  </ng-container>
-
-  <ng-container matColumnDef="resources-filter">
-    <th mat-header-cell *matHeaderCellDef>
-      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('resources', $event)"></app-column-filter>
-    </th>
-  </ng-container>
-
-  <ng-container matColumnDef="length-filter">
-    <th mat-header-cell *matHeaderCellDef>
-      <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('length', $event)"></app-column-filter>
-    </th>
-  </ng-container>
-
-  <ng-container matColumnDef="actions-filter">
-    <th mat-header-cell *matHeaderCellDef></th>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-  <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
-</table>
-</div>
+<app-data-grid
+  [title]="itemType + 's'"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="(courses$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  tableClass="courses-table"
+  initialSortKey="title"
+  initialSortDirection="asc"
+  exportFileName="courses.xlsx"
+  (rowDoubleClick)="showEditModal($event)">
+</app-data-grid>

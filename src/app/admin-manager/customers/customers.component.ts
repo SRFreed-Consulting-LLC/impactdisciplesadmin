@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
@@ -13,18 +12,11 @@ import { EventService } from 'src/app/common/services/data/event.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { CustomerDialogComponent } from './customer-dialog.component';
 import { SendEmailDialogComponent } from './send-email-dialog.component';
 import { EmailListDialogComponent } from './email-list-dialog.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 @Component({
     selector: 'app-customers',
@@ -33,15 +25,12 @@ interface ColumnDef {
     standalone: false
 })
 export class CustomersComponent implements OnInit {
-  customers$: Observable<CustomerModel[]>;
-  loadedCount = 0;
-  columns: ColumnDef[] = [
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'phone', label: 'Number', visible: true }
+  columns: DataGridColumn<CustomerModel>[] = [
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Number', value: (item) => item.phone?.number ?? '' }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
 
   itemType = 'Customer';
 
@@ -49,14 +38,7 @@ export class CustomersComponent implements OnInit {
   selectedList: EmailList | undefined;
   selection = new SelectionModel<CustomerModel>(true, []);
 
-  // House rule: every data table shows a loading spinner until its data
-  // has actually arrived (see app-table-loading-overlay) - starts true,
-  // flips to false the moment the stream first emits (even an empty
-  // array), never on a timer. loading$/loadingMore$/hasMore$ are the paged
-  // source's own subjects, reused directly.
-  loading$: BehaviorSubject<boolean>;
-  loadingMore$: BehaviorSubject<boolean>;
-  hasMore$: BehaviorSubject<boolean>;
+  rowActions: DataGridRowAction<CustomerModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   // A stable field, not a getter - app-list-header's *ngFor keys off these
   // action objects, and a getter that returns a brand-new array (and brand
@@ -66,10 +48,10 @@ export class CustomersComponent implements OnInit {
   // tested via Playwright, clicking "New" (or any menu action) did nothing.
   // Reassigned only when what it should show actually changes (see
   // refreshActions()).
-  actions: ListHeaderAction[] = [];
+  headerActions: ListHeaderAction[] = [];
 
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
-  private currentRows: CustomerModel[] = [];
+  paged: PagedCollectionSource<CustomerModel>;
+
   // Deliberately NOT sourced from the paged grid (paged.rows$ only ever has
   // whatever's been scrolled into view) - Filter by List's "Save List" writes
   // exactly whatever's in `selection.selected` back to the email list, so
@@ -80,7 +62,6 @@ export class CustomersComponent implements OnInit {
   // correctness here matters more than the read-count savings.
   private allCustomers: CustomerModel[] = [];
   private events: EventModel[] = [];
-  private paged: PagedCollectionSource<CustomerModel>;
 
   constructor(
     private service: CustomerService,
@@ -94,22 +75,11 @@ export class CustomersComponent implements OnInit {
       (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'lastName', 'asc'),
       50
     );
-    this.loading$ = this.paged.loading$;
-    this.loadingMore$ = this.paged.loadingMore$;
-    this.hasMore$ = this.paged.hasMore$;
   }
 
   async ngOnInit(): Promise<void> {
     // Each page already comes back ordered by lastName asc from Firestore,
     // and pages are appended in fetch order - no client-side re-sort needed.
-    this.customers$ = combineLatest([this.paged.rows$, this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items.filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])));
-        this.currentRows = filtered;
-        this.loadedCount = items.length;
-        return filtered;
-      })
-    );
     this.paged.loadFirstPage();
 
     this.service.getAll().then((customers) => {
@@ -131,43 +101,7 @@ export class CustomersComponent implements OnInit {
     if (this.selectedList?.name) {
       actions.push({ label: 'Save List', icon: 'save', onClick: () => this.onListSave() });
     }
-    this.actions = actions;
-  }
-
-  loadMore(): void {
-    this.paged.loadNextPage();
-  }
-
-  get displayedColumns(): string[] {
-    return ['select', ...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return ['select-filter', ...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<CustomerModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (row) => ((c.key === 'phone' ? row.phone?.number : (row as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'customers.xlsx');
-  }
-
-  private matchesField(item: CustomerModel, field: string, filter: ColumnFilterValue): boolean {
-    if (field === 'phone') {
-      return matchesColumnFilter(item.phone?.number, filter, 'text');
-    }
-    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.headerActions = actions;
   }
 
   onListFilterChanged(listId: string | null): void {
@@ -181,18 +115,6 @@ export class CustomersComponent implements OnInit {
       this.selectedList = { ...new EmailList() };
     }
     this.refreshActions();
-  }
-
-  isAllSelected(): boolean {
-    return this.currentRows.length > 0 && this.currentRows.every((row) => this.selection.isSelected(row));
-  }
-
-  masterToggle(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
-      this.currentRows.forEach((row) => this.selection.select(row));
-    }
   }
 
   // Wide enough that the Purchases tab's 10 columns (Date/Status/Receipt/

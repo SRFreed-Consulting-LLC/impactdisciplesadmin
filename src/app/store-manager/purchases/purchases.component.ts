@@ -1,23 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from 'src/app/common/lists/roles.enum';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts for the established precedent this mirrors) rather
@@ -37,33 +29,38 @@ export class PurchasesComponent implements OnInit {
 
   // ---- List state ----
   purchases$: Observable<CheckoutForm[]>;
-  textOperators = TEXT_FILTER_OPERATORS;
-  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Purchase';
 
   // Mirrors the original's column chooser - most columns visible by
   // default, the billing-address ones default hidden (never actually used
-  // day-to-day, kept toggleable for parity).
-  columns: ColumnDef[] = [
-    { key: 'processedStatus', label: 'Status', visible: true },
-    { key: 'dateProcessed', label: 'Date', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'billingAddress1', label: 'Address 1', visible: false },
-    { key: 'billingAddress2', label: 'Address 2', visible: false },
-    { key: 'billingCity', label: 'City', visible: false },
-    { key: 'billingState', label: 'State', visible: false },
-    { key: 'billingZip', label: 'Zip', visible: false },
-    { key: 'receipt', label: 'Receipt', visible: true },
-    { key: 'couponCode', label: 'Coupon', visible: true },
-    { key: 'totalBeforeDiscount', label: 'Total', visible: true },
-    { key: 'discount', label: 'Discount', visible: true },
-    { key: 'estimatedTaxes', label: 'Taxes', visible: true },
-    { key: 'shippingRate', label: 'Shipping', visible: true },
-    { key: 'charged', label: 'Charged', visible: true },
-    { key: 'refundAmount', label: 'Refunded', visible: true }
+  // day-to-day, kept toggleable for parity). The billing-address and date
+  // columns had no filter cell in the original (dxo-filter-row left them
+  // blank), reproduced here via filterable:false.
+  columns: DataGridColumn<CheckoutForm>[] = [
+    { key: 'processedStatus', label: 'Status' },
+    { key: 'dateProcessed', label: 'Date', type: 'date', dateFormat: 'short', filterable: false },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'billingAddress1', label: 'Address 1', visible: false, filterable: false, value: (item) => item.billingAddress?.address1 },
+    { key: 'billingAddress2', label: 'Address 2', visible: false, filterable: false, value: (item) => item.billingAddress?.address2 },
+    { key: 'billingCity', label: 'City', visible: false, filterable: false, value: (item) => item.billingAddress?.city },
+    { key: 'billingState', label: 'State', visible: false, filterable: false, value: (item) => item.billingAddress?.state },
+    { key: 'billingZip', label: 'Zip', visible: false, filterable: false, value: (item) => item.billingAddress?.zip },
+    { key: 'receipt', label: 'Receipt' },
+    { key: 'couponCode', label: 'Coupon' },
+    { key: 'totalBeforeDiscount', label: 'Total', type: 'currency', value: (item) => this.getProductTotalDisplayAmount(item) },
+    { key: 'discount', label: 'Discount', type: 'currency', value: (item) => this.getDiscountDisplayAmount(item) },
+    { key: 'estimatedTaxes', label: 'Taxes', type: 'currency', value: (item) => this.getTaxesDisplayAmount(item) },
+    { key: 'shippingRate', label: 'Shipping', type: 'currency', value: (item) => this.getShippingDisplayAmount(item) },
+    { key: 'charged', label: 'Charged', type: 'currency', value: (item) => this.getChargedDisplayAmount(item) },
+    { key: 'refundAmount', label: 'Refunded', type: 'currency' }
+  ];
+
+  rowActions: DataGridRowAction<CheckoutForm>[] = [
+    { icon: 'local_shipping', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.isVisible(['Admin']) && this.isShippingButtonVisible(item) },
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.isVisible(['Admin']) }
   ];
 
   // Was read fresh via authService.getLoggedInUser().role on every
@@ -74,13 +71,14 @@ export class PurchasesComponent implements OnInit {
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
+  // Backs the Admin-only summary row - kept in sync via (visibleRowsChange),
+  // since the grid now owns filtering/sorting rather than this component.
   currentRows: CheckoutForm[] = [];
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   // See new-record-tracking.util.ts - marks newly-arrived purchases seen the
   // moment this screen loads, and keeps them highlighted for this page view.
   tracker: NewRecordTracker<CheckoutForm>;
+  rowClass = (row: CheckoutForm): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   // ---- Edit state ----
   form: FormGroup;
@@ -107,56 +105,20 @@ export class PurchasesComponent implements OnInit {
       this.currentUserRole = user?.role;
     });
 
-    this.purchases$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      tap(([items]) => this.tracker.capture(items)),
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(this.fieldValue(item, field), filters[field], this.fieldType(field))))
-          .sort((a, b) => toMillis(b.dateProcessed) - toMillis(a.dateProcessed));
-        this.currentRows = filtered;
-        return filtered;
-      }),
+    this.purchases$ = this.service.streamAll().pipe(
+      tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
   }
 
   isVisible(roles: string[]): boolean {
     return hasRole(this.currentUserRole, roles);
   }
 
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
-  }
-
-  private fieldType(field: string): 'text' | 'number' | 'date' {
-    if (field === 'dateProcessed') return 'date';
-    if (['totalBeforeDiscount', 'discount', 'estimatedTaxes', 'shippingRate', 'charged', 'refundAmount'].includes(field)) return 'number';
-    return 'text';
-  }
-
-  private fieldValue(item: CheckoutForm, field: string): unknown {
-    switch (field) {
-      case 'billingAddress1': return item.billingAddress?.address1;
-      case 'billingAddress2': return item.billingAddress?.address2;
-      case 'billingCity': return item.billingAddress?.city;
-      case 'billingState': return item.billingAddress?.state;
-      case 'billingZip': return item.billingAddress?.zip;
-      case 'totalBeforeDiscount': return this.getProductTotalDisplayAmount(item);
-      case 'charged': return this.getChargedDisplayAmount(item);
-      default: return (item as unknown as Record<string, unknown>)[field];
-    }
+  // Backs the Admin-only summary row - the grid now owns filtering/sorting,
+  // so this just mirrors whatever it currently has on screen.
+  onVisibleRowsChange(rows: CheckoutForm[]): void {
+    this.currentRows = rows;
   }
 
   // Real dollar amounts come from the PayPal receipt when present, falling
@@ -242,17 +204,6 @@ export class PurchasesComponent implements OnInit {
   // never triggered during my own live verification.
   getShippingLabel(item: CheckoutForm): Promise<void> {
     return this.service.getShippingLabel(item);
-  }
-
-  // Exports whatever's currently on screen (after filters) - matches the
-  // original's exportGridToExcel default (visible rows, current column set).
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const columns: ExcelColumn<CheckoutForm>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, columns, 'purchases.xlsx');
   }
 
   // ---- Edit view ----

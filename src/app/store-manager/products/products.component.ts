@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ProductModel } from 'src/app/common/models/utils/product.model';
 import { ProductService } from 'src/app/common/services/data/product.service';
@@ -20,15 +20,8 @@ import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.c
 import { ProductCategoriesComponent } from '../product-categories/product-categories.component';
 import { ProductSeriesComponent } from '../product-series/product-series.component';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 @Component({
     selector: 'app-products',
@@ -45,37 +38,29 @@ export class ProductsComponent implements OnInit {
   mode: 'list' | 'edit' = 'list';
 
   // ---- List state ----
-  products$: Observable<ProductModel[]>;
-  currentRows: ProductModel[] = [];
-  loadedCount = 0;
-  columns: ColumnDef[] = [
-    { key: 'isActive', label: 'Live', visible: true },
-    { key: 'imageUrl', label: 'Image', visible: true },
-    { key: 'title', label: 'Title', visible: true },
-    { key: 'cost', label: 'Cost', visible: true },
-    { key: 'salePrice', label: 'Sale Price', visible: true },
-    { key: 'category', label: 'Category', visible: true },
-    { key: 'series', label: 'Series', visible: true },
-    { key: 'isEBook', label: 'eBook', visible: true },
-    { key: 'isDigitalBook', label: 'Digital Book', visible: true }
+  columns: DataGridColumn<ProductModel>[] = [
+    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
+    { key: 'imageUrl', label: 'Image', filterable: false, sortable: false },
+    { key: 'title', label: 'Title' },
+    { key: 'cost', label: 'Cost', type: 'currency' },
+    { key: 'salePrice', label: 'Sale Price', type: 'currency' },
+    { key: 'category', label: 'Category', value: (item) => this.categoryName(item) },
+    { key: 'series', label: 'Series', value: (item) => this.seriesName(item) },
+    { key: 'isEBook', label: 'eBook', value: (item) => (item.isEBook ? 'Yes' : 'No') },
+    { key: 'isDigitalBook', label: 'Digital Book', value: (item) => (item.isDigitalBook ? 'Yes' : 'No') }
   ];
-  textOperators = TEXT_FILTER_OPERATORS;
-  numberOperators = NUMBER_FILTER_OPERATORS;
 
   itemType = 'Product';
 
-  actions: ListHeaderAction[] = [
+  headerActions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
     { label: 'Categories', icon: 'view_list', onClick: () => this.manageCategories() },
     { label: 'Series', icon: 'collections_bookmark', onClick: () => this.manageSeries() }
   ];
 
-  // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation. loading$/loadingMore$/
-  // hasMore$ are the paged source's own subjects, reused directly.
-  loading$: BehaviorSubject<boolean>;
-  loadingMore$: BehaviorSubject<boolean>;
-  hasMore$: BehaviorSubject<boolean>;
+  rowActions: DataGridRowAction<ProductModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+
+  paged: PagedCollectionSource<ProductModel>;
 
   // One-time getAll() fetches, not live streamAll() subscriptions - these
   // are small reference collections that rarely change mid-session, and a
@@ -91,9 +76,6 @@ export class ProductsComponent implements OnInit {
   // worth reintroducing 5 standing listeners to avoid.
   categories: TagModel[] = [];
   series: SeriesModel[] = [];
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
-  private paged: PagedCollectionSource<ProductModel>;
 
   // ---- Edit state ----
   form: FormGroup;
@@ -131,9 +113,6 @@ export class ProductsComponent implements OnInit {
       (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'title', 'asc'),
       50
     );
-    this.loading$ = this.paged.loading$;
-    this.loadingMore$ = this.paged.loadingMore$;
-    this.hasMore$ = this.paged.hasMore$;
   }
 
   ngOnInit(): void {
@@ -155,56 +134,7 @@ export class ProductsComponent implements OnInit {
 
     // Each page already comes back ordered by title asc from Firestore, and
     // pages are appended in fetch order - no client-side re-sort needed.
-    this.products$ = combineLatest([this.paged.rows$, this.filters$]).pipe(
-      map(([items, filters]) => {
-        const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => this.matchesField(item, field, filters[field])));
-        this.currentRows = filtered;
-        this.loadedCount = items.length;
-        return filtered;
-      })
-    );
-
     this.paged.loadFirstPage();
-  }
-
-  loadMore(): void {
-    this.paged.loadNextPage();
-  }
-
-  get displayedColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => c.key), 'actions'];
-  }
-
-  get filterColumns(): string[] {
-    return [...this.columns.filter((c) => c.visible).map((c) => `${c.key}-filter`), 'actions-filter'];
-  }
-
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
-  }
-
-  // Exports whatever's currently on screen (after filters), matching every
-  // other table's exportExcel() - see purchases.component.ts.
-  exportExcel(): void {
-    const visible = this.columns.filter((c) => c.visible);
-    const excelColumns: ExcelColumn<ProductModel>[] = visible.map((c) => ({
-      header: c.label,
-      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
-    }));
-    exportToExcel(this.currentRows, excelColumns, 'products.xlsx');
-  }
-
-  private fieldValue(item: ProductModel, field: string): unknown {
-    switch (field) {
-      case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      case 'category': return this.categoryName(item);
-      case 'series': return this.seriesName(item);
-      case 'isEBook': return item.isEBook ? 'Yes' : 'No';
-      case 'isDigitalBook': return item.isDigitalBook ? 'Yes' : 'No';
-      case 'imageUrl': return item.imageUrl?.name ?? '';
-      default: return (item as unknown as Record<string, unknown>)[field];
-    }
   }
 
   categoryName(item: ProductModel): string {
@@ -213,23 +143,6 @@ export class ProductsComponent implements OnInit {
 
   seriesName(item: ProductModel): string {
     return this.series.find((s) => s.id === item.series)?.name ?? '';
-  }
-
-  private matchesField(item: ProductModel, field: string, filter: ColumnFilterValue): boolean {
-    if (field === 'category') {
-      return matchesColumnFilter(this.categoryName(item), filter, 'text');
-    }
-    if (field === 'series') {
-      return matchesColumnFilter(this.seriesName(item), filter, 'text');
-    }
-    if (field === 'cost' || field === 'salePrice') {
-      return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'number');
-    }
-    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
   }
 
   manageCategories(): void {

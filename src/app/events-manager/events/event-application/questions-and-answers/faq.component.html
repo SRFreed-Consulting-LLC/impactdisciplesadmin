@@ -1,79 +1,18 @@
-<app-list-header title="FAQ" [actions]="actions">
-  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
-    <mat-icon>view_column</mat-icon>
-    Columns
-  </button>
-  <mat-menu #columnsMenu="matMenu">
-    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
-      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
-    </button>
-  </mat-menu>
-
-  <button mat-raised-button color="primary" type="button" (click)="exportExcel()">
-    <mat-icon>file_download</mat-icon>
-    Export to Excel
-  </button>
-</app-list-header>
-
-<div class="table-scroll">
-  <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
-  <table mat-table [dataSource]="(faqs$ | async) ?? []" class="faq-table">
-    <ng-container matColumnDef="select">
-      <th mat-header-cell *matHeaderCellDef>
-        <mat-checkbox (change)="masterToggle()" [checked]="isAllSelected()"></mat-checkbox>
-      </th>
-      <td mat-cell *matCellDef="let item">
-        <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleRow(item)" [checked]="selection.isSelected(item)"></mat-checkbox>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="sortOrder">
-      <th mat-header-cell *matHeaderCellDef>Sort Order</th>
-      <td mat-cell *matCellDef="let item">{{ item.sortOrder }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="question">
-      <th mat-header-cell *matHeaderCellDef>Question</th>
-      <td mat-cell *matCellDef="let item">{{ item.question }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="answer">
-      <th mat-header-cell *matHeaderCellDef>Answer</th>
-      <td mat-cell *matCellDef="let item" class="answer-cell" [innerHTML]="item.answer"></td>
-    </ng-container>
-
-    <ng-container matColumnDef="actions">
-      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-      <td mat-cell *matCellDef="let item" class="actions-column">
-        <button mat-icon-button matTooltip="DELETE" (click)="delete(item)">
-          <mat-icon>delete</mat-icon>
-        </button>
-      </td>
-    </ng-container>
-
-    <!-- Filter row -->
-    <ng-container matColumnDef="select-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-    <ng-container matColumnDef="sortOrder-filter">
-      <th mat-header-cell *matHeaderCellDef>
-        <app-column-filter [operators]="textOperators" type="number" (filterChange)="onFilterChange('sortOrder', $event)"></app-column-filter>
-      </th>
-    </ng-container>
-    <ng-container matColumnDef="question-filter">
-      <th mat-header-cell *matHeaderCellDef>
-        <app-column-filter [operators]="textOperators" (filterChange)="onFilterChange('question', $event)"></app-column-filter>
-      </th>
-    </ng-container>
-    <ng-container matColumnDef="answer-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-    <ng-container matColumnDef="actions-filter">
-      <th mat-header-cell *matHeaderCellDef></th>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-    <tr mat-header-row *matHeaderRowDef="filterColumns; sticky: true"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="showEditModal(row)"></tr>
-  </table>
-</div>
+<app-data-grid
+  title="FAQ"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="(faqs$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  [selection]="selection"
+  (selectionChange)="onSelectionChange()"
+  tableClass="faq-table"
+  initialSortKey="sortOrder"
+  initialSortDirection="asc"
+  exportFileName="faqs.xlsx"
+  (rowDoubleClick)="showEditModal($event)">
+  <ng-template appDataGridCell="answer" let-row>
+    <span [innerHTML]="row.answer"></span>
+  </ng-template>
+</app-data-grid>

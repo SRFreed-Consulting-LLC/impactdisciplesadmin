@@ -1,0 +1,54 @@
+// Same flex-column/.table-scroll pattern every migrated list screen uses
+// (see customers.component.scss's own comment on why CDK Table's sticky
+// header needs a resolved, non-auto height to actually stay stuck) - now
+// living here once instead of copy-pasted into every screen that adopts
+// this grid. The host component still needs to give <app-data-grid> itself
+// a resolved height, e.g. `app-data-grid { flex: 1 1 auto; min-height: 0; }`
+// alongside its own `:host { display: flex; flex-direction: column; height: 100%; }`.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.table-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.data-grid-table {
+  width: 100%;
+}
+
+.actions-column {
+  text-align: right;
+}
+
+.columns-button {
+  margin-right: 8px;
+}
+
+.data-grid-table .mat-mdc-row:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+th.sortable:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.sort-icon {
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+  vertical-align: middle;
+  margin-left: 2px;
+}

@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { TagModel } from 'src/app/common/models/domain/tag.model';
 import { ProductCategoriesService } from 'src/app/common/services/data/product-categories.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { CategoryModalComponent } from './category-modal/category-modal.component';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 
 // Opened via MatDialog.open(ProductCategoriesComponent, ...) from
 // ProductsComponent's "Categories" menu item - there is no standalone
@@ -23,17 +23,17 @@ import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '.
 })
 export class ProductCategoriesComponent implements OnInit {
   categories$: Observable<TagModel[]>;
-  displayedColumns = ['tag', 'showInStore', 'actions'];
-  filterColumns = ['tag-filter', 'showInStore-filter', 'actions-filter'];
-  textOperators = TEXT_FILTER_OPERATORS;
+  columns: DataGridColumn<TagModel>[] = [
+    { key: 'tag', label: 'Tag' },
+    { key: 'showInStore', label: 'Show In Store', filterable: false, value: (item) => (item.showInStore ? 'Yes' : 'No') }
+  ];
+  rowActions: DataGridRowAction<TagModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
 
   itemType = 'Category';
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
-
-  private filters$ = new BehaviorSubject<Record<string, ColumnFilterValue>>({});
 
   constructor(
     private service: ProductCategoriesService,
@@ -44,18 +44,7 @@ export class ProductCategoriesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.categories$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
-      map(([items, filters]) =>
-        items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter(item[field as keyof TagModel], filters[field], 'text')))
-          .sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? ''))
-      ),
-      tap(() => this.loading$.next(false))
-    );
-  }
-
-  onFilterChange(field: string, filter: ColumnFilterValue): void {
-    this.filters$.next({ ...this.filters$.value, [field]: filter });
+    this.categories$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }
 
   onClose(): void {
