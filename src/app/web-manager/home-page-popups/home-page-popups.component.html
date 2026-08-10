@@ -170,8 +170,8 @@
         </div>
 
         <div class="color-row">
-          <label class="color-row__label">Background Color</label>
-          <input class="color-row__swatch" type="color" formControlName="bgColor">
+          <label class="color-row__label" for="bgColorSwatch">Background Color</label>
+          <input id="bgColorSwatch" class="color-row__swatch" type="color" formControlName="bgColor">
           <mat-form-field appearance="outline" class="color-row__hex">
             <input matInput formControlName="bgColor" required>
           </mat-form-field>
@@ -191,7 +191,7 @@
         title="SAVE"
         [isInProgress]="inProgress$ | async"
         [disabled]="inProgress$ | async"
-        (onClick)="onSave()">
+        (clicked)="onSave()">
       </app-indicator-button>
     </div>
   </div>

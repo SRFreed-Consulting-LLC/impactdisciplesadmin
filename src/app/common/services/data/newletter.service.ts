@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { NewsletterModel } from 'src/app/common/models/domain/newsletter.model';
-import { Observable } from 'rxjs';
 import { BaseService } from './base.service';
 
 @Injectable({

@@ -146,7 +146,7 @@ export class PurchasesComponent implements OnInit {
     return 'text';
   }
 
-  private fieldValue(item: CheckoutForm, field: string): any {
+  private fieldValue(item: CheckoutForm, field: string): unknown {
     switch (field) {
       case 'billingAddress1': return item.billingAddress?.address1;
       case 'billingAddress2': return item.billingAddress?.address2;
@@ -155,7 +155,7 @@ export class PurchasesComponent implements OnInit {
       case 'billingZip': return item.billingAddress?.zip;
       case 'totalBeforeDiscount': return this.getProductTotalDisplayAmount(item);
       case 'charged': return this.getChargedDisplayAmount(item);
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -165,31 +165,32 @@ export class PurchasesComponent implements OnInit {
   // the list columns and the edit view's summary block (called there with
   // editingItem).
   getProductTotalDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.breakdown.item_total.value) : (item.total ?? 0) > 0 ? item.total! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.item_total?.value ?? '') : (item.total ?? 0) > 0 ? item.total! : 0;
   }
 
   getDiscountDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt && (item.payPalReceipt as any)?.purchase_units[0]?.amount?.breakdown?.discount
-      ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.discount.value)
+    const discount = item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount;
+    return discount
+      ? parseFloat(discount.value)
       : (item.discount ?? 0) > 0
         ? item.discount!
         : 0;
   }
 
   getTaxesDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.tax_total.value) : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.tax_total?.value ?? '') : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
   }
 
   getShippingDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.shipping.value) : item.shippingRate ? item.shippingRate : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping?.value ?? '') : item.shippingRate ? item.shippingRate : 0;
   }
 
   getShippingDiscountDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any).purchase_units[0].amount.breakdown.shipping_discount.value) : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping_discount?.value ?? '') : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
   }
 
   getChargedDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.value) : (item.total ?? 0) - (item.discount ?? 0) > 0 ? item.total! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.value ?? '') : (item.total ?? 0) - (item.discount ?? 0) > 0 ? item.total! : 0;
   }
 
   // Falls back to processedStatus (NEW/COMPLETE/REFUNDED) for non-PayPal
@@ -198,7 +199,7 @@ export class PurchasesComponent implements OnInit {
   // storefront's own /give donation flow and by this repo's Cloud
   // Functions, just not read/displayed here anymore).
   getOrderStatusDisplay(item: CheckoutForm): string {
-    return item.payPalReceipt ? (item.payPalReceipt as any)?.status : item.processedStatus;
+    return item.payPalReceipt ? item.payPalReceipt.status : item.processedStatus;
   }
 
   getOrderItemCount(item: CheckoutForm): number {
@@ -249,7 +250,7 @@ export class PurchasesComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const columns: ExcelColumn<CheckoutForm>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, columns, 'purchases.xlsx');
   }

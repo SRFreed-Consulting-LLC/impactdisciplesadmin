@@ -105,7 +105,7 @@ export class FirebaseDAO<T extends BaseModel> {
     });
   }
 
-  public getAllByValue(table: string, field: string, value: any, fromFirestore?, limitCount?: number): Promise<T[]>{
+  public getAllByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number): Promise<T[]>{
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -114,7 +114,7 @@ export class FirebaseDAO<T extends BaseModel> {
     });
   }
 
-  public queryByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: any, fromFirestore?, limitCount?: number): Promise<T[]>{
+  public queryByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: unknown, fromFirestore?, limitCount?: number): Promise<T[]>{
     const constraints: QueryConstraint[] = [where(field, opStr, value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -229,7 +229,7 @@ export class FirebaseDAO<T extends BaseModel> {
     );
   }
 
-  public streamByValue(table: string, field: string, value: any, fromFirestore?, limitCount?: number): Observable<T[]>{
+  public streamByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -257,7 +257,7 @@ export class FirebaseDAO<T extends BaseModel> {
     })
   }
 
-  public queryStreamByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: any, fromFirestore?, limitCount?: number): Observable<T[]>{
+  public queryStreamByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: unknown, fromFirestore?, limitCount?: number): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, opStr, value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -300,11 +300,13 @@ export class FirebaseDAO<T extends BaseModel> {
   }
 
   public async getAllFromSubCollection(table: string, record_id: string, subcollection: string, fromFirestore?): Promise<T[]> {
+    // fromFirestore was accepted but never actually applied (unlike every
+    // other read method in this file, e.g. createInSubcollection right
+    // above) - fixed to match the established pattern instead of just
+    // silencing the unused-param lint error.
     const snap = await getDocs(collection(this.fs, table, record_id, subcollection));
 
-    const docsData = snap.docs.map((item) => (item.exists() ? item.data() as T : null));
-
-    return docsData;
+    return this.getDocListFromPromise(snap, fromFirestore);
   }
 
   private getDocListFromStream(docs: (DocumentData | (DocumentData & {id: string}))[], fromFirestore){
@@ -355,12 +357,12 @@ export enum WhereFilterOperandKeys {
 }
 
 export class QueryParam {
-  constructor(field: string, operation: WhereFilterOperandKeys, value: any) {
+  constructor(field: string, operation: WhereFilterOperandKeys, value: unknown) {
     this.field = field;
     this.operation = operation;
     this.value = value;
   }
   field: string;
-  value: any;
+  value: unknown;
   operation: WhereFilterOperandKeys;
 }

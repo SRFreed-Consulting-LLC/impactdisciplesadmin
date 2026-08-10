@@ -1,0 +1,114 @@
+<app-list-header title="Purchase Report">
+  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+    <mat-icon>view_column</mat-icon>
+    Columns
+  </button>
+  <mat-menu #columnsMenu="matMenu">
+    <button mat-menu-item *ngFor="let column of columns" (click)="$event.stopPropagation(); toggleColumn(column)">
+      <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+    </button>
+  </mat-menu>
+
+  <button mat-raised-button color="primary" type="button" [disabled]="results.length === 0" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="report-content">
+  <form [formGroup]="criteriaForm" class="criteria">
+    <div class="criteria__block">
+      <mat-checkbox formControlName="dateEnabled">Purchase Date</mat-checkbox>
+
+      <ng-container *ngIf="criteriaForm.value.dateEnabled">
+        <mat-form-field appearance="outline" class="mode-field">
+          <mat-label>Mode</mat-label>
+          <mat-select formControlName="dateMode">
+            <mat-option value="after">After a Date</mat-option>
+            <mat-option value="between">Between Dates</mat-option>
+            <mat-option value="lastMonths">Last X Months</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="date-field" *ngIf="criteriaForm.value.dateMode === 'after'">
+          <mat-label>After</mat-label>
+          <input matInput [matDatepicker]="afterPicker" formControlName="afterDate">
+          <mat-datepicker-toggle matSuffix [for]="afterPicker"></mat-datepicker-toggle>
+          <mat-datepicker #afterPicker></mat-datepicker>
+        </mat-form-field>
+
+        <ng-container *ngIf="criteriaForm.value.dateMode === 'between'">
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>Start</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>End</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        </ng-container>
+
+        <mat-form-field appearance="outline" class="months-field" *ngIf="criteriaForm.value.dateMode === 'lastMonths'">
+          <mat-label>Months</mat-label>
+          <input matInput type="number" min="1" formControlName="lastMonths">
+        </mat-form-field>
+      </ng-container>
+    </div>
+
+    <div class="criteria__block">
+      <mat-checkbox formControlName="stateEnabled">Location (State)</mat-checkbox>
+
+      <mat-form-field appearance="outline" class="state-field" *ngIf="criteriaForm.value.stateEnabled">
+        <mat-label>State</mat-label>
+        <mat-select formControlName="state">
+          <mat-option *ngFor="let s of states" [value]="s">{{ s }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="criteria__block criteria__block--actions">
+      <mat-slide-toggle [(ngModel)]="groupByUser" [ngModelOptions]="{standalone: true}">Group by User</mat-slide-toggle>
+      <button mat-raised-button color="primary" type="button" [disabled]="!canGenerate || loading" (click)="generateReport()">
+        <mat-icon>search</mat-icon>
+        Generate Report
+      </button>
+    </div>
+  </form>
+
+  <div class="hint" *ngIf="!canGenerate">Select at least one search criterion above to generate a report.</div>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+
+  <div class="error-state" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <ng-container *ngIf="!loading && generated">
+    <div class="empty-state" *ngIf="results.length === 0">No purchases matched these criteria.</div>
+
+    <div class="table-scroll" *ngIf="results.length > 0">
+      <div class="result-count">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</div>
+      <table mat-table [dataSource]="results" class="report-table">
+        <ng-container *ngFor="let key of displayedColumns" [matColumnDef]="key">
+          <th mat-header-cell *matHeaderCellDef>{{ columnLabel(key) }}</th>
+          <td mat-cell *matCellDef="let row">
+            <ng-container [ngSwitch]="key">
+              <span *ngSwitchCase="'dateProcessed'">{{ row.dateProcessed | date: 'short' }}</span>
+              <span *ngSwitchCase="'lastPurchaseDate'">{{ row.lastPurchaseDate | date: 'short' }}</span>
+              <span *ngSwitchCase="'total'">{{ row.total | currency }}</span>
+              <span *ngSwitchCase="'totalSpent'">{{ row.totalSpent | currency }}</span>
+              <span *ngSwitchDefault>{{ $any(row)[key] }}</span>
+            </ng-container>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+  </ng-container>
+</div>

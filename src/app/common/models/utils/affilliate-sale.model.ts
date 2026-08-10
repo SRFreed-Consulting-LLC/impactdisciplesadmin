@@ -5,7 +5,7 @@ export class AffilliateSaleModel extends BaseModel {
   date: Timestamp;
   code: string;
   email: string;
-  receipt: any;
+  receipt: string;
   totalBeforeDiscount: number | null;
   totalAfterDiscount: number | null;
   isPayed = false;

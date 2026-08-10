@@ -105,7 +105,7 @@ export class SalesComponent implements OnInit {
     column.visible = !column.visible;
   }
 
-  private fieldValue(item: SaleRow, field: string): any {
+  private fieldValue(item: SaleRow, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
       case 'startDate': return item.startDateParsed;
@@ -113,7 +113,7 @@ export class SalesComponent implements OnInit {
       case 'isProducts': return item.isProducts ? 'Yes' : 'No';
       case 'isEvents': return item.isEvents ? 'Yes' : 'No';
       case 'isShipping': return item.isShipping ? 'Yes' : 'No';
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -121,7 +121,7 @@ export class SalesComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<SaleRow>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'sales.xlsx');
   }

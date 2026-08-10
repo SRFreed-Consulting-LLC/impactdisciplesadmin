@@ -5,6 +5,4 @@ export class Phone {
     number: string;
     extension: string;
     type: PHONE_TYPES;
-
-    constructor(){}
 }

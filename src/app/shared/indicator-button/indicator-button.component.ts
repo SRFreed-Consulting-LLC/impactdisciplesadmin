@@ -16,14 +16,17 @@ export class IndicatorButtonComponent {
   @Input() public width: string;
   @Input() public hint: string;
 
-  // Name kept as-is (rather than the Angular-idiomatic `click`) so every
-  // existing `(onClick)="..."` call site keeps working unchanged - this
-  // component's whole point is being a drop-in replacement.
-  @Output() public onClick = new EventEmitter<void>();
+  // Was `onClick` - renamed to satisfy @angular-eslint/no-output-on-prefix
+  // (Angular's own style guide: outputs shouldn't be named "on"/prefixed
+  // with it, since the template binding syntax `(clicked)="..."` already
+  // reads as an event without repeating "on"). All call sites' `(onClick)`
+  // bindings were updated to `(clicked)` in the same pass - see git history
+  // if you're looking for the old name.
+  @Output() public clicked = new EventEmitter<void>();
 
   handleClick(): void {
     if (!this.isInProgress && !this.disabled) {
-      this.onClick.emit();
+      this.clicked.emit();
     }
   }
 }

@@ -112,5 +112,14 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Home Page Popups', slug: 'home-page-popups' },
       { label: 'Monthly Newsletter', slug: 'monthly-newsletter' }
     ]
+  },
+  {
+    id: 'reports-manager',
+    label: 'REPORTS MANAGER',
+    icon: 'assessment',
+    roles: [Role.ADMIN],
+    items: [
+      { label: 'Purchases', slug: 'purchases' }
+    ]
   }
 ];

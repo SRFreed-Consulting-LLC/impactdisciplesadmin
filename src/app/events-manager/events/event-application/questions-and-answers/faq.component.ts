@@ -65,7 +65,7 @@ export class FAQComponent implements OnInit, OnChanges {
     this.faqs$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
       map(([items, filters]) =>
         items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], field === 'sortOrder' ? 'number' : 'text')))
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filters[field], field === 'sortOrder' ? 'number' : 'text')))
           .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
       ),
       tap((items) => {
@@ -108,7 +108,7 @@ export class FAQComponent implements OnInit, OnChanges {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<FAQModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => (c.key === 'answer' ? this.stripHtml((item as any).answer) : (item as any)[c.key]) ?? ''
+      value: (item) => ((c.key === 'answer' ? this.stripHtml(item.answer ?? '') : (item as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'faqs.xlsx');
   }
@@ -122,7 +122,11 @@ export class FAQComponent implements OnInit, OnChanges {
   }
 
   masterToggle(): void {
-    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.currentRows.forEach((row) => this.selection.select(row));
+    }
     this.onSelectionChange();
   }
 

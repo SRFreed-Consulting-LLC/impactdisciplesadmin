@@ -3,7 +3,7 @@ import { BaseModel } from "../base.model";
 
 
 export class LogMessage extends BaseModel {
-    constructor(type: string, created_by: string, message: string,  error_code: string, data?: any){
+    constructor(type: string, created_by: string, message: string,  error_code: string, data?: unknown){
       super();
 
       this.date = Timestamp.fromDate(new Date()) ;
@@ -19,7 +19,7 @@ export class LogMessage extends BaseModel {
     date: Timestamp | Date;
     type: string;
     message: string;
-    data: any
+    data: unknown
     error_code: string;
     archived: boolean;
   }

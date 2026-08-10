@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
-import { PodCastService } from 'src/app/common/services/data/pod-cast.service';
+import { PodCastService, YoutubePlaylistItem } from 'src/app/common/services/data/pod-cast.service';
 import { TagModel } from 'src/app/common/models/domain/tag.model';
 import { PodCastCategoriesService } from 'src/app/common/services/data/pod-cast-categories.service';
 import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
@@ -110,7 +110,7 @@ export class PodCastsComponent implements OnInit, OnDestroy {
     return this.podCastCategories.find((category) => category.id === item.category)?.tag ?? '';
   }
 
-  private fieldValue(item: PodCastModel, field: string): any {
+  private fieldValue(item: PodCastModel, field: string): unknown {
     if (field === 'category') {
       return this.categoryName(item);
     }
@@ -118,9 +118,9 @@ export class PodCastsComponent implements OnInit, OnDestroy {
       return item.isActive ? 'LIVE' : 'INACTIVE';
     }
     if (field === 'thumbnail') {
-      return (item as any).thumbnail?.name ?? '';
+      return item.thumbnail?.name ?? '';
     }
-    return (item as any)[field];
+    return (item as unknown as Record<string, unknown>)[field];
   }
 
   get displayedColumns(): string[] {
@@ -139,7 +139,7 @@ export class PodCastsComponent implements OnInit, OnDestroy {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<PodCastModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'pod_casts.xlsx');
   }
@@ -189,7 +189,7 @@ export class PodCastsComponent implements OnInit, OnDestroy {
       this.syncing$.next(true);
 
       this.service.getVideoInfo().then((vids) => {
-        vids.forEach(async (video: any) => {
+        vids.forEach(async (video: YoutubePlaylistItem) => {
           let podCast: PodCastModel = await this.service.getById(video.id);
 
           if (!podCast) {
@@ -197,11 +197,12 @@ export class PodCastsComponent implements OnInit, OnDestroy {
           }
 
           podCast.id = video.id;
-          podCast.date = video.snippet.publishedAt;
+          podCast.date = new Date(video.snippet.publishedAt);
           podCast.isActive = true;
-          podCast.thumbnail = {};
-          podCast.thumbnail.name = video.snippet.title;
-          podCast.thumbnail.url = video.snippet.thumbnails.maxres ? video.snippet.thumbnails.maxres.url : video.snippet.thumbnails.high.url;
+          podCast.thumbnail = {
+            name: video.snippet.title,
+            url: video.snippet.thumbnails.maxres ? video.snippet.thumbnails.maxres.url : video.snippet.thumbnails.high.url
+          };
           podCast.title = video.snippet.title;
           podCast.videoId = video.contentDetails.videoId;
           podCast.videoType = 'Youtube';

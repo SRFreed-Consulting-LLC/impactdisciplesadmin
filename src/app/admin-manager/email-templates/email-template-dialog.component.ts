@@ -1,4 +1,5 @@
 import { Component, Inject } from '@angular/core';
+import Quill from 'quill';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
@@ -30,7 +31,7 @@ export class EmailTemplateDialogComponent {
   emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name'];
 
   private itemType = 'Email Template';
-  private quill: any;
+  private quill: Quill | undefined;
 
   constructor(
     private dialogRef: MatDialogRef<EmailTemplateDialogComponent, boolean>,
@@ -47,7 +48,7 @@ export class EmailTemplateDialogComponent {
     });
   }
 
-  onEditorCreated(quill: any): void {
+  onEditorCreated(quill: Quill): void {
     this.quill = quill;
   }
 

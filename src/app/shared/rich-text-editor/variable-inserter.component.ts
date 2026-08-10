@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { EventEmitter, Output } from '@angular/core';
+import Quill from 'quill';
 
 /**
  * Replaces dx-html-editor's built-in "variable" toolbar button + dxo-variables
@@ -26,7 +27,7 @@ export class VariableInserterComponent {
  * current cursor position (falling back to the end of the document if
  * nothing is focused/selected).
  */
-export function insertQuillVariable(quill: any, variableName: string): void {
+export function insertQuillVariable(quill: Quill | undefined, variableName: string): void {
   if (!quill) {
     return;
   }

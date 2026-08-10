@@ -154,7 +154,7 @@ export class CustomersComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<CustomerModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (row) => (c.key === 'phone' ? row.phone?.number : (row as any)[c.key]) ?? ''
+      value: (row) => ((c.key === 'phone' ? row.phone?.number : (row as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'customers.xlsx');
   }
@@ -163,7 +163,7 @@ export class CustomersComponent implements OnInit {
     if (field === 'phone') {
       return matchesColumnFilter(item.phone?.number, filter, 'text');
     }
-    return matchesColumnFilter((item as any)[field], filter, 'text');
+    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {
@@ -175,7 +175,7 @@ export class CustomersComponent implements OnInit {
 
     if (listId) {
       this.selectedList = this.emailLists.find((list) => list.id === listId);
-      const memberIds = new Set((this.selectedList?.list ?? []).map((c: CustomerModel) => c.id));
+      const memberIds = new Set(((this.selectedList?.list ?? []) as CustomerModel[]).map((c) => c.id));
       this.allCustomers.filter((c) => memberIds.has(c.id)).forEach((c) => this.selection.select(c));
     } else {
       this.selectedList = { ...new EmailList() };
@@ -188,7 +188,11 @@ export class CustomersComponent implements OnInit {
   }
 
   masterToggle(): void {
-    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.currentRows.forEach((row) => this.selection.select(row));
+    }
   }
 
   // Wide enough that the Purchases tab's 10 columns (Date/Status/Receipt/

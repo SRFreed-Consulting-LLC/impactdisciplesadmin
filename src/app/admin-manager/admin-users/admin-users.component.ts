@@ -140,7 +140,7 @@ export class AdminUsersComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<AdminUser>[] = visible.map((c) => ({
       header: c.label,
-      value: (row) => (c.key === 'phone' ? row.phone?.number : (row as any)[c.key]) ?? ''
+      value: (row) => ((c.key === 'phone' ? row.phone?.number : (row as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'admin_users.xlsx', 'Admin Users');
   }

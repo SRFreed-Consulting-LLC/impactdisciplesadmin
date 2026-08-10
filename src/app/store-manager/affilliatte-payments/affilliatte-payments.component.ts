@@ -25,7 +25,7 @@ export class AffilliattePaymentsComponent implements OnChanges {
     if (changes['code'] && this.code) {
       this.affiliatePayments$ = this.affilliatePaymentService.streamAllByValue('code', this.code).pipe(
         map((payments) => {
-          payments.forEach((payment) => (payment.date = dateFromTimestamp(payment.date as Timestamp) as any));
+          payments.forEach((payment) => (payment.date = dateFromTimestamp(payment.date as Timestamp) as unknown as Timestamp));
           return payments;
         })
       );

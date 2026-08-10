@@ -64,10 +64,10 @@
         </div>
         <img *ngIf="card.photoUrl?.url" class="image-preview" [src]="card.photoUrl.url" [alt]="card.photoUrl.name">
 
-        <label class="section-label">Shipping Address</label>
+        <div class="section-label">Shipping Address</div>
         <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
 
-        <label class="section-label">Phone Number</label>
+        <div class="section-label">Phone Number</div>
         <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
       </div>
     </mat-tab>
@@ -86,7 +86,7 @@
     title="SAVE"
     [isInProgress]="inProgress$ | async"
     [disabled]="inProgress$ | async"
-    (onClick)="onSave()">
+    (clicked)="onSave()">
   </app-indicator-button>
 </mat-dialog-actions>
 

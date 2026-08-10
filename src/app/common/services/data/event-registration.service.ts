@@ -1,4 +1,3 @@
-import { AgendaItem } from './../../models/domain/utils/agenda-item.model';
 import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO, QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';

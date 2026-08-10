@@ -14,6 +14,17 @@ const defaultPath = '/';
 
 const COOKIE_NAME = "impact-disciples-user"
 
+export interface LoginResult {
+  isOk: boolean;
+  data: AdminUser | null;
+  message: string;
+}
+
+export interface ResetPasswordResult {
+  isOk: boolean;
+  message?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -36,7 +47,7 @@ export class AdminAuthService {
     public loggerService: LoggerService,
   ) { }
 
-  logIn(email: string, password: string): Observable<any> {
+  logIn(email: string, password: string): Observable<LoginResult> {
     this.cookieService.delete(COOKIE_NAME);
 
     return from(this.dao.signIn(email.toLowerCase(), password)).pipe(
@@ -93,7 +104,7 @@ export class AdminAuthService {
           return this.loggerService.logMessage('LOGIN', email, 'You have entered an incorrect password for this email address.', [
             { ...err }
           ]).pipe(
-            switchMap((ec: any) => {
+            switchMap((ec: string | boolean) => {
               notify({
                 message: 'You have entered an incorrect password for this email address. If you have forgotten your password, enter your Email Address ' +
                 'and press the "Forgot Password" button. If the problem continues, please contact Alliance Group for assistance with this code: ' + ec,
@@ -109,7 +120,7 @@ export class AdminAuthService {
           );
         } else if (err.code == 'auth/user-not-found') {
           return this.loggerService.logMessage('LOGIN', email, 'The email address (' + email + ') is not recognized.', [{ ...err }]).pipe(
-            switchMap((ec: any) => {
+            switchMap((ec: string | boolean) => {
               notify({
                 message: 'The email address (' +  email + ') is not recognized. Correct the Email Address and Try again. If the problem continues, please contact your Admin for assistance with this code: ' + ec,
                 type: 'error'
@@ -126,7 +137,7 @@ export class AdminAuthService {
           return this.loggerService.logMessage('LOGIN', email, 'Too many failed attempts. The account is temporarily locked.', [
             { ...err }
           ]).pipe(
-            switchMap((ec: any) => {
+            switchMap((ec: string | boolean) => {
               notify({
                 message: 'There have been too many failed logins to this account. Please reset your password by going to the login screen, entering your password, and pressing the "Forgot Password" button. If the problem continues, please contact your Admin for assistance with this code: ' + ec,
                 type: 'error'
@@ -141,7 +152,7 @@ export class AdminAuthService {
           );
         } else {
           return this.loggerService.logMessage('LOGIN', email, 'The email address (' + email + ') is not recognized.', [{ ...err }]).pipe(
-            switchMap((ec: any) => {
+            switchMap((ec: string | boolean) => {
               notify({
                 message: 'There was an Error accessing your account. Please contact your Admin for Assistance with this code: ' + ec,
                 type: 'error'
@@ -200,7 +211,7 @@ export class AdminAuthService {
     return user;
   }
 
-  resetPassword(email: string): Observable<any> {
+  resetPassword(email: string): Observable<ResetPasswordResult> {
     try {
       // Send request
       this.dao.forgotPassword(email);

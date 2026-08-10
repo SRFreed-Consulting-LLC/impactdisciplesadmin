@@ -41,7 +41,7 @@ export class AffiliateSalesComponent implements OnChanges {
       this.selection.clear();
       this.affiliateSales$ = this.affiliateSalesService.streamAllByValue('code', this.code).pipe(
         map((sales) => {
-          sales.forEach((sale) => (sale.date = dateFromTimestamp(sale.date as Timestamp) as any));
+          sales.forEach((sale) => (sale.date = dateFromTimestamp(sale.date as Timestamp) as unknown as Timestamp));
           this.currentRows = sales;
           return sales;
         })
@@ -54,7 +54,11 @@ export class AffiliateSalesComponent implements OnChanges {
   }
 
   masterToggle(): void {
-    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.currentRows.forEach((row) => this.selection.select(row));
+    }
   }
 
   // NOTE: AffilliatePaymentsService.pay() is a hardcoded stub - see its own

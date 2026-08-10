@@ -22,7 +22,7 @@ export class LoggerService extends BaseService<LogMessage> {
     return data;
   };
 
-  logMessage(type: string, created_by: string, message: string, data?: any): Observable<any> {
+  logMessage(type: string, created_by: string, message: string, data?: unknown): Observable<string | boolean> {
     try {
       const ec = this.generateErrorCode();
       const logMessage: LogMessage = { ...new LogMessage(type, created_by, message, ec, data) };

@@ -236,7 +236,7 @@
               </mat-select>
             </mat-form-field>
 
-            <label class="section-label">Description</label>
+            <div class="section-label">Description</div>
             <div class="editor-wrap">
               <quill-editor formControlName="description" [modules]="richTextModules"></quill-editor>
             </div>
@@ -303,7 +303,7 @@
         title="SAVE"
         [isInProgress]="inProgress$ | async"
         [disabled]="inProgress$ | async"
-        (onClick)="onSave()">
+        (clicked)="onSave()">
       </app-indicator-button>
     </div>
   </div>

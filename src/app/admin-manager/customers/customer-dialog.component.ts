@@ -159,7 +159,7 @@ export class CustomerDialogComponent {
     return date instanceof Date ? date.toLocaleDateString() : '';
   }
 
-  getDate(timestamp: any): string {
+  getDate(timestamp: unknown): string {
     const date = dateFromTimestamp(timestamp);
     return date instanceof Date ? date.toLocaleDateString() : '';
   }

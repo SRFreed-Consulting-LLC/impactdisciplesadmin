@@ -10,7 +10,10 @@
   <div
     class="tree-node__label"
     [class.tree-node__label--selected]="folderPath === selectedPath"
-    (click)="select()">
+    role="button"
+    tabindex="0"
+    (click)="select()"
+    (keydown.enter)="select()">
     <mat-icon class="tree-node__icon">folder</mat-icon>
     <span class="tree-node__name">{{ folderName }}</span>
   </div>

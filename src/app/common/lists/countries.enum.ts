@@ -51,7 +51,7 @@ export enum Countries {
   "CO"="Colombia",
   "KM"="Comoros",
   "CG"="Congo",
-  "CD"="Congo",
+  "CD"="Congo (DRC)",
   "CK"="Cook Islands",
   "CR"="Costa Rica",
   "CI"="Côte d'Ivoire",

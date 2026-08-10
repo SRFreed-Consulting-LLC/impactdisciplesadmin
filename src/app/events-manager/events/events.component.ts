@@ -152,7 +152,7 @@ export class EventsComponent implements OnInit {
     column.visible = !column.visible;
   }
 
-  private fieldValue(item: EventModel, field: string): any {
+  private fieldValue(item: EventModel, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
       case 'isSummit': return item.isSummit ? 'Yes' : 'No';
@@ -160,10 +160,10 @@ export class EventsComponent implements OnInit {
       case 'location': return this.locationName(item);
       case 'startDate':
       case 'endDate': {
-        const value = (item as any)[field];
-        return value instanceof Date ? value : value ? new Date(value) : '';
+        const value = (item as unknown as Record<string, unknown>)[field];
+        return value instanceof Date ? value : value ? new Date(value as string | number) : '';
       }
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -171,7 +171,7 @@ export class EventsComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<EventModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'events.xlsx');
   }
@@ -201,9 +201,9 @@ export class EventsComponent implements OnInit {
       return matchesColumnFilter(item.costInDollars, filter, 'number');
     }
     if (field === 'startDate' || field === 'endDate') {
-      return matchesColumnFilter(toMillis((item as any)[field]), filter, 'date');
+      return matchesColumnFilter(toMillis((item as unknown as Record<string, unknown>)[field]), filter, 'date');
     }
-    return matchesColumnFilter((item as any)[field], filter, 'text');
+    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {
@@ -294,17 +294,17 @@ export class EventsComponent implements OnInit {
     toggle('kajabiSubscribeURL', isOnline);
   }
 
-  private toInputValue(date: any): string {
+  private toInputValue(date: unknown): string {
     if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date);
+    const d = date instanceof Date ? date : new Date(date as string | number);
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  private toTimeValue(date: any): string {
+  private toTimeValue(date: unknown): string {
     if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date);
+    const d = date instanceof Date ? date : new Date(date as string | number);
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;

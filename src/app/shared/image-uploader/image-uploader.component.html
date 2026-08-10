@@ -94,7 +94,10 @@
             class="uploader__row"
             *ngFor="let item of items"
             [class.uploader__row--selected]="isSelected(item)"
+            role="button"
+            tabindex="0"
             (click)="onRowClick(item, $event)"
+            (keydown.enter)="onRowClick(item, $any($event))"
             (dblclick)="onRowDoubleClick(item)"
             (contextmenu)="onContextMenu($event, item, contextMenuTrigger)">
             <mat-icon class="uploader__row-icon">{{ iconFor(item) }}</mat-icon>
@@ -111,7 +114,10 @@
             class="uploader__tile"
             *ngFor="let item of items"
             [class.uploader__tile--selected]="isSelected(item)"
+            role="button"
+            tabindex="0"
             (click)="onRowClick(item, $event)"
+            (keydown.enter)="onRowClick(item, $any($event))"
             (dblclick)="onRowDoubleClick(item)"
             (contextmenu)="onContextMenu($event, item, contextMenuTrigger)">
             <mat-icon class="uploader__tile-icon">{{ iconFor(item) }}</mat-icon>

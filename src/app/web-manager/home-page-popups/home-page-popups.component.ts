@@ -99,10 +99,10 @@ export class HomePagePopupsComponent implements OnInit {
     column.visible = !column.visible;
   }
 
-  private fieldValue(item: HomePagePopupModel, field: string): any {
+  private fieldValue(item: HomePagePopupModel, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -110,7 +110,7 @@ export class HomePagePopupsComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<HomePagePopupModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'home_page_popups.xlsx');
   }

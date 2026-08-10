@@ -49,12 +49,12 @@ export const NUMBER_FILTER_OPERATORS: FilterOperatorOption[] = [
 
 export const DATE_FILTER_OPERATORS: FilterOperatorOption[] = NUMBER_FILTER_OPERATORS;
 
-function isBlank(rawValue: any): boolean {
+function isBlank(rawValue: unknown): boolean {
   return rawValue === null || rawValue === undefined || rawValue === '';
 }
 
 export function matchesColumnFilter(
-  rawValue: any,
+  rawValue: unknown,
   filter: ColumnFilterValue | undefined,
   type: 'text' | 'number' | 'date' = 'text'
 ): boolean {
@@ -90,7 +90,7 @@ export function matchesColumnFilter(
   }
 
   if (type === 'date') {
-    const d = rawValue instanceof Date ? rawValue.getTime() : new Date(rawValue).getTime();
+    const d = rawValue instanceof Date ? rawValue.getTime() : new Date(rawValue as string | number).getTime();
     const term = new Date(filter.value).getTime();
     if (isNaN(d) || isNaN(term)) {
       return true;
@@ -106,7 +106,7 @@ export function matchesColumnFilter(
     }
   }
 
-  const str = (rawValue ?? '').toString().toLowerCase();
+  const str = String(rawValue ?? '').toLowerCase();
   const term = filter.value.toLowerCase();
   switch (filter.operator) {
     case 'contains': return str.includes(term);

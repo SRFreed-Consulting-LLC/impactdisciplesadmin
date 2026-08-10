@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 // see app.module.ts's provideAuth()), not a raw getAuth() call - see this
 // class's constructor for why.
 import { Auth } from '@angular/fire/auth';
-import { browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
+import { AuthProvider, browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
   setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut, updatePassword, User, UserCredential } from 'firebase/auth';
 import { BehaviorSubject, Observable, ReplaySubject, fromEventPattern } from 'rxjs';
 import { UserPermissionService } from '../services/data/user-permissions.service';
@@ -133,7 +133,7 @@ export class FireAuthDao {
     });
   }
 
-  public authLogin(provider: any): Promise<UserCredential> {
+  public authLogin(provider: AuthProvider): Promise<UserCredential> {
     return setPersistence(this.auth, browserSessionPersistence).then(() => {
       return signInWithPopup(this.auth, provider);
     });
@@ -165,8 +165,6 @@ export class FireAuthDao {
   }
 
   public resetPassword(newPassword: string) {
-    const that = this;
-
     if(this.auth.currentUser){
       updatePassword(this.auth.currentUser, newPassword).then(() => {
         notify({

@@ -44,9 +44,9 @@ export class EventAttendeeDialogComponent {
     });
   }
 
-  private toInputValue(date: any): string {
+  private toInputValue(date: unknown): string {
     if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date);
+    const d = date instanceof Date ? date : new Date(date as string | number);
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -60,8 +60,8 @@ export class EventAttendeeDialogComponent {
     if (!this.data.item?.receiptEmailId) {
       return;
     }
-    this.emailService.getById(this.data.item.receiptEmailId).then((mail: any) => {
-      delete mail['delivery'];
+    this.emailService.getById(this.data.item.receiptEmailId).then((mail) => {
+      delete mail.delivery;
       return mail;
     }).then((mail) => {
       this.emailService.update(mail.id, mail).then(() => {

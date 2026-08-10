@@ -10,5 +10,8 @@ export class LocationModel extends BaseModel {
   contactName: string;
   phone: Phone;
   trainingrooms: TrainingRoomModel[];
-  organization: OrganizationModel | any;
+  // Either a full OrganizationModel (freshly picked in the form) or just its
+  // id (as loaded from Firestore) - see organizationName()'s typeof check in
+  // locations.component.ts.
+  organization: OrganizationModel | string;
 }

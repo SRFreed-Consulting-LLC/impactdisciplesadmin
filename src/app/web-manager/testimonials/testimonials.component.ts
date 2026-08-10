@@ -91,10 +91,10 @@ export class TestimonialsComponent implements OnInit {
     column.visible = !column.visible;
   }
 
-  private fieldValue(item: TestimonialModel, field: string): any {
+  private fieldValue(item: TestimonialModel, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -102,7 +102,7 @@ export class TestimonialsComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<TestimonialModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'testimonials.xlsx');
   }

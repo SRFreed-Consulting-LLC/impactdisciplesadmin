@@ -22,16 +22,19 @@ export class EnumHelper {
     return Object.values(States) as [];
   }
 
-  static getState2LetterTypesAsArray(): string[] {
-    return Object.entries(States) as [];
+  // Unlike the other getters above, these return [key, value] pairs (e.g.
+  // ["CA", "California"]) rather than just values - callers need both the
+  // 2-letter code (to store) and the full name (to display).
+  static getState2LetterTypesAsArray(): [string, string][] {
+    return Object.entries(States);
   }
 
   static getCountryTypesAsArray(): string[] {
     return Object.values(Countries) as [];
   }
 
-  static getCountry2LetterTypesAsArray(): string[] {
-    return Object.entries(Countries) as [];
+  static getCountry2LetterTypesAsArray(): [string, string][] {
+    return Object.entries(Countries);
   }
 
   static getUOMTypesAsArray(): string[] {

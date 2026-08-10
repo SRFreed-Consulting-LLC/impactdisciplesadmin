@@ -28,7 +28,7 @@
 
         <div class="save-row">
           <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
-          <app-indicator-button title="SAVE" [isInProgress]="inProgress$ | async" [disabled]="inProgress$ | async" (onClick)="onSave()"></app-indicator-button>
+          <app-indicator-button title="SAVE" [isInProgress]="inProgress$ | async" [disabled]="inProgress$ | async" (clicked)="onSave()"></app-indicator-button>
         </div>
       </div>
     </mat-tab>
@@ -43,7 +43,7 @@
 
         <div class="save-row">
           <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
-          <app-indicator-button title="SAVE" [isInProgress]="inProgress$ | async" [disabled]="inProgress$ | async" (onClick)="onSave()"></app-indicator-button>
+          <app-indicator-button title="SAVE" [isInProgress]="inProgress$ | async" [disabled]="inProgress$ | async" (clicked)="onSave()"></app-indicator-button>
         </div>
       </div>
     </mat-tab>

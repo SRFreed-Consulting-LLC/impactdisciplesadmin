@@ -7,12 +7,12 @@ export class EventRegistrationModel extends BaseModel{
   eventId: string;
   email: string;
   receipt: string;
-  registrationDate: Timestamp | any;
+  registrationDate: Timestamp | Date | string;
   trainingSessions: string [];
   loggedIn?: boolean = false;
   receiptEmailId?: string;
   receiptEmailStatus: string;
-  receiptEmailDate: Timestamp | any;
+  receiptEmailDate: Timestamp | Date | string;
   // Set by the new-record-alert Cloud Function trigger on creation ('new'),
   // flipped to 'seen' by new-record-tracking.util.ts the first time an admin
   // views this record - see functions/src/new-record-alerts.functions.ts.

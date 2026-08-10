@@ -87,7 +87,7 @@ export class CoachesComponent implements OnInit {
     if (field === 'organization') {
       return matchesColumnFilter(this.organizationName(item), filter, 'text');
     }
-    return matchesColumnFilter((item as any)[field], filter, 'text');
+    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
   }
 
   get displayedColumns(): string[] {
@@ -102,12 +102,12 @@ export class CoachesComponent implements OnInit {
     column.visible = !column.visible;
   }
 
-  private fieldValue(item: CoachModel, field: string): any {
+  private fieldValue(item: CoachModel, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      case 'photoUrl': return (item as any).photoUrl?.name ?? '';
+      case 'photoUrl': return item.photoUrl?.name ?? '';
       case 'organization': return this.organizationName(item);
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -115,7 +115,7 @@ export class CoachesComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<CoachModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'coaches.xlsx');
   }

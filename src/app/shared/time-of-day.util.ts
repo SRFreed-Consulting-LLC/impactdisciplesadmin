@@ -10,7 +10,7 @@ import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 // string control instead of juggling Date objects directly.
 
 export function timestampToTimeString(value: Timestamp | Date | string | null | undefined): string {
-  const date = value instanceof Date ? value : dateFromTimestamp(value as any);
+  const date = value instanceof Date ? value : dateFromTimestamp(value);
   if (!(date instanceof Date)) {
     return '';
   }

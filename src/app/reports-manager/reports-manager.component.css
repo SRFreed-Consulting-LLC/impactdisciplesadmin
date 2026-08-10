@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.manager-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}

@@ -1,10 +1,11 @@
 import { UNIT_OF_MEASURE } from "src/app/common/lists/unit_of_measure.enum";
 import { BaseModel } from "../base.model"
 import { TagModel } from "../domain/tag.model";
+import { ImageModel } from "./image.model";
 
 export class ProductModel extends BaseModel {
   isActive = false;
-  imageUrl: any;
+  imageUrl: ImageModel;
   title: string;
   cost = 0;
   salePrice = 0;
@@ -17,7 +18,7 @@ export class ProductModel extends BaseModel {
   isEBook = false;
   isDigitalBook = false;
   digitalBookId: string;
-  eBookUrl: any;
+  eBookUrl: ImageModel;
   seriesOrder: number;
   categoryOrder: number;
   sizes?: string[] = [];

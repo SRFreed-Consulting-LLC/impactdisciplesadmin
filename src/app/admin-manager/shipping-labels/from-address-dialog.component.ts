@@ -23,8 +23,8 @@ export class FromAddressDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
 
-  states: { key: string; value: string }[] = EnumHelper.getState2LetterTypesAsArray().map((entry: any) => ({ key: entry[0], value: entry[1] }));
-  countries: { key: string; value: string }[] = EnumHelper.getCountry2LetterTypesAsArray().map((entry: any) => ({ key: entry[0], value: entry[1] }));
+  states: { key: string; value: string }[] = EnumHelper.getState2LetterTypesAsArray().map((entry: [string, string]) => ({ key: entry[0], value: entry[1] }));
+  countries: { key: string; value: string }[] = EnumHelper.getCountry2LetterTypesAsArray().map((entry: [string, string]) => ({ key: entry[0], value: entry[1] }));
 
   constructor(
     private dialogRef: MatDialogRef<FromAddressDialogComponent, ShippingFromAddress | false>,

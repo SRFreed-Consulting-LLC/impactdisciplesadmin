@@ -9,6 +9,7 @@ import { EventRegistrationModel } from 'src/app/common/models/domain/event-regis
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
+import { EMailModel } from 'src/app/common/models/admin/mail.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
@@ -81,7 +82,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
       tap(([items]) => this.tracker.capture(items)),
       map(([items, filters]) => {
         const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], 'text')))
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filters[field], 'text')))
           .sort((a, b) => (a.lastName ?? '').localeCompare(b.lastName ?? ''));
         this.currentRows = filtered;
         return filtered;
@@ -117,7 +118,11 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   }
 
   masterToggle(): void {
-    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.currentRows.forEach((row) => this.selection.select(row));
+    }
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {
@@ -131,7 +136,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   showEditModal(item: EventRegistrationModel): void {
     this.unsub?.();
     if (item.receiptEmailId) {
-      this.unsub = this.emailService.streamRecord(item.receiptEmailId, (mail: any) => {
+      this.unsub = this.emailService.streamRecord(item.receiptEmailId, (mail: EMailModel) => {
         if (mail?.delivery) {
           item.receiptEmailStatus = mail.delivery.state;
           item.receiptEmailDate = dateFromTimestamp(mail.delivery.endTime);
@@ -161,8 +166,8 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   resendConfirmationEmail(item: EventRegistrationModel): void {
     this.confirmService.confirm('<i>Are you sure you want resend this Registration Confirmation?</i>', 'Confirm').then((confirmed) => {
       if (confirmed && item.receiptEmailId) {
-        this.emailService.getById(item.receiptEmailId).then((mail: any) => {
-          delete mail['delivery'];
+        this.emailService.getById(item.receiptEmailId).then((mail) => {
+          delete mail.delivery;
           return mail;
         }).then((mail) => {
           this.emailService.update(mail.id, mail).then(() => {

@@ -1,4 +1,5 @@
 import { Component, Inject } from '@angular/core';
+import Quill from 'quill';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
@@ -37,7 +38,7 @@ export class SendPrayerDialogComponent {
 
   emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name', 'Date'];
 
-  private quill: any;
+  private quill: Quill | undefined;
 
   constructor(
     private dialogRef: MatDialogRef<SendPrayerDialogComponent, boolean>,
@@ -55,7 +56,7 @@ export class SendPrayerDialogComponent {
     });
   }
 
-  onEditorCreated(quill: any): void {
+  onEditorCreated(quill: Quill): void {
     this.quill = quill;
   }
 
@@ -81,7 +82,7 @@ export class SendPrayerDialogComponent {
     const subject = this.form.value.subject as string;
 
     const list: Promise<PrayerTeamSubscriptionModel[]> = this.data.selectedList
-      ? Promise.resolve(this.data.selectedList.list)
+      ? Promise.resolve(this.data.selectedList.list as PrayerTeamSubscriptionModel[])
       : this.service.getAll();
 
     list

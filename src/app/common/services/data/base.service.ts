@@ -20,11 +20,11 @@ export class BaseService<T extends BaseModel> {
     return this.dao.getAll(this.table, this.fromFirestore, limitCount);
   }
 
-  getAllByValue(field: string, value: any, limitCount?: number): Promise<T[]>{
+  getAllByValue(field: string, value: unknown, limitCount?: number): Promise<T[]>{
     return this.dao.getAllByValue(this.table, field, value, this.fromFirestore, limitCount);
   }
 
-  queryAllByValue(field: string, opStr: WhereFilterOperandKeys, value: any, limitCount?: number): Promise<T[]>{
+  queryAllByValue(field: string, opStr: WhereFilterOperandKeys, value: unknown, limitCount?: number): Promise<T[]>{
     return this.dao.queryByValue(this.table, field, opStr, value, this.fromFirestore, limitCount);
   }
 
@@ -48,7 +48,7 @@ export class BaseService<T extends BaseModel> {
     return this.dao.streamAll(this.table, this.fromFirestore, limitCount, onError)
   }
 
-  streamAllByValue(field: string, value: any, limitCount?: number): Observable<T[]>{
+  streamAllByValue(field: string, value: unknown, limitCount?: number): Observable<T[]>{
     return this.dao.streamByValue(this.table, field, value, this.fromFirestore, limitCount)
   }
 
@@ -60,7 +60,7 @@ export class BaseService<T extends BaseModel> {
     return this.dao.streamById(id, this.table, callBack, this.fromFirestore);
   }
 
-  queryStreamByValue(field: any, opStr: WhereFilterOperandKeys, value: string, limitCount?: number): Observable<T[]>{
+  queryStreamByValue(field: string, opStr: WhereFilterOperandKeys, value: unknown, limitCount?: number): Observable<T[]>{
     return this.dao.queryStreamByValue(this.table, field, opStr, value, this.fromFirestore, limitCount);
   }
 

@@ -5,6 +5,7 @@ import { Timestamp } from 'firebase/firestore';
 import { OrganizationModel } from './organization.model';
 import { AgendaItem } from './utils/agenda-item.model';
 import { FAQModel } from '../utils/faq.model';
+import { ImageModel } from '../utils/image.model';
 
 export class EventModel extends BaseModel {
   isActive = false;
@@ -22,7 +23,7 @@ export class EventModel extends BaseModel {
   isKajabiCourse?: boolean = false;
   kajabiPurchaseURL?: string;
   kajabiSubscribeURL?: string;
-  imageUrl?: any;
+  imageUrl?: ImageModel;
   emailTemplate?: string;
   videoId?: string;
   faqList: FAQModel[] = [];

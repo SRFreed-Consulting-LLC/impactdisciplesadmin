@@ -58,6 +58,11 @@ const routes: Routes = [
         path: 'store-manager',
         loadChildren: () => import('./store-manager/store-manager.module').then(m => m.StoreManagerModule),
         canActivate: [ AuthGuardService ]
+      },
+      {
+        path: 'reports-manager',
+        loadChildren: () => import('./reports-manager/reports-manager.module').then(m => m.ReportsManagerModule),
+        canActivate: [ AuthGuardService ]
       }
     ]
   },

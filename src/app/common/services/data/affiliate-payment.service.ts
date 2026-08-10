@@ -12,7 +12,11 @@ export class AffilliatePaymentsService extends BaseService<AffilliatePaymentMode
     this.table="affilliate_payments"
   }
 
-  pay(affiliatePaypalAccount: string, amount: number): Promise<any>{
+  // Hardcoded stub, not a real PayPal payout - see affiliate-sales.component.ts's
+  // own comment on pay(). Params are part of the intended real signature,
+  // kept even though unused by this placeholder body.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  pay(affiliatePaypalAccount: string, amount: number): Promise<string>{
     return Promise.resolve('asdsaerwerwer');
   }
 }

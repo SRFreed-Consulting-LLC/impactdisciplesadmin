@@ -56,7 +56,7 @@ export class PurchaseDetailsComponent {
       }
 
       item.processedStatus = 'SHIPPED';
-      item.dateProcessed = dateFromTimestamp(Timestamp.now() as Timestamp) as any;
+      item.dateProcessed = dateFromTimestamp(Timestamp.now() as Timestamp) as unknown as Timestamp;
 
       const isOrderComplete = (this.selectedItem.cartItems ?? []).every((cartItem) => cartItem.processedStatus === 'SHIPPED');
       if (isOrderComplete) {

@@ -57,9 +57,13 @@ export class CouponDialogComponent implements OnInit {
 
   ngOnInit(): void {
     merge(this.eventService.streamAll(), this.productService.streamAll()).subscribe((items) => {
-      items.forEach((item: any) => {
-        if (!this.couponTags.some((t) => t.id === item.id)) {
-          this.couponTags.push({ id: item.id, tag: item.title ?? item.eventName });
+      items.forEach((item) => {
+        // item is EventModel | ProductModel - title only exists on the
+        // latter, eventName only on the former, so a cast is unavoidable to
+        // read whichever one applies.
+        const rec = item as unknown as Record<string, unknown>;
+        if (!this.couponTags.some((t) => t.id === rec['id'])) {
+          this.couponTags.push({ id: rec['id'] as string, tag: (rec['title'] ?? rec['eventName']) as string });
         }
       });
     });

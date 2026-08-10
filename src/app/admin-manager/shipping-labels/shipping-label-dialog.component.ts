@@ -27,8 +27,8 @@ export class ShippingLabelDialogComponent {
   // 2-letter codes (this screen posts directly to a real shipping carrier
   // API, which requires 2-letter state/country codes) - a different array
   // shape than the rest of the app's state/country dropdowns.
-  states: { key: string; value: string }[] = EnumHelper.getState2LetterTypesAsArray().map((entry: any) => ({ key: entry[0], value: entry[1] }));
-  countries: { key: string; value: string }[] = EnumHelper.getCountry2LetterTypesAsArray().map((entry: any) => ({ key: entry[0], value: entry[1] }));
+  states: { key: string; value: string }[] = EnumHelper.getState2LetterTypesAsArray().map((entry: [string, string]) => ({ key: entry[0], value: entry[1] }));
+  countries: { key: string; value: string }[] = EnumHelper.getCountry2LetterTypesAsArray().map((entry: [string, string]) => ({ key: entry[0], value: entry[1] }));
 
   private itemType = 'Shipping Label';
 

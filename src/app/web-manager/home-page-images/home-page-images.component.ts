@@ -86,11 +86,11 @@ export class HomePageImagesComponent implements OnInit {
     column.visible = !column.visible;
   }
 
-  private fieldValue(item: HomePageImageModel, field: string): any {
+  private fieldValue(item: HomePageImageModel, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
-      case 'image': return (item as any).image?.name ?? '';
-      default: return (item as any)[field];
+      case 'image': return item.image?.name ?? '';
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -98,7 +98,7 @@ export class HomePageImagesComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<HomePageImageModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'home_page_images.xlsx');
   }

@@ -35,7 +35,7 @@ export class ImageUploaderComponent implements OnInit {
   @Input() imageSelectVisible = true;
   @Output() imageSelectClosed = new EventEmitter<boolean>();
 
-  @Input() card: any;
+  @Input() card: Record<string, unknown>;
   @Input() field: string;
   @Input() isList: boolean;
   @Input() selectionMode: 'single' | 'multiple' = 'single';
@@ -64,7 +64,7 @@ export class ImageUploaderComponent implements OnInit {
   // the left-hand tree re-fetches instead of showing a stale child list.
   treeRefreshToken = 0;
 
-  private originalValue: any;
+  private originalValue: unknown;
 
   constructor(
     private storage: FileBrowserStorageService,
@@ -108,7 +108,11 @@ export class ImageUploaderComponent implements OnInit {
 
   // Selection follows the original's single-click-selects behavior (not a
   // separate "open" gesture) - double-click on a folder navigates instead.
-  onRowClick(item: FileItem, event: MouseEvent): void {
+  // Event is MouseEvent | KeyboardEvent so this can also back a
+  // (keydown.enter) binding for keyboard activation (accessibility) - both
+  // event types carry the .stopPropagation()/.ctrlKey/.metaKey this method
+  // actually uses.
+  onRowClick(item: FileItem, event: MouseEvent | KeyboardEvent): void {
     event.stopPropagation();
 
     if (this.selectionMode === 'multiple' && (event.ctrlKey || event.metaKey)) {

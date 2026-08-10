@@ -59,7 +59,7 @@ export const toMillis = (item: unknown): number => {
   return 0;
 };
 
-const parseStringDate = (dateString: string): null | Date => {
+const parseStringDate = (dateString: string): null | Date | string => {
   //console.warn('Wrong Date format detected: all dates must be stored as Timestamp in DB', dateString);
 
   if (!dateString) {
@@ -70,5 +70,5 @@ const parseStringDate = (dateString: string): null | Date => {
     return isValid(date) ? date : null;
   }
   //console.warn('Wrong date format detected: unsupported string format', dateString);
-  return dateString as any;
+  return dateString;
 };

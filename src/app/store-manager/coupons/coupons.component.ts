@@ -55,7 +55,7 @@ export class CouponsComponent implements OnInit {
     this.coupons$ = combineLatest([this.service.streamAll(), this.filters$]).pipe(
       map(([items, filters]) => {
         const filtered = items
-          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as any)[field], filters[field], field === 'percentOff' ? 'number' : 'text')))
+          .filter((item) => Object.keys(filters).every((field) => matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filters[field], field === 'percentOff' ? 'number' : 'text')))
           .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''));
         this.currentRows = filtered;
         return filtered;
@@ -80,7 +80,7 @@ export class CouponsComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<CouponModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => (c.key === 'isActive' ? (item.isActive ? 'LIVE' : 'INACTIVE') : (item as any)[c.key]) ?? ''
+      value: (item) => ((c.key === 'isActive' ? (item.isActive ? 'LIVE' : 'INACTIVE') : (item as unknown as Record<string, unknown>)[c.key]) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'coupons.xlsx');
   }

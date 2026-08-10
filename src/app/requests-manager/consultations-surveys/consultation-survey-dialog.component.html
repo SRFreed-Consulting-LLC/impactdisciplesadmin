@@ -34,14 +34,14 @@
 
   <div class="level-row">
     <div class="level-field">
-      <label class="level-field__label">Commitment Level?</label>
+      <div class="level-field__label">Commitment Level?</div>
       <mat-radio-group formControlName="commitment">
         <mat-radio-button *ngFor="let level of levels" [value]="level">{{ level }}</mat-radio-button>
       </mat-radio-group>
     </div>
 
     <div class="level-field">
-      <label class="level-field__label">Readiness Level?</label>
+      <div class="level-field__label">Readiness Level?</div>
       <mat-radio-group formControlName="readiness">
         <mat-radio-button *ngFor="let level of levels" [value]="level">{{ level }}</mat-radio-button>
       </mat-radio-group>
@@ -85,6 +85,6 @@
     title="SAVE"
     [isInProgress]="inProgress$ | async"
     [disabled]="inProgress$ | async"
-    (onClick)="onSave()">
+    (clicked)="onSave()">
   </app-indicator-button>
 </mat-dialog-actions>

@@ -1,4 +1,21 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "purchases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "billingAddress.state", "order": "ASCENDING" },
+        { "fieldPath": "dateProcessed", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "purchases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "shippingAddress.state", "order": "ASCENDING" },
+        { "fieldPath": "dateProcessed", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

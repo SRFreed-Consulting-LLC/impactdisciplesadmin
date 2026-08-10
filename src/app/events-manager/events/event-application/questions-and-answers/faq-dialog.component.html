@@ -14,7 +14,7 @@
     </mat-form-field>
   </div>
 
-  <label class="section-label">Answer</label>
+  <div class="section-label">Answer</div>
   <quill-editor formControlName="answer" [modules]="richTextModules"></quill-editor>
 </mat-dialog-content>
 
@@ -24,6 +24,6 @@
     title="SAVE"
     [isInProgress]="inProgress$ | async"
     [disabled]="inProgress$ | async"
-    (onClick)="onSave()">
+    (clicked)="onSave()">
   </app-indicator-button>
 </mat-dialog-actions>

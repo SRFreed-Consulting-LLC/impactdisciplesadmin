@@ -40,7 +40,15 @@ export class TagChipsComponent implements ControlValueAccessor {
   filteredOptions$: Observable<TagModel[]>;
   disabled = false;
 
+  // Real no-ops by design - ControlValueAccessor's own contract is that
+  // Angular's forms module overwrites these via registerOnChange()/
+  // registerOnTouched() below the moment this component is bound to a
+  // form control; these defaults only matter for the (never-hit-in-
+  // practice) case where writeValue()/removeTag()/addTag() run before
+  // that registration completes.
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onChange: (value: TagModel[]) => void = () => {};
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onTouched: () => void = () => {};
 
   constructor() {

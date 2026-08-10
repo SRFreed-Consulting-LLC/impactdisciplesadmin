@@ -98,7 +98,7 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   private matchesField(item: NewsletterSubscriptionModel, field: string, filter: ColumnFilterValue): boolean {
-    return matchesColumnFilter((item as any)[field], filter, field === 'date' ? 'date' : 'text');
+    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, field === 'date' ? 'date' : 'text');
   }
 
   get displayedColumns(): string[] {
@@ -117,7 +117,7 @@ export class NewsletterSubscriptionComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<NewsletterSubscriptionModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => (item as any)[c.key] ?? ''
+      value: (item) => ((item as unknown as Record<string, unknown>)[c.key] as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'newsletter_subscribers.xlsx');
   }
@@ -131,7 +131,7 @@ export class NewsletterSubscriptionComponent implements OnInit {
 
     if (listId) {
       this.selectedList = this.emailLists.find((list) => list.id === listId);
-      const memberIds = new Set((this.selectedList?.list ?? []).map((s: NewsletterSubscriptionModel) => s.id));
+      const memberIds = new Set(((this.selectedList?.list ?? []) as NewsletterSubscriptionModel[]).map((s) => s.id));
       this.allSubscribers.filter((s) => memberIds.has(s.id)).forEach((s) => this.selection.select(s));
     } else {
       this.selectedList = { ...new EmailList() };
@@ -144,7 +144,11 @@ export class NewsletterSubscriptionComponent implements OnInit {
   }
 
   masterToggle(): void {
-    this.isAllSelected() ? this.selection.clear() : this.currentRows.forEach((row) => this.selection.select(row));
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.currentRows.forEach((row) => this.selection.select(row));
+    }
   }
 
   showAddModal(): void {

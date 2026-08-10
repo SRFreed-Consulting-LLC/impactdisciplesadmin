@@ -190,12 +190,12 @@ export class ProductsComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<ProductModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => this.fieldValue(item, c.key) ?? ''
+      value: (item) => (this.fieldValue(item, c.key) as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'products.xlsx');
   }
 
-  private fieldValue(item: ProductModel, field: string): any {
+  private fieldValue(item: ProductModel, field: string): unknown {
     switch (field) {
       case 'isActive': return item.isActive ? 'LIVE' : 'INACTIVE';
       case 'category': return this.categoryName(item);
@@ -203,7 +203,7 @@ export class ProductsComponent implements OnInit {
       case 'isEBook': return item.isEBook ? 'Yes' : 'No';
       case 'isDigitalBook': return item.isDigitalBook ? 'Yes' : 'No';
       case 'imageUrl': return item.imageUrl?.name ?? '';
-      default: return (item as any)[field];
+      default: return (item as unknown as Record<string, unknown>)[field];
     }
   }
 
@@ -223,9 +223,9 @@ export class ProductsComponent implements OnInit {
       return matchesColumnFilter(this.seriesName(item), filter, 'text');
     }
     if (field === 'cost' || field === 'salePrice') {
-      return matchesColumnFilter((item as any)[field], filter, 'number');
+      return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'number');
     }
-    return matchesColumnFilter((item as any)[field], filter, 'text');
+    return matchesColumnFilter((item as unknown as Record<string, unknown>)[field], filter, 'text');
   }
 
   onFilterChange(field: string, filter: ColumnFilterValue): void {

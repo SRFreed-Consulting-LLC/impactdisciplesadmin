@@ -100,7 +100,7 @@ export class LunchAndLearnsComponent implements OnInit {
     const visible = this.columns.filter((c) => c.visible);
     const excelColumns: ExcelColumn<LunchAndLearnModel>[] = visible.map((c) => ({
       header: c.label,
-      value: (item) => (item as any)[c.key] ?? ''
+      value: (item) => ((item as unknown as Record<string, unknown>)[c.key] as string | number | Date | null | undefined) ?? ''
     }));
     exportToExcel(this.currentRows, excelColumns, 'lunch_and_learns.xlsx');
   }

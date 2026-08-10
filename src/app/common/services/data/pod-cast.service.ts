@@ -6,6 +6,25 @@ import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 import { environment } from 'src/environments/environment';
 
+// Shape of a single item from the YouTube Data API v3 playlistItems
+// endpoint (https://developers.google.com/youtube/v3/docs/playlistItems) -
+// only the fields this service/pod-casts.component.ts actually reads.
+export interface YoutubePlaylistItem {
+  id: string;
+  snippet: {
+    title: string;
+    description: string;
+    publishedAt: string;
+    thumbnails: {
+      high: { url: string };
+      maxres?: { url: string };
+    };
+  };
+  contentDetails: {
+    videoId: string;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,10 +44,10 @@ export class PodCastService extends BaseService<PodCastModel>{
     return data;
   };
 
-  videos = signal<any[]>([]);
+  videos = signal<YoutubePlaylistItem[]>([]);
 
   async getVideoInfo(){
-    this.videos = signal<any[]>([]);
+    this.videos = signal<YoutubePlaylistItem[]>([]);
 
     const keysResponse = await fetch(environment.youtubeKeyUrl);
 
@@ -51,7 +70,7 @@ export class PodCastService extends BaseService<PodCastModel>{
   }
 
   private async callYoutube(playlistId: string, pageToken?: string){
-    const videos: any[] = [];
+    const videos: YoutubePlaylistItem[] = [];
 
     let playListItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.API_KEY}&part=snippet,contentDetails&maxResults=50&&playlistId=${playlistId}`;
 
