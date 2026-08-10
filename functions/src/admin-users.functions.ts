@@ -8,10 +8,16 @@ type AdminUserRole = "Admin" | "Employee";
  * Throws unless `callerUid` has an admin_users record (matched by its
  * firebaseUID field - this collection isn't keyed by uid the way
  * impact-discipleship-library-manager-new's adminUsers is) with role
- * "Admin". Employees may view the Admin Users screen but not create/delete
- * accounts.
+ * "Admin" (or "Root" - a single, manually-assigned super-admin account
+ * with every permission Admin has, same as the client-side hasRole()
+ * helper's own Root-inherits-Admin fallthrough in roles.enum.ts. This
+ * check used to require the literal string "Admin", which silently locked
+ * the Root account out of createAdminUser/deleteAdminUser - live-diagnosed
+ * via a 403 while verifying the new permission system). Employees may view
+ * the Admin Users screen but not create/delete accounts.
  * @param {string | undefined} callerUid Firebase Auth uid of the caller.
- * @return {Promise<void>} Resolves if the caller is an Admin, else throws.
+ * @return {Promise<void>} Resolves if the caller is an Admin or Root, else
+ * throws.
  */
 export async function requireAdminRole(
   callerUid: string | undefined
@@ -26,7 +32,8 @@ export async function requireAdminRole(
     .limit(1)
     .get();
 
-  if (snap.empty || snap.docs[0].data()?.role !== "Admin") {
+  const role = snap.empty ? undefined : snap.docs[0].data()?.role;
+  if (role !== "Admin" && role !== "Root") {
     throw new HttpsError("permission-denied", "Admin role required.");
   }
 }
