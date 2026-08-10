@@ -2,8 +2,6 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
-import jsPDF from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
 import { Unsubscribe } from 'firebase/firestore';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { EventModel } from 'src/app/common/models/domain/event.model';
@@ -47,8 +45,6 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   // customers.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
-  currentRows: EventRegistrationModel[] = [];
-
   private unsub?: Unsubscribe;
 
   // See new-record-tracking.util.ts - marks newly-arrived registrations for
@@ -83,18 +79,13 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
 
   headerActions: ListHeaderAction[] = [
     { label: 'New', icon: 'add', onClick: () => this.showAddModal() },
-    { label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() },
-    { label: 'Export to PDF', icon: 'picture_as_pdf', onClick: () => this.exportPdf() }
+    { label: 'Email Registered Users', icon: 'email', onClick: () => this.showEmailModal() }
   ];
 
   rowActions: DataGridRowAction<EventRegistrationModel>[] = [
     { icon: 'forward_to_inbox', tooltip: 'RESEND EMAIL', onClick: (item) => this.resendConfirmationEmail(item), visible: (item) => !!item.receiptEmailId },
     { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }
   ];
-
-  onVisibleRowsChange(rows: EventRegistrationModel[]): void {
-    this.currentRows = rows;
-  }
 
   showAddModal(): void {
     this.dialog.open(EventAttendeeDialogComponent, { width: '700px', data: { item: null, eventId: this.event?.id } });
@@ -143,20 +134,5 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
         });
       }
     });
-  }
-
-  exportPdf(): void {
-    const doc = new jsPDF();
-    autoTable(doc, {
-      startY: 12,
-      head: [['Last Name', 'First Name', 'Email', 'Registration Date']],
-      body: this.currentRows.map((row) => [
-        row.lastName ?? '',
-        row.firstName ?? '',
-        row.email ?? '',
-        row.registrationDate instanceof Date ? row.registrationDate.toLocaleDateString() : ''
-      ])
-    });
-    doc.save('attendee_list.pdf');
   }
 }

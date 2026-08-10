@@ -1,5 +1,7 @@
 <ng-container *ngIf="mode === 'list'">
   <app-data-grid
+    [showColumnsButton]="false"
+    [showExportButton]="false"
     [title]="itemType + 's'"
     [headerActions]="headerActions"
     [columns]="columns"
