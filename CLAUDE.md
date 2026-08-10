@@ -129,7 +129,7 @@ onto one-time paged fetches, to cut down on standing Firestore listeners:
 
 Every migrated list screen (`products.component.ts` is the canonical example) shares the same shape:
 a `ColumnDef[]` array driving a Columns-visibility menu, `<app-column-filter>`
-(`src/app/shared/column-filter/`) per-column filter row backed by `matchesColumnFilter()`
+(`src/app/shared/data-grid/column-filter/`) per-column filter row backed by `matchesColumnFilter()`
 (`column-filter.model.ts`), and an `exportExcel()` using `exportToExcel()`
 (`src/app/shared/table-export.util.ts`) that exports whatever's currently visible/filtered on
 screen. `<app-list-header>` (`src/app/shared/list-header/`) renders the action buttons (New,

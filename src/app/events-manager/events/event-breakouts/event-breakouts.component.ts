@@ -4,7 +4,7 @@ import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { CourseService } from 'src/app/common/services/data/course.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/column-filter/column-filter.model';
+import { ColumnFilterValue, matchesColumnFilter, TEXT_FILTER_OPERATORS } from '../../../shared/data-grid/column-filter/column-filter.model';
 
 export class BreakOutStudent {
   id: string;

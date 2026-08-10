@@ -12,7 +12,7 @@ import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.comm
 import { CoreModule } from './core/core.module';
 import { CookieService } from 'ngx-cookie-service';
 import { SharedModule } from './shared/shared.module';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './core/auth/auth.module';
 
 @NgModule({
   declarations: [

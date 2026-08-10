@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './common/forms/admin/login/login.component';
-import { ChangePasswordComponent } from './auth/change-password/change-password.component';
-import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
+import { ChangePasswordComponent } from './core/auth/change-password/change-password.component';
+import { ResetPasswordComponent } from './core/auth/reset-password/reset-password.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
 import { ThemesComponent } from './core/settings/themes.component';

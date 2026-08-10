@@ -3,7 +3,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { ColumnFilterValue, DATE_FILTER_OPERATORS, FilterOperatorOption, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../column-filter/column-filter.model';
+import { ColumnFilterValue, DATE_FILTER_OPERATORS, FilterOperatorOption, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from './column-filter/column-filter.model';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../table-export.util';
 import { ListHeaderAction } from '../list-header/list-header.component';

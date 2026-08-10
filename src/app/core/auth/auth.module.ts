@@ -8,8 +8,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthCardComponent } from './auth-card/auth-card.component';
-import { LoginComponent } from '../common/forms/admin/login/login.component';
-import { AnimatedLogoComponent } from '../common/forms/admin/login/animated-logo.component';
+import { LoginComponent } from '../../common/forms/admin/login/login.component';
+import { AnimatedLogoComponent } from '../../common/forms/admin/login/animated-logo.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { ChangePasswordComponent } from './change-password/change-password.component';
 
