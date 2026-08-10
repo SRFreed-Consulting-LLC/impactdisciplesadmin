@@ -100,6 +100,11 @@
 
             <tr mat-header-row *matHeaderRowDef="purchasesColumns; sticky: true"></tr>
             <tr mat-row *matRowDef="let row; columns: purchasesColumns;"></tr>
+            <tr *matNoDataRow>
+              <td class="empty-state" [attr.colspan]="purchasesColumns.length" *ngIf="(purchasesLoading$ | async) === false">
+                No purchases found for this customer.
+              </td>
+            </tr>
           </table>
         </div>
       </div>
@@ -141,6 +146,11 @@
 
             <tr mat-header-row *matHeaderRowDef="registrationsColumns; sticky: true"></tr>
             <tr mat-row *matRowDef="let row; columns: registrationsColumns;"></tr>
+            <tr *matNoDataRow>
+              <td class="empty-state" [attr.colspan]="registrationsColumns.length" *ngIf="(registrationsLoading$ | async) === false">
+                No event registrations found for this customer.
+              </td>
+            </tr>
           </table>
         </div>
       </div>
@@ -152,7 +162,7 @@
           <span class="notes-header__date">Date</span>
           <span class="notes-header__added-by">Added By</span>
           <span class="notes-header__private">Private</span>
-          <button mat-stroked-button type="button" (click)="addNote()" [disabled]="inProgress$ | async">ADD</button>
+          <button mat-stroked-button type="button" (click)="addNote()" [disabled]="inProgress$ | async">ADD NOTE</button>
         </div>
         <mat-divider></mat-divider>
 

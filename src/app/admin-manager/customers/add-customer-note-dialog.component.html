@@ -1,0 +1,16 @@
+<app-popup-header title="ADD NOTE" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Note</mat-label>
+    <textarea matInput rows="4" formControlName="note" required></textarea>
+    <mat-error *ngIf="form.get('note')?.hasError('required')">Note text is required</mat-error>
+  </mat-form-field>
+
+  <mat-checkbox formControlName="private">Private (only visible to me)</mat-checkbox>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-raised-button color="primary" type="button" [disabled]="form.invalid" (click)="onSave()">SAVE</button>
+</mat-dialog-actions>

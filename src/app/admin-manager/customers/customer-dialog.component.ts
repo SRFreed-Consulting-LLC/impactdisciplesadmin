@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
@@ -17,6 +17,7 @@ import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { AddCustomerNoteDialogComponent } from './add-customer-note-dialog.component';
 
 export interface CustomerDialogData {
   item: CustomerModel | null;
@@ -68,7 +69,8 @@ export class CustomerDialogComponent {
     private eventRegistrationService: EventRegistrationService,
     private authService: AdminAuthService,
     private snackbar: SnackbarService,
-    private confirmService: ConfirmService
+    private confirmService: ConfirmService,
+    private dialog: MatDialog
   ) {
     this.isEdit = !!data.item?.id;
     this.events = data.events;
@@ -164,15 +166,29 @@ export class CustomerDialogComponent {
     return date instanceof Date ? date.toLocaleDateString() : '';
   }
 
+  // Opens a small popup to compose the note text (and whether it's
+  // private) up front, then pushes the finished note and persists
+  // immediately - replaces the old flow of pushing a blank note into the
+  // list and relying on the inline textarea + a separate "SAVE" click.
+  // Existing notes still edit in place below; this only changes how a new
+  // one gets created.
   addNote(): void {
-    const note: CustomerNoteModel = {
-      ...new CustomerNoteModel(),
-      date: Timestamp.now(),
-      addedBy: `${this.user.firstName} ${this.user.lastName}`,
-      private: false,
-      id: this.generateRandomId()
-    };
-    this.notes.push(note);
+    const dialogRef = this.dialog.open(AddCustomerNoteDialogComponent, { width: '480px' });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) {
+        return;
+      }
+      const note: CustomerNoteModel = {
+        ...new CustomerNoteModel(),
+        date: Timestamp.now(),
+        addedBy: `${this.user.firstName} ${this.user.lastName}`,
+        private: result.private,
+        note: result.note,
+        id: this.generateRandomId()
+      };
+      this.notes = [...this.notes, note];
+      this.persistNotes();
+    });
   }
 
   canSeeNote(note: CustomerNoteModel): boolean {

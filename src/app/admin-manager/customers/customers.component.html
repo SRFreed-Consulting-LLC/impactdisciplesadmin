@@ -4,17 +4,10 @@
   [columns]="columns"
   [rowActions]="rowActions"
   [pagedSource]="paged"
-  [selection]="selection"
   tableClass="customers-table"
+  emptyMessage="No customers found."
   exportFileName="customers.xlsx"
   (rowDoubleClick)="showEditModal($event)">
-  <mat-form-field dataGridHeaderExtra appearance="outline" subscriptSizing="dynamic" class="list-filter">
-    <mat-label>Filter by List</mat-label>
-    <mat-select [value]="selectedList?.id ?? null" (selectionChange)="onListFilterChanged($event.value)">
-      <mat-option [value]="null">(All Customers)</mat-option>
-      <mat-option *ngFor="let list of emailLists" [value]="list.id">{{ list.name }}</mat-option>
-    </mat-select>
-  </mat-form-field>
   <ng-template appDataGridCell="phone" let-row>
     {{ row.phone?.countryCode ? '+' + row.phone.countryCode : '' }} {{ row.phone ? (row.phone | phoneNumberMask: false) : '' }}
   </ng-template>

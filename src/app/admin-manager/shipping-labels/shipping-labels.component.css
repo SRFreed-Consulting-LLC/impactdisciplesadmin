@@ -7,9 +7,254 @@
   height: 100%;
 }
 
+/* Applies to all 3 app-data-grid instances in this component: the
+   top-level batches list, and the recipients grid embedded in both Step 1
+   and Step 3's .step-panel - each flex-fills whatever space its own flex
+   parent gives it rather than a fixed height, so an empty/short list
+   doesn't force anything above it to grow, and a long one scrolls
+   internally (see .step-panel's own comment). */
 app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 1000;
+}
+
+/* ::ng-deep - .actions-column is rendered inside app-data-grid's own
+   template (a different component's view); the recipients grid has 3 row
+   action buttons, so it needs the no-wrap the grid's own baseline doesn't
+   set. */
+:host ::ng-deep .labels-table .actions-column {
+  white-space: nowrap;
+}
+
+/* Full-page in-place edit view (no popup - was a MatDialog, see
+   shipping-labels.component.ts's own comment) filling the same flex column
+   the grid normally occupies - same pattern as every other migrated
+   full-page editor (e.g. products.component.css). */
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor__header {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.editor__title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+.editor__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Split view (Concept 4 of the 5 previewed workflow concepts): current
+   step's content on the left, a persistent "Batch Summary" panel on the
+   right that stays visible across all 3 steps. */
+.wizard-body {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.wizard-main {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 24px 28px;
+}
+
+/* Each step's panel is a bounded flex column of its own, sized to
+   whatever's left of .wizard-main - not overflow: auto itself. Step 1/3's
+   grid is the thing that actually needs to scroll when the recipient list
+   is long, via its own internal .table-scroll (see data-grid.component.scss);
+   this panel just gives it room to flex into rather than forcing the whole
+   step (or the page) to grow/scroll when the list is short or empty. */
+.step-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wizard-summary {
+  flex: 0 0 300px;
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fafbfc;
+  padding: 22px 20px;
+  overflow-y: auto;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 3px;
+}
+
+.step-sub {
+  margin: 0 0 18px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 12.5px;
+  max-width: 70ch;
+}
+
+.step-actions-row {
+  margin-bottom: 14px;
+
+  mat-icon {
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+}
+
+.address-form {
+  max-width: 640px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+.wizard-summary h3 {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.5);
+  margin: 0 0 14px;
+}
+
+.summary-item {
+  margin-bottom: 18px;
+}
+
+.summary-item .k {
+  font-size: 11.5px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 3px;
+}
+
+.summary-item .v {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.summary-item .v.muted {
+  color: rgba(0, 0, 0, 0.4);
+  font-weight: 400;
+}
+
+.summary-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 22px;
+}
+
+.sp-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.55);
+  background: transparent;
+  border: none;
+  padding: 6px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sp-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.sp-item .dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.15);
+  color: #fff;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sp-item.is-done .dot,
+.sp-item.is-current .dot {
+  background: #3f51b5;
+}
+
+.sp-item.is-current {
+  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.15);
+}
+
+.sp-item.is-done,
+.sp-item.is-current {
+  color: rgba(0, 0, 0, 0.87);
+  font-weight: 600;
+}
+
+.editor__actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
 }

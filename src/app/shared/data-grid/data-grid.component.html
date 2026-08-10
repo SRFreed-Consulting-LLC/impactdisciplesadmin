@@ -71,6 +71,14 @@
       <tr mat-header-row *matHeaderRowDef="filterColumnKeys; sticky: true"></tr>
     </ng-container>
     <tr mat-row *matRowDef="let row; columns: displayedColumnKeys;" [class]="rowClass ? rowClass(row) : ''" (dblclick)="onRowDoubleClick(row)"></tr>
+
+    <!-- Only rendered once loading finishes (the loading overlay already
+         covers the empty table before then) - see resolvedEmptyMessage. -->
+    <tr *matNoDataRow>
+      <td class="empty-state" [attr.colspan]="displayedColumnKeys.length" *ngIf="(loading$ | async) === false">
+        {{ resolvedEmptyMessage }}
+      </td>
+    </tr>
   </table>
 
   <app-paged-table-footer

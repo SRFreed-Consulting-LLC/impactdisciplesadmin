@@ -11,17 +11,13 @@ import { SharedModule } from '../shared/shared.module';
 import { EmailTemplatesComponent } from './email-templates/email-templates.component';
 import { CustomersComponent } from './customers/customers.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
-import { ShippingBatchDialogComponent } from './shipping-labels/shipping-batch-dialog.component';
 import { ShippingLabelDialogComponent } from './shipping-labels/shipping-label-dialog.component';
-import { FromAddressDialogComponent } from './shipping-labels/from-address-dialog.component';
-import { ShippingResultsDialogComponent } from './shipping-labels/shipping-results-dialog.component';
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
 import { NotificationDialogComponent } from './notifications/notification-dialog.component';
 import { AdminUserDialogComponent } from './admin-users/admin-user-dialog.component';
 import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { CustomerDialogComponent } from './customers/customer-dialog.component';
-import { SendEmailDialogComponent } from './customers/send-email-dialog.component';
-import { EmailListDialogComponent } from './customers/email-list-dialog.component';
+import { AddCustomerNoteDialogComponent } from './customers/add-customer-note-dialog.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -36,6 +32,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuillModule } from 'ngx-quill';
 
 
@@ -60,6 +57,7 @@ import { QuillModule } from 'ngx-quill';
     MatCheckboxModule,
     MatMenuModule,
     MatDividerModule,
+    MatToolbarModule,
     QuillModule
   ],
   declarations: [
@@ -71,16 +69,12 @@ import { QuillModule } from 'ngx-quill';
     AdminUserDialogComponent,
     CustomersComponent,
     CustomerDialogComponent,
-    SendEmailDialogComponent,
-    EmailListDialogComponent,
+    AddCustomerNoteDialogComponent,
     WebConfigComponent,
     EmailTemplatesComponent,
     EmailTemplateDialogComponent,
     ShippingLabelsComponent,
-    ShippingBatchDialogComponent,
-    ShippingLabelDialogComponent,
-    FromAddressDialogComponent,
-    ShippingResultsDialogComponent
+    ShippingLabelDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe

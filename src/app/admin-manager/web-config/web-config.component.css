@@ -29,7 +29,7 @@
    removes the overlap risk regardless of how tall the fields get in the
    future - it's a true layout sibling now, not an overlay. */
 .tab-content-wrap {
-  height: 60vh;
+  height: 70vh;
   display: flex;
   flex-direction: column;
 }
@@ -77,6 +77,14 @@
 .column {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* Pricing tab has its own .tab-content, not shared with Info's two-column
+   .columns layout - without a sibling column to divide .tab-content's width
+   with, flex: 1 1 0 alone would stretch these 5 fields full-bleed across
+   the tab. Capped to roughly the same width Info's columns render at. */
+.pricing-column {
+  max-width: 480px;
 }
 
 .full-width {

@@ -39,36 +39,6 @@
               <mat-label>Instagram</mat-label>
               <input matInput formControlName="instagram">
             </mat-form-field>
-
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Inperson Seminar Cost</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="inpersonSeminarCost">
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Online Seminar Cost</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="onlineSeminarCost">
-              </mat-form-field>
-            </div>
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Equipping Group Total Cost</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="equippingGroupTotalCost">
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Equipping Group Payment Cost</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="equippingGroupPaymentCost">
-              </mat-form-field>
-            </div>
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Free Shipping Amount</mat-label>
-              <span matTextPrefix>$&nbsp;</span>
-              <input matInput type="number" formControlName="freeShippingAmount">
-            </mat-form-field>
           </div>
 
           <div class="column">
@@ -88,6 +58,49 @@
 
             <app-address-field [group]="$any(form.get('address'))"></app-address-field>
           </div>
+        </div>
+      </div>
+
+      <div class="save-row">
+        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" (clicked)="save()"></app-indicator-button>
+      </div>
+    </div>
+  </mat-tab>
+
+  <mat-tab label="Pricing">
+    <div class="tab-content-wrap">
+      <div class="tab-content">
+        <div class="column pricing-column">
+          <h3 class="section-title">Pricing</h3>
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Inperson Seminar Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="inpersonSeminarCost">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Online Seminar Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="onlineSeminarCost">
+            </mat-form-field>
+          </div>
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Equipping Group Total Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="equippingGroupTotalCost">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Equipping Group Payment Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="equippingGroupPaymentCost">
+            </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Free Shipping Amount</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" formControlName="freeShippingAmount">
+          </mat-form-field>
         </div>
       </div>
 

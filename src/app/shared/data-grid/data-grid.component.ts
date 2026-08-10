@@ -80,6 +80,15 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   @Input() exportFileName = 'export.xlsx';
   @Input() exportWorksheetName = 'Sheet1';
 
+  /** Shown in place of the table body once loading has finished and there
+   *  are zero rows (whether that's genuinely no data, or a filter that
+   *  matched nothing). Every table gets a message by default - falls back
+   *  to `No ${title} found.` when `title` is set, else a generic
+   *  "No records found." - but pass this explicitly whenever the generic
+   *  wording doesn't fit (e.g. a table scoped to one parent record: "No
+   *  purchases found for this customer."). */
+  @Input() emptyMessage?: string;
+
   /** Caller-owned selection model (same CDK SelectionModel every table
    *  already constructed by hand) - when provided, the grid renders a
    *  leading checkbox column bound directly to it (master-toggle in the
@@ -154,6 +163,10 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  get resolvedEmptyMessage(): string {
+    return this.emptyMessage || (this.title ? `No ${this.title} found.` : 'No records found.');
   }
 
   get visibleColumns(): DataGridColumn<T>[] {
