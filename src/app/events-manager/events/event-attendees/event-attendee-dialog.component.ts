@@ -82,7 +82,13 @@ export class EventAttendeeDialogComponent {
       ...this.data.item,
       ...raw,
       eventId: this.data.eventId,
-      registrationDate: raw.registrationDate ? new Date(raw.registrationDate) : this.data.item?.registrationDate
+      // Registration Date isn't a required field - if left blank while
+      // adding a brand-new attendee (no existing item to fall back to),
+      // this used to come out `undefined`, and Firestore's addDoc()
+      // rejects a document with an undefined field value outright.
+      // Defaulting to "now" keeps this Firestore-required field always
+      // defined, matching what a real self-service signup would get.
+      registrationDate: raw.registrationDate ? new Date(raw.registrationDate) : (this.data.item?.registrationDate ?? new Date())
     };
 
     const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
@@ -95,6 +101,15 @@ export class EventAttendeeDialogComponent {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
       }
+    }).catch((err) => {
+      // The other half of this fix: addDoc() rejecting (the undefined-date
+      // case above, or any other write failure - offline, permissions,
+      // etc.) used to leave inProgress$ stuck true forever with no
+      // feedback - the Save button just spun indefinitely and the dialog
+      // never closed, since nothing here handled a rejected promise.
+      console.error('EventAttendeeDialogComponent: save failed:', err);
+      this.inProgress$.next(false);
+      this.snackbar.error('Some Error Occured');
     });
   }
 }
