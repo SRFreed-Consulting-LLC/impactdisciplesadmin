@@ -1,0 +1,74 @@
+.hint {
+  font-size: 12.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0 0 12px;
+  max-width: 480px;
+}
+
+.loading-row {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.permission-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 460px;
+
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: rgba(0, 0, 0, 0.5);
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  td {
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .user-col {
+    white-space: nowrap;
+  }
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.user-email {
+  font-size: 11.5px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.full-access-cell {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+// Same "everyone always has full access" convention as roles.enum.ts's own
+// comment on Root - not a permission grant to display/edit, just a fact.
+.full-access-badge {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.empty-state {
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  padding: 16px 0;
+}

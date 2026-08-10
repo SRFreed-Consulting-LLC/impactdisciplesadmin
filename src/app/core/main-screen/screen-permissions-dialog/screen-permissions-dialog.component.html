@@ -1,0 +1,53 @@
+<app-popup-header [title]="'Who has access to ' + data.screenLabel" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
+
+<mat-dialog-content>
+  <p class="hint">
+    Admin and Root always have full access and aren't editable here. Changes save immediately, same as the
+    Permissions tab on each Employee's own Admin Users record.
+  </p>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <div class="table-scroll">
+      <table class="permission-table">
+        <thead>
+          <tr>
+            <th class="user-col">User</th>
+            <th>View</th>
+            <th>Add</th>
+            <th>Edit</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of rows">
+            <td class="user-col">
+              <div class="user-name">{{ row.displayName }}</div>
+              <div class="user-email">{{ row.email }}</div>
+            </td>
+            <ng-container *ngIf="isFullAccess(row); else editable">
+              <td colspan="4" class="full-access-cell">
+                <span class="full-access-badge">{{ row.role }} - full access</span>
+              </td>
+            </ng-container>
+            <ng-template #editable>
+              <td><mat-checkbox [checked]="row.view" (change)="toggle(row, 'view', $event)"></mat-checkbox></td>
+              <td><mat-checkbox [checked]="row.add" (change)="toggle(row, 'add', $event)"></mat-checkbox></td>
+              <td><mat-checkbox [checked]="row.edit" (change)="toggle(row, 'edit', $event)"></mat-checkbox></td>
+              <td><mat-checkbox [checked]="row.delete" (change)="toggle(row, 'delete', $event)"></mat-checkbox></td>
+            </ng-template>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty-state" *ngIf="rows.length === 0">No admin users found.</p>
+  </ng-container>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onClose()">CLOSE</button>
+</mat-dialog-actions>

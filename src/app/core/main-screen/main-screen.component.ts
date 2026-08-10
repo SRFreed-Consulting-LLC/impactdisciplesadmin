@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
@@ -9,6 +10,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 // doesn't instantiate it) - see that service's own comment on why the
 // shell is where this belongs.
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
+import { ScreenPermissionsDialogComponent } from './screen-permissions-dialog/screen-permissions-dialog.component';
 import { NAV_CONFIG, NavGroup, NavLeaf } from './nav-config';
 
 interface PinnedNavItem {
@@ -53,6 +55,19 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   activeGroupId: string | null = null;
   activeSlug: string | null = null;
 
+  // Whether the mouse is currently over the drawer - transient, not
+  // persisted. Combined with the persisted drawerPinned preference below to
+  // decide the drawer's actual expanded/collapsed width; see drawerExpanded.
+  private drawerHovered = false;
+
+  // Whether a row's "⋮" menu is currently open - CDK menu overlays render
+  // outside the mat-sidenav's own DOM subtree (appended to the global
+  // overlay container, not nested inside it), so moving the mouse from the
+  // "⋮" button into its now-open menu fires a real mouseleave on the
+  // drawer even though the menu visually sits right next to/over it. Both
+  // drive drawerExpanded so the drawer doesn't yank shut mid-interaction.
+  private rowMenuOpen = false;
+
   private ngUnsubscribe = new Subject<void>();
 
   constructor(
@@ -60,6 +75,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     private permissionService: PermissionService,
     private permissionMigrationService: PermissionMigrationService,
     private adminUserService: AdminUserService,
+    private dialog: MatDialog,
     private router: Router
   ) {}
 
@@ -111,6 +127,30 @@ export class MainScreenComponent implements OnInit, OnDestroy {
 
   isPinned(group: NavGroup, item: NavLeaf): boolean {
     return (this.currentUser?.pinnedScreens ?? []).includes(this.pinKey(group, item));
+  }
+
+  // Only Admin/Root can see or edit who else has access - an Employee
+  // browsing their own nav shouldn't be able to view (let alone change)
+  // another employee's grants, even ones scoped to a screen they can
+  // already see themselves.
+  get canManagePermissions(): boolean {
+    return this.permissionService.isFullAccess();
+  }
+
+  // "Who has access to this screen" - the inverse view of Admin Users'
+  // own Permissions tab (that's one employee x every screen; this is one
+  // screen x every employee). See ScreenPermissionsDialogComponent's own
+  // comment - modeled on impact-discipleship-library-manager-new's
+  // per-node "Manage Permissions" tree menu.
+  openScreenPermissions(group: NavGroup, item: NavLeaf): void {
+    if (!this.canManagePermissions) {
+      return;
+    }
+    this.dialog.open(ScreenPermissionsDialogComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      data: { screenKey: this.pinKey(group, item), screenLabel: item.label }
+    });
   }
 
   // Toggles a screen's pin state - optimistic (updates the nav immediately)
@@ -165,6 +205,71 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // manager-by-manager order.
     items.sort((a, b) => pinned.indexOf(this.pinKey(a.group, a.item)) - pinned.indexOf(this.pinKey(b.group, b.item)));
     this.pinnedItems = items;
+  }
+
+  // ---- Collapsible drawer ----
+  //
+  // Unpinned (the new default is actually "pinned", see isDrawerPinned) -
+  // the drawer sits collapsed to an icon-only rail and expands only while
+  // the mouse is over it, auto-collapsing again on mouseleave, the same
+  // auto-hide-sidebar pattern VSCode/most IDEs use. Pinned keeps it at full
+  // width permanently, identical to this app's behavior before this
+  // feature existed - drawerPinned undefined (every account that predates
+  // this) defaults to pinned so nobody's nav silently starts collapsing on
+  // them.
+
+  get isDrawerPinned(): boolean {
+    return this.currentUser?.drawerPinned !== false;
+  }
+
+  get drawerExpanded(): boolean {
+    return this.isDrawerPinned || this.drawerHovered || this.rowMenuOpen;
+  }
+
+  onDrawerMouseEnter(): void {
+    this.drawerHovered = true;
+  }
+
+  onDrawerMouseLeave(): void {
+    // Ignore the leave while a row menu is open - see rowMenuOpen's own
+    // comment on why the mouse crossing into the menu overlay looks like a
+    // real mouseleave here even though the user hasn't actually left the
+    // interaction. onRowMenuClosed() re-syncs drawerHovered once the menu
+    // itself closes, so a genuine subsequent mouseleave still collapses
+    // the drawer normally after that.
+    if (this.rowMenuOpen) {
+      return;
+    }
+    this.drawerHovered = false;
+  }
+
+  onRowMenuOpened(): void {
+    this.rowMenuOpen = true;
+  }
+
+  // Fires both when an item is selected and when the menu is dismissed by
+  // clicking off it - in both cases the user was just interacting with the
+  // drawer, so treat that as "still hovered" rather than collapsing right
+  // out from under them. A genuine subsequent mouseleave (the user
+  // actually moving away afterward) still collapses it normally.
+  onRowMenuClosed(): void {
+    this.rowMenuOpen = false;
+    this.drawerHovered = true;
+  }
+
+  toggleDrawerPin(): void {
+    if (!this.currentUser?.id) {
+      return;
+    }
+
+    const next = !this.isDrawerPinned;
+    const previousUser = this.currentUser;
+    this.currentUser = { ...this.currentUser, drawerPinned: next };
+
+    this.adminUserService.update(this.currentUser.id, this.currentUser).catch((err) => {
+      console.error('Failed to save drawer pin state:', err);
+      this.currentUser = previousUser;
+    });
   }
 
   logOff(): void {

@@ -12,6 +12,11 @@ $accent: #ffcc00;
 // link elsewhere in the app uses, so "selected" reads as this app's normal
 // accent rather than an arbitrary new color.
 $selected: #337ab7;
+// Shared with .impact-shell__content--rail-gutter below - the content
+// pane's static left offset (mode="over") has to match this exactly, or
+// the always-present collapsed rail sits on top of real content instead of
+// beside it.
+$collapsed-width: 64px;
 
 :host {
   display: block;
@@ -38,12 +43,109 @@ $selected: #337ab7;
   // sideways, so clip rather than let a future stray sub-pixel rounding
   // (mat-divider, etc.) reopen the same symptom.
   overflow-x: hidden;
+  transition: width 0.18s ease;
+}
+
+// Auto-hide state (unpinned + not hovered) - see the template's own
+// comment on the mouseenter/mouseleave pair driving this. Collapses to an
+// icon-only rail; everything text-based (and the per-row action buttons,
+// which need real width to be usable anyway) hides along with it, leaving
+// just the always-relevant navigation icons - including pinned shortcuts,
+// which stay visible here since "quick access while collapsed" is the
+// whole point of pinning.
+.impact-drawer--collapsed {
+  width: $collapsed-width;
+
+  .impact-drawer__sublist,
+  .impact-drawer__link-text,
+  .impact-drawer__sublink-text,
+  .impact-drawer__chevron,
+  .impact-drawer__pin-toggle,
+  .impact-drawer__row-menu-toggle,
+  .impact-drawer__pinned-divider {
+    display: none;
+  }
+
+  .impact-drawer__link {
+    padding-left: 0;
+    padding-right: 0;
+    display: flex;
+    justify-content: center;
+
+    mat-icon {
+      margin: 0;
+    }
+  }
 }
 
 .drawer-logo {
   margin: 20px 0;
   display: flex;
   justify-content: center;
+
+  img {
+    height: 120px;
+    transition: height 0.18s ease;
+  }
+}
+
+// Shrinks along with the drawer itself instead of staying full-size and
+// overflowing/getting clipped by the narrower 64px rail.
+.impact-drawer--collapsed .drawer-logo {
+  margin: 12px 0;
+
+  img {
+    height: 36px;
+  }
+}
+
+.impact-drawer__pin-drawer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px 12px;
+  border-bottom: 1px solid #ffffff4d;
+  margin-bottom: 4px;
+}
+
+.impact-drawer__pin-drawer-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// The drawer-level pin control (top of the drawer, next to the logo) - a
+// normal flex child of .impact-drawer__pin-drawer-row, not absolutely
+// positioned like .impact-drawer__pin-toggle below (deliberately a
+// different class - reusing that one here would have inherited its
+// position: absolute, breaking this button's layout since its own parent
+// isn't set up as that rule's positioning context).
+.impact-drawer__drawer-pin-toggle {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  flex: 0 0 auto;
+
+  mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    line-height: 15px;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+
+  &:hover mat-icon {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  &--pinned mat-icon {
+    color: $accent;
+    transform: rotate(45deg);
+  }
 }
 
 .impact-drawer__list {
@@ -233,6 +335,35 @@ $selected: #337ab7;
   }
 }
 
+// Sub-item rows' single "⋮" trigger (Pin to top / Unpin + Manage access,
+// see the mat-menu next to it in the template) - same absolute-positioning
+// technique and reasoning as .impact-drawer__pin-toggle above. Pinned-row
+// shortcuts keep their own direct single-action unpin button instead of a
+// menu (see .impact-drawer__pin-toggle) - one action doesn't need a menu.
+.impact-drawer__row-menu-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  z-index: 1;
+
+  mat-icon {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    line-height: 17px;
+    color: rgba(255, 255, 255, 0.35);
+    transition: color 0.15s ease;
+  }
+
+  &:hover mat-icon {
+    color: rgba(255, 255, 255, 0.85);
+  }
+}
+
 .impact-drawer__pinned-divider {
   border-top-color: rgba(255, 255, 255, 0.15);
   margin: 4px 0;
@@ -264,8 +395,8 @@ $selected: #337ab7;
   color: rgba(255, 255, 255, 0.75);
   // Matches the reviewed mockup's .subrow exactly, except the right side -
   // widened from the mockup's own 18px to leave room for the absolutely-
-  // positioned .impact-drawer__pin-toggle button so it truncates the label
-  // instead of sitting on top of it.
+  // positioned .impact-drawer__row-menu-toggle button so it truncates the
+  // label instead of sitting on top of it.
   font-size: 12.5px;
   padding: 8px 36px 8px 50px;
   white-space: nowrap;
@@ -313,6 +444,17 @@ $selected: #337ab7;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+}
+
+// Unpinned only (mode="over" - see the template's own comment on
+// mat-sidenav's [mode] binding) - a static offset matching the drawer's
+// resting collapsed width, so the always-present icon rail sits beside
+// this pane's content instead of on top of its leftmost 64px. Static, not
+// reactive to hover/menu state: the temporary wider (300px) expansion is
+// still meant to float OVER this gutter and a bit of real content beyond
+// it - only the permanent collapsed-state overlap needed fixing.
+.impact-shell__content--rail-gutter {
+  margin-left: $collapsed-width;
 }
 
 .impact-header {

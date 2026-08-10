@@ -32,6 +32,13 @@ export class AdminUser extends Person {
     // MainScreenComponent.togglePin()/rebuildPinnedItems().
     pinnedScreens?: string[];
 
+    // Whether the left nav drawer stays open permanently vs. auto-collapses
+    // to an icon rail when the mouse isn't over it. undefined (every
+    // account that predates this feature) defaults to pinned/expanded -
+    // see MainScreenComponent.isDrawerPinned - so nobody's nav silently
+    // starts auto-collapsing on them.
+    drawerPinned?: boolean;
+
     constructor(){
       super();
     }

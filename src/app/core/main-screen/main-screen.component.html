@@ -1,7 +1,51 @@
-<mat-sidenav-container class="impact-shell">
-  <mat-sidenav class="impact-drawer" mode="side" [opened]="true" disableClose>
+<mat-sidenav-container class="impact-shell" [hasBackdrop]="false">
+  <!-- Collapsible drawer: unpinned, this auto-collapses to an icon rail
+       whenever the mouse isn't over it (mouseenter/mouseleave below) and
+       expands back to full width on hover - same auto-hide-sidebar pattern
+       most IDEs use. Pinned (the default - see isDrawerPinned) keeps it at
+       full width permanently, matching this app's behavior before this
+       feature existed.
+
+       mode is the actual fix for "the content area shifts width whenever
+       the drawer expands (hover, or a row menu keeping it expanded)" -
+       mode="side" (used whenever pinned) makes mat-sidenav-content reserve
+       exactly the drawer's current width, so ANY width change - hover,
+       pinning, a menu holding it open - reflows/shrinks the content next
+       to it. mode="over" (unpinned) takes the drawer out of that layout
+       calculation entirely: mat-sidenav-content always sizes itself as if
+       the drawer weren't there (full width, unaffected by anything the
+       drawer does), and the drawer instead floats on top of it via
+       Material's own CDK-overlay-based positioning - collapsed (64px) or
+       hover-expanded (300px), it's always an overlay, never a push.
+       hasBackdrop="false" on the container (not just this sidenav) turns
+       off the dark scrim mode="over" would otherwise show behind an "open"
+       drawer, since here it's always considered open, just narrow. -->
+  <mat-sidenav
+    class="impact-drawer"
+    [class.impact-drawer--collapsed]="!drawerExpanded"
+    [mode]="isDrawerPinned ? 'side' : 'over'"
+    [opened]="true"
+    disableClose
+    (mouseenter)="onDrawerMouseEnter()"
+    (mouseleave)="onDrawerMouseLeave()">
     <div class="drawer-logo">
-      <img src="assets/Impact-Logo_Light.png" height="120px" alt="Impact Disciples logo">
+      <!-- Sized by CSS (.drawer-logo img), not the height attribute here,
+           so it can shrink along with the drawer when collapsed - see
+           .impact-drawer--collapsed .drawer-logo img. -->
+      <img src="assets/Impact-Logo_Light.png" alt="Impact Disciples logo">
+    </div>
+
+    <div class="impact-drawer__pin-drawer-row" *ngIf="drawerExpanded">
+      <button
+        type="button"
+        mat-icon-button
+        class="impact-drawer__drawer-pin-toggle"
+        [class.impact-drawer__drawer-pin-toggle--pinned]="isDrawerPinned"
+        [matTooltip]="isDrawerPinned ? 'Unpin sidebar (auto-collapse when not hovered)' : 'Pin sidebar open'"
+        (click)="toggleDrawerPin()">
+        <mat-icon>push_pin</mat-icon>
+      </button>
+      <span class="impact-drawer__pin-drawer-label">{{ isDrawerPinned ? 'Sidebar pinned open' : 'Sidebar auto-hides' }}</span>
     </div>
 
     <mat-nav-list class="impact-drawer__list">
@@ -71,7 +115,7 @@
 
         <div class="impact-drawer__sublist" *ngIf="group.items && expanded.has(group.id)">
           <!-- Same wrapper-div-as-sibling structure as the pinned rows/
-               group-header above - the pin-toggle button sits next to the
+               group-header above - the menu-trigger button sits next to the
                link, not projected inside it. -->
           <div class="impact-drawer__subitem" *ngFor="let item of group.items">
             <a
@@ -85,19 +129,47 @@
             <button
               type="button"
               mat-icon-button
-              class="impact-drawer__pin-toggle"
-              [class.impact-drawer__pin-toggle--pinned]="isPinned(group, item)"
-              [matTooltip]="isPinned(group, item) ? 'Unpin' : 'Pin to top'"
-              (click)="togglePin(group, item)">
-              <mat-icon>push_pin</mat-icon>
+              class="impact-drawer__row-menu-toggle"
+              matTooltip="More actions"
+              [matMenuTriggerFor]="rowMenu"
+              (menuOpened)="onRowMenuOpened()"
+              (menuClosed)="onRowMenuClosed()">
+              <mat-icon>more_vert</mat-icon>
             </button>
+            <mat-menu #rowMenu="matMenu">
+              <button mat-menu-item (click)="togglePin(group, item)">
+                <mat-icon>push_pin</mat-icon>
+                <span>{{ isPinned(group, item) ? 'Unpin' : 'Pin to top' }}</span>
+              </button>
+              <!-- "Who has access to this screen" - Admin/Root only, and
+                   only for screens the granular permission system actually
+                   covers (see NavLeaf.employeeGrantable - Admin Users
+                   itself is never grantable, so there's nothing to manage
+                   here). -->
+              <button
+                mat-menu-item
+                *ngIf="canManagePermissions && item.employeeGrantable !== false"
+                (click)="openScreenPermissions(group, item)">
+                <mat-icon>manage_accounts</mat-icon>
+                <span>Manage access</span>
+              </button>
+            </mat-menu>
           </div>
         </div>
       </ng-container>
     </mat-nav-list>
   </mat-sidenav>
 
-  <mat-sidenav-content class="impact-shell__content">
+  <!-- mode="over" (unpinned) takes the drawer out of layout entirely (see
+       the drawer's own comment above), so this content pane's left edge
+       needs its own static offset matching the drawer's resting COLLAPSED
+       width - otherwise the always-present 64px icon rail sits on top of
+       (not beside) the content's own left edge. Only a static offset, not
+       the full 300px: the temporary hover/menu-open expansion is still
+       meant to overlay OVER this reserved strip and a bit of real content
+       beyond it, per the original ask - this only fixes the permanent
+       collapsed-state overlap, not the deliberate expanded-state one. -->
+  <mat-sidenav-content class="impact-shell__content" [class.impact-shell__content--rail-gutter]="!isDrawerPinned">
     <mat-toolbar class="impact-header">
       <span class="impact-header__spacer"></span>
       <app-new-record-alerts></app-new-record-alerts>

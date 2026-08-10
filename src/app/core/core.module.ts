@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MainScreenComponent } from './main-screen/main-screen.component';
+import { ScreenPermissionsDialogComponent } from './main-screen/screen-permissions-dialog/screen-permissions-dialog.component';
 import { RouterModule } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ThemesComponent } from './settings/themes.component';
@@ -16,13 +17,16 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   declarations: [
     MainScreenComponent,
     DashboardComponent,
-    ThemesComponent
+    ThemesComponent,
+    ScreenPermissionsDialogComponent
   ],
   imports: [
     CommonModule,
@@ -39,6 +43,8 @@ import { SharedModule } from '../shared/shared.module';
     MatSlideToggleModule,
     MatProgressSpinnerModule,
     MatTableModule,
+    MatDialogModule,
+    MatCheckboxModule,
     SharedModule
   ]
 })
