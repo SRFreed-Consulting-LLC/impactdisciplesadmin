@@ -26,12 +26,6 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
-// Same highlight the original applied via onRowPrepared's direct style
-// mutation - a bound row class instead.
-.purchases-table .amount-mismatch {
-  background-color: #fff9c4;
-}
-
 .columns-button {
   margin-right: 8px;
 }

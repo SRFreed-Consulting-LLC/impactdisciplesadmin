@@ -63,7 +63,7 @@
             </ng-container>
             <ng-container matColumnDef="receipt">
               <th mat-header-cell *matHeaderCellDef>Receipt</th>
-              <td mat-cell *matCellDef="let row">{{ row.paymentIntent?.id ?? row.paymentIntent }}</td>
+              <td mat-cell *matCellDef="let row">{{ row.receipt }}</td>
             </ng-container>
             <ng-container matColumnDef="couponCode">
               <th mat-header-cell *matHeaderCellDef>Coupon Code</th>
@@ -83,7 +83,7 @@
             </ng-container>
             <ng-container matColumnDef="charged">
               <th mat-header-cell *matHeaderCellDef>Charged</th>
-              <td mat-cell *matCellDef="let row">{{ (row.paymentIntent?.amount ?? 0) / 100 | currency }}</td>
+              <td mat-cell *matCellDef="let row">{{ (row.total ?? 0) | currency }}</td>
             </ng-container>
             <ng-container matColumnDef="refunded">
               <th mat-header-cell *matHeaderCellDef>Refunded</th>

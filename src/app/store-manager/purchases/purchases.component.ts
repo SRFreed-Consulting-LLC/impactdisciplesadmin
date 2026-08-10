@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, tap } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { PaymentIntent } from '@stripe/stripe-js';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { hasRole } from 'src/app/common/lists/roles.enum';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
-import { environment } from 'src/environments/environment';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ColumnFilterValue, matchesColumnFilter, NUMBER_FILTER_OPERATORS, TEXT_FILTER_OPERATORS } from '../../shared/column-filter/column-filter.model';
@@ -85,7 +84,6 @@ export class PurchasesComponent implements OnInit {
   // ---- Edit state ----
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
-  isRefunding$ = new BehaviorSubject<boolean>(false);
 
   states = EnumHelper.getStateTypesAsArray();
   phoneTypes = EnumHelper.getPhoneTypesAsArray();
@@ -130,7 +128,7 @@ export class PurchasesComponent implements OnInit {
   }
 
   isVisible(roles: string[]): boolean {
-    return roles.some((role) => role === this.currentUserRole);
+    return hasRole(this.currentUserRole, roles);
   }
 
   toggleColumn(column: ColumnDef): void {
@@ -166,9 +164,10 @@ export class PurchasesComponent implements OnInit {
   }
 
   // Real dollar amounts come from the PayPal receipt when present, falling
-  // back to the Stripe-derived fields the storefront itself already wrote.
-  // Shared by both the list columns and the edit view's summary block
-  // (called there with editingItem).
+  // back to the general order-total fields the storefront's checkout
+  // writes on every purchase regardless of payment method. Shared by both
+  // the list columns and the edit view's summary block (called there with
+  // editingItem).
   getProductTotalDisplayAmount(item: CheckoutForm): number {
     return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.breakdown.item_total.value) : (item.total ?? 0) > 0 ? item.total! : 0;
   }
@@ -197,31 +196,17 @@ export class PurchasesComponent implements OnInit {
     return item.payPalReceipt ? parseFloat((item.payPalReceipt as any)?.purchase_units[0]?.amount?.value) : (item.total ?? 0) - (item.discount ?? 0) > 0 ? item.total! : 0;
   }
 
+  // Falls back to processedStatus (NEW/COMPLETE/REFUNDED) for non-PayPal
+  // orders - was a Stripe paymentIntent.status fallback before Stripe
+  // support was removed from this app (Stripe is still used by the
+  // storefront's own /give donation flow and by this repo's Cloud
+  // Functions, just not read/displayed here anymore).
   getOrderStatusDisplay(item: CheckoutForm): string {
-    return item.payPalReceipt ? (item.payPalReceipt as any)?.status : (item.paymentIntent as PaymentIntent)?.status;
+    return item.payPalReceipt ? (item.payPalReceipt as any)?.status : item.processedStatus;
   }
 
   getOrderItemCount(item: CheckoutForm): number {
     return (item.cartItems ?? []).map((cartItem) => cartItem.orderQuantity ?? 0).reduce((a, b) => a + b, 0);
-  }
-
-  // Yellow-row highlight when what the customer was actually charged
-  // (Stripe's own paymentIntent.amount, in cents) doesn't match this
-  // record's own computed total - same check as the original's
-  // onRowPrepared, now a bound row class instead of direct style mutation.
-  isAmountMismatch(item: CheckoutForm): boolean {
-    // totalBeforeDiscount is a real, server-written field (set at checkout)
-    // that was never added to the CheckoutForm interface - read dynamically
-    // here rather than declaring it, per the "don't change the data model"
-    // constraint.
-    let total = (item as any).totalBeforeDiscount ?? 0;
-    if (item.discount) total -= item.discount;
-    if (item.estimatedTaxes) total += item.estimatedTaxes;
-    if (item.shippingRate) total += item.shippingRate;
-    if (item.shippingDiscount) total -= item.shippingDiscount;
-
-    const chargedCents = (item.paymentIntent as PaymentIntent)?.amount;
-    return !!chargedCents && parseFloat(total.toFixed(2)) !== parseFloat((chargedCents / 100).toFixed(2));
   }
 
   // Backs the Admin-only summary row - matches the original's dxo-summary
@@ -319,42 +304,4 @@ export class PurchasesComponent implements OnInit {
     });
   }
 
-  // Refunds move real money - this endpoint requires a verified staff
-  // Firebase ID token. The button that called this is commented out in the
-  // original UI (method still exists, just unreachable) - preserved
-  // exactly as-is here too: ported, but left unwired to any button, rather
-  // than either removing it or re-enabling it. Never triggered during my
-  // own live verification for that reason.
-  refundOrder(): void {
-    const item = this.editingItem!;
-    const amountToRefund = item.total ?? 0;
-
-    this.confirmService.confirm(`<i>Are you sure you want to refund amount $${amountToRefund.toFixed(2)}?</i>`, 'Confirm').then(async (confirmed) => {
-      if (!confirmed) {
-        return;
-      }
-
-      this.isRefunding$.next(true);
-
-      const request = { paymentIntent: (item.paymentIntent as PaymentIntent).id };
-      const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
-
-      const response = await fetch(environment.stripeRefundURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
-        body: JSON.stringify(request)
-      });
-
-      const result = await response.json();
-
-      item.refundAmount = Number(amountToRefund.toFixed(2));
-      item.refundId = result.id;
-      item.processedStatus = 'REFUNDED';
-
-      this.service.update(item.id!, item).then(() => {
-        this.snackbar.success(`Order Refunded ($${amountToRefund.toFixed(2)})`);
-        this.isRefunding$.next(false);
-      });
-    });
-  }
 }

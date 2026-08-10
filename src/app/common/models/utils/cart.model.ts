@@ -1,5 +1,4 @@
 import { Timestamp } from 'firebase/firestore';
-import { PaymentIntent } from "@stripe/stripe-js";
 import { BaseModel } from "src/app/common/models/base.model";
 import { Address } from "src/app/common/models/domain/utils/address.model";
 import { Phone } from "src/app/common/models/domain/utils/phone.model";
@@ -61,7 +60,6 @@ export class CheckoutForm extends BaseModel {
   receipt?: string;
   isNewsletter?: boolean;
   isCreateAccount?: boolean;
-  paymentIntent?: PaymentIntent | string;
   payPalReceipt?: IClientAuthorizeCallbackData;
   dateProcessed?: Timestamp;
   processedStatus?: string;
