@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { FULFILLMENT_STEPS, completedStepCount } from './fulfillment-steps';
+import { FULFILLMENT_STEPS, completedStepCount, segmentState } from './fulfillment-steps';
 
 // Store Manager > Fulfillment - the 5-step physical-order workflow (see
 // fulfillment-steps.ts). Only ever shows purchases with a fulfillmentStatus
@@ -84,11 +84,11 @@ export class FulfillmentComponent implements OnInit {
     return completedStepCount(item.fulfillmentStatus);
   }
 
+  // Delegates to the shared free function (fulfillment-steps.ts) so this
+  // and DashboardComponent's read-only Recent Orders preview render
+  // identical bars off one definition - see that function's own comment.
   segmentState(item: CheckoutForm, index: number): 'done' | 'current' | 'pending' {
-    const completed = this.completedCount(item);
-    if (index < completed) return 'done';
-    if (index === completed) return 'current';
-    return 'pending';
+    return segmentState(item.fulfillmentStatus, index);
   }
 
   itemSummary(item: CheckoutForm): string {

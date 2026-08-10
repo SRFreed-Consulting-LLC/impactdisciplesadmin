@@ -13,6 +13,8 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule } from '@angular/material/table';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -33,6 +35,8 @@ import { SharedModule } from '../shared/shared.module';
     MatDividerModule,
     MatCardModule,
     MatSlideToggleModule,
+    MatProgressSpinnerModule,
+    MatTableModule,
     SharedModule
   ]
 })

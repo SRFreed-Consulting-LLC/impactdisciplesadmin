@@ -41,3 +41,14 @@ export function completedStepCount(status: FulfillmentStatus | undefined): numbe
   const index = FULFILLMENT_STEPS.findIndex((s) => s.status === status);
   return index === -1 ? 0 : index;
 }
+
+// Per-segment render state for the bar - shared between FulfillmentComponent
+// (the real, actionable workflow) and DashboardComponent's read-only Recent
+// Orders preview, so both render identical bars off one definition instead
+// of two copies drifting apart.
+export function segmentState(status: FulfillmentStatus | undefined, index: number): 'done' | 'current' | 'pending' {
+  const completed = completedStepCount(status);
+  if (index < completed) return 'done';
+  if (index === completed) return 'current';
+  return 'pending';
+}
