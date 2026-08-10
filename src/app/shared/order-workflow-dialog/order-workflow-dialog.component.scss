@@ -1,0 +1,71 @@
+// Same semantic tokens as fulfillment.component.scss/dashboard.component.scss
+// - duplicated, not imported (no shared-SCSS-partial convention in this
+// codebase).
+$done: #2e7d4f;
+$current: #337ab7;
+$pending: #d5d8dc;
+
+.order-workflow-dialog {
+  min-width: 380px;
+  padding-top: 4px !important;
+}
+
+.order-workflow-dialog__customer {
+  font-size: 13.5px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.order-workflow-dialog__date {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 16px;
+}
+
+.segbar {
+  display: flex;
+  gap: 3px;
+}
+
+.segbar__seg {
+  flex: 1 1 0;
+  height: 8px;
+  border-radius: 3px;
+
+  &--done {
+    background: $done;
+  }
+  &--current {
+    background: $current;
+  }
+  &--pending {
+    background: $pending;
+  }
+}
+
+.segbar__labels {
+  display: flex;
+  margin-top: 6px;
+  margin-bottom: 20px;
+}
+
+.segbar__label {
+  flex: 1 1 0;
+  font-size: 9.5px;
+  line-height: 1.25;
+  color: rgba(0, 0, 0, 0.55);
+  text-align: center;
+  overflow-wrap: break-word;
+  padding: 0 2px;
+}
+
+.order-workflow-dialog__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+
+.order-workflow-dialog__done {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13.5px;
+}

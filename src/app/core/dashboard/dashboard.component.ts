@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { OrderWorkflowDialogComponent } from '../../shared/order-workflow-dialog/order-workflow-dialog.component';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -10,15 +12,17 @@ import { ConsultationRequestService } from 'src/app/common/services/data/consult
 import { ConsultationSurveyService } from 'src/app/common/services/data/consultation-survey.service';
 import { LunchAndLearnService } from 'src/app/common/services/data/lunch-and-learn.service';
 import { SeminarService } from 'src/app/common/services/data/seminar.service';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { FULFILLMENT_STEPS, segmentState } from '../../store-manager/fulfillment/fulfillment-steps';
 
 interface DashboardEventRow {
   id: string;
   name: string;
   startDateMs: number;
+  endDateMs: number; // real endDate, or startDateMs itself for single-point events
   location: string;
   isOnline: boolean;
+  isOngoing: boolean; // startDate has passed but the event hasn't ended yet
   registeredCount: number | null; // null = enrichment read failed, hide rather than show 0
 }
 
@@ -80,7 +84,8 @@ export class DashboardComponent implements OnInit {
     private consultationSurveyService: ConsultationSurveyService,
     private lunchAndLearnService: LunchAndLearnService,
     private seminarService: SeminarService,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -98,16 +103,31 @@ export class DashboardComponent implements OnInit {
     this.purchasesService.getAll().then((items) => {
       // Same definition of "needs fulfillment" as FulfillmentComponent's
       // own loadOrders() - 'new' orders first, then oldest-dateProcessed-
-      // first within each group.
+      // first within each group. Deliberately uncapped (matches the
+      // original spec - "all orders that still need to be fulfilled");
+      // the horizontally-scrolling card row is what keeps this usable
+      // when there are a lot of them, not a slice().
       this.recentOrders = items
         .filter((item) => item.fulfillmentStatus && item.fulfillmentStatus !== 'closed')
-        .sort((a, b) => this.newRank(a) - this.newRank(b) || this.toMillis(a.dateProcessed) - this.toMillis(b.dateProcessed))
-        .slice(0, 5);
+        .sort((a, b) => this.newRank(a) - this.newRank(b) || toMillis(a.dateProcessed) - toMillis(b.dateProcessed));
       this.ordersLoading = false;
     }).catch(() => {
       this.ordersLoading = false;
       this.ordersFailed = true;
     });
+  }
+
+  // Opens the same fully-functional workflow (Acknowledge/Print Label/Mark
+  // Packaged/Mark Shipped) as the real Fulfillment screen, scoped to this
+  // one order - see OrderWorkflowDialogComponent. Refreshes the list on
+  // close regardless of what happened inside (cheap one-time read; simpler
+  // and just as correct as tracking exactly what changed).
+  openOrderDialog(item: CheckoutForm): void {
+    this.dialog.open(OrderWorkflowDialogComponent, {
+      width: '480px',
+      maxWidth: '95vw',
+      data: { item }
+    }).afterClosed().subscribe(() => this.loadRecentOrders());
   }
 
   segmentState(item: CheckoutForm, index: number): 'done' | 'current' | 'pending' {
@@ -164,17 +184,28 @@ export class DashboardComponent implements OnInit {
       const now = Date.now();
       this.upcomingEvents = eventsResult.value
         .filter((e) => e.isActive)
-        .map((e) => ({
-          id: e.id!,
-          name: e.eventName ?? 'Untitled Event',
-          startDateMs: this.toMillis(e.startDate),
-          location: this.locationName(e, locations),
-          isOnline: !!e.isOnline,
-          registeredCount: registrations ? (countByEventId.get(e.id!) ?? 0) : null
-        }))
-        .filter((row) => row.startDateMs >= now)
+        .map((e) => {
+          const startDateMs = toMillis(e.startDate);
+          // No endDate set - treat the event as ending the moment it
+          // starts (a single-point event), same fallback used for the
+          // "still relevant" filter below.
+          const endDateMs = e.endDate ? toMillis(e.endDate) : startDateMs;
+          return {
+            id: e.id!,
+            name: e.eventName ?? 'Untitled Event',
+            startDateMs,
+            endDateMs,
+            location: this.locationName(e, locations),
+            isOnline: !!e.isOnline,
+            isOngoing: startDateMs <= now && endDateMs >= now,
+            registeredCount: registrations ? (countByEventId.get(e.id!) ?? 0) : null
+          };
+        })
+        // Future events AND events happening right now - anything whose
+        // end (real or fallback) hasn't passed yet.
+        .filter((row) => row.endDateMs >= now)
         .sort((a, b) => a.startDateMs - b.startDateMs)
-        .slice(0, 5);
+        .slice(0, 8);
 
       this.eventsLoading = false;
     });
@@ -207,7 +238,7 @@ export class DashboardComponent implements OnInit {
           typeLabel: 'Consultation',
           name: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || 'Unknown',
           detail: r.email ?? '',
-          dateMs: this.toMillis(r.date),
+          dateMs: toMillis(r.date),
           isNew: r.newRecordStatus === 'new',
           queryParams: { tab: 'consultation-requests' }
         })));
@@ -220,7 +251,7 @@ export class DashboardComponent implements OnInit {
           typeLabel: 'Survey',
           name: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || 'Unknown',
           detail: r.churchName ?? '',
-          dateMs: this.toMillis(r.date),
+          dateMs: toMillis(r.date),
           isNew: r.newRecordStatus === 'new',
           queryParams: { tab: 'consultation-surveys' }
         })));
@@ -233,7 +264,7 @@ export class DashboardComponent implements OnInit {
           typeLabel: 'Lunch & Learn',
           name: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || 'Unknown',
           detail: r.locationName ?? '',
-          dateMs: this.toMillis(r.date),
+          dateMs: toMillis(r.date),
           isNew: r.newRecordStatus === 'new',
           queryParams: { tab: 'lunch-and-learns' }
         })));
@@ -248,7 +279,7 @@ export class DashboardComponent implements OnInit {
           typeLabel: 'Seminar',
           name: r.eventCoordinator || r.email || 'Unknown',
           detail: r.preferredLocationName ?? '',
-          dateMs: this.toMillis(r.date),
+          dateMs: toMillis(r.date),
           isNew: r.newRecordStatus === 'new',
           queryParams: { tab: 'seminars' }
         })));
@@ -275,14 +306,5 @@ export class DashboardComponent implements OnInit {
   // ties broken by dateMs descending (see the sort call above).
   private requestSortRank(isNew: boolean): number {
     return isNew ? 1 : 0;
-  }
-
-  // Handles both a real Date (most services' fromFirestore already
-  // converts) and a raw Firestore Timestamp (LunchAndLearnService leaves
-  // its own `date` field unconverted) via the same dateFromTimestamp()
-  // every DAO's fromFirestore hook already uses - not a bespoke parser.
-  private toMillis(value: unknown): number {
-    const date = dateFromTimestamp(value);
-    return date instanceof Date ? date.getTime() : 0;
   }
 }

@@ -6,7 +6,6 @@
   <section class="dash-section">
     <div class="sec-head">
       <span class="sec-head__title">Recent Orders <span class="sec-head__count" *ngIf="!ordersLoading">{{ recentOrders.length }}</span></span>
-      <a class="sec-head__link" routerLink="/store-manager" [queryParams]="{ tab: 'fulfillment' }">View Fulfillment &rarr;</a>
     </div>
 
     <div class="loading-row" *ngIf="ordersLoading">
@@ -21,23 +20,33 @@
     <ng-container *ngIf="!ordersLoading && !ordersFailed">
       <div class="empty-state" *ngIf="recentOrders.length === 0">Nothing waiting on fulfillment right now.</div>
 
-      <div class="order-card" [class.order-card--new]="isNew(item)" *ngFor="let item of recentOrders">
-        <div class="order-card__header">
-          <div>
-            <div class="order-card__id">
-              <span class="new-badge" *ngIf="isNew(item)">NEW</span>
-              Order {{ item.receipt || item.id }}
+      <div class="order-row" *ngIf="recentOrders.length > 0">
+        <div
+          class="order-card"
+          [class.order-card--new]="isNew(item)"
+          *ngFor="let item of recentOrders"
+          tabindex="0"
+          (click)="openOrderDialog(item)"
+          (keydown.enter)="openOrderDialog(item)">
+          <div class="order-card__header">
+            <div>
+              <div class="order-card__id">
+                <span class="new-badge" *ngIf="isNew(item)">NEW</span>
+                Order {{ item.receipt || item.id }}
+              </div>
+              <div class="order-card__customer">{{ customerName(item) }} &mdash; {{ itemSummary(item) }}</div>
             </div>
-            <div class="order-card__customer">{{ customerName(item) }} &mdash; {{ itemSummary(item) }}</div>
+            <div class="order-card__date">{{ $any(item.dateProcessed) | date: 'short' }}</div>
           </div>
-          <div class="order-card__date">{{ $any(item.dateProcessed) | date: 'short' }}</div>
-        </div>
 
-        <div class="segbar">
-          <div class="segbar__seg" *ngFor="let step of steps; let i = index" [class]="'segbar__seg--' + segmentState(item, i)"></div>
-        </div>
-        <div class="segbar__labels">
-          <span *ngFor="let step of steps" class="segbar__label">{{ step.statusLabel }}</span>
+          <div class="segbar">
+            <div class="segbar__seg" *ngFor="let step of steps; let i = index" [class]="'segbar__seg--' + segmentState(item, i)"></div>
+          </div>
+          <div class="segbar__labels">
+            <span *ngFor="let step of steps" class="segbar__label">{{ step.statusLabel }}</span>
+          </div>
+
+          <div class="order-card__hint">Click to update &rarr;</div>
         </div>
       </div>
     </ng-container>
@@ -47,7 +56,6 @@
   <section class="dash-section">
     <div class="sec-head">
       <span class="sec-head__title">Upcoming Events <span class="sec-head__count" *ngIf="!eventsLoading">{{ upcomingEvents.length }}</span></span>
-      <a class="sec-head__link" routerLink="/events-manager" [queryParams]="{ tab: 'events' }">View All &rarr;</a>
     </div>
 
     <div class="loading-row" *ngIf="eventsLoading">
@@ -63,6 +71,10 @@
       <div class="empty-state" *ngIf="upcomingEvents.length === 0">No upcoming events on the calendar.</div>
 
       <table mat-table [dataSource]="upcomingEvents" class="dash-table" *ngIf="upcomingEvents.length > 0">
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row"><span class="live-badge" *ngIf="row.isOngoing">LIVE NOW</span></td>
+        </ng-container>
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Event</th>
           <td mat-cell *matCellDef="let row">{{ row.name }}</td>
@@ -84,8 +96,8 @@
           <td mat-cell *matCellDef="let row">{{ row.registeredCount === null ? '—' : row.registeredCount }}</td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="['name', 'date', 'location', 'mode', 'registered']"></tr>
-        <tr mat-row *matRowDef="let row; columns: ['name', 'date', 'location', 'mode', 'registered'];"></tr>
+        <tr mat-header-row *matHeaderRowDef="['status', 'name', 'date', 'location', 'mode', 'registered']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['status', 'name', 'date', 'location', 'mode', 'registered'];" [class.event-row--live]="row.isOngoing"></tr>
       </table>
     </ng-container>
   </section>
@@ -94,7 +106,6 @@
   <section class="dash-section">
     <div class="sec-head">
       <span class="sec-head__title">New Requests <span class="sec-head__count" *ngIf="!requestsLoading">{{ newRequests.length }}</span></span>
-      <a class="sec-head__link" routerLink="/requests-manager">View All &rarr;</a>
     </div>
 
     <div class="loading-row" *ngIf="requestsLoading">
