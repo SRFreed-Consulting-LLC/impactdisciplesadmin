@@ -229,7 +229,7 @@ export class FirebaseDAO<T extends BaseModel> {
     );
   }
 
-  public streamByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number): Observable<T[]>{
+  public streamByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -241,6 +241,7 @@ export class FirebaseDAO<T extends BaseModel> {
       retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.streamByValue('${table}', '${field}') failed:`, err);
+        onError?.(err);
         return of([]);
       })
     );
@@ -257,7 +258,7 @@ export class FirebaseDAO<T extends BaseModel> {
     })
   }
 
-  public queryStreamByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: unknown, fromFirestore?, limitCount?: number): Observable<T[]>{
+  public queryStreamByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: unknown, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, opStr, value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -269,12 +270,13 @@ export class FirebaseDAO<T extends BaseModel> {
       retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.queryStreamByValue('${table}', '${field}') failed:`, err);
+        onError?.(err);
         return of([]);
       })
     );
   }
 
-  public queryAllStreamByMultiValue(table: string, queries: QueryParam[], fromFirestore?, limitCount?: number): Observable<T[]>{
+  public queryAllStreamByMultiValue(table: string, queries: QueryParam[], fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const queryConstraints: QueryConstraint[] = queries.map((query) =>
       where(query.field, query.operation, query.value),
     );
@@ -288,6 +290,7 @@ export class FirebaseDAO<T extends BaseModel> {
       retry({ count: FIRESTORE_RETRY_COUNT, delay: retryDelay }),
       catchError(err => {
         console.error(`FirebaseDAO.queryAllStreamByMultiValue('${table}') failed:`, err);
+        onError?.(err);
         return of([]);
       })
     );

@@ -48,8 +48,11 @@ export class BaseService<T extends BaseModel> {
     return this.dao.streamAll(this.table, this.fromFirestore, limitCount, onError)
   }
 
-  streamAllByValue(field: string, value: unknown, limitCount?: number): Observable<T[]>{
-    return this.dao.streamByValue(this.table, field, value, this.fromFirestore, limitCount)
+  // onError - see FirebaseDAO.streamAll()'s own comment. Added to these
+  // three alongside streamAll() so every stream method can distinguish
+  // "really empty" from "failed to load", not just this one.
+  streamAllByValue(field: string, value: unknown, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+    return this.dao.streamByValue(this.table, field, value, this.fromFirestore, limitCount, onError)
   }
 
   streamById(id: string): Observable<T[]>{
@@ -60,12 +63,12 @@ export class BaseService<T extends BaseModel> {
     return this.dao.streamById(id, this.table, callBack, this.fromFirestore);
   }
 
-  queryStreamByValue(field: string, opStr: WhereFilterOperandKeys, value: unknown, limitCount?: number): Observable<T[]>{
-    return this.dao.queryStreamByValue(this.table, field, opStr, value, this.fromFirestore, limitCount);
+  queryStreamByValue(field: string, opStr: WhereFilterOperandKeys, value: unknown, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+    return this.dao.queryStreamByValue(this.table, field, opStr, value, this.fromFirestore, limitCount, onError);
   }
 
-  queryAllStreamByMultiValue(queries: QueryParam[], limitCount?: number): Observable<T[]>{
-    return this.dao.queryAllStreamByMultiValue(this.table, queries, this.fromFirestore, limitCount);
+  queryAllStreamByMultiValue(queries: QueryParam[], limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+    return this.dao.queryAllStreamByMultiValue(this.table, queries, this.fromFirestore, limitCount, onError);
   }
 
   add(value: T): Promise<T>{

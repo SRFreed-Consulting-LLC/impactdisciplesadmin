@@ -42,7 +42,19 @@ export class AdminUserService extends BaseService<AdminUser>{
     const fn = httpsCallable<CreateAdminUserData, { uid: string; docId: string }>(this.functions, 'createAdminUser');
     const result = await fn(data);
 
-    await sendPasswordResetEmail(this.auth, data.email);
+    // Both records already exist at this point (the callable above already
+    // succeeded) - if the reset email fails to send, the new admin would be
+    // left with an account they can never set a password for and no
+    // indication anything went wrong. Roll both records back via the
+    // existing deleteAdminUser rather than leaving that silent orphan, and
+    // surface a real error so the caller (admin-user-dialog.component.ts)
+    // shows it instead of a false "Added" success.
+    try {
+      await sendPasswordResetEmail(this.auth, data.email);
+    } catch (err) {
+      await this.deleteAdminUser(result.data.docId);
+      throw new Error('Account setup failed while sending the password email - nothing was created. ' + ((err as { message?: string })?.message ?? ''));
+    }
 
     return result.data.docId;
   }

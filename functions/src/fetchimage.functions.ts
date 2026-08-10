@@ -1,18 +1,29 @@
 import functions = require("firebase-functions");
 import fetch = require("node-fetch");
 import {Storage} from "@google-cloud/storage";
+import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 
 // Create a Google Cloud Storage instance
 const storage = new Storage();
 const bucketName = "gs://impactdisciples-a82a8.appspot.com";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const cors = require("cors")({origin: true});
-
+// No caller anywhere in impactdisciples-admin or impactdisciples-web --
+// previously had no auth at all. Makes the server fetch an
+// attacker-supplied URL (SSRF-adjacent) and upload the result into the
+// public storage bucket under Blogs/, an unauthenticated storage-write/spam
+// vector. Now requires a real staff Firebase Auth session, same as every
+// other function that writes data on the caller's behalf.
 exports.uploadImageToStorage = functions
   .https.onRequest((req, res) => {
-    return cors(req, res, async () => {
+    return restrictedCors(req, res, async () => {
+      try {
+        await requireStaffAuth(req);
+      } catch (err) {
+        res.status(401).send({success: false, message: "Unauthorized"});
+        return;
+      }
+
       const imageUrl = req.body.url;
       const imageName = "Blogs/" + req.body.name;
 

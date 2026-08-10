@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { Router, ActivatedRouteSnapshot, CanActivate } from '@angular/router';
+import { Injectable, inject } from '@angular/core';
+import { Router, ActivatedRouteSnapshot, CanActivateFn } from '@angular/router';
 import { signOut, UserCredential } from 'firebase/auth';
 import { FireAuthDao } from '../../dao/fireauth.dao';
 import { AdminUser } from '../../models/admin/admin-user.model';
@@ -241,28 +241,6 @@ export class AdminAuthService {
     });
   }
 
-  get loggedIn(): boolean {
-    if(this.cookieService.check(COOKIE_NAME)){
-      const user: AdminUser =  this.getLoggedInUser()
-
-      if(user){
-        const expiration: number = user['cookie_expiration_time'];
-
-        if(expiration - Date.now() < (1000 * 60 * 60)){
-          user['cookie_expiration_time'] = expiration + (1000 * 60 * 60);
-
-          this.cookieService.set(COOKIE_NAME, JSON.stringify(user), { expires: user['cookie_expiration_time'] });
-
-          console.log('New Expiration:' + new Date(JSON.parse(this.cookieService.get(COOKIE_NAME))['cookie_expiration_time']));
-        }
-      }
-
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   private _lastAuthenticatedPath: string = defaultPath;
 
   set lastAuthenticatedPath(value: string) {
@@ -274,59 +252,62 @@ export class AdminAuthService {
   }
 }
 
-@Injectable({
-  providedIn: 'root'
-})
-//TODO: See why CanActivate is deprecated and update
-export class AuthGuardService implements CanActivate {
-  constructor(private router: Router, private authService: AdminAuthService) { }
+// SECURITY: this guard is the access-control boundary for every admin route.
+// It MUST be based on the Firebase Auth SDK's own session state (verified
+// against Firebase's servers), never on the "impact-disciples-user" cookie
+// alone -- that cookie is plain, unsigned JSON written client-side and can
+// be forged from devtools (e.g. `document.cookie = "impact-disciples-user=..."`).
+// The cookie is still used elsewhere to cache profile data (role, email) for
+// display purposes, but it is not trusted here as proof of authentication.
+//
+// Functional guard (CanActivateFn), not the deprecated class-based
+// CanActivate this used to be - inject() is how Angular's functional guards
+// receive their dependencies (there's no constructor to inject into, unlike
+// every @Component/@Injectable class elsewhere in this app). Logic below is
+// unchanged from the old AuthGuardService.canActivate() - only how it's
+// declared/registered changed, see app-routing.module.ts's own
+// `canActivate: [authGuard]` usage.
+export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
+  const authService = inject(AdminAuthService);
+  const router = inject(Router);
 
-  // SECURITY: this guard is the access-control boundary for every admin route.
-  // It MUST be based on the Firebase Auth SDK's own session state (verified
-  // against Firebase's servers), never on the "impact-disciples-user" cookie
-  // alone -- that cookie is plain, unsigned JSON written client-side and can
-  // be forged from devtools (e.g. `document.cookie = "impact-disciples-user=..."`).
-  // The cookie is still used elsewhere to cache profile data (role, email) for
-  // display purposes, but it is not trusted here as proof of authentication.
-  canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
-    const isAuthForm = [
-      'login',
-      'reset-password',
-      'change-password/:recoveryCode'
-    ].includes(route.routeConfig?.path || defaultPath);
+  const isAuthForm = [
+    'login',
+    'reset-password',
+    'change-password/:recoveryCode'
+  ].includes(route.routeConfig?.path || defaultPath);
 
-    return this.authService.dao.currentUser$.pipe(
-      take(1),
-      switchMap(user => {
-        if (!user) {
-          return of(false);
-        }
+  return authService.dao.currentUser$.pipe(
+    take(1),
+    switchMap(user => {
+      if (!user) {
+        return of(false);
+      }
 
-        // Force a refresh check against Firebase so an expired/revoked
-        // session can't be reused just because a stale cookie still exists.
-        return from(user.getIdTokenResult()).pipe(
-          map(token => new Date(token.expirationTime).getTime() > Date.now()),
-          catchError(() => of(false))
-        );
-      }),
-      map(isLoggedIn => {
-        if (isLoggedIn && isAuthForm) {
-          this.authService.lastAuthenticatedPath = defaultPath;
-          this.router.navigate([defaultPath]);
-          return false;
-        }
+      // Force a refresh check against Firebase so an expired/revoked
+      // session can't be reused just because a stale cookie still exists.
+      return from(user.getIdTokenResult()).pipe(
+        map(token => new Date(token.expirationTime).getTime() > Date.now()),
+        catchError(() => of(false))
+      );
+    }),
+    map(isLoggedIn => {
+      if (isLoggedIn && isAuthForm) {
+        authService.lastAuthenticatedPath = defaultPath;
+        router.navigate([defaultPath]);
+        return false;
+      }
 
-        if (!isLoggedIn && !isAuthForm) {
-          console.log('not logged in via Authguard');
-          this.router.navigate(['/login']);
-        }
+      if (!isLoggedIn && !isAuthForm) {
+        console.log('not logged in via Authguard');
+        router.navigate(['/login']);
+      }
 
-        if (isLoggedIn) {
-          this.authService.lastAuthenticatedPath = route.routeConfig?.path || defaultPath;
-        }
+      if (isLoggedIn) {
+        authService.lastAuthenticatedPath = route.routeConfig?.path || defaultPath;
+      }
 
-        return isLoggedIn || isAuthForm;
-      })
-    );
-  }
-}
+      return isLoggedIn || isAuthForm;
+    })
+  );
+};

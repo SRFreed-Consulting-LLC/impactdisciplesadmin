@@ -97,7 +97,6 @@ export class EMailService extends BaseService<EMailModel>{
       let html = template.html;
 
       Object.entries(model).forEach(([key]) => {
-        console.log('checking for ' + [key])
         html = html.replace("{{"+key+"}}", String(model[key]))
       });
 

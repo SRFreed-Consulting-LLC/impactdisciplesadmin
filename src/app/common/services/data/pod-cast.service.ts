@@ -5,6 +5,7 @@ import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 import { environment } from 'src/environments/environment';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 
 // Shape of a single item from the YouTube Data API v3 playlistItems
 // endpoint (https://developers.google.com/youtube/v3/docs/playlistItems) -
@@ -32,7 +33,7 @@ export class PodCastService extends BaseService<PodCastModel>{
   API_KEY
   PLAY_LIST_ID;
 
-  constructor(public override dao: FirebaseDAO<PodCastModel> ) {
+  constructor(public override dao: FirebaseDAO<PodCastModel>, private authService: AdminAuthService) {
     super(dao)
     this.table="pod_casts"
     this.fromFirestore = PodCastService.fromFirestore
@@ -49,7 +50,15 @@ export class PodCastService extends BaseService<PodCastModel>{
   async getVideoInfo(){
     this.videos = signal<YoutubePlaylistItem[]>([]);
 
-    const keysResponse = await fetch(environment.youtubeKeyUrl);
+    // get_youtube_keys now requires a real staff Firebase Auth session
+    // (see functions/src/youtube.functions.ts) - attach the caller's own
+    // ID token, same pattern as shipping-labels.component.ts's
+    // getShippingLabel().
+    const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
+
+    const keysResponse = await fetch(environment.youtubeKeyUrl, {
+      headers: { Authorization: 'Bearer ' + idToken }
+    });
 
     if (!keysResponse.ok) {
       throw new Error('Failed to fetch client secret');

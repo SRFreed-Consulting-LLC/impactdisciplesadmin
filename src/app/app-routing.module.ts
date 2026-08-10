@@ -6,80 +6,80 @@ import { ResetPasswordComponent } from './core/auth/reset-password/reset-passwor
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
 import { ThemesComponent } from './core/settings/themes.component';
-import { AuthGuardService } from 'src/app/common/forms/admin/admin-auth.service';
+import { authGuard } from 'src/app/common/forms/admin/admin-auth.service';
 
 const routes: Routes = [
   {
     path: '',
     component: MainScreenComponent,
-    canActivate: [ AuthGuardService ],
+    canActivate: [ authGuard ],
     children: [
       {
         path: '',
         component: DashboardComponent,
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'home',
         component: DashboardComponent,
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'settings',
         component: ThemesComponent,
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'admin-manager',
         loadChildren: () => import('./admin-manager/admin-manager.module').then(m => m.AdminManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'events-manager',
         loadChildren: () => import('./events-manager/events-manager.module').then(m => m.EventsManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'requests-manager',
         loadChildren: () => import('./requests-manager/requests-manager.module').then(m => m.RequestsManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'subscriptions-manager',
         loadChildren: () => import('./subscriptions-manager/subscriptions-manager.module').then(m => m.SubscriptionsManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'web-manager',
         loadChildren: () => import('./web-manager/web-manager.module').then(m => m.WebManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'store-manager',
         loadChildren: () => import('./store-manager/store-manager.module').then(m => m.StoreManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       },
       {
         path: 'reports-manager',
         loadChildren: () => import('./reports-manager/reports-manager.module').then(m => m.ReportsManagerModule),
-        canActivate: [ AuthGuardService ]
+        canActivate: [ authGuard ]
       }
     ]
   },
   {
     path: 'login',
     component: LoginComponent,
-    canActivate: [ AuthGuardService ]
+    canActivate: [ authGuard ]
   },
   {
     path: 'reset-password',
     component: ResetPasswordComponent,
-    canActivate: [ AuthGuardService ]
+    canActivate: [ authGuard ]
   },
   {
     path: 'change-password/:recoveryCode',
     component: ChangePasswordComponent,
-    canActivate: [ AuthGuardService ]
+    canActivate: [ authGuard ]
   },
 ];
 

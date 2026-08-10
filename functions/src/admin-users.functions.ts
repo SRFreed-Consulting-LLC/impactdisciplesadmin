@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 
 type AdminUserRole = "Admin" | "Employee";
@@ -12,7 +13,9 @@ type AdminUserRole = "Admin" | "Employee";
  * @param {string | undefined} callerUid Firebase Auth uid of the caller.
  * @return {Promise<void>} Resolves if the caller is an Admin, else throws.
  */
-async function requireAdminRole(callerUid: string | undefined): Promise<void> {
+export async function requireAdminRole(
+  callerUid: string | undefined
+): Promise<void> {
   if (!callerUid) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
@@ -88,16 +91,35 @@ export const createAdminUser = onCall(async (request) => {
     throw err;
   });
 
-  const docRef = await admin.firestore().collection("admin_users").add({
-    email,
-    firstName,
-    lastName,
-    role,
-    phone: data.phone ?? null,
-    shippingAddress: data.shippingAddress ?? null,
-    billingAddress: data.billingAddress ?? null,
-    firebaseUID: userRecord.uid,
-  });
+  // If this write fails after the Auth account above already succeeded,
+  // roll the Auth account back rather than leaving an orphan with no
+  // admin_users profile - best-effort, same auth/user-not-found-swallowing
+  // style deleteAdminUser already uses below.
+  let docRef;
+  try {
+    docRef = await admin.firestore().collection("admin_users").add({
+      email,
+      firstName,
+      lastName,
+      role,
+      phone: data.phone ?? null,
+      shippingAddress: data.shippingAddress ?? null,
+      billingAddress: data.billingAddress ?? null,
+      firebaseUID: userRecord.uid,
+    });
+  } catch (err) {
+    try {
+      await admin.auth().deleteUser(userRecord.uid);
+    } catch (cleanupErr) {
+      // Best-effort - the profile-write failure below is the error that
+      // actually reaches the caller either way, so just log this one.
+      logger.error("Failed to roll back orphaned Auth account", cleanupErr);
+    }
+    throw new HttpsError(
+      "internal",
+      "Account created but the profile record failed to save."
+    );
+  }
 
   return {uid: userRecord.uid, docId: docRef.id};
 });
