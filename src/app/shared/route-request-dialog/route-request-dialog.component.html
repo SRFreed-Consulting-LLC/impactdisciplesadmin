@@ -5,13 +5,13 @@
     <strong>{{ item.formName }}</strong> from {{ submitterIdentity() }}
   </div>
 
-  <!-- Side-by-side on anything wide enough (see dashboard.component.ts's/
-       custom-form-submissions.component.ts's dialog.open() width) so the
-       form and the live preview share the dialog's one scrollbar instead of
-       each stacking its own - the preview used to be a collapsible <details>
-       with its own internal max-height/overflow, which nested a second
-       scrollbar inside the dialog's. Falls back to a single stacked column
-       below ~680px (see the media query) for narrow viewports. -->
+  <!-- Side by side (stacks below ~680px, see the media query) so the form
+       and preview share the dialog's available height without either
+       forcing the whole popup to scroll - see route-request-dialog.
+       component.scss's own comment: this whole block is a flex column with
+       overflow: hidden, and only .route-request-dialog__preview-body (the
+       one region genuinely likely to overflow - a long field table) gets
+       its own overflow-y: auto. -->
   <div class="route-request-dialog__layout">
     <form [formGroup]="form" class="route-request-dialog__form">
       <mat-form-field appearance="outline" class="full-width">
@@ -51,12 +51,12 @@
       <div class="route-request-dialog__preview-body" [innerHTML]="previewHtml"></div>
     </div>
   </div>
-
-  <div class="route-request-dialog__actions">
-    <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
-    <button mat-raised-button color="primary" type="button" [disabled]="(inProgress$ | async) || form.invalid" (click)="onSend()">
-      <mat-icon>forward_to_inbox</mat-icon>
-      Forward &amp; Close Request
-    </button>
-  </div>
 </mat-dialog-content>
+
+<mat-dialog-actions align="end" class="route-request-dialog__actions">
+  <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" type="button" [disabled]="(inProgress$ | async) || form.invalid" (click)="onSend()">
+    <mat-icon>forward_to_inbox</mat-icon>
+    Forward &amp; Close Request
+  </button>
+</mat-dialog-actions>

@@ -46,6 +46,25 @@ $collapsed-width: 64px;
   transition: width 0.18s ease;
 }
 
+// The actual scrolling element live-diagnosed as the source of a recurring
+// horizontal scrollbar along the bottom of the drawer: mat-sidenav renders
+// its projected content inside its own child <div class="mat-drawer-inner-
+// container" cdkScrollable>, NOT this .impact-drawer host - and that child
+// carries Material's own `overflow: auto` on BOTH axes (see
+// @angular/material/sidenav's compiled styles), independent of whatever
+// overflow-x this host sets above. The host's overflow-x: hidden only clips
+// content that overflows the HOST's own box; the inner container never
+// does (it's width: 100% of the host) - it's the inner container's OWN
+// content overflowing ITS box that was showing a scrollbar along its own
+// bottom edge, i.e. the bottom of the sidebar. !important because a plain
+// class-selector override has no reliable specificity edge over Material's
+// own same-specificity rule otherwise (matches this file's existing
+// !important overrides on other stubborn Material internals, e.g.
+// .impact-drawer__link-text's color above).
+.impact-drawer .mat-drawer-inner-container {
+  overflow-x: hidden !important;
+}
+
 // Auto-hide state (unpinned + not hovered) - see the template's own
 // comment on the mouseenter/mouseleave pair driving this. Collapses to an
 // icon-only rail; everything text-based (and the per-row action buttons,

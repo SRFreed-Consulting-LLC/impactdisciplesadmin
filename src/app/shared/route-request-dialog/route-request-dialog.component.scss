@@ -1,31 +1,52 @@
+// Fills the height MatDialogConfig.maxHeight (see dashboard.component.ts's/
+// custom-form-submissions.component.ts's dialog.open() calls) allots this
+// content area, as a flex column - overflow: hidden here (overriding
+// Angular Material's own default overflow-y: auto on mat-dialog-content) is
+// what stops the WHOLE popup from scrolling. Only .route-request-dialog__
+// preview-body below opts back into scrolling, for the one region actually
+// likely to outgrow the available space (a long field table). Actions live
+// in a real <mat-dialog-actions> (outside this element entirely, see the
+// template), Material's own always-visible footer, so Cancel/Forward are
+// never scrolled out of view either.
 .route-request-dialog {
   width: 100%;
-  // Actual pixel width comes from the MatDialog.open() config at each call
-  // site (dashboard.component.ts / custom-form-submissions.component.ts),
-  // not from this component - keeps it flexible instead of double-set here.
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .route-request-dialog__source {
+  flex: none;
   font-size: 13px;
   color: rgba(0, 0, 0, 0.65);
   margin-bottom: 12px;
 }
 
 .route-request-dialog__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  display: flex;
   gap: 24px;
-  align-items: start;
+  flex: 1 1 auto;
+  // Lets this row shrink below its children's natural content height -
+  // without it, a flex item defaults to min-height: auto, which would
+  // still force the row (and this whole flex column) to grow to fit the
+  // preview's full content instead of clipping/scrolling it.
+  min-height: 0;
 
   @media (max-width: 680px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 
 .route-request-dialog__form {
+  flex: 0 0 320px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  // Safety valve, not the expected path - if "Other" fields + a long note
+  // ever make the form itself taller than the row, it scrolls on its own
+  // rather than pushing the dialog's height out.
+  overflow-y: auto;
 }
 
 .full-width {
@@ -33,14 +54,19 @@
 }
 
 .route-request-dialog__preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 6px;
   padding: 12px 14px;
   background: #fafafa;
-  min-width: 0;
 }
 
 .route-request-dialog__preview-label {
+  flex: none;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -50,30 +76,25 @@
 }
 
 .route-request-dialog__preview-subject {
+  flex: none;
   font-size: 13px;
   margin-bottom: 10px;
 }
 
-// Deliberately no max-height/overflow here - the dialog's own
-// mat-dialog-content scroll (set by Angular Material) is the single
-// scrollbar for everything in this popup, this panel just flows with it.
+// The one intentionally-scrollable region in this whole dialog.
 .route-request-dialog__preview-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
   font-size: 13px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
   padding: 10px;
   background: #fff;
-  overflow-x: auto;
 }
 
-.route-request-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-
-  mat-icon {
-    margin-right: 4px;
-    vertical-align: middle;
-  }
+.route-request-dialog__actions mat-icon {
+  margin-right: 4px;
+  vertical-align: middle;
 }
