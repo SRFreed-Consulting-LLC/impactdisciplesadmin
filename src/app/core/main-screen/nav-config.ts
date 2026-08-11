@@ -49,6 +49,16 @@ export interface NavLeaf {
   // self-escalation (an Employee who could edit Admin Users could grant
   // themselves anything) - see PermissionService.canView().
   employeeGrantable?: boolean;
+  // true = never rendered as its own row in the left nav (drawer sub-item
+  // list, or a "pin to top" shortcut) - still a real NAV_CONFIG entry
+  // otherwise, so it keeps its permission-registry key, its
+  // AdminManagerComponent-style tab-shell content still resolves via
+  // ?tab=, and (unless employeeGrantable is also false) it can still be
+  // reached by anyone who has view rights, just not from the drawer.
+  // Currently only Admin Users sets this - it's linked from the user-menu
+  // dropdown instead (see MainScreenComponent's template), not the left
+  // nav. Defaults to false/omitted (every normal screen shows in the nav).
+  hideFromNav?: boolean;
 }
 
 export interface NavGroup {
@@ -71,8 +81,10 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Notifications', slug: 'notifications' },
       // Never grantable to an Employee - see NavLeaf.employeeGrantable's own
       // comment. Admin/Root-only forever, regardless of the permission
-      // system this field otherwise plugs into everywhere else.
-      { label: 'Admin Users', slug: 'admin-users', employeeGrantable: false },
+      // system this field otherwise plugs into everywhere else. Also
+      // hidden from the left nav itself (see NavLeaf.hideFromNav) - linked
+      // from the user-menu dropdown instead, next to Settings/Log Off.
+      { label: 'Admin Users', slug: 'admin-users', employeeGrantable: false, hideFromNav: true },
       { label: 'Customers', slug: 'customers' },
       { label: 'Web Config', slug: 'web-config' },
       { label: 'Email Templates', slug: 'email-templates' },

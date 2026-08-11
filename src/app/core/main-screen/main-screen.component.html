@@ -185,6 +185,15 @@
           <div class="user-menu__role">{{ currentUser?.role }}</div>
         </div>
         <mat-divider></mat-divider>
+        <!-- Admin/Root only - see MainScreenComponent.canManageAdminUsers.
+             Moved here from its own left-nav row under Admin Manager (see
+             nav-config.ts's Admin Users entry, hideFromNav: true) - still
+             the same /admin-manager?tab=admin-users destination, just
+             linked from here instead. -->
+        <a mat-menu-item *ngIf="canManageAdminUsers" routerLink="/admin-manager" [queryParams]="{ tab: 'admin-users' }">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>Admin Users</span>
+        </a>
         <a mat-menu-item routerLink="/settings">
           <mat-icon>palette</mat-icon>
           <span>Settings</span>

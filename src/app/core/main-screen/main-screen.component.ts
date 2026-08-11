@@ -97,7 +97,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
         .filter((group) => this.permissionService.isFullAccess() || this.permissionService.canView(group.id))
         .map((group) => ({
           ...group,
-          items: group.items?.filter((item) => this.permissionService.canViewNavItem(group, item))
+          items: group.items?.filter((item) => !item.hideFromNav && this.permissionService.canViewNavItem(group, item))
         }));
 
       this.rebuildPinnedItems();
@@ -134,6 +134,16 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   // another employee's grants, even ones scoped to a screen they can
   // already see themselves.
   get canManagePermissions(): boolean {
+    return this.permissionService.isFullAccess();
+  }
+
+  // Gates the user-menu dropdown's "Admin Users" link (see the template) -
+  // same Admin/Root-only check as canManagePermissions above (and as
+  // nav-config.ts's employeeGrantable: false on the Admin Users NavLeaf,
+  // which is what actually blocks an Employee who navigated there directly
+  // by URL) but its own getter since the two gate unrelated pieces of UI
+  // that just happen to share a rule today.
+  get canManageAdminUsers(): boolean {
     return this.permissionService.isFullAccess();
   }
 
@@ -195,6 +205,9 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     const items: PinnedNavItem[] = [];
     for (const group of NAV_CONFIG) {
       for (const item of group.items ?? []) {
+        if (item.hideFromNav) {
+          continue; // Admin Users - never a drawer row, so never a pinnable shortcut either.
+        }
         if (pinned.includes(this.pinKey(group, item)) && this.permissionService.canViewNavItem(group, item)) {
           items.push({ group, item });
         }
