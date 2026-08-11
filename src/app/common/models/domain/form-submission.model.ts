@@ -21,4 +21,19 @@ export class FormSubmissionModel extends BaseModel {
   // Drives NewRecordTracker's row highlight - see new-record-tracking.util.ts.
   // Field name/values match NewRecordTrackable exactly, no changes needed there.
   newRecordStatus?: 'new' | 'seen';
+
+  // Routing workflow (see RouteRequestDialogComponent) - undefined/'open'
+  // means the request still shows on the dashboard's New Requests section;
+  // 'routed' means an admin has forwarded it to a staff person (or emailed
+  // an outside address) and it's considered handled, so the dashboard hides
+  // it. Custom Form Submissions (Web Manager) still shows every submission
+  // regardless of status, with a Status column + Reopen action to bring a
+  // misrouted one back. routedTo/routedNote/routedAt/routedBy are kept
+  // around after a Reopen (not cleared) so the last routing is still visible
+  // as history even once status flips back to 'open'.
+  status?: 'open' | 'routed';
+  routedTo?: { name: string; email: string };
+  routedNote?: string;
+  routedAt?: Date;
+  routedBy?: string;
 }

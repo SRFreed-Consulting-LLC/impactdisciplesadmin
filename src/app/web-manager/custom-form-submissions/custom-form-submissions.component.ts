@@ -10,6 +10,7 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submission-detail-dialog.component';
+import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
 
 // Submissions are viewed/reviewed, never authored by staff - a plain list
 // screen (no full-page edit mode, no headerActions "New") - includes
@@ -30,7 +31,8 @@ export class CustomFormSubmissionsComponent implements OnInit {
 
   columns: DataGridColumn<FormSubmissionModel>[] = [
     { key: 'submittedAt', label: 'Submitted', type: 'date', dateFormat: 'MMM d, y, h:mm a' },
-    { key: 'formName', label: 'Form' }
+    { key: 'formName', label: 'Form' },
+    { key: 'status', label: 'Status', filterable: false, sortable: false, value: (row) => this.statusLabel(row) }
   ];
 
   itemType = 'Custom Form Submission';
@@ -41,6 +43,12 @@ export class CustomFormSubmissionsComponent implements OnInit {
   headerActions: ListHeaderAction[] = [];
   rowActions: DataGridRowAction<FormSubmissionModel>[] = [
     { icon: 'visibility', tooltip: 'VIEW', onClick: (item) => this.view(item) },
+    // Forward/Reopen - see RouteRequestDialogComponent and
+    // dashboard.component.ts's own New Requests section, which this
+    // mirrors. Forward is hidden once already routed (use Reopen instead of
+    // re-forwarding over an existing routing) and vice versa.
+    { icon: 'forward_to_inbox', tooltip: 'FORWARD', onClick: (item) => this.forward(item), visible: (item) => item.status !== 'routed' },
+    { icon: 'undo', tooltip: 'REOPEN', onClick: (item) => this.reopen(item), visible: (item) => item.status === 'routed' },
     { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }
   ];
 
@@ -89,6 +97,32 @@ export class CustomFormSubmissionsComponent implements OnInit {
           this.snackbar.success(this.itemType + ' Deleted');
         });
       }
+    });
+  }
+
+  statusLabel(item: FormSubmissionModel): string {
+    if (item.status !== 'routed') {
+      return 'Open';
+    }
+    return `Routed to ${item.routedTo?.name ?? 'Unknown'}`;
+  }
+
+  forward(item: FormSubmissionModel): void {
+    this.dialog.open(RouteRequestDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: { item }
+    });
+  }
+
+  // Brings a misrouted request back to 'open' (and back onto the
+  // dashboard's New Requests section) without re-sending anything - the
+  // last routing's routedTo/routedNote/routedAt/routedBy are left in place
+  // as history (see FormSubmissionModel's own comment), just no longer
+  // authoritative once forwarded again.
+  reopen(item: FormSubmissionModel): void {
+    this.service.update(item.id!, { ...item, status: 'open' }).then(() => {
+      this.snackbar.success('Request reopened');
     });
   }
 }

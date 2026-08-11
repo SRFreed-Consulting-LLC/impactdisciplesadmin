@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { OrderWorkflowDialogComponent } from '../../shared/order-workflow-dialog/order-workflow-dialog.component';
+import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -32,7 +32,7 @@ interface DashboardRequestRow {
   detail: string;
   dateMs: number;
   isNew: boolean;
-  queryParams: { tab: string };
+  raw: FormSubmissionModel;
 }
 
 // Home - the app's landing page (routed at both '/' and '/home', see
@@ -78,7 +78,6 @@ export class DashboardComponent implements OnInit {
     private locationService: LocationService,
     private eventRegistrationService: EventRegistrationService,
     private formSubmissionService: FormSubmissionService,
-    private router: Router,
     private dialog: MatDialog
   ) {}
 
@@ -126,6 +125,14 @@ export class DashboardComponent implements OnInit {
 
   segmentState(item: CheckoutForm, index: number): 'done' | 'current' | 'pending' {
     return segmentState(item.fulfillmentStatus, index);
+  }
+
+  // Tooltip text for the condensed progress bar - the table row no longer
+  // has room for the full label strip the old card layout showed under the
+  // bar (see FULFILLMENT_STEPS), so surface the order's current step name
+  // this way instead.
+  segmentLabel(item: CheckoutForm): string {
+    return this.steps.find((s) => s.status === item.fulfillmentStatus)?.statusLabel ?? 'Unknown';
   }
 
   isNew(item: CheckoutForm): boolean {
@@ -229,6 +236,12 @@ export class DashboardComponent implements OnInit {
 
     this.formSubmissionService.getAll().then((items) => {
       this.newRequests = items
+        // 'routed' requests have already been handed off to a staff person
+        // (see RouteRequestDialogComponent) and are considered closed - they
+        // stay visible on Web Manager's Custom Form Submissions screen, just
+        // not here. undefined/'open' both count as still-open (undefined =
+        // every submission that existed before this status field shipped).
+        .filter((r) => r.status !== 'routed')
         .map((r) => ({
           id: r.id!,
           typeLabel: r.formName,
@@ -236,7 +249,7 @@ export class DashboardComponent implements OnInit {
           detail: r.isTest ? 'Test submission' : '',
           dateMs: toMillis(r.submittedAt),
           isNew: r.newRecordStatus === 'new',
-          queryParams: { tab: 'custom-form-submissions' }
+          raw: r
         }))
         .sort((a, b) => this.requestSortRank(b.isNew) - this.requestSortRank(a.isNew) || b.dateMs - a.dateMs)
         .slice(0, 8);
@@ -266,8 +279,18 @@ export class DashboardComponent implements OnInit {
     return 'Unknown';
   }
 
-  viewRequest(row: DashboardRequestRow): void {
-    this.router.navigate(['/web-manager'], { queryParams: row.queryParams });
+  // Opens the forward/route workflow directly (not a plain detail view -
+  // see RouteRequestDialogComponent) - a request landing on this dashboard
+  // needs to be triaged to a staff person, so that's the action a click
+  // here goes straight to. Reloads the list on close so a just-routed
+  // request drops off immediately, same refresh-after-close pattern as
+  // openOrderDialog() above.
+  routeRequest(row: DashboardRequestRow): void {
+    this.dialog.open(RouteRequestDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: { item: row.raw }
+    }).afterClosed().subscribe(() => this.loadNewRequests());
   }
 
   // Higher rank sorts first - 'new' requests before already-seen ones,

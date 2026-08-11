@@ -84,71 +84,8 @@ $live-tint: #fef3c7;
   max-width: 640px;
 }
 
-// ---- Recent Orders cards (same markup/classes as fulfillment.component.scss) ----
-
-// Horizontally-scrolling row, not a vertical stack - this section is
-// deliberately uncapped (see dashboard.component.ts), so scrolling
-// sideways is what keeps a long open-orders list scannable without
-// pushing Upcoming Events/New Requests off screen.
-.order-row {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  // A little extra room so the last card's box-shadow/focus ring isn't
-  // clipped by the scroll container.
-  margin-bottom: -6px;
-}
-
-.order-card {
-  flex: 0 0 320px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 14px 18px;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
-
-  &:hover,
-  &:focus-visible {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-    border-color: $current;
-  }
-
-  &:focus-visible {
-    outline: 2px solid $current;
-    outline-offset: 1px;
-  }
-
-  &--new {
-    border-color: $new;
-    border-left-width: 3px;
-  }
-}
-
-.order-card__hint {
-  margin-top: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: $current;
-}
-
-.order-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.order-card__id {
-  font-size: 14px;
-  font-weight: 650;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+// ---- Recent Orders (table - double-click a row for the same workflow the
+// old card grid opened on click, see dashboard.component.ts's openOrderDialog) ----
 
 .new-badge {
   background: $new;
@@ -160,20 +97,20 @@ $live-tint: #fef3c7;
   border-radius: 10px;
 }
 
-.order-card__customer {
-  font-size: 12.5px;
-  color: rgba(0, 0, 0, 0.6);
-  margin-top: 2px;
+.order-items-cell {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.order-card__date {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.5);
-}
-
+// Condensed version of the old card's progress bar - no per-step labels
+// underneath (no room in a table row), a matTooltip on the bar itself
+// surfaces the current step name instead (see segmentLabel()).
 .segbar {
   display: flex;
   gap: 3px;
+  width: 140px;
 }
 
 .segbar__seg {
@@ -192,22 +129,11 @@ $live-tint: #fef3c7;
   }
 }
 
-.segbar__labels {
-  display: flex;
-  margin-top: 6px;
+.order-row--new {
+  background: $new-tint;
 }
 
-.segbar__label {
-  flex: 1 1 0;
-  font-size: 9.5px;
-  line-height: 1.25;
-  color: rgba(0, 0, 0, 0.55);
-  text-align: center;
-  overflow-wrap: break-word;
-  padding: 0 2px;
-}
-
-// ---- Upcoming Events / New Requests tables ----
+// ---- Upcoming Events / New Requests / Recent Orders tables ----
 
 .dash-table {
   width: 100%;

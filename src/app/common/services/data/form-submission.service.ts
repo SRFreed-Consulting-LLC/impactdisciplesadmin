@@ -17,6 +17,9 @@ export class FormSubmissionService extends BaseService<FormSubmissionModel> {
 
   static readonly fromFirestore = (data): FormSubmissionModel => {
     data.submittedAt = dateFromTimestamp(data.submittedAt as Timestamp);
+    if (data.routedAt) {
+      data.routedAt = dateFromTimestamp(data.routedAt as Timestamp);
+    }
     return data;
   };
 }

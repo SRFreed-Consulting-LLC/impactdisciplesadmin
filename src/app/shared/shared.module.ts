@@ -15,6 +15,7 @@ import { InfiniteScrollDirective } from './infinite-scroll.directive';
 import { PagedTableFooterComponent } from './data-grid/paged-table-footer/paged-table-footer.component';
 import { NewRecordAlertsComponent } from './new-record-alerts/new-record-alerts.component';
 import { OrderWorkflowDialogComponent } from './order-workflow-dialog/order-workflow-dialog.component';
+import { RouteRequestDialogComponent } from './route-request-dialog/route-request-dialog.component';
 import { DataGridComponent } from './data-grid/data-grid.component';
 import { DataGridCellDirective } from './data-grid/data-grid-cell.directive';
 import { FormRendererComponent } from './form-renderer/form-renderer.component';
@@ -57,6 +58,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     PagedTableFooterComponent,
     NewRecordAlertsComponent,
     OrderWorkflowDialogComponent,
+    RouteRequestDialogComponent,
     DataGridComponent,
     DataGridCellDirective,
     FormRendererComponent,
@@ -101,6 +103,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     PagedTableFooterComponent,
     NewRecordAlertsComponent,
     OrderWorkflowDialogComponent,
+    RouteRequestDialogComponent,
     DataGridComponent,
     DataGridCellDirective,
     FormRendererComponent,
