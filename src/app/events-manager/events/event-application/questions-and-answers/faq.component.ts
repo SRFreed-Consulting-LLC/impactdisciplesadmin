@@ -14,8 +14,8 @@ import { FaqDialogComponent } from './faq-dialog.component';
 // Two concerns in one screen, matching the original: (a) a global FAQ
 // library (its own Firestore collection, plain add/edit/delete) and (b)
 // per-event membership (event.faqList) via checkbox selection on the same
-// table - mirrors NewsletterSubscriptionComponent's SelectionModel pattern
-// exactly (src/app/customers-manager/newsletter-subscription).
+// table - mirrors SubscriptionsComponent's SelectionModel pattern exactly
+// (src/app/customers-manager/subscriptions).
 @Component({
     selector: 'app-faq',
     templateUrl: './faq.component.html',

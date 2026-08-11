@@ -1,6 +1,15 @@
-<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' NEWSLETTER SUBSCRIPTION'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' SUBSCRIPTION'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Type</mat-label>
+    <mat-select formControlName="type" required>
+      <mat-option value="newsletter">Newsletter</mat-option>
+      <mat-option value="prayer">Prayer Team</mat-option>
+    </mat-select>
+    <mat-error *ngIf="form.get('type')?.hasError('required')">Type is required</mat-error>
+  </mat-form-field>
+
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>First Name</mat-label>
     <input matInput formControlName="firstName" required>

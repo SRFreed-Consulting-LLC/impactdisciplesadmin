@@ -3,38 +3,43 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { EmailList } from 'src/app/common/models/utils/email-list.model';
-import { NewsletterSubscriptionModel } from 'src/app/common/models/domain/newsletter-subscription.model';
+import { SubscriptionModel } from 'src/app/common/models/domain/subscription.model';
 import { EmailListService } from 'src/app/common/services/data/email-list.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
-export interface NewsletterListDialogData {
+export interface SubscriptionListDialogData {
   item: EmailList | null;
   // The subscriber rows currently checked in the main grid - becomes the
   // list's membership, matching the original's onListSave() which set
   // selectedList.list = selectedSubscribers regardless of add vs. edit.
-  members: NewsletterSubscriptionModel[];
+  members: SubscriptionModel[];
 }
 
+// Replaces NewsletterListDialogComponent + PrayerListDialogComponent - same
+// save-as-EmailList mechanic, `type` is now a real form field (previously
+// hardcoded per-dialog to 'newsletter'/'prayer') since one dialog now saves
+// lists of either kind.
 @Component({
-    selector: 'app-newsletter-list-dialog',
-    templateUrl: './newsletter-list-dialog.component.html',
-    styleUrls: ['./newsletter-list-dialog.component.scss'],
+    selector: 'app-subscription-list-dialog',
+    templateUrl: './subscription-list-dialog.component.html',
+    styleUrls: ['./subscription-list-dialog.component.scss'],
     standalone: false
 })
-export class NewsletterListDialogComponent {
+export class SubscriptionListDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
 
   constructor(
-    private dialogRef: MatDialogRef<NewsletterListDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: NewsletterListDialogData,
+    private dialogRef: MatDialogRef<SubscriptionListDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: SubscriptionListDialogData,
     private fb: FormBuilder,
     private service: EmailListService,
     private snackbar: SnackbarService
   ) {
     this.isEdit = !!data.item?.id;
     this.form = this.fb.group({
+      type: [data.item?.type ?? null, Validators.required],
       name: [data.item?.name ?? '', Validators.required]
     });
   }
@@ -53,7 +58,7 @@ export class NewsletterListDialogComponent {
     const value: EmailList = {
       ...this.data.item,
       name: this.form.value.name,
-      type: 'newsletter',
+      type: this.form.value.type,
       list: this.data.members
     };
 

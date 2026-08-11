@@ -110,8 +110,10 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Fulfillment', slug: 'fulfillment' },
       // Slug load-bearing - see NavLeaf.slug.
       { label: 'Custom Form Submissions', slug: 'custom-form-submissions' },
-      { label: 'Newsletters', slug: 'newsletters' },
-      { label: 'Prayer Team', slug: 'prayer-team' }
+      // Replaces the old separate Newsletters + Prayer Team entries - both
+      // collections merged into one (`subscriptions`, annotated by `type`),
+      // see SubscriptionModel's own comment for the full reasoning.
+      { label: 'Subscriptions', slug: 'subscriptions' }
     ]
   },
   {

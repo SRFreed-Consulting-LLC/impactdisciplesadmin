@@ -4,10 +4,12 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { NewsletterSubscriptionModel } from 'src/app/common/models/domain/newsletter-subscription.model';
-import { NewsletterSubscriptionService } from 'src/app/common/services/data/newsletter-subscription.service';
+import { SubscriptionModel, SubscriptionType } from 'src/app/common/models/domain/subscription.model';
+import { SubscriptionService } from 'src/app/common/services/data/subscription.service';
 import { NewsletterModel } from 'src/app/common/models/domain/newsletter.model';
 import { NewsletterService } from 'src/app/common/services/data/newletter.service';
+import { PrayerModel } from 'src/app/common/models/domain/prayer.model';
+import { PrayerService } from 'src/app/common/services/data/prayer.service';
 import { EmailList } from 'src/app/common/models/utils/email-list.model';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -17,21 +19,35 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../shared/rich-text-editor/variable-inserter.component';
 
-export interface SendNewsletterDialogData {
-  // When set (the "Filter by List" dropdown has an active selection), the
-  // newsletter goes to that list's members; otherwise it goes to every
-  // subscriber - matches the original's selectedList ? selectedList.list :
-  // service.getAll().
+export interface SendSubscriptionDialogData {
+  // Which audience this send targets - drives the title, the fallback
+  // "every subscriber" query (getAllByValue('type', type), NOT a blind
+  // getAll() - the merged collection holds both types now, so an
+  // unfiltered read would email the wrong audience entirely), the archive
+  // record written afterward (NewsletterModel vs PrayerModel - see below,
+  // that split itself is unchanged/out of scope), and the unsubscribe
+  // link's `type` param.
+  type: SubscriptionType;
+  // When set (the "Filter by List" dropdown has an active selection
+  // matching this type - see subscriptions.component.ts's showSendModal()),
+  // the email goes to that list's members; otherwise it goes to every
+  // subscriber of this type.
   selectedList: EmailList | undefined;
 }
 
+// Replaces SendNewsletterDialogComponent + SendPrayerDialogComponent - same
+// Quill compose/variable-insert mechanics for both; content/archive-model
+// still branches on `type` since Newsletter and Prayer Team retain their
+// own distinct outbound-archive collections (newsletters/prayers) - see
+// subscriptions.component.ts's own file comment on why sending stayed 2
+// actions instead of merging into one generic composer.
 @Component({
-    selector: 'app-send-newsletter-dialog',
-    templateUrl: './send-newsletter-dialog.component.html',
-    styleUrls: ['./send-newsletter-dialog.component.scss'],
+    selector: 'app-send-subscription-dialog',
+    templateUrl: './send-subscription-dialog.component.html',
+    styleUrls: ['./send-subscription-dialog.component.scss'],
     standalone: false
 })
-export class SendNewsletterDialogComponent {
+export class SendSubscriptionDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   richTextModules = RICH_TEXT_TOOLBAR;
@@ -41,12 +57,13 @@ export class SendNewsletterDialogComponent {
   private quill: Quill | undefined;
 
   constructor(
-    private dialogRef: MatDialogRef<SendNewsletterDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: SendNewsletterDialogData,
+    private dialogRef: MatDialogRef<SendSubscriptionDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: SendSubscriptionDialogData,
     private fb: FormBuilder,
-    private service: NewsletterSubscriptionService,
+    private service: SubscriptionService,
     private emailService: EMailService,
     private newsletterService: NewsletterService,
+    private prayerService: PrayerService,
     private authService: AdminAuthService,
     private snackbar: SnackbarService
   ) {
@@ -54,6 +71,10 @@ export class SendNewsletterDialogComponent {
       subject: ['', Validators.required],
       html: ['']
     });
+  }
+
+  get dialogTitle(): string {
+    return this.data.type === 'prayer' ? 'SEND PRAYER REQUEST' : 'SEND NEWSLETTER';
   }
 
   onEditorCreated(quill: Quill): void {
@@ -80,10 +101,11 @@ export class SendNewsletterDialogComponent {
     const date = Timestamp.now();
     const template = this.form.value.html as string;
     const subject = this.form.value.subject as string;
+    const type = this.data.type;
 
-    const list: Promise<NewsletterSubscriptionModel[]> = this.data.selectedList
-      ? Promise.resolve(this.data.selectedList.list as NewsletterSubscriptionModel[])
-      : this.service.getAll();
+    const list: Promise<SubscriptionModel[]> = this.data.selectedList
+      ? Promise.resolve(this.data.selectedList.list as SubscriptionModel[])
+      : this.service.getAllByValue('type', type);
 
     list
       .then((subscribers) => {
@@ -97,12 +119,28 @@ export class SendNewsletterDialogComponent {
           html +=
             '<br><br><br><div>If you believe you received this email by mistake, please click ' +
             "<b><a href='" + environment.unsubscribeUrl + '?email=' + subscriber.email +
-            "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>";
+            "&list=subscriptions&type=" + type + "'>here</a></b> to remove your address.</div>";
 
           this.emailService.sendHtmlEmail(subscriber.email, subject, html);
         });
       })
       .then(() => {
+        if (type === 'prayer') {
+          const prayer: PrayerModel = {
+            ...new PrayerModel(),
+            date,
+            sender: `${user.firstName} ${user.lastName}`,
+            subject,
+            html: template
+          };
+
+          this.prayerService.add(prayer).then(() => {
+            this.snackbar.success('Prayer Request Sent Successfully!');
+            this.dialogRef.close(true);
+          });
+          return;
+        }
+
         const newsletter: NewsletterModel = {
           ...new NewsletterModel(),
           date,

@@ -12,14 +12,10 @@ import { PurchaseDetailsComponent } from './purchase-details/purchase-details.co
 import { FulfillmentComponent } from './fulfillment/fulfillment.component';
 import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
 import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
-import { NewsletterSubscriptionComponent } from './newsletter-subscription/newsletter-subscription.component';
-import { NewsletterSubscriberDialogComponent } from './newsletter-subscription/newsletter-subscriber-dialog.component';
-import { SendNewsletterDialogComponent } from './newsletter-subscription/send-newsletter-dialog.component';
-import { NewsletterListDialogComponent } from './newsletter-subscription/newsletter-list-dialog.component';
-import { PrayerTeamSubscriptionComponent } from './prayer-team-subscription/prayer-team-subscription.component';
-import { PrayerSubscriberDialogComponent } from './prayer-team-subscription/prayer-subscriber-dialog.component';
-import { SendPrayerDialogComponent } from './prayer-team-subscription/send-prayer-dialog.component';
-import { PrayerListDialogComponent } from './prayer-team-subscription/prayer-list-dialog.component';
+import { SubscriptionsComponent } from './subscriptions/subscriptions.component';
+import { SubscriberDialogComponent } from './subscriptions/subscriber-dialog.component';
+import { SendSubscriptionDialogComponent } from './subscriptions/send-subscription-dialog.component';
+import { SubscriptionListDialogComponent } from './subscriptions/subscription-list-dialog.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -82,14 +78,10 @@ import { QuillModule } from 'ngx-quill';
     FulfillmentComponent,
     CustomFormSubmissionsComponent,
     CustomFormSubmissionDetailDialogComponent,
-    NewsletterSubscriptionComponent,
-    NewsletterSubscriberDialogComponent,
-    SendNewsletterDialogComponent,
-    NewsletterListDialogComponent,
-    PrayerTeamSubscriptionComponent,
-    PrayerSubscriberDialogComponent,
-    SendPrayerDialogComponent,
-    PrayerListDialogComponent
+    SubscriptionsComponent,
+    SubscriberDialogComponent,
+    SendSubscriptionDialogComponent,
+    SubscriptionListDialogComponent
   ]
 })
 export class CustomersManagerModule { }

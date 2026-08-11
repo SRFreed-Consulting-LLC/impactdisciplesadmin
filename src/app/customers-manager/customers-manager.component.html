@@ -15,11 +15,7 @@
     <app-custom-form-submissions></app-custom-form-submissions>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab === 'Newsletters'">
-    <app-newsletter-subscription></app-newsletter-subscription>
-  </ng-template>
-
-  <ng-template [ngIf]="selectedTab === 'Prayer Team'">
-    <app-prayer-team-subscription></app-prayer-team-subscription>
+  <ng-template [ngIf]="selectedTab === 'Subscriptions'">
+    <app-subscriptions></app-subscriptions>
   </ng-template>
 </div>
