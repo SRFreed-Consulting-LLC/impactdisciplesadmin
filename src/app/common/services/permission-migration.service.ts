@@ -6,14 +6,18 @@ import { ScreenPermission } from '../models/admin/screen-permission.model';
 
 // A handful of things already allowed Employee role broadly before this
 // permission system existed: Events' Attendees tab
-// (isVisible(['Admin','Employee'])), and Store Manager's Purchases/
-// Fulfillment nav entries (NavLeaf.roles: [Admin, Employee]) - none of which
-// had any further Add/Edit/Delete restriction once visible, so full CRUD is
-// the accurate "what they could already do" baseline to seed.
+// (isVisible(['Admin','Employee'])), and Purchases/Fulfillment's nav
+// entries (NavLeaf.roles: [Admin, Employee]) - none of which had any
+// further Add/Edit/Delete restriction once visible, so full CRUD is the
+// accurate "what they could already do" baseline to seed. Purchases/
+// Fulfillment's screenKey prefix changed from store-manager to
+// customers-manager in the 2026-08 nav reorg (see nav-config.ts's own
+// comment) - updated here too, or this seed would silently write dead keys
+// that match nothing in the current registry the next time it fires.
 const LEGACY_EMPLOYEE_GRANTS: ScreenPermission[] = [
   { screenKey: 'events-manager.events.attendees', view: true, add: true, edit: true, delete: true },
-  { screenKey: 'store-manager.purchases', view: true, add: true, edit: true, delete: true },
-  { screenKey: 'store-manager.fulfillment', view: true, add: true, edit: true, delete: true }
+  { screenKey: 'customers-manager.purchases', view: true, add: true, edit: true, delete: true },
+  { screenKey: 'customers-manager.fulfillment', view: true, add: true, edit: true, delete: true }
 ];
 
 // One-time, idempotent seed for Employee accounts that existed before this

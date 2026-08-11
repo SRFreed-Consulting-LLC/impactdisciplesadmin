@@ -1,0 +1,135 @@
+/* See customers-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+app-data-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// ::ng-deep - .actions-column is app-data-grid's own internal cell class
+// (a different component's view); two action buttons need to stay on one
+// line here, unlike the single-button default elsewhere.
+:host ::ng-deep .actions-column {
+  white-space: nowrap;
+}
+
+.summary-row {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Full-page in-place edit view (no popup - see products.component.scss for
+   the established precedent this mirrors) filling the same flex column the
+   grid normally occupies. No Live toggle here - purchases have no such
+   concept, unlike every other migrated editor. */
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor__header {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.editor__title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+// Single scrolling region for the whole body (summary + tabs) - same
+// reasoning as products.component.scss: mat-tab-group's internal body
+// wrapper is Material's own structural element and can't reliably be
+// targeted for flex/height sizing through view encapsulation.
+.editor__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+}
+
+.editor__actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+
+.purchase-tabs {
+  width: 100%;
+}
+
+.readonly-summary {
+  display: flex;
+  gap: 32px;
+  padding: 8px 4px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  margin-bottom: 8px;
+}
+
+.readonly-summary__col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.readonly-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+  font-size: 13px;
+
+  span:first-child {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.readonly-row--total {
+  font-weight: 600;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.tab-content {
+  padding: 16px 4px 4px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-field {
+  width: 200px;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}

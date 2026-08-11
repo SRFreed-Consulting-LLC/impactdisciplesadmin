@@ -1,0 +1,18 @@
+/* See customers-manager/customers/customers.component.scss for the full explanation. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+app-data-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-filter {
+  width: 220px;
+  margin-right: 12px;
+}

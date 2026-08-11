@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
-import { FULFILLMENT_STEPS, segmentState } from 'src/app/store-manager/fulfillment/fulfillment-steps';
+import { FULFILLMENT_STEPS, segmentState } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
 import { SnackbarService } from '../snackbar.service';
 
 export interface OrderWorkflowDialogData {
@@ -12,11 +12,11 @@ export interface OrderWorkflowDialogData {
 // Opened from Dashboard's Recent Orders cards (see dashboard.component.ts)
 // so an order's fulfillment workflow can be worked start-to-finish without
 // leaving Home - the exact same actions/transitions as the real Fulfillment
-// screen (src/app/store-manager/fulfillment/), just scoped to one order and
-// popped up. Declared in SharedModule (imported eagerly by AppModule), not
-// StoreManagerModule (lazy) - a lazy module's components aren't resolvable
-// by MatDialog.open() until that module has actually been loaded, which
-// isn't guaranteed the first time someone lands on Home.
+// screen (src/app/customers-manager/fulfillment/), just scoped to one order
+// and popped up. Declared in SharedModule (imported eagerly by AppModule),
+// not CustomersManagerModule (lazy) - a lazy module's components aren't
+// resolvable by MatDialog.open() until that module has actually been
+// loaded, which isn't guaranteed the first time someone lands on Home.
 //
 // Unlike FulfillmentComponent's own list (a live streamAll()), the
 // Dashboard's order list is a one-time getAll() - so, unlike that screen,

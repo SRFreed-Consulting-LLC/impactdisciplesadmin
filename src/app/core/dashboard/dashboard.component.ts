@@ -11,7 +11,7 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
-import { FULFILLMENT_STEPS, segmentState } from '../../store-manager/fulfillment/fulfillment-steps';
+import { FULFILLMENT_STEPS, segmentState } from '../../customers-manager/fulfillment/fulfillment-steps';
 
 interface DashboardEventRow {
   id: string;

@@ -25,13 +25,7 @@ import { WebManagerRoutingModule } from './web-manager-routing.module';
 import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
 import { MonthlyNewsletterDialogComponent } from './monthly-newsletters/monthly-newsletter-dialog.component';
-import { FormBuilderComponent } from './form-builder/form-builder.component';
-import { FormFieldSettingsComponent } from './form-builder/form-field-settings.component';
-import { FormTestSubmitDialogComponent } from './form-builder/form-test-submit-dialog.component';
-import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
-import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -74,8 +68,7 @@ import { QuillModule } from 'ngx-quill';
     MatMenuModule,
     MatCheckboxModule,
     MatButtonToggleModule,
-    QuillModule,
-    DragDropModule
+    QuillModule
   ],
   declarations: [
     WebManagerComponent,
@@ -92,12 +85,7 @@ import { QuillModule } from 'ngx-quill';
     HomePagePopupsComponent,
     HomePagePopupPreviewDialogComponent,
     MonthlyNewslettersComponent,
-    MonthlyNewsletterDialogComponent,
-    FormBuilderComponent,
-    FormFieldSettingsComponent,
-    FormTestSubmitDialogComponent,
-    CustomFormSubmissionsComponent,
-    CustomFormSubmissionDetailDialogComponent
+    MonthlyNewsletterDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe,

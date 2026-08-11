@@ -7,25 +7,9 @@
     <app-admin-users></app-admin-users>
   </ng-template>
 
-  <ng-template [ngIf]="selectedTab === 'Customers'">
-    <app-customers></app-customers>
-  </ng-template>
-
-  <ng-template [ngIf]="selectedTab === 'Web Config'">
-    <app-web-config></app-web-config>
-  </ng-template>
-
-  <ng-template [ngIf]="selectedTab === 'Email Templates'">
-    <app-email-templates></app-email-templates>
-  </ng-template>
-  <ng-template [ngIf]="selectedTab === 'Shipping Labels'">
-    <app-shipping-labels></app-shipping-labels>
-  </ng-template>
-
   <!-- selectedTab is '' when nothing here is actually granted to this user
        (see admin-manager.component.ts's own comment on why that's the
        default rather than a real screen name) - explain the blank content
        area rather than leaving it silent. -->
   <div class="no-access-state" *ngIf="!selectedTab">You don't have access to anything in Admin Manager.</div>
 </div>
-

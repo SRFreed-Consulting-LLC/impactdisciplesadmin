@@ -98,7 +98,13 @@ export class MainScreenComponent implements OnInit, OnDestroy {
         .map((group) => ({
           ...group,
           items: group.items?.filter((item) => !item.hideFromNav && this.permissionService.canViewNavItem(group, item))
-        }));
+        }))
+        // A group with `items` defined but every one of them filtered out
+        // (Admin Manager today - Logs/Admin Users are both hideFromNav) has
+        // nothing to show - drop it rather than render an expandable header
+        // that opens to nothing. Home (items undefined) always passes this
+        // check, `!group.items` short-circuits before the length check.
+        .filter((group) => !group.items || group.items.length > 0);
 
       this.rebuildPinnedItems();
     });

@@ -1,0 +1,17 @@
+<div class="manager-content">
+  <ng-template [ngIf]="selectedTab === 'Web Config'">
+    <app-web-config></app-web-config>
+  </ng-template>
+
+  <ng-template [ngIf]="selectedTab === 'Email Templates'">
+    <app-email-templates></app-email-templates>
+  </ng-template>
+
+  <ng-template [ngIf]="selectedTab === 'Shipping Labels'">
+    <app-shipping-labels></app-shipping-labels>
+  </ng-template>
+
+  <ng-template [ngIf]="selectedTab === 'Form Builder'">
+    <app-form-builder></app-form-builder>
+  </ng-template>
+</div>

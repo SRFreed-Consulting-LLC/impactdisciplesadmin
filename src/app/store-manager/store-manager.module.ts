@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StoreManagerComponent } from './store-manager.component';
 import { ProductsComponent } from './products/products.component';
-import { PurchasesComponent } from './purchases/purchases.component';
 import { SharedModule } from '../shared/shared.module';
 import { ProductCategoriesComponent } from './product-categories/product-categories.component';
 import { CategoryModalComponent } from './product-categories/category-modal/category-modal.component';
@@ -13,8 +12,6 @@ import { CouponDialogComponent } from './coupons/coupon-dialog.component';
 import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.component';
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 import { SalesComponent } from './sales/sales.component';
-import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
-import { FulfillmentComponent } from './fulfillment/fulfillment.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
 // see src/app/shared/image-uploader/ for the full rationale (built during
@@ -46,9 +43,6 @@ import { QuillModule } from 'ngx-quill';
   declarations: [
     StoreManagerComponent,
     ProductsComponent,
-    PurchasesComponent,
-    PurchaseDetailsComponent,
-    FulfillmentComponent,
     CouponsComponent,
     CouponDialogComponent,
     AffiliateSalesComponent,

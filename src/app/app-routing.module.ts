@@ -40,8 +40,8 @@ const routes: Routes = [
         canActivate: [ authGuard ]
       },
       {
-        path: 'subscriptions-manager',
-        loadChildren: () => import('./subscriptions-manager/subscriptions-manager.module').then(m => m.SubscriptionsManagerModule),
+        path: 'customers-manager',
+        loadChildren: () => import('./customers-manager/customers-manager.module').then(m => m.CustomersManagerModule),
         canActivate: [ authGuard ]
       },
       {
@@ -52,6 +52,11 @@ const routes: Routes = [
       {
         path: 'store-manager',
         loadChildren: () => import('./store-manager/store-manager.module').then(m => m.StoreManagerModule),
+        canActivate: [ authGuard ]
+      },
+      {
+        path: 'tools-manager',
+        loadChildren: () => import('./tools-manager/tools-manager.module').then(m => m.ToolsManagerModule),
         canActivate: [ authGuard ]
       },
       {

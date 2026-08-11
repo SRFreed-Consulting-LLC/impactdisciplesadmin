@@ -31,8 +31,8 @@ interface AlertSource {
 // - see NewRecordCounts's own comment.
 const ALERT_SOURCES: AlertSource[] = [
   { key: 'eventRegistrations', label: 'Event Registrations', route: ['/events-manager'], queryParams: { tab: 'events' } },
-  { key: 'formSubmissions', label: 'Custom Form Submissions', route: ['/web-manager'], queryParams: { tab: 'custom-form-submissions' } },
-  { key: 'purchases', label: 'Purchases', route: ['/store-manager'], queryParams: { tab: 'purchases' } }
+  { key: 'formSubmissions', label: 'Custom Form Submissions', route: ['/customers-manager'], queryParams: { tab: 'custom-form-submissions' } },
+  { key: 'purchases', label: 'Purchases', route: ['/customers-manager'], queryParams: { tab: 'purchases' } }
 ];
 
 interface AlertEntry extends AlertSource {

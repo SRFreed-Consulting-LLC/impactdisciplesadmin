@@ -15,7 +15,7 @@ import { FaqDialogComponent } from './faq-dialog.component';
 // library (its own Firestore collection, plain add/edit/delete) and (b)
 // per-event membership (event.faqList) via checkbox selection on the same
 // table - mirrors NewsletterSubscriptionComponent's SelectionModel pattern
-// exactly (src/app/subscriptions-manager/newsletter-subscription).
+// exactly (src/app/customers-manager/newsletter-subscription).
 @Component({
     selector: 'app-faq',
     templateUrl: './faq.component.html',
