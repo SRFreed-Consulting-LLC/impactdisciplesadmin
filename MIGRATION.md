@@ -96,3 +96,224 @@ migration script, out of scope for incidental work):
    in-session decision to guard locally rather than touch a helper a dozen
    other call sites depend on) - worth fixing at the source once someone's
    ready to verify all its callers.
+
+---
+
+## Requests Manager → Custom Form Submissions data migration
+
+**Done**: 2026-08-11, dev only (`impactdisciplesdev`). Production
+(`impactdisciples-a82a8`) still needs this - see "Outstanding for
+production" below.
+
+Runbook for migrating the 4 legacy Requests Manager collections
+(`consultation_requests`, `consultation_surveys`, `lunch_and_learns`,
+`seminars`) into `form_submissions` (the collection behind Web Manager >
+Custom Form Submissions), and safely retiring the old collections once
+they're no longer being written to.
+
+### Why this exists
+
+Requests Manager (Consultation Requests/Surveys, Lunch and Learn, Seminar)
+was removed from the admin app in favor of the generic Form Builder +
+Custom Form Submissions pair - see CLAUDE.md's "Feature areas" section.
+`impactdisciples-web`'s public pages were rewired one-by-one from hardcoded
+dx-forms onto `<app-dynamic-form [formId]="...">`, which submits into
+`form_submissions` instead of the old per-request-type collections. Once a
+form is cut over, its old collection stops receiving new writes but its
+**historical** records are still sitting there in the old shape and need to
+be brought forward before the old collection can be deleted.
+
+### Prerequisite: confirm the environment is actually cut over
+
+**Do not migrate+delete a collection that's still being written to.**
+Before touching anything, confirm for that environment:
+
+1. The public site's pages for all 4 form types are on
+   `<app-dynamic-form>`, not the old dx-form/hardcoded reactive form -
+   check `impactdisciples-web`'s `src/app/core/pages/{consultation-survey,
+   lunch-and-learn,seminars,contact}/**` for `app-dynamic-form` usage, and
+   confirm that code is actually **deployed** to the environment in
+   question (merged to the branch that environment deploys from -
+   `master` for `impactdisciples-a82a8` production, `development` for
+   `impactdisciplesdev` - not just sitting on a feature branch).
+2. The 5 `FormDefinitionModel` docs those pages point at (their hardcoded
+   `readonly formId = '...'` constants) actually exist in that
+   environment's own `forms` collection. Forms created via the admin app
+   while pointed at one Firebase project do **not** exist in another - dev
+   and prod are separate Firestore databases. Confirmed live 2026-08-11:
+   all 5 form IDs existed in dev's `forms` collection but were
+   **completely missing** from production's, even though the web app code
+   referencing them was already written.
+3. New submissions are actually landing in `form_submissions`, not the old
+   collection, for a real test submission of each form type.
+
+If any of these aren't true yet for the environment you're targeting,
+stop - migrating/deleting is premature. (Production was explicitly *not*
+touched on 2026-08-11 for exactly this reason: its public site was still
+running the old forms, and its `forms` collection didn't have the 5
+definitions yet. Scope was cut down to dev-only for that pass.)
+
+### Read/write access
+
+No `firestore:get`-style read command exists in the `firebase` CLI, and
+printing an access token via `gcloud auth application-default
+print-access-token` gets blocked by this environment's permission
+classifier as credential exfiltration-shaped. Application Default
+Credentials are already present on this machine though
+(`%APPDATA%\gcloud\application_default_credentials.json`), so a plain Node
+script using `firebase-admin` works fine without needing that token
+printed anywhere:
+
+```js
+const admin = require('C:/web/repo/impactdisciples - admin/functions/node_modules/firebase-admin');
+admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: 'impactdisciplesdev' }); // or impactdisciples-a82a8
+const db = admin.firestore();
+```
+
+Run these from the scratchpad directory (never commit them - they're
+one-off, and several contain inline field-id mappings specific to one
+form's current field list, which drifts if that form is ever edited in
+Form Builder).
+
+### Step-by-step
+
+1. **Count what's actually there** in both the old collections and
+   `form_submissions`, per environment - `.count().get()` on each. Don't
+   assume; dev and prod had wildly different pictures (dev: 1 stray record
+   total; prod: 43 real historical records).
+
+2. **Read the old record(s) in full** to see their actual field shape
+   (`ConsultationRequestModel`/`ConsultationSurveyModel`/
+   `LunchAndLearnModel`/`SeminarModel` - typed fields like `firstName`,
+   `email`, `churchName`, `date`).
+
+3. **Read the target form's field list and flatten it.**
+   `FormDefinitionModel.fields` is a tree - most of the top-level entries
+   are `type: 'columns'` layout containers, and the actual
+   data-collecting fields (text/email/phone/address/radio/paragraph/...)
+   are nested inside `field.columns[].fields`. Recurse the same way
+   `flattenDataFields()` (`src/app/common/models/domain/form-field.model.ts`)
+   does:
+
+   ```js
+   function flatten(fields, out) {
+     for (const f of fields || []) {
+       if (f.type === 'columns') {
+         for (const col of f.columns || []) flatten(col.fields, out);
+       } else {
+         out.push(f);
+       }
+     }
+     return out;
+   }
+   ```
+
+4. **Build a field mapping** from each old model's property name to the
+   new form's `{id, label, type}`, by matching on label/meaning (e.g. old
+   `committment` → the "How committed is the church to making disciples?"
+   radio field). This is manual and per-form - the old typed fields and
+   the current Form Builder field list aren't guaranteed to line up 1:1
+   (an admin may have edited the form since it was built from the
+   original dx-form). Fields with no old-side equivalent (e.g. the new
+   form gained an Address field the old model never had) still belong in
+   `fieldSnapshot` - just leave them out of `values`; `formatFieldValue()`
+   already renders a missing value as `-` in the detail dialog.
+
+5. **Write the migrated `FormSubmissionModel` doc(s) into
+   `form_submissions`:**
+
+   ```js
+   const submission = {
+     formId, formName,                    // from the target FormDefinitionModel
+     fieldSnapshot,                       // every flattened data field's {id, label, type}
+     values,                              // oldKey → newFieldId, only for fields with real data
+     submittedAt: new admin.firestore.Timestamp(old.date._seconds, old.date._nanoseconds || 0),
+     newRecordStatus: 'seen',             // see note below - load-bearing
+     migratedFrom: { collection: 'consultation_surveys', id: doc.id }   // breadcrumb back to the source
+   };
+   await db.collection('form_submissions').add(submission);
+   await doc.ref.delete();                // remove the old doc once its replacement is written
+   ```
+
+   **`newRecordStatus: 'seen'` is load-bearing, not cosmetic.**
+   `onFormSubmissionCreated`
+   (`functions/src/new-record-alerts.functions.ts`) skips tagging/counting
+   a doc that already has `newRecordStatus` set at creation time
+   (`if (!snap || !data || data.newRecordStatus) return;`). Omitting it
+   would make every migrated historical record ring the new-record-alerts
+   bell as if it just arrived.
+
+6. **Verify the old collection is actually gone**, not just empty -
+   Firestore drops a collection entirely once its last document is
+   deleted, so `db.listCollections()` should no longer list it:
+
+   ```js
+   const cols = (await db.listCollections()).map(c => c.id);
+   ```
+
+   If the old collection had 0 docs to begin with (true for 3 of the 4 in
+   dev), there's nothing to delete - an empty collection doesn't persist
+   as an entity in Firestore, so the migration is already "done" for it by
+   definition.
+
+### Known trap: `meta/newRecordCounts` drift
+
+The bell's aggregate counter (`meta/newRecordCounts`, one field per
+source) can silently drift from the real "how many docs actually have
+`newRecordStatus == 'new'`" answer, independent of anything in this
+migration:
+
+- **Deleting** a still-`new` record (e.g. the Attendees screen's Delete
+  action on a registration) never decrements the counter - only an update
+  transitioning `new → seen` does (`registerNewRecordTriggers()`'s
+  `onUpdate` half). A delete has no matching trigger, so the original
+  increment is never clawed back. Live-diagnosed 2026-08-11:
+  `eventRegistrations` was stuck at `1` in dev with zero actual `new`
+  registrations left.
+- A doc that already had `newRecordStatus: 'new'` on it **before** the
+  relevant trigger was ever deployed (e.g. a manual test submission
+  created pre-migration) gets no increment when the trigger goes live
+  later, but if it's subsequently viewed/marked-seen, the `onUpdate` half
+  still fires and decrements - net negative drift. Live-diagnosed
+  2026-08-11: `formSubmissions` had drifted to `-1` in dev this way, from
+  pre-existing Form Builder "Preview & Test Submit" docs.
+
+Symptom: a bell entry that's visible (count > 0) but does nothing useful
+when clicked - e.g. `NewRecordAlertsComponent.openEventRegistrations()`
+queries the real rows, finds none, and falls back to the bare list instead
+of a specific event. **Not a caching/server-restart issue** - confirm by
+comparing the stored count against a live query:
+
+```js
+const stored = (await db.doc('meta/newRecordCounts').get()).data();
+const real = (await db.collection('event-registrations').where('newRecordStatus', '==', 'new').count().get()).data().count;
+```
+
+Fix by overwriting the drifted field(s) with the true count - safe to do
+any time, it's just a cache of a derived value, not a source of truth:
+
+```js
+await db.doc('meta/newRecordCounts').set({ eventRegistrations: 0, formSubmissions: 0 }, { merge: true });
+```
+
+### Outstanding for production
+
+- Create the 5 form definitions in `impactdisciples-a82a8`'s `forms`
+  collection (currently missing entirely - see Prerequisite step 2
+  above).
+- Deploy the admin app (hosting + `onFormSubmissionCreated`/`Updated`
+  functions) to production.
+- Merge the dynamic-form web pages to `master` (triggers the existing
+  GitHub Action - `.github/workflows/firebase-hosting-merge.yml` - which
+  auto-deploys to the *live* production site on push; not something to do
+  incidentally).
+- Verify real submissions land in `form_submissions`, then migrate the 43
+  existing records (21 consultation requests, 7 surveys, 1 lunch and
+  learn, 14 seminars, counted 2026-08-11) using the steps above, per form
+  type.
+- Only then delete the 4 old collections in production.
+- Also delete the 8 now-orphaned old model/service files in
+  `impactdisciples-web` if they haven't been already (see
+  `src/app/common/{models/domain,services/data}/{consultation-request,
+  consultation-survey,lunch-and-learn,seminar}.*` - dev's copies were
+  removed 2026-08-11).
