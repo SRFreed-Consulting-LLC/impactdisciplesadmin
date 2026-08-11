@@ -12,11 +12,13 @@ import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submission-detail-dialog.component';
 
 // Submissions are viewed/reviewed, never authored by staff - a plain list
-// screen (no full-page edit mode, no headerActions "New") - otherwise the
-// same shape as every other Requests Manager screen (see
-// seminars.component.ts), including NewRecordTracker for the "new" row
-// highlight (FormSubmissionModel.newRecordStatus already matches
-// NewRecordTrackable's shape, so this Just Works with zero changes there).
+// screen (no full-page edit mode, no headerActions "New") - includes
+// NewRecordTracker for the "new" row highlight (FormSubmissionModel.
+// newRecordStatus already matches NewRecordTrackable's shape, so this Just
+// Works with zero changes there). Moved here from the old Requests Manager
+// module (which it now fully replaces, see the other 4 request-type
+// screens' removal) - see form-builder.component.ts for the form-authoring
+// side of this same feature.
 @Component({
     selector: 'app-custom-form-submissions',
     templateUrl: './custom-form-submissions.component.html',
@@ -33,7 +35,7 @@ export class CustomFormSubmissionsComponent implements OnInit {
 
   itemType = 'Custom Form Submission';
 
-  private readonly screenKey = 'requests-manager.custom-form-submissions';
+  private readonly screenKey = 'web-manager.custom-form-submissions';
 
   // Nothing to "add" - submissions come from a filled-out form, not staff.
   headerActions: ListHeaderAction[] = [];

@@ -162,8 +162,12 @@ Columns, Export, feature-specific actions) uniformly.
 
 Feature areas are lazy-loaded NgModules off `AppRoutingModule` (`src/app/app-routing.module.ts`),
 each gated by `AuthGuardService`: `admin-manager` (Admin Users, Customers, Log Messages),
-`events-manager`, `requests-manager`, `subscriptions-manager`, `web-manager`, `store-manager`
-(Products, Purchases, ...). `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
+`events-manager`, `subscriptions-manager`, `web-manager`, `store-manager`
+(Products, Purchases, ...). There is no `requests-manager` module any more - its one surviving
+screen, Custom Form Submissions, now lives under `web-manager` (`src/app/web-manager/
+custom-form-submissions/`); the other four Requests Manager screens (Consultation Requests/
+Surveys, Lunch and Learn, Seminar) were removed outright, superseded by the generic Form
+Builder + Custom Form Submissions pair. `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
 `dashboard` home route and all feature module outlets. `src/app/shared/` holds cross-feature
 UI (list header, column filter, dialogs, image uploader, table export/loading, paged-table
 infrastructure) and is imported by every feature module. This codebase is deliberately

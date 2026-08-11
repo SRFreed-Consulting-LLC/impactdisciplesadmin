@@ -10,7 +10,7 @@ interface AlertSource {
   queryParams?: Record<string, string>;
 }
 
-// Top-bar bell: one badge for the total across all 6 sources, a dropdown
+// Top-bar bell: one badge for the total across all sources, a dropdown
 // breaking that total down per source. Clicking an entry navigates to that
 // source's master list - the list screen itself (see
 // new-record-tracking.util.ts) is what actually highlights the new rows and
@@ -20,12 +20,14 @@ interface AlertSource {
 // (registrations are only ever viewed nested inside a specific event's
 // editor - see event-attendees.component.ts) - it lands on the Events
 // Manager list itself rather than a specific event.
+//
+// formSubmissions replaces the old Requests Manager sources
+// (consultationRequests, consultationSurveys, lunchAndLearns, seminars),
+// dropped when that module was removed in favor of Custom Form Submissions
+// - see NewRecordCounts's own comment.
 const ALERT_SOURCES: AlertSource[] = [
   { key: 'eventRegistrations', label: 'Event Registrations', route: ['/events-manager'] },
-  { key: 'consultationRequests', label: 'Consultation Requests', route: ['/requests-manager'], queryParams: { tab: 'consultation-requests' } },
-  { key: 'consultationSurveys', label: 'Consultation Surveys', route: ['/requests-manager'], queryParams: { tab: 'consultation-surveys' } },
-  { key: 'lunchAndLearns', label: 'Lunch and Learn Requests', route: ['/requests-manager'], queryParams: { tab: 'lunch-and-learns' } },
-  { key: 'seminars', label: 'Seminar Requests', route: ['/requests-manager'], queryParams: { tab: 'seminars' } },
+  { key: 'formSubmissions', label: 'Custom Form Submissions', route: ['/web-manager'], queryParams: { tab: 'custom-form-submissions' } },
   { key: 'purchases', label: 'Purchases', route: ['/store-manager'], queryParams: { tab: 'purchases' } }
 ];
 

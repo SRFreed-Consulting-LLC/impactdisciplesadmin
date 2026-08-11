@@ -8,10 +8,8 @@ import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { LocationService } from 'src/app/common/services/data/location.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { ConsultationRequestService } from 'src/app/common/services/data/consultation-request.service';
-import { ConsultationSurveyService } from 'src/app/common/services/data/consultation-survey.service';
-import { LunchAndLearnService } from 'src/app/common/services/data/lunch-and-learn.service';
-import { SeminarService } from 'src/app/common/services/data/seminar.service';
+import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
+import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { FULFILLMENT_STEPS, segmentState } from '../../store-manager/fulfillment/fulfillment-steps';
 
@@ -27,11 +25,8 @@ interface DashboardEventRow {
   newRegisteredCount: number | null; // same null convention - unseen (newRecordStatus === 'new') signups
 }
 
-type RequestType = 'consultation-request' | 'consultation-survey' | 'lunch-and-learn' | 'seminar';
-
 interface DashboardRequestRow {
   id: string;
-  type: RequestType;
   typeLabel: string;
   name: string;
   detail: string;
@@ -45,8 +40,9 @@ interface DashboardRequestRow {
 // the real screen that owns the underlying data: Recent Orders (the
 // Fulfillment workflow - same status/sort definition as
 // FulfillmentComponent.loadOrders(), just capped and read-only here, no
-// action buttons), Upcoming Events, and New Requests (merged across all 4
-// Requests Manager collections). Every section is a one-time getAll(), not
+// action buttons), Upcoming Events, and New Requests (Web Manager's Custom
+// Form Submissions - the old 4-collection Requests Manager this replaced).
+// Every section is a one-time getAll(), not
 // a live streamAll() - this is the page every login lands on, so it
 // shouldn't add more standing listeners on top of whatever else is already
 // live; getAll()'s own retry hardening (see firebase.dao.ts's
@@ -81,10 +77,7 @@ export class DashboardComponent implements OnInit {
     private eventService: EventService,
     private locationService: LocationService,
     private eventRegistrationService: EventRegistrationService,
-    private consultationRequestService: ConsultationRequestService,
-    private consultationSurveyService: ConsultationSurveyService,
-    private lunchAndLearnService: LunchAndLearnService,
-    private seminarService: SeminarService,
+    private formSubmissionService: FormSubmissionService,
     private router: Router,
     private dialog: MatDialog
   ) {}
@@ -234,83 +227,47 @@ export class DashboardComponent implements OnInit {
     this.requestsLoading = true;
     this.requestsFailed = false;
 
-    Promise.allSettled([
-      this.consultationRequestService.getAll(),
-      this.consultationSurveyService.getAll(),
-      this.lunchAndLearnService.getAll(),
-      this.seminarService.getAll()
-    ]).then(([consultations, surveys, lunches, seminars]) => {
-      const rows: DashboardRequestRow[] = [];
-
-      if (consultations.status === 'fulfilled') {
-        rows.push(...consultations.value.map((r) => ({
+    this.formSubmissionService.getAll().then((items) => {
+      this.newRequests = items
+        .map((r) => ({
           id: r.id!,
-          type: 'consultation-request' as const,
-          typeLabel: 'Consultation',
-          name: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || 'Unknown',
-          detail: r.email ?? '',
-          dateMs: toMillis(r.date),
+          typeLabel: r.formName,
+          name: this.submissionIdentity(r),
+          detail: r.isTest ? 'Test submission' : '',
+          dateMs: toMillis(r.submittedAt),
           isNew: r.newRecordStatus === 'new',
-          queryParams: { tab: 'consultation-requests' }
-        })));
-      }
-
-      if (surveys.status === 'fulfilled') {
-        rows.push(...surveys.value.map((r) => ({
-          id: r.id!,
-          type: 'consultation-survey' as const,
-          typeLabel: 'Survey',
-          name: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || 'Unknown',
-          detail: r.churchName ?? '',
-          dateMs: toMillis(r.date),
-          isNew: r.newRecordStatus === 'new',
-          queryParams: { tab: 'consultation-surveys' }
-        })));
-      }
-
-      if (lunches.status === 'fulfilled') {
-        rows.push(...lunches.value.map((r) => ({
-          id: r.id!,
-          type: 'lunch-and-learn' as const,
-          typeLabel: 'Lunch & Learn',
-          name: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || 'Unknown',
-          detail: r.locationName ?? '',
-          dateMs: toMillis(r.date),
-          isNew: r.newRecordStatus === 'new',
-          queryParams: { tab: 'lunch-and-learns' }
-        })));
-      }
-
-      if (seminars.status === 'fulfilled') {
-        // SeminarModel has no firstName/lastName - email + the requesting
-        // coordinator's name is all there is to identify the submitter.
-        rows.push(...seminars.value.map((r) => ({
-          id: r.id!,
-          type: 'seminar' as const,
-          typeLabel: 'Seminar',
-          name: r.eventCoordinator || r.email || 'Unknown',
-          detail: r.preferredLocationName ?? '',
-          dateMs: toMillis(r.date),
-          isNew: r.newRecordStatus === 'new',
-          queryParams: { tab: 'seminars' }
-        })));
-      }
-
-      // Every source failing (not just one) is the only case worth
-      // surfacing as a real failure state - a single rejected source just
-      // silently contributes zero rows (allSettled, not all).
-      this.requestsFailed = [consultations, surveys, lunches, seminars].every((r) => r.status === 'rejected');
-
-      this.newRequests = rows
+          queryParams: { tab: 'custom-form-submissions' }
+        }))
         .sort((a, b) => this.requestSortRank(b.isNew) - this.requestSortRank(a.isNew) || b.dateMs - a.dateMs)
         .slice(0, 8);
 
       this.requestsLoading = false;
+    }).catch(() => {
+      this.requestsLoading = false;
+      this.requestsFailed = true;
     });
   }
 
+  // Best-effort submitter identification for a fully dynamic form: prefer
+  // an Email-type field's value (every request form so far has had one),
+  // falling back to a text field whose label reads like a name field, then
+  // giving up rather than guessing wrong. There's no fixed firstName/
+  // lastName shape to rely on any more - fields are whatever the admin who
+  // built the form dragged onto the canvas.
+  private submissionIdentity(item: FormSubmissionModel): string {
+    const emailField = item.fieldSnapshot?.find((f) => f.type === 'email');
+    if (emailField && item.values?.[emailField.id]) {
+      return String(item.values[emailField.id]);
+    }
+    const nameField = item.fieldSnapshot?.find((f) => f.type === 'text' && /name/i.test(f.label));
+    if (nameField && item.values?.[nameField.id]) {
+      return String(item.values[nameField.id]);
+    }
+    return 'Unknown';
+  }
+
   viewRequest(row: DashboardRequestRow): void {
-    this.router.navigate(['/requests-manager'], { queryParams: row.queryParams });
+    this.router.navigate(['/web-manager'], { queryParams: row.queryParams });
   }
 
   // Higher rank sorts first - 'new' requests before already-seen ones,

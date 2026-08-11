@@ -40,11 +40,6 @@ const routes: Routes = [
         canActivate: [ authGuard ]
       },
       {
-        path: 'requests-manager',
-        loadChildren: () => import('./requests-manager/requests-manager.module').then(m => m.RequestsManagerModule),
-        canActivate: [ authGuard ]
-      },
-      {
         path: 'subscriptions-manager',
         loadChildren: () => import('./subscriptions-manager/subscriptions-manager.module').then(m => m.SubscriptionsManagerModule),
         canActivate: [ authGuard ]

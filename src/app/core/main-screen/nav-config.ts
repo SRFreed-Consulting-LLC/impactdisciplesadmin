@@ -28,9 +28,10 @@ export interface NavTab {
 export interface NavLeaf {
   label: string;
   // ?tab= query param value used to deep-link here from outside the
-  // manager (the left nav itself, or <app-new-record-alerts>). The 5 marked
-  // below are load-bearing - NewRecordAlertsComponent already navigates
-  // using these exact slugs, don't rename them without updating that too.
+  // manager (the left nav itself, or <app-new-record-alerts>). The 2 marked
+  // below (Purchases, Custom Form Submissions) are load-bearing -
+  // NewRecordAlertsComponent already navigates using these exact slugs,
+  // don't rename them without updating that too.
   slug: string;
   // Omit to inherit no extra restriction beyond the group's own `roles` -
   // this still means "Admin/Root only" everywhere it appears; Employee
@@ -103,20 +104,6 @@ export const NAV_CONFIG: NavGroup[] = [
     ]
   },
   {
-    id: 'requests-manager',
-    label: 'REQUESTS MANAGER',
-    icon: 'notifications_none',
-    roles: [Role.ADMIN],
-    items: [
-      // Slugs load-bearing - see NavLeaf.slug.
-      { label: 'Consultation Requests', slug: 'consultation-requests' },
-      { label: 'Consultation Surveys', slug: 'consultation-surveys' },
-      { label: 'Lunch and Learn Requests', slug: 'lunch-and-learns' },
-      { label: 'Seminar Requests', slug: 'seminars' },
-      { label: 'Custom Form Submissions', slug: 'custom-form-submissions' }
-    ]
-  },
-  {
     id: 'store-manager',
     label: 'STORE MANAGER',
     icon: 'storefront',
@@ -153,7 +140,9 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Home Page Images', slug: 'home-page-images' },
       { label: 'Home Page Popups', slug: 'home-page-popups' },
       { label: 'Monthly Newsletter', slug: 'monthly-newsletter' },
-      { label: 'Form Builder', slug: 'form-builder' }
+      { label: 'Form Builder', slug: 'form-builder' },
+      // Slug load-bearing - see NavLeaf.slug.
+      { label: 'Custom Form Submissions', slug: 'custom-form-submissions' }
     ]
   },
   {

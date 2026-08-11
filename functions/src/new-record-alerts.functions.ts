@@ -4,14 +4,14 @@ import {
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 
-// Backs the top-bar "new record" alert bell in the admin app. Six source
+// Backs the top-bar "new record" alert bell in the admin app. Three source
 // collections each get an onCreate/onUpdate trigger pair (below) that:
 //   1. Tags every newly-created doc with newRecordStatus: "new" - this has
 //      to happen server-side, in a trigger, rather than at each write site,
-//      because several of these collections (purchases, and possibly some
-//      Requests Manager submissions) are written by the public storefront/
-//      site, a separate repo this function set has no reach into. A
-//      Firestore trigger fires regardless of which app performed the write.
+//      because these collections (purchases, form_submissions, and
+//      event-registrations) are written by the public storefront/site, a
+//      separate repo this function set has no reach into. A Firestore
+//      trigger fires regardless of which app performed the write.
 //   2. Keeps a single running count per source in one aggregate doc,
 //      meta/newRecordCounts, so the client subscribes to one small doc
 //      instead of a live listener per collection.
@@ -76,24 +76,21 @@ function registerNewRecordTriggers(
 
 const eventRegistrations =
   registerNewRecordTriggers("event-registrations", "eventRegistrations");
-const consultationRequests =
-  registerNewRecordTriggers("consultation_requests", "consultationRequests");
-const consultationSurveys =
-  registerNewRecordTriggers("consultation_surveys", "consultationSurveys");
-const lunchAndLearns =
-  registerNewRecordTriggers("lunch_and_learns", "lunchAndLearns");
-const seminars = registerNewRecordTriggers("seminars", "seminars");
+// Replaces the old per-request-type triggers (consultation_requests,
+// consultation_surveys, lunch_and_learns, seminars) - those 4 collections'
+// admin screens were removed in favor of the generic Form Builder + Custom
+// Form Submissions pair (Web Manager), which all submissions now flow
+// through regardless of which form was filled out. One trigger on
+// form_submissions covers all of them going forward; the 4 old collections
+// still exist with whatever data they already had; but nothing writes to
+// them any more so their triggers were removed rather than left running.
+const formSubmissions =
+  registerNewRecordTriggers("form_submissions", "formSubmissions");
 const purchases = registerNewRecordTriggers("purchases", "purchases");
 
 export const onEventRegistrationCreated = eventRegistrations.onCreate;
 export const onEventRegistrationUpdated = eventRegistrations.onUpdate;
-export const onConsultationRequestCreated = consultationRequests.onCreate;
-export const onConsultationRequestUpdated = consultationRequests.onUpdate;
-export const onConsultationSurveyCreated = consultationSurveys.onCreate;
-export const onConsultationSurveyUpdated = consultationSurveys.onUpdate;
-export const onLunchAndLearnCreated = lunchAndLearns.onCreate;
-export const onLunchAndLearnUpdated = lunchAndLearns.onUpdate;
-export const onSeminarCreated = seminars.onCreate;
-export const onSeminarUpdated = seminars.onUpdate;
+export const onFormSubmissionCreated = formSubmissions.onCreate;
+export const onFormSubmissionUpdated = formSubmissions.onUpdate;
 export const onPurchaseCreated = purchases.onCreate;
 export const onPurchaseUpdated = purchases.onUpdate;

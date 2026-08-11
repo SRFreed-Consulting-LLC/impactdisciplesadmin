@@ -28,6 +28,8 @@ import { MonthlyNewsletterDialogComponent } from './monthly-newsletters/monthly-
 import { FormBuilderComponent } from './form-builder/form-builder.component';
 import { FormFieldSettingsComponent } from './form-builder/form-field-settings.component';
 import { FormTestSubmitDialogComponent } from './form-builder/form-test-submit-dialog.component';
+import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
+import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -93,7 +95,9 @@ import { QuillModule } from 'ngx-quill';
     MonthlyNewsletterDialogComponent,
     FormBuilderComponent,
     FormFieldSettingsComponent,
-    FormTestSubmitDialogComponent
+    FormTestSubmitDialogComponent,
+    CustomFormSubmissionsComponent,
+    CustomFormSubmissionDetailDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe,

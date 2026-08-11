@@ -30,14 +30,8 @@ exports.deleteAdminUser = adminUsers.deleteAdminUser;
 const alerts = require("./new-record-alerts.functions");
 exports.onEventRegistrationCreated = alerts.onEventRegistrationCreated;
 exports.onEventRegistrationUpdated = alerts.onEventRegistrationUpdated;
-exports.onConsultationRequestCreated = alerts.onConsultationRequestCreated;
-exports.onConsultationRequestUpdated = alerts.onConsultationRequestUpdated;
-exports.onConsultationSurveyCreated = alerts.onConsultationSurveyCreated;
-exports.onConsultationSurveyUpdated = alerts.onConsultationSurveyUpdated;
-exports.onLunchAndLearnCreated = alerts.onLunchAndLearnCreated;
-exports.onLunchAndLearnUpdated = alerts.onLunchAndLearnUpdated;
-exports.onSeminarCreated = alerts.onSeminarCreated;
-exports.onSeminarUpdated = alerts.onSeminarUpdated;
+exports.onFormSubmissionCreated = alerts.onFormSubmissionCreated;
+exports.onFormSubmissionUpdated = alerts.onFormSubmissionUpdated;
 exports.onPurchaseCreated = alerts.onPurchaseCreated;
 exports.onPurchaseUpdated = alerts.onPurchaseUpdated;
 

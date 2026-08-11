@@ -1,5 +1,5 @@
 // Single registry for the Form Builder feature (Web Manager > Form Builder,
-// Requests Manager > Custom Form Submissions) - the palette, the canvas, the
+// Web Manager > Custom Form Submissions) - the palette, the canvas, the
 // settings panel, and the renderer all read from FIELD_TYPE_META instead of
 // each hardcoding their own copy of "what field types exist and what group
 // they're in". Same "one source of truth" principle NAV_CONFIG already uses

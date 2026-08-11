@@ -1,8 +1,8 @@
 import { BaseModel } from '../base.model';
 import { FormFieldType } from './form-field.model';
 
-// A single submission of a Form Builder form, viewed under Requests Manager
-// > Custom Form Submissions. formName/fieldSnapshot are deliberately
+// A single submission of a Form Builder form, viewed under Web Manager >
+// Custom Form Submissions. formName/fieldSnapshot are deliberately
 // denormalized copies taken at submit time (not a live join back to the
 // FormDefinitionModel doc) so the submissions list and detail view stay
 // correct even if that form is later edited or deleted.
