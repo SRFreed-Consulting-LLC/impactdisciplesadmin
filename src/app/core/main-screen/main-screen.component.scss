@@ -46,22 +46,32 @@ $collapsed-width: 64px;
   transition: width 0.18s ease;
 }
 
-// The actual scrolling element live-diagnosed as the source of a recurring
-// horizontal scrollbar along the bottom of the drawer: mat-sidenav renders
-// its projected content inside its own child <div class="mat-drawer-inner-
-// container" cdkScrollable>, NOT this .impact-drawer host - and that child
-// carries Material's own `overflow: auto` on BOTH axes (see
-// @angular/material/sidenav's compiled styles), independent of whatever
-// overflow-x this host sets above. The host's overflow-x: hidden only clips
-// content that overflows the HOST's own box; the inner container never
-// does (it's width: 100% of the host) - it's the inner container's OWN
-// content overflowing ITS box that was showing a scrollbar along its own
-// bottom edge, i.e. the bottom of the sidebar. !important because a plain
-// class-selector override has no reliable specificity edge over Material's
-// own same-specificity rule otherwise (matches this file's existing
-// !important overrides on other stubborn Material internals, e.g.
-// .impact-drawer__link-text's color above).
-.impact-drawer .mat-drawer-inner-container {
+// The actual scrolling element live-diagnosed (Playwright, scrollWidth 301
+// vs. clientWidth 300 on .mat-drawer-inner-container, computed overflow-x:
+// auto) as the source of a recurring horizontal scrollbar along the bottom
+// of the drawer: mat-sidenav renders its projected content inside its own
+// child <div class="mat-drawer-inner-container" cdkScrollable>, NOT this
+// .impact-drawer host - and that child carries Material's own `overflow:
+// auto` on BOTH axes (see @angular/material/sidenav's compiled styles),
+// independent of whatever overflow-x this host sets above. The host's
+// overflow-x: hidden only clips content that overflows the HOST's own box;
+// the inner container never does (it's width: 100% of the host) - it's the
+// inner container's OWN content overflowing ITS box that was showing a
+// scrollbar along its own bottom edge, i.e. the bottom of the sidebar.
+//
+// A plain `.impact-drawer .mat-drawer-inner-container { overflow-x: hidden
+// !important; }` here (tried first) never actually applied, confirmed live -
+// MatSidenav's template has ViewEncapsulation.None, so
+// .mat-drawer-inner-container never receives this component's
+// [_ngcontent-*] attribute, and Angular's emulated encapsulation appends
+// that attribute to EVERY compound selector segment in this file's
+// compiled CSS - so the selector compiled to something requiring the
+// attribute on .mat-drawer-inner-container too, which it can never have,
+// and silently matched nothing. `::ng-deep` (already used elsewhere in
+// this codebase, e.g. app.component.scss) strips that attribute
+// requirement from everything after it while `:host` still scopes the
+// rule to this component's own subtree, not every mat-sidenav in the app.
+:host ::ng-deep .impact-drawer .mat-drawer-inner-container {
   overflow-x: hidden !important;
 }
 
