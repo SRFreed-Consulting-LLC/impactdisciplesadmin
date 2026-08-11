@@ -1,9 +1,10 @@
 name: Deploy to Firebase Hosting (development)
 
 on:
-  push:
-    branches:
-      - development
+  # Auto-deploy-on-push disabled for now (deploys should be manual only,
+  # e.g. `npm run build-deploy-dev`) - kept as a manually-triggerable
+  # workflow (Actions tab > Run workflow) rather than deleted outright.
+  workflow_dispatch:
 
 # Avoid two deploys racing each other if commits land in quick succession.
 concurrency:
