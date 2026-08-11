@@ -12,7 +12,17 @@ import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-conf
     standalone: false
 })
 export class AdminManagerComponent implements OnInit, OnDestroy {
-  selectedTab = 'Logs';
+  // Deliberately NOT a real tab label (e.g. 'Logs') as the initial value -
+  // the template's ng-templates match on this string with no permission
+  // check of their own (all gating happens below, computing secureItems/
+  // selectedTab), so a hardcoded real screen name here would render that
+  // screen's content for anyone whose secureItems ends up empty (e.g. an
+  // Employee with zero admin-manager grants who navigates to /admin-manager
+  // directly by URL - the group itself wouldn't show in their nav, but
+  // nothing stops typing the URL) regardless of what they actually have
+  // permission to view. '' matches no ng-template, so that case now
+  // renders blank instead of a bypass. See ngOnInit()'s own fallback chain.
+  selectedTab = '';
 
   // Sourced from nav-config.ts (the left nav's own data) rather than a
   // second, locally-duplicated list.

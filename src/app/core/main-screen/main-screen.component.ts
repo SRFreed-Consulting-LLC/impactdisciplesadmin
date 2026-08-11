@@ -147,6 +147,13 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     return this.permissionService.isFullAccess();
   }
 
+  // Gates the user-menu dropdown's "Logs" link (see the template) - same
+  // Admin/Root-only check as canManageAdminUsers above, and its own getter
+  // for the same "unrelated UI, same rule today" reason.
+  get canManageLogs(): boolean {
+    return this.permissionService.isFullAccess();
+  }
+
   // "Who has access to this screen" - the inverse view of Admin Users'
   // own Permissions tab (that's one employee x every screen; this is one
   // screen x every employee). See ScreenPermissionsDialogComponent's own

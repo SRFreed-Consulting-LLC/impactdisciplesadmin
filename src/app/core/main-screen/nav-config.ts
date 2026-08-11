@@ -77,7 +77,10 @@ export const NAV_CONFIG: NavGroup[] = [
     icon: 'admin_panel_settings',
     roles: [Role.ADMIN],
     items: [
-      { label: 'Logs', slug: 'logs' },
+      // Admin/Root-only and hidden from the left nav - moved to the
+      // user-menu dropdown, same treatment as Admin Users right below (see
+      // that entry's own comment for the full reasoning).
+      { label: 'Logs', slug: 'logs', employeeGrantable: false, hideFromNav: true },
       // Never grantable to an Employee - see NavLeaf.employeeGrantable's own
       // comment. Admin/Root-only forever, regardless of the permission
       // system this field otherwise plugs into everywhere else. Also

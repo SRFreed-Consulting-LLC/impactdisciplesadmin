@@ -185,6 +185,15 @@
           <div class="user-menu__role">{{ currentUser?.role }}</div>
         </div>
         <mat-divider></mat-divider>
+        <!-- Admin/Root only - see MainScreenComponent.canManageLogs.
+             Moved here from its own left-nav row under Admin Manager (see
+             nav-config.ts's Logs entry, hideFromNav: true) - same treatment
+             as Admin Users right below, still the same /admin-manager?
+             tab=logs destination, just linked from here instead. -->
+        <a mat-menu-item *ngIf="canManageLogs" routerLink="/admin-manager" [queryParams]="{ tab: 'logs' }">
+          <mat-icon>receipt_long</mat-icon>
+          <span>Logs</span>
+        </a>
         <!-- Admin/Root only - see MainScreenComponent.canManageAdminUsers.
              Moved here from its own left-nav row under Admin Manager (see
              nav-config.ts's Admin Users entry, hideFromNav: true) - still
