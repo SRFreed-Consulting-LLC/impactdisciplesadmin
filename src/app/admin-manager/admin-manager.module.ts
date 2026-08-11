@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogMessagesComponent } from './log-messages/log-messages.component';
 import { AdminUsersComponent } from './admin-users/admin-users.component';
-import { NotificationsComponent } from './notifications/notifications.component';
 import { WebConfigComponent } from './web-config/web-config.component';
 import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
@@ -13,7 +12,6 @@ import { CustomersComponent } from './customers/customers.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
 import { ShippingLabelDialogComponent } from './shipping-labels/shipping-label-dialog.component';
 import { AdminManagerRoutingModule } from './admin-manager-routing.module';
-import { NotificationDialogComponent } from './notifications/notification-dialog.component';
 import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { CustomerDialogComponent } from './customers/customer-dialog.component';
 import { AddCustomerNoteDialogComponent } from './customers/add-customer-note-dialog.component';
@@ -62,8 +60,6 @@ import { QuillModule } from 'ngx-quill';
   declarations: [
     AdminManagerComponent,
     LogMessagesComponent,
-    NotificationsComponent,
-    NotificationDialogComponent,
     AdminUsersComponent,
     CustomersComponent,
     CustomerDialogComponent,

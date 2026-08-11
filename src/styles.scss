@@ -35,8 +35,8 @@
 // trial-version banner, prepended directly to <body>) silently grows the
 // whole page taller than the viewport and gives it its own native
 // scrollbar - live-diagnosed via Playwright: every "manager" module's
-// internal dx-tabs bar (Logs/Notifications/Users/... within Admin Manager,
-// and the equivalent in every other manager module) drifted a few px on
+// internal dx-tabs bar (Logs/Users/... within Admin Manager, and the
+// equivalent in every other manager module) drifted a few px on
 // every scroll, riding on top of .portal-content's own internal scroll
 // instead of staying fully fixed. Clipping any overflow at the body level
 // forces that extra height to eat into the app's own available space
@@ -100,8 +100,6 @@ app-main-screen,
 app-monthly-newsletter-dialog,
 app-monthly-newsletters,
 app-newsletter-subscription,
-app-notification-dialog,
-app-notifications,
 app-organization-dialog,
 app-organizations,
 app-phone-field,

@@ -42,9 +42,9 @@ import { AuthModule } from './core/auth/auth.module';
     // risking silent change-detection misses). Providing Auth here the same
     // way Firestore already is lets FireAuthDao inject it instead.
     provideAuth(() => getAuth()),
-    // Same fix, same reason, for the two call sites that use Cloud
-    // Functions callables directly (AdminUserService.createAdminUser,
-    // NotificationDialogComponent) instead of getFunctions().
+    // Same fix, same reason, for the call site that uses a Cloud Functions
+    // callable directly (AdminUserService.createAdminUser) instead of
+    // getFunctions().
     provideFunctions(() => getFunctions()),
     // Function-based provider, not the BrowserAnimationsModule NgModule form -
     // see the NG05100 fix history for why a root-only NgModule that re-exports

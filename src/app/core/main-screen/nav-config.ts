@@ -78,7 +78,6 @@ export const NAV_CONFIG: NavGroup[] = [
     roles: [Role.ADMIN],
     items: [
       { label: 'Logs', slug: 'logs' },
-      { label: 'Notifications', slug: 'notifications' },
       // Never grantable to an Employee - see NavLeaf.employeeGrantable's own
       // comment. Admin/Root-only forever, regardless of the permission
       // system this field otherwise plugs into everywhere else. Also
