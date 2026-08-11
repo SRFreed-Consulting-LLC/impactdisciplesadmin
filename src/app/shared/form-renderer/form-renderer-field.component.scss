@@ -1,0 +1,107 @@
+.full-width {
+  width: 100%;
+}
+
+.renderer-field {
+  margin-bottom: 8px;
+}
+
+.renderer-field__checkbox {
+  display: block;
+  margin: 8px 0;
+}
+
+.renderer-field__group {
+  margin: 8px 0;
+}
+
+.renderer-field__group-label {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.7);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.renderer-field__radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.renderer-field__error {
+  color: #b3261e;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.renderer-field__stars {
+  display: flex;
+  gap: 2px;
+}
+
+.renderer-field__star {
+  color: #d9d9d9;
+  cursor: pointer;
+  user-select: none;
+}
+
+.renderer-field__star--filled {
+  color: #ffcc00;
+}
+
+.renderer-field__heading {
+  margin: 12px 0 4px;
+  font-size: 17px;
+}
+
+.renderer-field__instructions {
+  margin: 4px 0 8px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.renderer-field__divider {
+  margin: 12px 0;
+}
+
+.renderer-field__columns {
+  display: grid;
+  // Column count is admin-adjustable (2+) - the real value comes from
+  // [style.grid-template-columns] in the template; this is just a fallback
+  // for the instant before that binding first applies.
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .renderer-field__columns {
+    // !important is load-bearing here, not decorative: the real column
+    // count is set via an inline style (form-renderer-field.component.html),
+    // which always outranks a plain class-selector media-query rule
+    // regardless of viewport - without it, a 3+ column form would never
+    // collapse to one column on a narrow screen.
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.renderer-field__image-wrap {
+  margin: 8px 0;
+}
+
+.renderer-field__image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.renderer-field__image-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+  border: 1.5px dashed #d9d9d9;
+  border-radius: 4px;
+  padding: 24px 16px;
+}

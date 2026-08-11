@@ -25,7 +25,11 @@ import { WebManagerRoutingModule } from './web-manager-routing.module';
 import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
 import { MonthlyNewsletterDialogComponent } from './monthly-newsletters/monthly-newsletter-dialog.component';
+import { FormBuilderComponent } from './form-builder/form-builder.component';
+import { FormFieldSettingsComponent } from './form-builder/form-field-settings.component';
+import { FormTestSubmitDialogComponent } from './form-builder/form-test-submit-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -41,6 +45,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -66,7 +71,9 @@ import { QuillModule } from 'ngx-quill';
     MatProgressSpinnerModule,
     MatMenuModule,
     MatCheckboxModule,
-    QuillModule
+    MatButtonToggleModule,
+    QuillModule,
+    DragDropModule
   ],
   declarations: [
     WebManagerComponent,
@@ -83,7 +90,10 @@ import { QuillModule } from 'ngx-quill';
     HomePagePopupsComponent,
     HomePagePopupPreviewDialogComponent,
     MonthlyNewslettersComponent,
-    MonthlyNewsletterDialogComponent
+    MonthlyNewsletterDialogComponent,
+    FormBuilderComponent,
+    FormFieldSettingsComponent,
+    FormTestSubmitDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe,

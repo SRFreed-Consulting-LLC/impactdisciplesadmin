@@ -112,7 +112,8 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Consultation Requests', slug: 'consultation-requests' },
       { label: 'Consultation Surveys', slug: 'consultation-surveys' },
       { label: 'Lunch and Learn Requests', slug: 'lunch-and-learns' },
-      { label: 'Seminar Requests', slug: 'seminars' }
+      { label: 'Seminar Requests', slug: 'seminars' },
+      { label: 'Custom Form Submissions', slug: 'custom-form-submissions' }
     ]
   },
   {
@@ -151,7 +152,8 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Home Page Images', slug: 'home-page-images' },
       { label: 'Home Page Popups', slug: 'home-page-popups' },
-      { label: 'Monthly Newsletter', slug: 'monthly-newsletter' }
+      { label: 'Monthly Newsletter', slug: 'monthly-newsletter' },
+      { label: 'Form Builder', slug: 'form-builder' }
     ]
   },
   {

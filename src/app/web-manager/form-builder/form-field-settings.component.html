@@ -1,0 +1,134 @@
+<div class="settings-panel">
+  <div class="settings-panel__header">
+    <mat-icon>{{ meta.icon }}</mat-icon>
+    <span>{{ meta.label }}</span>
+    <span class="settings-panel__spacer"></span>
+    <button mat-icon-button type="button" matTooltip="Close" (click)="closed.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="form" class="settings-panel__form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ field.type === 'divider' || field.type === 'columns' ? 'Admin Note' : 'Label' }}</mat-label>
+      <input matInput formControlName="label">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width" *ngIf="isDataField && field.type !== 'checkbox' && form.get('labelDisplay')?.value !== 'placeholder'">
+      <mat-label>Placeholder</mat-label>
+      <input matInput formControlName="placeholder">
+    </mat-form-field>
+
+    <mat-checkbox *ngIf="isDataField" formControlName="required" class="settings-panel__required">Required</mat-checkbox>
+
+    <div class="settings-panel__section" *ngIf="showLabelDisplay">
+      <div class="settings-panel__section-label">Show As</div>
+      <mat-button-toggle-group formControlName="labelDisplay" class="settings-panel__toggle-group">
+        <mat-button-toggle value="label">Label</mat-button-toggle>
+        <mat-button-toggle value="placeholder">Placeholder</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="settings-panel__options" *ngIf="hasOptions">
+      <div class="settings-panel__options-label">Options</div>
+      <div class="settings-panel__option-row" *ngFor="let option of field.options; let i = index">
+        <mat-form-field appearance="outline" class="settings-panel__option-input">
+          <input matInput [value]="option.label" (input)="updateOptionLabel(i, $any($event.target).value)">
+        </mat-form-field>
+        <button mat-icon-button type="button" matTooltip="Remove option" [disabled]="(field.options?.length ?? 0) <= 1" (click)="removeOption(i)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <button mat-stroked-button type="button" class="settings-panel__add-option" (click)="addOption()">
+        <mat-icon>add</mat-icon>
+        Add Option
+      </button>
+    </div>
+
+    <div class="settings-panel__quill" *ngIf="field.type === 'instructions'">
+      <div class="settings-panel__options-label">Content</div>
+      <quill-editor formControlName="html" [modules]="{ toolbar: [['bold', 'italic', 'underline', 'link']] }"></quill-editor>
+    </div>
+
+    <div class="settings-panel__section" *ngIf="field.type === 'image'">
+      <div class="settings-panel__section-label">Image</div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Image URL</mat-label>
+        <input matInput formControlName="imageUrl" placeholder="https://...">
+      </mat-form-field>
+      <button mat-stroked-button type="button" class="settings-panel__upload-btn" (click)="showImageUploader()">
+        <mat-icon>upload</mat-icon>
+        Upload Image
+      </button>
+      <div class="settings-panel__image-preview" *ngIf="form.get('imageUrl')?.value">
+        <img [src]="form.get('imageUrl')?.value" alt="">
+      </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Alt Text</mat-label>
+        <input matInput formControlName="imageAlt">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Image Size</mat-label>
+        <mat-select formControlName="imageWidth">
+          <mat-option *ngFor="let width of imageWidths" [value]="width.value">{{ width.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="settings-panel__section" *ngIf="field.type === 'columns'">
+      <div class="settings-panel__section-label">Number of Columns</div>
+      <mat-button-toggle-group class="settings-panel__toggle-group">
+        <mat-button-toggle *ngFor="let count of columnCountOptions" [checked]="(field.columns?.length ?? 2) === count" (click)="setColumns(count)">
+          {{ count }}
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="settings-panel__section settings-panel__section--style">
+      <div class="settings-panel__section-label">Style</div>
+
+      <div class="settings-panel__color-row">
+        <span class="settings-panel__color-label">Text Color</span>
+        <input type="color" formControlName="textColor" class="settings-panel__color-swatch">
+        <input matInput type="text" formControlName="textColor" placeholder="#000000" class="settings-panel__color-hex">
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Font Size</mat-label>
+        <mat-select formControlName="fontSize">
+          <mat-option *ngFor="let size of fontSizes" [value]="size.value">{{ size.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Font</mat-label>
+        <mat-select formControlName="fontFamily">
+          <mat-option *ngFor="let family of fontFamilies" [value]="family.value">{{ family.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="settings-panel__section-label">Alignment</div>
+      <mat-button-toggle-group formControlName="align" class="settings-panel__toggle-group">
+        <mat-button-toggle value="left" matTooltip="Left"><mat-icon>format_align_left</mat-icon></mat-button-toggle>
+        <mat-button-toggle value="center" matTooltip="Center"><mat-icon>format_align_center</mat-icon></mat-button-toggle>
+        <mat-button-toggle value="right" matTooltip="Right"><mat-icon>format_align_right</mat-icon></mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <div class="settings-panel__bold-italic">
+        <mat-checkbox formControlName="bold">Bold</mat-checkbox>
+        <mat-checkbox formControlName="italic">Italic</mat-checkbox>
+      </div>
+    </div>
+  </form>
+</div>
+
+<ng-container *ngIf="isImageUploaderVisible$ | async">
+  <app-image-uploader
+    [card]="imageCard"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+</ng-container>

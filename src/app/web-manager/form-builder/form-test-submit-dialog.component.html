@@ -1,0 +1,10 @@
+<app-popup-header [title]="'PREVIEW & TEST SUBMIT: ' + data.formName" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content>
+  <p class="test-submit-hint">This writes a real submission, tagged <strong>Test</strong>, to Requests Manager &rsaquo; Custom Form Submissions.</p>
+  <app-form-renderer [fields]="data.fields" [backgroundColor]="data.backgroundColor" mode="fill" (submitted)="onSubmit($event)"></app-form-renderer>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="submitting" (click)="onCancel()">CANCEL</button>
+</mat-dialog-actions>

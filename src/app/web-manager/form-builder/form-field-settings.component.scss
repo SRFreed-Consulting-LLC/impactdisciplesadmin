@@ -1,0 +1,147 @@
+.full-width {
+  width: 100%;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.settings-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 1px solid #e0e0e0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.settings-panel__spacer {
+  flex: 1 1 auto;
+}
+
+.settings-panel__form {
+  padding: 14px 12px;
+  overflow-y: auto;
+}
+
+.settings-panel__required {
+  display: block;
+  margin: 4px 0 12px;
+}
+
+.settings-panel__options-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.55);
+  margin: 4px 0 8px;
+}
+
+.settings-panel__option-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settings-panel__option-input {
+  flex: 1 1 auto;
+}
+
+.settings-panel__add-option {
+  margin-top: 4px;
+}
+
+.settings-panel__quill {
+  margin-top: 8px;
+
+  quill-editor {
+    height: 160px;
+    display: block;
+  }
+}
+
+.settings-panel__section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #ececec;
+}
+
+.settings-panel__section-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.55);
+  margin: 0 0 8px;
+}
+
+.settings-panel__toggle-group {
+  display: flex;
+  margin-bottom: 12px;
+
+  ::ng-deep .mat-button-toggle-label-content {
+    line-height: 32px;
+    padding: 0 12px;
+  }
+}
+
+.settings-panel__color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.settings-panel__color-label {
+  font-size: 13px;
+  flex: 1 1 auto;
+}
+
+.settings-panel__color-swatch {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.settings-panel__color-hex {
+  width: 84px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.settings-panel__upload-btn {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.settings-panel__image-preview {
+  margin-bottom: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+
+  img {
+    max-width: 100%;
+    max-height: 120px;
+  }
+}
+
+.settings-panel__bold-italic {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+}

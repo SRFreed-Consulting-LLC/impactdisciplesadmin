@@ -13,6 +13,8 @@ import { RequestsManagerComponent } from './requests-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { RequestsManagerRoutingModule } from './requests-manager-routing.module';
 import { ConsultationRequestDialogComponent } from './consultations-requests/consultation-request-dialog.component';
+import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
+import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -64,6 +66,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     LunchAndLearnDialogComponent,
     SeminarsComponent,
     SeminarDialogComponent,
+    CustomFormSubmissionsComponent,
+    CustomFormSubmissionDetailDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe

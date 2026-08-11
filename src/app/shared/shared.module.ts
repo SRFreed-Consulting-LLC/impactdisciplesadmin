@@ -17,6 +17,8 @@ import { NewRecordAlertsComponent } from './new-record-alerts/new-record-alerts.
 import { OrderWorkflowDialogComponent } from './order-workflow-dialog/order-workflow-dialog.component';
 import { DataGridComponent } from './data-grid/data-grid.component';
 import { DataGridCellDirective } from './data-grid/data-grid-cell.directive';
+import { FormRendererComponent } from './form-renderer/form-renderer.component';
+import { FormRendererFieldComponent } from './form-renderer/form-renderer-field.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,6 +36,9 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @NgModule({
   declarations: [
@@ -53,7 +58,9 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     NewRecordAlertsComponent,
     OrderWorkflowDialogComponent,
     DataGridComponent,
-    DataGridCellDirective
+    DataGridCellDirective,
+    FormRendererComponent,
+    FormRendererFieldComponent
   ],
   imports: [
     CommonModule,
@@ -73,7 +80,10 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatAutocompleteModule,
     MatBadgeModule,
     MatTableModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatRadioModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   exports: [
     IndicatorButtonComponent,
@@ -92,7 +102,9 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     NewRecordAlertsComponent,
     OrderWorkflowDialogComponent,
     DataGridComponent,
-    DataGridCellDirective
+    DataGridCellDirective,
+    FormRendererComponent,
+    FormRendererFieldComponent
   ],
   // DatePipe/CurrencyPipe aren't auto-registered for DI just by importing
   // CommonModule (that only makes the `| date`/`| currency` template pipes

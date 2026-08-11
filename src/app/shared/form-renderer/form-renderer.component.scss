@@ -1,0 +1,31 @@
+.form-renderer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  // A little more room than the bare 4px/2px this had before backgroundColor
+  // existed - flush content against a colored background reads as a layout
+  // bug, not a deliberate design.
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.form-renderer--preview {
+  // Disabled Material controls already grey themselves out - this just
+  // signals "look, don't fill" a little further without fighting Material's
+  // own disabled styling.
+  opacity: 0.92;
+}
+
+.form-renderer__empty {
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  padding: 24px 8px;
+  text-align: center;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+}
+
+.form-renderer__submit {
+  align-self: flex-start;
+  margin-top: 12px;
+}
