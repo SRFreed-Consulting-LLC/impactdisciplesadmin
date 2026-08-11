@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -97,6 +98,19 @@ export class EventsComponent implements OnInit {
   // Save time - the two field sets never overlap.
   editingItem: EventModel | null = null;
 
+  // Which tab the mat-tab-group has open - always reset to 0 (Info) by
+  // showAddModal()/showEditModal() themselves; only overridden afterward by
+  // the ?eventId=&eventTab= deep-link path below (the new-record-alerts
+  // bell's "Event Registrations" entry, so clicking it lands directly on
+  // the specific event's Attendees tab instead of the bare Events list -
+  // see new-record-alerts.component.ts). Tab *ngIf visibility is
+  // permission-gated, so the same tab key ('attendees') can sit at a
+  // different index per admin - tabIndexFor() re-derives the real index
+  // from the same canView() checks the template itself uses, rather than
+  // hardcoding a position.
+  selectedTabIndex = 0;
+  private readonly tabOrder = ['info', 'application', 'agenda', 'attendees', 'breakouts'];
+
   constructor(
     private service: EventService,
     private registrationService: EventRegistrationService,
@@ -108,7 +122,8 @@ export class EventsComponent implements OnInit {
     private fb: FormBuilder,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -131,6 +146,34 @@ export class EventsComponent implements OnInit {
     this.registrationService.streamAllByValue('newRecordStatus', 'new').subscribe((registrations) => {
       this.newAttendeeEventIds = new Set(registrations.map((r) => r.eventId).filter((id): id is string => !!id));
     });
+
+    // ?eventId=&eventTab= - deep-link from the new-record-alerts bell (or
+    // any future caller) straight into one event's edit view on a specific
+    // tab. Subscribed (not a one-time snapshot read) so clicking the bell
+    // again while already sitting on this route still re-opens it, same
+    // reasoning as events-manager.component.ts's own ?tab= handling.
+    this.route.queryParamMap.subscribe((params) => {
+      const eventId = params.get('eventId');
+      if (eventId) {
+        this.openEventFromDeepLink(eventId, params.get('eventTab') ?? 'info');
+      }
+    });
+  }
+
+  private openEventFromDeepLink(eventId: string, tabKey: string): void {
+    this.service.getById(eventId).then((item) => {
+      if (!item) {
+        return;
+      }
+      this.showEditModal(item);
+      this.selectedTabIndex = this.tabIndexFor(tabKey);
+    });
+  }
+
+  private tabIndexFor(tabKey: string): number {
+    const visible = this.tabOrder.filter((key) => this.permissionService.canView(`${this.screenKey}.${key}`));
+    const index = visible.indexOf(tabKey);
+    return index >= 0 ? index : 0;
   }
 
   organizationName(item: EventModel): string {
@@ -168,6 +211,7 @@ export class EventsComponent implements OnInit {
     this.editingItem = { ...new EventModel() };
     this.isEdit = false;
     this.card = {};
+    this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
     this.mode = 'edit';
   }
@@ -179,6 +223,7 @@ export class EventsComponent implements OnInit {
     this.editingItem = { ...item };
     this.isEdit = true;
     this.card = { imageUrl: item.imageUrl };
+    this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
     this.mode = 'edit';
   }

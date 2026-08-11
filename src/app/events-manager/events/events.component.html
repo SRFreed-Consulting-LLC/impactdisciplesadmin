@@ -36,7 +36,7 @@
     </mat-toolbar>
 
     <div class="editor__body">
-      <mat-tab-group class="event-tabs" [formGroup]="form">
+      <mat-tab-group class="event-tabs" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
         <mat-tab label="Info" *ngIf="permissionService.canView('events-manager.events.info')">
           <div class="tab-content">
             <div class="field-row">
