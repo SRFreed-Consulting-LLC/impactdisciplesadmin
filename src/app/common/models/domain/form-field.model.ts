@@ -70,6 +70,72 @@ export type LabelDisplay = 'label' | 'placeholder';
 
 export type ImageWidth = 'small' | 'medium' | 'large' | 'full';
 
+// Input-chrome attributes (border radius/color, focus+radio/checkbox accent
+// color) - distinct from FormFieldStyle, which is about the field's own
+// TEXT (label/content). Settable at the whole-form level
+// (FormDefinitionModel.controlStyle, the default for every field) and
+// overridden per field (FormFieldDef.controlStyle) - see controlStyleVars()
+// for how the two combine. Chosen because this is literally the gap found
+// comparing the original DevExtreme-rendered forms against the plain-HTML
+// ones that replaced them: DevExtreme's dx.light theme gives every input
+// border-radius:4px, border-color #ddd (accent #337ab7 on focus), and
+// colors its own custom-drawn radio/checkbox dot with that same accent -
+// none of which a bare <input>/<select>/<textarea> has on its own.
+export interface FormControlStyle {
+  borderRadius?: number; // px
+  borderColor?: string; // hex
+  accentColor?: string; // hex - focus border + radio/checkbox fill (native `accent-color`)
+  paddingBlock?: number; // px - top/bottom inset between the border and the text
+  paddingInline?: number; // px - left/right inset between the border and the text
+}
+
+// Matches DevExtreme's dx.light theme defaults exactly (--dx-border-radius,
+// --dx-color-border, --dx-color-primary, and .dx-texteditor-input's own
+// `padding:7px 9px 8px` in dx.light.css) - the look every form had before
+// being migrated off dx-form, preserved as this system's own built-in
+// default rather than an invisible coincidence. DevExtreme's own top/bottom
+// padding actually differs by 1px (7px/8px, a baseline-centering nicety);
+// simplified here to a single symmetric paddingBlock since that 1px is
+// imperceptible and not worth a 4th number for admins to manage.
+export const DEFAULT_CONTROL_STYLE: Required<FormControlStyle> = {
+  borderRadius: 4,
+  borderColor: '#dddddd',
+  accentColor: '#337ab7',
+  paddingBlock: 8,
+  paddingInline: 9
+};
+
+// Builds a partial [ngStyle] object of CSS custom properties from whichever
+// of the 3 FormControlStyle properties are actually set - deliberately NOT
+// merged with DEFAULT_CONTROL_STYLE here. Applied at two DOM levels (the
+// whole form's wrapper, then again per-field on that field's own wrapper),
+// each only emitting the keys it actually overrides - CSS custom property
+// inheritance does the "field overrides form overrides built-in default"
+// resolution for free via the `var(--x, fallback)` usage in each
+// renderer's own stylesheet, no merge logic needed in TypeScript.
+export function controlStyleVars(style?: FormControlStyle): Record<string, string> {
+  if (!style) {
+    return {};
+  }
+  const out: Record<string, string> = {};
+  if (style.borderRadius != null) {
+    out['--dff-radius'] = `${style.borderRadius}px`;
+  }
+  if (style.borderColor) {
+    out['--dff-border'] = style.borderColor;
+  }
+  if (style.accentColor) {
+    out['--dff-accent'] = style.accentColor;
+  }
+  if (style.paddingBlock != null) {
+    out['--dff-padding-block'] = `${style.paddingBlock}px`;
+  }
+  if (style.paddingInline != null) {
+    out['--dff-padding-inline'] = `${style.paddingInline}px`;
+  }
+  return out;
+}
+
 // One column of a 'columns' field. Wrapped in an object (rather than
 // FormFieldDef being directly `columns: FormFieldDef[][]`) because Firestore
 // rejects an array whose elements are themselves arrays ("Nested arrays are
@@ -105,6 +171,10 @@ export interface FormFieldDef {
   imageWidth?: ImageWidth;
   // Every field type - see FormFieldStyle's own comment.
   style?: FormFieldStyle;
+  // Data fields only (no visible input on a layout type) - per-field
+  // override of the whole form's own controlStyle. See FormControlStyle's
+  // own comment.
+  controlStyle?: FormControlStyle;
   // text/paragraph/number/email/url only - see LabelDisplay's own comment.
   labelDisplay?: LabelDisplay;
   // 'columns' only - 2 or more entries, one per column (admin-adjustable via

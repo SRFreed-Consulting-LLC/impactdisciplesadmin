@@ -76,6 +76,62 @@
       </a>
     </div>
 
+    <div class="editor__subheader" matTooltip="Default input styling for every field on this form - override on an individual field in its own settings panel">
+      <mat-icon class="editor__subheader-icon">palette</mat-icon>
+      <span class="editor__subheader-label">Control Style</span>
+
+      <span class="editor__subheader-minilabel">Radius</span>
+      <input
+        class="editor__subheader-number"
+        type="number"
+        min="0"
+        max="24"
+        [value]="controlBorderRadius ?? ''"
+        [placeholder]="defaultControlStyle.borderRadius.toString()"
+        (input)="controlBorderRadius = $any($event.target).value === '' ? null : +$any($event.target).value">
+      <span class="editor__subheader-unit">px</span>
+
+      <span class="editor__subheader-minilabel">Border</span>
+      <input type="color" class="editor__subheader-swatch" [value]="controlBorderColor || defaultControlStyle.borderColor" (input)="controlBorderColor = $any($event.target).value">
+      <input
+        class="editor__subheader-hex"
+        type="text"
+        [value]="controlBorderColor"
+        [placeholder]="defaultControlStyle.borderColor"
+        (input)="controlBorderColor = $any($event.target).value">
+
+      <span class="editor__subheader-minilabel">Accent</span>
+      <input type="color" class="editor__subheader-swatch" [value]="controlAccentColor || defaultControlStyle.accentColor" (input)="controlAccentColor = $any($event.target).value">
+      <input
+        class="editor__subheader-hex"
+        type="text"
+        [value]="controlAccentColor"
+        [placeholder]="defaultControlStyle.accentColor"
+        (input)="controlAccentColor = $any($event.target).value">
+
+      <span class="editor__subheader-minilabel">Padding</span>
+      <input
+        class="editor__subheader-number"
+        type="number"
+        min="0"
+        max="40"
+        [value]="controlPaddingBlock ?? ''"
+        [placeholder]="defaultControlStyle.paddingBlock.toString()"
+        matTooltip="Top/bottom padding"
+        (input)="controlPaddingBlock = $any($event.target).value === '' ? null : +$any($event.target).value">
+      <span class="editor__subheader-unit">/</span>
+      <input
+        class="editor__subheader-number"
+        type="number"
+        min="0"
+        max="40"
+        [value]="controlPaddingInline ?? ''"
+        [placeholder]="defaultControlStyle.paddingInline.toString()"
+        matTooltip="Left/right padding"
+        (input)="controlPaddingInline = $any($event.target).value === '' ? null : +$any($event.target).value">
+      <span class="editor__subheader-unit">px</span>
+    </div>
+
     <div class="editor__body" *ngIf="!showPreview">
       <div class="builder">
         <div class="builder__palette">
@@ -121,7 +177,7 @@
     </div>
 
     <div class="editor__preview" *ngIf="showPreview">
-      <app-form-renderer [fields]="fields" [backgroundColor]="backgroundColor" mode="preview"></app-form-renderer>
+      <app-form-renderer [fields]="fields" [backgroundColor]="backgroundColor" [controlStyle]="controlStyle" mode="preview"></app-form-renderer>
     </div>
   </div>
 </ng-container>

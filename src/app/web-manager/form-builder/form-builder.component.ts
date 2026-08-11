@@ -5,9 +5,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { FormDefinitionModel } from 'src/app/common/models/domain/form-definition.model';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 import {
+  DEFAULT_CONTROL_STYLE,
   FIELD_TYPE_GROUPS,
   FIELD_TYPE_META,
   fieldTypesInGroup,
+  FormControlStyle,
   FormFieldDef,
   FormFieldType
 } from 'src/app/common/models/domain/form-field.model';
@@ -63,6 +65,15 @@ export class FormBuilderComponent implements OnInit {
   // See FormDefinitionModel.publicUrl's own comment - purely informational,
   // set by hand once a form is genuinely wired up somewhere.
   publicUrl = '';
+  // Default input-chrome styling for every field on this form - see
+  // FormControlStyle's own comment. '' / null mean "unset, fall back to
+  // DEFAULT_CONTROL_STYLE" - same unset convention backgroundColor uses.
+  controlBorderRadius: number | null = null;
+  controlBorderColor = '';
+  controlAccentColor = '';
+  controlPaddingBlock: number | null = null;
+  controlPaddingInline: number | null = null;
+  readonly defaultControlStyle = DEFAULT_CONTROL_STYLE;
   fields: FormFieldDef[] = [];
   selectedFieldId: string | null = null;
   showPreview = false;
@@ -70,6 +81,32 @@ export class FormBuilderComponent implements OnInit {
 
   readonly groups = FIELD_TYPE_GROUPS;
   readonly canvasListId = 'canvas-fields';
+
+  // Assembled fresh from the flat controlBorderRadius/controlBorderColor/
+  // controlAccentColor properties (same "flat properties, object only at
+  // the edges" pattern as everywhere else in this component) - only
+  // includes keys that are actually set, so an unset one correctly falls
+  // through to DEFAULT_CONTROL_STYLE in the renderer rather than
+  // overwriting it with an empty string.
+  get controlStyle(): FormControlStyle {
+    const style: FormControlStyle = {};
+    if (this.controlBorderRadius != null) {
+      style.borderRadius = this.controlBorderRadius;
+    }
+    if (this.controlBorderColor) {
+      style.borderColor = this.controlBorderColor;
+    }
+    if (this.controlAccentColor) {
+      style.accentColor = this.controlAccentColor;
+    }
+    if (this.controlPaddingBlock != null) {
+      style.paddingBlock = this.controlPaddingBlock;
+    }
+    if (this.controlPaddingInline != null) {
+      style.paddingInline = this.controlPaddingInline;
+    }
+    return style;
+  }
 
   constructor(
     private service: FormDefinitionService,
@@ -188,6 +225,11 @@ export class FormBuilderComponent implements OnInit {
     this.status = 'draft';
     this.backgroundColor = '';
     this.publicUrl = '';
+    this.controlBorderRadius = null;
+    this.controlBorderColor = '';
+    this.controlAccentColor = '';
+    this.controlPaddingBlock = null;
+    this.controlPaddingInline = null;
     this.fields = [];
     this.selectedFieldId = null;
     this.showPreview = false;
@@ -204,6 +246,11 @@ export class FormBuilderComponent implements OnInit {
     this.status = item.status;
     this.backgroundColor = item.backgroundColor ?? '';
     this.publicUrl = item.publicUrl ?? '';
+    this.controlBorderRadius = item.controlStyle?.borderRadius ?? null;
+    this.controlBorderColor = item.controlStyle?.borderColor ?? '';
+    this.controlAccentColor = item.controlStyle?.accentColor ?? '';
+    this.controlPaddingBlock = item.controlStyle?.paddingBlock ?? null;
+    this.controlPaddingInline = item.controlStyle?.paddingInline ?? null;
     // Deep clone so Cancel doesn't leave a half-edited object mutated in
     // place on the live list - fields/options/columns are all edited by
     // direct mutation while in the builder (see FormFieldSettingsComponent).
@@ -235,7 +282,13 @@ export class FormBuilderComponent implements OnInit {
     this.dialog.open(FormTestSubmitDialogComponent, {
       width: '700px',
       maxWidth: '95vw',
-      data: { formId: this.editingItem.id, formName: this.editingItem.name, fields: this.fields, backgroundColor: this.backgroundColor }
+      data: {
+        formId: this.editingItem.id,
+        formName: this.editingItem.name,
+        fields: this.fields,
+        backgroundColor: this.backgroundColor,
+        controlStyle: this.controlStyle
+      }
     });
   }
 
@@ -253,6 +306,7 @@ export class FormBuilderComponent implements OnInit {
       status: this.status,
       backgroundColor: this.backgroundColor,
       publicUrl: this.publicUrl,
+      controlStyle: this.controlStyle,
       fields: this.fields,
       createdAt: this.editingItem?.createdAt ?? now,
       updatedAt: now

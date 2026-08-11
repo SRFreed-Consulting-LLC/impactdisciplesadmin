@@ -2,7 +2,9 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
+  DEFAULT_CONTROL_STYLE,
   FIELD_TYPE_META,
+  FormControlStyle,
   FormFieldDef,
   FormFieldStyle,
   setColumnCount,
@@ -60,6 +62,7 @@ export class FormFieldSettingsComponent implements OnChanges {
   ];
 
   readonly columnCountOptions = [2, 3, 4];
+  readonly defaultControlStyle = DEFAULT_CONTROL_STYLE;
 
   private sub?: Subscription;
 
@@ -103,7 +106,12 @@ export class FormFieldSettingsComponent implements OnChanges {
         italic: [!!this.field.style?.italic],
         imageUrl: [this.field.imageUrl ?? ''],
         imageAlt: [this.field.imageAlt ?? ''],
-        imageWidth: [this.field.imageWidth ?? 'medium']
+        imageWidth: [this.field.imageWidth ?? 'medium'],
+        controlBorderRadius: [this.field.controlStyle?.borderRadius ?? null],
+        controlBorderColor: [this.field.controlStyle?.borderColor ?? ''],
+        controlAccentColor: [this.field.controlStyle?.accentColor ?? ''],
+        controlPaddingBlock: [this.field.controlStyle?.paddingBlock ?? null],
+        controlPaddingInline: [this.field.controlStyle?.paddingInline ?? null]
       });
 
       this.sub = this.form.valueChanges.subscribe((value) => {
@@ -135,6 +143,25 @@ export class FormFieldSettingsComponent implements OnChanges {
         this.field.imageUrl = value.imageUrl ?? '';
         this.field.imageAlt = value.imageAlt ?? '';
         this.field.imageWidth = value.imageWidth;
+
+        // Same "omit rather than set undefined" rule as style above.
+        const controlStyle: FormControlStyle = {};
+        if (value.controlBorderRadius != null && value.controlBorderRadius !== '') {
+          controlStyle.borderRadius = Number(value.controlBorderRadius);
+        }
+        if (value.controlBorderColor) {
+          controlStyle.borderColor = value.controlBorderColor;
+        }
+        if (value.controlAccentColor) {
+          controlStyle.accentColor = value.controlAccentColor;
+        }
+        if (value.controlPaddingBlock != null && value.controlPaddingBlock !== '') {
+          controlStyle.paddingBlock = Number(value.controlPaddingBlock);
+        }
+        if (value.controlPaddingInline != null && value.controlPaddingInline !== '') {
+          controlStyle.paddingInline = Number(value.controlPaddingInline);
+        }
+        this.field.controlStyle = controlStyle;
       });
     }
   }

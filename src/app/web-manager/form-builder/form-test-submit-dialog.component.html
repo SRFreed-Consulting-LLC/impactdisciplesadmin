@@ -2,7 +2,7 @@
 
 <mat-dialog-content>
   <p class="test-submit-hint">This writes a real submission, tagged <strong>Test</strong>, to Requests Manager &rsaquo; Custom Form Submissions.</p>
-  <app-form-renderer [fields]="data.fields" [backgroundColor]="data.backgroundColor" mode="fill" (submitted)="onSubmit($event)"></app-form-renderer>
+  <app-form-renderer [fields]="data.fields" [backgroundColor]="data.backgroundColor" [controlStyle]="data.controlStyle" mode="fill" (submitted)="onSubmit($event)"></app-form-renderer>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

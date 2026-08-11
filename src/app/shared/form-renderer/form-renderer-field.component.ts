@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { FIELD_TYPE_META, FormFieldDef, IMAGE_WIDTH_CSS, fieldStyleObject } from 'src/app/common/models/domain/form-field.model';
+import { controlStyleVars, FIELD_TYPE_META, FormFieldDef, IMAGE_WIDTH_CSS, fieldStyleObject } from 'src/app/common/models/domain/form-field.model';
 
 // Renders exactly one FormFieldDef against the shared top-level FormGroup a
 // parent app-form-renderer built (see build-form-group.ts) - dispatches by
@@ -28,6 +28,14 @@ export class FormRendererFieldComponent {
   // blocks: affects the whole block). See fieldStyleObject's own comment.
   get styleObject(): Record<string, string> {
     return fieldStyleObject(this.field.style);
+  }
+
+  // Combines the field's text style (styleObject) and its control-style CSS
+  // vars (only the keys it explicitly overrides - see controlStyleVars()'s
+  // own comment) into the one [ngStyle] binding the wrapper div actually
+  // uses - Angular doesn't support two [ngStyle] bindings on one element.
+  get wrapperStyle(): Record<string, string> {
+    return { ...this.styleObject, ...controlStyleVars(this.field.controlStyle) };
   }
 
   get imageWidthCss(): string {

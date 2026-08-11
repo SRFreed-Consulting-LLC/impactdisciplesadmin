@@ -1,3 +1,41 @@
+// Maps this field's resolved --dff-radius/--dff-border/--dff-accent CSS
+// custom properties (set via [ngStyle]="wrapperStyle" in the template, only
+// for whatever this field itself overrides - unset ones fall through via
+// the var(--dff-x, ...) defaults below) onto Angular Material's own M3/MDC
+// theming tokens. :host is enough - no ::ng-deep needed - because CSS
+// custom properties inherit through the DOM regardless of view
+// encapsulation, and Material's own internal template (a descendant in the
+// real DOM even though it's a different component) already reads these
+// same token names via its own var(--mdc-..., fallback) usage.
+//
+// Best-effort, not pixel-perfect: this is the SAME control-style data the
+// plain-HTML web app renderer applies (see impactdisciples-web's
+// dynamic-form-field.component.scss) - the primary target for closing the
+// "old forms looked softer" gap, since Material's own chrome already looks
+// reasonably polished on its own. This mapping exists so the Live Preview
+// here isn't completely disconnected from what the public page will
+// actually look like, not to make the two pixel-identical.
+//
+// --dff-padding-block/--dff-padding-inline (text inset) is deliberately NOT
+// mapped here: MDC's outlined text field doesn't expose its internal input
+// padding as a themeable custom property the way it does shape/outline
+// color - that spacing is tied to its density tokens instead. Not worth
+// faking with a guessed selector override for a preview that's already
+// explicitly best-effort; the web renderer (the real target) applies it.
+:host {
+  --mdc-outlined-text-field-container-shape: var(--dff-radius, 4px);
+  --mdc-outlined-text-field-outline-color: var(--dff-border, #dddddd);
+  --mdc-outlined-text-field-hover-outline-color: var(--dff-border, #dddddd);
+  --mdc-outlined-text-field-focus-outline-color: var(--dff-accent, #337ab7);
+  --mat-radio-checked-ring-color: var(--dff-accent, #337ab7);
+  --mdc-radio-selected-icon-color: var(--dff-accent, #337ab7);
+  --mdc-radio-selected-focus-icon-color: var(--dff-accent, #337ab7);
+  --mdc-radio-selected-hover-icon-color: var(--dff-accent, #337ab7);
+  --mdc-checkbox-selected-icon-color: var(--dff-accent, #337ab7);
+  --mdc-checkbox-selected-focus-icon-color: var(--dff-accent, #337ab7);
+  --mdc-checkbox-selected-hover-icon-color: var(--dff-accent, #337ab7);
+}
+
 .full-width {
   width: 100%;
 }

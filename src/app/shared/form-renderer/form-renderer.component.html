@@ -1,4 +1,4 @@
-<div class="form-renderer" [class.form-renderer--preview]="mode === 'preview'" [style.background-color]="backgroundColor || null">
+<div class="form-renderer" [class.form-renderer--preview]="mode === 'preview'" [style.background-color]="backgroundColor || null" [ngStyle]="controlStyleVars">
   <ng-container *ngFor="let field of fields">
     <app-form-renderer-field [field]="field" [form]="form" [mode]="mode"></app-form-renderer-field>
   </ng-container>

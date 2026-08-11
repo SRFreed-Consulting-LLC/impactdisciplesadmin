@@ -1,5 +1,5 @@
 import { BaseModel } from '../base.model';
-import { FormFieldDef } from './form-field.model';
+import { FormControlStyle, FormFieldDef } from './form-field.model';
 
 // A form built in Web Manager > Form Builder. Submissions (see
 // FormSubmissionModel) are their own collection, not a subcollection here,
@@ -12,6 +12,10 @@ export class FormDefinitionModel extends BaseModel {
   // Whole-form background - distinct from a field's own FormFieldStyle,
   // which only ever covers that one field's own text.
   backgroundColor?: string;
+  // Default input-chrome styling (border radius/color, focus/accent color)
+  // for every field on this form - see FormControlStyle's own comment.
+  // Overridden per field via FormFieldDef.controlStyle.
+  controlStyle?: FormControlStyle;
   // Where this form is actually live, once wired into a public page (e.g.
   // "/consultation-survey" on impactdisciples-web) - purely informational
   // for admins browsing the Form Builder list; nothing in this app reads it

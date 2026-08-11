@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { FormFieldDef } from 'src/app/common/models/domain/form-field.model';
+import { controlStyleVars, FormControlStyle, FormFieldDef } from 'src/app/common/models/domain/form-field.model';
 import { buildFormGroup } from './build-form-group';
 
 // Renders a fields[] tree as an actual reactive form - used both for the
@@ -21,9 +21,19 @@ export class FormRendererComponent implements OnChanges {
   @Input() mode: 'preview' | 'fill' = 'preview';
   // Whole-form background - see FormDefinitionModel.backgroundColor's own comment.
   @Input() backgroundColor?: string;
+  // Default input-chrome styling for every field - see FormControlStyle's
+  // own comment. Applied as CSS custom properties on this component's own
+  // wrapper; each field's own FormRendererFieldComponent applies its
+  // controlStyle the same way on ITS wrapper, which (via ordinary CSS
+  // custom property inheritance) overrides just that field's subtree.
+  @Input() controlStyle?: FormControlStyle;
   @Output() submitted = new EventEmitter<Record<string, unknown>>();
 
   form: FormGroup = new FormGroup({});
+
+  get controlStyleVars(): Record<string, string> {
+    return controlStyleVars(this.controlStyle);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['fields'] || changes['mode']) {

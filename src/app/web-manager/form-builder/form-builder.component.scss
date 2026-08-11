@@ -74,6 +74,46 @@
   }
 }
 
+.editor__subheader-minilabel {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.editor__subheader-number {
+  width: 44px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 3px 4px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.editor__subheader-unit {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.editor__subheader-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.editor__subheader-hex {
+  width: 68px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 11.5px;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
 .public-url-link {
   color: #337ab7;
   font-size: 12.5px;

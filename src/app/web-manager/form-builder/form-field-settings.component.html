@@ -119,6 +119,36 @@
         <mat-checkbox formControlName="italic">Italic</mat-checkbox>
       </div>
     </div>
+
+    <div class="settings-panel__section" *ngIf="isDataField" matTooltip="Overrides this form's own default for just this one field">
+      <div class="settings-panel__section-label">Control Style (override)</div>
+
+      <div class="settings-panel__control-row">
+        <span class="settings-panel__control-label">Radius</span>
+        <input matInput type="number" min="0" max="24" formControlName="controlBorderRadius" [placeholder]="defaultControlStyle.borderRadius.toString()" class="settings-panel__control-number">
+        <span class="settings-panel__control-unit">px</span>
+      </div>
+
+      <div class="settings-panel__color-row">
+        <span class="settings-panel__color-label">Border</span>
+        <input type="color" formControlName="controlBorderColor" class="settings-panel__color-swatch">
+        <input matInput type="text" formControlName="controlBorderColor" [placeholder]="defaultControlStyle.borderColor" class="settings-panel__color-hex">
+      </div>
+
+      <div class="settings-panel__color-row">
+        <span class="settings-panel__color-label">Accent</span>
+        <input type="color" formControlName="controlAccentColor" class="settings-panel__color-swatch">
+        <input matInput type="text" formControlName="controlAccentColor" [placeholder]="defaultControlStyle.accentColor" class="settings-panel__color-hex">
+      </div>
+
+      <div class="settings-panel__control-row">
+        <span class="settings-panel__control-label">Padding</span>
+        <input matInput type="number" min="0" max="40" formControlName="controlPaddingBlock" [placeholder]="defaultControlStyle.paddingBlock.toString()" matTooltip="Top/bottom padding" class="settings-panel__control-number">
+        <span class="settings-panel__control-unit">/</span>
+        <input matInput type="number" min="0" max="40" formControlName="controlPaddingInline" [placeholder]="defaultControlStyle.paddingInline.toString()" matTooltip="Left/right padding" class="settings-panel__control-number">
+        <span class="settings-panel__control-unit">px</span>
+      </div>
+    </div>
   </form>
 </div>
 
