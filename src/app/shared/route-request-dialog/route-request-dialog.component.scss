@@ -1,15 +1,26 @@
 .route-request-dialog {
-  width: 520px;
+  width: 100%;
+  // Actual pixel width comes from the MatDialog.open() config at each call
+  // site (dashboard.component.ts / custom-form-submissions.component.ts),
+  // not from this component - keeps it flexible instead of double-set here.
   max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .route-request-dialog__source {
   font-size: 13px;
   color: rgba(0, 0, 0, 0.65);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.route-request-dialog__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+
+  @media (max-width: 680px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .route-request-dialog__form {
@@ -22,39 +33,44 @@
 }
 
 .route-request-dialog__preview {
-  margin: 4px 0 16px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 12px 14px;
+  background: #fafafa;
+  min-width: 0;
+}
 
-  summary {
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    color: #337ab7;
-  }
+.route-request-dialog__preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
 }
 
 .route-request-dialog__preview-subject {
   font-size: 13px;
-  margin: 10px 0 8px;
+  margin-bottom: 10px;
 }
 
+// Deliberately no max-height/overflow here - the dialog's own
+// mat-dialog-content scroll (set by Angular Material) is the single
+// scrollbar for everything in this popup, this panel just flows with it.
 .route-request-dialog__preview-body {
   font-size: 13px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
   padding: 10px;
-  max-height: 320px;
-  overflow: auto;
-  background: #fafafa;
+  background: #fff;
+  overflow-x: auto;
 }
 
 .route-request-dialog__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 20px;
 
   mat-icon {
     margin-right: 4px;

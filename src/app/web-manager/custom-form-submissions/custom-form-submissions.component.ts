@@ -109,8 +109,9 @@ export class CustomFormSubmissionsComponent implements OnInit {
 
   forward(item: FormSubmissionModel): void {
     this.dialog.open(RouteRequestDialogComponent, {
-      width: '560px',
+      width: '860px',
       maxWidth: '95vw',
+      maxHeight: '85vh',
       data: { item }
     });
   }

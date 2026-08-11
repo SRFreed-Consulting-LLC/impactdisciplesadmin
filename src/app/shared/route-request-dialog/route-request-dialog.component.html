@@ -5,43 +5,52 @@
     <strong>{{ item.formName }}</strong> from {{ submitterIdentity() }}
   </div>
 
-  <form [formGroup]="form" class="route-request-dialog__form">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Forward to</mat-label>
-      <mat-select formControlName="recipientId" [disabled]="staffLoading">
-        <mat-option *ngFor="let user of staff" [value]="user.id">
-          {{ user.firstName }} {{ user.lastName }} &mdash; {{ user.email }}
-        </mat-option>
-        <mat-option value="other">Other (enter an email address)&hellip;</mat-option>
-      </mat-select>
-      <mat-error *ngIf="form.get('recipientId')?.hasError('required')">A recipient is required</mat-error>
-    </mat-form-field>
-
-    <ng-container *ngIf="isOther">
+  <!-- Side-by-side on anything wide enough (see dashboard.component.ts's/
+       custom-form-submissions.component.ts's dialog.open() width) so the
+       form and the live preview share the dialog's one scrollbar instead of
+       each stacking its own - the preview used to be a collapsible <details>
+       with its own internal max-height/overflow, which nested a second
+       scrollbar inside the dialog's. Falls back to a single stacked column
+       below ~680px (see the media query) for narrow viewports. -->
+  <div class="route-request-dialog__layout">
+    <form [formGroup]="form" class="route-request-dialog__form">
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Name (optional)</mat-label>
-        <input matInput formControlName="otherName">
+        <mat-label>Forward to</mat-label>
+        <mat-select formControlName="recipientId" [disabled]="staffLoading">
+          <mat-option *ngFor="let user of staff" [value]="user.id">
+            {{ user.firstName }} {{ user.lastName }} &mdash; {{ user.email }}
+          </mat-option>
+          <mat-option value="other">Other (enter an email address)&hellip;</mat-option>
+        </mat-select>
+        <mat-error *ngIf="form.get('recipientId')?.hasError('required')">A recipient is required</mat-error>
       </mat-form-field>
 
+      <ng-container *ngIf="isOther">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Name (optional)</mat-label>
+          <input matInput formControlName="otherName">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email address</mat-label>
+          <input matInput type="email" formControlName="otherEmail">
+          <mat-error *ngIf="form.get('otherEmail')?.hasError('required')">Email address is required</mat-error>
+          <mat-error *ngIf="form.get('otherEmail')?.hasError('email')">Enter a valid email address</mat-error>
+        </mat-form-field>
+      </ng-container>
+
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Email address</mat-label>
-        <input matInput type="email" formControlName="otherEmail">
-        <mat-error *ngIf="form.get('otherEmail')?.hasError('required')">Email address is required</mat-error>
-        <mat-error *ngIf="form.get('otherEmail')?.hasError('email')">Enter a valid email address</mat-error>
+        <mat-label>Note to include (optional)</mat-label>
+        <textarea matInput formControlName="note" rows="5" placeholder="Anything the recipient should know before they follow up..."></textarea>
       </mat-form-field>
-    </ng-container>
+    </form>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Note to include (optional)</mat-label>
-      <textarea matInput formControlName="note" rows="3" placeholder="Anything the recipient should know before they follow up..."></textarea>
-    </mat-form-field>
-  </form>
-
-  <details class="route-request-dialog__preview">
-    <summary>Preview email</summary>
-    <div class="route-request-dialog__preview-subject"><strong>Subject:</strong> {{ previewSubject }}</div>
-    <div class="route-request-dialog__preview-body" [innerHTML]="previewHtml"></div>
-  </details>
+    <div class="route-request-dialog__preview">
+      <div class="route-request-dialog__preview-label">Email preview</div>
+      <div class="route-request-dialog__preview-subject"><strong>Subject:</strong> {{ previewSubject }}</div>
+      <div class="route-request-dialog__preview-body" [innerHTML]="previewHtml"></div>
+    </div>
+  </div>
 
   <div class="route-request-dialog__actions">
     <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>

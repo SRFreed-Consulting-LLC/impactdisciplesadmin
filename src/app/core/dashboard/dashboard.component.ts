@@ -287,8 +287,9 @@ export class DashboardComponent implements OnInit {
   // openOrderDialog() above.
   routeRequest(row: DashboardRequestRow): void {
     this.dialog.open(RouteRequestDialogComponent, {
-      width: '560px',
+      width: '860px',
       maxWidth: '95vw',
+      maxHeight: '85vh',
       data: { item: row.raw }
     }).afterClosed().subscribe(() => this.loadNewRequests());
   }
