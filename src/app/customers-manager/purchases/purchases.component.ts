@@ -141,7 +141,17 @@ export class PurchasesComponent implements OnInit {
   }
 
   getChargedDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.value ?? '') : (item.total ?? 0) - (item.discount ?? 0) > 0 ? item.total! : 0;
+    if (item.payPalReceipt) {
+      return parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.value ?? '');
+    }
+
+    // 2026-08-12 fullsweep fix: this used to be a single ternary that
+    // computed (total - discount) only to test its sign, then returned the
+    // un-discounted item.total! regardless - every non-PayPal order's
+    // "Charged" figure (list column + Admin summary row via sumOf('charged'))
+    // was overstated by exactly the discount amount.
+    const charged = (item.total ?? 0) - (item.discount ?? 0);
+    return charged > 0 ? charged : 0;
   }
 
   // Falls back to processedStatus (NEW/COMPLETE/REFUNDED) for non-PayPal

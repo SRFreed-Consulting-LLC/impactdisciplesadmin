@@ -212,19 +212,23 @@ export class AdminAuthService {
   }
 
   resetPassword(email: string): Observable<ResetPasswordResult> {
-    try {
-      // Send request
-      this.dao.forgotPassword(email);
-      return of({
-        isOk: true
-      });
-    }
-    catch {
-      return of({
-        isOk: false,
-        message: "Failed to reset password"
-      });
-    }
+    // forgotPassword() returns a Promise (sendPasswordResetEmail) - it must
+    // actually be awaited/subscribed to, not just called and ignored. The
+    // previous version did neither (no await, no .then/.catch, and the
+    // surrounding try/catch was synchronous-only so it couldn't have caught
+    // a rejection anyway), so it always reported isOk:true immediately,
+    // regardless of whether Firebase actually sent the email.
+    return from(this.dao.forgotPassword(email)).pipe(
+      map(() => ({ isOk: true })),
+      catchError((err) => {
+        return of({
+          isOk: false,
+          message: err?.code === 'auth/user-not-found'
+            ? `The email address (${email}) is not recognized.`
+            : 'Failed to send the password reset email. Please try again.'
+        });
+      })
+    );
   }
 
   logOut(): void {
@@ -273,8 +277,7 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
 
   const isAuthForm = [
     'login',
-    'reset-password',
-    'change-password/:recoveryCode'
+    'reset-password'
   ].includes(route.routeConfig?.path || defaultPath);
 
   return authService.dao.currentUser$.pipe(

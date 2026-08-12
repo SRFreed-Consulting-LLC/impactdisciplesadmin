@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './common/forms/admin/login/login.component';
-import { ChangePasswordComponent } from './core/auth/change-password/change-password.component';
 import { ResetPasswordComponent } from './core/auth/reset-password/reset-password.component';
 import { MainScreenComponent } from './core/main-screen/main-screen.component';
 import { DashboardComponent } from './core/dashboard/dashboard.component';
@@ -74,11 +73,6 @@ const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent,
-    canActivate: [ authGuard ]
-  },
-  {
-    path: 'change-password/:recoveryCode',
-    component: ChangePasswordComponent,
     canActivate: [ authGuard ]
   },
 ];

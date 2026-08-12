@@ -106,17 +106,24 @@ session — that number IS the clean state); functions lint has 1 pre-existing
 warning. `ng build` clean.
 
 ## Open items (none started, in rough priority order)
-- **Security findings list** (presented to Shane, none fixed; he wants to
-  go through them one at a time eventually):
-  - CRITICAL: `functions/src/import.functions.ts` — fully open
-    unauthenticated Firestore write endpoint.
+- **Security findings list** (presented to Shane; going through them one at
+  a time as of 2026-08-12, see the Aug 2026 fullsweep audit in project
+  memory for the fuller published version of this list):
+  - FIXED (2026-08-12): `functions/src/import.functions.ts` — was a fully
+    open (later staff-auth-gated but still role-unchecked) unauthenticated
+    Firestore write endpoint with no caller in either app; removed outright
+    rather than hardened, since nothing depended on it.
   - CRITICAL: Firestore rules effectively allow-all (see above) — the
     long-designed rules redesign was never resumed.
-  - HIGH: `functions/src/fetchimage.functions.ts` — unauthenticated + SSRF.
+  - FIXED (2026-08-12): `functions/src/fetchimage.functions.ts` — was
+    unauthenticated (later staff-auth-gated) + SSRF-adjacent, no caller in
+    either app; removed outright, same call as `import.functions.ts` above.
   - HIGH: `get_youtube_keys` leaks real API secrets.
   - MEDIUM: `cancel_payment_intent` missing `requireStaffAuth`; no Storage
     rules file in repo.
-  - LOW: unused `SafeHtmlPipe` (dead code today).
+  - RESOLVED (found gone as of 2026-08-12): `SafeHtmlPipe` no longer exists
+    anywhere in the codebase - already removed/renamed since this note was
+    written, nothing left to clean up.
 - **Node 20 functions runtime upgrade** (hard deadline ~2026-10-30).
 - **Delete the orphaned `users` Firestore collection** (renamed to
   `admin_users`; old one intentionally left pending Shane's verification).

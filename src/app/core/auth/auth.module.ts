@@ -11,7 +11,6 @@ import { AuthCardComponent } from './auth-card/auth-card.component';
 import { LoginComponent } from '../../common/forms/admin/login/login.component';
 import { AnimatedLogoComponent } from '../../common/forms/admin/login/animated-logo.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
-import { ChangePasswordComponent } from './change-password/change-password.component';
 
 // Material replacement for the impactdisciplescommon submodule's
 // ImpactAdminFormsModule (DevExtreme-based) - kept entirely within this
@@ -32,8 +31,7 @@ import { ChangePasswordComponent } from './change-password/change-password.compo
     AuthCardComponent,
     LoginComponent,
     AnimatedLogoComponent,
-    ResetPasswordComponent,
-    ChangePasswordComponent
+    ResetPasswordComponent
   ],
   imports: [
     CommonModule,
@@ -47,8 +45,7 @@ import { ChangePasswordComponent } from './change-password/change-password.compo
   ],
   exports: [
     LoginComponent,
-    ResetPasswordComponent,
-    ChangePasswordComponent
+    ResetPasswordComponent
   ]
 })
 export class AuthModule { }

@@ -1,17 +1,18 @@
 import { Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
+import { AdminAuthService } from '../../../common/forms/admin/admin-auth.service';
+import { SnackbarService } from '../../../shared/snackbar.service';
 
 // Material replacement for the impactdisciplescommon submodule's
 // ResetPasswordFormComponent (DevExtreme dx-form based).
 //
-// Ported as-is: the original's onSubmit body (the actual
-// AdminAuthService.resetPassword() call + navigation) is entirely
-// commented out already in the source being replaced, so clicking
-// "Reset my password" on a validly-filled form just spins forever today
-// and does nothing - that exact (non-)behavior is preserved here rather
-// than being wired up, per explicit instruction to port visuals/behavior
-// faithfully rather than fix functionality as part of this rebuild.
+// 2026-08-12 fullsweep fix: the original's onSubmit body (the actual
+// AdminAuthService.resetPassword() call) was ported over commented-out, so
+// clicking "Reset my password" on a validly-filled form spun forever and
+// did nothing - reachable straight from the login screen's "Forgot
+// password?" link. Now wired up for real; see AdminAuthService.resetPassword()
+// for the matching fix to that method's own always-reports-success bug.
 @Component({
     selector: 'app-reset-password',
     templateUrl: './reset-password.component.html',
@@ -24,7 +25,11 @@ export class ResetPasswordComponent implements OnDestroy {
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AdminAuthService,
+    private snackbar: SnackbarService
+  ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
     });
@@ -38,7 +43,21 @@ export class ResetPasswordComponent implements OnDestroy {
     }
 
     this.isLoading = true;
-    // Original body intentionally left commented out upstream - see class comment.
+    this.form.disable();
+
+    this.authService.resetPassword(this.form.get('email')?.value).pipe(
+      takeUntil(this.ngUnsubscribe)
+    ).subscribe((result) => {
+      this.isLoading = false;
+      this.form.enable();
+
+      if (result.isOk) {
+        this.snackbar.success('Check your email for a link to reset your password.');
+        this.form.reset();
+      } else {
+        this.snackbar.error(result.message || 'Failed to send the password reset email. Please try again.');
+      }
+    });
   }
 
   ngOnDestroy(): void {

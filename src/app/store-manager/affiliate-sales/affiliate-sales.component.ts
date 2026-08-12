@@ -1,13 +1,9 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { SelectionModel } from '@angular/cdk/collections';
 import { Timestamp } from 'firebase/firestore';
-import { AffilliatePaymentModel } from 'src/app/common/models/utils/affilliate-payment.model';
 import { AffilliateSaleModel } from 'src/app/common/models/utils/affilliate-sale.model';
-import { AffilliatePaymentsService } from 'src/app/common/services/data/affiliate-payment.service';
 import { AffilliateSalesService } from 'src/app/common/services/data/affiliate-sales.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';
-import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Embedded (not a dialog) inside CouponDialogComponent, shown only for
@@ -26,8 +22,6 @@ export class AffiliateSalesComponent implements OnChanges {
   @Input() paypalAccount: string;
 
   affiliateSales$: Observable<AffilliateSaleModel[]>;
-  selection = new SelectionModel<AffilliateSaleModel>(true, []);
-  inProgress = false;
 
   columns: DataGridColumn<AffilliateSaleModel>[] = [
     { key: 'date', label: 'Date', type: 'date' },
@@ -38,15 +32,10 @@ export class AffiliateSalesComponent implements OnChanges {
     { key: 'isPayed', label: 'Paid', value: (item) => (item.isPayed ? 'Yes' : 'No') }
   ];
 
-  constructor(
-    private affiliateSalesService: AffilliateSalesService,
-    private affilliatePaymentService: AffilliatePaymentsService,
-    private snackbar: SnackbarService
-  ) {}
+  constructor(private affiliateSalesService: AffilliateSalesService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['code'] && this.code) {
-      this.selection.clear();
       this.affiliateSales$ = this.affiliateSalesService.streamAllByValue('code', this.code).pipe(
         map((sales) => {
           sales.forEach((sale) => (sale.date = dateFromTimestamp(sale.date as Timestamp) as unknown as Timestamp));
@@ -54,49 +43,5 @@ export class AffiliateSalesComponent implements OnChanges {
         })
       );
     }
-  }
-
-  // NOTE: AffilliatePaymentsService.pay() is a hardcoded stub - see its own
-  // comment - not a real PayPal payout. Ported as-is, not "fixed"; real
-  // payout integration is out of scope for this migration. This action is
-  // never triggered during my own live verification for that reason.
-  pay(): void {
-    if (this.selection.selected.length === 0) {
-      this.snackbar.error('No Sales Selected to pay!');
-      return;
-    }
-    if (this.selection.selected.some((row) => row.isPayed)) {
-      this.snackbar.error('The selected Sales include already payed!');
-      return;
-    }
-
-    this.inProgress = true;
-    const rows = this.selection.selected;
-    const sum = rows.map((row) => (row.totalAfterDiscount ?? 0) * 0.1).reduce((a, b) => a + b, 0);
-    const ids = rows.map((row) => row.id!);
-
-    this.affilliatePaymentService.pay(this.paypalAccount, sum).then(async (response) => {
-      const payment: AffilliatePaymentModel = { ...new AffilliatePaymentModel() };
-      payment.code = this.code;
-      payment.date = Timestamp.now();
-      payment.amountPayed = sum;
-      payment.saleIdsPayed = ids;
-      payment.receipt = response;
-
-      const saved = await this.affilliatePaymentService.add(payment);
-
-      await Promise.all(
-        rows.map((row) => {
-          row.isPayed = true;
-          row.paymentReceipt = saved.id!;
-          row.amountPayed = (row.totalAfterDiscount ?? 0) * 0.1;
-          return this.affiliateSalesService.update(row.id!, row);
-        })
-      );
-
-      this.selection.clear();
-      this.inProgress = false;
-      this.snackbar.success('All Sales Paid!');
-    });
   }
 }

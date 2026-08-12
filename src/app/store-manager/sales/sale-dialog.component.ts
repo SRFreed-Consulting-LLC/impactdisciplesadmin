@@ -40,7 +40,7 @@ export class SaleDialogComponent {
     this.form = this.fb.group({
       isActive: [data.item?.isActive ?? false],
       name: [data.item?.name ?? '', Validators.required],
-      percentOff: [data.item?.percentOff ?? null, Validators.required],
+      percentOff: [data.item?.percentOff ?? null, [Validators.required, Validators.min(0), Validators.max(100)]],
       startDate: [parseSaleDate(data.item?.startDate), Validators.required],
       endDate: [parseSaleDate(data.item?.endDate), Validators.required],
       isProducts: [data.item?.isProducts ?? false],

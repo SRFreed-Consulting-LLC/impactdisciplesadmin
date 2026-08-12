@@ -38,18 +38,14 @@ export const toMillis = (item: unknown): number => {
   if (date instanceof Date) {
     return date.getTime();
   }
-  // dateFromTimestamp()'s own string branch has a known bug (see
-  // parseStringDate()'s comment below) - its "is this MM/dd/yyyy" check
-  // can never match, so any date string that isn't already a Date/Timestamp
-  // falls through unparsed. Confirmed live against real data: `events`
-  // documents mostly store startDate as a plain ISO string
-  // ("2026-01-30T02:00:00"), not a Timestamp - without this fallback,
-  // toMillis() would silently treat most real events as epoch/0 instead of
-  // their actual date. Not fixing parseStringDate() itself here (same
-  // "guard at the call site, don't touch the shared utility" call made
-  // earlier this session for the identical bug in
-  // CustomerDialogComponent.getEventDate()) - narrower blast radius than
-  // changing a helper a dozen other services' fromFirestore hooks rely on.
+  // parseStringDate()'s "MM/dd/yyyy" regex (below) only handles that one
+  // literal format - it doesn't match the ISO strings ("2026-01-30T02:00:00")
+  // most `events` documents actually store startDate as, so those still fall
+  // through unparsed even after fixing the regex's literal-not-digit typo
+  // (2026-08-12 fullsweep fix - it used to never match anything at all).
+  // This fallback covers ISO/native-Date-parseable strings and numbers;
+  // between the two, dateFromTimestamp()'s string branch now handles every
+  // real date shape seen in this app's data.
   if (typeof item === 'string' || typeof item === 'number') {
     const fallback = new Date(item);
     if (!isNaN(fallback.getTime())) {
@@ -65,7 +61,7 @@ const parseStringDate = (dateString: string): null | Date | string => {
   if (!dateString) {
     return null;
   }
-  if (dateString.match(/dd\/dd\/dddd/)) {
+  if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
     const date = parse(dateString, 'MM/dd/yyyy', new Date());
     return isValid(date) ? date : null;
   }

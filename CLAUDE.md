@@ -179,8 +179,8 @@ time, that migration (like `*ngIf`/`*ngFor` → `@if`/`@for`) is out of scope fo
 
 Plain Node/Express-style `onRequest` HTTP functions (not callable functions), one file per concern
 (`stripe.functions.ts`, `shipping.functions.ts`, `notifications.functions.ts`,
-`admin-users.functions.ts`, `subscriptions.functions.ts`, `youtube.functions.ts`,
-`import.functions.ts`, `fetchimage.functions.ts`), each `require`d and re-exported from
+`admin-users.functions.ts`, `subscriptions.functions.ts`, `youtube.functions.ts`),
+each `require`d and re-exported from
 `functions/src/index.ts`. Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live
 in `functions/src/utils/security.functions.ts`.
 

@@ -1,6 +1,5 @@
 <div class="panel-header">
   <h3 class="panel-header__title">Affiliate Sales</h3>
-  <button mat-raised-button color="primary" type="button" [disabled]="inProgress" (click)="pay()">PAY</button>
 </div>
 
 <app-data-grid
@@ -8,6 +7,5 @@
   [showFilterRow]="false"
   [columns]="columns"
   [rows]="(affiliateSales$ | async) ?? []"
-  [selection]="selection"
   tableClass="sales-table">
 </app-data-grid>

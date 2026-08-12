@@ -10,7 +10,6 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
-import { environment } from 'src/environments/environment';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../../shared/rich-text-editor/variable-inserter.component';
@@ -88,12 +87,18 @@ export class EventEmailDialogComponent {
           .replace('{{Sender Last Name}}', user.lastName)
           .replace('{{Date}}', (dateFromTimestamp(date) as Date).toLocaleString());
 
-        const unsubscribe =
-          '<br><br><br><div>If you believe you received this email by mistake, please click ' +
-          "<b><a href='" + environment.unsubscribeUrl + '?email=' + subscriber.email +
-          "&list=newsletter_subscriptions'>here</a></b> to remove your address.</div>";
-
-        this.emailService.sendHtmlEmail(subscriber.email, subject, html + unsubscribe);
+        // 2026-08-12 fullsweep fix: this used to append an unsubscribe link
+        // hardcoding &list=newsletter_subscriptions, which the backing
+        // Cloud Function (unsubscribe_from_email_list) rejects outright -
+        // it only accepts list=subscriptions. Event registrants aren't even
+        // in that collection (they're in event_registrations), so pointing
+        // this at the newsletter's list=subscriptions&type=newsletter
+        // pattern instead would be wrong too: it'd either still 400 for a
+        // non-subscriber, or silently unsubscribe someone from the
+        // newsletter if they happen to share that email. Removed until a
+        // real per-event opt-out mechanism exists - see the fullsweep
+        // report for the fuller writeup.
+        this.emailService.sendHtmlEmail(subscriber.email, subject, html);
       });
     }).then(() => {
       this.customerEmailService.add(email).then((result) => {

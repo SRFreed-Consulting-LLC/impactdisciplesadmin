@@ -47,7 +47,7 @@ export class CouponDialogComponent implements OnInit {
     this.form = this.fb.group({
       isActive: [data.item?.isActive ?? false],
       code: [data.item?.code ?? '', Validators.required],
-      percentOff: [data.item?.percentOff ?? null, Validators.required],
+      percentOff: [data.item?.percentOff ?? null, [Validators.required, Validators.min(0), Validators.max(100)]],
       isAffilliate: [data.item?.isAffilliate ?? false],
       affilliateName: [data.item?.affilliateName ?? ''],
       affiliatePaypalAccount: [data.item?.affiliatePaypalAccount ?? ''],
