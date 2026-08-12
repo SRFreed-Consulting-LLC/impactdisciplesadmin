@@ -48,3 +48,7 @@ e2e/.auth
 # System files
 .DS_Store
 Thumbs.db
+
+# Firestore export/import snapshots - contain real customer PII (both dev
+# and prod), never commit these
+/scripts/backups

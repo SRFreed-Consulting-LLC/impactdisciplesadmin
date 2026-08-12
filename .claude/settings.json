@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/web/repo/impactdisciples - admin\" && cat /tmp/full.diff)",
+      "Read(//tmp/**)"
+    ]
+  }
+}

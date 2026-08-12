@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -9,6 +9,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
+import { PagedCollectionSource } from '../../shared/paged-collection-source';
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts for the established precedent this mirrors) rather
@@ -27,7 +28,13 @@ export class PurchasesComponent implements OnInit {
   mode: 'list' | 'edit' = 'list';
 
   // ---- List state ----
-  purchases$: Observable<CheckoutForm[]>;
+  // One-time paged fetches instead of a whole-collection streamAll() - see
+  // products.component.ts/customers.component.ts for the established
+  // pattern this mirrors. No admin-only summary row any more (it used to
+  // sum this screen's full live rowset; once paginated that would only ever
+  // be a sum of whatever's been scrolled into view, silently wrong as a
+  // "total" - removed outright rather than ship a misleading number).
+  paged: PagedCollectionSource<CheckoutForm>;
 
   itemType = 'Purchase';
 
@@ -64,14 +71,6 @@ export class PurchasesComponent implements OnInit {
 
   private readonly screenKey = 'customers-manager.purchases';
 
-  // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
-
-  // Backs the Admin-only summary row - kept in sync via (visibleRowsChange),
-  // since the grid now owns filtering/sorting rather than this component.
-  currentRows: CheckoutForm[] = [];
-
   // See new-record-tracking.util.ts - marks newly-arrived purchases seen the
   // moment this screen loads, and keeps them highlighted for this page view.
   tracker: NewRecordTracker<CheckoutForm>;
@@ -95,19 +94,26 @@ export class PurchasesComponent implements OnInit {
     private snackbar: SnackbarService
   ) {
     this.tracker = new NewRecordTracker(this.service);
-  }
-
-  ngOnInit(): void {
-    this.purchases$ = this.service.streamAll().pipe(
-      tap((items) => this.tracker.capture(items)),
-      tap(() => this.loading$.next(false))
+    this.paged = new PagedCollectionSource<CheckoutForm>(
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'dateProcessed', 'desc'),
+      50
     );
   }
 
-  // Backs the Admin-only summary row - the grid now owns filtering/sorting,
-  // so this just mirrors whatever it currently has on screen.
-  onVisibleRowsChange(rows: CheckoutForm[]): void {
-    this.currentRows = rows;
+  ngOnInit(): void {
+    // Each page already comes back ordered by dateProcessed desc from
+    // Firestore, and pages are appended in fetch order - no client-side
+    // re-sort needed (matches products.component.ts/customers.component.ts).
+    this.paged.loadFirstPage();
+
+    // NewRecordTracker.capture() only ever needs whatever's currently
+    // loaded (it marks-seen once, on first call, and no-ops after) - with
+    // streamAll() that first emission used to be the whole collection, now
+    // it's just page 1. A "new" purchase is inherently recent, so page 1 in
+    // dateProcessed-desc order should always include it in practice, but
+    // this is a real behavior change from "sees literally everything"
+    // worth knowing about if a new-record badge is ever missed.
+    this.paged.rows$.subscribe((items) => this.tracker.capture(items));
   }
 
   // Real dollar amounts come from the PayPal receipt when present, falling
@@ -167,22 +173,6 @@ export class PurchasesComponent implements OnInit {
     return (item.cartItems ?? []).map((cartItem) => cartItem.orderQuantity ?? 0).reduce((a, b) => a + b, 0);
   }
 
-  // Backs the Admin-only summary row - matches the original's dxo-summary
-  // sums, computed over whatever's currently on screen (post-filter).
-  sumOf(field: 'totalBeforeDiscount' | 'discount' | 'estimatedTaxes' | 'shippingRate' | 'charged' | 'refundAmount'): number {
-    const amount = (item: CheckoutForm): number => {
-      switch (field) {
-        case 'totalBeforeDiscount': return this.getProductTotalDisplayAmount(item);
-        case 'discount': return this.getDiscountDisplayAmount(item);
-        case 'estimatedTaxes': return this.getTaxesDisplayAmount(item);
-        case 'shippingRate': return this.getShippingDisplayAmount(item);
-        case 'charged': return this.getChargedDisplayAmount(item);
-        case 'refundAmount': return item.refundAmount ?? 0;
-      }
-    };
-    return this.currentRows.reduce((sum, item) => sum + amount(item), 0);
-  }
-
   delete(item: CheckoutForm): void {
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
@@ -195,13 +185,6 @@ export class PurchasesComponent implements OnInit {
 
   isShippingButtonVisible(item: CheckoutForm): boolean {
     return (item.shippingRate ?? 0) > 0;
-  }
-
-  // Backs the summary row's *ngIf - was Admin-only before this system
-  // existed (same as the download-shipping-label row action above), now
-  // maps to edit permission on this screen.
-  canEdit(): boolean {
-    return this.permissionService.canEdit(this.screenKey);
   }
 
   // Moved into PurchasesService (getShippingLabel/downloadShippingLabel) so

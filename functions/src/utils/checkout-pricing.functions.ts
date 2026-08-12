@@ -49,6 +49,7 @@ export interface PricingResult {
   estimatedTaxes: number;
   taxRate: number;
   taxSource: string;
+  shippingRate: number;
   shippingDiscount: number;
   shippingDiscountReason: string;
   total: number;
@@ -212,68 +213,85 @@ export async function computeOrderPricing(
       (sum, item) => sum + (item.discount || 0) * item.orderQuantity, 0
     )
   );
+  // What the items themselves cost after discount/sale, before tax and
+  // shipping - the number that decides whether this is a free order at all.
+  const itemsTotal = round2(subtotal - totalDiscount);
 
-  // Tax: only for Georgia shipping addresses (hardcoded client-side today,
-  // replicated as-is, not "fixed" here). Taxable amount is the pre-coupon-
-  // discount, sale-adjusted price on non-event items -- matches
-  // tax-rate.service.ts's own math exactly, including its pre-existing
-  // "not coupon-discount-aware" quirk. The apilayer key now comes from
-  // Firestore via the Admin SDK instead of the browser, closing the
-  // client-side key exposure as a side effect of this move.
   let estimatedTaxes = 0;
   let taxRate = 0;
   let taxSource = "none";
-
-  if (request.shippingAddress?.state === "Georgia") {
-    const taxableAmount = round2(
-      pricedItems
-        .filter((item) => !item.isEvent)
-        .reduce((sum, item) => sum + item.price * item.orderQuantity, 0)
-    );
-
-    try {
-      const response = await fetch(
-        "https://api.apilayer.com/tax_data/tax_rates?zip=" +
-          encodeURIComponent(request.shippingAddress.zip ?? "") +
-          "&use_client_ip=false&country=US",
-        {method: "GET", headers: {apikey: (config.taxApiKey as string) ?? ""}}
-      );
-      const data = response.ok ? await response.json() : null;
-
-      taxRate = typeof data?.combined_rate === "number" ?
-        data.combined_rate : 0.07;
-      taxSource = data ? "service" : "default";
-    } catch {
-      taxRate = 0.07;
-      taxSource = "default";
-    }
-
-    estimatedTaxes = round2(taxableAmount * taxRate);
-  }
-
-  // Shipping discount: the rate itself is trusted as sent by the client (it
-  // already came from the real get_shipping_rates/ShipEngine function
-  // earlier in the flow, by explicit scope decision) -- only the discount
-  // applied on top of it is re-verified here, matching
-  // checkout.component.ts#calculateShippingCost() exactly.
   let shippingDiscount = 0;
   let shippingDiscountReason = "";
-  const shippingRate = request.shippingRate ?? 0;
-  const freeShippingAmount = typeof config.freeShippingAmount === "number" ?
-    config.freeShippingAmount : Infinity;
+  let shippingRate = request.shippingRate ?? 0;
 
-  if (subtotal > freeShippingAmount) {
-    shippingDiscount = shippingRate;
-    shippingDiscountReason = "Over $" + config.freeShippingAmount;
-  } else if (shippingSale) {
-    const shippingPercentOff = clampPercent(shippingSale.percentOff);
-    shippingDiscount = round2(shippingPercentOff / 100 * shippingRate);
-    shippingDiscountReason = shippingPercentOff + "% Off";
+  // Business rule: an order that's already free after discount is never
+  // charged tax or shipping either, and skips PayPal entirely (see
+  // create_paypal_order's total <= 0 branch) - so there's nothing to
+  // compute here (also saves a live apilayer tax-rate lookup on every free
+  // order). Both blocks below are gated on this rather than on the final
+  // total, since computing tax/shipping first and only checking the grand
+  // total afterward would let a coupon-covered item still get charged for
+  // tax/shipping on top of being "free."
+  if (itemsTotal > 0) {
+    // Tax: only for Georgia shipping addresses (hardcoded client-side
+    // today, replicated as-is, not "fixed" here). Taxable amount is the
+    // pre-coupon-discount, sale-adjusted price on non-event items -- matches
+    // tax-rate.service.ts's own math exactly, including its pre-existing
+    // "not coupon-discount-aware" quirk. The apilayer key now comes from
+    // Firestore via the Admin SDK instead of the browser, closing the
+    // client-side key exposure as a side effect of this move.
+    if (request.shippingAddress?.state === "Georgia") {
+      const taxableAmount = round2(
+        pricedItems
+          .filter((item) => !item.isEvent)
+          .reduce((sum, item) => sum + item.price * item.orderQuantity, 0)
+      );
+
+      try {
+        const response = await fetch(
+          "https://api.apilayer.com/tax_data/tax_rates?zip=" +
+            encodeURIComponent(request.shippingAddress.zip ?? "") +
+            "&use_client_ip=false&country=US",
+          {
+            method: "GET",
+            headers: {apikey: (config.taxApiKey as string) ?? ""},
+          }
+        );
+        const data = response.ok ? await response.json() : null;
+
+        taxRate = typeof data?.combined_rate === "number" ?
+          data.combined_rate : 0.07;
+        taxSource = data ? "service" : "default";
+      } catch {
+        taxRate = 0.07;
+        taxSource = "default";
+      }
+
+      estimatedTaxes = round2(taxableAmount * taxRate);
+    }
+
+    // Shipping discount: the rate itself is trusted as sent by the client
+    // (it already came from the real get_shipping_rates/ShipEngine function
+    // earlier in the flow, by explicit scope decision) -- only the discount
+    // applied on top of it is re-verified here, matching
+    // checkout.component.ts#calculateShippingCost() exactly.
+    const freeShippingAmount = typeof config.freeShippingAmount === "number" ?
+      config.freeShippingAmount : Infinity;
+
+    if (subtotal > freeShippingAmount) {
+      shippingDiscount = shippingRate;
+      shippingDiscountReason = "Over $" + config.freeShippingAmount;
+    } else if (shippingSale) {
+      const shippingPercentOff = clampPercent(shippingSale.percentOff);
+      shippingDiscount = round2(shippingPercentOff / 100 * shippingRate);
+      shippingDiscountReason = shippingPercentOff + "% Off";
+    }
+  } else {
+    shippingRate = 0;
   }
 
-  const total = round2(
-    subtotal - totalDiscount + estimatedTaxes + shippingRate - shippingDiscount
-  );
+  const total = itemsTotal > 0 ?
+    round2(itemsTotal + estimatedTaxes + shippingRate - shippingDiscount) : 0;
 
   return {
     cartItems: pricedItems,
@@ -282,6 +300,7 @@ export async function computeOrderPricing(
     estimatedTaxes,
     taxRate,
     taxSource,
+    shippingRate,
     shippingDiscount,
     shippingDiscountReason,
     total,

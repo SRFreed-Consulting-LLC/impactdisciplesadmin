@@ -3,26 +3,12 @@
   [title]="itemType + 's'"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(purchases$ | async) ?? []"
-  [loading]="(loading$ | async) ?? false"
+  [pagedSource]="paged"
   [rowClass]="rowClass"
   tableClass="purchases-table"
-  initialSortKey="dateProcessed"
-  initialSortDirection="desc"
   exportFileName="purchases.xlsx"
-  (rowDoubleClick)="showEditModal($event)"
-  (visibleRowsChange)="onVisibleRowsChange($event)">
+  (rowDoubleClick)="showEditModal($event)">
 </app-data-grid>
-
-<div class="summary-row" *ngIf="canEdit()">
-  <span>{{ currentRows.length }} orders</span>
-  <span>Total: {{ sumOf('totalBeforeDiscount') | currency }}</span>
-  <span>Discount: {{ sumOf('discount') | currency }}</span>
-  <span>Taxes: {{ sumOf('estimatedTaxes') | currency }}</span>
-  <span>Shipping: {{ sumOf('shippingRate') | currency }}</span>
-  <span>Charged: {{ sumOf('charged') | currency }}</span>
-  <span>Refunded: {{ sumOf('refundAmount') | currency }}</span>
-</div>
 </ng-container>
 
 <ng-container *ngIf="mode === 'edit' && editingItem as item">

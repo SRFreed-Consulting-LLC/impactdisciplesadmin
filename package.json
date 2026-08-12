@@ -13,7 +13,9 @@
     "lint": "ng lint",
     "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "backup:dev": "node scripts/export.js --project=dev",
+    "backup:prod": "node scripts/export.js --project=prod"
   },
   "private": true,
   "dependencies": {

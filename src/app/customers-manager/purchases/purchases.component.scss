@@ -19,18 +19,6 @@ app-data-grid {
   white-space: nowrap;
 }
 
-.summary-row {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(0, 0, 0, 0.02);
-}
-
 /* Full-page in-place edit view (no popup - see products.component.scss for
    the established precedent this mirrors) filling the same flex column the
    grid normally occupies. No Live toggle here - purchases have no such

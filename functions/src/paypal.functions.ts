@@ -114,17 +114,91 @@ function buildCheckoutForm(
     shippingAddress: body.shippingAddress,
     cartItems: pricing.cartItems,
     isNewsletter: body.isNewsletter,
-    total: pricing.total,
+    // "total" means the pre-discount item subtotal throughout this system
+    // (admin's purchases.component.ts fallback helpers, and
+    // checkout-success.component.ts#recordAffiliateSale's own
+    // totalBeforeDiscount/totalAfterDiscount math both depend on this) --
+    // NOT the grand total actually charged. That real charged amount lives
+    // on payPalReceipt (paid orders) or is implicitly $0 (free orders,
+    // where tax/shipping are also zeroed - see computeOrderPricing).
+    total: pricing.subtotal,
     discount: pricing.totalDiscount,
     couponCode: pricing.couponCode,
     couponPercent: pricing.couponPercent,
-    shippingRate: body.shippingRate ?? 0,
+    // pricing.shippingRate, not body.shippingRate -- zeroed by
+    // computeOrderPricing when the order is free (see its own comment).
+    // shippingRateId is kept as sent (the full ShipEngine rate object) even
+    // on a free order, so fulfillment can still purchase the real label.
+    shippingRate: pricing.shippingRate,
     shippingRateId: body.shippingRateId,
     shippingDiscount: pricing.shippingDiscount,
     shippingDiscountReason: pricing.shippingDiscountReason,
     estimatedTaxes: pricing.estimatedTaxes,
     taxRate: pricing.taxRate,
     taxSource: pricing.taxSource,
+  };
+}
+
+/**
+ * Builds the `payPalReceipt` value in the shape the admin app's
+ * purchases.component.ts already expects (`IClientAuthorizeCallbackData`,
+ * the shape ngx-paypal's old client-side onClientAuthorization callback
+ * used to hand it: purchase_units[0].amount.{value,breakdown}, top-level
+ * status). PayPal's actual `/v2/checkout/orders/{id}/capture` response does
+ * NOT have that shape (the captured amount lives at
+ * purchase_units[0].payments.captures[0].amount.value instead, with no
+ * item_total/tax_total/shipping/discount breakdown at all) - storing it
+ * raw made every price/tax/shipping figure the admin UI derives from
+ * payPalReceipt come back NaN for a real (non-free) purchase. Reconstructed
+ * from the same server-verified numbers already on checkoutForm, since
+ * those are exactly what was quoted to PayPal at order-creation time.
+ * @param {Record<string, unknown>} checkoutForm The order's own
+ * total/discount/estimatedTaxes/shippingRate/shippingDiscount fields.
+ * @param {string} orderId The PayPal order id.
+ * @param {string | undefined} payerID The PayPal payer id, if provided.
+ * @param {string} amount The exact decimal amount PayPal captured.
+ * @param {unknown} captureData PayPal's raw capture response, kept
+ * alongside for audit/debugging - not read by any UI today.
+ * @return {Record<string, unknown>} A payPalReceipt value the existing
+ * admin display helpers can read without any change on their side.
+ */
+function buildPayPalReceipt(
+  checkoutForm: Record<string, unknown>,
+  orderId: string,
+  payerID: string | undefined,
+  amount: string,
+  captureData: unknown
+): Record<string, unknown> {
+  // checkoutForm.total IS the pre-discount item subtotal (see
+  // buildCheckoutForm's own comment on this) - no reverse-engineering
+  // needed, unlike an earlier version of this function that wrongly
+  // treated it as the grand total and derived a bogus item_total from it.
+  const itemTotal = (checkoutForm.total as number) ?? 0;
+  const discount = (checkoutForm.discount as number) ?? 0;
+  const estimatedTaxes = (checkoutForm.estimatedTaxes as number) ?? 0;
+  const shippingRate = (checkoutForm.shippingRate as number) ?? 0;
+  const shippingDiscount = (checkoutForm.shippingDiscount as number) ?? 0;
+  const usd = (value: number) =>
+    ({currency_code: "USD", value: value.toFixed(2)});
+
+  return {
+    orderID: orderId,
+    payerID: payerID ?? null,
+    status: (captureData as {status?: string})?.status,
+    purchase_units: [{
+      amount: {
+        currency_code: "USD",
+        value: amount,
+        breakdown: {
+          item_total: usd(itemTotal),
+          discount: usd(discount),
+          tax_total: usd(estimatedTaxes),
+          shipping: usd(shippingRate),
+          shipping_discount: usd(shippingDiscount),
+        },
+      },
+    }],
+    captureDetails: captureData,
   };
 }
 
@@ -253,7 +327,7 @@ exports.create_paypal_order = functions
         const clientId = await getPaypalClientId();
         const accessToken = await getPayPalAccessToken(clientId);
         const amountValue = pricing.total.toFixed(2);
-        const shippingRateValue = Number(body.shippingRate ?? 0).toFixed(2);
+        const shippingRateValue = pricing.shippingRate.toFixed(2);
 
         const itemTotalValue = pricing.subtotal.toFixed(2);
         const shippingDiscountValue = pricing.shippingDiscount.toFixed(2);
@@ -346,6 +420,7 @@ exports.capture_paypal_order = functions
     return restrictedCors(request, response, async () => {
       try {
         const orderId: string | undefined = request.body?.orderId;
+        const payerID: string | undefined = request.body?.payerID;
         if (!orderId) {
           response.status(400).send({code: 400, error: "orderId is required"});
           return;
@@ -422,7 +497,9 @@ exports.capture_paypal_order = functions
         const checkoutForm: Record<string, unknown> = {
           ...pending.checkoutForm,
           receipt: orderId,
-          payPalReceipt: captureData,
+          payPalReceipt: buildPayPalReceipt(
+            pending.checkoutForm, orderId, payerID, pending.amount, captureData
+          ),
           processedStatus: "NEW",
           dateProcessed: admin.firestore.Timestamp.now(),
         };
