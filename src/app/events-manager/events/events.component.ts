@@ -15,7 +15,6 @@ import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service'
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
-import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
@@ -51,7 +50,15 @@ export class EventsComponent implements OnInit {
   private readonly screenKey = 'events-manager.events';
 
   headerActions: ListHeaderAction[] = [];
-  rowActions: DataGridRowAction<EventModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
+  // Deleting an event has no cascading cleanup of its event-registrations -
+  // orphaning them (missing eventId, stuck "new" forever since nothing can
+  // resolve their startDate to suppress the bell) is exactly what happened
+  // to the Disciple-Making Summit's registrations, live-diagnosed
+  // 2026-08-12. Removed rather than fixed with a cascade, since there's no
+  // real product need for staff to delete an event outright (see isActive
+  // for retiring one instead) - don't re-add without also handling orphaned
+  // registrations/agenda references.
+  rowActions: DataGridRowAction<EventModel>[] = [];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -121,7 +128,6 @@ export class EventsComponent implements OnInit {
     public permissionService: PermissionService,
     private fb: FormBuilder,
     private dialog: MatDialog,
-    private confirmService: ConfirmService,
     private snackbar: SnackbarService,
     private route: ActivatedRoute
   ) {}
@@ -179,19 +185,6 @@ export class EventsComponent implements OnInit {
   organizationName(item: EventModel): string {
     const id = typeof item.organization === 'string' ? item.organization : item.organization?.id;
     return this.organizations.find((o) => o.id === id)?.name ?? '';
-  }
-
-  delete(item: EventModel): void {
-    if (!this.permissionService.canDelete(this.screenKey)) {
-      return;
-    }
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
   }
 
   manageLocations(): void {
