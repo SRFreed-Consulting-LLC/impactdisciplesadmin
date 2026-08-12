@@ -1,25 +1,25 @@
 <mat-sidenav-container class="impact-shell" [hasBackdrop]="false">
   <!-- Collapsible drawer: unpinned, this auto-collapses to an icon rail
-       whenever the mouse isn't over it (mouseenter/mouseleave below) and
-       expands back to full width on hover - same auto-hide-sidebar pattern
-       most IDEs use. Pinned (the default - see isDrawerPinned) keeps it at
-       full width permanently, matching this app's behavior before this
-       feature existed.
+  whenever the mouse isn't over it (mouseenter/mouseleave below) and
+  expands back to full width on hover - same auto-hide-sidebar pattern
+  most IDEs use. Pinned (the default - see isDrawerPinned) keeps it at
+  full width permanently, matching this app's behavior before this
+  feature existed.
 
-       mode is the actual fix for "the content area shifts width whenever
-       the drawer expands (hover, or a row menu keeping it expanded)" -
-       mode="side" (used whenever pinned) makes mat-sidenav-content reserve
-       exactly the drawer's current width, so ANY width change - hover,
-       pinning, a menu holding it open - reflows/shrinks the content next
-       to it. mode="over" (unpinned) takes the drawer out of that layout
-       calculation entirely: mat-sidenav-content always sizes itself as if
-       the drawer weren't there (full width, unaffected by anything the
-       drawer does), and the drawer instead floats on top of it via
-       Material's own CDK-overlay-based positioning - collapsed (64px) or
-       hover-expanded (300px), it's always an overlay, never a push.
-       hasBackdrop="false" on the container (not just this sidenav) turns
-       off the dark scrim mode="over" would otherwise show behind an "open"
-       drawer, since here it's always considered open, just narrow. -->
+  mode is the actual fix for "the content area shifts width whenever
+  the drawer expands (hover, or a row menu keeping it expanded)" -
+  mode="side" (used whenever pinned) makes mat-sidenav-content reserve
+  exactly the drawer's current width, so ANY width change - hover,
+  pinning, a menu holding it open - reflows/shrinks the content next
+  to it. mode="over" (unpinned) takes the drawer out of that layout
+  calculation entirely: mat-sidenav-content always sizes itself as if
+  the drawer weren't there (full width, unaffected by anything the
+  drawer does), and the drawer instead floats on top of it via
+  Material's own CDK-overlay-based positioning - collapsed (64px) or
+  hover-expanded (300px), it's always an overlay, never a push.
+  hasBackdrop="false" on the container (not just this sidenav) turns
+  off the dark scrim mode="over" would otherwise show behind an "open"
+  drawer, since here it's always considered open, just narrow. -->
   <mat-sidenav
     class="impact-drawer"
     [class.impact-drawer--collapsed]="!drawerExpanded"
@@ -30,145 +30,155 @@
     (mouseleave)="onDrawerMouseLeave()">
     <div class="drawer-logo">
       <!-- Sized by CSS (.drawer-logo img), not the height attribute here,
-           so it can shrink along with the drawer when collapsed - see
-           .impact-drawer--collapsed .drawer-logo img. -->
+      so it can shrink along with the drawer when collapsed - see
+      .impact-drawer--collapsed .drawer-logo img. -->
       <img src="assets/Impact-Logo_Light.png" alt="Impact Disciples logo">
     </div>
 
-    <div class="impact-drawer__pin-drawer-row" *ngIf="drawerExpanded">
-      <button
-        type="button"
-        mat-icon-button
-        class="impact-drawer__drawer-pin-toggle"
-        [class.impact-drawer__drawer-pin-toggle--pinned]="isDrawerPinned"
-        [matTooltip]="isDrawerPinned ? 'Unpin sidebar (auto-collapse when not hovered)' : 'Pin sidebar open'"
-        (click)="toggleDrawerPin()">
-        <mat-icon>push_pin</mat-icon>
-      </button>
-      <span class="impact-drawer__pin-drawer-label">{{ isDrawerPinned ? 'Sidebar pinned open' : 'Sidebar auto-hides' }}</span>
-    </div>
+    @if (drawerExpanded) {
+      <div class="impact-drawer__pin-drawer-row">
+        <button
+          type="button"
+          mat-icon-button
+          class="impact-drawer__drawer-pin-toggle"
+          [class.impact-drawer__drawer-pin-toggle--pinned]="isDrawerPinned"
+          [matTooltip]="isDrawerPinned ? 'Unpin sidebar (auto-collapse when not hovered)' : 'Pin sidebar open'"
+          (click)="toggleDrawerPin()">
+          <mat-icon>push_pin</mat-icon>
+        </button>
+        <span class="impact-drawer__pin-drawer-label">{{ isDrawerPinned ? 'Sidebar pinned open' : 'Sidebar auto-hides' }}</span>
+      </div>
+    }
 
     <mat-nav-list class="impact-drawer__list">
       <!-- Pinned shortcuts, above Home - same wrapper-div-as-sibling
-           structure as .impact-drawer__group-header below (see its own
-           comment): the unpin button sits next to the link, not inside it,
-           so it doesn't trip the same "third projected element doubles the
-           row height" issue. Hidden entirely (not just empty) when nothing
-           is pinned, rather than showing an empty section header. -->
-      <ng-container *ngIf="pinnedItems.length > 0">
-        <div class="impact-drawer__pinned-row" *ngFor="let pinned of pinnedItems">
-          <a
-            mat-list-item
-            [routerLink]="['/', pinned.group.id]"
-            [queryParams]="{ tab: pinned.item.slug }"
-            class="impact-drawer__link"
-            [class.impact-drawer__link--active]="activeGroupId === pinned.group.id && activeSlug === pinned.item.slug">
-            <mat-icon matListItemIcon>{{ pinned.group.icon }}</mat-icon>
-            <span matListItemTitle class="impact-drawer__link-text">{{ pinned.item.label }}</span>
-          </a>
-          <button
-            type="button"
-            mat-icon-button
-            class="impact-drawer__pin-toggle impact-drawer__pin-toggle--pinned"
-            matTooltip="Unpin"
-            (click)="togglePin(pinned.group, pinned.item)">
-            <mat-icon>push_pin</mat-icon>
-          </button>
-        </div>
-        <mat-divider class="impact-drawer__pinned-divider"></mat-divider>
-      </ng-container>
-
-      <ng-container *ngFor="let group of secureNav">
-        <!-- Home - no sub-items, plain link -->
-        <a
-          *ngIf="!group.items"
-          mat-list-item
-          [routerLink]="['/', group.id]"
-          class="impact-drawer__link"
-          [class.impact-drawer__link--active]="activeGroupId === group.id">
-          <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
-          <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
-        </a>
-
-        <!-- Manager group - header toggles expand/collapse, doesn't navigate itself.
-             The chevron is a sibling of the button, not a child of it: a third
-             projected element inside a mat-list-item (beyond matListItemIcon +
-             matListItemTitle) makes Material misclassify the row as a
-             "two-line" list item and roughly double its height, even though
-             the chevron itself is absolutely positioned and never affects
-             layout - confirmed live (Home, with no third element, measured
-             36px; a manager row with the chevron inside measured 69px for
-             identical padding). Kept out of the button entirely so its
-             content projection matches Home's exactly. -->
-        <div *ngIf="group.items" class="impact-drawer__group-header">
-          <button
-            type="button"
-            mat-list-item
-            (click)="toggleGroup(group.id)"
-            class="impact-drawer__link"
-            [class.impact-drawer__link--active]="activeGroupId === group.id && !activeSlug">
-            <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
-            <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
-          </button>
-          <mat-icon class="impact-drawer__chevron" [class.impact-drawer__chevron--open]="expanded.has(group.id)">expand_more</mat-icon>
-        </div>
-
-        <div class="impact-drawer__sublist" *ngIf="group.items && expanded.has(group.id)">
-          <!-- Same wrapper-div-as-sibling structure as the pinned rows/
-               group-header above - the menu-trigger button sits next to the
-               link, not projected inside it. -->
-          <div class="impact-drawer__subitem" *ngFor="let item of group.items">
+      structure as .impact-drawer__group-header below (see its own
+      comment): the unpin button sits next to the link, not inside it,
+      so it doesn't trip the same "third projected element doubles the
+      row height" issue. Hidden entirely (not just empty) when nothing
+      is pinned, rather than showing an empty section header. -->
+      @if (pinnedItems.length > 0) {
+        @for (pinned of pinnedItems; track pinned) {
+          <div class="impact-drawer__pinned-row">
             <a
               mat-list-item
-              [routerLink]="['/', group.id]"
-              [queryParams]="{ tab: item.slug }"
-              class="impact-drawer__sublink"
-              [class.impact-drawer__sublink--active]="activeGroupId === group.id && activeSlug === item.slug">
-              <span matListItemTitle class="impact-drawer__sublink-text">{{ item.label }}</span>
+              [routerLink]="['/', pinned.group.id]"
+              [queryParams]="{ tab: pinned.item.slug }"
+              class="impact-drawer__link"
+              [class.impact-drawer__link--active]="activeGroupId === pinned.group.id && activeSlug === pinned.item.slug">
+              <mat-icon matListItemIcon>{{ pinned.group.icon }}</mat-icon>
+              <span matListItemTitle class="impact-drawer__link-text">{{ pinned.item.label }}</span>
             </a>
             <button
               type="button"
               mat-icon-button
-              class="impact-drawer__row-menu-toggle"
-              matTooltip="More actions"
-              [matMenuTriggerFor]="rowMenu"
-              (menuOpened)="onRowMenuOpened()"
-              (menuClosed)="onRowMenuClosed()">
-              <mat-icon>more_vert</mat-icon>
+              class="impact-drawer__pin-toggle impact-drawer__pin-toggle--pinned"
+              matTooltip="Unpin"
+              (click)="togglePin(pinned.group, pinned.item)">
+              <mat-icon>push_pin</mat-icon>
             </button>
-            <mat-menu #rowMenu="matMenu">
-              <button mat-menu-item (click)="togglePin(group, item)">
-                <mat-icon>push_pin</mat-icon>
-                <span>{{ isPinned(group, item) ? 'Unpin' : 'Pin to top' }}</span>
-              </button>
-              <!-- "Who has access to this screen" - Admin/Root only, and
-                   only for screens the granular permission system actually
-                   covers (see NavLeaf.employeeGrantable - Admin Users
-                   itself is never grantable, so there's nothing to manage
-                   here). -->
-              <button
-                mat-menu-item
-                *ngIf="canManagePermissions && item.employeeGrantable !== false"
-                (click)="openScreenPermissions(group, item)">
-                <mat-icon>manage_accounts</mat-icon>
-                <span>Manage access</span>
-              </button>
-            </mat-menu>
           </div>
-        </div>
-      </ng-container>
+        }
+        <mat-divider class="impact-drawer__pinned-divider"></mat-divider>
+      }
+
+      @for (group of secureNav; track group) {
+        <!-- Home - no sub-items, plain link -->
+        @if (!group.items) {
+          <a
+            mat-list-item
+            [routerLink]="['/', group.id]"
+            class="impact-drawer__link"
+            [class.impact-drawer__link--active]="activeGroupId === group.id">
+            <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
+            <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
+          </a>
+        }
+        <!-- Manager group - header toggles expand/collapse, doesn't navigate itself.
+        The chevron is a sibling of the button, not a child of it: a third
+        projected element inside a mat-list-item (beyond matListItemIcon +
+        matListItemTitle) makes Material misclassify the row as a
+        "two-line" list item and roughly double its height, even though
+        the chevron itself is absolutely positioned and never affects
+        layout - confirmed live (Home, with no third element, measured
+        36px; a manager row with the chevron inside measured 69px for
+        identical padding). Kept out of the button entirely so its
+        content projection matches Home's exactly. -->
+        @if (group.items) {
+          <div class="impact-drawer__group-header">
+            <button
+              type="button"
+              mat-list-item
+              (click)="toggleGroup(group.id)"
+              class="impact-drawer__link"
+              [class.impact-drawer__link--active]="activeGroupId === group.id && !activeSlug">
+              <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
+              <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
+            </button>
+            <mat-icon class="impact-drawer__chevron" [class.impact-drawer__chevron--open]="expanded.has(group.id)">expand_more</mat-icon>
+          </div>
+        }
+        @if (group.items && expanded.has(group.id)) {
+          <div class="impact-drawer__sublist">
+            <!-- Same wrapper-div-as-sibling structure as the pinned rows/
+            group-header above - the menu-trigger button sits next to the
+            link, not projected inside it. -->
+            @for (item of group.items; track item) {
+              <div class="impact-drawer__subitem">
+                <a
+                  mat-list-item
+                  [routerLink]="['/', group.id]"
+                  [queryParams]="{ tab: item.slug }"
+                  class="impact-drawer__sublink"
+                  [class.impact-drawer__sublink--active]="activeGroupId === group.id && activeSlug === item.slug">
+                  <span matListItemTitle class="impact-drawer__sublink-text">{{ item.label }}</span>
+                </a>
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="impact-drawer__row-menu-toggle"
+                  matTooltip="More actions"
+                  [matMenuTriggerFor]="rowMenu"
+                  (menuOpened)="onRowMenuOpened()"
+                  (menuClosed)="onRowMenuClosed()">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #rowMenu="matMenu">
+                  <button mat-menu-item (click)="togglePin(group, item)">
+                    <mat-icon>push_pin</mat-icon>
+                    <span>{{ isPinned(group, item) ? 'Unpin' : 'Pin to top' }}</span>
+                  </button>
+                  <!-- "Who has access to this screen" - Admin/Root only, and
+                  only for screens the granular permission system actually
+                  covers (see NavLeaf.employeeGrantable - Admin Users
+                  itself is never grantable, so there's nothing to manage
+                  here). -->
+                  @if (canManagePermissions && item.employeeGrantable !== false) {
+                    <button
+                      mat-menu-item
+                      (click)="openScreenPermissions(group, item)">
+                      <mat-icon>manage_accounts</mat-icon>
+                      <span>Manage access</span>
+                    </button>
+                  }
+                </mat-menu>
+              </div>
+            }
+          </div>
+        }
+      }
     </mat-nav-list>
   </mat-sidenav>
 
   <!-- mode="over" (unpinned) takes the drawer out of layout entirely (see
-       the drawer's own comment above), so this content pane's left edge
-       needs its own static offset matching the drawer's resting COLLAPSED
-       width - otherwise the always-present 64px icon rail sits on top of
-       (not beside) the content's own left edge. Only a static offset, not
-       the full 300px: the temporary hover/menu-open expansion is still
-       meant to overlay OVER this reserved strip and a bit of real content
-       beyond it, per the original ask - this only fixes the permanent
-       collapsed-state overlap, not the deliberate expanded-state one. -->
+  the drawer's own comment above), so this content pane's left edge
+  needs its own static offset matching the drawer's resting COLLAPSED
+  width - otherwise the always-present 64px icon rail sits on top of
+  (not beside) the content's own left edge. Only a static offset, not
+  the full 300px: the temporary hover/menu-open expansion is still
+  meant to overlay OVER this reserved strip and a bit of real content
+  beyond it, per the original ask - this only fixes the permanent
+  collapsed-state overlap, not the deliberate expanded-state one. -->
   <mat-sidenav-content class="impact-shell__content" [class.impact-shell__content--rail-gutter]="!isDrawerPinned">
     <mat-toolbar class="impact-header">
       <span class="impact-header__spacer"></span>
@@ -186,23 +196,27 @@
         </div>
         <mat-divider></mat-divider>
         <!-- Admin/Root only - see MainScreenComponent.canManageLogs.
-             Moved here from its own left-nav row under Admin Manager (see
-             nav-config.ts's Logs entry, hideFromNav: true) - same treatment
-             as Admin Users right below, still the same /admin-manager?
-             tab=logs destination, just linked from here instead. -->
-        <a mat-menu-item *ngIf="canManageLogs" routerLink="/admin-manager" [queryParams]="{ tab: 'logs' }">
-          <mat-icon>receipt_long</mat-icon>
-          <span>Logs</span>
-        </a>
+        Moved here from its own left-nav row under Admin Manager (see
+        nav-config.ts's Logs entry, hideFromNav: true) - same treatment
+        as Admin Users right below, still the same /admin-manager?
+        tab=logs destination, just linked from here instead. -->
+        @if (canManageLogs) {
+          <a mat-menu-item routerLink="/admin-manager" [queryParams]="{ tab: 'logs' }">
+            <mat-icon>receipt_long</mat-icon>
+            <span>Logs</span>
+          </a>
+        }
         <!-- Admin/Root only - see MainScreenComponent.canManageAdminUsers.
-             Moved here from its own left-nav row under Admin Manager (see
-             nav-config.ts's Admin Users entry, hideFromNav: true) - still
-             the same /admin-manager?tab=admin-users destination, just
-             linked from here instead. -->
-        <a mat-menu-item *ngIf="canManageAdminUsers" routerLink="/admin-manager" [queryParams]="{ tab: 'admin-users' }">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <span>Admin Users</span>
-        </a>
+        Moved here from its own left-nav row under Admin Manager (see
+        nav-config.ts's Admin Users entry, hideFromNav: true) - still
+        the same /admin-manager?tab=admin-users destination, just
+        linked from here instead. -->
+        @if (canManageAdminUsers) {
+          <a mat-menu-item routerLink="/admin-manager" [queryParams]="{ tab: 'admin-users' }">
+            <mat-icon>admin_panel_settings</mat-icon>
+            <span>Admin Users</span>
+          </a>
+        }
         <a mat-menu-item routerLink="/settings">
           <mat-icon>palette</mat-icon>
           <span>Settings</span>

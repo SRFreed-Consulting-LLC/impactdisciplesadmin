@@ -8,13 +8,17 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>First Name</mat-label>
             <input matInput formControlName="firstName" required>
-            <mat-error *ngIf="form.get('firstName')?.hasError('required')">First name is required</mat-error>
+            @if (form.get('firstName')?.hasError('required')) {
+              <mat-error>First name is required</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Last Name</mat-label>
             <input matInput formControlName="lastName" required>
-            <mat-error *ngIf="form.get('lastName')?.hasError('required')">Last name is required</mat-error>
+            @if (form.get('lastName')?.hasError('required')) {
+              <mat-error>Last name is required</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
@@ -101,9 +105,11 @@
             <tr mat-header-row *matHeaderRowDef="purchasesColumns; sticky: true"></tr>
             <tr mat-row *matRowDef="let row; columns: purchasesColumns;"></tr>
             <tr *matNoDataRow>
-              <td class="empty-state" [attr.colspan]="purchasesColumns.length" *ngIf="(purchasesLoading$ | async) === false">
-                No purchases found for this customer.
-              </td>
+              @if ((purchasesLoading$ | async) === false) {
+                <td class="empty-state" [attr.colspan]="purchasesColumns.length">
+                  No purchases found for this customer.
+                </td>
+              }
             </tr>
           </table>
         </div>
@@ -147,9 +153,11 @@
             <tr mat-header-row *matHeaderRowDef="registrationsColumns; sticky: true"></tr>
             <tr mat-row *matRowDef="let row; columns: registrationsColumns;"></tr>
             <tr *matNoDataRow>
-              <td class="empty-state" [attr.colspan]="registrationsColumns.length" *ngIf="(registrationsLoading$ | async) === false">
-                No event registrations found for this customer.
-              </td>
+              @if ((registrationsLoading$ | async) === false) {
+                <td class="empty-state" [attr.colspan]="registrationsColumns.length">
+                  No event registrations found for this customer.
+                </td>
+              }
             </tr>
           </table>
         </div>
@@ -166,24 +174,26 @@
         </div>
         <mat-divider></mat-divider>
 
-        <ng-container *ngFor="let note of notes; let i = index">
-          <div class="note-row" *ngIf="canSeeNote(note)">
-            <div class="note-row__header">
-              <span class="note-row__date">{{ getDate(note.date) }}</span>
-              <span class="note-row__added-by">{{ note.addedBy }}</span>
-              <mat-checkbox [(ngModel)]="note.private" class="note-row__private"></mat-checkbox>
-              <button mat-icon-button matTooltip="DELETE" (click)="deleteNote(i)">
-                <mat-icon>close</mat-icon>
-              </button>
+        @for (note of notes; track note; let i = $index) {
+          @if (canSeeNote(note)) {
+            <div class="note-row">
+              <div class="note-row__header">
+                <span class="note-row__date">{{ getDate(note.date) }}</span>
+                <span class="note-row__added-by">{{ note.addedBy }}</span>
+                <mat-checkbox [(ngModel)]="note.private" class="note-row__private"></mat-checkbox>
+                <button mat-icon-button matTooltip="DELETE" (click)="deleteNote(i)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+              <mat-form-field appearance="outline" class="full-width">
+                <textarea matInput rows="3" [(ngModel)]="note.note"></textarea>
+              </mat-form-field>
+              <div class="note-row__save">
+                <button mat-stroked-button type="button" (click)="saveNote()">SAVE</button>
+              </div>
             </div>
-            <mat-form-field appearance="outline" class="full-width">
-              <textarea matInput rows="3" [(ngModel)]="note.note"></textarea>
-            </mat-form-field>
-            <div class="note-row__save">
-              <button mat-stroked-button type="button" (click)="saveNote()">SAVE</button>
-            </div>
-          </div>
-        </ng-container>
+          }
+        }
       </div>
     </mat-tab>
   </mat-tab-group>

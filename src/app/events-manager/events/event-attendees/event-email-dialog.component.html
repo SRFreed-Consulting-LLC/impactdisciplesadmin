@@ -4,7 +4,9 @@
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Subject</mat-label>
     <input matInput formControlName="subject" required>
-    <mat-error *ngIf="form.get('subject')?.hasError('required')">Subject is required</mat-error>
+    @if (form.get('subject')?.hasError('required')) {
+      <mat-error>Subject is required</mat-error>
+    }
   </mat-form-field>
 
   <app-variable-inserter [variables]="emailVals" (insert)="insertVariable($event)"></app-variable-inserter>

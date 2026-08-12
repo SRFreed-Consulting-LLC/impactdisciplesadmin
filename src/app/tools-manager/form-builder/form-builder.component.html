@@ -1,4 +1,4 @@
-<ng-container *ngIf="mode === 'list'">
+@if (mode === 'list') {
   <app-data-grid
     [showColumnsButton]="false"
     [showExportButton]="false"
@@ -18,15 +18,19 @@
       </span>
     </ng-template>
     <ng-template appDataGridCell="publicUrl" let-row>
-      <a *ngIf="row.publicUrl" [href]="row.publicUrl" target="_blank" rel="noopener" class="public-url-link" (click)="$event.stopPropagation()">
-        {{ row.publicUrl }}
-      </a>
-      <span *ngIf="!row.publicUrl" class="public-url-empty">&mdash;</span>
+      @if (row.publicUrl) {
+        <a [href]="row.publicUrl" target="_blank" rel="noopener" class="public-url-link" (click)="$event.stopPropagation()">
+          {{ row.publicUrl }}
+        </a>
+      }
+      @if (!row.publicUrl) {
+        <span class="public-url-empty">&mdash;</span>
+      }
     </ng-template>
   </app-data-grid>
-</ng-container>
+}
 
-<ng-container *ngIf="mode === 'edit'">
+@if (mode === 'edit') {
   <div class="editor">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
@@ -35,7 +39,9 @@
       <mat-form-field appearance="outline" class="editor__name-field">
         <mat-label>Form Name</mat-label>
         <input matInput [formControl]="nameControl" required>
-        <mat-error *ngIf="nameControl.hasError('required')">Form name is required</mat-error>
+        @if (nameControl.hasError('required')) {
+          <mat-error>Form name is required</mat-error>
+        }
       </mat-form-field>
       <span class="editor__spacer"></span>
       <mat-slide-toggle
@@ -46,9 +52,11 @@
       <div class="editor__bg-control" matTooltip="Form Background Color">
         <span class="editor__bg-label">Background</span>
         <input type="color" [value]="backgroundColor || '#ffffff'" (input)="backgroundColor = $any($event.target).value" class="editor__bg-swatch">
-        <button mat-icon-button type="button" *ngIf="backgroundColor" matTooltip="Clear background" (click)="backgroundColor = ''">
-          <mat-icon>close</mat-icon>
-        </button>
+        @if (backgroundColor) {
+          <button mat-icon-button type="button" matTooltip="Clear background" (click)="backgroundColor = ''">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
       </div>
       <button mat-stroked-button type="button" class="editor__action-btn" (click)="showPreview = !showPreview">
         <mat-icon>{{ showPreview ? 'edit' : 'visibility' }}</mat-icon>
@@ -61,7 +69,6 @@
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
       <app-indicator-button title="SAVE" [isInProgress]="inProgress$ | async" [disabled]="inProgress$ | async" (clicked)="onSave()"></app-indicator-button>
     </mat-toolbar>
-
     <div class="editor__subheader">
       <mat-icon class="editor__subheader-icon">link</mat-icon>
       <span class="editor__subheader-label">Public URL</span>
@@ -71,162 +78,173 @@
         [value]="publicUrl"
         placeholder="Not wired to a public page yet - full URL, e.g. http://localhost:4200/consultation-survey"
         (input)="publicUrl = $any($event.target).value">
-      <a *ngIf="publicUrl" [href]="publicUrl" target="_blank" rel="noopener" class="editor__subheader-link" matTooltip="Open in a new tab (must be a full URL - a relative path opens on this app's own origin instead of the public site's)">
-        <mat-icon>open_in_new</mat-icon>
-      </a>
-    </div>
-
-    <div class="editor__subheader" matTooltip="Default input styling for every field on this form - override on an individual field in its own settings panel">
-      <mat-icon class="editor__subheader-icon">palette</mat-icon>
-      <span class="editor__subheader-label">Control Style</span>
-
-      <span class="editor__subheader-minilabel">Radius</span>
-      <input
-        class="editor__subheader-number"
-        type="number"
-        min="0"
-        max="24"
-        [value]="controlBorderRadius ?? ''"
-        [placeholder]="defaultControlStyle.borderRadius.toString()"
-        (input)="controlBorderRadius = $any($event.target).value === '' ? null : +$any($event.target).value">
-      <span class="editor__subheader-unit">px</span>
-
-      <span class="editor__subheader-minilabel">Border</span>
-      <input type="color" class="editor__subheader-swatch" [value]="controlBorderColor || defaultControlStyle.borderColor" (input)="controlBorderColor = $any($event.target).value">
-      <input
-        class="editor__subheader-hex"
-        type="text"
-        [value]="controlBorderColor"
-        [placeholder]="defaultControlStyle.borderColor"
-        (input)="controlBorderColor = $any($event.target).value">
-
-      <span class="editor__subheader-minilabel">Accent</span>
-      <input type="color" class="editor__subheader-swatch" [value]="controlAccentColor || defaultControlStyle.accentColor" (input)="controlAccentColor = $any($event.target).value">
-      <input
-        class="editor__subheader-hex"
-        type="text"
-        [value]="controlAccentColor"
-        [placeholder]="defaultControlStyle.accentColor"
-        (input)="controlAccentColor = $any($event.target).value">
-
-      <span class="editor__subheader-minilabel">Padding</span>
-      <input
-        class="editor__subheader-number"
-        type="number"
-        min="0"
-        max="40"
-        [value]="controlPaddingBlock ?? ''"
-        [placeholder]="defaultControlStyle.paddingBlock.toString()"
-        matTooltip="Top/bottom padding"
-        (input)="controlPaddingBlock = $any($event.target).value === '' ? null : +$any($event.target).value">
-      <span class="editor__subheader-unit">/</span>
-      <input
-        class="editor__subheader-number"
-        type="number"
-        min="0"
-        max="40"
-        [value]="controlPaddingInline ?? ''"
-        [placeholder]="defaultControlStyle.paddingInline.toString()"
-        matTooltip="Left/right padding"
-        (input)="controlPaddingInline = $any($event.target).value === '' ? null : +$any($event.target).value">
-      <span class="editor__subheader-unit">px</span>
-    </div>
-
-    <div class="editor__body" *ngIf="!showPreview">
-      <div class="builder">
-        <div class="builder__palette">
-          <div class="palette-group" *ngFor="let group of groups">
-            <div class="palette-group__label">{{ group }}</div>
-            <div
-              class="palette-group__list"
-              cdkDropList
-              cdkDropListSortingDisabled
-              [id]="paletteListId(group)"
-              [cdkDropListData]="fieldTypesForGroup(group)"
-              [cdkDropListConnectedTo]="allDropListIds()"
-              (cdkDropListDropped)="onDropped($event)">
-              <div class="palette-item" *ngFor="let type of fieldTypesForGroup(group)" cdkDrag>
-                <mat-icon>{{ meta(type).icon }}</mat-icon>
-                <span>{{ meta(type).label }}</span>
+        @if (publicUrl) {
+          <a [href]="publicUrl" target="_blank" rel="noopener" class="editor__subheader-link" matTooltip="Open in a new tab (must be a full URL - a relative path opens on this app's own origin instead of the public site's)">
+            <mat-icon>open_in_new</mat-icon>
+          </a>
+        }
+      </div>
+      <div class="editor__subheader" matTooltip="Default input styling for every field on this form - override on an individual field in its own settings panel">
+        <mat-icon class="editor__subheader-icon">palette</mat-icon>
+        <span class="editor__subheader-label">Control Style</span>
+        <span class="editor__subheader-minilabel">Radius</span>
+        <input
+          class="editor__subheader-number"
+          type="number"
+          min="0"
+          max="24"
+          [value]="controlBorderRadius ?? ''"
+          [placeholder]="defaultControlStyle.borderRadius.toString()"
+          (input)="controlBorderRadius = $any($event.target).value === '' ? null : +$any($event.target).value">
+          <span class="editor__subheader-unit">px</span>
+          <span class="editor__subheader-minilabel">Border</span>
+          <input type="color" class="editor__subheader-swatch" [value]="controlBorderColor || defaultControlStyle.borderColor" (input)="controlBorderColor = $any($event.target).value">
+          <input
+            class="editor__subheader-hex"
+            type="text"
+            [value]="controlBorderColor"
+            [placeholder]="defaultControlStyle.borderColor"
+            (input)="controlBorderColor = $any($event.target).value">
+            <span class="editor__subheader-minilabel">Accent</span>
+            <input type="color" class="editor__subheader-swatch" [value]="controlAccentColor || defaultControlStyle.accentColor" (input)="controlAccentColor = $any($event.target).value">
+            <input
+              class="editor__subheader-hex"
+              type="text"
+              [value]="controlAccentColor"
+              [placeholder]="defaultControlStyle.accentColor"
+              (input)="controlAccentColor = $any($event.target).value">
+              <span class="editor__subheader-minilabel">Padding</span>
+              <input
+                class="editor__subheader-number"
+                type="number"
+                min="0"
+                max="40"
+                [value]="controlPaddingBlock ?? ''"
+                [placeholder]="defaultControlStyle.paddingBlock.toString()"
+                matTooltip="Top/bottom padding"
+                (input)="controlPaddingBlock = $any($event.target).value === '' ? null : +$any($event.target).value">
+                <span class="editor__subheader-unit">/</span>
+                <input
+                  class="editor__subheader-number"
+                  type="number"
+                  min="0"
+                  max="40"
+                  [value]="controlPaddingInline ?? ''"
+                  [placeholder]="defaultControlStyle.paddingInline.toString()"
+                  matTooltip="Left/right padding"
+                  (input)="controlPaddingInline = $any($event.target).value === '' ? null : +$any($event.target).value">
+                  <span class="editor__subheader-unit">px</span>
+                </div>
+                @if (!showPreview) {
+                  <div class="editor__body">
+                    <div class="builder">
+                      <div class="builder__palette">
+                        @for (group of groups; track group) {
+                          <div class="palette-group">
+                            <div class="palette-group__label">{{ group }}</div>
+                            <div
+                              class="palette-group__list"
+                              cdkDropList
+                              cdkDropListSortingDisabled
+                              [id]="paletteListId(group)"
+                              [cdkDropListData]="fieldTypesForGroup(group)"
+                              [cdkDropListConnectedTo]="allDropListIds()"
+                              (cdkDropListDropped)="onDropped($event)">
+                              @for (type of fieldTypesForGroup(group); track type) {
+                                <div class="palette-item" cdkDrag>
+                                  <mat-icon>{{ meta(type).icon }}</mat-icon>
+                                  <span>{{ meta(type).label }}</span>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                      <div
+                        class="builder__canvas"
+                        cdkDropList
+                        [id]="canvasListId"
+                        [cdkDropListData]="fields"
+                        [cdkDropListConnectedTo]="allDropListIds()"
+                        [style.background-color]="backgroundColor || null"
+                        (cdkDropListDropped)="onDropped($event)">
+                        @if (!fields.length) {
+                          <div class="canvas-empty">Drag a field here from the left.</div>
+                        }
+                        @for (field of fields; track field) {
+                          <ng-container *ngTemplateOutlet="fieldCard; context: { field: field, container: fields }"></ng-container>
+                        }
+                      </div>
+                      @if (selectedField; as field) {
+                        <div class="builder__settings">
+                          <app-form-field-settings [field]="field" (closed)="selectedFieldId = null"></app-form-field-settings>
+                        </div>
+                      } @else {
+                        <div class="builder__settings builder__settings--empty">Select a field on the canvas to edit its settings.</div>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (showPreview) {
+                  <div class="editor__preview">
+                    <app-form-renderer [fields]="fields" [backgroundColor]="backgroundColor" [controlStyle]="controlStyle" mode="preview"></app-form-renderer>
+                  </div>
+                }
               </div>
+            }
+
+            <!-- Recursive field card - also used for a 'columns' field's own two nested
+            column lists, via *ngTemplateOutlet calling itself. stopPropagation on
+            select is required here: a field nested inside a Columns card is a DOM
+            descendant of that card's own click handler, so without it, clicking a
+            nested field bubbles up and re-selects its parent Columns field right
+            after, leaving the settings panel showing the wrong one. -->
+            <ng-template #fieldCard let-field="field" let-container="container">
+              <div
+                class="field-card"
+                [class.field-card--selected]="selectedFieldId === field.id"
+                cdkDrag
+                role="button"
+                tabindex="0"
+                (click)="selectField(field); $event.stopPropagation()"
+                (keyup.enter)="selectField(field); $event.stopPropagation()">
+                <div class="field-card__grip" cdkDragHandle>
+                  <mat-icon>drag_indicator</mat-icon>
+                </div>
+                <div class="field-card__body">
+                  <div class="field-card__type">
+                    <mat-icon>{{ meta(field.type).icon }}</mat-icon>
+                    {{ meta(field.type).label }}
+                  </div>
+                  <div class="field-card__label">
+                    {{ field.label }}@if (field.required) {
+                    <span class="field-card__required"> *</span>
+                  }
+                </div>
+
+                @if (field.type === 'columns') {
+                  <div class="field-card__columns" [style.grid-template-columns]="'repeat(' + field.columns.length + ', 1fr)'">
+                    @for (column of field.columns; track column; let i = $index) {
+                      <div
+                        class="field-card__column"
+                        cdkDropList
+                        [id]="columnListId(field, i)"
+                        [cdkDropListData]="column.fields"
+                        [cdkDropListConnectedTo]="allDropListIds()"
+                        (cdkDropListDropped)="onDropped($event)">
+                        @if (!column.fields.length) {
+                          <div class="field-card__column-empty">Drop a field here</div>
+                        }
+                        @for (child of column.fields; track child) {
+                          <ng-container *ngTemplateOutlet="fieldCard; context: { field: child, container: column.fields }"></ng-container>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+              <button mat-icon-button type="button" class="field-card__delete" matTooltip="Remove" (click)="removeField(container, field); $event.stopPropagation()">
+                <mat-icon>close</mat-icon>
+              </button>
             </div>
-          </div>
-        </div>
-
-        <div
-          class="builder__canvas"
-          cdkDropList
-          [id]="canvasListId"
-          [cdkDropListData]="fields"
-          [cdkDropListConnectedTo]="allDropListIds()"
-          [style.background-color]="backgroundColor || null"
-          (cdkDropListDropped)="onDropped($event)">
-          <div class="canvas-empty" *ngIf="!fields.length">Drag a field here from the left.</div>
-          <ng-container *ngFor="let field of fields">
-            <ng-container *ngTemplateOutlet="fieldCard; context: { field: field, container: fields }"></ng-container>
-          </ng-container>
-        </div>
-
-        <div class="builder__settings" *ngIf="selectedField as field; else noSelection">
-          <app-form-field-settings [field]="field" (closed)="selectedFieldId = null"></app-form-field-settings>
-        </div>
-        <ng-template #noSelection>
-          <div class="builder__settings builder__settings--empty">Select a field on the canvas to edit its settings.</div>
-        </ng-template>
-      </div>
-    </div>
-
-    <div class="editor__preview" *ngIf="showPreview">
-      <app-form-renderer [fields]="fields" [backgroundColor]="backgroundColor" [controlStyle]="controlStyle" mode="preview"></app-form-renderer>
-    </div>
-  </div>
-</ng-container>
-
-<!-- Recursive field card - also used for a 'columns' field's own two nested
-     column lists, via *ngTemplateOutlet calling itself. stopPropagation on
-     select is required here: a field nested inside a Columns card is a DOM
-     descendant of that card's own click handler, so without it, clicking a
-     nested field bubbles up and re-selects its parent Columns field right
-     after, leaving the settings panel showing the wrong one. -->
-<ng-template #fieldCard let-field="field" let-container="container">
-  <div
-    class="field-card"
-    [class.field-card--selected]="selectedFieldId === field.id"
-    cdkDrag
-    role="button"
-    tabindex="0"
-    (click)="selectField(field); $event.stopPropagation()"
-    (keyup.enter)="selectField(field); $event.stopPropagation()">
-    <div class="field-card__grip" cdkDragHandle>
-      <mat-icon>drag_indicator</mat-icon>
-    </div>
-    <div class="field-card__body">
-      <div class="field-card__type">
-        <mat-icon>{{ meta(field.type).icon }}</mat-icon>
-        {{ meta(field.type).label }}
-      </div>
-      <div class="field-card__label">
-        {{ field.label }}<span *ngIf="field.required" class="field-card__required"> *</span>
-      </div>
-
-      <div class="field-card__columns" *ngIf="field.type === 'columns'" [style.grid-template-columns]="'repeat(' + field.columns.length + ', 1fr)'">
-        <div
-          class="field-card__column"
-          *ngFor="let column of field.columns; let i = index"
-          cdkDropList
-          [id]="columnListId(field, i)"
-          [cdkDropListData]="column.fields"
-          [cdkDropListConnectedTo]="allDropListIds()"
-          (cdkDropListDropped)="onDropped($event)">
-          <div class="field-card__column-empty" *ngIf="!column.fields.length">Drop a field here</div>
-          <ng-container *ngFor="let child of column.fields">
-            <ng-container *ngTemplateOutlet="fieldCard; context: { field: child, container: column.fields }"></ng-container>
-          </ng-container>
-        </div>
-      </div>
-    </div>
-    <button mat-icon-button type="button" class="field-card__delete" matTooltip="Remove" (click)="removeField(container, field); $event.stopPropagation()">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-</ng-template>
+          </ng-template>

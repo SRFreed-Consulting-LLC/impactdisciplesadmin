@@ -4,7 +4,9 @@
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Note</mat-label>
     <textarea matInput rows="4" formControlName="note" required></textarea>
-    <mat-error *ngIf="form.get('note')?.hasError('required')">Note text is required</mat-error>
+    @if (form.get('note')?.hasError('required')) {
+      <mat-error>Note text is required</mat-error>
+    }
   </mat-form-field>
 
   <mat-checkbox formControlName="private">Private (only visible to me)</mat-checkbox>

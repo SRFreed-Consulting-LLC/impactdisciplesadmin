@@ -4,7 +4,9 @@
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Tag</mat-label>
     <input matInput formControlName="tag" required>
-    <mat-error *ngIf="form.get('tag')?.hasError('required')">Tag is required</mat-error>
+    @if (form.get('tag')?.hasError('required')) {
+      <mat-error>Tag is required</mat-error>
+    }
   </mat-form-field>
 </mat-dialog-content>
 

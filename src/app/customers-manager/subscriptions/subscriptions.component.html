@@ -18,12 +18,20 @@
     <mat-label>Filter by List</mat-label>
     <mat-select [value]="selectedList?.id ?? null" (selectionChange)="onListFilterChanged($event.value)">
       <mat-option [value]="null">(All Subscribers)</mat-option>
-      <mat-optgroup label="Newsletter Lists" *ngIf="newsletterLists.length > 0">
-        <mat-option *ngFor="let list of newsletterLists" [value]="list.id">{{ list.name }}</mat-option>
-      </mat-optgroup>
-      <mat-optgroup label="Prayer Team Lists" *ngIf="prayerLists.length > 0">
-        <mat-option *ngFor="let list of prayerLists" [value]="list.id">{{ list.name }}</mat-option>
-      </mat-optgroup>
+      @if (newsletterLists.length > 0) {
+        <mat-optgroup label="Newsletter Lists">
+          @for (list of newsletterLists; track list) {
+            <mat-option [value]="list.id">{{ list.name }}</mat-option>
+          }
+        </mat-optgroup>
+      }
+      @if (prayerLists.length > 0) {
+        <mat-optgroup label="Prayer Team Lists">
+          @for (list of prayerLists; track list) {
+            <mat-option [value]="list.id">{{ list.name }}</mat-option>
+          }
+        </mat-optgroup>
+      }
     </mat-select>
   </mat-form-field>
 </app-data-grid>

@@ -1,17 +1,18 @@
-<ng-container *ngIf="title">
+@if (title) {
   <div class="popup-header" mat-dialog-title>
     <span class="popup-header__title">{{ title }}</span>
     <span class="popup-header__spacer"></span>
     <ng-content select="[popup-header-actions]"></ng-content>
-    <button
-      *ngIf="showCloseButton"
-      mat-icon-button
-      class="popup-header__close"
-      type="button"
-      aria-label="Close"
-      (click)="closed.emit()">
-      <mat-icon>close</mat-icon>
-    </button>
+    @if (showCloseButton) {
+      <button
+        mat-icon-button
+        class="popup-header__close"
+        type="button"
+        aria-label="Close"
+        (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
   </div>
   <mat-divider></mat-divider>
-</ng-container>
+}

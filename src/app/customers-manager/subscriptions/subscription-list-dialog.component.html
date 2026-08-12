@@ -7,13 +7,17 @@
       <mat-option value="newsletter">Newsletter</mat-option>
       <mat-option value="prayer">Prayer Team</mat-option>
     </mat-select>
-    <mat-error *ngIf="form.get('type')?.hasError('required')">Type is required</mat-error>
+    @if (form.get('type')?.hasError('required')) {
+      <mat-error>Type is required</mat-error>
+    }
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Name</mat-label>
     <input matInput formControlName="name" required>
-    <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+    @if (form.get('name')?.hasError('required')) {
+      <mat-error>Name is required</mat-error>
+    }
   </mat-form-field>
 </mat-dialog-content>
 

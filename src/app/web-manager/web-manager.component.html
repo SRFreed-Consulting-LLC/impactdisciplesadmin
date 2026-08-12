@@ -1,24 +1,24 @@
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab === 'Disciple Making Minute'">
+  @if (selectedTab === 'Disciple Making Minute') {
     <app-dmms></app-dmms>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Pod Casts'">
+  @if (selectedTab === 'Pod Casts') {
     <app-pod-casts></app-pod-casts>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Testimonials'">
+  @if (selectedTab === 'Testimonials') {
     <app-testimonials></app-testimonials>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Home Page Images'">
+  @if (selectedTab === 'Home Page Images') {
     <app-home-page-images></app-home-page-images>
-  </ng-template>
-  <ng-template [ngIf]="selectedTab === 'Home Page Popups'">
+  }
+  @if (selectedTab === 'Home Page Popups') {
     <app-home-page-popups></app-home-page-popups>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Monthly Newsletter'">
+  @if (selectedTab === 'Monthly Newsletter') {
     <app-monthly-newsletters></app-monthly-newsletters>
-  </ng-template>
+  }
 </div>

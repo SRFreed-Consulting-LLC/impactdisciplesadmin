@@ -1,31 +1,32 @@
-<ng-container *ngIf="mode === 'list'">
-<app-data-grid
-  [title]="itemType + 's'"
-  [columns]="columns"
-  [rowActions]="rowActions"
-  [rows]="(purchases$ | async) ?? []"
-  [loading]="(loading$ | async) ?? false"
-  [rowClass]="rowClass"
-  tableClass="purchases-table"
-  initialSortKey="dateProcessed"
-  initialSortDirection="desc"
-  exportFileName="purchases.xlsx"
-  (rowDoubleClick)="showEditModal($event)"
-  (visibleRowsChange)="onVisibleRowsChange($event)">
-</app-data-grid>
+@if (mode === 'list') {
+  <app-data-grid
+    [title]="itemType + 's'"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [rows]="(purchases$ | async) ?? []"
+    [loading]="(loading$ | async) ?? false"
+    [rowClass]="rowClass"
+    tableClass="purchases-table"
+    initialSortKey="dateProcessed"
+    initialSortDirection="desc"
+    exportFileName="purchases.xlsx"
+    (rowDoubleClick)="showEditModal($event)"
+    (visibleRowsChange)="onVisibleRowsChange($event)">
+  </app-data-grid>
+  @if (canEdit()) {
+    <div class="summary-row">
+      <span>{{ currentRows.length }} orders</span>
+      <span>Total: {{ sumOf('totalBeforeDiscount') | currency }}</span>
+      <span>Discount: {{ sumOf('discount') | currency }}</span>
+      <span>Taxes: {{ sumOf('estimatedTaxes') | currency }}</span>
+      <span>Shipping: {{ sumOf('shippingRate') | currency }}</span>
+      <span>Charged: {{ sumOf('charged') | currency }}</span>
+      <span>Refunded: {{ sumOf('refundAmount') | currency }}</span>
+    </div>
+  }
+}
 
-<div class="summary-row" *ngIf="canEdit()">
-  <span>{{ currentRows.length }} orders</span>
-  <span>Total: {{ sumOf('totalBeforeDiscount') | currency }}</span>
-  <span>Discount: {{ sumOf('discount') | currency }}</span>
-  <span>Taxes: {{ sumOf('estimatedTaxes') | currency }}</span>
-  <span>Shipping: {{ sumOf('shippingRate') | currency }}</span>
-  <span>Charged: {{ sumOf('charged') | currency }}</span>
-  <span>Refunded: {{ sumOf('refundAmount') | currency }}</span>
-</div>
-</ng-container>
-
-<ng-container *ngIf="mode === 'edit' && editingItem as item">
+@if (mode === 'edit' && editingItem; as item) {
   <div class="editor">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
@@ -34,7 +35,6 @@
       <h2 class="editor__title">EDIT PURCHASE</h2>
       <span class="editor__spacer"></span>
     </mat-toolbar>
-
     <div class="editor__body">
       <div class="readonly-summary">
         <div class="readonly-summary__col">
@@ -54,25 +54,23 @@
           <div class="readonly-row readonly-row--total"><span>Charged</span><span>{{ getChargedDisplayAmount(item) | currency }}</span></div>
         </div>
       </div>
-
       <mat-tab-group class="purchase-tabs" [formGroup]="form">
         <mat-tab label="Contact">
           <div class="tab-content">
             <mat-form-field appearance="outline" class="status-field">
               <mat-label>Status</mat-label>
               <mat-select formControlName="processedStatus">
-                <mat-option *ngFor="let status of statuses" [value]="status">{{ status }}</mat-option>
+                @for (status of statuses; track status) {
+                  <mat-option [value]="status">{{ status }}</mat-option>
+                }
               </mat-select>
             </mat-form-field>
-
             <div class="section-label">Shipping Address</div>
             <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
-
             <div class="section-label">Phone Number</div>
             <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
           </div>
         </mat-tab>
-
         <mat-tab label="Sale Details">
           <div class="tab-content">
             <app-purchase-details [selectedItem]="item"></app-purchase-details>
@@ -80,7 +78,6 @@
         </mat-tab>
       </mat-tab-group>
     </div>
-
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
       <app-indicator-button
@@ -91,4 +88,4 @@
       </app-indicator-button>
     </div>
   </div>
-</ng-container>
+}

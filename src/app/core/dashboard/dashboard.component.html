@@ -5,163 +5,197 @@
   <!-- ==================== Recent Orders (primary section) ==================== -->
   <section class="dash-section">
     <div class="sec-head">
-      <span class="sec-head__title">Recent Orders <span class="sec-head__count" *ngIf="!ordersLoading">{{ recentOrders.length }}</span></span>
+      <span class="sec-head__title">Recent Orders @if (!ordersLoading) {
+        <span class="sec-head__count">{{ recentOrders.length }}</span>
+      }</span>
     </div>
 
-    <div class="loading-row" *ngIf="ordersLoading">
-      <mat-spinner diameter="28"></mat-spinner>
-    </div>
+    @if (ordersLoading) {
+      <div class="loading-row">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+    }
 
-    <div class="error-state" *ngIf="ordersFailed">
-      Couldn't load recent orders - this is a connection issue, not an empty list.
-      <button mat-stroked-button type="button" (click)="loadRecentOrders()">Retry</button>
-    </div>
+    @if (ordersFailed) {
+      <div class="error-state">
+        Couldn't load recent orders - this is a connection issue, not an empty list.
+        <button mat-stroked-button type="button" (click)="loadRecentOrders()">Retry</button>
+      </div>
+    }
 
-    <ng-container *ngIf="!ordersLoading && !ordersFailed">
-      <div class="empty-state" *ngIf="recentOrders.length === 0">Nothing waiting on fulfillment right now.</div>
-
-      <table mat-table [dataSource]="recentOrders" class="dash-table dash-table--clickable" *ngIf="recentOrders.length > 0">
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let item"><span class="new-badge" *ngIf="isNew(item)">NEW</span></td>
-        </ng-container>
-        <ng-container matColumnDef="order">
-          <th mat-header-cell *matHeaderCellDef>Order</th>
-          <td mat-cell *matCellDef="let item">{{ item.receipt || item.id }}</td>
-        </ng-container>
-        <ng-container matColumnDef="customer">
-          <th mat-header-cell *matHeaderCellDef>Customer</th>
-          <td mat-cell *matCellDef="let item">{{ customerName(item) }}</td>
-        </ng-container>
-        <ng-container matColumnDef="items">
-          <th mat-header-cell *matHeaderCellDef>Items</th>
-          <td mat-cell *matCellDef="let item" class="order-items-cell">{{ itemSummary(item) }}</td>
-        </ng-container>
-        <ng-container matColumnDef="progress">
-          <th mat-header-cell *matHeaderCellDef>Progress</th>
-          <td mat-cell *matCellDef="let item">
-            <div class="segbar" [matTooltip]="segmentLabel(item)">
-              <div class="segbar__seg" *ngFor="let step of steps; let i = index" [class]="'segbar__seg--' + segmentState(item, i)"></div>
-            </div>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let item">{{ $any(item.dateProcessed) | date: 'short' }}</td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="['status', 'order', 'customer', 'items', 'progress', 'date']"></tr>
-        <tr
-          mat-row
-          *matRowDef="let item; columns: ['status', 'order', 'customer', 'items', 'progress', 'date'];"
-          [class.order-row--new]="isNew(item)"
-          tabindex="0"
-          matTooltip="Double-click to update"
-          (dblclick)="openOrderDialog(item)"
+    @if (!ordersLoading && !ordersFailed) {
+      @if (recentOrders.length === 0) {
+        <div class="empty-state">Nothing waiting on fulfillment right now.</div>
+      }
+      @if (recentOrders.length > 0) {
+        <table mat-table [dataSource]="recentOrders" class="dash-table dash-table--clickable">
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let item">@if (isNew(item)) {
+              <span class="new-badge">NEW</span>
+            }</td>
+          </ng-container>
+          <ng-container matColumnDef="order">
+            <th mat-header-cell *matHeaderCellDef>Order</th>
+            <td mat-cell *matCellDef="let item">{{ item.receipt || item.id }}</td>
+          </ng-container>
+          <ng-container matColumnDef="customer">
+            <th mat-header-cell *matHeaderCellDef>Customer</th>
+            <td mat-cell *matCellDef="let item">{{ customerName(item) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="items">
+            <th mat-header-cell *matHeaderCellDef>Items</th>
+            <td mat-cell *matCellDef="let item" class="order-items-cell">{{ itemSummary(item) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="progress">
+            <th mat-header-cell *matHeaderCellDef>Progress</th>
+            <td mat-cell *matCellDef="let item">
+              <div class="segbar" [matTooltip]="segmentLabel(item)">
+                @for (step of steps; track step; let i = $index) {
+                  <div class="segbar__seg" [class]="'segbar__seg--' + segmentState(item, i)"></div>
+                }
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let item">{{ $any(item.dateProcessed) | date: 'short' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['status', 'order', 'customer', 'items', 'progress', 'date']"></tr>
+          <tr
+            mat-row
+            *matRowDef="let item; columns: ['status', 'order', 'customer', 'items', 'progress', 'date'];"
+            [class.order-row--new]="isNew(item)"
+            tabindex="0"
+            matTooltip="Double-click to update"
+            (dblclick)="openOrderDialog(item)"
           (keydown.enter)="openOrderDialog(item)"></tr>
-      </table>
-    </ng-container>
+        </table>
+      }
+    }
   </section>
 
   <!-- ==================== Upcoming Events ==================== -->
   <section class="dash-section">
     <div class="sec-head">
-      <span class="sec-head__title">Upcoming Events <span class="sec-head__count" *ngIf="!eventsLoading">{{ upcomingEvents.length }}</span></span>
+      <span class="sec-head__title">Upcoming Events @if (!eventsLoading) {
+        <span class="sec-head__count">{{ upcomingEvents.length }}</span>
+      }</span>
     </div>
 
-    <div class="loading-row" *ngIf="eventsLoading">
-      <mat-spinner diameter="28"></mat-spinner>
-    </div>
+    @if (eventsLoading) {
+      <div class="loading-row">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+    }
 
-    <div class="error-state" *ngIf="eventsFailed">
-      Couldn't load upcoming events - this is a connection issue, not an empty list.
-      <button mat-stroked-button type="button" (click)="loadUpcomingEvents()">Retry</button>
-    </div>
+    @if (eventsFailed) {
+      <div class="error-state">
+        Couldn't load upcoming events - this is a connection issue, not an empty list.
+        <button mat-stroked-button type="button" (click)="loadUpcomingEvents()">Retry</button>
+      </div>
+    }
 
-    <ng-container *ngIf="!eventsLoading && !eventsFailed">
-      <div class="empty-state" *ngIf="upcomingEvents.length === 0">No upcoming events on the calendar.</div>
-
-      <table mat-table [dataSource]="upcomingEvents" class="dash-table" *ngIf="upcomingEvents.length > 0">
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let row">
-            <div class="status-badges">
-              <span class="live-badge" *ngIf="row.isOngoing">LIVE NOW</span>
-              <span class="new-badge" *ngIf="row.newRegisteredCount">+{{ row.newRegisteredCount }} NEW</span>
-            </div>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Event</th>
-          <td mat-cell *matCellDef="let row">{{ row.name }}</td>
-        </ng-container>
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let row">{{ row.startDateMs | date: 'MMM d, y' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="location">
-          <th mat-header-cell *matHeaderCellDef>Location</th>
-          <td mat-cell *matCellDef="let row">{{ row.location }}</td>
-        </ng-container>
-        <ng-container matColumnDef="mode">
-          <th mat-header-cell *matHeaderCellDef>Mode</th>
-          <td mat-cell *matCellDef="let row">{{ row.isOnline ? 'Online' : 'In-person' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="registered">
-          <th mat-header-cell *matHeaderCellDef>Registered</th>
-          <td mat-cell *matCellDef="let row">{{ row.registeredCount === null ? '—' : row.registeredCount }}</td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="['status', 'name', 'date', 'location', 'mode', 'registered']"></tr>
-        <tr mat-row *matRowDef="let row; columns: ['status', 'name', 'date', 'location', 'mode', 'registered'];" [class.event-row--live]="row.isOngoing"></tr>
-      </table>
-    </ng-container>
+    @if (!eventsLoading && !eventsFailed) {
+      @if (upcomingEvents.length === 0) {
+        <div class="empty-state">No upcoming events on the calendar.</div>
+      }
+      @if (upcomingEvents.length > 0) {
+        <table mat-table [dataSource]="upcomingEvents" class="dash-table">
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row">
+              <div class="status-badges">
+                @if (row.isOngoing) {
+                  <span class="live-badge">LIVE NOW</span>
+                }
+                @if (row.newRegisteredCount) {
+                  <span class="new-badge">+{{ row.newRegisteredCount }} NEW</span>
+                }
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Event</th>
+            <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let row">{{ row.startDateMs | date: 'MMM d, y' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="location">
+            <th mat-header-cell *matHeaderCellDef>Location</th>
+            <td mat-cell *matCellDef="let row">{{ row.location }}</td>
+          </ng-container>
+          <ng-container matColumnDef="mode">
+            <th mat-header-cell *matHeaderCellDef>Mode</th>
+            <td mat-cell *matCellDef="let row">{{ row.isOnline ? 'Online' : 'In-person' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="registered">
+            <th mat-header-cell *matHeaderCellDef>Registered</th>
+            <td mat-cell *matCellDef="let row">{{ row.registeredCount === null ? '—' : row.registeredCount }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['status', 'name', 'date', 'location', 'mode', 'registered']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['status', 'name', 'date', 'location', 'mode', 'registered'];" [class.event-row--live]="row.isOngoing"></tr>
+        </table>
+      }
+    }
   </section>
 
   <!-- ==================== New Requests ==================== -->
   <section class="dash-section">
     <div class="sec-head">
-      <span class="sec-head__title">New Requests <span class="sec-head__count" *ngIf="!requestsLoading">{{ newRequests.length }}</span></span>
+      <span class="sec-head__title">New Requests @if (!requestsLoading) {
+        <span class="sec-head__count">{{ newRequests.length }}</span>
+      }</span>
     </div>
 
-    <div class="loading-row" *ngIf="requestsLoading">
-      <mat-spinner diameter="28"></mat-spinner>
-    </div>
+    @if (requestsLoading) {
+      <div class="loading-row">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+    }
 
-    <div class="error-state" *ngIf="requestsFailed">
-      Couldn't load requests - this is a connection issue, not an empty list.
-      <button mat-stroked-button type="button" (click)="loadNewRequests()">Retry</button>
-    </div>
+    @if (requestsFailed) {
+      <div class="error-state">
+        Couldn't load requests - this is a connection issue, not an empty list.
+        <button mat-stroked-button type="button" (click)="loadNewRequests()">Retry</button>
+      </div>
+    }
 
-    <ng-container *ngIf="!requestsLoading && !requestsFailed">
-      <div class="empty-state" *ngIf="newRequests.length === 0">No requests waiting.</div>
-
-      <table mat-table [dataSource]="newRequests" class="dash-table dash-table--clickable" *ngIf="newRequests.length > 0">
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let row"><span class="new-badge" *ngIf="row.isNew">NEW</span></td>
-        </ng-container>
-        <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
-          <td mat-cell *matCellDef="let row">{{ row.typeLabel }}</td>
-        </ng-container>
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let row">{{ row.name }}</td>
-        </ng-container>
-        <ng-container matColumnDef="detail">
-          <th mat-header-cell *matHeaderCellDef>Details</th>
-          <td mat-cell *matCellDef="let row">{{ row.detail || '—' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Received</th>
-          <td mat-cell *matCellDef="let row">{{ row.dateMs | date: 'short' }}</td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="['status', 'type', 'name', 'detail', 'date']"></tr>
-        <tr mat-row *matRowDef="let row; columns: ['status', 'type', 'name', 'detail', 'date'];" matTooltip="Click to forward this request" (click)="routeRequest(row)"></tr>
-      </table>
-    </ng-container>
+    @if (!requestsLoading && !requestsFailed) {
+      @if (newRequests.length === 0) {
+        <div class="empty-state">No requests waiting.</div>
+      }
+      @if (newRequests.length > 0) {
+        <table mat-table [dataSource]="newRequests" class="dash-table dash-table--clickable">
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row">@if (row.isNew) {
+              <span class="new-badge">NEW</span>
+            }</td>
+          </ng-container>
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let row">{{ row.typeLabel }}</td>
+          </ng-container>
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Name</th>
+            <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="detail">
+            <th mat-header-cell *matHeaderCellDef>Details</th>
+            <td mat-cell *matCellDef="let row">{{ row.detail || '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Received</th>
+            <td mat-cell *matCellDef="let row">{{ row.dateMs | date: 'short' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['status', 'type', 'name', 'detail', 'date']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['status', 'type', 'name', 'detail', 'date'];" matTooltip="Click to forward this request" (click)="routeRequest(row)"></tr>
+        </table>
+      }
+    }
   </section>
 
 </div>

@@ -1,15 +1,17 @@
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab === 'Logs'">
+  @if (selectedTab === 'Logs') {
     <app-log-messages></app-log-messages>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Admin Users'">
+  @if (selectedTab === 'Admin Users') {
     <app-admin-users></app-admin-users>
-  </ng-template>
+  }
 
   <!-- selectedTab is '' when nothing here is actually granted to this user
-       (see admin-manager.component.ts's own comment on why that's the
-       default rather than a real screen name) - explain the blank content
-       area rather than leaving it silent. -->
-  <div class="no-access-state" *ngIf="!selectedTab">You don't have access to anything in Admin Manager.</div>
+  (see admin-manager.component.ts's own comment on why that's the
+  default rather than a real screen name) - explain the blank content
+  area rather than leaving it silent. -->
+  @if (!selectedTab) {
+    <div class="no-access-state">You don't have access to anything in Admin Manager.</div>
+  }
 </div>

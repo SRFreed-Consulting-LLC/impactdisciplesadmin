@@ -7,14 +7,20 @@
     <mat-form-field appearance="outline" class="name-field">
       <mat-label>Name</mat-label>
       <input matInput formControlName="name" required>
-      <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+      @if (form.get('name')?.hasError('required')) {
+        <mat-error>Name is required</mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="percent-field">
       <mat-label>Percent Off</mat-label>
       <input matInput type="number" formControlName="percentOff" min="0" max="100" required>
-      <mat-error *ngIf="form.get('percentOff')?.hasError('required')">Required</mat-error>
-      <mat-error *ngIf="form.get('percentOff')?.hasError('min') || form.get('percentOff')?.hasError('max')">Must be between 0 and 100</mat-error>
+      @if (form.get('percentOff')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
+      @if (form.get('percentOff')?.hasError('min') || form.get('percentOff')?.hasError('max')) {
+        <mat-error>Must be between 0 and 100</mat-error>
+      }
     </mat-form-field>
   </div>
 
@@ -24,7 +30,9 @@
       <input matInput [matDatepicker]="startPicker" formControlName="startDate" required>
       <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
       <mat-datepicker #startPicker></mat-datepicker>
-      <mat-error *ngIf="form.get('startDate')?.hasError('required')">Required</mat-error>
+      @if (form.get('startDate')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="half-width">
@@ -32,7 +40,9 @@
       <input matInput [matDatepicker]="endPicker" formControlName="endDate" required>
       <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
       <mat-datepicker #endPicker></mat-datepicker>
-      <mat-error *ngIf="form.get('endDate')?.hasError('required')">Required</mat-error>
+      @if (form.get('endDate')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
     </mat-form-field>
   </div>
 

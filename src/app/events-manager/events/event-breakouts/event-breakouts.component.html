@@ -31,7 +31,9 @@
     <tr mat-row *matRowDef="let row; columns: ['lastName', 'firstName', 'email']; when: isStudentRow"></tr>
   </table>
 
-  <p class="empty-state" *ngIf="(rows$ | async)?.length === 0">No breakout registrations yet.</p>
+  @if ((rows$ | async)?.length === 0) {
+    <p class="empty-state">No breakout registrations yet.</p>
+  }
 </div>
 
 <div class="total-row">Total registered: {{ totalRegistered$ | async }}</div>

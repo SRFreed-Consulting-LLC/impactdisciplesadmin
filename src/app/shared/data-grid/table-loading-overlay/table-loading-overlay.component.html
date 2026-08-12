@@ -1,3 +1,5 @@
-<div class="table-loading-overlay" *ngIf="loading">
-  <mat-spinner diameter="48"></mat-spinner>
-</div>
+@if (loading) {
+  <div class="table-loading-overlay">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+}

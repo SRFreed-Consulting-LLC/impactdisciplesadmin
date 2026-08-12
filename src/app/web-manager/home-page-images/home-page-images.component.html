@@ -18,6 +18,8 @@
     </span>
   </ng-template>
   <ng-template appDataGridCell="image" let-row>
-    <img *ngIf="row.image" width="100" [src]="row.image.url" [alt]="row.image.name">
+    @if (row.image) {
+      <img width="100" [src]="row.image.url" [alt]="row.image.name">
+    }
   </ng-template>
 </app-data-grid>

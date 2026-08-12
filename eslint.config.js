@@ -50,11 +50,5 @@ module.exports = defineConfig([
       angular.configs.templateRecommended,
       angular.configs.templateAccessibility,
     ],
-    rules: {
-      // Same reasoning as prefer-standalone/prefer-inject above -- adopting
-      // @if/@for over *ngIf/*ngFor is a codebase-wide migration, not a
-      // per-file lint fix.
-      "@angular-eslint/template/prefer-control-flow": "off",
-    },
   }
 ]);

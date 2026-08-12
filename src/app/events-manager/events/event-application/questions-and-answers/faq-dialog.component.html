@@ -10,7 +10,9 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Question</mat-label>
       <input matInput formControlName="question" required>
-      <mat-error *ngIf="form.get('question')?.hasError('required')">Question is required</mat-error>
+      @if (form.get('question')?.hasError('required')) {
+        <mat-error>Question is required</mat-error>
+      }
     </mat-form-field>
   </div>
 

@@ -6,7 +6,9 @@
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Author</mat-label>
     <input matInput formControlName="author" required>
-    <mat-error *ngIf="form.get('author')?.hasError('required')">Author is required</mat-error>
+    @if (form.get('author')?.hasError('required')) {
+      <mat-error>Author is required</mat-error>
+    }
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full-width">
@@ -17,15 +19,21 @@
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Testimonial Type</mat-label>
     <mat-select formControlName="type" required>
-      <mat-option *ngFor="let type of testimonialTypes" [value]="type">{{ type }}</mat-option>
+      @for (type of testimonialTypes; track type) {
+        <mat-option [value]="type">{{ type }}</mat-option>
+      }
     </mat-select>
-    <mat-error *ngIf="form.get('type')?.hasError('required')">Type is required</mat-error>
+    @if (form.get('type')?.hasError('required')) {
+      <mat-error>Type is required</mat-error>
+    }
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Text</mat-label>
     <textarea matInput formControlName="text" rows="6" required></textarea>
-    <mat-error *ngIf="form.get('text')?.hasError('required')">Text is required</mat-error>
+    @if (form.get('text')?.hasError('required')) {
+      <mat-error>Text is required</mat-error>
+    }
   </mat-form-field>
 </mat-dialog-content>
 

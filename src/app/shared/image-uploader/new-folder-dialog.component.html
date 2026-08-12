@@ -4,7 +4,9 @@
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Folder Name</mat-label>
     <input matInput formControlName="name" required cdkFocusInitial>
-    <mat-error *ngIf="form.get('name')?.hasError('required')">Folder name is required</mat-error>
+    @if (form.get('name')?.hasError('required')) {
+      <mat-error>Folder name is required</mat-error>
+    }
   </mat-form-field>
 </mat-dialog-content>
 

@@ -9,22 +9,30 @@
       <input matInput [matDatepicker]="datePicker" formControlName="date" required>
       <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
       <mat-datepicker #datePicker></mat-datepicker>
-      <mat-error *ngIf="form.get('date')?.hasError('required')">Required</mat-error>
+      @if (form.get('date')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Category</mat-label>
       <mat-select formControlName="category" required>
-        <mat-option *ngFor="let category of data.categories" [value]="category.id">{{ category.tag }}</mat-option>
+        @for (category of data.categories; track category) {
+          <mat-option [value]="category.id">{{ category.tag }}</mat-option>
+        }
       </mat-select>
-      <mat-error *ngIf="form.get('category')?.hasError('required')">Category is required</mat-error>
+      @if (form.get('category')?.hasError('required')) {
+        <mat-error>Category is required</mat-error>
+      }
     </mat-form-field>
   </div>
 
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Title</mat-label>
     <input matInput formControlName="title" required>
-    <mat-error *ngIf="form.get('title')?.hasError('required')">Title is required</mat-error>
+    @if (form.get('title')?.hasError('required')) {
+      <mat-error>Title is required</mat-error>
+    }
   </mat-form-field>
 
   <div class="field-row">
@@ -39,15 +47,21 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Video Type</mat-label>
       <mat-select formControlName="videoType" required>
-        <mat-option *ngFor="let type of videoTypes" [value]="type">{{ type }}</mat-option>
+        @for (type of videoTypes; track type) {
+          <mat-option [value]="type">{{ type }}</mat-option>
+        }
       </mat-select>
-      <mat-error *ngIf="form.get('videoType')?.hasError('required')">Video type is required</mat-error>
+      @if (form.get('videoType')?.hasError('required')) {
+        <mat-error>Video type is required</mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Video Id</mat-label>
       <input matInput formControlName="videoId" required>
-      <mat-error *ngIf="form.get('videoId')?.hasError('required')">Video ID is required</mat-error>
+      @if (form.get('videoId')?.hasError('required')) {
+        <mat-error>Video ID is required</mat-error>
+      }
     </mat-form-field>
   </div>
 
@@ -64,7 +78,7 @@
   </app-indicator-button>
 </mat-dialog-actions>
 
-<ng-container *ngIf="isImageUploaderVisible$ | async">
+@if (isImageUploaderVisible$ | async) {
   <app-image-uploader
     [card]="card"
     [isList]="false"
@@ -73,4 +87,4 @@
     [imageSelectVisible]="isImageUploaderVisible$ | async"
     (imageSelectClosed)="closeImageUploader()">
   </app-image-uploader>
-</ng-container>
+}

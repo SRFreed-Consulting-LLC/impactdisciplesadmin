@@ -1,4 +1,4 @@
-<ng-container *ngIf="mode === 'list'">
+@if (mode === 'list') {
   <app-data-grid
     [title]="itemType + 's'"
     [headerActions]="headerActions"
@@ -14,12 +14,14 @@
       </span>
     </ng-template>
     <ng-template appDataGridCell="imageUrl" let-row>
-      <img *ngIf="row.imageUrl" width="60" [src]="row.imageUrl.url" [alt]="row.imageUrl.name">
+      @if (row.imageUrl) {
+        <img width="60" [src]="row.imageUrl.url" [alt]="row.imageUrl.name">
+      }
     </ng-template>
   </app-data-grid>
-</ng-container>
+}
 
-<ng-container *ngIf="mode === 'edit'">
+@if (mode === 'edit') {
   <div class="editor" [formGroup]="form">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
@@ -29,7 +31,6 @@
       <span class="editor__spacer"></span>
       <mat-slide-toggle formControlName="isActive">Live</mat-slide-toggle>
     </mat-toolbar>
-
     <div class="editor__body">
       <mat-tab-group class="product-tabs">
         <mat-tab label="Dimensions">
@@ -38,111 +39,132 @@
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Image</mat-label>
                 <input matInput [value]="card.imageUrl?.name ?? ''" readonly required>
-                <mat-error *ngIf="!card.imageUrl?.name">Image is required</mat-error>
+                @if (!card.imageUrl?.name) {
+                  <mat-error>Image is required</mat-error>
+                }
               </mat-form-field>
               <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
                 {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
               </button>
             </div>
-            <img *ngIf="card.imageUrl?.url" class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-
+            @if (card.imageUrl?.url) {
+              <img class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+            }
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Weight</mat-label>
                 <input matInput type="number" formControlName="weight" required>
-                <mat-error *ngIf="form.get('weight')?.hasError('required')">Required</mat-error>
+                @if (form.get('weight')?.hasError('required')) {
+                  <mat-error>Required</mat-error>
+                }
               </mat-form-field>
-
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>UOM</mat-label>
                 <mat-select formControlName="uom" required>
-                  <mat-option *ngFor="let uom of uoms" [value]="uom">{{ uom }}</mat-option>
+                  @for (uom of uoms; track uom) {
+                    <mat-option [value]="uom">{{ uom }}</mat-option>
+                  }
                 </mat-select>
-                <mat-error *ngIf="form.get('uom')?.hasError('required')">Required</mat-error>
+                @if (form.get('uom')?.hasError('required')) {
+                  <mat-error>Required</mat-error>
+                }
               </mat-form-field>
             </div>
-
             <app-tag-chips formControlName="sizes" label="Sizes" placeholder="Enter Sizes..." (createTag)="onCreateSizeTag($event)"></app-tag-chips>
             <app-tag-chips formControlName="colors" label="Colors" placeholder="Enter Colors..." (createTag)="onCreateColorTag($event)"></app-tag-chips>
             <app-tag-chips formControlName="languages" label="Languages" placeholder="Enter Languages..." (createTag)="onCreateLanguageTag($event)"></app-tag-chips>
           </div>
         </mat-tab>
-
         <mat-tab label="Details">
           <div class="tab-content">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Product Name</mat-label>
               <input matInput formControlName="title" required>
-              <mat-error *ngIf="form.get('title')?.hasError('required')">Product name is required</mat-error>
+              @if (form.get('title')?.hasError('required')) {
+                <mat-error>Product name is required</mat-error>
+              }
             </mat-form-field>
-
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Cost</mat-label>
                 <span matTextPrefix>$&nbsp;</span>
                 <input matInput type="number" formControlName="cost" required>
-                <mat-error *ngIf="form.get('cost')?.hasError('required')">Required</mat-error>
+                @if (form.get('cost')?.hasError('required')) {
+                  <mat-error>Required</mat-error>
+                }
               </mat-form-field>
-
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Sale Price</mat-label>
                 <span matTextPrefix>$&nbsp;</span>
                 <input matInput type="number" formControlName="salePrice" required>
-                <mat-error *ngIf="form.get('salePrice')?.hasError('required')">Required</mat-error>
+                @if (form.get('salePrice')?.hasError('required')) {
+                  <mat-error>Required</mat-error>
+                }
               </mat-form-field>
             </div>
-
             <div class="field-row">
               <mat-checkbox formControlName="isEBook">Is this an eBook?</mat-checkbox>
             </div>
-            <div class="field-row" *ngIf="form.get('isEBook')?.value">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>eBook File</mat-label>
-                <input matInput [value]="card.eBookUrl?.name ?? ''" readonly>
-              </mat-form-field>
-              <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showEBookUploader()">Upload</button>
-            </div>
-
+            @if (form.get('isEBook')?.value) {
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>eBook File</mat-label>
+                  <input matInput [value]="card.eBookUrl?.name ?? ''" readonly>
+                </mat-form-field>
+                <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showEBookUploader()">Upload</button>
+              </div>
+            }
             <div class="field-row">
               <mat-checkbox formControlName="isDigitalBook">Is this a Digital Book?</mat-checkbox>
             </div>
-            <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('isDigitalBook')?.value">
-              <mat-label>Select Book</mat-label>
-              <mat-select formControlName="digitalBookId">
-                <mat-option *ngFor="let book of books" [value]="book.id">{{ book.title }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-
+            @if (form.get('isDigitalBook')?.value) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Select Book</mat-label>
+                <mat-select formControlName="digitalBookId">
+                  @for (book of books; track book) {
+                    <mat-option [value]="book.id">{{ book.title }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
             <div class="section-label">Description</div>
             <div class="editor-wrap">
               <quill-editor formControlName="description" [modules]="richTextModules"></quill-editor>
             </div>
-            <mat-error class="description-error" *ngIf="form.get('description')?.hasError('required') && form.get('description')?.touched">
-              Description is required
-            </mat-error>
-
+            @if (form.get('description')?.hasError('required') && form.get('description')?.touched) {
+              <mat-error class="description-error">
+                Description is required
+              </mat-error>
+            }
             <div class="field-row">
               <mat-checkbox formControlName="sendFollowUpEmail">Send Follow Up Email?</mat-checkbox>
             </div>
-            <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('sendFollowUpEmail')?.value">
-              <mat-label>Select Email</mat-label>
-              <mat-select formControlName="followUpEmailId">
-                <mat-option [value]="null">(None)</mat-option>
-                <mat-option *ngFor="let email of emails" [value]="email.id">{{ email.name }}</mat-option>
-              </mat-select>
-            </mat-form-field>
+            @if (form.get('sendFollowUpEmail')?.value) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Select Email</mat-label>
+                <mat-select formControlName="followUpEmailId">
+                  <mat-option [value]="null">(None)</mat-option>
+                  @for (email of emails; track email) {
+                    <mat-option [value]="email.id">{{ email.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
           </div>
         </mat-tab>
-
         <mat-tab label="Organization">
           <div class="tab-content">
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Category</mat-label>
                 <mat-select formControlName="category" required>
-                  <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.tag }}</mat-option>
+                  @for (category of categories; track category) {
+                    <mat-option [value]="category.id">{{ category.tag }}</mat-option>
+                  }
                 </mat-select>
-                <mat-error *ngIf="form.get('category')?.hasError('required')">Category is required</mat-error>
+                @if (form.get('category')?.hasError('required')) {
+                  <mat-error>Category is required</mat-error>
+                }
               </mat-form-field>
               <button mat-stroked-button type="button" (click)="manageCategories()">Manage Categories</button>
             </div>
@@ -150,13 +172,14 @@
               <mat-label>Category Order</mat-label>
               <input matInput type="number" formControlName="categoryOrder">
             </mat-form-field>
-
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Series</mat-label>
                 <mat-select formControlName="series">
                   <mat-option [value]="null">(None)</mat-option>
-                  <mat-option *ngFor="let s of series" [value]="s.id">{{ s.name }}</mat-option>
+                  @for (s of series; track s) {
+                    <mat-option [value]="s.id">{{ s.name }}</mat-option>
+                  }
                 </mat-select>
               </mat-form-field>
               <button mat-stroked-button type="button" (click)="manageSeries()">Manage Series</button>
@@ -165,15 +188,12 @@
               <mat-label>Series Order</mat-label>
               <input matInput type="number" formControlName="seriesOrder">
             </mat-form-field>
-
             <mat-checkbox formControlName="showInStore">Show In Store?</mat-checkbox>
-
             <app-tag-chips formControlName="tags" [options]="productTags" label="Tags" placeholder="Tag this Product..." (createTag)="onCreateProductTag($event)"></app-tag-chips>
           </div>
         </mat-tab>
       </mat-tab-group>
     </div>
-
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
       <app-indicator-button
@@ -184,8 +204,7 @@
       </app-indicator-button>
     </div>
   </div>
-
-  <ng-container *ngIf="isImageUploaderVisible$ | async">
+  @if (isImageUploaderVisible$ | async) {
     <app-image-uploader
       [card]="card"
       [isList]="false"
@@ -194,9 +213,8 @@
       [imageSelectVisible]="isImageUploaderVisible$ | async"
       (imageSelectClosed)="closeImageUploader()">
     </app-image-uploader>
-  </ng-container>
-
-  <ng-container *ngIf="isEBookUploaderVisible$ | async">
+  }
+  @if (isEBookUploaderVisible$ | async) {
     <app-image-uploader
       [card]="card"
       [isList]="false"
@@ -205,5 +223,5 @@
       [imageSelectVisible]="isEBookUploaderVisible$ | async"
       (imageSelectClosed)="closeEBookUploader()">
     </app-image-uploader>
-  </ng-container>
-</ng-container>
+  }
+}
