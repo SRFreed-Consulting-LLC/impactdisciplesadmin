@@ -13,6 +13,12 @@ const admin = require("firebase-admin");
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
 });
+// The Admin SDK throws on any `undefined` field value by default (e.g. an
+// optional CheckoutForm field like billingAddress/phone genuinely absent
+// from a request) rather than just omitting it - paypal.functions.ts hit
+// this writing a Purchase doc built from a partially-filled request. Set
+// once, here, before any function's first admin.firestore() call.
+admin.firestore().settings({ignoreUndefinedProperties: true});
 
 const stripe = require("./stripe.functions");
 exports.create_payment_intent = stripe.create_payment_intent;
@@ -22,6 +28,10 @@ exports.refund_payment = stripe.refund_payment;
 const shipping = require("./shipping.functions");
 exports.get_shipping_rates = shipping.get_shipping_rates;
 exports.get_shipping_label = shipping.get_shipping_label;
+
+const paypal = require("./paypal.functions");
+exports.create_paypal_order = paypal.create_paypal_order;
+exports.capture_paypal_order = paypal.capture_paypal_order;
 
 const subscriptions = require("./subscriptions.functions");
 exports.unsubscribe_from_email_list = subscriptions.unsubscribe_from_email_list;
