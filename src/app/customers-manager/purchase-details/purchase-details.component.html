@@ -1,72 +1,211 @@
-<div class="table-scroll">
-  <table mat-table [dataSource]="selectedItem.cartItems ?? []" class="details-table">
-    <ng-container matColumnDef="img">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let item">
-        @if (item.img) {
-          <img width="80" [src]="item.img.url" [alt]="item.img.name">
-        }
-      </td>
-    </ng-container>
+<div class="sale-details">
 
-    <ng-container matColumnDef="itemName">
-      <th mat-header-cell *matHeaderCellDef>Description</th>
-      <td mat-cell *matCellDef="let item">
-        <div>{{ item.itemName }}</div>
-        <div>{{ item.orderQuantity }} x {{ service.calculateProductCostAmount(costRow(item)) | currency }} = {{ (item.orderQuantity * service.calculateProductCostAmount(costRow(item))) | currency }}</div>
-        @if (item.attendees?.length) {
-          <ol type="1">
-            @for (attendee of item.attendees; track attendee) {
-              <li>{{ attendee.firstName }} {{ attendee.lastName }} - ({{ attendee.email }})</li>
+  <!-- Customer & Addresses -->
+  <p class="section-label">Customer &amp; Addresses</p>
+  <div class="addr-panel">
+    <div class="addr-card">
+      <div class="addr-card__name">{{ customerName() }}</div>
+      <div class="addr-card__lines">{{ selectedItem.email }}<br>{{ phoneDisplay() }}</div>
+    </div>
+    <div class="addr-card">
+      <p class="addr-card__label">Billing</p>
+      @if (selectedItem.billingAddress?.address1) {
+        <div class="addr-card__lines">
+          {{ selectedItem.billingAddress?.address1 }}
+          @if (selectedItem.billingAddress?.address2) { <br>{{ selectedItem.billingAddress?.address2 }} }
+          <br>{{ selectedItem.billingAddress?.city }}, {{ selectedItem.billingAddress?.state }} {{ selectedItem.billingAddress?.zip }}
+          <br>{{ selectedItem.billingAddress?.country }}
+        </div>
+      } @else {
+        <div class="addr-card__lines addr-card__lines--empty">No billing address on file</div>
+      }
+    </div>
+    <div class="addr-card">
+      <p class="addr-card__label">Shipping</p>
+      @if (selectedItem.isShippingSameAsBilling) {
+        <div class="addr-card__lines">Same as billing</div>
+      } @else if (selectedItem.shippingAddress?.address1) {
+        <div class="addr-card__lines">
+          {{ selectedItem.shippingAddress?.address1 }}
+          @if (selectedItem.shippingAddress?.address2) { <br>{{ selectedItem.shippingAddress?.address2 }} }
+          <br>{{ selectedItem.shippingAddress?.city }}, {{ selectedItem.shippingAddress?.state }} {{ selectedItem.shippingAddress?.zip }}
+          <br>{{ selectedItem.shippingAddress?.country }}
+        </div>
+      } @else {
+        <div class="addr-card__lines addr-card__lines--empty">No shipping address on file</div>
+      }
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- Order Totals -->
+  <p class="section-label">Order Totals</p>
+  <div class="tiles">
+    <div class="tile"><span class="tile__k">Subtotal</span><span class="tile__v">{{ service.getProductTotalDisplayAmount(selectedItem) | currency }}</span></div>
+    <div class="tile"><span class="tile__k">Tax</span><span class="tile__v">{{ service.getTaxesDisplayAmount(selectedItem) | currency }}</span></div>
+    <div class="tile"><span class="tile__k">Shipping</span><span class="tile__v">{{ service.getShippingDisplayAmount(selectedItem) | currency }}</span></div>
+    <div class="tile tile--down"><span class="tile__k">Discount</span><span class="tile__v">-{{ totalDiscountAmount | currency }}</span></div>
+    <div class="tile"><span class="tile__k">Items</span><span class="tile__v">{{ getOrderItemCount() }}</span></div>
+    <div class="tile tile--hot"><span class="tile__k">Charged</span><span class="tile__v">{{ service.getChargedDisplayAmount(selectedItem) | currency }}</span></div>
+  </div>
+
+  <!-- Discount breakdown -->
+  <div class="breakdown-wrap">
+    <p class="section-label">Discount Breakdown</p>
+    @if (hasDiscounts) {
+      <table class="breakdown">
+        <thead><tr><th>Source</th><th>Applied To</th><th>Detail</th><th class="amt-col">Amount</th></tr></thead>
+        <tbody>
+          @if (couponAmount > 0) {
+            <tr>
+              <td><span class="src-tag">Coupon</span><div class="src-note">{{ selectedItem.couponCode || '—' }}</div></td>
+              <td>Products</td>
+              <td>{{ selectedItem.couponPercent ? selectedItem.couponPercent + '% off qualifying items' : 'Applied at checkout' }}</td>
+              <td class="amt-col amt">-{{ couponAmount | currency }}</td>
+            </tr>
+          }
+          @if (shippingDiscountAmount > 0) {
+            <tr>
+              <td><span class="src-tag">Shipping</span></td>
+              <td>Shipping</td>
+              <td>{{ selectedItem.shippingDiscountReason || 'Applied at checkout' }}</td>
+              <td class="amt-col amt">-{{ shippingDiscountAmount | currency }}</td>
+            </tr>
+          }
+          <tr class="breakdown__total-row">
+            <td colspan="3">Total</td>
+            <td class="amt-col amt">-{{ totalDiscountAmount | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+    } @else {
+      <div class="breakdown-empty">No coupon or shipping discount applied to this order.</div>
+    }
+    @if (onSaleItems.length) {
+      <div class="breakdown-info">
+        <span>ℹ️</span>
+        <div>
+          @for (item of onSaleItems; track item; let last = $last) {
+            <b>{{ item.itemName }}</b>{{ last ? '' : ', ' }}
+          }
+          {{ onSaleItems.length === 1 ? 'was' : 'were' }} independently on sale at checkout - already reflected in the subtotal above, not part of the coupon discount.
+        </div>
+      </div>
+    }
+  </div>
+
+  <hr class="rule">
+
+  <!-- Timeline + Items -->
+  <div class="tl">
+    <div>
+      <p class="section-label">Order Timeline</p>
+      <div class="tl__events">
+        @for (node of timeline; track node.step.status) {
+          <div class="tl__event" [class]="'tl__event--' + node.state">
+            <b>{{ node.step.label }}</b>
+            @if (node.date) {
+              <div class="tl__when">{{ $any(node.date) | date: 'medium' }}@if (node.by) { &middot; {{ node.by }} }</div>
+            } @else if (node.state === 'pending') {
+              <div class="tl__when tl__when--pending">Pending</div>
             }
-          </ol>
+          </div>
         }
-        @if (item.size) {
-          <span>Size: ({{ item.size }})</span>
+      </div>
+    </div>
+    <div>
+      <p class="section-label">Items</p>
+      <div class="tl__items">
+        @for (item of selectedItem.cartItems; track item) {
+          <div class="tl__item">
+            <div class="tl__img">
+              @if (item.img) {
+                <img [src]="item.img.url" [alt]="item.img.name">
+              }
+            </div>
+            <div class="tl__item-body">
+              <div class="tl__item-name">{{ item.itemName }}</div>
+              <div class="tl__item-sub">
+                {{ item.orderQuantity }} x {{ service.calculateProductCostAmount(costRow(item)) | currency }}
+                @if (item.size) { &middot; {{ item.size }} }
+                @if (item.color) { &middot; {{ item.color }} }
+              </div>
+              @if (item.attendees?.length) {
+                <ol class="tl__attendees">
+                  @for (attendee of item.attendees; track attendee) {
+                    <li>{{ attendee.firstName }} {{ attendee.lastName }} ({{ attendee.email }})</li>
+                  }
+                </ol>
+              }
+              <div class="tl__item-tags">
+                <span class="pill pill--neutral">{{ isPhysical(item) ? 'Physical' : 'Digital' }}</span>
+                @if (item.salePrice) {
+                  <span class="pill pill--accent">On Sale</span>
+                }
+                @if (item.processedStatus === 'SHIPPED') {
+                  <span class="pill pill--success">Shipped</span>
+                }
+                @if (item.processedStatus === 'REFUNDED') {
+                  <span class="pill pill--critical">Refunded</span>
+                }
+              </div>
+            </div>
+            <div class="tl__item-amt">
+              {{ itemTotal(item) | currency }}
+              @if (isVisible(['Admin']) && isShippedButtonVisible(item)) {
+                <button mat-icon-button matTooltip="Mark As Shipped" (click)="markAsShipped(item)">
+                  <mat-icon>local_shipping</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
         }
-        @if (item.color) {
-          <span>Color: ({{ item.color }})</span>
-        }
-      </td>
-    </ng-container>
+      </div>
+    </div>
+  </div>
 
-    <ng-container matColumnDef="tax">
-      <th mat-header-cell *matHeaderCellDef>Tax</th>
-      <td mat-cell *matCellDef="let item">{{ service.calculateItemTaxableAmount(costRow(item), selectedItem) | currency }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="shipping">
-      <th mat-header-cell *matHeaderCellDef>Shipping</th>
-      <td mat-cell *matCellDef="let item">{{ service.calculateItemShippingAmount(costRow(item), selectedItem) | currency }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="discount">
-      <th mat-header-cell *matHeaderCellDef>Discount</th>
-      <td mat-cell *matCellDef="let item">{{ service.calculateItemDiscountAmount(costRow(item)) | currency }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="total">
-      <th mat-header-cell *matHeaderCellDef>Total</th>
-      <td mat-cell *matCellDef="let item">{{ service.calculateItemTotalAmount(costRow(item), selectedItem) | currency }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="processedStatus">
-      <th mat-header-cell *matHeaderCellDef>Status</th>
-      <td mat-cell *matCellDef="let item">{{ item.processedStatus }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="actions">
-      <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-      <td mat-cell *matCellDef="let item" class="actions-column">
-        @if (isVisible(['Admin']) && isShippedButtonVisible(item)) {
-          <button mat-icon-button matTooltip="Mark As Shipped" (click)="markAsShipped(item)">
-            <mat-icon>local_shipping</mat-icon>
+  <!-- Action bar -->
+  @if (isVisible(['Admin']) && selectedItem.fulfillmentStatus && selectedItem.fulfillmentStatus !== 'closed') {
+    <div class="footbar">
+      <span class="pill pill--accent">{{ service.getFulfillmentStatusLabel(selectedItem.fulfillmentStatus) }}</span>
+      @switch (selectedItem.fulfillmentStatus) {
+        @case ('new') {
+          <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder()">
+            <mat-icon>check_circle</mat-icon>
+            Acknowledge Order
           </button>
         }
-      </td>
-    </ng-container>
+        @case ('received') {
+          <div class="footbar__actions">
+            <button mat-raised-button color="primary" type="button" [disabled]="printing" (click)="printShippingLabel()">
+              <mat-icon>local_shipping</mat-icon>
+              Print Shipping Label
+            </button>
+            <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
+              Mark as Picked Up / Delivered
+            </button>
+          </div>
+        }
+        @case ('shipping_label_printed') {
+          <button mat-raised-button color="primary" type="button" (click)="markPackaged()">
+            <mat-icon>inventory_2</mat-icon>
+            Mark as Packaged
+          </button>
+        }
+        @case ('awaiting_shipping') {
+          <button mat-raised-button color="primary" type="button" (click)="markShipped()">
+            <mat-icon>local_shipping</mat-icon>
+            Mark as Shipped
+          </button>
+        }
+      }
+    </div>
+  } @else if (selectedItem.fulfillmentStatus === 'closed') {
+    <div class="footbar footbar--done">
+      <span class="pill pill--success">Closed</span>
+      <span class="footbar__done-note">This order is closed.</span>
+    </div>
+  }
 
-    <tr mat-header-row *matHeaderRowDef="['img', 'itemName', 'tax', 'shipping', 'discount', 'total', 'processedStatus', 'actions']; sticky: true"></tr>
-    <tr mat-row *matRowDef="let row; columns: ['img', 'itemName', 'tax', 'shipping', 'discount', 'total', 'processedStatus', 'actions'];"></tr>
-  </table>
 </div>

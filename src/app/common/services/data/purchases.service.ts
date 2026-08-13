@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm, FulfillmentStatus, StatusHistoryEntry } from 'src/app/common/models/utils/cart.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
+import { FULFILLMENT_STEPS } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
 import { BaseService } from './base.service';
 
 @Injectable({
@@ -29,6 +30,23 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   };
 
 
+
+  // Appends one entry to the Sale Details tab's timeline (see
+  // StatusHistoryEntry's own comment, cart.model.ts) - every transition
+  // method below folds this into the same full-object update() that changes
+  // fulfillmentStatus itself, so the two can never drift apart.
+  private withStatusHistory(item: CheckoutForm, status: FulfillmentStatus): StatusHistoryEntry[] {
+    const entry: StatusHistoryEntry = { status, date: Timestamp.now(), by: this.currentUserLabel() };
+    return [...(item.statusHistory ?? []), entry];
+  }
+
+  // getLoggedInUser() reads the client-side display-caching cookie (see
+  // AdminAuthService's own SECURITY comment) - fine here, this only ever
+  // labels a timeline entry with "who did this", it's not an auth decision.
+  private currentUserLabel(): string | undefined {
+    const user = this.authService.getLoggedInUser();
+    return user ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email : undefined;
+  }
 
   calculateProductCostAmount(cartItem){
       return cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
@@ -68,6 +86,67 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     const discountAmount = (cartItem.data.price - cartItem.data.discountPrice) * cartItem.data.orderQuantity
 
     return discountAmount && discountAmount > 0 ? discountAmount : 0;
+  }
+
+  // ---- Display amounts ----
+  // Real dollar amounts come from the PayPal receipt when present, falling
+  // back to the general order-total fields the storefront's checkout writes
+  // on every purchase regardless of payment method. Shared by the Purchases
+  // list columns, its edit-view summary block, and the Sale Details tab's
+  // stat tiles (purchase-details.component.ts) - moved here (out of
+  // PurchasesComponent, which used to own all six) so all three render the
+  // exact same figures instead of three copies of this math drifting apart.
+  getProductTotalDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.item_total?.value ?? '') : (item.total ?? 0) > 0 ? item.total! : 0;
+  }
+
+  getDiscountDisplayAmount(item: CheckoutForm): number {
+    const discount = item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount;
+    return discount
+      ? parseFloat(discount.value)
+      : (item.discount ?? 0) > 0
+        ? item.discount!
+        : 0;
+  }
+
+  getTaxesDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.tax_total?.value ?? '') : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
+  }
+
+  getShippingDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping?.value ?? '') : item.shippingRate ? item.shippingRate : 0;
+  }
+
+  getShippingDiscountDisplayAmount(item: CheckoutForm): number {
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping_discount?.value ?? '') : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
+  }
+
+  getChargedDisplayAmount(item: CheckoutForm): number {
+    if (item.payPalReceipt) {
+      return parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.value ?? '');
+    }
+
+    // 2026-08-12 fullsweep fix: this used to be a single ternary that
+    // computed (total - discount) only to test its sign, then returned the
+    // un-discounted item.total! regardless - every non-PayPal order's
+    // "Charged" figure (list column + Admin summary row via sumOf('charged'))
+    // was overstated by exactly the discount amount.
+    const charged = (item.total ?? 0) - (item.discount ?? 0);
+    return charged > 0 ? charged : 0;
+  }
+
+  // Falls back to fulfillmentStatus's human label for non-PayPal orders -
+  // was a Stripe paymentIntent.status fallback before Stripe support was
+  // removed from this app (Stripe is still used by the storefront's own
+  // /give donation flow and by this repo's Cloud Functions, just not read/
+  // displayed here anymore), then a processedStatus (NEW/COMPLETE/REFUNDED)
+  // fallback before that field was removed entirely.
+  getOrderStatusDisplay(item: CheckoutForm): string {
+    return item.payPalReceipt ? item.payPalReceipt.status : this.getFulfillmentStatusLabel(item.fulfillmentStatus);
+  }
+
+  getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
+    return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
   calculateOrderRefundedAmount(selectedItem){
@@ -110,6 +189,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
         item.shippingLabel = response;
         if (item.fulfillmentStatus === 'received') {
           item.fulfillmentStatus = 'shipping_label_printed';
+          item.statusHistory = this.withStatusHistory(item, 'shipping_label_printed');
         }
         this.update(item.id!, item).then((saved) => {
           this.downloadShippingLabel(saved!.shippingLabel.labelDownload.pdf);
@@ -138,7 +218,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
 
   // Step 2: admin acknowledges a freshly-arrived order. 'new' -> 'received'.
   acknowledgeOrder(item: CheckoutForm): Promise<CheckoutForm> {
-    return this.update(item.id!, { ...item, fulfillmentStatus: 'received' });
+    return this.update(item.id!, { ...item, fulfillmentStatus: 'received', statusHistory: this.withStatusHistory(item, 'received') });
   }
 
   // Override for orders picked up in person or hand-delivered - they never
@@ -146,14 +226,14 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   // straight from 'received' to 'closed', skipping shipping_label_printed
   // and awaiting_shipping entirely.
   markPickedUp(item: CheckoutForm): Promise<CheckoutForm> {
-    return this.update(item.id!, { ...item, fulfillmentStatus: 'closed' });
+    return this.update(item.id!, { ...item, fulfillmentStatus: 'closed', statusHistory: this.withStatusHistory(item, 'closed') });
   }
 
   markPackaged(item: CheckoutForm): Promise<CheckoutForm> {
-    return this.update(item.id!, { ...item, fulfillmentStatus: 'awaiting_shipping' });
+    return this.update(item.id!, { ...item, fulfillmentStatus: 'awaiting_shipping', statusHistory: this.withStatusHistory(item, 'awaiting_shipping') });
   }
 
   markShipped(item: CheckoutForm): Promise<CheckoutForm> {
-    return this.update(item.id!, { ...item, fulfillmentStatus: 'closed' });
+    return this.update(item.id!, { ...item, fulfillmentStatus: 'closed', statusHistory: this.withStatusHistory(item, 'closed') });
   }
 }

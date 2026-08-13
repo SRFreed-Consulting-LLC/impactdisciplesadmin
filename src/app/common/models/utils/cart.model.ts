@@ -50,6 +50,25 @@ export interface CartItem {
 // live on the same document.
 export type FulfillmentStatus = 'new' | 'received' | 'shipping_label_printed' | 'awaiting_shipping' | 'closed';
 
+// One entry per fulfillmentStatus transition, oldest first - backs the Sale
+// Details tab's timeline (purchase-details.component.ts). The very first
+// entry is stamped server-side at order creation (see
+// functions/src/purchase-fulfillment.functions.ts); every entry after that
+// is appended by PurchasesService's own transition methods
+// (acknowledgeOrder/getShippingLabel/markPackaged/markShipped/markPickedUp)
+// as part of the same full-object update() that changes fulfillmentStatus -
+// never a separate write, so the two can't drift apart. `by` is the acting
+// admin's display name/email (absent on the creation entry - nobody "did"
+// that one). Purchases created before this field existed simply have no
+// statusHistory at all - the timeline UI falls back to just dateProcessed +
+// the current status for those, rather than inventing history that was
+// never recorded.
+export interface StatusHistoryEntry {
+  status: FulfillmentStatus;
+  date: Timestamp;
+  by?: string;
+}
+
 export interface Attendee {
   firstName: string;
   lastName: string;
@@ -110,4 +129,7 @@ export class CheckoutForm extends BaseModel {
   // creation, for every purchase unconditionally - see FulfillmentStatus's
   // own comment above for what determines 'new' vs 'closed'.
   fulfillmentStatus?: FulfillmentStatus;
+
+  // See StatusHistoryEntry's own comment above.
+  statusHistory?: StatusHistoryEntry[];
 }

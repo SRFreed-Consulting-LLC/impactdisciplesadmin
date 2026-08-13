@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
@@ -10,7 +10,6 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
-import { FULFILLMENT_STEPS } from '../fulfillment/fulfillment-steps';
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts for the established precedent this mirrors) rather
@@ -45,7 +44,7 @@ export class PurchasesComponent implements OnInit {
   // columns had no filter cell in the original (dxo-filter-row left them
   // blank), reproduced here via filterable:false.
   columns: DataGridColumn<CheckoutForm>[] = [
-    { key: 'fulfillmentStatus', label: 'Status', value: (item) => this.getFulfillmentStatusLabel(item.fulfillmentStatus) },
+    { key: 'fulfillmentStatus', label: 'Status', value: (item) => this.service.getFulfillmentStatusLabel(item.fulfillmentStatus) },
     { key: 'dateProcessed', label: 'Date', type: 'date', dateFormat: 'short', filterable: false },
     { key: 'firstName', label: 'First Name' },
     { key: 'lastName', label: 'Last Name' },
@@ -57,11 +56,11 @@ export class PurchasesComponent implements OnInit {
     { key: 'billingZip', label: 'Zip', visible: false, filterable: false, value: (item) => item.billingAddress?.zip },
     { key: 'receipt', label: 'Receipt' },
     { key: 'couponCode', label: 'Coupon' },
-    { key: 'totalBeforeDiscount', label: 'Total', type: 'currency', value: (item) => this.getProductTotalDisplayAmount(item) },
-    { key: 'discount', label: 'Discount', type: 'currency', value: (item) => this.getDiscountDisplayAmount(item) },
-    { key: 'estimatedTaxes', label: 'Taxes', type: 'currency', value: (item) => this.getTaxesDisplayAmount(item) },
-    { key: 'shippingRate', label: 'Shipping', type: 'currency', value: (item) => this.getShippingDisplayAmount(item) },
-    { key: 'charged', label: 'Charged', type: 'currency', value: (item) => this.getChargedDisplayAmount(item) },
+    { key: 'totalBeforeDiscount', label: 'Total', type: 'currency', value: (item) => this.service.getProductTotalDisplayAmount(item) },
+    { key: 'discount', label: 'Discount', type: 'currency', value: (item) => this.service.getDiscountDisplayAmount(item) },
+    { key: 'estimatedTaxes', label: 'Taxes', type: 'currency', value: (item) => this.service.getTaxesDisplayAmount(item) },
+    { key: 'shippingRate', label: 'Shipping', type: 'currency', value: (item) => this.service.getShippingDisplayAmount(item) },
+    { key: 'charged', label: 'Charged', type: 'currency', value: (item) => this.service.getChargedDisplayAmount(item) },
     { key: 'refundAmount', label: 'Refunded', type: 'currency' }
   ];
 
@@ -83,17 +82,15 @@ export class PurchasesComponent implements OnInit {
 
   states = EnumHelper.getStateTypesAsArray();
   phoneTypes = EnumHelper.getPhoneTypesAsArray();
-  // Same 5-step list the Fulfillment screen itself uses - this dropdown is
-  // a raw manual override (matches the old processedStatus dropdown's own
-  // capability), independent of the Fulfillment screen's workflow buttons,
-  // so picking e.g. "Shipping Label Printed" here does NOT actually
-  // purchase a real label the way that screen's own button does.
-  fulfillmentSteps = FULFILLMENT_STEPS;
 
   editingItem: CheckoutForm | null = null;
 
   constructor(
-    private service: PurchasesService,
+    // Public - the template calls its display-amount/label methods directly
+    // (service.getChargedDisplayAmount(item), etc.) rather than through
+    // component wrappers, same as app-purchase-details already does with
+    // service.calculateProductCostAmount().
+    public service: PurchasesService,
     private permissionService: PermissionService,
     private fb: FormBuilder,
     private confirmService: ConfirmService,
@@ -122,63 +119,14 @@ export class PurchasesComponent implements OnInit {
     this.paged.rows$.subscribe((items) => this.tracker.capture(items));
   }
 
-  // Real dollar amounts come from the PayPal receipt when present, falling
-  // back to the general order-total fields the storefront's checkout
-  // writes on every purchase regardless of payment method. Shared by both
-  // the list columns and the edit view's summary block (called there with
-  // editingItem).
-  getProductTotalDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.item_total?.value ?? '') : (item.total ?? 0) > 0 ? item.total! : 0;
-  }
-
-  getDiscountDisplayAmount(item: CheckoutForm): number {
-    const discount = item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount;
-    return discount
-      ? parseFloat(discount.value)
-      : (item.discount ?? 0) > 0
-        ? item.discount!
-        : 0;
-  }
-
-  getTaxesDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.tax_total?.value ?? '') : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
-  }
-
-  getShippingDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping?.value ?? '') : item.shippingRate ? item.shippingRate : 0;
-  }
-
-  getShippingDiscountDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping_discount?.value ?? '') : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
-  }
-
-  getChargedDisplayAmount(item: CheckoutForm): number {
-    if (item.payPalReceipt) {
-      return parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.value ?? '');
-    }
-
-    // 2026-08-12 fullsweep fix: this used to be a single ternary that
-    // computed (total - discount) only to test its sign, then returned the
-    // un-discounted item.total! regardless - every non-PayPal order's
-    // "Charged" figure (list column + Admin summary row via sumOf('charged'))
-    // was overstated by exactly the discount amount.
-    const charged = (item.total ?? 0) - (item.discount ?? 0);
-    return charged > 0 ? charged : 0;
-  }
-
-  // Falls back to fulfillmentStatus's human label for non-PayPal orders -
-  // was a Stripe paymentIntent.status fallback before Stripe support was
-  // removed from this app (Stripe is still used by the storefront's own
-  // /give donation flow and by this repo's Cloud Functions, just not read/
-  // displayed here anymore), then a processedStatus (NEW/COMPLETE/
-  // REFUNDED) fallback before that field was removed entirely.
-  getOrderStatusDisplay(item: CheckoutForm): string {
-    return item.payPalReceipt ? item.payPalReceipt.status : this.getFulfillmentStatusLabel(item.fulfillmentStatus);
-  }
-
-  getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
-    return this.fulfillmentSteps.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
-  }
+  // getProductTotalDisplayAmount/getDiscountDisplayAmount/
+  // getTaxesDisplayAmount/getShippingDisplayAmount/
+  // getShippingDiscountDisplayAmount/getChargedDisplayAmount/
+  // getOrderStatusDisplay/getFulfillmentStatusLabel all moved onto
+  // PurchasesService (see its own comment) so the Sale Details tab's stat
+  // tiles render the exact same figures as this screen's columns and
+  // summary block - call `service.xxx()` directly instead of a component
+  // wrapper.
 
   getOrderItemCount(item: CheckoutForm): number {
     return (item.cartItems ?? []).map((cartItem) => cartItem.orderQuantity ?? 0).reduce((a, b) => a + b, 0);
@@ -215,7 +163,6 @@ export class PurchasesComponent implements OnInit {
     this.editingItem = item;
 
     this.form = this.fb.group({
-      fulfillmentStatus: [item.fulfillmentStatus ?? 'new'],
       phone: this.fb.group({
         countryCode: [item.phone?.countryCode ?? ''],
         number: [item.phone?.number ?? ''],

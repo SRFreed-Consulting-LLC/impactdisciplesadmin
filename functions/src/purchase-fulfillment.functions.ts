@@ -1,4 +1,5 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import * as admin from "firebase-admin";
 
 // Backs the Store Manager > Fulfillment screen's 5-step physical-order
 // workflow (new -> received -> shipping_label_printed -> awaiting_shipping
@@ -65,6 +66,13 @@ export const onPurchaseFulfillmentEligible = onDocumentCreated(
     }
 
     const isPhysical = hasPhysicalItem(data.cartItems);
-    await snap.ref.update({fulfillmentStatus: isPhysical ? "new" : "closed"});
+    const status = isPhysical ? "new" : "closed";
+    await snap.ref.update({
+      fulfillmentStatus: status,
+      // First entry of the Sale Details tab's timeline - see
+      // StatusHistoryEntry's own comment (cart.model.ts) for why this has to
+      // land in the same write as fulfillmentStatus itself.
+      statusHistory: [{status, date: admin.firestore.Timestamp.now()}],
+    });
   }
 );
