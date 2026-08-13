@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { Subject, takeUntil } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { OrderWorkflowDialogComponent } from '../../shared/order-workflow-dialog/order-workflow-dialog.component';
 import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
@@ -12,6 +13,7 @@ import { FormSubmissionService } from 'src/app/common/services/data/form-submiss
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { FULFILLMENT_STEPS, segmentState } from '../../customers-manager/fulfillment/fulfillment-steps';
+import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 
 interface DashboardEventRow {
   id: string;
@@ -42,22 +44,26 @@ interface DashboardRequestRow {
 // FulfillmentComponent.loadOrders(), just capped and read-only here, no
 // action buttons), Upcoming Events, and New Requests (Web Manager's Custom
 // Form Submissions - the old 4-collection Requests Manager this replaced).
-// Every section is a one-time getAll(), not
-// a live streamAll() - this is the page every login lands on, so it
-// shouldn't add more standing listeners on top of whatever else is already
-// live; getAll()'s own retry hardening (see firebase.dao.ts's
-// FIRESTORE_RETRY_COUNT) already makes a one-time read resilience-
-// equivalent to a stream here. The 3 sections load independently (not one
-// combined combineLatest/forkJoin) so Recent Orders - the primary section -
-// never waits on the slowest of three unrelated reads, and a failure in one
-// section can't blank the other two.
+//
+// Recent Orders and New Requests are live now (explicit user request - a
+// new purchase/request should appear without a manual refresh), Upcoming
+// Events stays a one-time read (not asked for, and less time-sensitive).
+// Recent Orders uses a *scoped* live query (fulfillmentStatus != 'closed'),
+// not streamAll() over the whole purchases collection - that collection is
+// large (2000+ docs) and this app deliberately moved off whole-collection
+// streamAll() for exactly that size of collection elsewhere (see Products/
+// Customers/Purchases' own PagedCollectionSource usage) - a scoped query
+// keeps this page from adding an expensive standing listener over data
+// nobody here needs to see. New Requests uses streamAll() instead (see its
+// own comment below for why a scoped query doesn't work there) - that
+// collection is small/staff-bounded, not the same cost concern.
 @Component({
     selector: 'app-dashboard',
     templateUrl: './dashboard.component.html',
     styleUrls: ['./dashboard.component.scss'],
     standalone: false
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   steps = FULFILLMENT_STEPS;
 
   recentOrders: CheckoutForm[] = [];
@@ -71,6 +77,8 @@ export class DashboardComponent implements OnInit {
   newRequests: DashboardRequestRow[] = [];
   requestsLoading = true;
   requestsFailed = false;
+
+  private ngUnsubscribe = new Subject<void>();
 
   constructor(
     private purchasesService: PurchasesService,
@@ -87,13 +95,26 @@ export class DashboardComponent implements OnInit {
     this.loadNewRequests();
   }
 
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
+  }
+
   // ---- Recent Orders ----
 
   loadRecentOrders(): void {
     this.ordersLoading = true;
     this.ordersFailed = false;
 
-    this.purchasesService.getAll().then((items) => {
+    // Scoped live query, not a one-time getAll() any more - see the class
+    // comment above. Every purchase always has a fulfillmentStatus now (see
+    // the processedStatus->fulfillmentStatus migration), so this already
+    // fully replaces the old client-side "item.fulfillmentStatus &&" part
+    // of the filter - nothing comes back missing the field to filter out.
+    this.purchasesService.queryStreamByValue(
+      'fulfillmentStatus', WhereFilterOperandKeys.notEqual, 'closed', undefined,
+      () => { this.ordersFailed = true; }
+    ).pipe(takeUntil(this.ngUnsubscribe)).subscribe((items) => {
       // Same definition of "needs fulfillment" as FulfillmentComponent's
       // own loadOrders() - 'new' orders first, then newest-dateProcessed-
       // first within each group. Deliberately uncapped (matches the
@@ -101,26 +122,22 @@ export class DashboardComponent implements OnInit {
       // the horizontally-scrolling card row is what keeps this usable
       // when there are a lot of them, not a slice().
       this.recentOrders = items
-        .filter((item) => item.fulfillmentStatus && item.fulfillmentStatus !== 'closed')
         .sort((a, b) => this.newRank(a) - this.newRank(b) || toMillis(b.dateProcessed) - toMillis(a.dateProcessed));
       this.ordersLoading = false;
-    }).catch(() => {
-      this.ordersLoading = false;
-      this.ordersFailed = true;
     });
   }
 
   // Opens the same fully-functional workflow (Acknowledge/Print Label/Mark
   // Packaged/Mark Shipped) as the real Fulfillment screen, scoped to this
-  // one order - see OrderWorkflowDialogComponent. Refreshes the list on
-  // close regardless of what happened inside (cheap one-time read; simpler
-  // and just as correct as tracking exactly what changed).
+  // one order - see OrderWorkflowDialogComponent. No refresh-on-close call
+  // any more - the list is a live subscription now, it already reflects
+  // whatever the dialog just changed without this.
   openOrderDialog(item: CheckoutForm): void {
     this.dialog.open(OrderWorkflowDialogComponent, {
       width: '480px',
       maxWidth: '95vw',
       data: { item }
-    }).afterClosed().subscribe(() => this.loadRecentOrders());
+    });
   }
 
   segmentState(item: CheckoutForm, index: number): 'done' | 'current' | 'pending' {
@@ -234,31 +251,40 @@ export class DashboardComponent implements OnInit {
     this.requestsLoading = true;
     this.requestsFailed = false;
 
-    this.formSubmissionService.getAll().then((items) => {
-      this.newRequests = items
-        // 'routed' requests have already been handed off to a staff person
-        // (see RouteRequestDialogComponent) and are considered closed - they
-        // stay visible on Web Manager's Custom Form Submissions screen, just
-        // not here. undefined/'open' both count as still-open (undefined =
-        // every submission that existed before this status field shipped).
-        .filter((r) => r.status !== 'routed')
-        .map((r) => ({
-          id: r.id!,
-          typeLabel: r.formName,
-          name: this.submissionIdentity(r),
-          detail: r.isTest ? 'Test submission' : '',
-          dateMs: toMillis(r.submittedAt),
-          isNew: r.newRecordStatus === 'new',
-          raw: r
-        }))
-        .sort((a, b) => this.requestSortRank(b.isNew) - this.requestSortRank(a.isNew) || b.dateMs - a.dateMs)
-        .slice(0, 8);
+    // Live, via streamAll() rather than a scoped queryStreamByValue() like
+    // Recent Orders above - "still open" here means status !== 'routed' OR
+    // completely missing (every submission that existed before this status
+    // field shipped, see the filter's own comment below), and Firestore's
+    // != excludes docs missing the field entirely, the opposite of what's
+    // needed - there's no single query that expresses this. Custom Form
+    // Submissions is a small, staff-facing collection (not the public
+    // storefront's high-volume Purchases), so a live whole-collection
+    // listener here doesn't carry the same cost concern that kept Recent
+    // Orders off streamAll().
+    this.formSubmissionService.streamAll(undefined, () => { this.requestsFailed = true; })
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((items) => {
+        this.newRequests = items
+          // 'routed' requests have already been handed off to a staff person
+          // (see RouteRequestDialogComponent) and are considered closed - they
+          // stay visible on Web Manager's Custom Form Submissions screen, just
+          // not here. undefined/'open' both count as still-open (undefined =
+          // every submission that existed before this status field shipped).
+          .filter((r) => r.status !== 'routed')
+          .map((r) => ({
+            id: r.id!,
+            typeLabel: r.formName,
+            name: this.submissionIdentity(r),
+            detail: r.isTest ? 'Test submission' : '',
+            dateMs: toMillis(r.submittedAt),
+            isNew: r.newRecordStatus === 'new',
+            raw: r
+          }))
+          .sort((a, b) => this.requestSortRank(b.isNew) - this.requestSortRank(a.isNew) || b.dateMs - a.dateMs)
+          .slice(0, 8);
 
-      this.requestsLoading = false;
-    }).catch(() => {
-      this.requestsLoading = false;
-      this.requestsFailed = true;
-    });
+        this.requestsLoading = false;
+      });
   }
 
   // Best-effort submitter identification for a fully dynamic form: prefer
@@ -282,16 +308,16 @@ export class DashboardComponent implements OnInit {
   // Opens the forward/route workflow directly (not a plain detail view -
   // see RouteRequestDialogComponent) - a request landing on this dashboard
   // needs to be triaged to a staff person, so that's the action a click
-  // here goes straight to. Reloads the list on close so a just-routed
-  // request drops off immediately, same refresh-after-close pattern as
-  // openOrderDialog() above.
+  // here goes straight to. No refresh-on-close call any more - the list is
+  // a live subscription now (see loadNewRequests()), a just-routed request
+  // drops off on its own once its status write lands.
   routeRequest(row: DashboardRequestRow): void {
     this.dialog.open(RouteRequestDialogComponent, {
       width: '860px',
       maxWidth: '95vw',
       maxHeight: '85vh',
       data: { item: row.raw }
-    }).afterClosed().subscribe(() => this.loadNewRequests());
+    });
   }
 
   // Higher rank sorts first - 'new' requests before already-seen ones,
