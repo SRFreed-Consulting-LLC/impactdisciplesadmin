@@ -8,15 +8,26 @@ import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 interface AlertSource {
   key: keyof NewRecordCounts;
   label: string;
-  route: string[];
+  // Only Event Registrations still deep-links elsewhere - it has no live,
+  // dedicated view on the Dashboard the way Purchases/Custom Form
+  // Submissions now do (Recent Orders / New Requests, both live - see
+  // dashboard.component.ts), so it's the one source that still needs
+  // somewhere more specific to go than just "the Dashboard". route/
+  // queryParams are omitted entirely for every other source; open() below
+  // sends those straight to /home instead.
+  route?: string[];
   queryParams?: Record<string, string>;
 }
 
 // Top-bar bell: one badge for the total across all sources, a dropdown
-// breaking that total down per source. Clicking an entry navigates to that
-// source's master list - the list screen itself (see
-// new-record-tracking.util.ts) is what actually highlights the new rows and
-// marks them seen once viewed; this component only knows how to get there.
+// breaking that total down per source. Clicking a Purchases/Custom Form
+// Submissions entry just lands on the Dashboard - both now show up there
+// live (Recent Orders / New Requests), so there's nothing more specific to
+// deep-link into any more. Event Registrations is the one exception (see
+// AlertSource.route's own comment and openEventRegistrations() below) - the
+// list screen itself (see new-record-tracking.util.ts) is what actually
+// highlights the new rows and marks them seen once viewed; this component
+// only knows how to get there.
 //
 // Event Registrations has no flat cross-event list to deep-link into by
 // default (registrations are only ever viewed nested inside a specific
@@ -31,8 +42,8 @@ interface AlertSource {
 // - see NewRecordCounts's own comment.
 const ALERT_SOURCES: AlertSource[] = [
   { key: 'eventRegistrations', label: 'Event Registrations', route: ['/events-manager'], queryParams: { tab: 'events' } },
-  { key: 'formSubmissions', label: 'Custom Form Submissions', route: ['/customers-manager'], queryParams: { tab: 'custom-form-submissions' } },
-  { key: 'purchases', label: 'Purchases', route: ['/customers-manager'], queryParams: { tab: 'purchases' } }
+  { key: 'formSubmissions', label: 'Custom Form Submissions' },
+  { key: 'purchases', label: 'Purchases' }
 ];
 
 interface AlertEntry extends AlertSource {
@@ -69,7 +80,10 @@ export class NewRecordAlertsComponent {
       this.openEventRegistrations(entry);
       return;
     }
-    this.router.navigate(entry.route, entry.queryParams ? { queryParams: entry.queryParams } : {});
+    // Purchases/Custom Form Submissions now show up live right on the
+    // Dashboard (Recent Orders / New Requests) - no need to deep-link
+    // anywhere else, just land there.
+    this.router.navigate(['/home']);
   }
 
   // Finds which event the most recent still-unseen registration belongs to
@@ -87,7 +101,10 @@ export class NewRecordAlertsComponent {
         .sort((a, b) => toMillis(b.registrationDate) - toMillis(a.registrationDate))[0];
 
       const queryParams = latest ? { ...entry.queryParams, eventId: latest.eventId, eventTab: 'attendees' } : entry.queryParams;
-      this.router.navigate(entry.route, queryParams ? { queryParams } : {});
+      // route is always set for the eventRegistrations entry (the only one
+      // this method is ever called for) - the ?? fallback only matters if
+      // that ever stops being true, so this never silently no-ops.
+      this.router.navigate(entry.route ?? ['/events-manager'], queryParams ? { queryParams } : {});
     });
   }
 }
