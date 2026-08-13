@@ -44,9 +44,9 @@
           <div class="tab-content">
             <mat-form-field appearance="outline" class="status-field">
               <mat-label>Status</mat-label>
-              <mat-select formControlName="processedStatus">
-                @for (status of statuses; track status) {
-                  <mat-option [value]="status">{{ status }}</mat-option>
+              <mat-select formControlName="fulfillmentStatus">
+                @for (step of fulfillmentSteps; track step.status) {
+                  <mat-option [value]="step.status">{{ step.statusLabel }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>

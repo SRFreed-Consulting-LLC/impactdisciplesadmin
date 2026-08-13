@@ -98,7 +98,10 @@ async function getPaypalClientId(): Promise<string> {
  * (customer/address fields only -- price fields are ignored).
  * @param {PricingResult} pricing The server-computed pricing breakdown.
  * @return {Record<string, unknown>} A CheckoutForm-shaped object, not yet
- * carrying receipt/payPalReceipt/processedStatus/dateProcessed.
+ * carrying receipt/payPalReceipt/dateProcessed. fulfillmentStatus isn't set
+ * here either -- onPurchaseFulfillmentEligible (purchase-fulfillment.
+ * functions.ts) stamps it after the doc is actually created, same as it
+ * does for every other purchase-creation path.
  */
 function buildCheckoutForm(
   body: Record<string, unknown>,
@@ -295,7 +298,6 @@ exports.create_paypal_order = functions
 
         if (pricing.total <= 0) {
           checkoutForm.receipt = pricing.couponCode ? "COUPON" : "FREE ONLY";
-          checkoutForm.processedStatus = "NEW";
           checkoutForm.dateProcessed = admin.firestore.Timestamp.now();
           stampCartItems(
             pricing.cartItems as unknown as Array<Record<string, unknown>>
@@ -500,7 +502,6 @@ exports.capture_paypal_order = functions
           payPalReceipt: buildPayPalReceipt(
             pending.checkoutForm, orderId, payerID, pending.amount, captureData
           ),
-          processedStatus: "NEW",
           dateProcessed: admin.firestore.Timestamp.now(),
         };
         stampCartItems(

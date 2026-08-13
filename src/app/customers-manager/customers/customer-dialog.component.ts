@@ -11,7 +11,8 @@ import { PurchasesService } from 'src/app/common/services/data/purchases.service
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
+import { FULFILLMENT_STEPS } from '../fulfillment/fulfillment-steps';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
@@ -52,7 +53,7 @@ export class CustomerDialogComponent {
   purchasesLoading$ = new BehaviorSubject<boolean>(true);
   registrationsLoading$ = new BehaviorSubject<boolean>(true);
 
-  purchasesColumns = ['dateProcessed', 'processedStatus', 'receipt', 'couponCode', 'total', 'taxes', 'shipping', 'charged', 'refunded', 'actions'];
+  purchasesColumns = ['dateProcessed', 'fulfillmentStatus', 'receipt', 'couponCode', 'total', 'taxes', 'shipping', 'charged', 'refunded', 'actions'];
   registrationsColumns = ['startDate', 'eventId', 'email', 'receipt', 'registrationDate', 'actions'];
 
   notes: CustomerNoteModel[];
@@ -164,6 +165,13 @@ export class CustomerDialogComponent {
   getDate(timestamp: unknown): string {
     const date = dateFromTimestamp(timestamp);
     return date instanceof Date ? date.toLocaleDateString() : '';
+  }
+
+  // Same label lookup as purchases.component.ts's own
+  // getFulfillmentStatusLabel() - this tab shows the same status this
+  // customer's purchases carry on the main Purchases screen.
+  getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
+    return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
   // Opens a small popup to compose the note text (and whether it's

@@ -58,9 +58,15 @@ export class PurchaseDetailsComponent {
       item.processedStatus = 'SHIPPED';
       item.dateProcessed = dateFromTimestamp(Timestamp.now() as Timestamp) as unknown as Timestamp;
 
+      // Was: this.selectedItem.processedStatus = 'COMPLETE' - that field's
+      // gone now, fulfillmentStatus is the one order-status field a
+      // purchase carries. 'closed' is its own terminal state (same value
+      // the Fulfillment screen's markShipped()/markPickedUp() land on), so
+      // this keeps the same "every item shipped -> order done" behavior
+      // using the field that's actually still there.
       const isOrderComplete = (this.selectedItem.cartItems ?? []).every((cartItem) => cartItem.processedStatus === 'SHIPPED');
       if (isOrderComplete) {
-        this.selectedItem.processedStatus = 'COMPLETE';
+        this.selectedItem.fulfillmentStatus = 'closed';
         this.selectedItem.dateProcessed = Timestamp.now();
       }
 

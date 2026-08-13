@@ -33,14 +33,21 @@ export interface CartItem {
 }
 
 // The 5-step physical-fulfillment workflow (Store Manager > Fulfillment) -
-// see fulfillment-steps.ts for the label/step-number mapping. 'new' is set
+// see fulfillment-steps.ts for the label/step-number mapping. Set
 // automatically on order creation (server-side, see
-// functions/src/purchase-fulfillment.functions.ts); every other status is a
-// manual admin action. 'received' -> 'closed' is a valid direct jump (the
-// pickup/hand-delivery override - skips shipping-label/packaging entirely).
-// Distinct from CheckoutForm.processedStatus (payment state:
-// NEW/COMPLETE/REFUNDED) and newRecordStatus (the new-record alert badge) -
-// three separate concerns that happen to all live on the same document.
+// functions/src/purchase-fulfillment.functions.ts) - 'new' if the order has
+// a physical line item, 'closed' otherwise (ebook/digital/event-only orders
+// have nothing to ship, so they're already done); every other transition
+// past that is a manual admin action. 'received' -> 'closed' is a valid
+// direct jump (the pickup/hand-delivery override - skips shipping-label/
+// packaging entirely).
+//
+// This is the only order-status field a purchase carries now - there used
+// to be a separate CheckoutForm.processedStatus (payment state: NEW/
+// COMPLETE/REFUNDED), removed in favor of this one being set on every
+// purchase unconditionally. Still distinct from newRecordStatus below (the
+// new-record alert badge) - a different, unrelated concern that happens to
+// live on the same document.
 export type FulfillmentStatus = 'new' | 'received' | 'shipping_label_printed' | 'awaiting_shipping' | 'closed';
 
 export interface Attendee {
@@ -64,7 +71,6 @@ export class CheckoutForm extends BaseModel {
   isCreateAccount?: boolean;
   payPalReceipt?: IClientAuthorizeCallbackData;
   dateProcessed?: Timestamp;
-  processedStatus?: string;
 
   //total sale amount
   total?: number = 0;
@@ -95,14 +101,13 @@ export class CheckoutForm extends BaseModel {
   refundAmount?: number = 0;
   refundId?: string;
 
-  // Distinct from processedStatus above (payment/fulfillment state) - this
-  // tracks the new-record alert badge instead. See
+  // Distinct from fulfillmentStatus (order-status field, see its own
+  // comment above) - this tracks the new-record alert badge instead. See
   // EventRegistrationModel.newRecordStatus for what sets/clears it.
   newRecordStatus?: 'new' | 'seen';
 
   // Set server-side (functions/src/purchase-fulfillment.functions.ts) on
-  // creation, only when this order has at least one physical line item -
-  // undefined means this purchase never enters the Fulfillment workflow at
-  // all (ebook/digital/event-only orders).
+  // creation, for every purchase unconditionally - see FulfillmentStatus's
+  // own comment above for what determines 'new' vs 'closed'.
   fulfillmentStatus?: FulfillmentStatus;
 }

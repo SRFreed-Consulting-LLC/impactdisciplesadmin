@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
@@ -10,6 +10,7 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
+import { FULFILLMENT_STEPS } from '../fulfillment/fulfillment-steps';
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts for the established precedent this mirrors) rather
@@ -44,7 +45,7 @@ export class PurchasesComponent implements OnInit {
   // columns had no filter cell in the original (dxo-filter-row left them
   // blank), reproduced here via filterable:false.
   columns: DataGridColumn<CheckoutForm>[] = [
-    { key: 'processedStatus', label: 'Status' },
+    { key: 'fulfillmentStatus', label: 'Status', value: (item) => this.getFulfillmentStatusLabel(item.fulfillmentStatus) },
     { key: 'dateProcessed', label: 'Date', type: 'date', dateFormat: 'short', filterable: false },
     { key: 'firstName', label: 'First Name' },
     { key: 'lastName', label: 'Last Name' },
@@ -82,7 +83,12 @@ export class PurchasesComponent implements OnInit {
 
   states = EnumHelper.getStateTypesAsArray();
   phoneTypes = EnumHelper.getPhoneTypesAsArray();
-  statuses = ['NEW', 'COMPLETE', 'REFUNDED'];
+  // Same 5-step list the Fulfillment screen itself uses - this dropdown is
+  // a raw manual override (matches the old processedStatus dropdown's own
+  // capability), independent of the Fulfillment screen's workflow buttons,
+  // so picking e.g. "Shipping Label Printed" here does NOT actually
+  // purchase a real label the way that screen's own button does.
+  fulfillmentSteps = FULFILLMENT_STEPS;
 
   editingItem: CheckoutForm | null = null;
 
@@ -160,13 +166,18 @@ export class PurchasesComponent implements OnInit {
     return charged > 0 ? charged : 0;
   }
 
-  // Falls back to processedStatus (NEW/COMPLETE/REFUNDED) for non-PayPal
-  // orders - was a Stripe paymentIntent.status fallback before Stripe
-  // support was removed from this app (Stripe is still used by the
-  // storefront's own /give donation flow and by this repo's Cloud
-  // Functions, just not read/displayed here anymore).
+  // Falls back to fulfillmentStatus's human label for non-PayPal orders -
+  // was a Stripe paymentIntent.status fallback before Stripe support was
+  // removed from this app (Stripe is still used by the storefront's own
+  // /give donation flow and by this repo's Cloud Functions, just not read/
+  // displayed here anymore), then a processedStatus (NEW/COMPLETE/
+  // REFUNDED) fallback before that field was removed entirely.
   getOrderStatusDisplay(item: CheckoutForm): string {
-    return item.payPalReceipt ? item.payPalReceipt.status : item.processedStatus;
+    return item.payPalReceipt ? item.payPalReceipt.status : this.getFulfillmentStatusLabel(item.fulfillmentStatus);
+  }
+
+  getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
+    return this.fulfillmentSteps.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
   getOrderItemCount(item: CheckoutForm): number {
@@ -204,7 +215,7 @@ export class PurchasesComponent implements OnInit {
     this.editingItem = item;
 
     this.form = this.fb.group({
-      processedStatus: [item.processedStatus ?? 'NEW'],
+      fulfillmentStatus: [item.fulfillmentStatus ?? 'new'],
       phone: this.fb.group({
         countryCode: [item.phone?.countryCode ?? ''],
         number: [item.phone?.number ?? ''],

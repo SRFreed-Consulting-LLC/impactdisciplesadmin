@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
+import { FULFILLMENT_STEPS } from '../../customers-manager/fulfillment/fulfillment-steps';
 
 interface ColumnDef {
   key: string;
@@ -36,7 +37,7 @@ interface ReportRow {
   dateProcessed: Date | null;
   itemsPurchased: string;
   total: number;
-  processedStatus: string;
+  fulfillmentStatusLabel: string;
   receipt: string;
   // Grouped-mode-only - 0/blank when ungrouped.
   purchaseCount: number;
@@ -98,7 +99,7 @@ export class PurchaseReportComponent {
     { key: 'dateProcessed', label: 'Purchase Date', visible: true },
     { key: 'itemsPurchased', label: 'Items Purchased', visible: true },
     { key: 'total', label: 'Total', visible: true },
-    { key: 'processedStatus', label: 'Status', visible: false },
+    { key: 'fulfillmentStatusLabel', label: 'Status', visible: false },
     { key: 'receipt', label: 'Receipt', visible: false },
     // Only meaningful once groupByUser is on - see displayedColumns.
     { key: 'purchaseCount', label: 'Purchase Count', visible: true },
@@ -233,6 +234,12 @@ export class PurchaseReportComponent {
     return [new QueryParam('dateProcessed', WhereFilterOperandKeys.moreOrEqual, since)];
   }
 
+  // Same label lookup as purchases.component.ts's own
+  // getFulfillmentStatusLabel().
+  private getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
+    return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
+  }
+
   private toRow(item: CheckoutForm): ReportRow {
     return {
       id: item.id!,
@@ -253,7 +260,7 @@ export class PurchaseReportComponent {
       dateProcessed: dateFromTimestamp(item.dateProcessed),
       itemsPurchased: (item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', '),
       total: item.total ?? 0,
-      processedStatus: item.processedStatus ?? '',
+      fulfillmentStatusLabel: this.getFulfillmentStatusLabel(item.fulfillmentStatus),
       receipt: item.receipt ?? '',
       purchaseCount: 0,
       totalSpent: 0,
