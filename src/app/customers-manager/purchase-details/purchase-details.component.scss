@@ -43,19 +43,16 @@ hr.rule {
   margin-bottom: 18px;
 }
 
-// Full width, its own row below .addr-panel - a real address form (a
-// city/state/zip row alongside address1/2 + country) needs more room than a
-// third or even a half of the panel above gives it, especially once the
-// state/zip <mat-select>s are in play.
+// Its own row below .addr-panel, read-only text now (see this card's own
+// template comment on why address editing moved off this screen) - no
+// longer needs the wide layout a real address form once did here.
 .addr-card--shipping {
   margin-bottom: 18px;
-  max-width: 640px;
 }
 
-// Both fragments manage their own [formGroup] internally (see their own
-// components) - just tighten the vertical rhythm to match this page's
-// smaller type scale instead of their form-dialog-sized default spacing.
-.addr-card ::ng-deep .address-field,
+// app-phone-field manages its own [formGroup] internally (see its own
+// component) - just tighten the vertical rhythm to match this page's
+// smaller type scale instead of its form-dialog-sized default spacing.
 .addr-card ::ng-deep .phone-field {
   gap: 4px;
   margin-top: 6px;
@@ -65,6 +62,11 @@ hr.rule {
 }
 .addr-card ::ng-deep .mat-mdc-text-field-wrapper {
   padding-top: 0;
+}
+
+.addr-card__view-customer {
+  margin-top: 10px;
+  font-size: 12.5px;
 }
 
 .addr-card__name {

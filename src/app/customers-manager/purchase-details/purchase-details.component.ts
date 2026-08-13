@@ -1,14 +1,18 @@
 import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { CustomerService } from 'src/app/common/services/data/customer.service';
+import { EventService } from 'src/app/common/services/data/event.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from 'src/app/common/lists/roles.enum';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { FULFILLMENT_STEPS, FulfillmentStep } from '../fulfillment/fulfillment-steps';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { CustomerDialogComponent } from '../customers/customer-dialog.component';
 
 export interface TimelineNode {
   step: FulfillmentStep;
@@ -21,16 +25,22 @@ export interface TimelineNode {
 // the entire edit screen (there is no longer a separate Contact tab/dialog;
 // purchases.component.html renders nothing but this). Redesigned from a
 // single dense item table + a separate editable-address tab into one page:
-// customer & address panel (shipping address/phone still editable here,
-// same form/fields the old Contact tab had - billing address stays
-// read-only, it was never editable), order-total stat tiles, a real
-// discount-source breakdown, an order timeline, and the item list, per the
-// reviewed mockup - https://claude.ai/code/artifact/adb6fa1b-28fa-4f50-9901-113f2730e0c8
+// customer & address panel, order-total stat tiles, a real discount-source
+// breakdown, an order timeline, and the item list, per the reviewed mockup -
+// https://claude.ai/code/artifact/adb6fa1b-28fa-4f50-9901-113f2730e0c8
 // (merge of that gallery's "Stat Tiles" + "Timeline" concepts -
 // https://claude.ai/code/artifact/bc048b67-a51f-49d0-85d2-47ab5fea23e6).
 // The per-line-item refund action (refundLineItem) is fully commented out in
 // both the template and the TS of the original - not ported at all, nothing
 // lost since it was unreachable there either.
+//
+// Addresses, 2026-08-13 update: now that every purchase upserts a customer
+// record (functions/src/customer-upsert.functions.ts), address editing
+// moved off this screen entirely and onto that customer record instead -
+// see cart.model.ts's own comment. Only phone stays editable here (still
+// this specific order's own contact info); billing/shipping render
+// read-only, and "View Customer Record" opens the real record to review/
+// correct there.
 @Component({
     selector: 'app-purchase-details',
     templateUrl: './purchase-details.component.html',
@@ -43,7 +53,8 @@ export class PurchaseDetailsComponent {
   // Owned by PurchasesComponent (built in showEditModal(), submitted by its
   // own Save button) - passed down rather than rebuilt here so there's still
   // exactly one save flow, same as before this screen absorbed the Contact
-  // tab. Only ever has phone/shippingAddress controls.
+  // tab. Only ever has a phone control now (shippingAddress editing moved to
+  // the customer record - see this component's own header comment).
   @Input() form: FormGroup;
 
   // Was read fresh via authService.getLoggedInUser().role on every
@@ -52,12 +63,16 @@ export class PurchaseDetailsComponent {
   currentUserRole?: string;
 
   printing = false;
+  viewingCustomer = false;
 
   constructor(
     public service: PurchasesService,
     private authService: AdminAuthService,
     private confirmService: ConfirmService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private customerService: CustomerService,
+    private eventService: EventService,
+    private dialog: MatDialog
   ) {
     this.authService.dao.loggedInUser$.subscribe((user) => {
       this.currentUserRole = user?.role;
@@ -72,6 +87,40 @@ export class PurchaseDetailsComponent {
 
   customerName(): string {
     return [this.selectedItem.firstName, this.selectedItem.lastName].filter(Boolean).join(' ') || this.selectedItem.email || 'Unknown';
+  }
+
+  // Looks the customer up by email (same lowercased/trimmed match key
+  // onPurchaseCustomerUpsert writes with - see its own comment) rather than
+  // storing a customerId anywhere; opens the same dialog
+  // CustomersComponent's own row double-click does. Events are fetched here
+  // too (CustomerDialogComponent needs them for its Events Attended tab) -
+  // a small duplicate live call rather than plumbing them all the way down
+  // from PurchasesComponent for a link that's clicked occasionally, not on
+  // every page load.
+  async viewCustomer(): Promise<void> {
+    if (!this.selectedItem.email || this.viewingCustomer) {
+      return;
+    }
+    this.viewingCustomer = true;
+    try {
+      const email = this.selectedItem.email.trim().toLowerCase();
+      const [customers, events] = await Promise.all([
+        this.customerService.getAllByValue('email', email),
+        this.eventService.getAll()
+      ]);
+      const customer = customers[0];
+      if (!customer) {
+        this.snackbar.error('No customer record found for this email yet.');
+        return;
+      }
+      this.dialog.open(CustomerDialogComponent, {
+        width: '1200px',
+        maxWidth: '95vw',
+        data: { item: customer, events }
+      });
+    } finally {
+      this.viewingCustomer = false;
+    }
   }
 
   getOrderItemCount(): number {

@@ -54,3 +54,11 @@ exports.onPurchaseUpdated = alerts.onPurchaseUpdated;
 const fulfillment = require("./purchase-fulfillment.functions");
 exports.onPurchaseFulfillmentEligible =
   fulfillment.onPurchaseFulfillmentEligible;
+
+const customerUpsert = require("./customer-upsert.functions");
+exports.onPurchaseCustomerUpsert = customerUpsert.onPurchaseCustomerUpsert;
+
+const eventRegCustomerUpsert =
+  require("./event-registration-customer-upsert.functions");
+exports.onEventRegistrationCustomerUpsert =
+  eventRegCustomerUpsert.onEventRegistrationCustomerUpsert;

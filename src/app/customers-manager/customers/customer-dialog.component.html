@@ -1,7 +1,34 @@
-<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' CUSTOMER'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+<app-popup-header title="EDIT CUSTOMER" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content>
   <mat-tab-group class="customer-tabs" [formGroup]="form">
+    @if (pendingChanges.length > 0) {
+      <mat-tab [label]="'Pending Updates (' + pendingChanges.length + ')'">
+        <div class="tab-content">
+          <p class="pending-intro">A purchase under this customer's email had different info than what's on file. Review each change below - Use New Value applies it, Keep Current dismisses it.</p>
+          @for (change of pendingChanges; track change) {
+            <div class="pending-change">
+              <div class="pending-change__field">{{ pendingFieldLabel(change.field) }}</div>
+              <div class="pending-change__values">
+                <div class="pending-change__value">
+                  <span class="pending-change__label">On File</span>
+                  {{ formatPendingValue(change.field, change.currentValue) }}
+                </div>
+                <div class="pending-change__value pending-change__value--proposed">
+                  <span class="pending-change__label">From Order</span>
+                  {{ formatPendingValue(change.field, change.proposedValue) }}
+                </div>
+              </div>
+              <div class="pending-change__actions">
+                <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="resolvePendingChange(change, false)">Keep Current</button>
+                <button mat-raised-button color="primary" type="button" [disabled]="inProgress$ | async" (click)="resolvePendingChange(change, true)">Use New Value</button>
+              </div>
+            </div>
+          }
+        </div>
+      </mat-tab>
+    }
+
     <mat-tab label="Info">
       <div class="tab-content">
         <div class="field-row">
@@ -180,13 +207,13 @@
               <div class="note-row__header">
                 <span class="note-row__date">{{ getDate(note.date) }}</span>
                 <span class="note-row__added-by">{{ note.addedBy }}</span>
-                <mat-checkbox [(ngModel)]="note.private" class="note-row__private"></mat-checkbox>
+                <mat-checkbox [(ngModel)]="note.private" [ngModelOptions]="{standalone: true}" class="note-row__private"></mat-checkbox>
                 <button mat-icon-button matTooltip="DELETE" (click)="deleteNote(i)">
                   <mat-icon>close</mat-icon>
                 </button>
               </div>
               <mat-form-field appearance="outline" class="full-width">
-                <textarea matInput rows="3" [(ngModel)]="note.note"></textarea>
+                <textarea matInput rows="3" [(ngModel)]="note.note" [ngModelOptions]="{standalone: true}"></textarea>
               </mat-form-field>
               <div class="note-row__save">
                 <button mat-stroked-button type="button" (click)="saveNote()">SAVE</button>

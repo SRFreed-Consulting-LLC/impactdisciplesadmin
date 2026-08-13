@@ -8,6 +8,10 @@
       <div class="addr-card__name">{{ customerName() }}</div>
       <div class="addr-card__lines">{{ selectedItem.email }}</div>
       <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+      <button mat-button type="button" class="addr-card__view-customer" [disabled]="viewingCustomer" (click)="viewCustomer()">
+        <mat-icon>account_circle</mat-icon>
+        View Customer Record
+      </button>
     </div>
     <div class="addr-card">
       <p class="addr-card__label">Billing</p>
@@ -27,11 +31,23 @@
     </div>
   </div>
 
-  <!-- Full width - a real address form (incl. a city/state/zip row) needs
-       more room than a third of the panel above gives it. -->
+  <!-- Read-only - this is the address that specific order actually shipped
+       to at checkout, kept exactly as recorded (still what a shipping label
+       prints against). No longer editable from here - ongoing corrections
+       to a customer's own address happen on their customer record instead
+       (View Customer Record above), which future orders read from. -->
   <div class="addr-card addr-card--shipping">
     <p class="addr-card__label">Shipping</p>
-    <app-address-field [group]="$any(form.get('shippingAddress'))" [showCountry]="true"></app-address-field>
+    @if (selectedItem.shippingAddress?.address1) {
+      <div class="addr-card__lines">
+        {{ selectedItem.shippingAddress?.address1 }}
+        @if (selectedItem.shippingAddress?.address2) { <br>{{ selectedItem.shippingAddress?.address2 }} }
+        <br>{{ selectedItem.shippingAddress?.city }}, {{ selectedItem.shippingAddress?.state }} {{ selectedItem.shippingAddress?.zip }}
+        <br>{{ selectedItem.shippingAddress?.country }}
+      </div>
+    } @else {
+      <div class="addr-card__lines addr-card__lines--empty">No shipping address on file</div>
+    }
   </div>
 
   <hr class="rule">

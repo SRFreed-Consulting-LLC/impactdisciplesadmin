@@ -154,19 +154,16 @@ export class PurchasesComponent implements OnInit {
     }
     this.editingItem = item;
 
+    // shippingAddress is deliberately not part of this form any more -
+    // address editing moved to the customer record (see
+    // purchase-details.component.ts's own comment); this order's own
+    // shippingAddress still renders (read-only) there, just isn't editable
+    // through this form.
     this.form = this.fb.group({
       phone: this.fb.group({
         countryCode: [item.phone?.countryCode ?? ''],
         number: [item.phone?.number ?? ''],
         type: [item.phone?.type ?? null]
-      }),
-      shippingAddress: this.fb.group({
-        address1: [item.shippingAddress?.address1 ?? ''],
-        address2: [item.shippingAddress?.address2 ?? ''],
-        city: [item.shippingAddress?.city ?? ''],
-        state: [item.shippingAddress?.state ?? ''],
-        zip: [item.shippingAddress?.zip ?? ''],
-        country: [item.shippingAddress?.country ?? '']
       })
     });
 

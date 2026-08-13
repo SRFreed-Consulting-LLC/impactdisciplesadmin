@@ -251,6 +251,17 @@ table.mat-mdc-table tr.mat-mdc-row.row--new {
   box-shadow: inset 4px 0 0 var(--mat-sys-primary, #1a73e8);
 }
 
+// Pending-customer-change highlight (see customer.model.ts's
+// PendingCustomerChange) - applied via [class.row--pending] on the
+// Customers screen's rows. Amber rather than row--new's blue: this isn't
+// "arrived recently", it's "needs a decision" (accept/reject a mismatch a
+// purchase flagged), a different semantic that deserves a different color,
+// same global-selector reasoning as row--new above.
+table.mat-mdc-table tr.mat-mdc-row.row--pending {
+  background-color: #fbf0dc;
+  box-shadow: inset 4px 0 0 #b7791f;
+}
+
 // House rule: any thumbnail/image shown directly in a data table cell
 // (Pod Casts' thumbnail column, Home Page Images' image column, and any
 // future screen following the same pattern) gets vertical breathing room.

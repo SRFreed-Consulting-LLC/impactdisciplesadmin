@@ -107,6 +107,58 @@
   }
 }
 
+.pending-intro {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0 0 16px;
+}
+
+.pending-change {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.pending-change__field {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.pending-change__values {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.pending-change__value {
+  font-size: 13px;
+}
+
+.pending-change__value--proposed {
+  font-weight: 600;
+}
+
+.pending-change__label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 2px;
+}
+
+.pending-change__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .note-row {
   padding: 12px 0;
 

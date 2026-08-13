@@ -72,6 +72,15 @@ function getFirestoreFor(projectId, databaseId) {
       key
     );
     const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+    // Matches functions/src/index.ts's own setting - the Admin SDK throws on
+    // any `undefined` field value by default (e.g. a customer record that
+    // was never given a shippingAddress) rather than just omitting it. A
+    // script building an update payload from a plain JS object with some
+    // optional fields unset hits this constantly; without this, a batch
+    // write can fail entirely partway through (see
+    // backfill-customers-from-purchases.js's own history: this crashed a
+    // live --execute run mid-batch on 2026-08-13).
+    db.settings({ignoreUndefinedProperties: true});
     dbByKey.set(key, db);
   }
   return dbByKey.get(key);

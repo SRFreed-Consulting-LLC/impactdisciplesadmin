@@ -7,11 +7,15 @@ import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { CustomerDialogComponent } from './customer-dialog.component';
 
+// No "New Customer" flow any more - customer records are created/kept up to
+// date entirely from the storefront's checkout now (see
+// functions/src/customer-upsert.functions.ts's onPurchaseCustomerUpsert
+// trigger). This screen is edit + review (a mismatch an incoming purchase
+// flagged - see CustomerDialogComponent's "Pending Updates" tab) only.
 @Component({
     selector: 'app-customers',
     templateUrl: './customers.component.html',
@@ -23,7 +27,8 @@ export class CustomersComponent implements OnInit {
     { key: 'lastName', label: 'Last Name' },
     { key: 'firstName', label: 'First Name' },
     { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Number', value: (item) => item.phone?.number ?? '' }
+    { key: 'phone', label: 'Number', value: (item) => item.phone?.number ?? '' },
+    { key: 'pendingChanges', label: 'Pending Review', filterable: false, value: (item) => this.pendingChangesLabel(item) }
   ];
 
   itemType = 'Customer';
@@ -32,7 +37,10 @@ export class CustomersComponent implements OnInit {
 
   rowActions: DataGridRowAction<CustomerModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
-  headerActions: ListHeaderAction[] = [];
+  // Flags a customer whose most recent purchase disagreed with what's on
+  // file (see CustomerModel.pendingChanges) - same idea as
+  // NewRecordTracker's row--new, just driven by this field instead.
+  rowClass = (row: CustomerModel): string => ((row.pendingChanges?.length ?? 0) > 0 ? 'row--pending' : '');
 
   paged: PagedCollectionSource<CustomerModel>;
 
@@ -58,24 +66,17 @@ export class CustomersComponent implements OnInit {
     this.paged.loadFirstPage();
 
     this.events = await this.eventService.getAll();
+  }
 
-    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+  pendingChangesLabel(item: CustomerModel): string {
+    const count = item.pendingChanges?.length ?? 0;
+    return count > 0 ? `${count} pending` : '';
   }
 
   // Wide enough that the Purchases tab's 10 columns (Date/Status/Receipt/
   // Coupon/Total/Taxes/Shipping/Charged/Refunded/Actions) fit without
   // needing their own horizontal scroll on typical desktop widths.
   private static readonly DIALOG_WIDTH = { width: '1200px', maxWidth: '95vw' };
-
-  showAddModal(): void {
-    if (!this.permissionService.canAdd(this.screenKey)) {
-      return;
-    }
-    this.dialog.open(CustomerDialogComponent, {
-      ...CustomersComponent.DIALOG_WIDTH,
-      data: { item: null, events: this.events }
-    });
-  }
 
   showEditModal(item: CustomerModel): void {
     if (!this.permissionService.canEdit(this.screenKey)) {

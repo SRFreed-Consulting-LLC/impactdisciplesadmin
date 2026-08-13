@@ -1,10 +1,10 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject, Observable, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
-import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model';
+import { CustomerModel, PendingCustomerChange } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerNoteModel } from 'src/app/common/models/domain/utils/customer-note.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -12,6 +12,8 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
+import { Address } from 'src/app/common/models/domain/utils/address.model';
+import { Phone } from 'src/app/common/models/domain/utils/phone.model';
 import { FULFILLMENT_STEPS } from '../fulfillment/fulfillment-steps';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
@@ -21,7 +23,10 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { AddCustomerNoteDialogComponent } from './add-customer-note-dialog.component';
 
 export interface CustomerDialogData {
-  item: CustomerModel | null;
+  // Always a real, already-persisted customer now - there's no "New
+  // Customer" flow any more (see customers.component.ts's own comment), so
+  // this dialog is edit + review only.
+  item: CustomerModel;
   // Loaded once by the list screen (shared across every customer dialog
   // open) rather than re-fetched per customer - only used to resolve the
   // Events Attended tab's eventId -> event name/date lookup.
@@ -37,7 +42,6 @@ export interface CustomerDialogData {
 export class CustomerDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
 
   states: string[] = EnumHelper.getStateTypesAsArray();
   countries: string[] = EnumHelper.getCountryTypesAsArray();
@@ -45,6 +49,12 @@ export class CustomerDialogComponent {
   purchases$: Observable<CheckoutForm[]>;
   eventRegistrations$: Observable<EventRegistrationModel[]>;
   events: EventModel[];
+
+  // See PendingCustomerChange's own comment (customer.model.ts) - a
+  // purchase under this customer's email disagreed with what's on file.
+  // Local copy (not just read off this.data.item) so resolving one updates
+  // the tab immediately without waiting on a round-trip.
+  pendingChanges: PendingCustomerChange[];
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation. Two independent flags
@@ -73,45 +83,44 @@ export class CustomerDialogComponent {
     private confirmService: ConfirmService,
     private dialog: MatDialog
   ) {
-    this.isEdit = !!data.item?.id;
     this.events = data.events;
     this.user = this.authService.getLoggedInUser() as AdminUser;
-    this.notes = data.item?.notes ? [...data.item.notes] : [];
+    this.notes = data.item.notes ? [...data.item.notes] : [];
+    this.pendingChanges = data.item.pendingChanges ? [...data.item.pendingChanges] : [];
 
     this.form = this.fb.group({
-      firstName: [data.item?.firstName ?? '', Validators.required],
-      lastName: [data.item?.lastName ?? '', Validators.required],
-      email: [{ value: data.item?.email ?? '', disabled: true }, Validators.required],
+      firstName: [data.item.firstName ?? '', Validators.required],
+      lastName: [data.item.lastName ?? '', Validators.required],
+      email: [{ value: data.item.email ?? '', disabled: true }, Validators.required],
       phone: this.fb.group({
-        countryCode: [data.item?.phone?.countryCode ?? ''],
-        number: [data.item?.phone?.number ?? ''],
-        type: [data.item?.phone?.type ?? null]
+        countryCode: [data.item.phone?.countryCode ?? ''],
+        number: [data.item.phone?.number ?? ''],
+        type: [data.item.phone?.type ?? null]
       }),
       shippingAddress: this.fb.group({
-        address1: [data.item?.shippingAddress?.address1 ?? ''],
-        address2: [data.item?.shippingAddress?.address2 ?? ''],
-        city: [data.item?.shippingAddress?.city ?? ''],
-        state: [data.item?.shippingAddress?.state ?? ''],
-        zip: [data.item?.shippingAddress?.zip ?? ''],
-        country: [data.item?.shippingAddress?.country ?? '']
+        address1: [data.item.shippingAddress?.address1 ?? ''],
+        address2: [data.item.shippingAddress?.address2 ?? ''],
+        city: [data.item.shippingAddress?.city ?? ''],
+        state: [data.item.shippingAddress?.state ?? ''],
+        zip: [data.item.shippingAddress?.zip ?? ''],
+        country: [data.item.shippingAddress?.country ?? '']
       }),
       billingAddress: this.fb.group({
-        address1: [data.item?.billingAddress?.address1 ?? ''],
-        address2: [data.item?.billingAddress?.address2 ?? ''],
-        city: [data.item?.billingAddress?.city ?? ''],
-        state: [data.item?.billingAddress?.state ?? ''],
-        zip: [data.item?.billingAddress?.zip ?? ''],
-        country: [data.item?.billingAddress?.country ?? '']
+        address1: [data.item.billingAddress?.address1 ?? ''],
+        address2: [data.item.billingAddress?.address2 ?? ''],
+        city: [data.item.billingAddress?.city ?? ''],
+        state: [data.item.billingAddress?.state ?? ''],
+        zip: [data.item.billingAddress?.zip ?? ''],
+        country: [data.item.billingAddress?.country ?? '']
       })
     });
 
-    this.purchases$ = (data.item?.email ? this.purchasesService.streamAllByValue('email', data.item.email) : of([])).pipe(
+    this.purchases$ = this.purchasesService.streamAllByValue('email', data.item.email).pipe(
       tap(() => this.purchasesLoading$.next(false))
     );
-    this.eventRegistrations$ = (data.item?.email
-      ? this.eventRegistrationService.streamAllByValue('email', data.item.email)
-      : of([])
-    ).pipe(tap(() => this.registrationsLoading$.next(false)));
+    this.eventRegistrations$ = this.eventRegistrationService.streamAllByValue('email', data.item.email).pipe(
+      tap(() => this.registrationsLoading$.next(false))
+    );
   }
 
   onCancel(): void {
@@ -125,19 +134,74 @@ export class CustomerDialogComponent {
     }
 
     this.inProgress$.next(true);
-    const value: CustomerModel = { ...this.data.item, ...this.form.getRawValue(), notes: this.notes };
+    const value: CustomerModel = { ...this.data.item, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
 
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
+    this.service.update(value.id!, value).then((result) => {
       if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        this.snackbar.success(this.itemType + ' Updated');
         this.dialogRef.close(true);
       } else {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
       }
     });
+  }
+
+  // ---- Pending Updates tab ----
+  // Accept applies the purchase's proposed value straight into the form
+  // (so it's visible on the Info/Addresses tabs immediately) and persists
+  // right away rather than waiting for the main SAVE button - same reasoning
+  // as CustomerNoteModel's addNote()/deleteNote() persisting immediately.
+  // Reject just drops the entry and keeps whatever's already on file.
+  resolvePendingChange(change: PendingCustomerChange, accept: boolean): void {
+    if (accept) {
+      switch (change.field) {
+        case 'firstName':
+        case 'lastName':
+          this.form.get(change.field)?.setValue(change.proposedValue);
+          break;
+        case 'phone':
+          this.form.get('phone')?.patchValue(change.proposedValue as Phone);
+          break;
+        case 'shippingAddress':
+        case 'billingAddress':
+          this.form.get(change.field)?.patchValue(change.proposedValue as Address);
+          break;
+      }
+    }
+
+    this.pendingChanges = this.pendingChanges.filter((c) => c !== change);
+
+    const value: CustomerModel = { ...this.data.item, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
+    this.data.item = value;
+    this.service.update(value.id!, value).then(() => {
+      this.snackbar.success(accept ? 'Update applied' : 'Update dismissed');
+    });
+  }
+
+  pendingFieldLabel(field: PendingCustomerChange['field']): string {
+    switch (field) {
+      case 'firstName': return 'First Name';
+      case 'lastName': return 'Last Name';
+      case 'phone': return 'Phone';
+      case 'shippingAddress': return 'Shipping Address';
+      case 'billingAddress': return 'Billing Address';
+    }
+  }
+
+  formatPendingValue(field: PendingCustomerChange['field'], value: unknown): string {
+    if (value == null) {
+      return '—';
+    }
+    if (field === 'shippingAddress' || field === 'billingAddress') {
+      const a = value as Address;
+      return [a.address1, a.address2, [a.city, a.state, a.zip].filter(Boolean).join(', '), a.country].filter(Boolean).join(', ') || '—';
+    }
+    if (field === 'phone') {
+      const p = value as Phone;
+      return p.number ? [p.countryCode, p.number].filter(Boolean).join(' ') : '—';
+    }
+    return String(value) || '—';
   }
 
   getEventName(eventId: string): string {
