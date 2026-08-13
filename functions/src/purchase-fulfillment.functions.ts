@@ -64,7 +64,7 @@ export const onPurchaseFulfillmentEligible = onDocumentCreated(
       return;
     }
 
-    const fulfillmentStatus = hasPhysicalItem(data.cartItems) ? "new" : "closed";
-    await snap.ref.update({fulfillmentStatus});
+    const isPhysical = hasPhysicalItem(data.cartItems);
+    await snap.ref.update({fulfillmentStatus: isPhysical ? "new" : "closed"});
   }
 );
