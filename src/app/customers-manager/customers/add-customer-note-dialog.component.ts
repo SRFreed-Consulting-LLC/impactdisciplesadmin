@@ -9,10 +9,10 @@ export interface AddCustomerNoteResult {
 
 // Small popup for composing a new customer note - replaces the old flow of
 // pushing a blank CustomerNoteModel straight into the list and editing it
-// inline (see customer-dialog.component.ts's addNote()). Existing notes
+// inline (see customer-details.component.ts's addNote()). Existing notes
 // still edit in place; this dialog only handles creating a new one, and
 // hands the finished text back to the caller rather than writing to
-// Firestore itself - CustomerDialogComponent still owns persistNotes().
+// Firestore itself - CustomerDetailsComponent still owns persistNotes().
 @Component({
     selector: 'app-add-customer-note-dialog',
     templateUrl: './add-customer-note-dialog.component.html',

@@ -1,0 +1,7 @@
+// Lets app-customer-details' own height:100% resolve against the dialog's
+// configured height (see purchase-details.component.ts's viewCustomer(),
+// which sets height/maxHeight explicitly) instead of collapsing to content.
+:host {
+  display: block;
+  height: 100%;
+}

@@ -1,14 +1,25 @@
-<app-data-grid
-  [title]="itemType + 's'"
-  [columns]="columns"
-  [rowActions]="rowActions"
-  [rowClass]="rowClass"
-  [pagedSource]="paged"
-  tableClass="customers-table"
-  emptyMessage="No customers found."
-  exportFileName="customers.xlsx"
-  (rowDoubleClick)="showEditModal($event)">
-  <ng-template appDataGridCell="phone" let-row>
-    {{ row.phone?.countryCode ? '+' + row.phone.countryCode : '' }} {{ row.phone ? (row.phone | phoneNumberMask: false) : '' }}
-  </ng-template>
-</app-data-grid>
+@if (mode === 'list') {
+  <app-data-grid
+    [title]="itemType + 's'"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [rowClass]="rowClass"
+    [pagedSource]="paged"
+    tableClass="customers-table"
+    emptyMessage="No customers found."
+    exportFileName="customers.xlsx"
+    (rowDoubleClick)="showEditModal($event)">
+    <ng-template appDataGridCell="phone" let-row>
+      {{ row.phone?.countryCode ? '+' + row.phone.countryCode : '' }} {{ row.phone ? (row.phone | phoneNumberMask: false) : '' }}
+    </ng-template>
+  </app-data-grid>
+}
+
+@if (mode === 'edit' && editingItem; as item) {
+  <app-customer-details
+    [selectedItem]="item"
+    [events]="events"
+    (back)="onEditClosed()"
+    (saved)="onEditClosed()">
+  </app-customer-details>
+}

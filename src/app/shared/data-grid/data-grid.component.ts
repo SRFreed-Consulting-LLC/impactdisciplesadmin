@@ -367,7 +367,7 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
     // through unparsed (returned as-is) rather than becoming a Date -
     // confirmed live against real `events` documents, most of which store
     // startDate/endDate exactly that way. Same guard-at-the-call-site fix
-    // toMillis() and CustomerDialogComponent.getEventDate() already apply,
+    // toMillis() and CustomerDetailsComponent.toDate() already apply,
     // not touching the shared utility itself (too many other fromFirestore
     // hooks depend on its current behavior) - without it, every 'date'
     // column in the grid would render these as a raw technical string

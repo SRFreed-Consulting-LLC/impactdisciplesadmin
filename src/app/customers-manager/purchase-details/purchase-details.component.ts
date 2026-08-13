@@ -11,7 +11,7 @@ import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { FULFILLMENT_STEPS, FulfillmentStep } from '../fulfillment/fulfillment-steps';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { CustomerDialogComponent } from '../customers/customer-dialog.component';
+import { CustomerDetailsDialogComponent } from '../customers/customer-details-dialog.component';
 
 export interface TimelineNode {
   step: FulfillmentStep;
@@ -87,12 +87,16 @@ export class PurchaseDetailsComponent {
 
   // Looks the customer up by email (same lowercased/trimmed match key
   // onPurchaseCustomerUpsert writes with - see its own comment) rather than
-  // storing a customerId anywhere; opens the same dialog
-  // CustomersComponent's own row double-click does. Events are fetched here
-  // too (CustomerDialogComponent needs them for its Events Attended tab) -
-  // a small duplicate live call rather than plumbing them all the way down
-  // from PurchasesComponent for a link that's clicked occasionally, not on
-  // every page load.
+  // storing a customerId anywhere; opens the same app-customer-details
+  // CustomersComponent's own row double-click does, just wrapped in a
+  // dialog here (see CustomerDetailsDialogComponent's own comment) so this
+  // screen's own in-progress edit isn't lost underneath it. Sized generously
+  // rather than the old CustomerDialogComponent's 1200px/95vw cap - that
+  // cap was sized for a 6-tab layout this screen no longer has. Events are
+  // fetched here too (app-customer-details needs them for its merged
+  // activity feed) - a small duplicate live call rather than plumbing them
+  // all the way down from PurchasesComponent for a link that's clicked
+  // occasionally, not on every page load.
   async viewCustomer(): Promise<void> {
     if (!this.selectedItem.email || this.viewingCustomer) {
       return;
@@ -109,9 +113,11 @@ export class PurchaseDetailsComponent {
         this.snackbar.error('No customer record found for this email yet.');
         return;
       }
-      this.dialog.open(CustomerDialogComponent, {
-        width: '1200px',
-        maxWidth: '95vw',
+      this.dialog.open(CustomerDetailsDialogComponent, {
+        width: '95vw',
+        maxWidth: '1400px',
+        height: '90vh',
+        maxHeight: '900px',
         data: { item: customer, events }
       });
     } finally {

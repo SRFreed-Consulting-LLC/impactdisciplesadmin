@@ -5,7 +5,8 @@ import { SharedModule } from '../shared/shared.module';
 import { CustomersManagerComponent } from './customers-manager.component';
 import { CustomersManagerRoutingModule } from './customers-manager-routing.module';
 import { CustomersComponent } from './customers/customers.component';
-import { CustomerDialogComponent } from './customers/customer-dialog.component';
+import { CustomerDetailsComponent } from './customers/customer-details.component';
+import { CustomerDetailsDialogComponent } from './customers/customer-details-dialog.component';
 import { AddCustomerNoteDialogComponent } from './customers/add-customer-note-dialog.component';
 import { PurchasesComponent } from './purchases/purchases.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
@@ -71,7 +72,8 @@ import { QuillModule } from 'ngx-quill';
   declarations: [
     CustomersManagerComponent,
     CustomersComponent,
-    CustomerDialogComponent,
+    CustomerDetailsComponent,
+    CustomerDetailsDialogComponent,
     AddCustomerNoteDialogComponent,
     PurchasesComponent,
     PurchaseDetailsComponent,

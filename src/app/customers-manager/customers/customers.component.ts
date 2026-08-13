@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
 import { CustomerModel } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
@@ -9,13 +8,18 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
-import { CustomerDialogComponent } from './customer-dialog.component';
 
 // No "New Customer" flow any more - customer records are created/kept up to
 // date entirely from the storefront's checkout now (see
 // functions/src/customer-upsert.functions.ts's onPurchaseCustomerUpsert
 // trigger). This screen is edit + review (a mismatch an incoming purchase
-// flagged - see CustomerDialogComponent's "Pending Updates" tab) only.
+// flagged - see CustomerDetailsComponent's "Pending Updates" strip) only.
+//
+// Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
+// products.component.ts for the established precedent this mirrors) rather
+// than the MatDialog this screen started with (CustomerDialogComponent,
+// capped at 1200px/95vw - see customer-details.component.ts's header
+// comment for the full redesign rationale/mockup link).
 @Component({
     selector: 'app-customers',
     templateUrl: './customers.component.html',
@@ -23,6 +27,8 @@ import { CustomerDialogComponent } from './customer-dialog.component';
     standalone: false
 })
 export class CustomersComponent implements OnInit {
+  mode: 'list' | 'edit' = 'list';
+
   columns: DataGridColumn<CustomerModel>[] = [
     { key: 'lastName', label: 'Last Name' },
     { key: 'firstName', label: 'First Name' },
@@ -44,13 +50,14 @@ export class CustomersComponent implements OnInit {
 
   paged: PagedCollectionSource<CustomerModel>;
 
-  private events: EventModel[] = [];
+  // ---- Edit state ----
+  editingItem: CustomerModel | null = null;
+  events: EventModel[] = [];
 
   constructor(
     private service: CustomerService,
     private eventService: EventService,
     private permissionService: PermissionService,
-    private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
   ) {
@@ -73,33 +80,26 @@ export class CustomersComponent implements OnInit {
     return count > 0 ? `${count} pending` : '';
   }
 
-  // Wide enough that the Purchases tab's 10 columns (Date/Status/Receipt/
-  // Coupon/Total/Taxes/Shipping/Charged/Refunded/Actions) fit without
-  // needing their own horizontal scroll on typical desktop widths.
-  private static readonly DIALOG_WIDTH = { width: '1200px', maxWidth: '95vw' };
+  // ---- Edit view ----
 
   showEditModal(item: CustomerModel): void {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    const dialogRef = this.dialog.open(CustomerDialogComponent, {
-      ...CustomersComponent.DIALOG_WIDTH,
-      data: { item, events: this.events }
-    });
+    this.editingItem = item;
+    this.mode = 'edit';
+  }
 
-    // Resolving a pending change (or adding a note) inside the dialog saves
-    // immediately rather than waiting for its own SAVE button - see
-    // CustomerDialogComponent's own `changed` flag - so this table's
-    // pendingChanges count/row--pending highlight would otherwise stay
-    // stale until a manual page reload. PagedCollectionSource has no
-    // "patch just this row" API (see its own file comment), only a full
-    // loadFirstPage() - same pattern already used by
-    // subscriptions.component.ts's own dialog-close refresh.
-    dialogRef.afterClosed().subscribe((changed) => {
-      if (changed) {
-        this.paged.loadFirstPage();
-      }
-    });
+  // Used for both "Back" (cancel, no save) and a successful Save -
+  // CustomerDetailsComponent already persisted anything it needed to
+  // (pending-change resolutions/notes save immediately, same as the old
+  // dialog) before either fires, so returning to the list and reloading
+  // page 1 unconditionally is always correct, no "did anything change" flag
+  // to thread through any more.
+  onEditClosed(): void {
+    this.editingItem = null;
+    this.mode = 'list';
+    this.paged.loadFirstPage();
   }
 
   delete(item: CustomerModel): void {

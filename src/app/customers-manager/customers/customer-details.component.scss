@@ -1,0 +1,326 @@
+// Same "fixed chrome, one bounded scroll region" shape as
+// products.component.scss/purchases.component.scss's own .editor - just
+// owned by this component instead of its host (see this component's own
+// header comment for why). editor__body is the ONLY scroll region (see
+// customer-dialog.component.scss's old comment, deleted along with that
+// file, for the double-scrollbar bug this avoids by not also giving
+// .split__activity/.timeline a bound of their own).
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor__header {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.editor__title-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.editor__title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.editor__subtitle {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+.editor__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.editor__actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}
+
+// ---- Stat bar ----
+// Warn colors reused from styles.scss's existing .row--pending look, not
+// invented for this screen.
+.stat-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #fff;
+}
+
+.stat-tile__value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.stat-tile__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.stat-tile--warn {
+  border-color: #b7791f;
+  background: #fbf0dc;
+}
+
+.stat-tile--warn .stat-tile__value {
+  color: #b7791f;
+}
+
+// ---- Pending Updates strip ----
+// Same look as the old dialog's Pending Updates tab (customer-dialog.
+// component.scss), just always visible above the split pane instead of
+// behind a tab.
+.pending-strip {
+  margin-bottom: 16px;
+}
+
+.pending-strip__intro {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0 0 12px;
+}
+
+.pending-change {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.pending-change__field {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.pending-change__values {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.pending-change__value {
+  font-size: 13px;
+}
+
+.pending-change__value--proposed {
+  font-weight: 600;
+}
+
+.pending-change__label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 2px;
+}
+
+.pending-change__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+// ---- Split pane ----
+.split {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.split__form {
+  flex: 0 0 340px;
+  display: flex;
+  flex-direction: column;
+}
+
+.split__activity {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .split {
+    flex-direction: column;
+  }
+
+  .split__form {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+// ---- Activity feed ----
+.activity-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #fff;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+
+.chip--active {
+  background: var(--mat-sys-primary, #1a73e8);
+  border-color: var(--mat-sys-primary, #1a73e8);
+  color: #fff;
+}
+
+// Deliberately NOT its own bounded scroll region - see this file's header
+// comment. It flows within .editor__body's single scroll instead.
+.timeline {
+  position: relative;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.timeline-item__date {
+  flex: 0 0 76px;
+  font-size: 11.5px;
+  color: rgba(0, 0, 0, 0.5);
+  padding-top: 2px;
+}
+
+.timeline-item__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.timeline-item__title {
+  font-weight: 600;
+}
+
+.timeline-item__badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.timeline-item__meta {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.timeline-note {
+  flex: 1 1 100%;
+}
+
+.timeline-note__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.timeline-note__author {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.timeline-note__save {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+}

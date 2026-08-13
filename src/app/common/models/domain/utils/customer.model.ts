@@ -38,7 +38,7 @@ export class CustomerModel extends Person {
     // Un-actioned discrepancies between this record and a more recent
     // purchase or event registration under the same email - surfaced on
     // the Customers screen (a count) and resolved one at a time in
-    // CustomerDialogComponent's "Pending Updates" tab (accept applies
+    // CustomerDetailsComponent's Pending Updates strip (accept applies
     // proposedValue, reject just drops the entry and keeps currentValue).
     // Same `field` never appears twice - a second purchase/registration
     // before the first is resolved replaces the earlier entry for that
