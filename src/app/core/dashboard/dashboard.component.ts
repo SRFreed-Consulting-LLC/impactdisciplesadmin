@@ -95,14 +95,14 @@ export class DashboardComponent implements OnInit {
 
     this.purchasesService.getAll().then((items) => {
       // Same definition of "needs fulfillment" as FulfillmentComponent's
-      // own loadOrders() - 'new' orders first, then oldest-dateProcessed-
+      // own loadOrders() - 'new' orders first, then newest-dateProcessed-
       // first within each group. Deliberately uncapped (matches the
       // original spec - "all orders that still need to be fulfilled");
       // the horizontally-scrolling card row is what keeps this usable
       // when there are a lot of them, not a slice().
       this.recentOrders = items
         .filter((item) => item.fulfillmentStatus && item.fulfillmentStatus !== 'closed')
-        .sort((a, b) => this.newRank(a) - this.newRank(b) || toMillis(a.dateProcessed) - toMillis(b.dateProcessed));
+        .sort((a, b) => this.newRank(a) - this.newRank(b) || toMillis(b.dateProcessed) - toMillis(a.dateProcessed));
       this.ordersLoading = false;
     }).catch(() => {
       this.ordersLoading = false;

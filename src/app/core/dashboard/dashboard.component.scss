@@ -135,6 +135,22 @@ $live-tint: #fef3c7;
 
 // ---- Upcoming Events / New Requests / Recent Orders tables ----
 
+// Opts out of the global sticky-header rule (styles.scss - table.mat-mdc-
+// table tr.mat-mdc-header-row). That rule assumes one table per its own
+// individually-bounded .table-scroll container (Products/Purchases/etc's
+// full-page list screens) - here, all 3 dashboard tables (Recent Orders/
+// Upcoming Events/New Requests) share a single scroll container
+// (.dashboard-content), so a sticky header has no correctly-bounded range
+// to stick within and instead overlaps/bleeds into whichever row happens
+// to be scrolled underneath it. These are short summary tables, not long
+// paginated lists - a static (non-sticky) header is correct here, not a
+// missing feature. Matches the global rule's own selector specificity
+// (table.mat-mdc-table + tr.mat-mdc-header-row) so it reliably wins
+// regardless of stylesheet injection order.
+::ng-deep table.mat-mdc-table.dash-table tr.mat-mdc-header-row {
+  position: static;
+}
+
 .dash-table {
   width: 100%;
   max-width: 900px;
