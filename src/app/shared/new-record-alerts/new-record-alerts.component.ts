@@ -3,7 +3,10 @@ import { Router } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { NewRecordAlertsService, NewRecordCounts } from 'src/app/common/services/data/new-record-alerts.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
+import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { NewRecordTracker } from '../new-record-tracking.util';
 
 interface AlertSource {
   key: keyof NewRecordCounts;
@@ -63,6 +66,8 @@ export class NewRecordAlertsComponent {
   constructor(
     private service: NewRecordAlertsService,
     private registrationService: EventRegistrationService,
+    private purchasesService: PurchasesService,
+    private formSubmissionService: FormSubmissionService,
     private router: Router
   ) {
     this.entries$ = this.service.counts$.pipe(
@@ -84,6 +89,29 @@ export class NewRecordAlertsComponent {
     // Dashboard (Recent Orders / New Requests) - no need to deep-link
     // anywhere else, just land there.
     this.router.navigate(['/home']);
+    // Resets the bell's own count for this source - same newRecordStatus
+    // 'new' -> 'seen' write NewRecordTracker already does when the real
+    // list screen loads (see new-record-tracking.util.ts), just triggered
+    // by this click instead of a screen visit, since landing on the
+    // Dashboard doesn't run that screen's own tracker. Deliberately only
+    // touches newRecordStatus - fulfillmentStatus (the separate "NEW"
+    // badge on Recent Orders/the Fulfillment screen) is untouched here on
+    // purpose, so an order still reads as needing attention until it's
+    // actually acknowledged through that real workflow, not just because
+    // someone clicked the bell.
+    this.markSourceSeen(entry.key);
+  }
+
+  private markSourceSeen(key: 'purchases' | 'formSubmissions'): void {
+    if (key === 'purchases') {
+      this.purchasesService.getAllByValue('newRecordStatus', 'new').then((items) => {
+        new NewRecordTracker(this.purchasesService).capture(items);
+      });
+    } else {
+      this.formSubmissionService.getAllByValue('newRecordStatus', 'new').then((items) => {
+        new NewRecordTracker(this.formSubmissionService).capture(items);
+      });
+    }
   }
 
   // Finds which event the most recent still-unseen registration belongs to
