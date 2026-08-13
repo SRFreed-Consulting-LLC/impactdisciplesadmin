@@ -82,9 +82,23 @@ export class CustomersComponent implements OnInit {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    this.dialog.open(CustomerDialogComponent, {
+    const dialogRef = this.dialog.open(CustomerDialogComponent, {
       ...CustomersComponent.DIALOG_WIDTH,
       data: { item, events: this.events }
+    });
+
+    // Resolving a pending change (or adding a note) inside the dialog saves
+    // immediately rather than waiting for its own SAVE button - see
+    // CustomerDialogComponent's own `changed` flag - so this table's
+    // pendingChanges count/row--pending highlight would otherwise stay
+    // stale until a manual page reload. PagedCollectionSource has no
+    // "patch just this row" API (see its own file comment), only a full
+    // loadFirstPage() - same pattern already used by
+    // subscriptions.component.ts's own dialog-close refresh.
+    dialogRef.afterClosed().subscribe((changed) => {
+      if (changed) {
+        this.paged.loadFirstPage();
+      }
     });
   }
 

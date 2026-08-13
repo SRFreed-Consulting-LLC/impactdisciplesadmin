@@ -69,6 +69,13 @@ export class CustomerDialogComponent {
   notes: CustomerNoteModel[];
   user: AdminUser;
 
+  // Resolving a pending change (or adding/editing a note) saves immediately
+  // rather than waiting for the main SAVE button - so closing via CANCEL/the
+  // X button afterward must still tell the list screen something changed,
+  // not just report false because the main form itself was never submitted.
+  // See onCancel()/resolvePendingChange()/persistNotes().
+  private changed = false;
+
   private itemType = 'Customer';
 
   constructor(
@@ -124,7 +131,7 @@ export class CustomerDialogComponent {
   }
 
   onCancel(): void {
-    this.dialogRef.close(false);
+    this.dialogRef.close(this.changed);
   }
 
   onSave(): void {
@@ -174,6 +181,7 @@ export class CustomerDialogComponent {
 
     const value: CustomerModel = { ...this.data.item, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
     this.data.item = value;
+    this.changed = true;
     this.service.update(value.id!, value).then(() => {
       this.snackbar.success(accept ? 'Update applied' : 'Update dismissed');
     });
@@ -285,6 +293,7 @@ export class CustomerDialogComponent {
       return;
     }
     const value: CustomerModel = { ...this.data.item, notes: this.notes };
+    this.changed = true;
     this.service.update(this.data.item.id, value).then((item) => {
       if (item) {
         this.snackbar.success(this.itemType + ' Updated');
