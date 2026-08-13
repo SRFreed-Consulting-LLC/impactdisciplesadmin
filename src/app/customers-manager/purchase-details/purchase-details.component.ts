@@ -1,5 +1,4 @@
 import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
@@ -34,13 +33,12 @@ export interface TimelineNode {
 // both the template and the TS of the original - not ported at all, nothing
 // lost since it was unreachable there either.
 //
-// Addresses, 2026-08-13 update: now that every purchase upserts a customer
-// record (functions/src/customer-upsert.functions.ts), address editing
-// moved off this screen entirely and onto that customer record instead -
-// see cart.model.ts's own comment. Only phone stays editable here (still
-// this specific order's own contact info); billing/shipping render
-// read-only, and "View Customer Record" opens the real record to review/
-// correct there.
+// Addresses & phone, 2026-08-13 update: now that every purchase upserts a
+// customer record (functions/src/customer-upsert.functions.ts), all
+// contact-info editing moved off this screen entirely and onto that
+// customer record instead - see cart.model.ts's own comment. Customer/
+// Billing/Shipping render side by side, all read-only; "View Customer
+// Record" opens the real record to review/correct there.
 @Component({
     selector: 'app-purchase-details',
     templateUrl: './purchase-details.component.html',
@@ -49,13 +47,6 @@ export interface TimelineNode {
 })
 export class PurchaseDetailsComponent {
   @Input() selectedItem: CheckoutForm;
-
-  // Owned by PurchasesComponent (built in showEditModal(), submitted by its
-  // own Save button) - passed down rather than rebuilt here so there's still
-  // exactly one save flow, same as before this screen absorbed the Contact
-  // tab. Only ever has a phone control now (shippingAddress editing moved to
-  // the customer record - see this component's own header comment).
-  @Input() form: FormGroup;
 
   // Was read fresh via authService.getLoggedInUser().role on every
   // isVisible() call - see events.component.ts for the full explanation
@@ -87,6 +78,11 @@ export class PurchaseDetailsComponent {
 
   customerName(): string {
     return [this.selectedItem.firstName, this.selectedItem.lastName].filter(Boolean).join(' ') || this.selectedItem.email || 'Unknown';
+  }
+
+  phoneDisplay(): string {
+    const phone = this.selectedItem.phone;
+    return phone?.number ? [phone.countryCode, phone.number].filter(Boolean).join(' ') : '—';
   }
 
   // Looks the customer up by email (same lowercased/trimmed match key

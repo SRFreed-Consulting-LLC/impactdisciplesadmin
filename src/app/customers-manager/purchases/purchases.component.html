@@ -21,7 +21,7 @@
       <span class="editor__spacer"></span>
     </mat-toolbar>
     <div class="editor__body">
-      <app-purchase-details [selectedItem]="item" [form]="form"></app-purchase-details>
+      <app-purchase-details [selectedItem]="item"></app-purchase-details>
     </div>
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
