@@ -10,22 +10,27 @@ test.describe('Left nav - collapsible manager groups', () => {
     await page.goto('/home');
 
     // Collapsed by default on a route with no active manager - Purchases
-    // shouldn't be visible until Store Manager is expanded.
+    // shouldn't be visible until Customers Manager is expanded (Purchases
+    // moved from Store Manager to Customers Manager in nav-config.ts's
+    // 2026-08 reorg - see that file's header comment).
     await expect(page.getByRole('link', { name: 'Purchases' })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
+    await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
     await expect(page.getByRole('link', { name: 'Purchases' })).toBeVisible();
 
     // Opening a second group shouldn't close the first (no accordion-
-    // exclusive behavior - see MainScreenComponent.expanded).
-    await page.getByRole('button', { name: 'ADMIN MANAGER' }).click();
-    await expect(page.getByRole('link', { name: 'Customers' })).toBeVisible();
+    // exclusive behavior - see MainScreenComponent.expanded). Store Manager
+    // has no label overlap with Customers Manager's items, unlike Reports
+    // Manager (which also has its own separate "Purchases" entry) - picked
+    // deliberately to avoid a two-match getByRole ambiguity here.
+    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
+    await expect(page.getByRole('link', { name: 'Products' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Purchases' })).toBeVisible();
 
-    // Collapsing Store Manager again hides just its own sub-items.
-    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
+    // Collapsing Customers Manager again hides just its own sub-items.
+    await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
     await expect(page.getByRole('link', { name: 'Purchases' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Customers' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Products' })).toBeVisible();
   });
 
   test('clicking between sibling tabs switches content live', async ({ page }) => {
@@ -59,7 +64,12 @@ test.describe('User menu', () => {
     await page.goto('/home');
 
     await page.locator('.impact-header__user').click();
-    await expect(page.locator('.user-menu__email')).toHaveText('shane.freed@gmail.com');
+    // Longer timeout than the 5s default - currentUser comes from
+    // AdminAuthService.dao.loggedInUser$, a one-time Firestore read (same
+    // class of cold-load race as FireAuthDao's own loggedInUser$, see the
+    // Settings-Themes describe block below) that can occasionally take a
+    // few seconds after a fresh login before this menu's fields populate.
+    await expect(page.locator('.user-menu__email')).toHaveText('shane.freed@gmail.com', { timeout: 15000 });
     await expect(page.locator('.user-menu__role')).not.toHaveText('');
 
     await page.getByRole('menuitem', { name: 'Settings' }).click();
@@ -115,7 +125,7 @@ test.describe('Settings - Themes', () => {
     await page.getByRole('link', { name: 'HOME' }).click();
     await expect(html).toHaveClass(/theme-forest/);
 
-    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
+    await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
     await page.getByRole('link', { name: 'Purchases' }).click();
     await expect(html).toHaveClass(/theme-forest/);
 

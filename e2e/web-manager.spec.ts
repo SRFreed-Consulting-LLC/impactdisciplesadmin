@@ -70,7 +70,12 @@ test.describe('Home Page Popups - full round trip', () => {
 
     // "New" is the list's only header action, so app-list-header renders it
     // as a direct button rather than a kebab menu - see list-header.component.
-    await page.getByRole('button', { name: 'New' }).click();
+    // exact:true - the top-bar "New records" notification bell
+    // (new-record-alerts.component.html) is always in the DOM once its
+    // stream emits, regardless of count, and Playwright's default name
+    // match is substring-based, so plain { name: 'New' } ambiguously
+    // matches both.
+    await page.getByRole('button', { name: 'New', exact: true }).click();
 
     // Confirms the list -> edit view swap actually happened (no dialog, no
     // new URL - just this screen's own content area changing).

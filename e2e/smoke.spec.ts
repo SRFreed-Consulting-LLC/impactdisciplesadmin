@@ -8,13 +8,16 @@ import { loginAsAdmin } from './support/auth';
 test('logs in and loads the Customers list via the left nav', async ({ page }) => {
   await loginAsAdmin(page);
 
-  // admin-manager is a single route (AdminManagerComponent) that switches
-  // between screens client-side via the left nav's collapsible groups (see
-  // nav-config.ts / MainScreenComponent), not a per-screen route - default
-  // sub-screen is Logs, so Customers needs an explicit nav click. Landing
-  // on this route auto-expands its own group (MainScreenComponent's
-  // syncActiveFromUrl), so the Customers link is already visible.
-  await page.goto('/admin-manager');
+  // Customers now lives under the Customers Manager group (nav-config.ts's
+  // 2026-08 reorg moved it off the old admin-manager module, which is no
+  // longer a visible left-nav group at all - see that file's header
+  // comment). customers-manager is a single route (CustomersManagerComponent)
+  // that switches between screens client-side via the left nav's
+  // collapsible groups, not a per-screen route. Driven via a real group-
+  // expand + link-click (not a direct ?tab= URL) so this still exercises
+  // the left-nav flow the test name promises.
+  await page.goto('/home');
+  await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
   await page.getByRole('link', { name: 'Customers' }).click();
 
   const table = page.locator('table.customers-table');
