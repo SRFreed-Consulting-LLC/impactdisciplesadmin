@@ -19,6 +19,8 @@
     </span>
   </ng-template>
   <ng-template appDataGridCell="photoUrl" let-row>
-    <img *ngIf="row.photoUrl" width="60" [src]="row.photoUrl.url" [alt]="row.firstName + ' ' + row.lastName">
+    @if (row.photoUrl) {
+      <img width="60" [src]="row.photoUrl.url" [alt]="row.firstName + ' ' + row.lastName">
+    }
   </ng-template>
 </app-data-grid>

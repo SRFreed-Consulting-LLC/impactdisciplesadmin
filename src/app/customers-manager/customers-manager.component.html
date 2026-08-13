@@ -1,21 +1,21 @@
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab === 'Customers'">
+  @if (selectedTab === 'Customers') {
     <app-customers></app-customers>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Purchases'">
+  @if (selectedTab === 'Purchases') {
     <app-purchases></app-purchases>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Fulfillment'">
+  @if (selectedTab === 'Fulfillment') {
     <app-fulfillment></app-fulfillment>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Custom Form Submissions'">
+  @if (selectedTab === 'Custom Form Submissions') {
     <app-custom-form-submissions></app-custom-form-submissions>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Subscriptions'">
+  @if (selectedTab === 'Subscriptions') {
     <app-subscriptions></app-subscriptions>
-  </ng-template>
+  }
 </div>

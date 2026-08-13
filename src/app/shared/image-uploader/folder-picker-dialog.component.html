@@ -8,18 +8,26 @@
     <span class="picker__breadcrumb-label">{{ currentFolderLabel }}</span>
   </div>
 
-  <div class="picker__loading" *ngIf="loading">
-    <mat-spinner diameter="28"></mat-spinner>
-  </div>
-
-  <div class="picker__list" *ngIf="!loading">
-    <div class="picker__row" *ngFor="let folder of folders" (dblclick)="navigateInto(folder)">
-      <mat-icon class="picker__icon">folder</mat-icon>
-      <span class="picker__name">{{ folder.name }}</span>
-      <button mat-button type="button" (click)="navigateInto(folder)">OPEN</button>
+  @if (loading) {
+    <div class="picker__loading">
+      <mat-spinner diameter="28"></mat-spinner>
     </div>
-    <div class="picker__empty" *ngIf="!folders.length">No sub-folders here</div>
-  </div>
+  }
+
+  @if (!loading) {
+    <div class="picker__list">
+      @for (folder of folders; track folder) {
+        <div class="picker__row" (dblclick)="navigateInto(folder)">
+          <mat-icon class="picker__icon">folder</mat-icon>
+          <span class="picker__name">{{ folder.name }}</span>
+          <button mat-button type="button" (click)="navigateInto(folder)">OPEN</button>
+        </div>
+      }
+      @if (!folders.length) {
+        <div class="picker__empty">No sub-folders here</div>
+      }
+    </div>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

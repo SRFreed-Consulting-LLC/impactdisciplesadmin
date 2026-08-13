@@ -5,51 +5,53 @@
   <div class="order-workflow-dialog__date">{{ $any(item.dateProcessed) | date: 'medium' }}</div>
 
   <div class="segbar">
-    <div class="segbar__seg" *ngFor="let step of steps; let i = index" [class]="'segbar__seg--' + segmentState(i)"></div>
+    @for (step of steps; track step; let i = $index) {
+      <div class="segbar__seg" [class]="'segbar__seg--' + segmentState(i)"></div>
+    }
   </div>
   <div class="segbar__labels">
-    <span *ngFor="let step of steps" class="segbar__label">{{ step.statusLabel }}</span>
+    @for (step of steps; track step) {
+      <span class="segbar__label">{{ step.statusLabel }}</span>
+    }
   </div>
 
-  <div class="order-workflow-dialog__actions" [ngSwitch]="item.fulfillmentStatus">
-    <ng-container *ngSwitchCase="'new'">
-      <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder()">
-        <mat-icon>check_circle</mat-icon>
-        Acknowledge Order
-      </button>
-    </ng-container>
-
-    <ng-container *ngSwitchCase="'received'">
-      <button
-        mat-raised-button
-        color="primary"
-        type="button"
-        [disabled]="printing"
-        (click)="printShippingLabel()">
-        <mat-icon>local_shipping</mat-icon>
-        Print Shipping Label
-      </button>
-      <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
-        Mark as Picked Up / Delivered
-      </button>
-    </ng-container>
-
-    <ng-container *ngSwitchCase="'shipping_label_printed'">
-      <button mat-raised-button color="primary" type="button" (click)="markPackaged()">
-        <mat-icon>inventory_2</mat-icon>
-        Mark as Packaged
-      </button>
-    </ng-container>
-
-    <ng-container *ngSwitchCase="'awaiting_shipping'">
-      <button mat-raised-button color="primary" type="button" (click)="markShipped()">
-        <mat-icon>local_shipping</mat-icon>
-        Mark as Shipped
-      </button>
-    </ng-container>
-
-    <ng-container *ngSwitchCase="'closed'">
-      <div class="order-workflow-dialog__done">This order is closed.</div>
-    </ng-container>
+  <div class="order-workflow-dialog__actions">
+    @switch (item.fulfillmentStatus) {
+      @case ('new') {
+        <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder()">
+          <mat-icon>check_circle</mat-icon>
+          Acknowledge Order
+        </button>
+      }
+      @case ('received') {
+        <button
+          mat-raised-button
+          color="primary"
+          type="button"
+          [disabled]="printing"
+          (click)="printShippingLabel()">
+          <mat-icon>local_shipping</mat-icon>
+          Print Shipping Label
+        </button>
+        <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
+          Mark as Picked Up / Delivered
+        </button>
+      }
+      @case ('shipping_label_printed') {
+        <button mat-raised-button color="primary" type="button" (click)="markPackaged()">
+          <mat-icon>inventory_2</mat-icon>
+          Mark as Packaged
+        </button>
+      }
+      @case ('awaiting_shipping') {
+        <button mat-raised-button color="primary" type="button" (click)="markShipped()">
+          <mat-icon>local_shipping</mat-icon>
+          Mark as Shipped
+        </button>
+      }
+      @case ('closed') {
+        <div class="order-workflow-dialog__done">This order is closed.</div>
+      }
+    }
   </div>
 </mat-dialog-content>

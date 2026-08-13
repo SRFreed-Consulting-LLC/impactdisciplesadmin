@@ -173,7 +173,11 @@ UI (list header, column filter, dialogs, image uploader, table export/loading, p
 infrastructure) and is imported by every feature module. This codebase is deliberately
 NgModule-based with constructor injection throughout, not standalone components/`inject()` — see the
 `prefer-standalone`/`prefer-inject` overrides in `eslint.config.js`; don't convert files one at a
-time, that migration (like `*ngIf`/`*ngFor` → `@if`/`@for`) is out of scope for incidental changes.
+time, that migration is out of scope for incidental changes. (The `*ngIf`/`*ngFor` → `@if`/`@for`
+control-flow migration was a separate, smaller lift and was completed codebase-wide on
+2026-08-12 via `ng generate @angular/core:control-flow-migration`; `@angular-eslint/template/prefer-control-flow`
+is back on at `error` in `eslint.config.js` now that it's done — don't reintroduce `*ngIf`/`*ngFor`/`*ngSwitch`
+in new code.)
 
 ### Cloud Functions (`functions/src/`)
 

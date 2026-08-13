@@ -1,18 +1,22 @@
 <app-popup-header [title]="'SUBMISSION: ' + data.item.formName" [showCloseButton]="true" (closed)="onClose()">
-  <span class="test-chip" popup-header-actions *ngIf="data.item.isTest">TEST</span>
+  @if (data.item.isTest) {
+    <span class="test-chip" popup-header-actions>TEST</span>
+  }
 </app-popup-header>
 
 <mat-dialog-content>
   <div class="submitted-at">Submitted {{ data.item.submittedAt | date: 'MMM d, y, h:mm a' }}</div>
 
   <dl class="detail-list">
-    <ng-container *ngFor="let row of rows">
+    @for (row of rows; track row) {
       <dt>{{ row.label }}</dt>
       <dd>{{ row.value }}</dd>
-    </ng-container>
+    }
   </dl>
 
-  <div *ngIf="!rows.length" class="no-fields">This form had no data fields.</div>
+  @if (!rows.length) {
+    <div class="no-fields">This form had no data fields.</div>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

@@ -6,38 +6,45 @@
   </div>
 
   <!-- Side by side (stacks below ~680px, see the media query) so the form
-       and preview share the dialog's available height without either
-       forcing the whole popup to scroll - see route-request-dialog.
-       component.scss's own comment: this whole block is a flex column with
-       overflow: hidden, and only .route-request-dialog__preview-body (the
-       one region genuinely likely to overflow - a long field table) gets
-       its own overflow-y: auto. -->
+  and preview share the dialog's available height without either
+  forcing the whole popup to scroll - see route-request-dialog.
+  component.scss's own comment: this whole block is a flex column with
+  overflow: hidden, and only .route-request-dialog__preview-body (the
+  one region genuinely likely to overflow - a long field table) gets
+  its own overflow-y: auto. -->
   <div class="route-request-dialog__layout">
     <form [formGroup]="form" class="route-request-dialog__form">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Forward to</mat-label>
         <mat-select formControlName="recipientId" [disabled]="staffLoading">
-          <mat-option *ngFor="let user of staff" [value]="user.id">
-            {{ user.firstName }} {{ user.lastName }} &mdash; {{ user.email }}
-          </mat-option>
+          @for (user of staff; track user) {
+            <mat-option [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }} &mdash; {{ user.email }}
+            </mat-option>
+          }
           <mat-option value="other">Other (enter an email address)&hellip;</mat-option>
         </mat-select>
-        <mat-error *ngIf="form.get('recipientId')?.hasError('required')">A recipient is required</mat-error>
+        @if (form.get('recipientId')?.hasError('required')) {
+          <mat-error>A recipient is required</mat-error>
+        }
       </mat-form-field>
 
-      <ng-container *ngIf="isOther">
+      @if (isOther) {
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Name (optional)</mat-label>
           <input matInput formControlName="otherName">
         </mat-form-field>
-
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Email address</mat-label>
           <input matInput type="email" formControlName="otherEmail">
-          <mat-error *ngIf="form.get('otherEmail')?.hasError('required')">Email address is required</mat-error>
-          <mat-error *ngIf="form.get('otherEmail')?.hasError('email')">Enter a valid email address</mat-error>
+          @if (form.get('otherEmail')?.hasError('required')) {
+            <mat-error>Email address is required</mat-error>
+          }
+          @if (form.get('otherEmail')?.hasError('email')) {
+            <mat-error>Enter a valid email address</mat-error>
+          }
         </mat-form-field>
-      </ng-container>
+      }
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Note to include (optional)</mat-label>

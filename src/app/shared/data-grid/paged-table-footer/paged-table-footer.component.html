@@ -1,14 +1,14 @@
 <div class="paged-table-footer">
-  <ng-container *ngIf="loadingMore">
+  @if (loadingMore) {
     <mat-spinner diameter="16"></mat-spinner>
     <span>Loading more&hellip;</span>
-  </ng-container>
+  }
 
-  <ng-container *ngIf="!loadingMore && hasMore">
+  @if (!loadingMore && hasMore) {
     <span>{{ loadedCount }} loaded &mdash; scroll for more</span>
-  </ng-container>
+  }
 
-  <ng-container *ngIf="!loadingMore && !hasMore">
+  @if (!loadingMore && !hasMore) {
     <span>{{ loadedCount }} loaded &mdash; that's all of them</span>
-  </ng-container>
+  }
 </div>

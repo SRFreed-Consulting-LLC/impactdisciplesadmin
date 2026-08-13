@@ -18,11 +18,15 @@
     </span>
   </ng-template>
   <ng-template appDataGridCell="thumbnail" let-row>
-    <img *ngIf="row.thumbnail" width="100" [src]="row.thumbnail.url" [alt]="row.thumbnail.name">
+    @if (row.thumbnail) {
+      <img width="100" [src]="row.thumbnail.url" [alt]="row.thumbnail.name">
+    }
   </ng-template>
 </app-data-grid>
 
-<div class="sync-overlay" *ngIf="syncing$ | async">
-  <mat-spinner diameter="56"></mat-spinner>
-  <p>Please do not leave or refresh this page until complete!</p>
-</div>
+@if (syncing$ | async) {
+  <div class="sync-overlay">
+    <mat-spinner diameter="56"></mat-spinner>
+    <p>Please do not leave or refresh this page until complete!</p>
+  </div>
+}

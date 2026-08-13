@@ -3,7 +3,9 @@
     <ng-container matColumnDef="img">
       <th mat-header-cell *matHeaderCellDef></th>
       <td mat-cell *matCellDef="let item">
-        <img *ngIf="item.img" width="80" [src]="item.img.url" [alt]="item.img.name">
+        @if (item.img) {
+          <img width="80" [src]="item.img.url" [alt]="item.img.name">
+        }
       </td>
     </ng-container>
 
@@ -12,11 +14,19 @@
       <td mat-cell *matCellDef="let item">
         <div>{{ item.itemName }}</div>
         <div>{{ item.orderQuantity }} x {{ service.calculateProductCostAmount(costRow(item)) | currency }} = {{ (item.orderQuantity * service.calculateProductCostAmount(costRow(item))) | currency }}</div>
-        <ol *ngIf="item.attendees?.length" type="1">
-          <li *ngFor="let attendee of item.attendees">{{ attendee.firstName }} {{ attendee.lastName }} - ({{ attendee.email }})</li>
-        </ol>
-        <span *ngIf="item.size">Size: ({{ item.size }})</span>
-        <span *ngIf="item.color">Color: ({{ item.color }})</span>
+        @if (item.attendees?.length) {
+          <ol type="1">
+            @for (attendee of item.attendees; track attendee) {
+              <li>{{ attendee.firstName }} {{ attendee.lastName }} - ({{ attendee.email }})</li>
+            }
+          </ol>
+        }
+        @if (item.size) {
+          <span>Size: ({{ item.size }})</span>
+        }
+        @if (item.color) {
+          <span>Color: ({{ item.color }})</span>
+        }
       </td>
     </ng-container>
 
@@ -48,9 +58,11 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
       <td mat-cell *matCellDef="let item" class="actions-column">
-        <button mat-icon-button matTooltip="Mark As Shipped" *ngIf="isVisible(['Admin']) && isShippedButtonVisible(item)" (click)="markAsShipped(item)">
-          <mat-icon>local_shipping</mat-icon>
-        </button>
+        @if (isVisible(['Admin']) && isShippedButtonVisible(item)) {
+          <button mat-icon-button matTooltip="Mark As Shipped" (click)="markAsShipped(item)">
+            <mat-icon>local_shipping</mat-icon>
+          </button>
+        }
       </td>
     </ng-container>
 

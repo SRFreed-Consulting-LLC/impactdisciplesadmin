@@ -14,6 +14,8 @@
   (rowDoubleClick)="view($event)">
   <ng-template appDataGridCell="formName" let-row>
     {{ row.formName }}
-    <span class="test-chip" *ngIf="row.isTest">TEST</span>
+    @if (row.isTest) {
+      <span class="test-chip">TEST</span>
+    }
   </ng-template>
 </app-data-grid>

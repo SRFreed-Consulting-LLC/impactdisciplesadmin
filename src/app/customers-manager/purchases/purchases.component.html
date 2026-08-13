@@ -1,17 +1,17 @@
-<ng-container *ngIf="mode === 'list'">
-<app-data-grid
-  [title]="itemType + 's'"
-  [columns]="columns"
-  [rowActions]="rowActions"
-  [pagedSource]="paged"
-  [rowClass]="rowClass"
-  tableClass="purchases-table"
-  exportFileName="purchases.xlsx"
-  (rowDoubleClick)="showEditModal($event)">
-</app-data-grid>
-</ng-container>
+@if (mode === 'list') {
+  <app-data-grid
+    [title]="itemType + 's'"
+    [columns]="columns"
+    [rowActions]="rowActions"
+    [pagedSource]="paged"
+    [rowClass]="rowClass"
+    tableClass="purchases-table"
+    exportFileName="purchases.xlsx"
+    (rowDoubleClick)="showEditModal($event)">
+  </app-data-grid>
+}
 
-<ng-container *ngIf="mode === 'edit' && editingItem as item">
+@if (mode === 'edit' && editingItem; as item) {
   <div class="editor">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
@@ -20,7 +20,6 @@
       <h2 class="editor__title">EDIT PURCHASE</h2>
       <span class="editor__spacer"></span>
     </mat-toolbar>
-
     <div class="editor__body">
       <div class="readonly-summary">
         <div class="readonly-summary__col">
@@ -40,25 +39,23 @@
           <div class="readonly-row readonly-row--total"><span>Charged</span><span>{{ getChargedDisplayAmount(item) | currency }}</span></div>
         </div>
       </div>
-
       <mat-tab-group class="purchase-tabs" [formGroup]="form">
         <mat-tab label="Contact">
           <div class="tab-content">
             <mat-form-field appearance="outline" class="status-field">
               <mat-label>Status</mat-label>
               <mat-select formControlName="processedStatus">
-                <mat-option *ngFor="let status of statuses" [value]="status">{{ status }}</mat-option>
+                @for (status of statuses; track status) {
+                  <mat-option [value]="status">{{ status }}</mat-option>
+                }
               </mat-select>
             </mat-form-field>
-
             <div class="section-label">Shipping Address</div>
             <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
-
             <div class="section-label">Phone Number</div>
             <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
           </div>
         </mat-tab>
-
         <mat-tab label="Sale Details">
           <div class="tab-content">
             <app-purchase-details [selectedItem]="item"></app-purchase-details>
@@ -66,7 +63,6 @@
         </mat-tab>
       </mat-tab-group>
     </div>
-
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
       <app-indicator-button
@@ -77,4 +73,4 @@
       </app-indicator-button>
     </div>
   </div>
-</ng-container>
+}

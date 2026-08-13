@@ -1,13 +1,13 @@
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab === 'Products'">
+  @if (selectedTab === 'Products') {
     <app-products></app-products>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Coupons'">
+  @if (selectedTab === 'Coupons') {
     <app-coupons></app-coupons>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Sales'">
+  @if (selectedTab === 'Sales') {
     <app-sales></app-sales>
-  </ng-template>
+  }
 </div>

@@ -12,7 +12,9 @@
   <mat-form-field appearance="outline" class="type-field">
     <mat-label>Type</mat-label>
     <mat-select formControlName="type">
-      <mat-option *ngFor="let phoneType of phoneTypes" [value]="phoneType">{{ phoneType }}</mat-option>
+      @for (phoneType of phoneTypes; track phoneType) {
+        <mat-option [value]="phoneType">{{ phoneType }}</mat-option>
+      }
     </mat-select>
   </mat-form-field>
 </div>

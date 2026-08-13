@@ -18,7 +18,9 @@
     initialSortDirection="asc"
     (rowDoubleClick)="showEditModal($event)">
     <ng-template appDataGridCell="imageUrl" let-row>
-      <img *ngIf="row.imageUrl" width="60" [src]="row.imageUrl.url" [alt]="row.imageUrl.name">
+      @if (row.imageUrl) {
+        <img width="60" [src]="row.imageUrl.url" [alt]="row.imageUrl.name">
+      }
     </ng-template>
   </app-data-grid>
 </mat-dialog-content>

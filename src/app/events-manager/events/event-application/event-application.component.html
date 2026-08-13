@@ -1,34 +1,41 @@
 <div class="application-layout">
   <!-- Local vertical nav, replacing the vertical dx-tabs - not worth a new
-       shared component for this one, one-off use. -->
+  shared component for this one, one-off use. -->
   <div class="application-nav">
-    <button
-      *ngFor="let tab of tabs"
-      type="button"
-      class="application-nav__item"
-      [class.application-nav__item--active]="selectedTab === tab.key"
-      (click)="selectTab(tab.key)">
-      {{ tab.label }}
-    </button>
+    @for (tab of tabs; track tab) {
+      <button
+        type="button"
+        class="application-nav__item"
+        [class.application-nav__item--active]="selectedTab === tab.key"
+        (click)="selectTab(tab.key)">
+        {{ tab.label }}
+      </button>
+    }
   </div>
 
   <div class="application-content">
-    <ng-container [ngSwitch]="selectedTab">
-      <app-announcements *ngSwitchCase="'announcements'" [event]="event"></app-announcements>
-
-      <div *ngSwitchCase="'diningOptions'" class="editor-wrap">
-        <quill-editor [(ngModel)]="event.diningOptions" [modules]="richTextModules"></quill-editor>
-      </div>
-
-      <div *ngSwitchCase="'checkinInstructions'" class="editor-wrap">
-        <quill-editor [(ngModel)]="event.checkinInstructions" [modules]="richTextModules"></quill-editor>
-      </div>
-
-      <app-faq *ngSwitchCase="'faq'" [event]="event"></app-faq>
-
-      <div *ngSwitchCase="'whatsNext'" class="editor-wrap">
-        <quill-editor [(ngModel)]="event.whatsNext" [modules]="richTextModules"></quill-editor>
-      </div>
-    </ng-container>
+    @switch (selectedTab) {
+      @case ('announcements') {
+        <app-announcements [event]="event"></app-announcements>
+      }
+      @case ('diningOptions') {
+        <div class="editor-wrap">
+          <quill-editor [(ngModel)]="event.diningOptions" [modules]="richTextModules"></quill-editor>
+        </div>
+      }
+      @case ('checkinInstructions') {
+        <div class="editor-wrap">
+          <quill-editor [(ngModel)]="event.checkinInstructions" [modules]="richTextModules"></quill-editor>
+        </div>
+      }
+      @case ('faq') {
+        <app-faq [event]="event"></app-faq>
+      }
+      @case ('whatsNext') {
+        <div class="editor-wrap">
+          <quill-editor [(ngModel)]="event.whatsNext" [modules]="richTextModules"></quill-editor>
+        </div>
+      }
+    }
   </div>
 </div>

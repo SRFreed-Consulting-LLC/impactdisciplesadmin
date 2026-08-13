@@ -10,13 +10,17 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>First Name</mat-label>
             <input matInput formControlName="firstName" required>
-            <mat-error *ngIf="form.get('firstName')?.hasError('required')">Required</mat-error>
+            @if (form.get('firstName')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Last Name</mat-label>
             <input matInput formControlName="lastName" required>
-            <mat-error *ngIf="form.get('lastName')?.hasError('required')">Required</mat-error>
+            @if (form.get('lastName')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
           </mat-form-field>
         </div>
 
@@ -24,15 +28,21 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Title</mat-label>
             <input matInput formControlName="title" required>
-            <mat-error *ngIf="form.get('title')?.hasError('required')">Required</mat-error>
+            @if (form.get('title')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Organization</mat-label>
             <mat-select formControlName="organization" required>
-              <mat-option *ngFor="let org of organizations$ | async" [value]="org.id">{{ org.name }}</mat-option>
+              @for (org of organizations$ | async; track org) {
+                <mat-option [value]="org.id">{{ org.name }}</mat-option>
+              }
             </mat-select>
-            <mat-error *ngIf="form.get('organization')?.hasError('required')">Required</mat-error>
+            @if (form.get('organization')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
           </mat-form-field>
         </div>
 
@@ -62,7 +72,9 @@
             {{ card.photoUrl?.name ? 'Change Picture' : 'Upload Picture' }}
           </button>
         </div>
-        <img *ngIf="card.photoUrl?.url" class="image-preview" [src]="card.photoUrl.url" [alt]="card.photoUrl.name">
+        @if (card.photoUrl?.url) {
+          <img class="image-preview" [src]="card.photoUrl.url" [alt]="card.photoUrl.name">
+        }
 
         <div class="section-label">Shipping Address</div>
         <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
@@ -90,7 +102,7 @@
   </app-indicator-button>
 </mat-dialog-actions>
 
-<ng-container *ngIf="isImageUploaderVisible$ | async">
+@if (isImageUploaderVisible$ | async) {
   <app-image-uploader
     [card]="card"
     [isList]="false"
@@ -99,4 +111,4 @@
     [imageSelectVisible]="isImageUploaderVisible$ | async"
     (imageSelectClosed)="closeImageUploader()">
   </app-image-uploader>
-</ng-container>
+}

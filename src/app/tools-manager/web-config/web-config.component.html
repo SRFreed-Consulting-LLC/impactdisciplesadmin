@@ -1,6 +1,8 @@
-<div class="spinner-overlay" *ngIf="spinnerVisible">
-  <mat-spinner diameter="80"></mat-spinner>
-</div>
+@if (spinnerVisible) {
+  <div class="spinner-overlay">
+    <mat-spinner diameter="80"></mat-spinner>
+  </div>
+}
 
 <app-list-header [title]="itemType"></app-list-header>
 

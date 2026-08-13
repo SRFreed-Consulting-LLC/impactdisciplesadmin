@@ -3,7 +3,9 @@
   Insert Variable
 </button>
 <mat-menu #menu="matMenu">
-  <button mat-menu-item *ngFor="let variable of variables" (click)="insert.emit(variable)">
-    {{ variable }}
-  </button>
+  @for (variable of variables; track variable) {
+    <button mat-menu-item (click)="insert.emit(variable)">
+      {{ variable }}
+    </button>
+  }
 </mat-menu>

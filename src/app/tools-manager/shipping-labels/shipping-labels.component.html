@@ -1,8 +1,10 @@
-<div class="spinner-overlay" *ngIf="spinnerVisible">
-  <mat-spinner diameter="80"></mat-spinner>
-</div>
+@if (spinnerVisible) {
+  <div class="spinner-overlay">
+    <mat-spinner diameter="80"></mat-spinner>
+  </div>
+}
 
-<ng-container *ngIf="mode === 'list'">
+@if (mode === 'list') {
   <app-data-grid
     [showColumnsButton]="false"
     [showExportButton]="false"
@@ -16,9 +18,9 @@
     tableClass="batches-table"
     (rowDoubleClick)="editBatch($event)">
   </app-data-grid>
-</ng-container>
+}
 
-<ng-container *ngIf="mode === 'edit'">
+@if (mode === 'edit') {
   <div class="editor">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" (click)="onClose()">
@@ -27,183 +29,189 @@
       <h2 class="editor__title">SHIPPING LABEL BATCH</h2>
       <span class="editor__spacer"></span>
     </mat-toolbar>
-
     <!-- Toolbar (and its Back button) render immediately regardless of
-         labels$'s first emission - only the step content + summary panel,
-         which actually need resolved recipient data, wait on it. A single
-         "as labels" hoist here also means every reference below (both grid
-         [rows] bindings, generatedSummary()) shares the one labels$
-         subscription instead of each `| async` opening its own. -->
+    labels$'s first emission - only the step content + summary panel,
+    which actually need resolved recipient data, wait on it. A single
+    "as labels" hoist here also means every reference below (both grid
+    [rows] bindings, generatedSummary()) shares the one labels$
+    subscription instead of each `| async` opening its own. -->
     <div class="editor__body">
-      <ng-container *ngIf="(labels$ | async) as labels; else wizardLoading">
-      <div class="wizard-body">
-        <div class="wizard-main">
-
-          <!-- Step 1: Add Recipients -->
-          <div class="step-panel" *ngIf="step === 0">
-            <h3 class="step-title">Add Recipients</h3>
-            <p class="step-sub">Add everyone who should receive a shipping label in this batch.</p>
-
-            <div class="step-actions-row">
-              <button mat-stroked-button type="button" (click)="showAddModal()">
-                <mat-icon>add</mat-icon>
-                New Recipient
+      @if ((labels$ | async); as labels) {
+        <div class="wizard-body">
+          <div class="wizard-main">
+            <!-- Step 1: Add Recipients -->
+            @if (step === 0) {
+              <div class="step-panel">
+                <h3 class="step-title">Add Recipients</h3>
+                <p class="step-sub">Add everyone who should receive a shipping label in this batch.</p>
+                <div class="step-actions-row">
+                  <button mat-stroked-button type="button" (click)="showAddModal()">
+                    <mat-icon>add</mat-icon>
+                    New Recipient
+                  </button>
+                </div>
+                <app-data-grid
+                  [showHeader]="false"
+                  [showFilterRow]="false"
+                  [columns]="labelColumns"
+                  [rowActions]="labelRowActions"
+                  [rows]="labels"
+                  [loading]="(labelsLoading$ | async) ?? false"
+                  tableClass="labels-table"
+                  emptyMessage="No recipients added yet."
+                  (rowDoubleClick)="showEditModal($event)">
+                </app-data-grid>
+              </div>
+            }
+            <!-- Step 2: Add a Return Address -->
+            @if (step === 1) {
+              <div class="step-panel">
+                <h3 class="step-title">Return Address</h3>
+                <p class="step-sub">Every label in this batch ships from this address.</p>
+                <form [formGroup]="addressForm" class="address-form">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Name</mat-label>
+                    <input matInput formControlName="name" required>
+                    @if (addressForm.get('name')?.hasError('required')) {
+                      <mat-error>Name is required</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Address</mat-label>
+                    <input matInput formControlName="addressLine1" required>
+                    @if (addressForm.get('addressLine1')?.hasError('required')) {
+                      <mat-error>Address is required</mat-error>
+                    }
+                  </mat-form-field>
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>City</mat-label>
+                      <input matInput formControlName="cityLocality" required>
+                      @if (addressForm.get('cityLocality')?.hasError('required')) {
+                        <mat-error>City is required</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>State</mat-label>
+                      <mat-select formControlName="stateProvince" required>
+                        @for (state of states; track state) {
+                          <mat-option [value]="state.key">{{ state.value }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Zip</mat-label>
+                      <input matInput formControlName="postalCode" required>
+                      @if (addressForm.get('postalCode')?.hasError('required')) {
+                        <mat-error>Zip is required</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Country</mat-label>
+                      <mat-select formControlName="countryCode" required>
+                        @for (country of countries; track country) {
+                          <mat-option [value]="country.key">{{ country.value }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Phone</mat-label>
+                      <input matInput formControlName="phone" required>
+                      @if (addressForm.get('phone')?.hasError('required')) {
+                        <mat-error>Phone is required</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                </form>
+              </div>
+            }
+            <!-- Step 3: Generate the Labels -->
+            @if (step === 2) {
+              <div class="step-panel">
+                <h3 class="step-title">Generate the Labels</h3>
+                <p class="step-sub">Requests a shipping rate for every recipient below, then purchase and download each label individually with the download icon once it's rated.</p>
+                <div class="step-actions-row">
+                  <button mat-raised-button color="primary" type="button" (click)="generateShippingLabels()">
+                    <mat-icon>local_shipping</mat-icon>
+                    Generate Labels
+                  </button>
+                </div>
+                <app-data-grid
+                  [showHeader]="false"
+                  [showFilterRow]="false"
+                  [columns]="labelColumns"
+                  [rowActions]="labelRowActions"
+                  [rows]="labels"
+                  [loading]="(labelsLoading$ | async) ?? false"
+                  tableClass="labels-table"
+                  emptyMessage="No recipients in this batch."
+                  (rowDoubleClick)="showEditModal($event)">
+                </app-data-grid>
+              </div>
+            }
+          </div>
+          <div class="wizard-summary">
+            <h3>Batch Summary</h3>
+            <div class="summary-item">
+              <div class="k">Recipients</div>
+              <div class="v" [class.muted]="recipientCount === 0">{{ recipientCount === 0 ? 'None yet' : recipientCount + ' added' }}</div>
+            </div>
+            <div class="summary-item">
+              <div class="k">Return address</div>
+              @if (batch.shipFrom; as from) {
+                <div class="v">
+                  {{ from.name }}<br>
+                  {{ from.addressLine1 }}<br>
+                  {{ from.cityLocality }}, {{ from.stateProvince }} {{ from.postalCode }}
+                </div>
+              } @else {
+                <div class="v muted">Not set</div>
+              }
+            </div>
+            <div class="summary-item">
+              <div class="k">Labels generated</div>
+              <div class="v" [class.muted]="!hasGenerated">{{ hasGenerated ? generatedSummary(labels) : 'Not yet' }}</div>
+            </div>
+            <div class="summary-progress">
+              <button type="button" class="sp-item" [class.is-done]="step > 0" [class.is-current]="step === 0" (click)="goToStep(0)">
+                <span class="dot">{{ step > 0 ? '&#10003;' : '1' }}</span>
+                Add Recipients
+              </button>
+              <button type="button" class="sp-item" [class.is-done]="step > 1" [class.is-current]="step === 1" (click)="goToStep(1)">
+                <span class="dot">{{ step > 1 ? '&#10003;' : '2' }}</span>
+                Add Return Address
+              </button>
+              <button type="button" class="sp-item" [class.is-current]="step === 2" (click)="goToStep(2)">
+                <span class="dot">3</span>
+                Generate the Labels
               </button>
             </div>
-
-            <app-data-grid
-              [showHeader]="false"
-              [showFilterRow]="false"
-              [columns]="labelColumns"
-              [rowActions]="labelRowActions"
-              [rows]="labels"
-              [loading]="(labelsLoading$ | async) ?? false"
-              tableClass="labels-table"
-              emptyMessage="No recipients added yet."
-              (rowDoubleClick)="showEditModal($event)">
-            </app-data-grid>
-          </div>
-
-          <!-- Step 2: Add a Return Address -->
-          <div class="step-panel" *ngIf="step === 1">
-            <h3 class="step-title">Return Address</h3>
-            <p class="step-sub">Every label in this batch ships from this address.</p>
-
-            <form [formGroup]="addressForm" class="address-form">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Name</mat-label>
-                <input matInput formControlName="name" required>
-                <mat-error *ngIf="addressForm.get('name')?.hasError('required')">Name is required</mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Address</mat-label>
-                <input matInput formControlName="addressLine1" required>
-                <mat-error *ngIf="addressForm.get('addressLine1')?.hasError('required')">Address is required</mat-error>
-              </mat-form-field>
-
-              <div class="field-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>City</mat-label>
-                  <input matInput formControlName="cityLocality" required>
-                  <mat-error *ngIf="addressForm.get('cityLocality')?.hasError('required')">City is required</mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>State</mat-label>
-                  <mat-select formControlName="stateProvince" required>
-                    <mat-option *ngFor="let state of states" [value]="state.key">{{ state.value }}</mat-option>
-                  </mat-select>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Zip</mat-label>
-                  <input matInput formControlName="postalCode" required>
-                  <mat-error *ngIf="addressForm.get('postalCode')?.hasError('required')">Zip is required</mat-error>
-                </mat-form-field>
-              </div>
-
-              <div class="field-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Country</mat-label>
-                  <mat-select formControlName="countryCode" required>
-                    <mat-option *ngFor="let country of countries" [value]="country.key">{{ country.value }}</mat-option>
-                  </mat-select>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Phone</mat-label>
-                  <input matInput formControlName="phone" required>
-                  <mat-error *ngIf="addressForm.get('phone')?.hasError('required')">Phone is required</mat-error>
-                </mat-form-field>
-              </div>
-            </form>
-          </div>
-
-          <!-- Step 3: Generate the Labels -->
-          <div class="step-panel" *ngIf="step === 2">
-            <h3 class="step-title">Generate the Labels</h3>
-            <p class="step-sub">Requests a shipping rate for every recipient below, then purchase and download each label individually with the download icon once it's rated.</p>
-
-            <div class="step-actions-row">
-              <button mat-raised-button color="primary" type="button" (click)="generateShippingLabels()">
-                <mat-icon>local_shipping</mat-icon>
-                Generate Labels
-              </button>
-            </div>
-
-            <app-data-grid
-              [showHeader]="false"
-              [showFilterRow]="false"
-              [columns]="labelColumns"
-              [rowActions]="labelRowActions"
-              [rows]="labels"
-              [loading]="(labelsLoading$ | async) ?? false"
-              tableClass="labels-table"
-              emptyMessage="No recipients in this batch."
-              (rowDoubleClick)="showEditModal($event)">
-            </app-data-grid>
           </div>
         </div>
-
-        <div class="wizard-summary">
-          <h3>Batch Summary</h3>
-
-          <div class="summary-item">
-            <div class="k">Recipients</div>
-            <div class="v" [class.muted]="recipientCount === 0">{{ recipientCount === 0 ? 'None yet' : recipientCount + ' added' }}</div>
-          </div>
-
-          <div class="summary-item">
-            <div class="k">Return address</div>
-            <div class="v" *ngIf="batch.shipFrom as from; else noAddress">
-              {{ from.name }}<br>
-              {{ from.addressLine1 }}<br>
-              {{ from.cityLocality }}, {{ from.stateProvince }} {{ from.postalCode }}
-            </div>
-            <ng-template #noAddress><div class="v muted">Not set</div></ng-template>
-          </div>
-
-          <div class="summary-item">
-            <div class="k">Labels generated</div>
-            <div class="v" [class.muted]="!hasGenerated">{{ hasGenerated ? generatedSummary(labels) : 'Not yet' }}</div>
-          </div>
-
-          <div class="summary-progress">
-            <button type="button" class="sp-item" [class.is-done]="step > 0" [class.is-current]="step === 0" (click)="goToStep(0)">
-              <span class="dot">{{ step > 0 ? '&#10003;' : '1' }}</span>
-              Add Recipients
-            </button>
-            <button type="button" class="sp-item" [class.is-done]="step > 1" [class.is-current]="step === 1" (click)="goToStep(1)">
-              <span class="dot">{{ step > 1 ? '&#10003;' : '2' }}</span>
-              Add Return Address
-            </button>
-            <button type="button" class="sp-item" [class.is-current]="step === 2" (click)="goToStep(2)">
-              <span class="dot">3</span>
-              Generate the Labels
-            </button>
-          </div>
-        </div>
-      </div>
-      </ng-container>
-      <ng-template #wizardLoading>
+      } @else {
         <div class="wizard-loading"><mat-spinner diameter="48"></mat-spinner></div>
-      </ng-template>
+      }
     </div>
-
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onClose()">CLOSE</button>
       <div class="btn-row">
-        <button mat-stroked-button type="button" *ngIf="step > 0" [disabled]="inProgress$ | async" (click)="goToStep(step - 1)">BACK</button>
-        <button mat-raised-button color="primary" type="button" *ngIf="step === 0" [disabled]="recipientCount === 0" (click)="goToStep(1)">NEXT</button>
-        <app-indicator-button
-          *ngIf="step === 1"
-          title="NEXT"
-          [isInProgress]="inProgress$ | async"
-          [disabled]="addressForm.invalid || (inProgress$ | async)"
-          (clicked)="saveFromAddressAndAdvance()">
-        </app-indicator-button>
+        @if (step > 0) {
+          <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="goToStep(step - 1)">BACK</button>
+        }
+        @if (step === 0) {
+          <button mat-raised-button color="primary" type="button" [disabled]="recipientCount === 0" (click)="goToStep(1)">NEXT</button>
+        }
+        @if (step === 1) {
+          <app-indicator-button
+            title="NEXT"
+            [isInProgress]="inProgress$ | async"
+            [disabled]="addressForm.invalid || (inProgress$ | async)"
+            (clicked)="saveFromAddressAndAdvance()">
+          </app-indicator-button>
+        }
       </div>
     </div>
   </div>
-</ng-container>
+}

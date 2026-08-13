@@ -1,4 +1,4 @@
-<ng-container *ngIf="mode === 'list'">
+@if (mode === 'list') {
   <app-data-grid
     [showColumnsButton]="false"
     [showExportButton]="false"
@@ -19,12 +19,14 @@
       </span>
     </ng-template>
     <ng-template appDataGridCell="newAttendees" let-row>
-      <span class="new-badge" *ngIf="newAttendeeEventIds.has(row.id)">NEW</span>
+      @if (newAttendeeEventIds.has(row.id)) {
+        <span class="new-badge">NEW</span>
+      }
     </ng-template>
   </app-data-grid>
-</ng-container>
+}
 
-<ng-container *ngIf="mode === 'edit' && editingItem as item">
+@if (mode === 'edit' && editingItem; as item) {
   <div class="editor">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
@@ -32,167 +34,190 @@
       </button>
       <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' EVENT' }}</h2>
       <span class="editor__spacer"></span>
-      <mat-slide-toggle *ngIf="permissionService.canEdit('events-manager.events.info')" [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
+      @if (permissionService.canEdit('events-manager.events.info')) {
+        <mat-slide-toggle [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
+      }
     </mat-toolbar>
-
     <div class="editor__body">
       <mat-tab-group class="event-tabs" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
-        <mat-tab label="Info" *ngIf="permissionService.canView('events-manager.events.info')">
-          <div class="tab-content">
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Event Name</mat-label>
-                <input matInput formControlName="eventName" required>
-                <mat-error *ngIf="form.get('eventName')?.hasError('required')">Event name is required</mat-error>
+        @if (permissionService.canView('events-manager.events.info')) {
+          <mat-tab label="Info">
+            <div class="tab-content">
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Event Name</mat-label>
+                  <input matInput formControlName="eventName" required>
+                  @if (form.get('eventName')?.hasError('required')) {
+                    <mat-error>Event name is required</mat-error>
+                  }
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Email Template</mat-label>
+                  <mat-select formControlName="emailTemplate">
+                    <mat-option [value]="null">(None)</mat-option>
+                    @for (template of emailTemplates; track template) {
+                      <mat-option [value]="template">{{ template }}</mat-option>
+                    }
+                  </mat-select>
+                  @if (form.get('emailTemplate')?.hasError('required')) {
+                    <mat-error>Required for in-person events</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Start Date</mat-label>
+                  <input matInput type="datetime-local" formControlName="startDate" required>
+                  @if (form.get('startDate')?.hasError('required')) {
+                    <mat-error>Required</mat-error>
+                  }
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>End Date</mat-label>
+                  <input matInput type="datetime-local" formControlName="endDate">
+                  @if (form.get('endDate')?.hasError('required')) {
+                    <mat-error>Required for in-person events</mat-error>
+                  }
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Check-In Time</mat-label>
+                  <input matInput type="time" formControlName="checkIn">
+                  @if (form.get('checkIn')?.hasError('required')) {
+                    <mat-error>Required for in-person events</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+              <mat-form-field appearance="outline" class="cost-field">
+                <mat-label>Cost</mat-label>
+                <span matTextPrefix>$&nbsp;</span>
+                <input matInput type="number" formControlName="costInDollars">
               </mat-form-field>
-
+              <div class="field-row">
+                <mat-checkbox formControlName="isSummit">Is Annual Summit?</mat-checkbox>
+                @if (form.get('isSummit')?.value) {
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Promo Video Id</mat-label>
+                    <input matInput formControlName="videoId">
+                  </mat-form-field>
+                }
+              </div>
+              <mat-checkbox formControlName="isOnline">Is Online Event?</mat-checkbox>
+              <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
+              @if (form.get('isKajabiCourse')?.value) {
+                <div class="field-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Purchase URL</mat-label>
+                    <input matInput formControlName="kajabiPurchaseURL">
+                    @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
+                      <mat-error>Required</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Subscribe URL</mat-label>
+                    <input matInput formControlName="kajabiSubscribeURL">
+                    @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
+                      <mat-error>Required</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+              }
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Location</mat-label>
+                  <mat-select formControlName="location">
+                    <mat-option [value]="null">(None)</mat-option>
+                    @for (location of locations; track location) {
+                      <mat-option [value]="location.id">{{ location.name }}</mat-option>
+                    }
+                  </mat-select>
+                  @if (form.get('location')?.hasError('required')) {
+                    <mat-error>Required for in-person events</mat-error>
+                  }
+                </mat-form-field>
+                <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Organization</mat-label>
+                  <mat-select formControlName="organization">
+                    <mat-option [value]="null">(None)</mat-option>
+                    @for (org of organizations; track org) {
+                      <mat-option [value]="org.id">{{ org.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
+              </div>
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Image</mat-label>
+                  <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+                </mat-form-field>
+                <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+                  {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
+                </button>
+              </div>
+              @if (card.imageUrl?.url) {
+                <img class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+              }
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Email Template</mat-label>
-                <mat-select formControlName="emailTemplate">
-                  <mat-option [value]="null">(None)</mat-option>
-                  <mat-option *ngFor="let template of emailTemplates" [value]="template">{{ template }}</mat-option>
-                </mat-select>
-                <mat-error *ngIf="form.get('emailTemplate')?.hasError('required')">Required for in-person events</mat-error>
+                <mat-label>Web Description</mat-label>
+                <textarea matInput formControlName="description" rows="6"></textarea>
               </mat-form-field>
             </div>
-
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Start Date</mat-label>
-                <input matInput type="datetime-local" formControlName="startDate" required>
-                <mat-error *ngIf="form.get('startDate')?.hasError('required')">Required</mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>End Date</mat-label>
-                <input matInput type="datetime-local" formControlName="endDate">
-                <mat-error *ngIf="form.get('endDate')?.hasError('required')">Required for in-person events</mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Check-In Time</mat-label>
-                <input matInput type="time" formControlName="checkIn">
-                <mat-error *ngIf="form.get('checkIn')?.hasError('required')">Required for in-person events</mat-error>
-              </mat-form-field>
-            </div>
-
-            <mat-form-field appearance="outline" class="cost-field">
-              <mat-label>Cost</mat-label>
-              <span matTextPrefix>$&nbsp;</span>
-              <input matInput type="number" formControlName="costInDollars">
-            </mat-form-field>
-
-            <div class="field-row">
-              <mat-checkbox formControlName="isSummit">Is Annual Summit?</mat-checkbox>
-              <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('isSummit')?.value">
-                <mat-label>Promo Video Id</mat-label>
-                <input matInput formControlName="videoId">
-              </mat-form-field>
-            </div>
-
-            <mat-checkbox formControlName="isOnline">Is Online Event?</mat-checkbox>
-            <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
-
-            <div class="field-row" *ngIf="form.get('isKajabiCourse')?.value">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Purchase URL</mat-label>
-                <input matInput formControlName="kajabiPurchaseURL">
-                <mat-error *ngIf="form.get('kajabiPurchaseURL')?.hasError('required')">Required</mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Subscribe URL</mat-label>
-                <input matInput formControlName="kajabiSubscribeURL">
-                <mat-error *ngIf="form.get('kajabiSubscribeURL')?.hasError('required')">Required</mat-error>
-              </mat-form-field>
-            </div>
-
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Location</mat-label>
-                <mat-select formControlName="location">
-                  <mat-option [value]="null">(None)</mat-option>
-                  <mat-option *ngFor="let location of locations" [value]="location.id">{{ location.name }}</mat-option>
-                </mat-select>
-                <mat-error *ngIf="form.get('location')?.hasError('required')">Required for in-person events</mat-error>
-              </mat-form-field>
-              <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
-
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Organization</mat-label>
-                <mat-select formControlName="organization">
-                  <mat-option [value]="null">(None)</mat-option>
-                  <mat-option *ngFor="let org of organizations" [value]="org.id">{{ org.name }}</mat-option>
-                </mat-select>
-              </mat-form-field>
-              <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
-            </div>
-
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Image</mat-label>
-                <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
-              </mat-form-field>
-              <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
-                {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
-              </button>
-            </div>
-            <img *ngIf="card.imageUrl?.url" class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Web Description</mat-label>
-              <textarea matInput formControlName="description" rows="6"></textarea>
-            </mat-form-field>
-          </div>
-        </mat-tab>
-
+          </mat-tab>
+        }
         <!-- matTabContent: unlike DevExtreme's tabbed form (which only ever
-             instantiated a tab's content the first time it was clicked),
-             mat-tab-group eagerly creates every tab's content the moment
-             the group itself mounts. These four embed heavy, stateful
-             components (each opening its own Firestore streams; Agenda in
-             particular assumes a saved event with a location already set)
-             - matTabContent defers creation until a tab is actually
-             selected, matching the original's real behavior instead of
-             firing all four at once on every single Add/Edit open. -->
-        <mat-tab label="Application" *ngIf="permissionService.canView('events-manager.events.application')">
-          <ng-template matTabContent>
-            <div class="tab-content tab-content--flush">
-              <app-event-application [event]="item"></app-event-application>
-            </div>
-          </ng-template>
-        </mat-tab>
-
-        <mat-tab label="Agenda" *ngIf="permissionService.canView('events-manager.events.agenda')">
-          <ng-template matTabContent>
-            <div class="tab-content tab-content--flush">
-              <app-event-agenda [event]="item"></app-event-agenda>
-            </div>
-          </ng-template>
-        </mat-tab>
-
-        <mat-tab *ngIf="permissionService.canView('events-manager.events.attendees')">
-          <ng-template mat-tab-label>
-            Attendees
-            <span class="new-badge tab-badge" *ngIf="newAttendeeEventIds.has(item.id)">NEW</span>
-          </ng-template>
-          <ng-template matTabContent>
-            <div class="tab-content tab-content--flush">
-              <app-event-attendees [event]="item"></app-event-attendees>
-            </div>
-          </ng-template>
-        </mat-tab>
-
-        <mat-tab label="Break Outs" *ngIf="permissionService.canView('events-manager.events.breakouts')">
-          <ng-template matTabContent>
-            <div class="tab-content tab-content--flush">
-              <app-event-breakouts [event]="item"></app-event-breakouts>
-            </div>
-          </ng-template>
-        </mat-tab>
+        instantiated a tab's content the first time it was clicked),
+        mat-tab-group eagerly creates every tab's content the moment
+        the group itself mounts. These four embed heavy, stateful
+        components (each opening its own Firestore streams; Agenda in
+        particular assumes a saved event with a location already set)
+        - matTabContent defers creation until a tab is actually
+        selected, matching the original's real behavior instead of
+        firing all four at once on every single Add/Edit open. -->
+        @if (permissionService.canView('events-manager.events.application')) {
+          <mat-tab label="Application">
+            <ng-template matTabContent>
+              <div class="tab-content tab-content--flush">
+                <app-event-application [event]="item"></app-event-application>
+              </div>
+            </ng-template>
+          </mat-tab>
+        }
+        @if (permissionService.canView('events-manager.events.agenda')) {
+          <mat-tab label="Agenda">
+            <ng-template matTabContent>
+              <div class="tab-content tab-content--flush">
+                <app-event-agenda [event]="item"></app-event-agenda>
+              </div>
+            </ng-template>
+          </mat-tab>
+        }
+        @if (permissionService.canView('events-manager.events.attendees')) {
+          <mat-tab>
+            <ng-template mat-tab-label>
+              Attendees
+              @if (newAttendeeEventIds.has(item.id)) {
+                <span class="new-badge tab-badge">NEW</span>
+              }
+            </ng-template>
+            <ng-template matTabContent>
+              <div class="tab-content tab-content--flush">
+                <app-event-attendees [event]="item"></app-event-attendees>
+              </div>
+            </ng-template>
+          </mat-tab>
+        }
+        @if (permissionService.canView('events-manager.events.breakouts')) {
+          <mat-tab label="Break Outs">
+            <ng-template matTabContent>
+              <div class="tab-content tab-content--flush">
+                <app-event-breakouts [event]="item"></app-event-breakouts>
+              </div>
+            </ng-template>
+          </mat-tab>
+        }
       </mat-tab-group>
     </div>
-
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
       <app-indicator-button
@@ -203,8 +228,7 @@
       </app-indicator-button>
     </div>
   </div>
-
-  <ng-container *ngIf="isImageUploaderVisible$ | async">
+  @if (isImageUploaderVisible$ | async) {
     <app-image-uploader
       [card]="card"
       [isList]="false"
@@ -213,5 +237,5 @@
       [imageSelectVisible]="isImageUploaderVisible$ | async"
       (imageSelectClosed)="closeImageUploader()">
     </app-image-uploader>
-  </ng-container>
-</ng-container>
+  }
+}

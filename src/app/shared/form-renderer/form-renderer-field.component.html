@@ -1,125 +1,192 @@
-<div class="renderer-field" [ngSwitch]="field.type" [ngStyle]="wrapperStyle">
-
-  <!-- Basic -->
-  <mat-form-field *ngSwitchCase="'text'" appearance="outline" class="full-width">
-    <mat-label *ngIf="!usesPlaceholder">{{ field.label }}</mat-label>
-    <input matInput [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')">
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field *ngSwitchCase="'paragraph'" appearance="outline" class="full-width">
-    <mat-label *ngIf="!usesPlaceholder">{{ field.label }}</mat-label>
-    <textarea matInput rows="3" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')"></textarea>
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field *ngSwitchCase="'number'" appearance="outline" class="full-width">
-    <mat-label *ngIf="!usesPlaceholder">{{ field.label }}</mat-label>
-    <input matInput type="number" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')">
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <mat-checkbox *ngSwitchCase="'checkbox'" [formControl]="control()" class="renderer-field__checkbox">
-    {{ field.label }}
-  </mat-checkbox>
-
-  <div *ngSwitchCase="'checkboxes'" class="renderer-field__group">
-    <div class="renderer-field__group-label">{{ field.label }}</div>
-    <mat-checkbox
-      *ngFor="let option of field.options"
-      [checked]="isChecked(option.value)"
-      [disabled]="mode === 'preview'"
-      (change)="toggleOption(option.value, $event.checked)">
-      {{ option.label }}
-    </mat-checkbox>
-    <div class="renderer-field__error" *ngIf="hasError('required')">{{ field.label }} is required</div>
-  </div>
-
-  <div *ngSwitchCase="'radio'" class="renderer-field__group">
-    <div class="renderer-field__group-label">{{ field.label }}</div>
-    <mat-radio-group [formControl]="control()" class="renderer-field__radio-group">
-      <mat-radio-button *ngFor="let option of field.options" [value]="option.value">{{ option.label }}</mat-radio-button>
-    </mat-radio-group>
-    <div class="renderer-field__error" *ngIf="hasError('required')">{{ field.label }} is required</div>
-  </div>
-
-  <mat-form-field *ngSwitchCase="'dropdown'" appearance="outline" class="full-width">
-    <mat-label>{{ field.label }}</mat-label>
-    <mat-select [formControl]="control()">
-      <mat-option *ngFor="let option of field.options" [value]="option.value">{{ option.label }}</mat-option>
-    </mat-select>
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <!-- Advanced -->
-  <mat-form-field *ngSwitchCase="'email'" appearance="outline" class="full-width">
-    <mat-label *ngIf="!usesPlaceholder">{{ field.label }}</mat-label>
-    <input matInput type="email" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')">
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <app-phone-field *ngSwitchCase="'phone'" [group]="group()"></app-phone-field>
-
-  <app-address-field *ngSwitchCase="'address'" [group]="group()"></app-address-field>
-
-  <mat-form-field *ngSwitchCase="'date'" appearance="outline" class="full-width">
-    <mat-label>{{ field.label }}</mat-label>
-    <input matInput [matDatepicker]="picker" [formControl]="control()">
-    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-    <mat-datepicker #picker></mat-datepicker>
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field *ngSwitchCase="'time'" appearance="outline" class="full-width">
-    <mat-label>{{ field.label }}</mat-label>
-    <input matInput type="time" [formControl]="control()">
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field *ngSwitchCase="'datetime'" appearance="outline" class="full-width">
-    <mat-label>{{ field.label }}</mat-label>
-    <input matInput type="datetime-local" [formControl]="control()">
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field *ngSwitchCase="'url'" appearance="outline" class="full-width">
-    <mat-label *ngIf="!usesPlaceholder">{{ field.label }}</mat-label>
-    <input matInput type="url" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? 'https://')">
-    <mat-error *ngIf="hasError('required')">{{ field.label }} is required</mat-error>
-  </mat-form-field>
-
-  <div *ngSwitchCase="'rating'" class="renderer-field__group">
-    <div class="renderer-field__group-label">{{ field.label }}</div>
-    <div class="renderer-field__stars">
-      <mat-icon
-        *ngFor="let star of stars"
-        class="renderer-field__star"
-        [class.renderer-field__star--filled]="star <= ratingValue()"
-        (click)="setRating(star)">
-        star
-      </mat-icon>
-    </div>
-  </div>
-
-  <!-- Layout -->
-  <h3 *ngSwitchCase="'heading'" class="renderer-field__heading">{{ field.label }}</h3>
-
-  <div *ngSwitchCase="'instructions'" class="renderer-field__instructions" [innerHTML]="field.html"></div>
-
-  <div *ngSwitchCase="'image'" class="renderer-field__image-wrap">
-    <img *ngIf="field.imageUrl" [src]="field.imageUrl" [alt]="field.imageAlt || ''" [style.width]="imageWidthCss" class="renderer-field__image">
-    <div *ngIf="!field.imageUrl" class="renderer-field__image-empty">
-      <mat-icon>image</mat-icon>
-      No image set
-    </div>
-  </div>
-
-  <mat-divider *ngSwitchCase="'divider'" class="renderer-field__divider"></mat-divider>
-
-  <div *ngSwitchCase="'columns'" class="renderer-field__columns" [style.grid-template-columns]="'repeat(' + field.columns.length + ', 1fr)'">
-    <div class="renderer-field__column" *ngFor="let column of field.columns">
-      <app-form-renderer-field *ngFor="let child of column.fields" [field]="child" [form]="form" [mode]="mode"></app-form-renderer-field>
-    </div>
-  </div>
-
+<div class="renderer-field" [ngStyle]="wrapperStyle">
+  @switch (field.type) {
+    <!-- Basic -->
+    @case ('text') {
+      <mat-form-field appearance="outline" class="full-width">
+        @if (!usesPlaceholder) {
+          <mat-label>{{ field.label }}</mat-label>
+        }
+        <input matInput [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')">
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('paragraph') {
+      <mat-form-field appearance="outline" class="full-width">
+        @if (!usesPlaceholder) {
+          <mat-label>{{ field.label }}</mat-label>
+        }
+        <textarea matInput rows="3" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')"></textarea>
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('number') {
+      <mat-form-field appearance="outline" class="full-width">
+        @if (!usesPlaceholder) {
+          <mat-label>{{ field.label }}</mat-label>
+        }
+        <input matInput type="number" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')">
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('checkbox') {
+      <mat-checkbox [formControl]="control()" class="renderer-field__checkbox">
+        {{ field.label }}
+      </mat-checkbox>
+    }
+    @case ('checkboxes') {
+      <div class="renderer-field__group">
+        <div class="renderer-field__group-label">{{ field.label }}</div>
+        @for (option of field.options; track option) {
+          <mat-checkbox
+            [checked]="isChecked(option.value)"
+            [disabled]="mode === 'preview'"
+            (change)="toggleOption(option.value, $event.checked)">
+            {{ option.label }}
+          </mat-checkbox>
+        }
+        @if (hasError('required')) {
+          <div class="renderer-field__error">{{ field.label }} is required</div>
+        }
+      </div>
+    }
+    @case ('radio') {
+      <div class="renderer-field__group">
+        <div class="renderer-field__group-label">{{ field.label }}</div>
+        <mat-radio-group [formControl]="control()" class="renderer-field__radio-group">
+          @for (option of field.options; track option) {
+            <mat-radio-button [value]="option.value">{{ option.label }}</mat-radio-button>
+          }
+        </mat-radio-group>
+        @if (hasError('required')) {
+          <div class="renderer-field__error">{{ field.label }} is required</div>
+        }
+      </div>
+    }
+    @case ('dropdown') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ field.label }}</mat-label>
+        <mat-select [formControl]="control()">
+          @for (option of field.options; track option) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    <!-- Advanced -->
+    @case ('email') {
+      <mat-form-field appearance="outline" class="full-width">
+        @if (!usesPlaceholder) {
+          <mat-label>{{ field.label }}</mat-label>
+        }
+        <input matInput type="email" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? '')">
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('phone') {
+      <app-phone-field [group]="group()"></app-phone-field>
+    }
+    @case ('address') {
+      <app-address-field [group]="group()"></app-address-field>
+    }
+    @case ('date') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ field.label }}</mat-label>
+        <input matInput [matDatepicker]="picker" [formControl]="control()">
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('time') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ field.label }}</mat-label>
+        <input matInput type="time" [formControl]="control()">
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('datetime') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ field.label }}</mat-label>
+        <input matInput type="datetime-local" [formControl]="control()">
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('url') {
+      <mat-form-field appearance="outline" class="full-width">
+        @if (!usesPlaceholder) {
+          <mat-label>{{ field.label }}</mat-label>
+        }
+        <input matInput type="url" [formControl]="control()" [placeholder]="usesPlaceholder ? placeholderText : (field.placeholder ?? 'https://')">
+        @if (hasError('required')) {
+          <mat-error>{{ field.label }} is required</mat-error>
+        }
+      </mat-form-field>
+    }
+    @case ('rating') {
+      <div class="renderer-field__group">
+        <div class="renderer-field__group-label">{{ field.label }}</div>
+        <div class="renderer-field__stars">
+          @for (star of stars; track star) {
+            <mat-icon
+              class="renderer-field__star"
+              [class.renderer-field__star--filled]="star <= ratingValue()"
+              (click)="setRating(star)">
+              star
+            </mat-icon>
+          }
+        </div>
+      </div>
+    }
+    <!-- Layout -->
+    @case ('heading') {
+      <h3 class="renderer-field__heading">{{ field.label }}</h3>
+    }
+    @case ('instructions') {
+      <div class="renderer-field__instructions" [innerHTML]="field.html"></div>
+    }
+    @case ('image') {
+      <div class="renderer-field__image-wrap">
+        @if (field.imageUrl) {
+          <img [src]="field.imageUrl" [alt]="field.imageAlt || ''" [style.width]="imageWidthCss" class="renderer-field__image">
+        }
+        @if (!field.imageUrl) {
+          <div class="renderer-field__image-empty">
+            <mat-icon>image</mat-icon>
+            No image set
+          </div>
+        }
+      </div>
+    }
+    @case ('divider') {
+      <mat-divider class="renderer-field__divider"></mat-divider>
+    }
+    @case ('columns') {
+      <div class="renderer-field__columns" [style.grid-template-columns]="'repeat(' + field.columns.length + ', 1fr)'">
+        @for (column of field.columns; track column) {
+          <div class="renderer-field__column">
+            @for (child of column.fields; track child) {
+              <app-form-renderer-field [field]="child" [form]="form" [mode]="mode"></app-form-renderer-field>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
 </div>

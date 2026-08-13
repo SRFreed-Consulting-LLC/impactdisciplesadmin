@@ -1,24 +1,33 @@
-<ng-container [ngSwitch]="stylingMode">
-  <button *ngSwitchCase="'text'" mat-button [ngClass]="cssClass" class="button-with-indicator"
-    [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
-    [disabled]="isInProgress || disabled" (click)="handleClick()">
-    <ng-container *ngTemplateOutlet="content"></ng-container>
-  </button>
-  <button *ngSwitchCase="'outlined'" mat-stroked-button [ngClass]="cssClass" class="button-with-indicator"
-    [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
-    [disabled]="isInProgress || disabled" (click)="handleClick()">
-    <ng-container *ngTemplateOutlet="content"></ng-container>
-  </button>
-  <button *ngSwitchDefault mat-raised-button color="primary" [ngClass]="cssClass" class="button-with-indicator"
-    [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
-    [disabled]="isInProgress || disabled" (click)="handleClick()">
-    <ng-container *ngTemplateOutlet="content"></ng-container>
-  </button>
-</ng-container>
+
+@switch (stylingMode) {
+  @case ('text') {
+    <button mat-button [ngClass]="cssClass" class="button-with-indicator"
+      [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
+      [disabled]="isInProgress || disabled" (click)="handleClick()">
+      <ng-container *ngTemplateOutlet="content"></ng-container>
+    </button>
+  }
+  @case ('outlined') {
+    <button mat-stroked-button [ngClass]="cssClass" class="button-with-indicator"
+      [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
+      [disabled]="isInProgress || disabled" (click)="handleClick()">
+      <ng-container *ngTemplateOutlet="content"></ng-container>
+    </button>
+  }
+  @default {
+    <button mat-raised-button color="primary" [ngClass]="cssClass" class="button-with-indicator"
+      [style.height]="height" [style.width]="width" [matTooltip]="hint || ''"
+      [disabled]="isInProgress || disabled" (click)="handleClick()">
+      <ng-container *ngTemplateOutlet="content"></ng-container>
+    </button>
+  }
+}
 
 <ng-template #content>
   <span class="button-with-indicator__content-container">
-    <mat-spinner *ngIf="isInProgress" class="button-with-indicator__indicator" diameter="18"></mat-spinner>
+    @if (isInProgress) {
+      <mat-spinner class="button-with-indicator__indicator" diameter="18"></mat-spinner>
+    }
     <span class="button-with-indicator__title">{{ title }}</span>
   </span>
 </ng-template>

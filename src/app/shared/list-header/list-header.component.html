@@ -3,25 +3,31 @@
   <span class="list-header__spacer"></span>
 
   <!-- Optional extra controls (e.g. a filter dropdown) between the title and
-       the actions menu - most screens project nothing here. -->
+  the actions menu - most screens project nothing here. -->
   <ng-content></ng-content>
 
-  <ng-container *ngIf="actions.length === 1">
+  @if (actions.length === 1) {
     <button mat-raised-button color="primary" (click)="actions[0].onClick()">
-      <mat-icon *ngIf="actions[0].icon">{{ actions[0].icon }}</mat-icon>
+      @if (actions[0].icon) {
+        <mat-icon>{{ actions[0].icon }}</mat-icon>
+      }
       {{ actions[0].label }}
     </button>
-  </ng-container>
+  }
 
-  <ng-container *ngIf="actions.length > 1">
+  @if (actions.length > 1) {
     <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Manage">
       <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #menu="matMenu">
-      <button mat-menu-item *ngFor="let action of actions" (click)="action.onClick()">
-        <mat-icon *ngIf="action.icon">{{ action.icon }}</mat-icon>
-        <span>{{ action.label }}</span>
-      </button>
+      @for (action of actions; track action) {
+        <button mat-menu-item (click)="action.onClick()">
+          @if (action.icon) {
+            <mat-icon>{{ action.icon }}</mat-icon>
+          }
+          <span>{{ action.label }}</span>
+        </button>
+      }
     </mat-menu>
-  </ng-container>
+  }
 </mat-toolbar>

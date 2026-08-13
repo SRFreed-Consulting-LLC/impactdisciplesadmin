@@ -1,22 +1,22 @@
 <div class="manager-content">
-  <ng-template [ngIf]="selectedTab === 'Events'">
+  @if (selectedTab === 'Events') {
     <app-events></app-events>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Coaches'">
+  @if (selectedTab === 'Coaches') {
     <app-coaches></app-coaches>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Courses'">
+  @if (selectedTab === 'Courses') {
     <app-courses></app-courses>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Locations'">
+  @if (selectedTab === 'Locations') {
     <app-locations></app-locations>
-  </ng-template>
+  }
 
-  <ng-template [ngIf]="selectedTab === 'Organizations'">
+  @if (selectedTab === 'Organizations') {
     <app-organizations></app-organizations>
-  </ng-template>
+  }
 </div>
 

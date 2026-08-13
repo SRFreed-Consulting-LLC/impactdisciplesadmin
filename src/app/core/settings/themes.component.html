@@ -18,18 +18,19 @@
       <div class="field field--column">
         <span class="field-label">Color Theme</span>
         <div class="accent-options">
-          <button
-            type="button"
-            *ngFor="let option of colorThemes"
-            class="accent-option"
-            [class.accent-option--selected]="themeService.colorTheme() === option.id"
-            (click)="onColorThemeChange(option.id)">
-            <span class="theme-swatch" [ngClass]="swatchClasses(option.id)">
-              <span class="theme-swatch-primary"></span>
-              <span class="theme-swatch-tertiary"></span>
-            </span>
-            <span>{{ option.label }}</span>
-          </button>
+          @for (option of colorThemes; track option) {
+            <button
+              type="button"
+              class="accent-option"
+              [class.accent-option--selected]="themeService.colorTheme() === option.id"
+              (click)="onColorThemeChange(option.id)">
+              <span class="theme-swatch" [ngClass]="swatchClasses(option.id)">
+                <span class="theme-swatch-primary"></span>
+                <span class="theme-swatch-tertiary"></span>
+              </span>
+              <span>{{ option.label }}</span>
+            </button>
+          }
         </div>
       </div>
     </mat-card-content>

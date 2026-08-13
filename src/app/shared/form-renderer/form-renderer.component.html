@@ -1,11 +1,15 @@
 <div class="form-renderer" [class.form-renderer--preview]="mode === 'preview'" [style.background-color]="backgroundColor || null" [ngStyle]="controlStyleVars">
-  <ng-container *ngFor="let field of fields">
+  @for (field of fields; track field) {
     <app-form-renderer-field [field]="field" [form]="form" [mode]="mode"></app-form-renderer-field>
-  </ng-container>
+  }
 
-  <div *ngIf="!fields.length" class="form-renderer__empty">Drag a field onto the canvas to see it here.</div>
+  @if (!fields.length) {
+    <div class="form-renderer__empty">Drag a field onto the canvas to see it here.</div>
+  }
 
-  <button *ngIf="mode === 'fill'" mat-flat-button color="primary" type="button" class="form-renderer__submit" (click)="submit()">
-    Submit
-  </button>
+  @if (mode === 'fill') {
+    <button mat-flat-button color="primary" type="button" class="form-renderer__submit" (click)="submit()">
+      Submit
+    </button>
+  }
 </div>
