@@ -37,8 +37,34 @@ hr.rule {
 // ---- Addresses ----
 .addr-panel {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: 18px;
+  margin-bottom: 18px;
+}
+
+// Full width, its own row below .addr-panel - a real address form (a
+// city/state/zip row alongside address1/2 + country) needs more room than a
+// third or even a half of the panel above gives it, especially once the
+// state/zip <mat-select>s are in play.
+.addr-card--shipping {
+  margin-bottom: 18px;
+  max-width: 640px;
+}
+
+// Both fragments manage their own [formGroup] internally (see their own
+// components) - just tighten the vertical rhythm to match this page's
+// smaller type scale instead of their form-dialog-sized default spacing.
+.addr-card ::ng-deep .address-field,
+.addr-card ::ng-deep .phone-field {
+  gap: 4px;
+  margin-top: 6px;
+}
+.addr-card ::ng-deep .mat-mdc-form-field {
+  font-size: 13px;
+}
+.addr-card ::ng-deep .mat-mdc-text-field-wrapper {
+  padding-top: 0;
 }
 
 .addr-card__name {
@@ -64,6 +90,11 @@ hr.rule {
 .addr-card__lines--empty {
   color: var(--sd-ink-faint);
   font-style: italic;
+}
+
+.addr-card__same {
+  display: inline-block;
+  margin-top: 8px;
 }
 
 // ---- Stat tiles ----

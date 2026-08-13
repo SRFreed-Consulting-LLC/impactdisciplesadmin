@@ -4,7 +4,6 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
@@ -80,9 +79,6 @@ export class PurchasesComponent implements OnInit {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
 
-  states = EnumHelper.getStateTypesAsArray();
-  phoneTypes = EnumHelper.getPhoneTypesAsArray();
-
   editingItem: CheckoutForm | null = null;
 
   constructor(
@@ -123,14 +119,10 @@ export class PurchasesComponent implements OnInit {
   // getTaxesDisplayAmount/getShippingDisplayAmount/
   // getShippingDiscountDisplayAmount/getChargedDisplayAmount/
   // getOrderStatusDisplay/getFulfillmentStatusLabel all moved onto
-  // PurchasesService (see its own comment) so the Sale Details tab's stat
-  // tiles render the exact same figures as this screen's columns and
-  // summary block - call `service.xxx()` directly instead of a component
-  // wrapper.
-
-  getOrderItemCount(item: CheckoutForm): number {
-    return (item.cartItems ?? []).map((cartItem) => cartItem.orderQuantity ?? 0).reduce((a, b) => a + b, 0);
-  }
+  // PurchasesService (see its own comment) so the list columns render the
+  // exact same figures as the edit view (now entirely app-purchase-details -
+  // see its own getOrderItemCount()) - call `service.xxx()` directly instead
+  // of a component wrapper.
 
   delete(item: CheckoutForm): void {
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {

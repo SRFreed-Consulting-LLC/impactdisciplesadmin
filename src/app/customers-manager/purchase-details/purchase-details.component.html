@@ -4,8 +4,10 @@
   <p class="section-label">Customer &amp; Addresses</p>
   <div class="addr-panel">
     <div class="addr-card">
+      <p class="addr-card__label">Customer</p>
       <div class="addr-card__name">{{ customerName() }}</div>
-      <div class="addr-card__lines">{{ selectedItem.email }}<br>{{ phoneDisplay() }}</div>
+      <div class="addr-card__lines">{{ selectedItem.email }}</div>
+      <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
     </div>
     <div class="addr-card">
       <p class="addr-card__label">Billing</p>
@@ -19,22 +21,17 @@
       } @else {
         <div class="addr-card__lines addr-card__lines--empty">No billing address on file</div>
       }
-    </div>
-    <div class="addr-card">
-      <p class="addr-card__label">Shipping</p>
       @if (selectedItem.isShippingSameAsBilling) {
-        <div class="addr-card__lines">Same as billing</div>
-      } @else if (selectedItem.shippingAddress?.address1) {
-        <div class="addr-card__lines">
-          {{ selectedItem.shippingAddress?.address1 }}
-          @if (selectedItem.shippingAddress?.address2) { <br>{{ selectedItem.shippingAddress?.address2 }} }
-          <br>{{ selectedItem.shippingAddress?.city }}, {{ selectedItem.shippingAddress?.state }} {{ selectedItem.shippingAddress?.zip }}
-          <br>{{ selectedItem.shippingAddress?.country }}
-        </div>
-      } @else {
-        <div class="addr-card__lines addr-card__lines--empty">No shipping address on file</div>
+        <span class="pill pill--neutral addr-card__same">Shipping is the same as billing</span>
       }
     </div>
+  </div>
+
+  <!-- Full width - a real address form (incl. a city/state/zip row) needs
+       more room than a third of the panel above gives it. -->
+  <div class="addr-card addr-card--shipping">
+    <p class="addr-card__label">Shipping</p>
+    <app-address-field [group]="$any(form.get('shippingAddress'))" [showCountry]="true"></app-address-field>
   </div>
 
   <hr class="rule">

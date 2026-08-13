@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -16,11 +17,15 @@ export interface TimelineNode {
   by?: string;
 }
 
-// Embedded (not a dialog) inside PurchaseDialogComponent's "Sale Details"
-// tab. Redesigned 2026-08-13 from a single dense item table into: customer &
-// address panel, order-total stat tiles, a real discount-source breakdown,
-// an order timeline, and the item list, per the reviewed mockup -
-// https://claude.ai/code/artifact/adb6fa1b-28fa-4f50-9901-113f2730e0c8
+// Embedded inside PurchasesComponent's edit view - as of 2026-08-13 this IS
+// the entire edit screen (there is no longer a separate Contact tab/dialog;
+// purchases.component.html renders nothing but this). Redesigned from a
+// single dense item table + a separate editable-address tab into one page:
+// customer & address panel (shipping address/phone still editable here,
+// same form/fields the old Contact tab had - billing address stays
+// read-only, it was never editable), order-total stat tiles, a real
+// discount-source breakdown, an order timeline, and the item list, per the
+// reviewed mockup - https://claude.ai/code/artifact/adb6fa1b-28fa-4f50-9901-113f2730e0c8
 // (merge of that gallery's "Stat Tiles" + "Timeline" concepts -
 // https://claude.ai/code/artifact/bc048b67-a51f-49d0-85d2-47ab5fea23e6).
 // The per-line-item refund action (refundLineItem) is fully commented out in
@@ -34,6 +39,12 @@ export interface TimelineNode {
 })
 export class PurchaseDetailsComponent {
   @Input() selectedItem: CheckoutForm;
+
+  // Owned by PurchasesComponent (built in showEditModal(), submitted by its
+  // own Save button) - passed down rather than rebuilt here so there's still
+  // exactly one save flow, same as before this screen absorbed the Contact
+  // tab. Only ever has phone/shippingAddress controls.
+  @Input() form: FormGroup;
 
   // Was read fresh via authService.getLoggedInUser().role on every
   // isVisible() call - see events.component.ts for the full explanation
@@ -61,11 +72,6 @@ export class PurchaseDetailsComponent {
 
   customerName(): string {
     return [this.selectedItem.firstName, this.selectedItem.lastName].filter(Boolean).join(' ') || this.selectedItem.email || 'Unknown';
-  }
-
-  phoneDisplay(): string {
-    const phone = this.selectedItem.phone;
-    return phone?.number ? [phone.countryCode, phone.number].filter(Boolean).join(' ') : '—';
   }
 
   getOrderItemCount(): number {

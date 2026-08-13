@@ -21,39 +21,7 @@
       <span class="editor__spacer"></span>
     </mat-toolbar>
     <div class="editor__body">
-      <div class="readonly-summary">
-        <div class="readonly-summary__col">
-          <div class="readonly-row"><span>Date</span><span>{{ $any(item.dateProcessed) | date: 'short' }}</span></div>
-          <div class="readonly-row"><span>Name</span><span>{{ item.firstName }} {{ item.lastName }}</span></div>
-          <div class="readonly-row"><span>Email</span><span>{{ item.email }}</span></div>
-          <div class="readonly-row"><span>Order Status</span><span>{{ service.getOrderStatusDisplay(item) }}</span></div>
-          <div class="readonly-row"><span>Coupon</span><span>{{ item.couponCode || '—' }}</span></div>
-          <div class="readonly-row"><span>Item Count</span><span>{{ getOrderItemCount(item) }}</span></div>
-        </div>
-        <div class="readonly-summary__col">
-          <div class="readonly-row"><span>Item Total</span><span>{{ service.getProductTotalDisplayAmount(item) | currency }}</span></div>
-          <div class="readonly-row"><span>Taxes</span><span>{{ service.getTaxesDisplayAmount(item) | currency }}</span></div>
-          <div class="readonly-row"><span>Shipping</span><span>{{ service.getShippingDisplayAmount(item) | currency }}</span></div>
-          <div class="readonly-row"><span>Discount</span><span>-{{ service.getDiscountDisplayAmount(item) | currency }}</span></div>
-          <div class="readonly-row"><span>Shipping Discount</span><span>-{{ service.getShippingDiscountDisplayAmount(item) | currency }}</span></div>
-          <div class="readonly-row readonly-row--total"><span>Charged</span><span>{{ service.getChargedDisplayAmount(item) | currency }}</span></div>
-        </div>
-      </div>
-      <mat-tab-group class="purchase-tabs" [formGroup]="form">
-        <mat-tab label="Contact">
-          <div class="tab-content">
-            <div class="section-label">Shipping Address</div>
-            <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
-            <div class="section-label">Phone Number</div>
-            <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
-          </div>
-        </mat-tab>
-        <mat-tab label="Sale Details">
-          <div class="tab-content tab-content--sale-details">
-            <app-purchase-details [selectedItem]="item"></app-purchase-details>
-          </div>
-        </mat-tab>
-      </mat-tab-group>
+      <app-purchase-details [selectedItem]="item" [form]="form"></app-purchase-details>
     </div>
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
