@@ -1,0 +1,91 @@
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 1000;
+}
+
+/* Capped at the same width as .settings-content (not just the content area)
+   so .save-row's flex-end lines the Save button up under the field column
+   itself, rather than the far right of whatever the viewport happens to be -
+   live-diagnosed: a wide screen left Save floating alone, ~600px away from
+   the actual form. No fixed height/internal overflow-y here (unlike Web
+   Config's own .tab-content-wrap) - that pattern exists there for a much
+   taller multi-tab form that genuinely needs a sticky-footer scroll region;
+   this is one short page, so it just flows in the normal document, page
+   scrolls if needed. */
+.settings-wrap {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+  padding: 0 16px;
+}
+
+.settings-content {
+  padding: 16px 4px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+/* One field (or toggle) plus its own explanatory text, kept as a single
+   flex item - the 20px gap on .settings-content only applies BETWEEN
+   groups, not between a field and its own hint. Hint text is a plain <p>,
+   not <mat-hint> - mat-form-field's subscript wrapper reserves a fixed
+   single-line height, so a hint that wraps to two lines (several of these
+   do) overflowed into the next field instead of pushing it down. A plain
+   paragraph participates in normal flow instead. */
+.field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.hint {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 4px 0 0;
+}
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.info-box mat-icon {
+  flex: 0 0 auto;
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+}
+
+.save-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 4px 24px;
+}

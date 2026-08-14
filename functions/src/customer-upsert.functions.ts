@@ -6,6 +6,7 @@ import {
   normalizedName,
   normalizedPhoneDigits,
 } from "./utils/customer-match.functions";
+import {addMailchimpSourceTag} from "./mailchimp-sync.functions";
 
 // Every purchase now creates or updates a "customers" record - see
 // src/app/common/models/domain/utils/customer.model.ts's own comment (this
@@ -113,6 +114,12 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
     if (!data || !isPlausibleEmail(email)) {
       return;
     }
+
+    // A purchase happening is reason enough to tag this customer "Store
+    // Customer" in Mailchimp, whether or not any of their fields below
+    // actually change - fires unconditionally, not just on the
+    // brand-new-customer branch.
+    await addMailchimpSourceTag(email, "purchase");
 
     const db = admin.firestore();
     const existingSnap = await db.collection("customers")

@@ -6,6 +6,7 @@ import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.mod
 import { ToolsManagerComponent } from './tools-manager.component';
 import { ToolsManagerRoutingModule } from './tools-manager-routing.module';
 import { WebConfigComponent } from './web-config/web-config.component';
+import { MailchimpSettingsComponent } from './mailchimp-settings/mailchimp-settings.component';
 import { EmailTemplatesComponent } from './email-templates/email-templates.component';
 import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
@@ -66,6 +67,7 @@ import { QuillModule } from 'ngx-quill';
   declarations: [
     ToolsManagerComponent,
     WebConfigComponent,
+    MailchimpSettingsComponent,
     EmailTemplatesComponent,
     EmailTemplateDialogComponent,
     ShippingLabelsComponent,

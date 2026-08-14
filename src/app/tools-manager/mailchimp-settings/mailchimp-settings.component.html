@@ -1,0 +1,72 @@
+@if (spinnerVisible) {
+  <div class="spinner-overlay">
+    <mat-spinner diameter="80"></mat-spinner>
+  </div>
+}
+
+<app-list-header [title]="itemType"></app-list-header>
+
+<form [formGroup]="form" class="settings-wrap">
+  <div class="settings-content">
+    <div class="field-group">
+      <mat-slide-toggle formControlName="enabled">Enabled</mat-slide-toggle>
+      <p class="hint">Turns the Mailchimp sync on/off across the whole app - while off, new and updated customers are never sent to Mailchimp.</p>
+    </div>
+
+    <div class="field-group">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Mailchimp Audience ID</mat-label>
+        <input matInput formControlName="audienceId">
+        @if (form.get('audienceId')?.hasError('required')) {
+          <mat-error>Required while Enabled is on</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="field-group">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Server Prefix (optional)</mat-label>
+        <input matInput formControlName="serverPrefix" placeholder="e.g. us21">
+      </mat-form-field>
+      <p class="hint">Leave blank to auto-detect from the API key's "-usXX" suffix.</p>
+    </div>
+
+    <div class="field-group">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Default Status for New Contacts</mat-label>
+        <mat-select formControlName="defaultSubscribeStatus">
+          <mat-option value="pending">Pending (double opt-in)</mat-option>
+          <mat-option value="subscribed">Subscribed</mat-option>
+          <mat-option value="transactional">Transactional</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <p class="hint">Only ever applied to brand-new contacts - never changes an existing member's status, so someone who unsubscribed in Mailchimp stays unsubscribed. Prefer "Pending" or "Transactional" unless customers have explicitly opted in to marketing email.</p>
+    </div>
+
+    <div class="field-group">
+      <mat-slide-toggle formControlName="enableSourceTags">Tag contacts by source</mat-slide-toggle>
+    </div>
+
+    @if (form.get('enableSourceTags')?.value) {
+      <div class="field-group field-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Purchase Tag Name</mat-label>
+          <input matInput formControlName="purchaseTag">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Event Registration Tag Name</mat-label>
+          <input matInput formControlName="eventRegistrationTag">
+        </mat-form-field>
+      </div>
+    }
+
+    <div class="info-box">
+      <mat-icon>info</mat-icon>
+      <span>The Mailchimp API key is stored in Firebase Secret Manager, not here - this screen only controls sync behavior, not credentials.</span>
+    </div>
+  </div>
+
+  <div class="save-row">
+    <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
+  </div>
+</form>

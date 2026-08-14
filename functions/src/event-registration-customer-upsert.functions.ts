@@ -4,6 +4,7 @@ import {
   isPlausibleEmail,
   normalizedName,
 } from "./utils/customer-match.functions";
+import {addMailchimpSourceTag} from "./mailchimp-sync.functions";
 
 // Event registrations now also create/update a "customers" record, same as
 // purchases do (customer-upsert.functions.ts) - see
@@ -51,6 +52,12 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
     if (!data || !isPlausibleEmail(email)) {
       return;
     }
+
+    // Registering for an event is reason enough to tag this customer
+    // "Event Registrant" in Mailchimp, whether or not any of their fields
+    // below actually change - fires unconditionally, not just on the
+    // brand-new-customer branch.
+    await addMailchimpSourceTag(email, "eventRegistration");
 
     const db = admin.firestore();
     const existingSnap = await db.collection("customers")
