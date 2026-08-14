@@ -92,6 +92,22 @@
   gap: 1px;
 }
 
+// Flattened to match this panel's plain-field look (outline mat-form-
+// fields, 1px-border cards elsewhere) instead of Material's default
+// elevated-card shadow, which reads as too heavy in a 340px-wide column.
+// Collapsed by default (mat-expansion-panel's own behavior when
+// `expanded` isn't bound) - see this component's own comment on why.
+.address-panel {
+  box-shadow: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.same-address-row {
+  padding: 2px 0 10px;
+}
+
 .subscription-item__date {
   font-size: 10px;
   color: rgba(0, 0, 0, 0.5);

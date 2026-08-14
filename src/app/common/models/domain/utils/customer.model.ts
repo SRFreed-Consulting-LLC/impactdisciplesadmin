@@ -59,6 +59,15 @@ export class CustomerModel extends Person {
     subscribedToPrayerTeam?: boolean;
     prayerTeamSubscribedDate?: Timestamp;
 
+    // Mirrors CheckoutForm's own isShippingSameAsBilling (cart.model.ts),
+    // direction flipped to match how Customer Details presents the 2
+    // sections (Shipping first, Billing collapses into it) - when true,
+    // billingAddress is kept as a copy of shippingAddress (re-copied on
+    // every Save, not just live-mirrored while editing) rather than being
+    // independently maintained, and the Billing Address section on
+    // Customer Details hides entirely while this is checked.
+    isBillingSameAsShipping?: boolean;
+
     constructor(){
       super();
     }

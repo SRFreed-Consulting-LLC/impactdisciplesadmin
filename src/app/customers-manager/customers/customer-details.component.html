@@ -107,10 +107,26 @@
         <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
 
         <h3 class="section-title">Shipping Address</h3>
-        <app-address-field [group]="$any(form.get('shippingAddress'))" [showCountry]="true"></app-address-field>
+        <mat-expansion-panel class="address-panel" [(expanded)]="shippingExpanded">
+          <mat-expansion-panel-header>
+            <mat-panel-description>{{ addressSummary(form.get('shippingAddress')) }}</mat-panel-description>
+          </mat-expansion-panel-header>
+          <app-address-field [group]="$any(form.get('shippingAddress'))" [showCountry]="true"></app-address-field>
+        </mat-expansion-panel>
 
-        <h3 class="section-title">Billing Address</h3>
-        <app-address-field [group]="$any(form.get('billingAddress'))" [showCountry]="true"></app-address-field>
+        <div class="same-address-row">
+          <mat-checkbox formControlName="isBillingSameAsShipping" (change)="onSameAsShippingToggle($event.checked)">Billing address is the same as shipping</mat-checkbox>
+        </div>
+
+        @if (!isBillingSameAsShipping) {
+          <h3 class="section-title">Billing Address</h3>
+          <mat-expansion-panel class="address-panel" [(expanded)]="billingExpanded">
+            <mat-expansion-panel-header>
+              <mat-panel-description>{{ addressSummary(form.get('billingAddress')) }}</mat-panel-description>
+            </mat-expansion-panel-header>
+            <app-address-field [group]="$any(form.get('billingAddress'))" [showCountry]="true"></app-address-field>
+          </mat-expansion-panel>
+        }
       </div>
 
       <!-- Purchases + Events Attended + Notes, merged into one

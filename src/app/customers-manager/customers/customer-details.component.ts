@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, combineLatest, tap } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -73,6 +73,13 @@ export class CustomerDetailsComponent implements OnInit {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
 
+  // Shipping always opens expanded on load; Billing starts collapsed (it's
+  // usually a duplicate) but pops open the moment the "same as shipping"
+  // box gets unchecked - see onSameAsShippingToggle() - so the admin isn't
+  // left needing an extra click to see what they just asked to edit.
+  shippingExpanded = true;
+  billingExpanded = false;
+
   purchases$: Observable<CheckoutForm[]>;
   eventRegistrations$: Observable<EventRegistrationModel[]>;
   timeline$: Observable<TimelineEntry[]>;
@@ -145,6 +152,7 @@ export class CustomerDetailsComponent implements OnInit {
         zip: [this.selectedItem.billingAddress?.zip ?? ''],
         country: [this.selectedItem.billingAddress?.country ?? '']
       }),
+      isBillingSameAsShipping: [this.defaultIsBillingSameAsShipping()],
       // See customer.model.ts's own comment - a subscriber IS a customer
       // now, these 2 flags are the same data the Subscribers screen reads/
       // writes, just editable here too.
@@ -240,6 +248,63 @@ export class CustomerDetailsComponent implements OnInit {
     return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
+  // ---- Addresses ----
+
+  // Collapsed-panel preview line - "123 Main St, Atlanta, GA" or a plain
+  // placeholder when nothing's on file yet, so a collapsed section isn't
+  // just a blank row with no way to tell whether it's actually empty.
+  addressSummary(group: AbstractControl | null): string {
+    const value = group?.value as Address | undefined;
+    if (!value?.address1) {
+      return 'No address on file';
+    }
+    return [value.address1, [value.city, value.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ');
+  }
+
+  get isBillingSameAsShipping(): boolean {
+    return !!this.form?.get('isBillingSameAsShipping')?.value;
+  }
+
+  // isBillingSameAsShipping is a new field - essentially every existing
+  // customer record predates it (undefined, not false). Default to
+  // "assume same" (the common case) for those UNLESS this record already
+  // has a real, distinct billing address on file - a UI default silently
+  // overwriting genuine historical data the first time someone opens and
+  // saves an existing customer, without ever touching this checkbox, would
+  // be a real (if quiet) data-loss bug. A record that explicitly has this
+  // field set (true or false) always honors that instead.
+  private defaultIsBillingSameAsShipping(): boolean {
+    if (this.selectedItem.isBillingSameAsShipping != null) {
+      return this.selectedItem.isBillingSameAsShipping;
+    }
+    return !this.hasDistinctBillingAddress();
+  }
+
+  private hasDistinctBillingAddress(): boolean {
+    const billing = this.selectedItem.billingAddress;
+    if (!billing?.address1) {
+      return false;
+    }
+    const shipping = this.selectedItem.shippingAddress;
+    const fields: (keyof Address)[] = ['address1', 'address2', 'city', 'state', 'zip', 'country'];
+    return fields.some((f) => (billing[f] ?? '') !== (shipping?.[f] ?? ''));
+  }
+
+  // Copies whatever's in Shipping into Billing's form fields right away -
+  // not required for correctness (buildUpdatedCustomer() re-copies at Save
+  // time regardless, in case Shipping is edited afterward while this stays
+  // checked), just so unchecking the box later starts from a populated,
+  // editable Billing section instead of a blank one. Unchecking also pops
+  // Billing open (see billingExpanded's own comment) - checking it back
+  // doesn't need to touch billingExpanded, the section just hides again.
+  onSameAsShippingToggle(checked: boolean): void {
+    if (checked) {
+      this.form.get('billingAddress')?.patchValue(this.form.get('shippingAddress')?.value);
+    } else {
+      this.billingExpanded = true;
+    }
+  }
+
   // ---- Subscriptions ----
   // Read/write the same 2 flags the Subscribers screen and the public
   // site's subscribe_to_email_list/unsubscribe_from_email_list endpoints
@@ -284,10 +349,18 @@ export class CustomerDetailsComponent implements OnInit {
 
   // Shared by onSave() and resolvePendingChange() - both persist the WHOLE
   // form (see resolvePendingChange's own comment on why), so both need the
-  // same subscription-date-stamping rule applied, not just the main Save
-  // button.
+  // same subscription-date-stamping/same-as-shipping rules applied, not
+  // just the main Save button.
   private buildUpdatedCustomer(): CustomerModel {
-    const value: CustomerModel = { ...this.selectedItem, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
+    const raw = this.form.getRawValue();
+    // Re-copy at Save time (not just on the checkbox's own toggle - see
+    // onSameAsShippingToggle()) so Billing always reflects whatever's
+    // currently in Shipping, even if Shipping was edited after the box was
+    // already checked.
+    if (raw.isBillingSameAsShipping) {
+      raw.billingAddress = { ...raw.shippingAddress };
+    }
+    const value: CustomerModel = { ...this.selectedItem, ...raw, notes: this.notes, pendingChanges: this.pendingChanges };
     this.stampSubscriptionDates(value);
     return value;
   }

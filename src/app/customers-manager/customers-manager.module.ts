@@ -35,6 +35,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { QuillModule } from 'ngx-quill';
 
 // Everything that's either a customer record or something a customer/site
@@ -67,6 +68,7 @@ import { QuillModule } from 'ngx-quill';
     MatMenuModule,
     MatDividerModule,
     MatProgressSpinnerModule,
+    MatExpansionModule,
     QuillModule
   ],
   declarations: [
