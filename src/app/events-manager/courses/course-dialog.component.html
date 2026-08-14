@@ -36,6 +36,15 @@
     <mat-label>Resources</mat-label>
     <input matInput formControlName="resources">
   </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Coaches</mat-label>
+    <mat-select formControlName="coachIds" multiple>
+      @for (coach of coaches; track coach) {
+        <mat-option [value]="coach.id">{{ coach.fullname }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

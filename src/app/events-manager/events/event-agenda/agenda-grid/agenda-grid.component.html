@@ -1,0 +1,53 @@
+@if (days.length === 0) {
+  <div class="empty-state">Set this event's Start Date and End Date on the Info tab first.</div>
+} @else {
+  <div class="canvas-toolbar">
+    <div class="daytoggle">
+      @for (day of days; track day; let i = $index) {
+        <button type="button" [class.is-on]="selectedDayIndex === i" (click)="selectedDayIndex = i">Day {{ i + 1 }}</button>
+      }
+    </div>
+    <span class="spacer"></span>
+    <button mat-stroked-button type="button" (click)="openItemDialog(null)">
+      <mat-icon>add</mat-icon>
+      Item
+    </button>
+    <button mat-raised-button color="primary" type="button" (click)="openBlockDialog(null)">
+      <mat-icon>add</mat-icon>
+      Breakout Block
+    </button>
+  </div>
+
+  @if (gridRooms().length === 0) {
+    <div class="empty-state">No rooms set up yet for this event's location — add rooms from Events Manager &gt; Locations to see them here as grid columns.</div>
+  } @else if (schedule().length === 0) {
+    <div class="empty-state">Nothing on Day {{ selectedDayIndex + 1 }} yet — add a single item or a breakout block above.</div>
+  } @else {
+    @for (entry of schedule(); track (entry.kind === 'item' ? entry.item.id : entry.block.key)) {
+      @if (entry.kind === 'item') {
+        <div class="banner banner--clickable" (click)="openItemDialog(entry.item)">
+          {{ entry.item.startDate | date: 'shortTime' }} — {{ entry.item.text || '(Untitled)' }}
+        </div>
+      } @else {
+        <div class="sgrid" [style.grid-template-columns]="'78px repeat(' + gridRooms().length + ', 1fr)'">
+          <div></div>
+          @for (room of gridRooms(); track room) {
+            <div class="sgrid__room">{{ room.name }}</div>
+          }
+          <div class="sgrid__time">{{ entry.block.startDate | date: 'shortTime' }}</div>
+          @for (room of gridRooms(); track room) {
+            @if (optionForRoom(entry.block, room.id); as option) {
+              <div class="cell cell--clickable" (click)="openBlockDialog(entry.block)">
+                <div class="cell__course">{{ courseTitle(option.course) }}</div>
+                <div class="cell__coach">{{ coachLabel(option) }}</div>
+                <div class="cell__cap">Cap {{ option.maxParticipants ?? '—' }}</div>
+              </div>
+            } @else {
+              <div class="cell cell--open cell--clickable" (click)="openBlockDialog(entry.block)">Room open</div>
+            }
+          }
+        </div>
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+@if (days.length === 0) {
+  <div class="empty-state">Set this event's Start Date and End Date on the Info tab first.</div>
+} @else {
+  <div class="canvas-toolbar">
+    <div class="daytoggle">
+      @for (day of days; track day; let i = $index) {
+        <button type="button" [class.is-on]="selectedDayIndex === i" (click)="selectedDayIndex = i">Day {{ i + 1 }}</button>
+      }
+    </div>
+    <span class="spacer"></span>
+    <button mat-stroked-button type="button" (click)="openItemDialog(null)">
+      <mat-icon>add</mat-icon>
+      Item
+    </button>
+    <button mat-raised-button color="primary" type="button" (click)="openBlockDialog(null)">
+      <mat-icon>add</mat-icon>
+      Breakout Block
+    </button>
+  </div>
+
+  @if (schedule().length === 0) {
+    <div class="empty-state">Nothing on Day {{ selectedDayIndex + 1 }} yet — add a single item or a breakout block above.</div>
+  }
+
+  <div class="canvas">
+    @for (entry of schedule(); track (entry.kind === 'item' ? entry.item.id : entry.block.key)) {
+      @if (entry.kind === 'item') {
+        <div class="kcard kcard--plain kcard--clickable" (click)="openItemDialog(entry.item)">
+          <div class="kcard__title">{{ entry.item.text || '(Untitled)' }}</div>
+          <div class="kcard__time">{{ entry.item.startDate | date: 'shortTime' }}</div>
+        </div>
+      } @else {
+        <details class="kcard kblock" open>
+          <summary>
+            <div class="kblock__head">
+              <div class="kcard__title">{{ blockLabel(blockIndex(entry.block)) }}</div>
+              <span class="kblock__badge">{{ entry.block.options.length }} option{{ entry.block.options.length === 1 ? '' : 's' }}</span>
+              <div class="kcard__time">{{ entry.block.startDate | date: 'shortTime' }} – {{ entry.block.endDate | date: 'shortTime' }}</div>
+              <button mat-icon-button type="button" matTooltip="Edit this block" (click)="$event.preventDefault(); $event.stopPropagation(); openBlockDialog(entry.block)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <span class="chev">▸</span>
+            </div>
+          </summary>
+          <div class="koptions">
+            @for (option of entry.block.options; track option.id) {
+              <div class="kopt">
+                <div class="kopt__course">{{ courseTitle(option.course) }}</div>
+                <div class="kopt__coach">{{ coachLabel(option) }} · {{ roomName(option.room) }}</div>
+                <div class="kopt__meta">Cap {{ option.maxParticipants ?? '—' }}</div>
+              </div>
+            }
+          </div>
+        </details>
+      }
+    }
+  </div>
+}

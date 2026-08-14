@@ -1,28 +1,33 @@
-<div class="agenda-toolbar">
-  <button mat-icon-button type="button" mwlCalendarPreviousView [view]="view" [(viewDate)]="viewDate" matTooltip="Previous">
-    <mat-icon>chevron_left</mat-icon>
-  </button>
-  <button mat-stroked-button type="button" mwlCalendarToday [(viewDate)]="viewDate">Today</button>
-  <button mat-icon-button type="button" mwlCalendarNextView [view]="view" [(viewDate)]="viewDate" matTooltip="Next">
-    <mat-icon>chevron_right</mat-icon>
-  </button>
-  <h3 class="agenda-toolbar__title">{{ viewDate | calendarDate: 'weekViewTitle' : 'en' }}</h3>
-  <span class="agenda-toolbar__spacer"></span>
-  <button mat-raised-button color="primary" type="button" (click)="openDialog(null, viewDate)">
-    <mat-icon>add</mat-icon>
-    Add Agenda Item
-  </button>
-</div>
+<div class="agenda-shell">
+  @if (mode !== 'wizard') {
+    <div class="agenda-mode-toolbar">
+      <div class="viewtoggle">
+        <button type="button" [class.is-on]="mode === 'canvas'" (click)="setMode('canvas')">Canvas</button>
+        <button type="button" [class.is-on]="mode === 'grid'" (click)="setMode('grid')">Grid</button>
+      </div>
+      <span class="spacer"></span>
+      <button mat-stroked-button type="button" (click)="setMode('wizard')">
+        <mat-icon>restart_alt</mat-icon>
+        Rebuild with Wizard
+      </button>
+    </div>
+  }
 
-<div class="agenda-calendar">
-  <mwl-calendar-week-view
-    [viewDate]="viewDate"
-    [events]="events"
-    [daysInWeek]="3"
-    [dayStartHour]="9"
-    [hourSegments]="4"
-    (eventClicked)="onEventClicked($event)"
-    (eventTimesChanged)="onEventTimesChanged($event)"
-    (hourSegmentClicked)="openDialog(null, $event.date)">
-  </mwl-calendar-week-view>
+  @switch (mode) {
+    @case ('wizard') {
+      <app-agenda-wizard
+        [event]="event"
+        [courses]="courses"
+        [coaches]="coaches"
+        [rooms]="rooms"
+        (published)="onPublished()">
+      </app-agenda-wizard>
+    }
+    @case ('canvas') {
+      <app-agenda-canvas [event]="event" [courses]="courses" [coaches]="coaches" [rooms]="rooms"></app-agenda-canvas>
+    }
+    @case ('grid') {
+      <app-agenda-grid [event]="event" [courses]="courses" [coaches]="coaches" [rooms]="rooms"></app-agenda-grid>
+    }
+  }
 </div>

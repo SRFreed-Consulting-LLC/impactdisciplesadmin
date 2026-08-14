@@ -1,0 +1,150 @@
+$current: #337ab7;
+$current-tint: #e8f1fa;
+$accent2: #6a4e82;
+$accent2-tint: #f1e3fb;
+
+.empty-state {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  padding: 24px 4px;
+}
+
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.daytoggle {
+  display: inline-flex;
+  background: #f0f0f0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+
+  button {
+    border: none;
+    background: none;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 13px;
+    border-radius: 6px;
+    color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+
+    &.is-on {
+      background: #fff;
+      color: $current;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+.canvas {
+  display: grid;
+  gap: 10px;
+}
+
+.kcard {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+
+  &--plain {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      border-color: $current;
+    }
+  }
+}
+
+.kcard__title {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.kcard__time {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.kblock {
+  summary {
+    list-style: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+}
+
+.kblock__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .chev {
+    margin-left: auto;
+    color: rgba(0, 0, 0, 0.4);
+    font-size: 11px;
+    transition: transform 0.15s;
+  }
+}
+
+.kblock[open] .kblock__head .chev {
+  transform: rotate(90deg);
+}
+
+.kblock__badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: $accent2-tint;
+  color: $accent2;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.koptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.kopt {
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 9px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kopt__course {
+  font-size: 12.3px;
+  font-weight: 650;
+}
+
+.kopt__coach,
+.kopt__meta {
+  font-size: 10.8px;
+  color: rgba(0, 0, 0, 0.5);
+}
