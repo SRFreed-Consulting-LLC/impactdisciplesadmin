@@ -59,10 +59,12 @@ export class OrderWorkflowDialogComponent {
   }
 
   acknowledgeOrder(): void {
-    this.service.acknowledgeOrder(this.item).then(() => {
-      this.item.fulfillmentStatus = 'received';
-      this.snackbar.success('Order acknowledged');
-    });
+    this.service.acknowledgeOrder(this.item)
+      .then(() => {
+        this.item.fulfillmentStatus = 'received';
+        this.snackbar.success('Order acknowledged');
+      })
+      .catch((err) => this.reportTransitionError(err));
   }
 
   async printShippingLabel(): Promise<void> {
@@ -72,6 +74,8 @@ export class OrderWorkflowDialogComponent {
       // fulfillmentStatus 'received' -> 'shipping_label_printed') - see
       // PurchasesService.getShippingLabel()'s own comment.
       await this.service.getShippingLabel(this.item);
+    } catch (err) {
+      this.reportTransitionError(err);
     } finally {
       this.printing = false;
     }
@@ -82,28 +86,44 @@ export class OrderWorkflowDialogComponent {
   // of the open-orders list, same as it would on the real Fulfillment
   // screen.
   markPickedUp(): void {
-    this.service.markPickedUp(this.item).then(() => {
-      this.snackbar.success('Marked as picked up / delivered - order closed');
-      this.dialogRef.close(true);
-    });
+    this.service.markPickedUp(this.item)
+      .then(() => {
+        this.snackbar.success('Marked as picked up / delivered - order closed');
+        this.dialogRef.close(true);
+      })
+      .catch((err) => this.reportTransitionError(err));
   }
 
   markPackaged(): void {
-    this.service.markPackaged(this.item).then(() => {
-      this.item.fulfillmentStatus = 'awaiting_shipping';
-      this.snackbar.success('Marked as packaged');
-    });
+    this.service.markPackaged(this.item)
+      .then(() => {
+        this.item.fulfillmentStatus = 'awaiting_shipping';
+        this.snackbar.success('Marked as packaged');
+      })
+      .catch((err) => this.reportTransitionError(err));
   }
 
   // Terminal action - see markPickedUp()'s own comment.
   markShipped(): void {
-    this.service.markShipped(this.item).then(() => {
-      this.snackbar.success('Marked as shipped - order closed');
-      this.dialogRef.close(true);
-    });
+    this.service.markShipped(this.item)
+      .then(() => {
+        this.snackbar.success('Marked as shipped - order closed');
+        this.dialogRef.close(true);
+      })
+      .catch((err) => this.reportTransitionError(err));
   }
 
   onClose(): void {
     this.dialogRef.close();
+  }
+
+  // Same rationale as FulfillmentComponent's own reportTransitionError() -
+  // this dialog shares PurchasesService with that screen and had the same
+  // gap: a rejected write used to vanish with no snackbar, no visible app
+  // error, nothing - the dialog just sat there looking like the click never
+  // registered.
+  private reportTransitionError(err: unknown): void {
+    console.error('Fulfillment status update failed', err);
+    this.snackbar.error("Couldn't update this order - please try again.");
   }
 }
