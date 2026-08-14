@@ -187,6 +187,38 @@ export class EventsComponent implements OnInit {
     return this.organizations.find((o) => o.id === id)?.name ?? '';
   }
 
+  // ---- Info tab preview card ----
+  // Reads the *live form value*, not a saved EventModel (unlike
+  // organizationName() above, which resolves an already-saved item for the
+  // list grid) - the preview updates as the admin types, before Save.
+  // Angular re-evaluates this each change-detection cycle from the
+  // template, same as the existing `card.imageUrl?.name` reads already do
+  // - no manual valueChanges subscription needed.
+  previewLocationName(): string {
+    const id = this.form?.get('location')?.value;
+    return this.locations.find((l) => l.id === id)?.name ?? '';
+  }
+
+  // "Standard" isn't a real field - it's just the display state when
+  // neither isSummit nor isOnline is checked (see the Info tab's type-card
+  // row). Clicking it is a convenience reset, not a new toggle.
+  isStandardType(): boolean {
+    return !this.form?.get('isSummit')?.value && !this.form?.get('isOnline')?.value;
+  }
+
+  resetToStandard(): void {
+    this.form.get('isSummit')?.setValue(false);
+    this.form.get('isOnline')?.setValue(false);
+  }
+
+  // Backs the type-card row's Summit/Online cards - clicking anywhere on
+  // the card flips the boolean (the actual mat-checkbox inside stops its
+  // own click from double-firing this - see the template).
+  toggleControl(name: string): void {
+    const control = this.form.get(name);
+    control?.setValue(!control.value);
+  }
+
   manageLocations(): void {
     this.dialog.open(LocationsComponent, { width: '1000px', maxWidth: '95vw' });
   }

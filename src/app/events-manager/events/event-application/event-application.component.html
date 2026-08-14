@@ -38,4 +38,71 @@
       }
     }
   </div>
+
+  <!-- Live preview - mirrors whichever section is selected on the left
+  using the same live data the editors above write to (event.diningOptions
+  etc. two-way-bound already; announcements$ and event.faqList read the
+  same collections/arrays those editors themselves show), not a separate
+  copy. See event-application.component.ts's own comment on why
+  announcements$ is fetched again here rather than reused from
+  AnnouncementsComponent. -->
+  <div class="application-preview">
+    <div class="preview-label">Attendee app preview</div>
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__bar"></div>
+        <div class="phone__head"><b>{{ event.eventName || 'Untitled Event' }}</b></div>
+        <div class="phone__body">
+          @switch (selectedTab) {
+            @case ('announcements') {
+              @for (a of (announcements$ | async) ?? []; track a.id) {
+                <div class="pitem">
+                  <b>📣 {{ a.title }}</b>
+                  <span class="pitem__meta">{{ $any(a.date) | date: 'MMM d, y' }}</span>
+                  <p>{{ a.announcement }}</p>
+                </div>
+              } @empty {
+                <div class="pempty">No announcements posted yet.</div>
+              }
+            }
+            @case ('diningOptions') {
+              @if (event.diningOptions) {
+                <div class="prich" [innerHTML]="event.diningOptions"></div>
+              } @else {
+                <div class="pempty">Not filled in yet.</div>
+              }
+            }
+            @case ('checkinInstructions') {
+              @if (event.checkinInstructions) {
+                <div class="prich" [innerHTML]="event.checkinInstructions"></div>
+              } @else {
+                <div class="pempty">Not filled in yet.</div>
+              }
+            }
+            @case ('faq') {
+              @for (f of event.faqList ?? []; track f.id) {
+                <div class="pitem">
+                  <b>{{ f.question }}</b>
+                  <!-- f.answer is rich Quill HTML, same as answer's own
+                  rendering in faq.component.html's grid ([innerHTML]) -
+                  plain interpolation would show the raw <p>/<strong> tags
+                  as literal text instead of rendering them. -->
+                  <div class="pitem__answer" [innerHTML]="f.answer"></div>
+                </div>
+              } @empty {
+                <div class="pempty">No FAQs selected for this event yet.</div>
+              }
+            }
+            @case ('whatsNext') {
+              @if (event.whatsNext) {
+                <div class="prich" [innerHTML]="event.whatsNext"></div>
+              } @else {
+                <div class="pempty">Not filled in yet.</div>
+              }
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

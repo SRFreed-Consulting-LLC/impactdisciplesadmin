@@ -42,126 +42,185 @@
       <mat-tab-group class="event-tabs" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
         @if (permissionService.canView('events-manager.events.info')) {
           <mat-tab label="Info">
-            <div class="tab-content">
-              <div class="field-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Event Name</mat-label>
-                  <input matInput formControlName="eventName" required>
-                  @if (form.get('eventName')?.hasError('required')) {
-                    <mat-error>Event name is required</mat-error>
-                  }
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Email Template</mat-label>
-                  <mat-select formControlName="emailTemplate">
-                    <mat-option [value]="null">(None)</mat-option>
-                    @for (template of emailTemplates; track template) {
-                      <mat-option [value]="template">{{ template }}</mat-option>
+            <div class="tab-content info-layout">
+              <div class="info-form">
+                <div class="type-row">
+                  <div class="type-card" [class.is-active]="isStandardType()" (click)="resetToStandard()">
+                    <span class="type-card__icon">📅</span>
+                    <div class="type-card__title">Standard</div>
+                    <div class="type-card__sub">A regular in-person event</div>
+                  </div>
+                  <div class="type-card" [class.is-active]="form.get('isSummit')?.value" (click)="toggleControl('isSummit')">
+                    <mat-checkbox formControlName="isSummit" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
+                    <span class="type-card__icon">🎪</span>
+                    <div class="type-card__title">Annual Summit</div>
+                    <div class="type-card__sub">Multi-day, breakouts, promo video</div>
+                  </div>
+                  <div class="type-card" [class.is-active]="form.get('isOnline')?.value" (click)="toggleControl('isOnline')">
+                    <mat-checkbox formControlName="isOnline" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
+                    <span class="type-card__icon">💻</span>
+                    <div class="type-card__title">Online</div>
+                    <div class="type-card__sub">Kajabi-hosted, no venue</div>
+                  </div>
+                </div>
+
+                <div class="field-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Event Name</mat-label>
+                    <input matInput formControlName="eventName" required>
+                    @if (form.get('eventName')?.hasError('required')) {
+                      <mat-error>Event name is required</mat-error>
                     }
-                  </mat-select>
-                  @if (form.get('emailTemplate')?.hasError('required')) {
-                    <mat-error>Required for in-person events</mat-error>
-                  }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Email Template</mat-label>
+                    <mat-select formControlName="emailTemplate">
+                      <mat-option [value]="null">(None)</mat-option>
+                      @for (template of emailTemplates; track template) {
+                        <mat-option [value]="template">{{ template }}</mat-option>
+                      }
+                    </mat-select>
+                    @if (form.get('emailTemplate')?.hasError('required')) {
+                      <mat-error>Required for in-person events</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+                <div class="field-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Start Date</mat-label>
+                    <input matInput type="datetime-local" formControlName="startDate" required>
+                    @if (form.get('startDate')?.hasError('required')) {
+                      <mat-error>Required</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>End Date</mat-label>
+                    <input matInput type="datetime-local" formControlName="endDate">
+                    @if (form.get('endDate')?.hasError('required')) {
+                      <mat-error>Required for in-person events</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Check-In Time</mat-label>
+                    <input matInput type="time" formControlName="checkIn">
+                    @if (form.get('checkIn')?.hasError('required')) {
+                      <mat-error>Required for in-person events</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="outline" class="cost-field">
+                  <mat-label>Cost</mat-label>
+                  <span matTextPrefix>$&nbsp;</span>
+                  <input matInput type="number" formControlName="costInDollars">
                 </mat-form-field>
-              </div>
-              <div class="field-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Start Date</mat-label>
-                  <input matInput type="datetime-local" formControlName="startDate" required>
-                  @if (form.get('startDate')?.hasError('required')) {
-                    <mat-error>Required</mat-error>
-                  }
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>End Date</mat-label>
-                  <input matInput type="datetime-local" formControlName="endDate">
-                  @if (form.get('endDate')?.hasError('required')) {
-                    <mat-error>Required for in-person events</mat-error>
-                  }
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Check-In Time</mat-label>
-                  <input matInput type="time" formControlName="checkIn">
-                  @if (form.get('checkIn')?.hasError('required')) {
-                    <mat-error>Required for in-person events</mat-error>
-                  }
-                </mat-form-field>
-              </div>
-              <mat-form-field appearance="outline" class="cost-field">
-                <mat-label>Cost</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="costInDollars">
-              </mat-form-field>
-              <div class="field-row">
-                <mat-checkbox formControlName="isSummit">Is Annual Summit?</mat-checkbox>
+
                 @if (form.get('isSummit')?.value) {
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Promo Video Id</mat-label>
                     <input matInput formControlName="videoId">
                   </mat-form-field>
                 }
-              </div>
-              <mat-checkbox formControlName="isOnline">Is Online Event?</mat-checkbox>
-              <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
-              @if (form.get('isKajabiCourse')?.value) {
+                <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
+                @if (form.get('isKajabiCourse')?.value) {
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Purchase URL</mat-label>
+                      <input matInput formControlName="kajabiPurchaseURL">
+                      @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
+                        <mat-error>Required</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Subscribe URL</mat-label>
+                      <input matInput formControlName="kajabiSubscribeURL">
+                      @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
+                        <mat-error>Required</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                }
                 <div class="field-row">
                   <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Purchase URL</mat-label>
-                    <input matInput formControlName="kajabiPurchaseURL">
-                    @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
-                      <mat-error>Required</mat-error>
+                    <mat-label>Location</mat-label>
+                    <mat-select formControlName="location">
+                      <mat-option [value]="null">(None)</mat-option>
+                      @for (location of locations; track location) {
+                        <mat-option [value]="location.id">{{ location.name }}</mat-option>
+                      }
+                    </mat-select>
+                    @if (form.get('location')?.hasError('required')) {
+                      <mat-error>Required for in-person events</mat-error>
                     }
                   </mat-form-field>
+                  <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
                   <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Subscribe URL</mat-label>
-                    <input matInput formControlName="kajabiSubscribeURL">
-                    @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
-                      <mat-error>Required</mat-error>
-                    }
+                    <mat-label>Organization</mat-label>
+                    <mat-select formControlName="organization">
+                      <mat-option [value]="null">(None)</mat-option>
+                      @for (org of organizations; track org) {
+                        <mat-option [value]="org.id">{{ org.name }}</mat-option>
+                      }
+                    </mat-select>
                   </mat-form-field>
+                  <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
                 </div>
-              }
-              <div class="field-row">
+                <div class="field-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Image</mat-label>
+                    <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+                  </mat-form-field>
+                  <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+                    {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
+                  </button>
+                </div>
                 <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Location</mat-label>
-                  <mat-select formControlName="location">
-                    <mat-option [value]="null">(None)</mat-option>
-                    @for (location of locations; track location) {
-                      <mat-option [value]="location.id">{{ location.name }}</mat-option>
-                    }
-                  </mat-select>
-                  @if (form.get('location')?.hasError('required')) {
-                    <mat-error>Required for in-person events</mat-error>
-                  }
+                  <mat-label>Web Description</mat-label>
+                  <textarea matInput formControlName="description" rows="6"></textarea>
                 </mat-form-field>
-                <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Organization</mat-label>
-                  <mat-select formControlName="organization">
-                    <mat-option [value]="null">(None)</mat-option>
-                    @for (org of organizations; track org) {
-                      <mat-option [value]="org.id">{{ org.name }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-                <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
               </div>
-              <div class="field-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Image</mat-label>
-                  <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
-                </mat-form-field>
-                <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
-                  {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
-                </button>
+
+              <div class="info-preview">
+                <div class="preview-card">
+                  <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
+                    @if (card.imageUrl?.url) {
+                      <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+                    } @else {
+                      <span>No image yet</span>
+                    }
+                  </div>
+                  <div class="preview-card__body">
+                    <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
+                    <div class="preview-card__meta">
+                      @if (form.get('startDate')?.value) {
+                        {{ form.get('startDate')?.value | date: 'MMM d, y' }}
+                        @if (form.get('endDate')?.value) {
+                          – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                        }
+                      } @else {
+                        No start date set
+                      }
+                    </div>
+                    @if (!form.get('isOnline')?.value) {
+                      <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
+                    }
+                    <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
+                    <div class="preview-card__tags">
+                      @if (isStandardType()) {
+                        <span class="ptag">Standard</span>
+                      }
+                      @if (form.get('isSummit')?.value) {
+                        <span class="ptag ptag--summit">Summit</span>
+                      }
+                      @if (form.get('isOnline')?.value) {
+                        <span class="ptag ptag--online">Online</span>
+                      }
+                      @if (form.get('isKajabiCourse')?.value) {
+                        <span class="ptag ptag--kajabi">Kajabi</span>
+                      }
+                    </div>
+                  </div>
+                </div>
               </div>
-              @if (card.imageUrl?.url) {
-                <img class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-              }
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Web Description</mat-label>
-                <textarea matInput formControlName="description" rows="6"></textarea>
-              </mat-form-field>
             </div>
           </mat-tab>
         }

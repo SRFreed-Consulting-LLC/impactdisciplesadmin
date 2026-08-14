@@ -128,9 +128,186 @@ app-data-grid {
   width: 200px;
 }
 
-.image-preview {
-  max-width: 160px;
-  max-height: 160px;
-  object-fit: contain;
-  margin-bottom: 8px;
+// Info tab: the app's real accent blue (see fulfillment.component.scss's
+// own $current - the same one the left nav's "selected" state uses),
+// consistent with the newer screens rather than this file's older
+// #3f51b5 indigo (.application-nav__item--active, event-application.
+// component.scss) - not touching that one here, out of scope.
+$info-accent: #337ab7;
+$info-accent-tint: #e8f1fa;
+$info-accent2: #6a4e82;
+$info-accent2-tint: #f1e3fb;
+
+// Widened past .tab-content's own 1200px cap so the preview column has
+// real room alongside the form - the Info tab is the one screen here that
+// needs it, doesn't affect any other tab's max-width.
+.info-layout {
+  max-width: 1500px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 28px;
+  align-items: start;
+}
+
+.info-form {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 900px) {
+  .info-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ---- Type cards (Standard / Summit / Online) ----
+// Summit/Online are real mat-checkbox controls (formControlName binds
+// straight to isSummit/isOnline, same validators/persistence as before) -
+// the checkbox itself sits in the corner and stops its own click from
+// bubbling to the card's (click) handler (see events.component.html),
+// which is what makes clicking anywhere on the card toggle it without
+// re-implementing checkbox semantics. Standard has no control of its own -
+// it's the derived "neither is checked" state (isStandardType()) with a
+// reset-both click handler, not a new field.
+.type-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .type-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.type-card {
+  position: relative;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.15s, background-color 0.15s;
+
+  &:hover {
+    border-color: rgba($info-accent2, 0.5);
+  }
+
+  &.is-active {
+    border-color: $info-accent2;
+    background: $info-accent2-tint;
+  }
+}
+
+.type-card__check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.type-card__icon {
+  font-size: 18px;
+}
+
+.type-card__title {
+  font-size: 13.5px;
+  font-weight: 650;
+  margin-top: 6px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.type-card.is-active .type-card__title {
+  color: $info-accent2;
+}
+
+.type-card__sub {
+  font-size: 11.5px;
+  color: rgba(0, 0, 0, 0.55);
+  margin-top: 2px;
+}
+
+// ---- Live preview card ----
+.info-preview {
+  position: sticky;
+  top: 0;
+}
+
+.preview-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 20px -14px rgba(0, 0, 0, 0.3);
+}
+
+.preview-card__img {
+  height: 96px;
+  background: linear-gradient(135deg, $info-accent-tint, $info-accent2-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+
+  &--filled {
+    background: #000;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.preview-card__body {
+  padding: 14px 16px;
+}
+
+.preview-card__name {
+  font-size: 14px;
+  font-weight: 650;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.preview-card__meta {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+  margin-top: 4px;
+}
+
+.preview-card__tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.ptag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #eee;
+  color: rgba(0, 0, 0, 0.6);
+
+  &--summit {
+    background: $info-accent2-tint;
+    color: $info-accent2;
+  }
+
+  &--online {
+    background: $info-accent-tint;
+    color: $info-accent;
+  }
+
+  &--kajabi {
+    background: #fff3d6;
+    color: #92600a;
+  }
 }
