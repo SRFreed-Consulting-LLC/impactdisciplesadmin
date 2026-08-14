@@ -1,0 +1,76 @@
+<app-list-header title="Customer Report">
+  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+    <mat-icon>view_column</mat-icon>
+    Columns
+  </button>
+  <mat-menu #columnsMenu="matMenu">
+    @for (column of columns; track column) {
+      <button mat-menu-item (click)="$event.stopPropagation(); toggleColumn(column)">
+        <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+      </button>
+    }
+  </mat-menu>
+
+  <button mat-raised-button color="primary" type="button" [disabled]="results.length === 0" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="report-content">
+  <form [formGroup]="criteriaForm" class="criteria">
+    <div class="criteria__block">
+      <mat-checkbox formControlName="stateEnabled">Location (State)</mat-checkbox>
+
+      @if (criteriaForm.value.stateEnabled) {
+        <mat-form-field appearance="outline" class="state-field">
+          <mat-label>State</mat-label>
+          <mat-select formControlName="state">
+            @for (s of states; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+
+    <div class="criteria__block criteria__block--actions">
+      <button mat-raised-button color="primary" type="button" [disabled]="!canGenerate || loading" (click)="generateReport()">
+        <mat-icon>search</mat-icon>
+        Generate Report
+      </button>
+    </div>
+  </form>
+
+  @if (!canGenerate) {
+    <div class="hint">Select at least one search criterion above to generate a report.</div>
+  }
+
+  @if (loading) {
+    <div class="loading-row">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-state">{{ errorMessage }}</div>
+  }
+
+  @if (!loading && generated) {
+    @if (results.length === 0) {
+      <div class="empty-state">No customers matched these criteria.</div>
+    }
+    @if (results.length > 0) {
+      <div class="results-wrap">
+        <div class="result-count">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</div>
+        <app-data-grid
+          [showHeader]="false"
+          [showFilterRow]="false"
+          [columns]="gridColumns"
+          [rows]="results"
+          tableClass="report-table">
+        </app-data-grid>
+      </div>
+    }
+  }
+</div>

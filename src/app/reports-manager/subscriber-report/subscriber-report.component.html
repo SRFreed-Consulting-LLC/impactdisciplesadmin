@@ -1,0 +1,145 @@
+<app-list-header title="Subscriber Report">
+  <button mat-raised-button color="primary" type="button" class="columns-button" [matMenuTriggerFor]="columnsMenu">
+    <mat-icon>view_column</mat-icon>
+    Columns
+  </button>
+  <mat-menu #columnsMenu="matMenu">
+    @for (column of columns; track column) {
+      <button mat-menu-item (click)="$event.stopPropagation(); toggleColumn(column)">
+        <mat-checkbox [checked]="column.visible" (click)="$event.stopPropagation(); toggleColumn(column)">{{ column.label }}</mat-checkbox>
+      </button>
+    }
+  </mat-menu>
+
+  <button mat-raised-button color="primary" type="button" [disabled]="results.length === 0" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="report-content">
+  <form [formGroup]="criteriaForm" class="criteria">
+    <div class="criteria__block">
+      <mat-checkbox formControlName="dateEnabled">Date Subscribed</mat-checkbox>
+
+      @if (criteriaForm.value.dateEnabled) {
+        <mat-form-field appearance="outline" class="mode-field">
+          <mat-label>Mode</mat-label>
+          <mat-select formControlName="dateMode">
+            <mat-option value="after">After a Date</mat-option>
+            <mat-option value="between">Between Dates</mat-option>
+            <mat-option value="lastMonths">Last X Months</mat-option>
+          </mat-select>
+        </mat-form-field>
+        @if (criteriaForm.value.dateMode === 'after') {
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>After</mat-label>
+            <input matInput [matDatepicker]="afterPicker" formControlName="afterDate">
+            <mat-datepicker-toggle matSuffix [for]="afterPicker"></mat-datepicker-toggle>
+            <mat-datepicker #afterPicker></mat-datepicker>
+          </mat-form-field>
+        }
+        @if (criteriaForm.value.dateMode === 'between') {
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>Start</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>End</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        }
+        @if (criteriaForm.value.dateMode === 'lastMonths') {
+          <mat-form-field appearance="outline" class="months-field">
+            <mat-label>Months</mat-label>
+            <input matInput type="number" min="1" formControlName="lastMonths">
+          </mat-form-field>
+        }
+      }
+    </div>
+
+    <div class="criteria__block">
+      <mat-checkbox formControlName="typeEnabled">Type</mat-checkbox>
+
+      @if (criteriaForm.value.typeEnabled) {
+        <mat-form-field appearance="outline" class="type-field">
+          <mat-label>Type</mat-label>
+          <mat-select formControlName="type">
+            <mat-option value="newsletter">Newsletter</mat-option>
+            <mat-option value="prayer">Prayer Team</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+
+    <div class="criteria__block">
+      <mat-checkbox formControlName="listEnabled">List</mat-checkbox>
+
+      @if (criteriaForm.value.listEnabled) {
+        <mat-form-field appearance="outline" class="list-field">
+          <mat-label>List</mat-label>
+          <mat-select formControlName="listId">
+            @if (newsletterLists.length > 0) {
+              <mat-optgroup label="Newsletter">
+                @for (list of newsletterLists; track list.id) {
+                  <mat-option [value]="list.id">{{ list.name }}</mat-option>
+                }
+              </mat-optgroup>
+            }
+            @if (prayerLists.length > 0) {
+              <mat-optgroup label="Prayer Team">
+                @for (list of prayerLists; track list.id) {
+                  <mat-option [value]="list.id">{{ list.name }}</mat-option>
+                }
+              </mat-optgroup>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+
+    <div class="criteria__block criteria__block--actions">
+      <mat-slide-toggle [(ngModel)]="groupByType" [ngModelOptions]="{standalone: true}">Group by Type</mat-slide-toggle>
+      <button mat-raised-button color="primary" type="button" [disabled]="!canGenerate || loading" (click)="generateReport()">
+        <mat-icon>search</mat-icon>
+        Generate Report
+      </button>
+    </div>
+  </form>
+
+  @if (!canGenerate) {
+    <div class="hint">Select at least one search criterion above to generate a report.</div>
+  }
+
+  @if (loading) {
+    <div class="loading-row">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-state">{{ errorMessage }}</div>
+  }
+
+  @if (!loading && generated) {
+    @if (results.length === 0) {
+      <div class="empty-state">No subscribers matched these criteria.</div>
+    }
+    @if (results.length > 0) {
+      <div class="results-wrap">
+        <div class="result-count">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</div>
+        <app-data-grid
+          [showHeader]="false"
+          [showFilterRow]="false"
+          [columns]="gridColumns"
+          [rows]="results"
+          tableClass="report-table">
+        </app-data-grid>
+      </div>
+    }
+  }
+</div>

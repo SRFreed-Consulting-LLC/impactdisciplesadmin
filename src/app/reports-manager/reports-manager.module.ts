@@ -17,11 +17,17 @@ import { SharedModule } from '../shared/shared.module';
 import { ReportsManagerRoutingModule } from './reports-manager-routing.module';
 import { ReportsManagerComponent } from './reports-manager.component';
 import { PurchaseReportComponent } from './purchase-report/purchase-report.component';
+import { SubscriberReportComponent } from './subscriber-report/subscriber-report.component';
+import { CustomerReportComponent } from './customer-report/customer-report.component';
+import { EventReportComponent } from './event-report/event-report.component';
 
 @NgModule({
   declarations: [
     ReportsManagerComponent,
-    PurchaseReportComponent
+    PurchaseReportComponent,
+    SubscriberReportComponent,
+    CustomerReportComponent,
+    EventReportComponent
   ],
   imports: [
     CommonModule,

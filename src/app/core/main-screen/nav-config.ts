@@ -188,7 +188,10 @@ export const NAV_CONFIG: NavGroup[] = [
     icon: 'assessment',
     roles: [Role.ADMIN],
     items: [
-      { label: 'Purchases', slug: 'purchases' }
+      { label: 'Purchases', slug: 'purchases' },
+      { label: 'Subscribers', slug: 'subscribers' },
+      { label: 'Customers', slug: 'customers' },
+      { label: 'Events', slug: 'events' }
     ]
   },
   {

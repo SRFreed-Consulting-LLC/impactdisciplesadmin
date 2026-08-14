@@ -1,0 +1,176 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.report-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.criteria {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.event-field {
+  width: 360px;
+}
+
+mat-form-field {
+  margin-bottom: -1.25em;
+}
+
+.hint {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+  padding: 4px 4px 16px;
+}
+
+.loading-row {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.error-state {
+  color: #c0392b;
+  background: #fdecea;
+  border: 1px solid rgba(#c0392b, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  max-width: 640px;
+}
+
+.event-summary {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+}
+
+.event-summary__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.event-summary__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.event-summary__description {
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+  max-width: 720px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
+}
+
+.badge--inactive {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.badge--summit {
+  background: rgba(21, 101, 192, 0.12);
+  color: #1565c0;
+}
+
+.empty-state {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  padding: 16px 4px;
+}
+
+.result-count {
+  font-size: 12.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin-bottom: 8px;
+}
+
+.results-wrap {
+  overflow: auto;
+}
+
+// See purchase-report.component.scss's own comment - same override, same
+// reasoning (app-data-grid defaults to flex-filling its parent's height,
+// wrong for a report growing within .report-content's own scroll region).
+app-data-grid {
+  display: block;
+  height: auto;
+}
+
+:host ::ng-deep .table-scroll {
+  flex: none;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.report-table {
+  width: 100%;
+}
+
+// Grouped breakout-session table - same styling as
+// event-breakouts.component.scss's own version. Named distinctly from
+// .table-scroll (above) - that class belongs to app-data-grid's own
+// internal element, reached via ::ng-deep; reusing the same name here would
+// have applied that override to this unrelated wrapper too.
+.breakout-scroll {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.breakouts-table {
+  width: 100%;
+}
+
+.group-cell {
+  flex: 1 1 100%;
+  width: 100%;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+  padding-left: 16px !important;
+}
+
+.group-cell--breakout {
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.session-row .group-cell {
+  padding-left: 32px !important;
+  font-weight: 500;
+  font-size: 13px;
+}

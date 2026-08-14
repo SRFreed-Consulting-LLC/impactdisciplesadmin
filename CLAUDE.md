@@ -31,6 +31,10 @@ npm run build-prod
 npm run build-deploy-dev                # -> impactdisciplesdev project, hosting:development target
 npm run build-deploy-prod               # -> impactdisciples-a82a8 project, hosting:production target
 
+# Firestore data export (see scripts/export.js)
+npm run backup:dev                      # node scripts/export.js --project=dev
+npm run backup:prod                     # node scripts/export.js --project=prod
+
 # Lint / format (Angular app)
 npm run lint
 npm run format
@@ -114,16 +118,19 @@ onto one-time paged fetches, to cut down on standing Firestore listeners:
 - `PagedCollectionSource<T>` (`src/app/shared/paged-collection-source.ts`) — client-side accumulator
   a component constructs with a `getPage`-shaped fetch function; exposes `rows$`, `loading$`,
   `loadingMore$`, `hasMore$`, `loadFirstPage()`, `loadNextPage()`.
-- `appInfiniteScroll` directive + `<app-paged-table-footer>` (`src/app/shared/`) — scroll-triggered
+- `appInfiniteScroll` directive (`src/app/shared/infinite-scroll.directive.ts`) +
+  `<app-paged-table-footer>` (`src/app/shared/data-grid/paged-table-footer/`) — scroll-triggered
   "load more" plus a "N loaded" footer indicator.
 - Firestore's `orderBy()` silently excludes any doc missing that field — if you add pagination to a
   new table, confirm every existing record actually has the `orderByField` set.
-- **Customers is a special case**: the grid is paginated, but a separate one-time full `getAll()`
-  (`allCustomers`) backs "Filter by List"/"Save List" — paginating that too would risk silently
-  truncating a saved list to whatever page happened to be scrolled into view. Read the comment in
-  `customers.component.ts` before changing this.
 - New tables should follow this pattern (see `products.component.ts` for the fullest example) rather
   than reintroducing whole-collection `streamAll()`.
+- Customers is no longer a special case here (an earlier version of this doc said the grid pagination
+  coexisted with a separate full `getAll()` backing "Filter by List"/"Save List" on that screen — that
+  affordance is gone post-redesign; `customers.component.ts` today is `PagedCollectionSource` only, no
+  `allCustomers`). List-membership filtering still exists, just on the **Subscribers** screen
+  (`customers-manager/subscriptions/`), via a separately-saved `EmailList` doc's `list` array, not a
+  Firestore query — see Reports Manager's Subscriber Report below for the same mechanism reused.
 
 ### List-screen conventions (Columns + Export + column filters)
 
@@ -143,10 +150,10 @@ Columns, Export, feature-specific actions) uniformly.
   facade: signs in via `FireAuthDao`, then looks the signed-in email up in `admin_users` (via
   `AdminUserService`) to load the app's own `AdminUser` profile, and caches it in a **client-side,
   unsigned** cookie (`impact-disciples-user`) purely for display/profile caching.
-- `AuthGuardService` (same file) gates every route. **It must check Firebase Auth's own session
-  state (`currentUser$` + a live `getIdTokenResult()` check), never the cookie** — the cookie is
-  forgeable from devtools and is not treated as proof of authentication. See the `SECURITY` comment
-  on `canActivate()` before touching this.
+- `authGuard` (same file) — a functional guard (`CanActivateFn`, not a class-based `CanActivate`) —
+  gates every route. **It must check Firebase Auth's own session state (`currentUser$` + a live
+  `getIdTokenResult()` check), never the cookie** — the cookie is forgeable from devtools and is not
+  treated as proof of authentication. See the `SECURITY` comment on `authGuard` before touching this.
 - Login is a single email+password form (`src/app/common/forms/admin/login/`, copied from
   `impact-discipleship-library-manager-new`). There is no self-service account creation in this app —
   Admin User Firebase Auth accounts are created via the `createAdminUser` Cloud Function (Admin-role
@@ -161,13 +168,20 @@ Columns, Export, feature-specific actions) uniformly.
 ### Module/routing structure
 
 Feature areas are lazy-loaded NgModules off `AppRoutingModule` (`src/app/app-routing.module.ts`),
-each gated by `AuthGuardService`: `admin-manager` (Admin Users, Customers, Log Messages),
-`events-manager`, `subscriptions-manager`, `web-manager`, `store-manager`
-(Products, Purchases, ...). There is no `requests-manager` module any more - its one surviving
-screen, Custom Form Submissions, now lives under `web-manager` (`src/app/web-manager/
-custom-form-submissions/`); the other four Requests Manager screens (Consultation Requests/
-Surveys, Lunch and Learn, Seminar) were removed outright, superseded by the generic Form
-Builder + Custom Form Submissions pair. `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
+each gated by `authGuard`: `admin-manager` (Admin Users, Log Messages — both `hideFromNav`, reached
+from the user-menu dropdown, not the left nav), `events-manager`, `customers-manager`,
+`web-manager`, `store-manager`, `tools-manager`, `reports-manager`. There is no
+`subscriptions-manager` module any more — it was absorbed into `customers-manager` (subscriber
+records live at `src/app/customers-manager/subscriptions/`), and there is no `requests-manager`
+module either — its one surviving screen, Custom Form Submissions, has moved twice (originally its
+own module, briefly under `web-manager`) and now lives under `customers-manager`
+(`custom-form-submissions/`) as of the August 2026 nav reorg; the other four Requests Manager
+screens (Consultation Requests/Surveys, Lunch and Learn, Seminar) were removed outright, superseded
+by the generic Form Builder (`tools-manager`) + Custom Form Submissions pair. `customers-manager`
+also owns Purchases/Fulfillment, not `store-manager` — `store-manager` today is Products, Coupons,
+Sales, affiliate-sales/affiliate-payments, product-categories, product-series. `tools-manager` holds
+Web Config, Email Templates, Shipping Labels, Form Builder, and Mailchimp Settings. `reports-manager`
+is new — see below. `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
 `dashboard` home route and all feature module outlets. `src/app/shared/` holds cross-feature
 UI (list header, column filter, dialogs, image uploader, table export/loading, paged-table
 infrastructure) and is imported by every feature module. This codebase is deliberately
@@ -179,14 +193,94 @@ control-flow migration was a separate, smaller lift and was completed codebase-w
 is back on at `error` in `eslint.config.js` now that it's done — don't reintroduce `*ngIf`/`*ngFor`/`*ngSwitch`
 in new code.)
 
+Which modules own which screens has moved more than once (see above) — don't assume a screen's
+module from memory or an old link; check `nav-config.ts` or `app-routing.module.ts` first.
+
+### Nav config as permission registry (`src/app/core/main-screen/nav-config.ts`)
+
+`NAV_CONFIG` (`NavGroup`/`NavLeaf`/`NavTab`) drives the left nav *and* doubles as the permission
+registry: each entry's id/slug/key forms a dot-path "screenKey" that `ScreenPermission` grants are
+checked against. `employeeGrantable` and `roles` flags control whether a screen can be granted to
+Employee-role admins at all vs. is Admin-only; `hideFromNav` marks screens reached some other way
+(user-menu dropdown, nested detail pages) that still need a screenKey for permissioning. See
+`src/app/common/services/permission.service.ts` and `permission-migration.service.ts` for how grants
+are read/enforced. `nav-config.ts`'s header comment documents the August 2026 reorg rationale
+("around what a screen actually IS rather than which internal app area happened to own it") — read
+it before adding a new screen or moving an existing one between modules.
+
+### Reports Manager (`src/app/reports-manager/`)
+
+Three screens today, all sharing one pattern — a tab shell (`reports-manager.component.ts`) that
+reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one `@if
+(selectedTab === '<label>')` block per report (no per-report Angular routes; a new report is a new
+`NavLeaf` + a new `@if` block + a declaration in `ReportsManagerModule`, not a new route):
+
+- **Purchase Report** (`purchase-report/`, Reports Manager → Purchases) — over the `purchases`
+  collection, filters on Purchase Date and State, group-by-user aggregation.
+- **Subscriber Report** (`subscriber-report/`, Reports Manager → Subscribers) — over the
+  `subscriptions` collection, filters on Date Subscribed, Type (newsletter/prayer, real query), and
+  List (**not** a Firestore query — resolved from a separately-saved `EmailList` doc's `list` array
+  and applied client-side, same mechanism as the Subscribers screen's own "Filter by List"), with a
+  group-by-type aggregation (counts + earliest/latest date per type).
+- **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
+  collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
+  signup/created-date field at all (customer docs are upserted from purchases/event registrations —
+  see `functions/src/customer-upsert.functions.ts` — with no timestamp stamped anywhere), and there
+  is no live list-membership mechanism wired to Customers (see the Pagination section above).
+
+Common conventions established by Purchase Report and followed by the other two:
+
+- A dedicated `ReportRow` interface distinct from the underlying entity model (e.g. `CheckoutForm`)
+  — a report row is a flat, report-specific shape, and in grouped/aggregate mode a synthesized
+  aggregate that doesn't correspond to any single real document.
+- Criteria drive **real Firestore queries** (`queryAllByMultiValue`/`QueryParam`) wherever the data
+  supports it, not a full-collection client-side filter. Where Firestore can't OR across two fields
+  in one query (e.g. matching a State against both billing and shipping address), the report queries
+  twice and merges/dedupes by id client-side.
+- Reuses list-screen infra: `ColumnDef[]` visibility toggles, `DataGridColumn`/`app-data-grid`
+  (rendered with `[showHeader]="false" [showFilterRow]="false"` — Columns/Export/criteria stay this
+  component's own hand-rolled `app-list-header`, not the grid's built-in versions), `exportToExcel`/
+  `ExcelColumn` (`shared/table-export.util.ts`) — same conventions as the List-screen section above.
+- Known limitation on Purchase Report specifically, documented inline and in `MIGRATION.md`:
+  malformed date fields (see next section) can silently drop matching rows from a date-range report
+  query. A "specific product(s)" filter was deliberately dropped as infeasible without a schema
+  change (cart items aren't a scalar-array-queryable field) — also documented inline with a pointer
+  to `MIGRATION.md`.
+- Before adding a criterion that filters/groups by some field, confirm that field is actually
+  queryable data on the entity, not something that only exists in a downstream, one-way-synced
+  system (see Customer Report's own header comment on why it has no List filter — Mailchimp
+  membership is push-only, never mirrored back to Firestore, see Cloud Functions section below).
+
+### `MIGRATION.md`
+
+Repo-root running list of known Firestore data-integrity issues and their defensive fixes — most
+notably inconsistent date-field shapes (real `Timestamp` vs. a malformed `{seconds,nanoseconds}` map
+vs. an ISO string) that can break sort order or silently exclude documents from range queries; the
+defensive fix is the `toMillis()` helper in `src/app/common/utils/date-from-timestamp.ts`. Check it
+before writing any new query or sort against a date field, and add to it when you find a new
+data-shape gotcha rather than working around it silently in one screen.
+
 ### Cloud Functions (`functions/src/`)
 
 Plain Node/Express-style `onRequest` HTTP functions (not callable functions), one file per concern
-(`stripe.functions.ts`, `shipping.functions.ts`, `notifications.functions.ts`,
-`admin-users.functions.ts`, `subscriptions.functions.ts`, `youtube.functions.ts`),
-each `require`d and re-exported from
-`functions/src/index.ts`. Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live
-in `functions/src/utils/security.functions.ts`.
+(`stripe.functions.ts`, `paypal.functions.ts`, `shipping.functions.ts`, `purchase-fulfillment.functions.ts`,
+`new-record-alerts.functions.ts` — this replaced `notifications.functions.ts` —
+`admin-users.functions.ts`, `subscriptions.functions.ts`, `youtube.functions.ts`,
+`customer-upsert.functions.ts`, `event-registration-customer-upsert.functions.ts`,
+`mailchimp-sync.functions.ts`), each `require`d and re-exported from `functions/src/index.ts`.
+Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
+`functions/src/utils/security.functions.ts`.
+
+- **Customer auto-upsert**: `customer-upsert.functions.ts` and
+  `event-registration-customer-upsert.functions.ts` keep Customer records created/synced
+  automatically from purchase and event-registration writes — Customer data is no longer only
+  manually maintained in the admin UI, worth knowing before assuming a Customer doc's fields are
+  admin-entered.
+- **Mailchimp sync**: `mailchimp-sync.functions.ts` (`@mailchimp/mailchimp_marketing`) plus
+  `src/app/common/models/utils/mailchimp-config.model.ts`,
+  `src/app/common/services/data/mailchimp-config.service.ts`, and the
+  `tools-manager/mailchimp-settings/` screen — pushes customer changes to a connected Mailchimp
+  audience.
 
 ### Firestore collection naming note
 

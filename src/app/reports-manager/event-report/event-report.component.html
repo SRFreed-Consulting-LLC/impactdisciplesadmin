@@ -1,0 +1,126 @@
+<app-list-header title="Event Report">
+  <button mat-raised-button color="primary" type="button" [disabled]="!hasResults" (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="report-content">
+  <div class="criteria">
+    <mat-form-field appearance="outline" class="event-field">
+      <mat-label>Event</mat-label>
+      <mat-select [(ngModel)]="selectedEventId" [ngModelOptions]="{standalone: true}" (selectionChange)="onEventSelected()">
+        @for (event of events; track event.id) {
+          <mat-option [value]="event.id">{{ eventLabel(event) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (selectedEvent?.isSummit) {
+      <mat-slide-toggle [(ngModel)]="breakoutMode" [ngModelOptions]="{standalone: true}" (change)="onBreakoutModeChange()">
+        Breakout Sessions Report
+      </mat-slide-toggle>
+    }
+  </div>
+
+  @if (!selectedEvent && !loading) {
+    <div class="hint">Select an event above to generate a report.</div>
+  }
+
+  @if (loading) {
+    <div class="loading-row">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-state">{{ errorMessage }}</div>
+  }
+
+  @if (selectedEvent && !loading) {
+    <div class="event-summary">
+      <div class="event-summary__title">{{ selectedEvent.eventName }}</div>
+      <div class="event-summary__row">
+        @if (organizationName) {
+          <span>{{ organizationName }}</span>
+        }
+        @if (locationName) {
+          <span>{{ locationName }}</span>
+        }
+        @if (eventStartDate) {
+          <span>
+            {{ eventStartDate | date: 'mediumDate' }}
+            @if (eventEndDate) {
+              – {{ eventEndDate | date: 'mediumDate' }}
+            }
+          </span>
+        }
+        <span class="badge" [class.badge--inactive]="!selectedEvent.isActive">{{ selectedEvent.isActive ? 'Active' : 'Inactive' }}</span>
+        @if (selectedEvent.isSummit) {
+          <span class="badge badge--summit">Summit</span>
+        }
+      </div>
+      @if (selectedEvent.description) {
+        <div class="event-summary__description">{{ selectedEvent.description }}</div>
+      }
+    </div>
+
+    @if (!breakoutMode) {
+      @if (attendees.length === 0) {
+        <div class="empty-state">No attendees registered for this event.</div>
+      }
+      @if (attendees.length > 0) {
+        <div class="results-wrap">
+          <div class="result-count">{{ attendees.length }} attendee{{ attendees.length === 1 ? '' : 's' }}</div>
+          <app-data-grid
+            [showHeader]="false"
+            [showFilterRow]="false"
+            [columns]="attendeeColumns"
+            [rows]="attendees"
+            tableClass="report-table">
+          </app-data-grid>
+        </div>
+      }
+    }
+
+    @if (breakoutMode) {
+      @if (breakoutStudents.length === 0) {
+        <div class="empty-state">No breakout session sign-ups for this event.</div>
+      }
+      @if (breakoutStudents.length > 0) {
+        <div class="results-wrap">
+          <div class="result-count">{{ breakoutStudents.length }} sign-up{{ breakoutStudents.length === 1 ? '' : 's' }}</div>
+          <div class="breakout-scroll">
+            <table mat-table [dataSource]="breakoutRows" class="breakouts-table">
+              <!-- Group/session header rows share one full-width cell -->
+              <ng-container matColumnDef="groupHeader">
+                <td mat-cell *matCellDef="let row" class="group-cell" [class.group-cell--breakout]="row.kind === 'breakout'">
+                  {{ row.label }} — {{ row.count }} registered
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="lastName">
+                <th mat-header-cell *matHeaderCellDef>Last Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.lastName }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="firstName">
+                <th mat-header-cell *matHeaderCellDef>First Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.firstName }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="email">
+                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="['lastName', 'firstName', 'email']; sticky: true"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['groupHeader']; when: isGroupRow" [class.session-row]="row.kind === 'session'"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['lastName', 'firstName', 'email']; when: isStudentRow"></tr>
+            </table>
+          </div>
+        </div>
+      }
+    }
+  }
+</div>
