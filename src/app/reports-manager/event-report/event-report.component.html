@@ -93,32 +93,65 @@
         <div class="results-wrap">
           <div class="result-count">{{ breakoutStudents.length }} sign-up{{ breakoutStudents.length === 1 ? '' : 's' }}</div>
           <div class="breakout-scroll">
-            <table mat-table [dataSource]="breakoutRows" class="breakouts-table">
-              <!-- Group/session header rows share one full-width cell -->
-              <ng-container matColumnDef="groupHeader">
-                <td mat-cell *matCellDef="let row" class="group-cell" [class.group-cell--breakout]="row.kind === 'breakout'">
-                  {{ row.label }} — {{ row.count }} registered
-                </td>
-              </ng-container>
+            <!-- Hand-rolled table (not mat-table/DataSource) - collapsing
+                 whole subtrees is straightforward over a plain @for tree and
+                 awkward to retrofit onto mat-table's flat-row model. Every
+                 group/session header cell uses colspan="3" so its title
+                 bar spans the full table width instead of just the first
+                 column. -->
+            <table class="breakouts-table">
+              <thead>
+                <tr>
+                  <th>Last Name</th>
+                  <th>First Name</th>
+                  <th>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (group of breakoutGroups; track group.name) {
+                  <tr class="group-row group-row--breakout" (click)="toggleBreakout(group.name)">
+                    <td colspan="3" class="group-cell group-cell--breakout">
+                      <mat-icon class="chevron">{{ isBreakoutCollapsed(group.name) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+                      {{ group.name }} — {{ group.students.length }} registered
+                    </td>
+                  </tr>
 
-              <ng-container matColumnDef="lastName">
-                <th mat-header-cell *matHeaderCellDef>Last Name</th>
-                <td mat-cell *matCellDef="let row">{{ row.lastName }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="firstName">
-                <th mat-header-cell *matHeaderCellDef>First Name</th>
-                <td mat-cell *matCellDef="let row">{{ row.firstName }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="email">
-                <th mat-header-cell *matHeaderCellDef>Email</th>
-                <td mat-cell *matCellDef="let row">{{ row.email }}</td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="['lastName', 'firstName', 'email']; sticky: true"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['groupHeader']; when: isGroupRow" [class.session-row]="row.kind === 'session'"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['lastName', 'firstName', 'email']; when: isStudentRow"></tr>
+                  @if (!isBreakoutCollapsed(group.name)) {
+                    @if (group.sessions.length > 1) {
+                      <!-- More than one time slot - each gets its own
+                           collapsible header under the breakout. -->
+                      @for (session of group.sessions; track session.key) {
+                        <tr class="group-row group-row--session" (click)="toggleSession(group.name, session.key)">
+                          <td colspan="3" class="group-cell">
+                            <mat-icon class="chevron">{{ isSessionCollapsed(group.name, session.key) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+                            {{ session.label }} — {{ session.students.length }} registered
+                          </td>
+                        </tr>
+                        @if (!isSessionCollapsed(group.name, session.key)) {
+                          @for (s of session.students; track s.email) {
+                            <tr>
+                              <td>{{ s.lastName }}</td>
+                              <td>{{ s.firstName }}</td>
+                              <td>{{ s.email }}</td>
+                            </tr>
+                          }
+                        }
+                      }
+                    } @else {
+                      <!-- Only one time slot - skip the redundant
+                           collapsible layer, students sit directly under
+                           the breakout's own collapse. -->
+                      @for (s of group.sessions[0].students; track s.email) {
+                        <tr>
+                          <td>{{ s.lastName }}</td>
+                          <td>{{ s.firstName }}</td>
+                          <td>{{ s.email }}</td>
+                        </tr>
+                      }
+                    }
+                  }
+                }
+              </tbody>
             </table>
           </div>
         </div>

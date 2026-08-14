@@ -33,13 +33,25 @@ interface BreakoutStudent {
   email: string;
 }
 
-// Rows synthesized for the mat-table - matColumnDef/matRowDef "when"
-// predicates pick a different row template per kind, same approach as
-// event-breakouts.component.ts's own BreakoutRow.
-type BreakoutRow =
-  | { kind: 'breakout'; label: string; count: number }
-  | { kind: 'session'; label: string; count: number }
-  | { kind: 'student'; firstName: string; lastName: string; email: string };
+// A single time slot within a breakout - `key` is a toMillis() value
+// (as a string, since it doubles as a Map/Set key) rather than the Date
+// itself, sidestepping the "is this really a Date at runtime" problem
+// documented on toSafeDate() below.
+interface BreakoutSession {
+  key: string;
+  label: string;
+  students: BreakoutStudent[];
+}
+
+// One collapsible section per breakout (course). `sessions` always has at
+// least 1 entry - the template only renders it as its OWN collapsible layer
+// when there's more than one (see isBreakoutCollapsed/isSessionCollapsed
+// and the template's own comment).
+interface BreakoutGroup {
+  name: string;
+  students: BreakoutStudent[];
+  sessions: BreakoutSession[];
+}
 
 // Reports Manager > Events - pick an event, see its details + attendee list.
 // Diverges from Purchase/Subscriber/Customer Report's own
@@ -93,8 +105,14 @@ export class EventReportComponent implements OnInit {
   ];
 
   attendees: AttendeeRow[] = [];
-  breakoutRows: BreakoutRow[] = [];
+  breakoutGroups: BreakoutGroup[] = [];
   breakoutStudents: BreakoutStudent[] = [];
+
+  // Both start every breakout (and, for a breakout with >1 time slot, every
+  // session within it) collapsed - see setBreakoutGroups(). Keyed by
+  // breakout name / `${breakoutName}||${sessionKey}` respectively.
+  private collapsedBreakouts = new Set<string>();
+  private collapsedSessions = new Set<string>();
 
   private registrations: EventRegistrationModel[] = [];
   private courses: CourseModel[] = [];
@@ -147,7 +165,7 @@ export class EventReportComponent implements OnInit {
     this.selectedEvent = this.events.find((e) => e.id === this.selectedEventId) ?? null;
     this.breakoutMode = false;
     this.attendees = [];
-    this.breakoutRows = [];
+    this.breakoutGroups = [];
     this.breakoutStudents = [];
     this.registrations = [];
     this.organizationName = '';
@@ -189,7 +207,7 @@ export class EventReportComponent implements OnInit {
         this.coursesLoaded = true;
       }
       this.breakoutStudents = this.flattenBreakouts(this.registrations);
-      this.breakoutRows = this.buildBreakoutRows(this.breakoutStudents);
+      this.setBreakoutGroups(this.buildBreakoutGroups(this.breakoutStudents));
     } catch (err) {
       this.errorMessage = (err as { message?: string })?.message ?? 'Something went wrong loading breakout sign-ups.';
     } finally {
@@ -197,8 +215,45 @@ export class EventReportComponent implements OnInit {
     }
   }
 
-  isGroupRow = (_: number, row: BreakoutRow): boolean => row.kind === 'breakout' || row.kind === 'session';
-  isStudentRow = (_: number, row: BreakoutRow): boolean => row.kind === 'student';
+  private sessionMapKey(breakoutName: string, sessionKey: string): string {
+    return `${breakoutName}||${sessionKey}`;
+  }
+
+  // Every section starts collapsed - a summit with several breakouts (each
+  // with several time slots) rendered fully expanded is exactly the "one
+  // giant list" this was built to avoid.
+  private setBreakoutGroups(groups: BreakoutGroup[]): void {
+    this.breakoutGroups = groups;
+    this.collapsedBreakouts = new Set(groups.map((g) => g.name));
+    this.collapsedSessions = new Set(
+      groups.flatMap((g) => (g.sessions.length > 1 ? g.sessions.map((s) => this.sessionMapKey(g.name, s.key)) : []))
+    );
+  }
+
+  toggleBreakout(name: string): void {
+    if (this.collapsedBreakouts.has(name)) {
+      this.collapsedBreakouts.delete(name);
+    } else {
+      this.collapsedBreakouts.add(name);
+    }
+  }
+
+  isBreakoutCollapsed(name: string): boolean {
+    return this.collapsedBreakouts.has(name);
+  }
+
+  toggleSession(breakoutName: string, sessionKey: string): void {
+    const key = this.sessionMapKey(breakoutName, sessionKey);
+    if (this.collapsedSessions.has(key)) {
+      this.collapsedSessions.delete(key);
+    } else {
+      this.collapsedSessions.add(key);
+    }
+  }
+
+  isSessionCollapsed(breakoutName: string, sessionKey: string): boolean {
+    return this.collapsedSessions.has(this.sessionMapKey(breakoutName, sessionKey));
+  }
 
   // `location`/`organization` are each either a full object (freshly picked
   // in a form) or just an id string (as loaded from Firestore) - same
@@ -287,10 +342,12 @@ export class EventReportComponent implements OnInit {
   }
 
   // Same 2-level grouping as event-breakouts.component.ts's own
-  // buildRows() - breakout, then time-session within it, then students.
-  private buildBreakoutRows(students: BreakoutStudent[]): BreakoutRow[] {
-    const rows: BreakoutRow[] = [];
-
+  // buildRows() - breakout, then time-session within it - but returns a
+  // real nested tree (BreakoutGroup[]) rather than a synthesized flat row
+  // list for a mat-table DataSource: collapse/expand needs to hide whole
+  // subtrees, which is straightforward with @for + @if over a tree and
+  // awkward to retrofit onto a flat mat-table row list.
+  private buildBreakoutGroups(students: BreakoutStudent[]): BreakoutGroup[] {
     const byBreakout = new Map<string, BreakoutStudent[]>();
     students.forEach((s) => {
       const list = byBreakout.get(s.breakoutName) ?? [];
@@ -298,11 +355,10 @@ export class EventReportComponent implements OnInit {
       byBreakout.set(s.breakoutName, list);
     });
 
-    Array.from(byBreakout.keys())
+    return Array.from(byBreakout.keys())
       .sort()
-      .forEach((breakoutName) => {
+      .map((breakoutName) => {
         const breakoutStudents = byBreakout.get(breakoutName)!;
-        rows.push({ kind: 'breakout', label: breakoutName, count: breakoutStudents.length });
 
         // Numeric key via toMillis() rather than s.sessionDate.toISOString()
         // - sessionDate is already routed through toSafeDate() above so
@@ -318,17 +374,16 @@ export class EventReportComponent implements OnInit {
           bySession.set(key, list);
         });
 
-        Array.from(bySession.keys())
+        const sessions: BreakoutSession[] = Array.from(bySession.keys())
           .sort((a, b) => a - b)
-          .forEach((key) => {
-            const sessionStudents = bySession.get(key)!.sort((a, b) => a.lastName.localeCompare(b.lastName));
-            const label = key > 0 ? new Date(key).toLocaleTimeString() : '';
-            rows.push({ kind: 'session', label, count: sessionStudents.length });
-            sessionStudents.forEach((s) => rows.push({ kind: 'student', lastName: s.lastName, firstName: s.firstName, email: s.email }));
-          });
-      });
+          .map((key) => ({
+            key: String(key),
+            label: key > 0 ? new Date(key).toLocaleTimeString() : 'Time TBD',
+            students: bySession.get(key)!.sort((a, b) => a.lastName.localeCompare(b.lastName))
+          }));
 
-    return rows;
+        return { name: breakoutName, students: breakoutStudents, sessions };
+      });
   }
 
   exportExcel(): void {

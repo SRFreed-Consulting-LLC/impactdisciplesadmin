@@ -239,7 +239,12 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
   name). This join is reproduced from `event-breakouts.component.ts`'s own `flatten()`/`buildRows()`
   rather than reusing that component directly — it's tightly coupled to being an `@Input`-driven tab
   inside the event-edit screen, with its own live-stream/filter-row state a one-shot report doesn't
-  need.
+  need. The breakout view is a hand-rolled collapsible `<table>` (plain `@for`/`@if`, not
+  `mat-table`/`DataSource`) — breakout, then (only when a breakout has more than one distinct time)
+  a time-slot layer within it, both collapsed by default; a flat mat-table row list fights back
+  against collapsing arbitrary subtrees, and a `<td colspan="3">` group-header cell (needed so a
+  section's title bar spans every real column, not just the first) isn't expressible through
+  mat-table's per-column `matColumnDef` model without the same fight.
 
 Common conventions established by Purchase Report and followed by the other two:
 

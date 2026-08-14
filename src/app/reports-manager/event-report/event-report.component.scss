@@ -170,14 +170,39 @@ app-data-grid {
 
 .breakouts-table {
   width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    font-weight: 600;
+    z-index: 1;
+  }
+}
+
+// Group/session header rows are a single <td colspan="3"> so the title bar
+// spans every real column instead of sitting in just the first one.
+.group-row {
+  cursor: pointer;
+
+  &:hover .group-cell {
+    background: rgba(0, 0, 0, 0.08);
+  }
 }
 
 .group-cell {
-  flex: 1 1 100%;
-  width: 100%;
   font-weight: 600;
   background: rgba(0, 0, 0, 0.04);
-  padding-left: 16px !important;
+  padding-left: 12px !important;
 }
 
 .group-cell--breakout {
@@ -185,8 +210,17 @@ app-data-grid {
   background: rgba(0, 0, 0, 0.07);
 }
 
-.session-row .group-cell {
+.group-row--session .group-cell {
   padding-left: 32px !important;
   font-weight: 500;
   font-size: 13px;
+}
+
+.chevron {
+  vertical-align: middle;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  color: rgba(0, 0, 0, 0.5);
 }
