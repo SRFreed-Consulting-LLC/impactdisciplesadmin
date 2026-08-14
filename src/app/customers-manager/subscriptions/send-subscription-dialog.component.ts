@@ -4,8 +4,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { SubscriptionModel, SubscriptionType } from 'src/app/common/models/domain/subscription.model';
-import { SubscriptionService } from 'src/app/common/services/data/subscription.service';
+import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
+import { CustomerService } from 'src/app/common/services/data/customer.service';
+import { SubscriberRow } from './subscriber-row.model';
 import { NewsletterModel } from 'src/app/common/models/domain/newsletter.model';
 import { NewsletterService } from 'src/app/common/services/data/newletter.service';
 import { PrayerModel } from 'src/app/common/models/domain/prayer.model';
@@ -19,11 +20,20 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../shared/rich-text-editor/variable-inserter.component';
 
+// Recipient shape both audience sources (a full flag-based query and a
+// saved EmailList's `list` array of SubscriberRow) satisfy - the send just
+// needs name + email, not the rest of SubscriberRow/CustomerModel.
+interface Recipient {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export interface SendSubscriptionDialogData {
   // Which audience this send targets - drives the title, the fallback
-  // "every subscriber" query (getAllByValue('type', type), NOT a blind
-  // getAll() - the merged collection holds both types now, so an
-  // unfiltered read would email the wrong audience entirely), the archive
+  // "every subscriber" query (CustomerService.getAllByValue against this
+  // type's flag field, NOT a blind getAll() - customers who aren't
+  // subscribed to this specific type must never receive it), the archive
   // record written afterward (NewsletterModel vs PrayerModel - see below,
   // that split itself is unchanged/out of scope), and the unsubscribe
   // link's `type` param.
@@ -60,7 +70,7 @@ export class SendSubscriptionDialogComponent {
     private dialogRef: MatDialogRef<SendSubscriptionDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: SendSubscriptionDialogData,
     private fb: FormBuilder,
-    private service: SubscriptionService,
+    private service: CustomerService,
     private emailService: EMailService,
     private newsletterService: NewsletterService,
     private prayerService: PrayerService,
@@ -103,9 +113,10 @@ export class SendSubscriptionDialogComponent {
     const subject = this.form.value.subject as string;
     const type = this.data.type;
 
-    const list: Promise<SubscriptionModel[]> = this.data.selectedList
-      ? Promise.resolve(this.data.selectedList.list as SubscriptionModel[])
-      : this.service.getAllByValue('type', type);
+    const { flagField } = subscriptionFieldsForType(type);
+    const list: Promise<Recipient[]> = this.data.selectedList
+      ? Promise.resolve(this.data.selectedList.list as SubscriberRow[])
+      : this.service.getAllByValue(flagField, true);
 
     list
       .then((subscribers) => {

@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import jsPDF from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
-import { SubscriptionModel, SubscriptionType } from 'src/app/common/models/domain/subscription.model';
-import { SubscriptionService } from 'src/app/common/services/data/subscription.service';
+import { CustomerModel, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
+import { CustomerService } from 'src/app/common/services/data/customer.service';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { EmailList } from 'src/app/common/models/utils/email-list.model';
 import { EmailListService } from 'src/app/common/services/data/email-list.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -13,20 +14,21 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
-import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { SubscriberDialogComponent } from './subscriber-dialog.component';
 import { SendSubscriptionDialogComponent } from './send-subscription-dialog.component';
 import { SubscriptionListDialogComponent } from './subscription-list-dialog.component';
+import { SubscriberRow } from './subscriber-row.model';
 
-// Combined Newsletter + Prayer Team subscriber list - was 2 near-identical
-// screens each backed by its own Firestore collection
-// (newsletter_subscriptions, prayer_team_subscriptions), merged into one
-// table + one collection (`subscriptions`) annotated by `type` (see
-// SubscriptionModel). "Send Newsletter"/"Send Prayer Request" stay as 2
-// distinct actions - each type still has genuinely different confirmation-
-// email content (see SubscriptionService.sendConfirmationEmail) - just both
-// now filter their audience from this one shared table instead of reading
-// their own collection.
+// Combined Newsletter + Prayer Team subscriber list - used to be its own
+// `subscriptions` collection (merged from 2 even older ones); now it's just
+// 2 booleans + dates on the `customers` collection (see customer.model.ts's
+// own comment, and functions/src/subscriptions.functions.ts for the public
+// site's 2 write endpoints). This screen queries `customers` by each flag
+// (one-time getAllByValue, not streamAll() - `customers` is the large/
+// paginated collection now, see CLAUDE.md's Pagination section, not a small
+// reference table worth an always-on listener) and flattens the 2 result
+// sets into one row-per-subscription-type list, the same shape the old
+// collection had.
 @Component({
     selector: 'app-subscriptions',
     templateUrl: './subscriptions.component.html',
@@ -34,8 +36,8 @@ import { SubscriptionListDialogComponent } from './subscription-list-dialog.comp
     standalone: false
 })
 export class SubscriptionsComponent implements OnInit {
-  subscribers$: Observable<SubscriptionModel[]>;
-  columns: DataGridColumn<SubscriptionModel>[] = [
+  subscribers: SubscriberRow[] = [];
+  columns: DataGridColumn<SubscriberRow>[] = [
     { key: 'lastName', label: 'Last Name' },
     { key: 'firstName', label: 'First Name' },
     { key: 'email', label: 'Email' },
@@ -47,14 +49,14 @@ export class SubscriptionsComponent implements OnInit {
 
   private readonly screenKey = 'customers-manager.subscriptions';
 
-  rowActions: DataGridRowAction<SubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
+  rowActions: DataGridRowAction<SubscriberRow>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
-  // See new-record-tracking.util.ts - marks newly-arrived subscribers seen
-  // the moment this screen loads, and keeps them highlighted for this page
-  // view. Same pattern as custom-form-submissions.component.ts/
-  // purchases.component.ts.
-  tracker: NewRecordTracker<SubscriptionModel>;
-  rowClass = (row: SubscriptionModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
+  // No more row--new highlighting here: that came from a 4th onCreate/
+  // onUpdate trigger pair on the old standalone `subscriptions` collection,
+  // deliberately removed alongside it (see new-record-alerts.functions.ts's
+  // own comment) - a `customers` doc being created/updated is no longer a
+  // reliable "just subscribed" signal, most Customer docs are created by a
+  // purchase or event registration instead (see customer.model.ts).
 
   // Kept as 2 separate arrays (rather than one combined list) purely so the
   // "Filter by List" dropdown can group them under 2 optgroups - both are
@@ -64,7 +66,7 @@ export class SubscriptionsComponent implements OnInit {
   newsletterLists: EmailList[] = [];
   prayerLists: EmailList[] = [];
   selectedList: EmailList | undefined;
-  selection = new SelectionModel<SubscriptionModel>(true, []);
+  selection = new SelectionModel<SubscriberRow>(true, []);
 
   // House rule: loading spinner shown until first emission - see
   // customers.component.ts for the full explanation.
@@ -74,29 +76,50 @@ export class SubscriptionsComponent implements OnInit {
   // why.
   headerActions: ListHeaderAction[] = [];
 
-  currentRows: SubscriptionModel[] = [];
-  private allSubscribers: SubscriptionModel[] = [];
+  currentRows: SubscriberRow[] = [];
 
   constructor(
-    private service: SubscriptionService,
+    private service: CustomerService,
     private emailListService: EmailListService,
     private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {
-    this.tracker = new NewRecordTracker(this.service);
-  }
+  ) {}
 
   async ngOnInit(): Promise<void> {
-    this.subscribers$ = this.service.streamAll().pipe(
-      tap((items) => (this.allSubscribers = items)),
-      tap((items) => this.tracker.capture(items)),
-      tap(() => this.loading$.next(false))
-    );
-
+    await this.refresh();
     await this.refreshEmailLists();
     this.refreshActions();
+  }
+
+  // One-time fetch, not a live stream (see this component's own file
+  // comment) - re-run after anything that changes a flag (add/edit/delete)
+  // instead of relying on a standing listener.
+  private async refresh(): Promise<void> {
+    this.loading$.next(true);
+    const [newsletterCustomers, prayerCustomers] = await Promise.all([
+      this.service.getAllByValue('subscribedToNewsletter', true),
+      this.service.getAllByValue('subscribedToPrayerTeam', true)
+    ]);
+    this.subscribers = [
+      ...newsletterCustomers.map((c) => this.toRow(c, 'newsletter')),
+      ...prayerCustomers.map((c) => this.toRow(c, 'prayer'))
+    ];
+    this.loading$.next(false);
+  }
+
+  private toRow(customer: CustomerModel, type: SubscriptionType): SubscriberRow {
+    const { dateField } = subscriptionFieldsForType(type);
+    return {
+      id: `${customer.id}:${type}`,
+      type,
+      firstName: customer.firstName ?? '',
+      lastName: customer.lastName ?? '',
+      email: customer.email ?? '',
+      date: dateFromTimestamp(customer[dateField]),
+      customer
+    };
   }
 
   typeLabel(type: SubscriptionType): string {
@@ -135,7 +158,7 @@ export class SubscriptionsComponent implements OnInit {
 
   // Backs "Export List" (selected-only PDF) - kept in sync via
   // (visibleRowsChange) since the grid now owns filtering/sorting.
-  onVisibleRowsChange(rows: SubscriptionModel[]): void {
+  onVisibleRowsChange(rows: SubscriberRow[]): void {
     this.currentRows = rows;
   }
 
@@ -144,8 +167,8 @@ export class SubscriptionsComponent implements OnInit {
 
     if (listId) {
       this.selectedList = [...this.newsletterLists, ...this.prayerLists].find((list) => list.id === listId);
-      const memberIds = new Set(((this.selectedList?.list ?? []) as SubscriptionModel[]).map((s) => s.id));
-      this.allSubscribers.filter((s) => memberIds.has(s.id)).forEach((s) => this.selection.select(s));
+      const memberIds = new Set(((this.selectedList?.list ?? []) as SubscriberRow[]).map((s) => s.id));
+      this.subscribers.filter((s) => memberIds.has(s.id)).forEach((s) => this.selection.select(s));
     } else {
       this.selectedList = { ...new EmailList() };
     }
@@ -156,19 +179,29 @@ export class SubscriptionsComponent implements OnInit {
     if (!this.permissionService.canAdd(this.screenKey)) {
       return;
     }
-    this.dialog.open(SubscriberDialogComponent, {
+    const dialogRef = this.dialog.open(SubscriberDialogComponent, {
       width: '500px',
       data: { item: null }
     });
+    dialogRef.afterClosed().subscribe(async (saved) => {
+      if (saved) {
+        await this.refresh();
+      }
+    });
   }
 
-  showEditModal(item: SubscriptionModel): void {
+  showEditModal(item: SubscriberRow): void {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    this.dialog.open(SubscriberDialogComponent, {
+    const dialogRef = this.dialog.open(SubscriberDialogComponent, {
       width: '500px',
       data: { item }
+    });
+    dialogRef.afterClosed().subscribe(async (saved) => {
+      if (saved) {
+        await this.refresh();
+      }
     });
   }
 
@@ -222,16 +255,26 @@ export class SubscriptionsComponent implements OnInit {
     });
   }
 
-  delete(item: SubscriptionModel): void {
+  // Clears just this row's flag on the underlying customer (leaving the
+  // *SubscribedDate field alone - "last subscribed", not "currently
+  // subscribed since", see customer.model.ts) rather than deleting the
+  // customer record itself, which may carry real purchase/order history
+  // completely unrelated to this subscription. Same behavior as the public
+  // unsubscribe link (functions/src/subscriptions.functions.ts's
+  // unsubscribe_from_email_list), just triggered from the admin side.
+  delete(item: SubscriberRow): void {
     if (!this.permissionService.canDelete(this.screenKey)) {
       return;
     }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
+      if (!confirmed) {
+        return;
       }
+      const { flagField } = subscriptionFieldsForType(item.type);
+      this.service.update(item.customer.id!, { ...item.customer, [flagField]: false }).then(async () => {
+        this.snackbar.success(this.itemType + ' Deleted');
+        await this.refresh();
+      });
     });
   }
 

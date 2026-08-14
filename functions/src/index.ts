@@ -34,6 +34,7 @@ exports.create_paypal_order = paypal.create_paypal_order;
 exports.capture_paypal_order = paypal.capture_paypal_order;
 
 const subscriptions = require("./subscriptions.functions");
+exports.subscribe_to_email_list = subscriptions.subscribe_to_email_list;
 exports.unsubscribe_from_email_list = subscriptions.unsubscribe_from_email_list;
 
 const youtube = require("./youtube.functions");
@@ -50,8 +51,6 @@ exports.onFormSubmissionCreated = alerts.onFormSubmissionCreated;
 exports.onFormSubmissionUpdated = alerts.onFormSubmissionUpdated;
 exports.onPurchaseCreated = alerts.onPurchaseCreated;
 exports.onPurchaseUpdated = alerts.onPurchaseUpdated;
-exports.onSubscriptionCreated = alerts.onSubscriptionCreated;
-exports.onSubscriptionUpdated = alerts.onSubscriptionUpdated;
 
 const fulfillment = require("./purchase-fulfillment.functions");
 exports.onPurchaseFulfillmentEligible =

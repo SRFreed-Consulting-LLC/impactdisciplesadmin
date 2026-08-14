@@ -2,12 +2,16 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { SubscriptionModel, SubscriptionType } from 'src/app/common/models/domain/subscription.model';
-import { SubscriptionService } from 'src/app/common/services/data/subscription.service';
+import { Timestamp } from 'firebase/firestore';
+import { CustomerModel, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
+import { CustomerService } from 'src/app/common/services/data/customer.service';
+import { EMailService } from 'src/app/common/services/data/email.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { SubscriberRow } from './subscriber-row.model';
+import { sendSubscriptionConfirmationEmail } from './subscription-confirmation-email.util';
 
 export interface SubscriberDialogData {
-  item: SubscriptionModel | null;
+  item: SubscriberRow | null;
 }
 
 // Replaces NewsletterSubscriberDialogComponent + PrayerSubscriberDialogComponent
@@ -30,10 +34,11 @@ export class SubscriberDialogComponent {
     private dialogRef: MatDialogRef<SubscriberDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: SubscriberDialogData,
     private fb: FormBuilder,
-    private service: SubscriptionService,
+    private service: CustomerService,
+    private emailService: EMailService,
     private snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    this.isEdit = !!data.item;
     this.form = this.fb.group({
       type: [data.item?.type ?? null, Validators.required],
       firstName: [data.item?.firstName ?? '', Validators.required],
@@ -55,28 +60,69 @@ export class SubscriberDialogComponent {
     this.inProgress$.next(true);
     const { type, firstName, lastName, email } = this.form.value as { type: SubscriptionType; firstName: string; lastName: string; email: string };
 
-    if (this.isEdit) {
-      const value: SubscriptionModel = { ...this.data.item, type, firstName, lastName, email };
-      this.service.update(value.id!, value).then((result) => {
-        if (result) {
-          this.snackbar.success(this.itemType + ' Updated');
-          this.dialogRef.close(true);
-        } else {
-          this.inProgress$.next(false);
-          this.snackbar.error('Some Error Occured');
+    const request = this.isEdit ? this.updateExisting(type, firstName, lastName, email) : this.subscribeCustomer(type, firstName, lastName, email);
+
+    request.then((result) => {
+      if (result) {
+        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        if (!this.isEdit) {
+          sendSubscriptionConfirmationEmail(this.emailService, type, firstName, email);
         }
-      });
-    } else {
-      this.service.createSubscription(type, firstName, lastName, email).then((result) => {
-        if (result) {
-          this.snackbar.success(this.itemType + ' Added');
-          this.service.sendConfirmationEmail(result);
-          this.dialogRef.close(true);
-        } else {
-          this.inProgress$.next(false);
-          this.snackbar.error('Some Error Occured');
-        }
-      });
+        this.dialogRef.close(true);
+      } else {
+        this.inProgress$.next(false);
+        this.snackbar.error('Some Error Occured');
+      }
+    });
+  }
+
+  // Moving an existing subscription row from one type to the other flips
+  // both flags on the SAME customer doc and re-stamps the date (a fresh
+  // "subscribed" moment for the new type); leaving type unchanged only
+  // touches name/email, the existing *SubscribedDate is left alone.
+  private updateExisting(type: SubscriptionType, firstName: string, lastName: string, email: string): Promise<CustomerModel> {
+    const original = this.data.item!;
+    const updated: CustomerModel = { ...original.customer, firstName, lastName, email };
+
+    if (type !== original.type) {
+      const oldFields = subscriptionFieldsForType(original.type);
+      const newFields = subscriptionFieldsForType(type);
+      (updated as unknown as Record<string, unknown>)[oldFields.flagField] = false;
+      (updated as unknown as Record<string, unknown>)[newFields.flagField] = true;
+      (updated as unknown as Record<string, unknown>)[newFields.dateField] = Timestamp.now();
     }
+
+    return this.service.update(original.customer.id!, updated);
+  }
+
+  // Mirrors subscribe_to_email_list's own behavior (functions/src/
+  // subscriptions.functions.ts) for consistency between the 2 subscribe
+  // entry points - matched by email (trimmed/lowercased, same convention as
+  // every other customer-record writer, see customer-upsert.functions.ts).
+  // An existing customer match only gets the flag/date merged in - name/
+  // email on file aren't overwritten from what could be a stale or
+  // mistyped manual entry here.
+  private subscribeCustomer(type: SubscriptionType, firstName: string, lastName: string, email: string): Promise<CustomerModel> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const { flagField, dateField } = subscriptionFieldsForType(type);
+    const now = Timestamp.now();
+
+    return this.service.getAllByValue('email', normalizedEmail).then((matches) => {
+      if (!matches || matches.length === 0) {
+        const customer: CustomerModel = {
+          ...new CustomerModel(),
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          [flagField]: true,
+          [dateField]: now
+        };
+        return this.service.add(customer);
+      }
+
+      const existing = matches[0];
+      const updated: CustomerModel = { ...existing, [flagField]: true, [dateField]: now };
+      return this.service.update(existing.id!, updated);
+    });
   }
 }

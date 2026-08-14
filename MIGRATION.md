@@ -317,3 +317,53 @@ await db.doc('meta/newRecordCounts').set({ eventRegistrations: 0, formSubmission
   `src/app/common/{models/domain,services/data}/{consultation-request,
   consultation-survey,lunch-and-learn,seminar}.*` - dev's copies were
   removed 2026-08-11).
+
+---
+
+## Newsletter/Prayer Team subscribers: collection merged into `customers` flags
+
+**Found**: 2026-08-14, mid-implementation - recorded here as the migration
+step still outstanding, not a bug discovered after the fact.
+
+Subscriber state (`SubscriptionModel`) used to live in its own
+`subscriptions` collection (one doc per email+type, itself a 2026-era merge
+of the even older `newsletter_subscriptions`/`prayer_team_subscriptions`
+collections - see `scripts/recreate-subscriptions.js`'s own header comment
+for that earlier merge). It's now 2 booleans + dates directly on the
+matching `customers` doc instead - `subscribedToNewsletter`/
+`newsletterSubscribedDate`, `subscribedToPrayerTeam`/
+`prayerTeamSubscribedDate` (see `CustomerModel`'s own comment). Both
+directions of the public site's write path
+(`functions/src/subscriptions.functions.ts`'s `subscribe_to_email_list`/
+`unsubscribe_from_email_list`) and every admin-app read/write (Subscribers
+screen, Subscriber Report) already target `customers` as of this change -
+the standalone `subscriptions` collection is dead code's worth of a data
+source starting now, same status as the orphaned `users` collection (see
+CLAUDE.md's Firestore collection naming note).
+
+**What's NOT done yet - this is a real data migration, not just a code
+change**: existing docs in the `subscriptions` collection (dev has an
+unknown-but-nonzero count as of this writing - prod was never migrated onto
+that collection at all per `recreate-subscriptions.js`'s own comment, so
+prod's actual source of truth for existing subscribers is still the *even
+older* `newsletter_subscriptions`/`prayer_team_subscriptions` collections)
+have NOT been backfilled onto `customers`. Until that backfill runs,
+real existing subscribers will not show up on the redesigned Subscribers
+screen or Subscriber Report at all - both only read the new flags.
+
+**Backfill script**: `scripts/migrate-subscriptions-to-customers.js` (dry-run
+by default, `--execute` to write) - for each `subscriptions` doc, matches a
+`customers` doc by email (creates one if none exists, same shape
+`subscribe_to_email_list` creates) and sets that type's flag/date, same
+merge-not-overwrite behavior as the Cloud Function. Run once per project
+(`--project=dev` / `--project=prod`) before treating the old collection as
+safe to ignore. Prod also needs a first pass over the 2 pre-merge
+collections (`newsletter_subscriptions`/`prayer_team_subscriptions`) if
+they were never consolidated into `subscriptions` there - check counts
+before assuming which source collection(s) prod actually needs migrated.
+
+**Not yet updated** (out of reach from this repo): `impactdisciples-web`'s
+own subscribe form(s) - confirm they've moved to POSTing the new
+`subscribe_to_email_list` endpoint instead of whatever direct write against
+the old `subscriptions` collection that repo's code currently does, before
+considering this migration complete end-to-end.

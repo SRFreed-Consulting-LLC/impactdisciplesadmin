@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { EmailList } from 'src/app/common/models/utils/email-list.model';
-import { SubscriptionModel } from 'src/app/common/models/domain/subscription.model';
+import { SubscriberRow } from './subscriber-row.model';
 import { EmailListService } from 'src/app/common/services/data/email-list.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
@@ -12,7 +12,7 @@ export interface SubscriptionListDialogData {
   // The subscriber rows currently checked in the main grid - becomes the
   // list's membership, matching the original's onListSave() which set
   // selectedList.list = selectedSubscribers regardless of add vs. edit.
-  members: SubscriptionModel[];
+  members: SubscriberRow[];
 }
 
 // Replaces NewsletterListDialogComponent + PrayerListDialogComponent - same

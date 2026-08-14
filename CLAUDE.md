@@ -130,7 +130,9 @@ onto one-time paged fetches, to cut down on standing Firestore listeners:
   affordance is gone post-redesign; `customers.component.ts` today is `PagedCollectionSource` only, no
   `allCustomers`). List-membership filtering still exists, just on the **Subscribers** screen
   (`customers-manager/subscriptions/`), via a separately-saved `EmailList` doc's `list` array, not a
-  Firestore query — see Reports Manager's Subscriber Report below for the same mechanism reused.
+  Firestore query — see Reports Manager's Subscriber Report below for the same mechanism reused. The
+  Subscribers screen itself is a filtered view of `customers` now, not its own collection — see the
+  Firestore collection naming note at the bottom of this file.
 
 ### List-screen conventions (Columns + Export + column filters)
 
@@ -217,12 +219,17 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
 
 - **Purchase Report** (`purchase-report/`, Reports Manager → Purchases) — over the `purchases`
   collection, filters on Purchase Date and State, group-by-user aggregation.
-- **Subscriber Report** (`subscriber-report/`, Reports Manager → Subscribers) — over the
-  `subscriptions` collection, filters on Date Subscribed and Type (newsletter/prayer), both real
-  Firestore queries, with a group-by-type aggregation (counts + earliest/latest date per type). No
-  List criterion — considered (the same saved-`EmailList`-membership mechanism as the Subscribers
-  screen's own "Filter by List", client-side rather than a Firestore query since subscribers don't
-  carry list membership themselves) and deliberately dropped as not worth the extra criterion.
+- **Subscriber Report** (`subscriber-report/`, Reports Manager → Subscribers) — over the `customers`
+  collection's `subscribedToNewsletter`/`subscribedToPrayerTeam` flags (see the Firestore collection
+  naming note below — subscriber state used to be its own `subscriptions` collection), filters on
+  Date Subscribed and Type (newsletter/prayer), both real Firestore queries, with a group-by-type
+  aggregation (counts + earliest/latest date per type). Type picks which flag/date-field pair to
+  query; with Type off, "either type" means querying both flags and merging client-side (same OR-
+  across-two-fields pattern as Purchase Report's State criterion, see below) since a customer has no
+  single `type` field any more. No List criterion — considered (the same saved-`EmailList`-membership
+  mechanism as the Subscribers screen's own "Filter by List", client-side rather than a Firestore
+  query since subscribers don't carry list membership themselves) and deliberately dropped as not
+  worth the extra criterion.
 - **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
   collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
   signup/created-date field at all (customer docs are upserted from purchases/event registrations —
@@ -306,3 +313,15 @@ The Admin Users collection is `admin_users` (renamed from `users`; see commit `3
 Angular `AdminUserService` and the Cloud Functions' `requireStaffAuth()` were updated together. The
 old `users` collection is still present in Firestore but intentionally unused/orphaned pending
 verification — don't resurrect it as a source of truth.
+
+Newsletter/Prayer Team subscriber state used to be its own `subscriptions` collection (itself already
+a merge of 2 even older `newsletter_subscriptions`/`prayer_team_subscriptions` collections) — it's now
+2 booleans + dates (`subscribedToNewsletter`/`newsletterSubscribedDate`,
+`subscribedToPrayerTeam`/`prayerTeamSubscribedDate`) directly on the matching `customers` doc instead
+(see `CustomerModel`'s own comment, and `functions/src/subscriptions.functions.ts` for the 2 endpoints
+that flip those flags from outside the admin app). The Subscribers screen
+(`customers-manager/subscriptions/`) and Reports Manager's Subscriber Report both query `customers` by
+these flags now, not a `subscriptions` collection. The old `subscriptions` collection is left in place
+in Firestore, unmigrated-from, same as `users` above — see `MIGRATION.md` for the one-time backfill
+script that copies its docs onto the matching (or newly-created) `customers` doc before it can be
+considered safe to stop reading anywhere it still might be (e.g. directly in the Firebase console).

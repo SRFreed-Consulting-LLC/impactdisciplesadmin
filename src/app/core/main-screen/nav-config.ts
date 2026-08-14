@@ -112,11 +112,13 @@ export const NAV_CONFIG: NavGroup[] = [
       // (shortened from "Custom Form Submissions") - the slug/screenKey
       // stay as-is on purpose, only the display label changed.
       { label: 'Form Submissions', slug: 'custom-form-submissions' },
-      // Replaces the old separate Newsletters + Prayer Team entries - both
-      // collections merged into one (`subscriptions`, annotated by `type`),
-      // see SubscriptionModel's own comment for the full reasoning. Label
-      // reads "Subscribers" (the people on the list) rather than
-      // "Subscriptions" (the act) - slug/screenKey unchanged.
+      // Replaces the old separate Newsletters + Prayer Team screens, which
+      // in turn had already been merged into one `subscriptions` collection
+      // annotated by `type` - that collection is gone too now, subscriber
+      // state is just 2 booleans + dates on the customer's own `customers`
+      // doc (see customer.model.ts's own comment). Label reads "Subscribers"
+      // (the people on the list) rather than "Subscriptions" (the act) -
+      // slug/screenKey unchanged even though the backing data moved.
       { label: 'Subscribers', slug: 'subscriptions' }
     ]
   },

@@ -45,9 +45,43 @@ export class CustomerModel extends Person {
     // field rather than piling up duplicates.
     pendingChanges?: PendingCustomerChange[] = [];
 
+    // Replaces the old standalone `subscriptions` collection/Subscribers
+    // screen entirely - a subscriber IS a customer now, not a separate
+    // record. Just booleans + when-it-happened, no more per-type doc: set
+    // true (and the matching date stamped) the moment someone
+    // subscribes, flipped false on unsubscribe (the date is left alone -
+    // it's "last subscribed", not "currently subscribed since", so it's
+    // still meaningful history after an unsubscribe/re-subscribe). See
+    // functions/src/subscriptions.functions.ts for both directions of that
+    // write.
+    subscribedToNewsletter?: boolean;
+    newsletterSubscribedDate?: Timestamp;
+    subscribedToPrayerTeam?: boolean;
+    prayerTeamSubscribedDate?: Timestamp;
+
     constructor(){
       super();
     }
 
 
+}
+
+// The old SubscriptionModel's `type` discriminator, kept as a standalone
+// type export (rather than reintroducing that model) now that it just picks
+// between 2 fields on CustomerModel instead of 2 collections.
+export type SubscriptionType = 'newsletter' | 'prayer';
+
+// Same flagField/dateField mapping as functions/src/subscriptions.
+// functions.ts's own fieldsForType() - duplicated rather than imported since
+// the Angular app and Cloud Functions are separate TS projects with no
+// shared package between them. Keep the two in sync by hand if this ever
+// changes. Used everywhere the admin app itself needs to flip one of these
+// flags (Subscribers screen's add/edit/delete, Subscriber Report) so the
+// field-name pairing only lives in one place per project.
+export function subscriptionFieldsForType(
+  type: SubscriptionType
+): { flagField: 'subscribedToNewsletter' | 'subscribedToPrayerTeam'; dateField: 'newsletterSubscribedDate' | 'prayerTeamSubscribedDate' } {
+  return type === 'prayer'
+    ? { flagField: 'subscribedToPrayerTeam', dateField: 'prayerTeamSubscribedDate' }
+    : { flagField: 'subscribedToNewsletter', dateField: 'newsletterSubscribedDate' };
 }
