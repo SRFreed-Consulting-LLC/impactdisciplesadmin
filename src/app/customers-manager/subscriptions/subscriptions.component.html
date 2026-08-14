@@ -1,10 +1,11 @@
 <app-data-grid
   [showColumnsButton]="false"
   [showExportButton]="false"
-  [title]="'Subscriptions'"
+  [title]="'Subscribers'"
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
+  [rowClass]="rowClass"
   [rows]="(subscribers$ | async) ?? []"
   [loading]="(loading$ | async) ?? false"
   [selection]="selection"

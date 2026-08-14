@@ -35,7 +35,7 @@ export class CustomFormSubmissionsComponent implements OnInit {
     { key: 'status', label: 'Status', filterable: false, sortable: false, value: (row) => this.statusLabel(row) }
   ];
 
-  itemType = 'Custom Form Submission';
+  itemType = 'Form Submission';
 
   private readonly screenKey = 'customers-manager.custom-form-submissions';
 

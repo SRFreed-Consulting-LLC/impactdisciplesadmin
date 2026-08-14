@@ -13,6 +13,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { SubscriberDialogComponent } from './subscriber-dialog.component';
 import { SendSubscriptionDialogComponent } from './send-subscription-dialog.component';
 import { SubscriptionListDialogComponent } from './subscription-list-dialog.component';
@@ -42,11 +43,18 @@ export class SubscriptionsComponent implements OnInit {
     { key: 'date', label: 'Date', type: 'date', filterable: false }
   ];
 
-  itemType = 'Subscription';
+  itemType = 'Subscriber';
 
   private readonly screenKey = 'customers-manager.subscriptions';
 
   rowActions: DataGridRowAction<SubscriptionModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
+
+  // See new-record-tracking.util.ts - marks newly-arrived subscribers seen
+  // the moment this screen loads, and keeps them highlighted for this page
+  // view. Same pattern as custom-form-submissions.component.ts/
+  // purchases.component.ts.
+  tracker: NewRecordTracker<SubscriptionModel>;
+  rowClass = (row: SubscriptionModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
 
   // Kept as 2 separate arrays (rather than one combined list) purely so the
   // "Filter by List" dropdown can group them under 2 optgroups - both are
@@ -76,11 +84,14 @@ export class SubscriptionsComponent implements OnInit {
     private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
-  ) {}
+  ) {
+    this.tracker = new NewRecordTracker(this.service);
+  }
 
   async ngOnInit(): Promise<void> {
     this.subscribers$ = this.service.streamAll().pipe(
       tap((items) => (this.allSubscribers = items)),
+      tap((items) => this.tracker.capture(items)),
       tap(() => this.loading$.next(false))
     );
 

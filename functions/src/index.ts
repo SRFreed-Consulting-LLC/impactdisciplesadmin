@@ -50,6 +50,8 @@ exports.onFormSubmissionCreated = alerts.onFormSubmissionCreated;
 exports.onFormSubmissionUpdated = alerts.onFormSubmissionUpdated;
 exports.onPurchaseCreated = alerts.onPurchaseCreated;
 exports.onPurchaseUpdated = alerts.onPurchaseUpdated;
+exports.onSubscriptionCreated = alerts.onSubscriptionCreated;
+exports.onSubscriptionUpdated = alerts.onSubscriptionUpdated;
 
 const fulfillment = require("./purchase-fulfillment.functions");
 exports.onPurchaseFulfillmentEligible =
@@ -62,3 +64,9 @@ const eventRegCustomerUpsert =
   require("./event-registration-customer-upsert.functions");
 exports.onEventRegistrationCustomerUpsert =
   eventRegCustomerUpsert.onEventRegistrationCustomerUpsert;
+
+const mailchimpSync = require("./mailchimp-sync.functions");
+exports.onCustomerCreatedMailchimpSync =
+  mailchimpSync.onCustomerCreatedMailchimpSync;
+exports.onCustomerUpdatedMailchimpSync =
+  mailchimpSync.onCustomerUpdatedMailchimpSync;

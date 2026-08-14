@@ -24,7 +24,7 @@ export class SubscriberDialogComponent {
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
 
-  private itemType = 'Subscription';
+  private itemType = 'Subscriber';
 
   constructor(
     private dialogRef: MatDialogRef<SubscriberDialogComponent, boolean>,

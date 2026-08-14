@@ -4,14 +4,17 @@ import {
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 
-// Backs the top-bar "new record" alert bell in the admin app. Three source
-// collections each get an onCreate/onUpdate trigger pair (below) that:
+// Backs the top-bar "new record" alert bell, and (subscriptions only) the
+// Subscribers screen's own row highlight - see subscriptions.component.ts.
+// Four source collections each get an onCreate/onUpdate trigger pair
+// (below) that:
 //   1. Tags every newly-created doc with newRecordStatus: "new" - this has
 //      to happen server-side, in a trigger, rather than at each write site,
-//      because these collections (purchases, form_submissions, and
-//      event-registrations) are written by the public storefront/site, a
-//      separate repo this function set has no reach into. A Firestore
-//      trigger fires regardless of which app performed the write.
+//      because these collections (purchases, form_submissions,
+//      event-registrations, and subscriptions) are written by the public
+//      storefront/site, a separate repo this function set has no reach
+//      into. A Firestore trigger fires regardless of which app performed
+//      the write.
 //   2. Keeps a single running count per source in one aggregate doc,
 //      meta/newRecordCounts, so the client subscribes to one small doc
 //      instead of a live listener per collection.
@@ -20,6 +23,13 @@ import * as admin from "firebase-admin";
 // "new" to "seen" once a record has actually been viewed (see
 // src/app/shared/new-record-tracking.util.ts) - the onUpdate trigger here
 // just reacts to that transition to keep the count in sync.
+//
+// subscriptions doesn't feed the bell itself (NewRecordAlertsComponent's
+// ALERT_SOURCES doesn't list it - no deep-link destination decided for it
+// yet) - only the Subscribers screen's own NewRecordTracker reads its
+// newRecordStatus. The meta/newRecordCounts doc still gets a `subscriptions`
+// field written (registerNewRecordTriggers always keeps one), it's just
+// unread by the client today.
 
 const NEW_RECORD_COUNTS_DOC = "meta/newRecordCounts";
 
@@ -87,6 +97,10 @@ const eventRegistrations =
 const formSubmissions =
   registerNewRecordTriggers("form_submissions", "formSubmissions");
 const purchases = registerNewRecordTriggers("purchases", "purchases");
+// Newsletter + Prayer Team signups (SubscriptionModel) - see this file's
+// header comment for why this doesn't also feed the bell.
+const subscriptions =
+  registerNewRecordTriggers("subscriptions", "subscriptions");
 
 export const onEventRegistrationCreated = eventRegistrations.onCreate;
 export const onEventRegistrationUpdated = eventRegistrations.onUpdate;
@@ -94,3 +108,5 @@ export const onFormSubmissionCreated = formSubmissions.onCreate;
 export const onFormSubmissionUpdated = formSubmissions.onUpdate;
 export const onPurchaseCreated = purchases.onCreate;
 export const onPurchaseUpdated = purchases.onUpdate;
+export const onSubscriptionCreated = subscriptions.onCreate;
+export const onSubscriptionUpdated = subscriptions.onUpdate;

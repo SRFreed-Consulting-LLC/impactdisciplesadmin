@@ -12,8 +12,8 @@ interface AlertSource {
   key: keyof NewRecordCounts;
   label: string;
   // Only Event Registrations still deep-links elsewhere - it has no live,
-  // dedicated view on the Dashboard the way Purchases/Custom Form
-  // Submissions now do (Recent Orders / New Requests, both live - see
+  // dedicated view on the Dashboard the way Purchases/Form Submissions
+  // now do (Recent Orders / New Requests, both live - see
   // dashboard.component.ts), so it's the one source that still needs
   // somewhere more specific to go than just "the Dashboard". route/
   // queryParams are omitted entirely for every other source; open() below
@@ -23,7 +23,7 @@ interface AlertSource {
 }
 
 // Top-bar bell: one badge for the total across all sources, a dropdown
-// breaking that total down per source. Clicking a Purchases/Custom Form
+// breaking that total down per source. Clicking a Purchases/Form
 // Submissions entry just lands on the Dashboard - both now show up there
 // live (Recent Orders / New Requests), so there's nothing more specific to
 // deep-link into any more. Event Registrations is the one exception (see
@@ -41,11 +41,11 @@ interface AlertSource {
 //
 // formSubmissions replaces the old Requests Manager sources
 // (consultationRequests, consultationSurveys, lunchAndLearns, seminars),
-// dropped when that module was removed in favor of Custom Form Submissions
+// dropped when that module was removed in favor of Form Submissions
 // - see NewRecordCounts's own comment.
 const ALERT_SOURCES: AlertSource[] = [
   { key: 'eventRegistrations', label: 'Event Registrations', route: ['/events-manager'], queryParams: { tab: 'events' } },
-  { key: 'formSubmissions', label: 'Custom Form Submissions' },
+  { key: 'formSubmissions', label: 'Form Submissions' },
   { key: 'purchases', label: 'Purchases' }
 ];
 
@@ -85,7 +85,7 @@ export class NewRecordAlertsComponent {
       this.openEventRegistrations(entry);
       return;
     }
-    // Purchases/Custom Form Submissions now show up live right on the
+    // Purchases/Form Submissions now show up live right on the
     // Dashboard (Recent Orders / New Requests) - no need to deep-link
     // anywhere else, just land there.
     this.router.navigate(['/home']);

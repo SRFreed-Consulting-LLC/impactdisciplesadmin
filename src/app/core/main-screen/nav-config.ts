@@ -108,12 +108,16 @@ export const NAV_CONFIG: NavGroup[] = [
       // Operational (packing/shipping), same order lifecycle as Purchases -
       // a different view of the same records, not a separate concern.
       { label: 'Fulfillment', slug: 'fulfillment' },
-      // Slug load-bearing - see NavLeaf.slug.
-      { label: 'Custom Form Submissions', slug: 'custom-form-submissions' },
+      // Slug load-bearing - see NavLeaf.slug. Label reads "Form Submissions"
+      // (shortened from "Custom Form Submissions") - the slug/screenKey
+      // stay as-is on purpose, only the display label changed.
+      { label: 'Form Submissions', slug: 'custom-form-submissions' },
       // Replaces the old separate Newsletters + Prayer Team entries - both
       // collections merged into one (`subscriptions`, annotated by `type`),
-      // see SubscriptionModel's own comment for the full reasoning.
-      { label: 'Subscriptions', slug: 'subscriptions' }
+      // see SubscriptionModel's own comment for the full reasoning. Label
+      // reads "Subscribers" (the people on the list) rather than
+      // "Subscriptions" (the act) - slug/screenKey unchanged.
+      { label: 'Subscribers', slug: 'subscriptions' }
     ]
   },
   {
@@ -174,7 +178,8 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Web Config', slug: 'web-config' },
       { label: 'Email Templates', slug: 'email-templates' },
       { label: 'Shipping Labels', slug: 'shipping-labels' },
-      { label: 'Form Builder', slug: 'form-builder' }
+      { label: 'Form Builder', slug: 'form-builder' },
+      { label: 'Mailchimp', slug: 'mailchimp' }
     ]
   },
   {
