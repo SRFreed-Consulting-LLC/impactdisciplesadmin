@@ -1,0 +1,121 @@
+<div class="wizsteps">
+  <div class="wizstep" [class.is-active]="step === 1" [class.is-done]="step > 1" (click)="goToStep(1)">
+    <span class="wizstep__dot">{{ step > 1 ? '✓' : '1' }}</span>
+    <span class="wizstep__label">Days &amp; Rooms</span>
+  </div>
+  <div class="wizline"></div>
+  <div class="wizstep" [class.is-active]="step === 2" [class.is-done]="step > 2" (click)="goToStep(2)">
+    <span class="wizstep__dot">{{ step > 2 ? '✓' : '2' }}</span>
+    <span class="wizstep__label">Single Items</span>
+  </div>
+  <div class="wizline"></div>
+  <div class="wizstep" [class.is-active]="step === 3" [class.is-done]="step > 3" (click)="goToStep(3)">
+    <span class="wizstep__dot">{{ step > 3 ? '✓' : '3' }}</span>
+    <span class="wizstep__label">Breakout Blocks</span>
+  </div>
+  <div class="wizline"></div>
+  <div class="wizstep" [class.is-active]="step === 4" (click)="goToStep(4)">
+    <span class="wizstep__dot">4</span>
+    <span class="wizstep__label">Review &amp; Publish</span>
+  </div>
+</div>
+
+@if (days.length === 0) {
+  <div class="empty-state">Set this event's Start Date, End Date, and Location on the Info tab first, then come back to build the agenda.</div>
+} @else {
+  <!-- ---- Step 1: Days & Rooms (informational) ---- -->
+  @if (step === 1) {
+    <div class="wizday">
+      @for (day of days; track day) {
+        <div class="wizcard">
+          <div class="wizcard__day-title">{{ day | date: 'EEEE, MMM d, y' }}</div>
+        </div>
+      }
+    </div>
+    <div class="wizday">
+      <h4>Rooms available at this event's location</h4>
+      @if (rooms.length === 0) {
+        <div class="addghost">No rooms set up yet for this event's location — add rooms from Events Manager &gt; Locations, then come back here.</div>
+      }
+      @for (room of rooms; track room) {
+        <div class="wizcard">
+          <div class="wizrow4">
+            <div class="field3"><label>Room</label><div class="val">{{ room.name }}</div></div>
+            <div class="field3"><label>Capacity</label><div class="val">{{ room.capacity ?? '—' }}</div></div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ---- Step 2: Single Items ---- -->
+  @if (step === 2) {
+    @for (day of days; track day; let dayIndex = $index) {
+      <div class="wizday">
+        <h4>Day {{ dayIndex + 1 }} — {{ day | date: 'MMM d' }}</h4>
+        @for (item of singleItemsForDay(day); track item.id) {
+          <div class="wizcard wizcard--clickable" (click)="openItemDialog(item, day)">
+            <div class="wizrow4">
+              <div class="field3"><label>Item</label><div class="val">{{ item.text || '(Untitled)' }}</div></div>
+              <div class="field3"><label>Time</label><div class="val">{{ item.startDate | date: 'shortTime' }} – {{ item.endDate | date: 'shortTime' }}</div></div>
+              <div class="field3"><label>Speaker</label><div class="val">{{ (item.coaches?.length ? item.coaches!.length + ' assigned' : '—') }}</div></div>
+              <div class="field3"><label>Room</label><div class="val">{{ roomName(item.room) }}</div></div>
+            </div>
+          </div>
+        }
+        <button mat-stroked-button type="button" class="addghost addghost--btn" (click)="openItemDialog(null, day)">
+          <mat-icon>add</mat-icon>
+          Add a single item to Day {{ dayIndex + 1 }}
+        </button>
+      </div>
+    }
+  }
+
+  <!-- ---- Step 3: Breakout Blocks ---- -->
+  @if (step === 3) {
+    @for (day of days; track day; let dayIndex = $index) {
+      <div class="wizday">
+        <h4>Day {{ dayIndex + 1 }} — {{ day | date: 'MMM d' }}</h4>
+        @for (block of blocksForDay(day); track block.key; let blockIndex = $index) {
+          <div class="blockcard blockcard--clickable" (click)="openBlockDialog(block, day)">
+            <div class="blockcard__head">
+              <b>{{ blockLabel(blockIndex) }}</b>
+              <span class="badge">{{ block.startDate | date: 'shortTime' }} – {{ block.endDate | date: 'shortTime' }}</span>
+            </div>
+            @for (option of block.options; track option.id) {
+              <div class="optrow3">
+                <b>{{ courseTitle(option.course) }}</b>
+                <span class="m">{{ roomName(option.room) }}</span>
+                <span class="m">Cap {{ option.maxParticipants ?? '—' }}</span>
+              </div>
+            }
+          </div>
+        }
+        <button mat-stroked-button type="button" class="addghost addghost--btn" (click)="openBlockDialog(null, day)">
+          <mat-icon>add</mat-icon>
+          Add a breakout block to Day {{ dayIndex + 1 }}
+        </button>
+      </div>
+    }
+  }
+
+  <!-- ---- Step 4: Review & Publish ---- -->
+  @if (step === 4) {
+    <div class="reviewgrid">
+      <div class="reviewstat"><b>{{ days.length }}</b><span>Days</span></div>
+      <div class="reviewstat"><b>{{ totalSingleItems() }}</b><span>Single items</span></div>
+      <div class="reviewstat"><b>{{ totalBlocks() }}</b><span>Breakout blocks</span></div>
+      <div class="reviewstat"><b>{{ totalOptions() }}</b><span>Breakout options</span></div>
+    </div>
+    @if (totalBlocks() === 0 && totalSingleItems() === 0) {
+      <div class="reviewok reviewok--warn">Nothing's been added yet — go back to Steps 2–3 to build out the agenda, or Publish anyway and add items later from Canvas/Grid.</div>
+    } @else {
+      <div class="reviewok">✓ Ready to publish — you can keep fine-tuning rooms, capacities, and coaches from Canvas/Grid afterward.</div>
+    }
+  }
+
+  <div class="wizfoot">
+    <button mat-button type="button" [disabled]="step === 1" (click)="back()">← Back</button>
+    <button mat-raised-button color="primary" type="button" (click)="next()">{{ step === 4 ? 'Publish Agenda' : 'Continue →' }}</button>
+  </div>
+}

@@ -317,12 +317,21 @@ export class EventsComponent implements OnInit {
 
     this.inProgress$.next(true);
     const raw = this.form.getRawValue();
+    // this.card.imageUrl is undefined (not just falsy) for a brand new
+    // event with no image uploaded yet (showAddModal() sets this.card =
+    // {}, no imageUrl key at all) - assigning that straight onto `value`
+    // put an explicit `imageUrl: undefined` key on the object, which
+    // Firestore's addDoc()/setDoc() reject outright ("Unsupported field
+    // value: undefined"), the same class of bug already diagnosed and
+    // fixed in PurchasesService.withStatusHistory() (see that file's own
+    // comment) - build the key conditionally instead of assigning
+    // unconditionally, so it's omitted rather than present-with-undefined.
     const value: EventModel = {
       ...this.editingItem,
       ...raw,
       startDate: raw.startDate ? new Date(raw.startDate) : this.editingItem?.startDate,
       endDate: raw.endDate ? new Date(raw.endDate) : this.editingItem?.endDate,
-      imageUrl: this.card.imageUrl
+      ...(this.card.imageUrl ? { imageUrl: this.card.imageUrl } : {})
     };
 
     const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);

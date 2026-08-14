@@ -1,30 +1,39 @@
-:host {
-  display: flex;
-  flex-direction: column;
-  height: 70vh;
-}
+$current: #337ab7;
 
-.agenda-toolbar {
-  flex: 0 0 auto;
+.agenda-mode-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
-.agenda-toolbar__title {
-  font-size: 15px;
-  font-weight: 500;
-  margin: 0 0 0 8px;
-}
-
-.agenda-toolbar__spacer {
+.spacer {
   flex: 1 1 auto;
 }
 
-.agenda-calendar {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  padding: 0 16px 16px;
+.viewtoggle {
+  display: inline-flex;
+  background: #f0f0f0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+
+  button {
+    border: none;
+    background: none;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 13px;
+    border-radius: 6px;
+    color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+
+    &.is-on {
+      background: #fff;
+      color: $current;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+  }
 }

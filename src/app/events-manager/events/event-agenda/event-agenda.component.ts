@@ -1,42 +1,28 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
-import { CalendarEvent, CalendarEventTimesChangedEvent, CalendarView } from 'angular-calendar';
-import { EventColor } from 'calendar-utils';
 import { EventModel } from 'src/app/common/models/domain/event.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { CourseService } from 'src/app/common/services/data/course.service';
 import { LocationService } from 'src/app/common/services/data/location.service';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
-import { AgendaItemDialogComponent, AgendaItemDialogResult } from './agenda-item-dialog.component';
 
-// Replaces DevExtreme's dx-scheduler. Deliberate, documented deviations
-// from the original (see the Events Manager migration plan):
-// - daysInWeek:3 replicates the original's fixed 3-day rolling window
-//   exactly (angular-calendar's week view supports this directly).
-// - Drag-to-move and resize-to-change-duration are native to the week
-//   view; drag-to-create-on-empty-space is not, so an explicit "+ Add
-//   Agenda Item" button (and clicking an empty hour segment) opens the
-//   same edit dialog instead.
-// - No true swim-lanes per resource (course/coach/room) - the original's
-//   3 dxi-resource axes with no `groups` set never actually rendered as
-//   lanes either, just per-course coloring, which this replicates by
-//   hashing each course id to a color from a fixed palette.
-const COURSE_COLORS: EventColor[] = [
-  { primary: '#1e88e5', secondary: '#e3f2fd' },
-  { primary: '#43a047', secondary: '#e8f5e9' },
-  { primary: '#fb8c00', secondary: '#fff3e0' },
-  { primary: '#8e24aa', secondary: '#f3e5f5' },
-  { primary: '#00897b', secondary: '#e0f2f1' },
-  { primary: '#d81b60', secondary: '#fce4ec' },
-  { primary: '#3949ab', secondary: '#e8eaf6' }
-];
-const FOOD_BREAK_COLOR: EventColor = { primary: '#6d4c41', secondary: '#efebe9' };
-const AGENDA_COLOR: EventColor = { primary: '#546e7a', secondary: '#eceff1' };
+type AgendaMode = 'wizard' | 'canvas' | 'grid';
 
+// Agenda tab shell - a thin mode-switching wrapper around the redesigned
+// Summit agenda builder (see the Summit Agenda Builder redesign plan).
+// Replaces the old angular-calendar week-view scheduler entirely; the
+// actual editing UI lives in the three child components below, each
+// taking the same @Input() event/courses/coaches/rooms this used to load
+// for the calendar and its item dialog. Courses/coaches/rooms are still
+// loaded exactly the same way as the old calendar version did (one-time
+// getAll()/getById().trainingrooms, not streamAll() - see those call
+// sites' own history for why cold-load WebChannel races make that the
+// right call for small reference lists feeding a dialog).
+//
+// `event.agendaItems` is still mutated in place by whichever child is
+// active - nothing here (or in any child) writes to Firestore on its own;
+// that still only happens when events.component.ts's own Save runs.
 @Component({
     selector: 'app-event-agenda',
     templateUrl: './event-agenda.component.html',
@@ -46,10 +32,7 @@ const AGENDA_COLOR: EventColor = { primary: '#546e7a', secondary: '#eceff1' };
 export class EventAgendaComponent implements OnInit {
   @Input() event: EventModel;
 
-  CalendarView = CalendarView;
-  view: CalendarView = CalendarView.Week;
-  viewDate = new Date();
-  events: CalendarEvent<AgendaItem>[] = [];
+  mode: AgendaMode = 'wizard';
 
   courses: CourseModel[] = [];
   coaches: CoachModel[] = [];
@@ -58,15 +41,13 @@ export class EventAgendaComponent implements OnInit {
   constructor(
     private courseService: CourseService,
     private coachService: CoachService,
-    private locationService: LocationService,
-    private dialog: MatDialog
+    private locationService: LocationService
   ) {}
 
   async ngOnInit(): Promise<void> {
     if (!this.event.agendaItems) {
       this.event.agendaItems = [];
     }
-    this.viewDate = this.toValidDate(dateFromTimestamp(this.event.startDate)) ?? new Date();
 
     this.courses = await this.courseService.getAll();
     this.coaches = await this.coachService.getAll();
@@ -74,96 +55,21 @@ export class EventAgendaComponent implements OnInit {
     const locationId = typeof this.event.location === 'string' ? this.event.location : this.event.location?.id;
     this.rooms = locationId ? ((await this.locationService.getById(locationId))?.trainingrooms ?? []) : [];
 
-    this.rebuildEvents();
+    // Existing Summit events - built entirely under the old calendar-only
+    // Agenda tab - already have agendaItems the first time anyone opens
+    // them in this new UI; land straight on the fine-tune view for those
+    // rather than forcing a redundant Wizard pass over data that's
+    // already there. This is what makes an existing event "just work"
+    // with zero migration - session-block.util.ts derives its blocks from
+    // whatever agendaItems already exist, however they got there.
+    this.mode = (this.event.agendaItems?.length ?? 0) > 0 ? 'canvas' : 'wizard';
   }
 
-  // dateFromTimestamp() has a known, pre-existing gap (see its own
-  // comment): a date already stored in Firestore as a plain string in an
-  // unrecognized format is returned unchanged rather than parsed - a real
-  // data-quality artifact from the original DevExtreme date box's
-  // dateSerializationFormat writing some dates back as strings instead of
-  // Timestamps. Coerces whatever comes back into a real Date (or null),
-  // matching the same defensiveness events.component.ts's own
-  // toInputValue() already applies.
-  private toValidDate(value: unknown): Date | null {
-    if (!value) return null;
-    const date = value instanceof Date ? value : new Date(value as string);
-    return isNaN(date.getTime()) ? null : date;
+  setMode(mode: AgendaMode): void {
+    this.mode = mode;
   }
 
-  private rebuildEvents(): void {
-    this.events = (this.event.agendaItems ?? []).map((item) => this.toCalendarEvent(item));
-  }
-
-  private toCalendarEvent(item: AgendaItem): CalendarEvent<AgendaItem> {
-    return {
-      id: item.id,
-      start: new Date(item.startDate),
-      end: item.endDate ? new Date(item.endDate) : undefined,
-      title: this.titleFor(item),
-      color: this.colorFor(item),
-      meta: item,
-      resizable: { beforeStart: true, afterEnd: true },
-      draggable: true
-    };
-  }
-
-  titleFor(item: AgendaItem): string {
-    if (item.isCourse) {
-      return this.getCourseById(item.course)?.title ?? '(Course)';
-    }
-    return item.text || '(Untitled)';
-  }
-
-  private colorFor(item: AgendaItem): EventColor {
-    if (item.isFoodBreak) return FOOD_BREAK_COLOR;
-    if (item.isCourse && item.course) {
-      const index = this.courses.findIndex((c) => c.id === item.course);
-      return COURSE_COLORS[Math.max(index, 0) % COURSE_COLORS.length];
-    }
-    return AGENDA_COLOR;
-  }
-
-  getCourseById = (id: string | undefined): CourseModel | undefined => this.courses.find((c) => c.id === id);
-  getCoachById = (id: string): CoachModel | undefined => this.coaches.find((c) => c.id === id);
-
-  onEventClicked({ event }: { event: CalendarEvent<AgendaItem> }): void {
-    this.openDialog(event.meta ?? null, event.start);
-  }
-
-  onEventTimesChanged({ event, newStart, newEnd }: CalendarEventTimesChangedEvent<AgendaItem>): void {
-    const item = event.meta;
-    if (!item) return;
-
-    item.startDate = newStart;
-    if (newEnd) {
-      item.endDate = newEnd;
-    }
-    this.rebuildEvents();
-  }
-
-  openDialog(item: AgendaItem | null, defaultStart: Date): void {
-    const ref = this.dialog.open<AgendaItemDialogComponent, unknown, AgendaItemDialogResult>(AgendaItemDialogComponent, {
-      width: '600px',
-      maxWidth: '95vw',
-      data: { item, defaultStart, courses: this.courses, coaches: this.coaches, rooms: this.rooms }
-    });
-
-    ref.afterClosed().subscribe((result) => {
-      if (!result) return;
-
-      const items = this.event.agendaItems ?? (this.event.agendaItems = []);
-      const index = items.findIndex((i) => i.id === result.item.id);
-
-      if (result.action === 'delete') {
-        if (index >= 0) items.splice(index, 1);
-      } else if (index >= 0) {
-        items[index] = result.item;
-      } else {
-        items.push(result.item);
-      }
-
-      this.rebuildEvents();
-    });
+  onPublished(): void {
+    this.mode = 'canvas';
   }
 }
