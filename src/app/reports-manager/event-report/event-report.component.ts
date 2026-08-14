@@ -233,10 +233,27 @@ export class EventReportComponent implements OnInit {
       lastName: item.lastName ?? '',
       firstName: item.firstName ?? '',
       email: item.email ?? '',
-      registrationDate: dateFromTimestamp(item.registrationDate),
+      registrationDate: this.toSafeDate(item.registrationDate),
       loggedIn: item.loggedIn ? 'Yes' : 'No',
       receipt: item.receipt ?? ''
     };
+  }
+
+  // dateFromTimestamp() only converts a real Timestamp/{seconds,nanoseconds}
+  // map or an "MM/dd/yyyy" string - an ISO string ("2026-01-30T02:00:00"),
+  // which is how agendaItems' startDate (and other date fields) are often
+  // actually stored (see MIGRATION.md's "Date fields: inconsistent storage
+  // shapes" entry), passes straight through UNCONVERTED, still a string.
+  // Both call sites below used to assume the Date|null they're typed as is
+  // really a Date at runtime and called Date-only methods on it
+  // (.toISOString()) - crashing ("...toISOString is not a function") the
+  // moment a real-world ISO-string date showed up. toMillis() is the
+  // codebase's own canonical fix for exactly this (see its own comment in
+  // date-from-timestamp.ts) - route through it instead of trusting the
+  // static type.
+  private toSafeDate(value: unknown): Date | null {
+    const ms = toMillis(value);
+    return ms > 0 ? new Date(ms) : null;
   }
 
   // Same join as event-breakouts.component.ts's own flatten(): trainingSessions
@@ -258,7 +275,7 @@ export class EventReportComponent implements OnInit {
         }
         students.push({
           breakoutName: course.title,
-          sessionDate: dateFromTimestamp(agendaItem.startDate),
+          sessionDate: this.toSafeDate(agendaItem.startDate),
           lastName: reg.lastName ?? '',
           firstName: reg.firstName ?? '',
           email: reg.email ?? ''
@@ -287,19 +304,25 @@ export class EventReportComponent implements OnInit {
         const breakoutStudents = byBreakout.get(breakoutName)!;
         rows.push({ kind: 'breakout', label: breakoutName, count: breakoutStudents.length });
 
-        const bySession = new Map<string, BreakoutStudent[]>();
+        // Numeric key via toMillis() rather than s.sessionDate.toISOString()
+        // - sessionDate is already routed through toSafeDate() above so
+        // it's a real Date or null by this point, but grouping by a plain
+        // number is simpler and matches this codebase's own convention
+        // (toMillis is the canonical "give me a sortable number" helper)
+        // rather than re-introducing a Date-only method call here too.
+        const bySession = new Map<number, BreakoutStudent[]>();
         breakoutStudents.forEach((s) => {
-          const key = s.sessionDate ? s.sessionDate.toISOString() : '';
+          const key = toMillis(s.sessionDate);
           const list = bySession.get(key) ?? [];
           list.push(s);
           bySession.set(key, list);
         });
 
         Array.from(bySession.keys())
-          .sort()
+          .sort((a, b) => a - b)
           .forEach((key) => {
             const sessionStudents = bySession.get(key)!.sort((a, b) => a.lastName.localeCompare(b.lastName));
-            const label = key ? new Date(key).toLocaleTimeString() : '';
+            const label = key > 0 ? new Date(key).toLocaleTimeString() : '';
             rows.push({ kind: 'session', label, count: sessionStudents.length });
             sessionStudents.forEach((s) => rows.push({ kind: 'student', lastName: s.lastName, firstName: s.firstName, email: s.email }));
           });
