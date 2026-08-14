@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, combineLatest, tap } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Timestamp } from 'firebase/firestore';
-import { CustomerModel, PendingCustomerChange } from 'src/app/common/models/domain/utils/customer.model';
+import { CustomerModel, PendingCustomerChange, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerNoteModel } from 'src/app/common/models/domain/utils/customer-note.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -144,7 +144,12 @@ export class CustomerDetailsComponent implements OnInit {
         state: [this.selectedItem.billingAddress?.state ?? ''],
         zip: [this.selectedItem.billingAddress?.zip ?? ''],
         country: [this.selectedItem.billingAddress?.country ?? '']
-      })
+      }),
+      // See customer.model.ts's own comment - a subscriber IS a customer
+      // now, these 2 flags are the same data the Subscribers screen reads/
+      // writes, just editable here too.
+      subscribedToNewsletter: [this.selectedItem.subscribedToNewsletter ?? false],
+      subscribedToPrayerTeam: [this.selectedItem.subscribedToPrayerTeam ?? false]
     });
 
     this.purchases$ = this.purchasesService.streamAllByValue('email', this.selectedItem.email).pipe(
@@ -235,6 +240,22 @@ export class CustomerDetailsComponent implements OnInit {
     return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
+  // ---- Subscriptions ----
+  // Read/write the same 2 flags the Subscribers screen and the public
+  // site's subscribe_to_email_list/unsubscribe_from_email_list endpoints
+  // use (see customer.model.ts's own comment) - this is just another place
+  // to see/flip them, not a separate mechanism.
+
+  subscriptionLabel(type: SubscriptionType): string {
+    return type === 'prayer' ? 'Prayer Team' : 'Newsletter';
+  }
+
+  subscriptionDateLabel(type: SubscriptionType): string {
+    const { dateField } = subscriptionFieldsForType(type);
+    const date = dateFromTimestamp(this.selectedItem[dateField]);
+    return date instanceof Date ? `Subscribed ${date.toLocaleDateString()}` : '';
+  }
+
   // ---- Save / cancel ----
 
   onCancel(): void {
@@ -248,7 +269,7 @@ export class CustomerDetailsComponent implements OnInit {
     }
 
     this.inProgress$.next(true);
-    const value: CustomerModel = { ...this.selectedItem, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
+    const value = this.buildUpdatedCustomer();
 
     this.service.update(value.id!, value).then((result) => {
       if (result) {
@@ -257,6 +278,33 @@ export class CustomerDetailsComponent implements OnInit {
       } else {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
+      }
+    });
+  }
+
+  // Shared by onSave() and resolvePendingChange() - both persist the WHOLE
+  // form (see resolvePendingChange's own comment on why), so both need the
+  // same subscription-date-stamping rule applied, not just the main Save
+  // button.
+  private buildUpdatedCustomer(): CustomerModel {
+    const value: CustomerModel = { ...this.selectedItem, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
+    this.stampSubscriptionDates(value);
+    return value;
+  }
+
+  // Checking a subscription box writes the flag exactly like the
+  // Subscribers screen's own Add/Edit (see subscriptionFieldsForType) -
+  // stamp a fresh *SubscribedDate only on a false -> true transition;
+  // unchecking leaves the date alone ("last subscribed", not "currently
+  // subscribed since" - same rule everywhere else this flag pair is
+  // written, see customer.model.ts's own comment).
+  private stampSubscriptionDates(value: CustomerModel): void {
+    (['newsletter', 'prayer'] as SubscriptionType[]).forEach((type) => {
+      const { flagField, dateField } = subscriptionFieldsForType(type);
+      const wasSubscribed = !!this.selectedItem[flagField];
+      const isSubscribed = !!value[flagField];
+      if (isSubscribed && !wasSubscribed) {
+        value[dateField] = Timestamp.now();
       }
     });
   }
@@ -286,7 +334,7 @@ export class CustomerDetailsComponent implements OnInit {
 
     this.pendingChanges = this.pendingChanges.filter((c) => c !== change);
 
-    const value: CustomerModel = { ...this.selectedItem, ...this.form.getRawValue(), notes: this.notes, pendingChanges: this.pendingChanges };
+    const value = this.buildUpdatedCustomer();
     this.selectedItem = value;
     this.service.update(value.id!, value).then(() => {
       this.snackbar.success(accept ? 'Update applied' : 'Update dismissed');

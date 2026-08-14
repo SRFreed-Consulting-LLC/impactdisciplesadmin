@@ -96,6 +96,20 @@
 
         <h3 class="section-title">Billing Address</h3>
         <app-address-field [group]="$any(form.get('billingAddress'))" [showCountry]="true"></app-address-field>
+
+        <h3 class="section-title">Subscriptions</h3>
+        <div class="subscription-row">
+          <mat-checkbox formControlName="subscribedToNewsletter">Newsletter</mat-checkbox>
+          @if (selectedItem.subscribedToNewsletter) {
+            <span class="subscription-row__date">{{ subscriptionDateLabel('newsletter') }}</span>
+          }
+        </div>
+        <div class="subscription-row">
+          <mat-checkbox formControlName="subscribedToPrayerTeam">Prayer Team</mat-checkbox>
+          @if (selectedItem.subscribedToPrayerTeam) {
+            <span class="subscription-row__date">{{ subscriptionDateLabel('prayer') }}</span>
+          }
+        </div>
       </div>
 
       <!-- Purchases + Events Attended + Notes, merged into one
