@@ -1,9 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SubscriptionModel, SubscriptionType } from 'src/app/common/models/domain/subscription.model';
 import { SubscriptionService } from 'src/app/common/services/data/subscription.service';
-import { EmailList } from 'src/app/common/models/utils/email-list.model';
-import { EmailListService } from 'src/app/common/services/data/email-list.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
@@ -26,7 +24,6 @@ interface ReportRow {
   typeLabel: string;
   date: Date | null;
   // Grouped-mode-only - blank/0 when ungrouped.
-  listName: string;
   subscriberCount: number;
   earliestDate: Date | null;
   latestDate: Date | null;
@@ -38,19 +35,22 @@ type DateMode = 'after' | 'between' | 'lastMonths';
 // over the subscriptions collection (see subscriptions.component.ts's own
 // comment: newsletter + prayer team, merged into one collection,
 // distinguished by `type`). Date Subscribed and Type are real Firestore
-// queries (see criteriaForm/runQuery() below); List is NOT a Firestore
-// query - SubscriptionModel carries no listId/list membership field of its
-// own, so (matching subscriptions.component.ts's own "Filter by List")
-// membership is resolved from a separately-saved EmailList doc's `list`
-// array and applied as a client-side filter over whatever the date/type
-// query already returned.
+// queries (see criteriaForm/runQuery() below).
+//
+// Deliberately no "List" criterion (a saved EmailList membership filter,
+// like the Subscribers screen's own "Filter by List") - considered and
+// dropped: it's not a Firestore query (SubscriptionModel carries no list
+// membership field of its own; membership only exists in a separately
+// saved EmailList doc's `list` array, resolved client-side), and wasn't
+// worth the extra criterion for how rarely a report needs to be scoped to
+// one specific saved list rather than a type/date range.
 @Component({
     selector: 'app-subscriber-report',
     templateUrl: './subscriber-report.component.html',
     styleUrls: ['./subscriber-report.component.scss'],
     standalone: false
 })
-export class SubscriberReportComponent implements OnInit {
+export class SubscriberReportComponent {
   criteriaForm: FormGroup;
 
   columns: ColumnDef[] = [
@@ -60,7 +60,6 @@ export class SubscriberReportComponent implements OnInit {
     { key: 'typeLabel', label: 'Type', visible: true },
     { key: 'date', label: 'Date Subscribed', visible: true },
     // Only meaningful once groupByType is on - see displayedColumns.
-    { key: 'listName', label: 'List', visible: true },
     { key: 'subscriberCount', label: 'Subscriber Count', visible: true },
     { key: 'earliestDate', label: 'Earliest Subscribed', visible: false },
     { key: 'latestDate', label: 'Most Recent Subscribed', visible: false }
@@ -68,17 +67,12 @@ export class SubscriberReportComponent implements OnInit {
 
   groupByType = false;
 
-  // Kept as 2 separate arrays purely so the List dropdown can group them
-  // under 2 optgroups - same reasoning/source as subscriptions.component.ts.
-  newsletterLists: EmailList[] = [];
-  prayerLists: EmailList[] = [];
-
   results: ReportRow[] = [];
   loading = false;
   generated = false;
   errorMessage: string | null = null;
 
-  constructor(private service: SubscriptionService, private emailListService: EmailListService, private fb: FormBuilder) {
+  constructor(private service: SubscriptionService, private fb: FormBuilder) {
     this.criteriaForm = this.fb.group({
       dateEnabled: [false],
       dateMode: ['after' as DateMode],
@@ -87,23 +81,12 @@ export class SubscriberReportComponent implements OnInit {
       endDate: [null],
       lastMonths: [3],
       typeEnabled: [false],
-      type: [null, Validators.required],
-      listEnabled: [false],
-      listId: [null, Validators.required]
+      type: [null, Validators.required]
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    const [newsletterLists, prayerLists] = await Promise.all([
-      this.emailListService.getAllByValue('type', 'newsletter'),
-      this.emailListService.getAllByValue('type', 'prayer')
-    ]);
-    this.newsletterLists = newsletterLists ?? [];
-    this.prayerLists = prayerLists ?? [];
-  }
-
   get canGenerate(): boolean {
-    return this.criteriaForm.value.dateEnabled || this.criteriaForm.value.typeEnabled || this.criteriaForm.value.listEnabled;
+    return this.criteriaForm.value.dateEnabled || this.criteriaForm.value.typeEnabled;
   }
 
   // Grouped-only columns (a type-level aggregate) stay out of the ungrouped
@@ -112,7 +95,7 @@ export class SubscriberReportComponent implements OnInit {
   // identity columns (name/email/date) as the "ungrouped-only" side instead
   // of "grouped-only", since here a group ISN'T one person, it's a category.
   get displayedColumns(): string[] {
-    const groupedOnlyKeys = ['listName', 'subscriberCount', 'earliestDate', 'latestDate'];
+    const groupedOnlyKeys = ['subscriberCount', 'earliestDate', 'latestDate'];
     const ungroupedOnlyKeys = ['firstName', 'lastName', 'email', 'date'];
     return this.columns
       .filter((c) => c.visible)
@@ -158,8 +141,7 @@ export class SubscriberReportComponent implements OnInit {
 
     try {
       const raw = await this.runQuery();
-      const listName = this.resolveListName();
-      this.results = this.groupByType ? this.aggregateByType(raw, listName) : raw.map((item) => this.toRow(item));
+      this.results = this.groupByType ? this.aggregateByType(raw) : raw.map((item) => this.toRow(item));
       this.generated = true;
     } catch (err) {
       this.errorMessage = (err as { message?: string })?.message ?? 'Something went wrong generating the report.';
@@ -169,21 +151,13 @@ export class SubscriberReportComponent implements OnInit {
   }
 
   // Builds one real Firestore query (date range + type, both optional -
-  // unlike Purchase Report there's no OR-across-two-fields case here) then,
-  // if List is enabled, filters the result client-side against that list's
-  // saved membership (see this component's header comment).
+  // unlike Purchase Report there's no OR-across-two-fields case here).
   private async runQuery(): Promise<SubscriptionModel[]> {
     const dateParams = this.criteriaForm.value.dateEnabled ? this.buildDateParams() : [];
     const typeParams = this.criteriaForm.value.typeEnabled
       ? [new QueryParam('type', WhereFilterOperandKeys.equal, this.criteriaForm.value.type)]
       : [];
-    const raw = await this.service.queryAllByMultiValue([...dateParams, ...typeParams]);
-
-    if (!this.criteriaForm.value.listEnabled) {
-      return raw;
-    }
-    const memberIds = new Set(((this.findSelectedList()?.list ?? []) as SubscriptionModel[]).map((s) => s.id));
-    return raw.filter((item) => memberIds.has(item.id));
+    return this.service.queryAllByMultiValue([...dateParams, ...typeParams]);
   }
 
   private buildDateParams(): QueryParam[] {
@@ -204,14 +178,6 @@ export class SubscriberReportComponent implements OnInit {
     return [new QueryParam('date', WhereFilterOperandKeys.moreOrEqual, since)];
   }
 
-  private findSelectedList(): EmailList | undefined {
-    return [...this.newsletterLists, ...this.prayerLists].find((l) => l.id === this.criteriaForm.value.listId);
-  }
-
-  private resolveListName(): string {
-    return this.criteriaForm.value.listEnabled ? this.findSelectedList()?.name ?? '' : '';
-  }
-
   private toRow(item: SubscriptionModel): ReportRow {
     return {
       id: item.id!,
@@ -220,14 +186,13 @@ export class SubscriberReportComponent implements OnInit {
       email: item.email ?? '',
       typeLabel: this.typeLabel(item.type),
       date: dateFromTimestamp(item.date),
-      listName: '',
       subscriberCount: 0,
       earliestDate: null,
       latestDate: null
     };
   }
 
-  private aggregateByType(items: SubscriptionModel[], listName: string): ReportRow[] {
+  private aggregateByType(items: SubscriptionModel[]): ReportRow[] {
     const groups = new Map<SubscriptionType, SubscriptionModel[]>();
     items.forEach((item) => {
       if (!groups.has(item.type)) {
@@ -245,7 +210,6 @@ export class SubscriberReportComponent implements OnInit {
         email: '',
         typeLabel: this.typeLabel(type),
         date: null,
-        listName: listName || 'All Subscribers',
         subscriberCount: subs.length,
         earliestDate: dates.length ? new Date(Math.min(...dates)) : null,
         latestDate: dates.length ? new Date(Math.max(...dates)) : null

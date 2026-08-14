@@ -72,6 +72,13 @@ export class EventReportComponent implements OnInit {
   organizationName = '';
   locationName = '';
 
+  // Off (default) = every event in the picker. On = only isActive ones -
+  // Firestore's own "currently live on the site" flag, not a past/future
+  // distinction (a past event can still be isActive=false long after the
+  // fact, or in principle still true - this filters on the flag as stored,
+  // not derived from startDate).
+  showLiveEventsOnly = false;
+
   // Off = Full Report, on = Breakout Sessions - only shown/relevant for a
   // summit event (see template).
   breakoutMode = false;
@@ -114,6 +121,10 @@ export class EventReportComponent implements OnInit {
   eventLabel(event: EventModel): string {
     const date = dateFromTimestamp(event.startDate);
     return date ? `${event.eventName} (${date.toLocaleDateString()})` : event.eventName ?? '';
+  }
+
+  get visibleEvents(): EventModel[] {
+    return this.showLiveEventsOnly ? this.events.filter((e) => e.isActive) : this.events;
   }
 
   get hasResults(): boolean {

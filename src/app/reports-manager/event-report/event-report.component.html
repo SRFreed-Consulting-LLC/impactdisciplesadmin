@@ -9,12 +9,14 @@
   <div class="criteria">
     <mat-form-field appearance="outline" class="event-field">
       <mat-label>Event</mat-label>
-      <mat-select [(ngModel)]="selectedEventId" [ngModelOptions]="{standalone: true}" (selectionChange)="onEventSelected()">
-        @for (event of events; track event.id) {
+      <mat-select [(ngModel)]="selectedEventId" [ngModelOptions]="{standalone: true}" panelClass="event-select-panel" (selectionChange)="onEventSelected()">
+        @for (event of visibleEvents; track event.id) {
           <mat-option [value]="event.id">{{ eventLabel(event) }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
+
+    <mat-checkbox [(ngModel)]="showLiveEventsOnly" [ngModelOptions]="{standalone: true}">Live Events Only</mat-checkbox>
 
     @if (selectedEvent?.isSummit) {
       <mat-slide-toggle [(ngModel)]="breakoutMode" [ngModelOptions]="{standalone: true}" (change)="onBreakoutModeChange()">

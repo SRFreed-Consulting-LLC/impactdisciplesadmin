@@ -210,7 +210,7 @@ it before adding a new screen or moving an existing one between modules.
 
 ### Reports Manager (`src/app/reports-manager/`)
 
-Three screens today, all sharing one pattern — a tab shell (`reports-manager.component.ts`) that
+Four screens today, all sharing one pattern — a tab shell (`reports-manager.component.ts`) that
 reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one `@if
 (selectedTab === '<label>')` block per report (no per-report Angular routes; a new report is a new
 `NavLeaf` + a new `@if` block + a declaration in `ReportsManagerModule`, not a new route):
@@ -218,15 +218,28 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
 - **Purchase Report** (`purchase-report/`, Reports Manager → Purchases) — over the `purchases`
   collection, filters on Purchase Date and State, group-by-user aggregation.
 - **Subscriber Report** (`subscriber-report/`, Reports Manager → Subscribers) — over the
-  `subscriptions` collection, filters on Date Subscribed, Type (newsletter/prayer, real query), and
-  List (**not** a Firestore query — resolved from a separately-saved `EmailList` doc's `list` array
-  and applied client-side, same mechanism as the Subscribers screen's own "Filter by List"), with a
-  group-by-type aggregation (counts + earliest/latest date per type).
+  `subscriptions` collection, filters on Date Subscribed and Type (newsletter/prayer), both real
+  Firestore queries, with a group-by-type aggregation (counts + earliest/latest date per type). No
+  List criterion — considered (the same saved-`EmailList`-membership mechanism as the Subscribers
+  screen's own "Filter by List", client-side rather than a Firestore query since subscribers don't
+  carry list membership themselves) and deliberately dropped as not worth the extra criterion.
 - **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
   collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
   signup/created-date field at all (customer docs are upserted from purchases/event registrations —
   see `functions/src/customer-upsert.functions.ts` — with no timestamp stamped anywhere), and there
   is no live list-membership mechanism wired to Customers (see the Pagination section above).
+- **Event Report** (`event-report/`, Reports Manager → Events) — pick an event (single required
+  select, not a checkboxed criteria form like the other 3 — there's only one real "criterion" here,
+  so picking one loads its data immediately rather than needing a separate "Generate Report" submit
+  step), see its details and attendee list, with a "Live Events Only" checkbox narrowing the picker
+  to `isActive` events. A summit event (`isSummit`) adds a toggle between a plain attendee list and a
+  breakout-session-grouped report — breakout sign-up isn't its own collection:
+  `EventRegistrationModel.trainingSessions` is an array of agenda-item ids, cross-referenced against
+  the event's own `agendaItems` (for session time) and the `courses` collection (for the display
+  name). This join is reproduced from `event-breakouts.component.ts`'s own `flatten()`/`buildRows()`
+  rather than reusing that component directly — it's tightly coupled to being an `@Input`-driven tab
+  inside the event-edit screen, with its own live-stream/filter-row state a one-shot report doesn't
+  need.
 
 Common conventions established by Purchase Report and followed by the other two:
 

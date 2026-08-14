@@ -76,32 +76,6 @@
       }
     </div>
 
-    <div class="criteria__block">
-      <mat-checkbox formControlName="listEnabled">List</mat-checkbox>
-
-      @if (criteriaForm.value.listEnabled) {
-        <mat-form-field appearance="outline" class="list-field">
-          <mat-label>List</mat-label>
-          <mat-select formControlName="listId">
-            @if (newsletterLists.length > 0) {
-              <mat-optgroup label="Newsletter">
-                @for (list of newsletterLists; track list.id) {
-                  <mat-option [value]="list.id">{{ list.name }}</mat-option>
-                }
-              </mat-optgroup>
-            }
-            @if (prayerLists.length > 0) {
-              <mat-optgroup label="Prayer Team">
-                @for (list of prayerLists; track list.id) {
-                  <mat-option [value]="list.id">{{ list.name }}</mat-option>
-                }
-              </mat-optgroup>
-            }
-          </mat-select>
-        </mat-form-field>
-      }
-    </div>
-
     <div class="criteria__block criteria__block--actions">
       <mat-slide-toggle [(ngModel)]="groupByType" [ngModelOptions]="{standalone: true}">Group by Type</mat-slide-toggle>
       <button mat-raised-button color="primary" type="button" [disabled]="!canGenerate || loading" (click)="generateReport()">

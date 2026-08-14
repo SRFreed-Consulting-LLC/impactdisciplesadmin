@@ -25,7 +25,23 @@
 }
 
 .event-field {
-  width: 360px;
+  width: 520px;
+}
+
+// Event labels ("Name (date)") are long enough to wrap inside the default
+// option-list width - widen the overlay panel itself (it otherwise matches
+// the trigger) and stop individual option labels from wrapping to a second
+// line. A global rule (::ng-deep, scoped to this report's own panelClass so
+// it doesn't leak into every other mat-select in the app) since the overlay
+// panel renders outside this component's own DOM.
+::ng-deep .event-select-panel {
+  max-width: 640px !important;
+
+  .mat-mdc-option .mdc-list-item__primary-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 mat-form-field {
