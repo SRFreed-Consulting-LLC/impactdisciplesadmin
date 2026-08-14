@@ -81,6 +81,14 @@ exports.subscribe_to_email_list = functions
           .limit(1)
           .get();
 
+        // alreadySubscribed lets callers (impactdisciples-web's
+        // SubscriptionService) keep showing a distinct "you're already on
+        // this list" message instead of a flat success toast every time -
+        // same UX the old createSubscription()'s null-vs-object return
+        // gave them back when this was a direct Firestore query against
+        // the `subscriptions` collection.
+        let alreadySubscribed = false;
+
         if (existingSnap.empty) {
           await db.collection("customers").add({
             firstName,
@@ -93,13 +101,14 @@ exports.subscribe_to_email_list = functions
             [dateField]: now,
           });
         } else {
+          alreadySubscribed = existingSnap.docs[0].data()[flagField] === true;
           await existingSnap.docs[0].ref.update({
             [flagField]: true,
             [dateField]: now,
           });
         }
 
-        response.send("Subscribed successfully");
+        response.send({subscribed: true, alreadySubscribed});
       } catch (err) {
         functions.logger.error("subscribe_to_email_list failed", err);
         response.status(500).send("Something went wrong");
