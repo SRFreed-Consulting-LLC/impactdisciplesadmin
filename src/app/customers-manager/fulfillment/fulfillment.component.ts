@@ -92,7 +92,9 @@ export class FulfillmentComponent implements OnInit {
     if (!this.canEdit()) {
       return;
     }
-    this.service.acknowledgeOrder(item).then(() => this.snackbar.success('Order acknowledged'));
+    this.service.acknowledgeOrder(item)
+      .then(() => this.snackbar.success('Order acknowledged'))
+      .catch((err) => this.reportTransitionError(err));
   }
 
   completedCount(item: CheckoutForm): number {
@@ -121,6 +123,8 @@ export class FulfillmentComponent implements OnInit {
     this.printingIds.add(item.id!);
     try {
       await this.service.getShippingLabel(item);
+    } catch (err) {
+      this.reportTransitionError(err);
     } finally {
       this.printingIds.delete(item.id!);
     }
@@ -130,24 +134,41 @@ export class FulfillmentComponent implements OnInit {
     if (!this.canEdit()) {
       return;
     }
-    this.service.markPickedUp(item).then(() => this.snackbar.success('Marked as picked up / delivered - order closed'));
+    this.service.markPickedUp(item)
+      .then(() => this.snackbar.success('Marked as picked up / delivered - order closed'))
+      .catch((err) => this.reportTransitionError(err));
   }
 
   markPackaged(item: CheckoutForm): void {
     if (!this.canEdit()) {
       return;
     }
-    this.service.markPackaged(item).then(() => this.snackbar.success('Marked as packaged'));
+    this.service.markPackaged(item)
+      .then(() => this.snackbar.success('Marked as packaged'))
+      .catch((err) => this.reportTransitionError(err));
   }
 
   markShipped(item: CheckoutForm): void {
     if (!this.canEdit()) {
       return;
     }
-    this.service.markShipped(item).then(() => this.snackbar.success('Marked as shipped - order closed'));
+    this.service.markShipped(item)
+      .then(() => this.snackbar.success('Marked as shipped - order closed'))
+      .catch((err) => this.reportTransitionError(err));
   }
 
   private newRank(item: CheckoutForm): number {
     return this.isNew(item) ? 0 : 1;
+  }
+
+  // Every transition method above used to let a rejected write vanish
+  // silently - no snackbar, no console-visible app error, button just
+  // re-enabled with nothing else changed, indistinguishable from the click
+  // never having registered at all. This is the one place that turns any
+  // such failure (network blip, a transient Firestore write error, etc.)
+  // into something the admin can actually see.
+  private reportTransitionError(err: unknown): void {
+    console.error('Fulfillment status update failed', err);
+    this.snackbar.error("Couldn't update this order - please try again.");
   }
 }

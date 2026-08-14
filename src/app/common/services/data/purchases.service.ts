@@ -35,8 +35,21 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   // StatusHistoryEntry's own comment, cart.model.ts) - every transition
   // method below folds this into the same full-object update() that changes
   // fulfillmentStatus itself, so the two can never drift apart.
+  //
+  // `by` is only set when currentUserLabel() has a real value - live-
+  // diagnosed 2026-08-14: `by` is typed optional (`by?: string`) but
+  // currentUserLabel() can return `undefined` (the display-caching cookie
+  // it reads can be missing/expired independently of the real Firebase Auth
+  // session - see its own comment), and an object literal with a key
+  // explicitly set to `undefined` is NOT the same thing as that key being
+  // absent - Firestore's setDoc() rejects the whole write ("Unsupported
+  // field value: undefined") the moment any field, however deeply nested,
+  // is explicitly undefined. Every fulfillment-status transition button
+  // silently failed this way whenever the cookie had lapsed. Omitting the
+  // key entirely when there's no label keeps the entry itself valid.
   private withStatusHistory(item: CheckoutForm, status: FulfillmentStatus): StatusHistoryEntry[] {
-    const entry: StatusHistoryEntry = { status, date: Timestamp.now(), by: this.currentUserLabel() };
+    const by = this.currentUserLabel();
+    const entry: StatusHistoryEntry = { status, date: Timestamp.now(), ...(by ? { by } : {}) };
     return [...(item.statusHistory ?? []), entry];
   }
 

@@ -1,0 +1,71 @@
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+.options-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  margin: 8px 0 6px;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.course-field {
+  flex: 1.4 1 0;
+}
+
+.room-field {
+  flex: 1 1 0;
+}
+
+.cap-field {
+  flex: 0.6 1 0;
+}
+
+.coach-display {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.coach-display__label {
+  font-size: 11px;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+}
+
+.coach-display__value {
+  font-weight: 500;
+}
+
+.add-option-btn {
+  margin-top: 8px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}

@@ -20,7 +20,7 @@
         Nothing waiting on fulfillment right now.
       </div>
     }
-    @for (item of orders; track item) {
+    @for (item of orders; track item.id) {
       <div class="order-card" [class.order-card--new]="isNew(item)">
         <div class="order-card__header">
           <div>

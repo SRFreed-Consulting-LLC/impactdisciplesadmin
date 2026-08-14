@@ -107,6 +107,17 @@ export class AgendaItemDialogComponent {
     const raw = this.form.getRawValue();
     const type: AgendaItemType = raw.type;
 
+    // `null`, never `undefined`, for a field that doesn't apply to this
+    // type - Firestore's setDoc()/update() (a full document overwrite,
+    // not a merge - see FirebaseDAO.update()) rejects the entire write if
+    // any field is explicitly `undefined`, however deeply nested. This
+    // item only reaches Firestore later, batched into the whole Event
+    // document by events.component.ts's own onSave() - the failure mode
+    // (a rejected write) doesn't surface until then, which is why this
+    // went unnoticed: nothing here calls Firestore directly to catch it
+    // sooner. Live-diagnosed 2026-08-14 alongside the identical bug in
+    // events.component.ts's own onSave() (imageUrl) - see that file's
+    // own comment.
     const item: AgendaItem = {
       ...this.data.item,
       id: this.data.item?.id ?? this.generateId(),
@@ -114,16 +125,16 @@ export class AgendaItemDialogComponent {
       endDate: new Date(raw.endDate),
       isCourse: type === 'course',
       isFoodBreak: type === 'foodBreak',
-      room: raw.room ?? undefined,
+      room: raw.room,
       // Course-type items don't carry their own text/description - the
       // calendar's own event title is derived from the linked course's
       // title instead (see event-agenda.component.ts's titleFor()),
       // matching the original's custom appointment-template behavior.
-      text: type === 'course' ? undefined : raw.text,
-      description: type === 'course' ? undefined : raw.description,
-      course: type === 'course' ? raw.course : undefined,
-      maxParticipants: type === 'course' ? raw.maxParticipants ?? undefined : undefined,
-      coaches: type !== 'foodBreak' ? raw.coaches : undefined
+      text: type === 'course' ? null : raw.text,
+      description: type === 'course' ? null : raw.description,
+      course: type === 'course' ? raw.course : null,
+      maxParticipants: type === 'course' ? (raw.maxParticipants ?? null) : null,
+      coaches: type !== 'foodBreak' ? raw.coaches : null
     };
 
     this.dialogRef.close({ action: 'save', item });

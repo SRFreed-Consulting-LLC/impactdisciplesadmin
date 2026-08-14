@@ -1,0 +1,259 @@
+// Palette matches fulfillment.component.scss's own convention (semantic
+// status colors, not the app's brand yellow; $current reuses the app's
+// real primary blue #337ab7).
+$current: #337ab7;
+$current-tint: #e8f1fa;
+$done: #2e7d4f;
+$done-tint: #e6f4ea;
+$pending: #d5d8dc;
+$accent2: #6a4e82;
+$accent2-tint: #f1e3fb;
+$warn: #92600a;
+$warn-tint: #ffecc7;
+
+.empty-state {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  padding: 24px 4px;
+}
+
+.wizsteps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.wizstep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.wizstep__dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.wizstep__label {
+  font-size: 12px;
+  font-weight: 650;
+  color: rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.wizstep.is-active .wizstep__dot {
+  background: $current;
+  border-color: $current;
+  color: #fff;
+}
+
+.wizstep.is-active .wizstep__label {
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.wizstep.is-done .wizstep__dot {
+  background: $done-tint;
+  border-color: $done;
+  color: $done;
+}
+
+.wizline {
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.12);
+  margin: 0 6px;
+  min-width: 20px;
+}
+
+.wizday {
+  margin-bottom: 22px;
+}
+
+.wizday h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.5);
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.wizcard {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      border-color: $current;
+    }
+  }
+}
+
+.wizcard__day-title {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.wizrow4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.field3 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field3 label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+}
+
+.field3 .val {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.blockcard {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: #fff;
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      border-color: $accent2;
+    }
+  }
+}
+
+.blockcard__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  b {
+    font-size: 13px;
+  }
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: $accent2-tint;
+  color: $accent2;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.optrow3 {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 0.8fr;
+  gap: 8px;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  margin-bottom: 6px;
+
+  b {
+    font-weight: 650;
+    font-size: 12.3px;
+  }
+
+  .m {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 11px;
+  }
+}
+
+.addghost {
+  border: 1.5px dashed rgba(0, 0, 0, 0.16);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+
+  &--btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+}
+
+.reviewgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reviewstat {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+
+  b {
+    display: block;
+    font-size: 22px;
+    color: $current;
+  }
+
+  span {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    font-weight: 650;
+  }
+}
+
+.reviewok {
+  background: $done-tint;
+  color: $done;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12.5px;
+  font-weight: 650;
+
+  &--warn {
+    background: $warn-tint;
+    color: $warn;
+  }
+}
+
+.wizfoot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}

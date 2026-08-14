@@ -101,6 +101,16 @@ not a decision to defend or extend.
   methods retry with jitter and swallow terminal errors into `of([])` — see the comment on
   `retryDelay()` for why (a diagnosed WebChannel handshake race when several `onSnapshot` listeners
   attach in the same tick, not a real rules rejection).
+- **Firestore write gotcha: never assign an optional field the literal value `undefined`.** An
+  object literal with a key explicitly set to `undefined` is not the same as that key being absent —
+  `setDoc()`/`update()` reject the *entire* write ("Unsupported field value: undefined") the moment
+  any field, however deeply nested, is explicitly `undefined`. Live-diagnosed 2026-08-14 in
+  `PurchasesService.withStatusHistory()`: `by?: string` was always assigned from
+  `currentUserLabel()`, which can itself return `undefined` (its display-caching cookie can lapse
+  independently of the real Firebase Auth session), silently failing every fulfillment-status
+  transition whenever that happened. Fix pattern: build the optional field conditionally
+  (`...(value ? { key: value } : {})`) rather than assigning it unconditionally, so the key is
+  omitted rather than present-with-`undefined`.
 - **`BaseService<T>`** (`src/app/common/services/data/base.service.ts`) — thin per-collection
   wrapper around the DAO; every entity service (`ProductService`, `CustomerService`, etc.) extends
   this and just sets `table` (the Firestore collection name) and optionally `fromFirestore`
