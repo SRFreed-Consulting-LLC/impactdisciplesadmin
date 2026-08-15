@@ -1,0 +1,210 @@
+<div class="composer" [formGroup]="form">
+  <mat-toolbar class="composer__header">
+    <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 class="composer__title">{{ isEdit ? form.value.name || 'EDIT CAMPAIGN' : 'NEW CAMPAIGN' }}</h2>
+    <span class="chip" [class]="'status-' + displayStatus">{{ displayStatus | uppercase }}</span>
+    <span class="composer__spacer"></span>
+    @if (isLive) {
+      <button mat-stroked-button type="button" color="warn" [disabled]="inProgress$ | async" (click)="onEnd()">End Campaign</button>
+    }
+    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="onSaveDraft()">
+      {{ isLive || isEnded ? 'Save Changes' : 'Save Draft' }}
+    </button>
+    @if (!isLive && !isEnded) {
+      <button mat-flat-button color="primary" type="button" [disabled]="inProgress$ | async" (click)="onLaunch()">Launch</button>
+    }
+  </mat-toolbar>
+
+  <div class="composer__meta">
+    <mat-button-toggle-group formControlName="type" class="type-toggle">
+      <mat-button-toggle value="product">Product Push</mat-button-toggle>
+      <mat-button-toggle value="event">Event Push</mat-button-toggle>
+      <mat-button-toggle value="lead-capture">Lead Capture</mat-button-toggle>
+    </mat-button-toggle-group>
+    @if (startedFrom) {
+      <span class="started-from">Started from <b>{{ startedFrom }}</b> — every field below is yours to change</span>
+    }
+  </div>
+
+  <div class="composer__body">
+    <div class="composer__form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Campaign Name (internal)</mat-label>
+        <input matInput formControlName="name" required>
+        @if (form.get('name')?.hasError('required')) {
+          <mat-error>Required</mat-error>
+        }
+      </mat-form-field>
+
+      @if (type === 'product') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Product</mat-label>
+          <mat-select formControlName="productId" required>
+            @for (product of products; track product.id) {
+              <mat-option [value]="product.id">{{ product.title }}</mat-option>
+            }
+          </mat-select>
+          @if (form.get('productId')?.hasError('required')) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @if (type === 'event') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Event</mat-label>
+          <mat-select formControlName="eventId" required>
+            @for (event of events; track event.id) {
+              <mat-option [value]="event.id">{{ event.eventName }}</mat-option>
+            }
+          </mat-select>
+          @if (form.get('eventId')?.hasError('required')) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @if (type !== 'lead-capture') {
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Coupon (optional)</mat-label>
+            <mat-select formControlName="couponId">
+              <mat-option [value]="null">None</mat-option>
+              @for (coupon of coupons; track coupon.id) {
+                <mat-option [value]="coupon.id">{{ coupon.code }} · {{ coupon.percentOff }}% off</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email Template</mat-label>
+            <mat-select formControlName="emailTemplateId">
+              <mat-option [value]="null">None</mat-option>
+              @for (template of emailTemplates; track template.id) {
+                <mat-option [value]="template.id">{{ template.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Subject Line</mat-label>
+          <input matInput formControlName="subject" required>
+          @if (form.get('subject')?.hasError('required')) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Message</mat-label>
+          <textarea matInput formControlName="message" rows="4"></textarea>
+        </mat-form-field>
+      }
+
+      @if (type === 'lead-capture') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Headline</mat-label>
+          <input matInput formControlName="headline" required>
+          @if (form.get('headline')?.hasError('required')) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Supporting Text</mat-label>
+          <input matInput formControlName="supportingText">
+        </mat-form-field>
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Coupon</mat-label>
+            <mat-select formControlName="couponId" required>
+              @for (coupon of coupons; track coupon.id) {
+                <mat-option [value]="coupon.id">{{ coupon.code }} · {{ coupon.percentOff }}% off</mat-option>
+              }
+            </mat-select>
+            @if (form.get('couponId')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Placement (public site path)</mat-label>
+            <input matInput formControlName="placement" placeholder="/welcome" required>
+            @if (form.get('placement')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Thank-You Message</mat-label>
+          <input matInput formControlName="thankYouMessage">
+        </mat-form-field>
+      }
+
+      <div class="field-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Start Date</mat-label>
+          <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+          <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+          <mat-datepicker #startPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>End Date</mat-label>
+          <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+          <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="composer__preview">
+      <div class="preview-label">
+        {{ type === 'lead-capture' ? 'Landing block preview' : 'Email preview' }}
+      </div>
+      <div class="preview-card">
+        @if (type === 'product') {
+          @if (selectedProduct?.imageUrl?.url) {
+            <img class="preview-image" [src]="selectedProduct.imageUrl.url" [alt]="selectedProduct.title">
+          } @else {
+            <div class="preview-image preview-image--placeholder"></div>
+          }
+          <h3 class="preview-headline">{{ form.value.subject || 'Your subject line' }}</h3>
+          <p class="preview-body">{{ form.value.message || 'Your message to subscribers.' }}</p>
+          @if (selectedProduct) {
+            <p class="preview-price">
+              @if (discountedPrice !== null) {
+                <s>{{ selectedProduct.salePrice | currency }}</s>
+                <b>{{ discountedPrice | currency }} with {{ selectedCoupon?.code }}</b>
+              } @else {
+                <b>{{ selectedProduct.salePrice | currency }}</b>
+              }
+            </p>
+          }
+          <span class="preview-cta">Shop Now</span>
+        }
+        @if (type === 'event') {
+          <h3 class="preview-headline">{{ form.value.subject || 'Your subject line' }}</h3>
+          @if (selectedEvent) {
+            <p class="preview-event">{{ selectedEvent.eventName }}@if (eventStartDate) {<span> · {{ eventStartDate | date }}</span>}</p>
+          }
+          <p class="preview-body">{{ form.value.message || 'Your message to subscribers.' }}</p>
+          @if (selectedCoupon) {
+            <p class="preview-price"><b>Use code {{ selectedCoupon.code }} for {{ selectedCoupon.percentOff }}% off</b></p>
+          }
+          <span class="preview-cta">Register Now</span>
+        }
+        @if (type === 'lead-capture') {
+          <h3 class="preview-headline">{{ form.value.headline || 'Your headline' }}</h3>
+          <p class="preview-body">{{ form.value.supportingText || 'Your supporting text.' }}</p>
+          <div class="preview-input">Name</div>
+          <div class="preview-input">Email</div>
+          <span class="preview-cta preview-cta--lead">Send My Code</span>
+        }
+      </div>
+      <div class="preview-note">
+        @if (type === 'lead-capture') {
+          Submissions will create/update a customer (tagged with this campaign), set the newsletter flag, and email the code.
+        } @else {
+          Will send to all flagged newsletter subscribers when launched — no audience narrowing.
+        }
+      </div>
+    </div>
+  </div>
+</div>

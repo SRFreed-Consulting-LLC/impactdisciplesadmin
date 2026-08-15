@@ -1,0 +1,101 @@
+import { Timestamp } from 'firebase/firestore';
+import { BaseModel } from '../base.model';
+import { toMillis } from '../../utils/date-from-timestamp';
+
+// A marketing campaign (Campaigns Manager, added 2026-08). One model for
+// all 3 campaign goals - `type` decides which of the optional field groups
+// below is actually in play; the Composer only ever shows/writes the group
+// matching the type. See the Campaigns Manager section the feature was
+// designed against (feature/campaign-manager branch) for the screen set.
+export type CampaignType = 'product' | 'event' | 'lead-capture';
+
+// `status` is what's STORED; display always goes through effectiveStatus()
+// below, which auto-promotes scheduled->live and live->ended as the dates
+// pass without needing a writer to flip the field at the right moment.
+export type CampaignStatus = 'draft' | 'scheduled' | 'live' | 'ended';
+
+// Denormalized outcome counters, stamped onto the campaign doc so list/
+// board/hub screens never fan out per-campaign queries. v1 initializes
+// these to 0 and displays them; the Cloud Function wiring that increments
+// them (coupon redemptions, event registrations, lead captures) is the
+// build-order step after the admin screens - see the branch's plan.
+export interface CampaignStats {
+  emailsSent: number;
+  linkClicks: number;
+  leads: number;
+  redemptions: number;
+  registrations: number;
+  revenue: number;
+}
+
+export const emptyCampaignStats = (): CampaignStats => ({
+  emailsSent: 0,
+  linkClicks: 0,
+  leads: 0,
+  redemptions: 0,
+  registrations: 0,
+  revenue: 0
+});
+
+export class CampaignModel extends BaseModel {
+  name = '';
+  type: CampaignType = 'product';
+  status: CampaignStatus = 'draft';
+  // Same shape union as EventModel's dates - existing docs in this app have
+  // all 3 shapes, so reads always normalize via toMillis()/dateFromTimestamp()
+  // (see MIGRATION.md). New writes from the Composer store real Dates.
+  startDate?: Timestamp | Date | string | null;
+  endDate?: Timestamp | Date | string | null;
+
+  // -- product push --
+  productId?: string | null;
+  // -- event push --
+  eventId?: string | null;
+  // -- product/event push share these --
+  subject?: string | null;
+  message?: string | null;
+  emailTemplateId?: string | null;
+  // -- lead capture --
+  headline?: string | null;
+  supportingText?: string | null;
+  thankYouMessage?: string | null;
+  // Public-site path the capture block renders at (e.g. '/welcome') -
+  // consumed by impactdisciples-web once the landing block exists there.
+  placement?: string | null;
+
+  // Existing Coupons record (store-manager) - the discount system is NOT
+  // duplicated here. Optional for product/event pushes, required by the
+  // Composer for lead-capture (it's the incentive).
+  couponId?: string | null;
+
+  // Which gallery recipe this started from - informational only (shown as
+  // "Started from X" in the Composer), never a live link back.
+  templateName?: string | null;
+
+  stats: CampaignStats = emptyCampaignStats();
+}
+
+// Stored status + dates -> the status a human would say. Rules:
+// - 'ended' stored, or any end date in the past -> ended (no writer has to
+//   race the clock to flip live campaigns off)
+// - 'scheduled' whose start date has arrived -> live
+// - otherwise the stored value stands.
+export const effectiveStatus = (c: CampaignModel): CampaignStatus => {
+  const now = Date.now();
+  const start = c.startDate ? toMillis(c.startDate) : 0;
+  const end = c.endDate ? toMillis(c.endDate) : 0;
+
+  if (c.status === 'ended' || (end > 0 && end < now && c.status !== 'draft')) {
+    return 'ended';
+  }
+  if (c.status === 'scheduled' && start > 0 && start <= now) {
+    return 'live';
+  }
+  return c.status;
+};
+
+export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
+  'product': 'PRODUCT',
+  'event': 'EVENT',
+  'lead-capture': 'LEAD'
+};
