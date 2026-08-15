@@ -62,13 +62,9 @@ export class ProductsComponent implements OnInit {
   paged: PagedCollectionSource<ProductModel>;
 
   // One-time getAll() fetches, not live streamAll() subscriptions - these
-  // are small reference collections that rarely change mid-session, and a
-  // cold load already fires this component's 5 reference-data reads plus
-  // the paginated product fetch all in the same tick; that many onSnapshot
-  // listeners attaching at once is exactly the WebChannel handshake race
-  // documented on retryDelay() in firebase.dao.ts (occasionally exhausting
-  // even the 4-attempt jittered retry there). getDocs()-backed getAll()
-  // doesn't open a standing listener, so it isn't part of that race.
+  // are small reference collections that rarely change mid-session, and
+  // one-time getDocs()-backed reads avoid opening 5 standing onSnapshot
+  // listeners for data that's only read when the screen loads.
   // Trade-off: adding a category/series via "Manage Categories"/"Manage
   // Series" while this screen is open no longer shows up here until the
   // next reload - acceptable for reference data that changes rarely, not

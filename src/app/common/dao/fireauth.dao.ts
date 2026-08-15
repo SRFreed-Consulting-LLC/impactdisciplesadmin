@@ -96,15 +96,14 @@ export class FireAuthDao {
       }),
       // share(), not shareReplay(1) - shareReplay caches an error
       // permanently (its ReplaySubject completes with error and is never
-      // replaced), so if getAllByValue()'s own internal retry (see
-      // FirebaseDAO.getAllByValue/retryGetDocs) still exhausts under a bad
-      // enough cold-load collision, every subscriber for the rest of that
+      // replaced), so if getAllByValue() fails under a bad enough cold-load
+      // collision, every subscriber for the rest of that
       // page's life - every nav render, every route guard, every manager
       // screen - gets that same stale error forever, with no way to recover
       // short of a full reload. resetOnError tears the connector down on
       // error so the next subscriber re-subscribes to the source fresh
-      // (getting its own fresh getAllByValue() call, with its own fresh
-      // internal retries) instead of replaying a dead result. Since
+      // (getting its own fresh getAllByValue() call) instead of replaying a
+      // dead result. Since
       // currentUser$ above is its own separately-shared stream now, this
       // reset only re-runs the mergeMap/map stage, not the whole auth
       // listener - no more resubscription storm.

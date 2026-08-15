@@ -152,9 +152,13 @@ exports.unsubscribe_from_email_list = functions
         }
 
         const {flagField} = fieldsForType(type);
+        // Customer emails are stored lowercased/trimmed (see subscribe
+        // path); normalize here too so a mixed-case or padded value in an
+        // unsubscribe link still matches instead of silently no-op'ing.
+        const normalizedEmail = email.trim().toLowerCase();
         const db = admin.firestore();
         const matches = await db.collection("customers")
-          .where("email", "==", email)
+          .where("email", "==", normalizedEmail)
           .get();
 
         await Promise.all(
@@ -164,7 +168,7 @@ exports.unsubscribe_from_email_list = functions
         response.send("You have been successfully removed from the list");
       } catch (err) {
         functions.logger.error("unsubscribe_from_email_list failed", err);
-        response.send(err);
+        response.status(500).send("Unable to process unsubscribe request");
       }
     });
   });

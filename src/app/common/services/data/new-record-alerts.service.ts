@@ -6,8 +6,7 @@ import { Observable, map } from 'rxjs';
 // (meta/newRecordCounts) that functions/src/new-record-alerts.functions.ts
 // keeps up to date via Firestore onCreate/onUpdate triggers on the 3 source
 // collections - one small doc, one listener, instead of a live listener per
-// collection (see the comment on FirebaseDAO's retryDelay() for why this
-// app is trying to keep the standing-listener count down).
+// collection, keeping this app's standing-listener count down.
 //
 // formSubmissions replaces the old per-request-type fields
 // (consultationRequests/consultationSurveys/lunchAndLearns/seminars) now

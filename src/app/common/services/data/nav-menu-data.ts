@@ -1,4 +1,4 @@
-import { MenuModel, MobileMenuModel } from "src/app/common/models/utils/nav-menu.model";
+import { MenuModel } from "src/app/common/models/utils/nav-menu.model";
 
 
 
@@ -50,34 +50,3 @@ const menuData: MenuModel[] = [
 ]
 
 export default menuData;
-
-export const mobileMenuData: MobileMenuModel[] = [
-  { link: '/', title: 'Home', visible: true },
-  {
-    title: 'Training',
-    dropdownMenu: [
-      { link: '/seminars', title: 'Seminars', visible: true },
-      { link: '/equipping-groups', title: 'Equipping Groups', visible: true },
-      { link: '/coaching-with-impact', title: 'Coaching with Impact', visible: true },
-      { link: '/lunch-and-learns', title: 'Lunch and Learns', visible: true },
-      { link: '/events', title: 'Upcoming Training', visible: true }
-    ],
-    visible: true,
-  },
-  {
-    title: 'Resources',
-    dropdownMenu: [
-      { link: '/e-books', title: 'E-Books', visible: true },
-      { link: '/podcasts', title: 'Podcasts', visible: true },
-      { link: '/disciple-making-minute', title: 'Disciple-Making Minute', visible: true },
-      { link: '/monthly-newsletter', title: 'Monthly Newsletter', visible: true },
-      { link: '/store?category=spanish-resources', title: 'Spanish Resources', visible: true },
-    ],
-    visible: true
-  },
-  { link: '/store', title: 'Store', visible: true },
-  { link: '/give', title: 'Donate', visible: true },
-  { link: '/team', title: 'Team', visible: true },
-  { link: '/summit/2027', title: 'Summit 2027', external: false, visible: true, highlight: true },
-
-]

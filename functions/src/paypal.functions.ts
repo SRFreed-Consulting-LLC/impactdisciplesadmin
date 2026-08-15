@@ -411,7 +411,7 @@ exports.create_paypal_order = functions
         });
       } catch (err) {
         console.error("create_paypal_order failed", err);
-        response.status(400).send({code: 400, error: String(err)});
+        response.status(400).send({code: 400, error: "Unable to start checkout"});
       }
     });
   });
@@ -544,7 +544,7 @@ exports.capture_paypal_order = functions
         }
       } catch (err) {
         console.error("capture_paypal_order failed", err);
-        response.status(400).send({code: 400, error: String(err)});
+        response.status(400).send({code: 400, error: "Unable to complete payment"});
       }
     });
   });

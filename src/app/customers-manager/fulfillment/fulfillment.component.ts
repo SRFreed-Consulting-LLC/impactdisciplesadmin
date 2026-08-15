@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
@@ -67,9 +68,17 @@ export class FulfillmentComponent implements OnInit {
     this.loading$.next(true);
     this.loadFailed$.next(false);
 
-    this.orders$ = this.service.streamAll(undefined, () => this.loadFailed$.next(true)).pipe(
+    // Scoped live query, not a streamAll() over the whole purchases
+    // collection - matches the dashboard's Recent Orders query. Every
+    // purchase always has a fulfillmentStatus (set server-side, see
+    // purchase-fulfillment.functions.ts), so the '!= closed' query fully
+    // replaces the old client-side "item.fulfillmentStatus && ... !== 'closed'"
+    // filter - nothing comes back missing the field to filter out.
+    this.orders$ = this.service.queryStreamByValue(
+      'fulfillmentStatus', WhereFilterOperandKeys.notEqual, 'closed', undefined,
+      () => this.loadFailed$.next(true)
+    ).pipe(
       map((items) => items
-        .filter((item) => item.fulfillmentStatus && item.fulfillmentStatus !== 'closed')
         // 'new' orders always float to the top (the whole point of the
         // status - see fulfillment-steps.ts), then oldest-first within
         // each group so nothing already in progress gets buried by a

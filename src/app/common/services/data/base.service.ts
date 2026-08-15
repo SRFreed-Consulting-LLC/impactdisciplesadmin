@@ -24,10 +24,6 @@ export class BaseService<T extends BaseModel> {
     return this.dao.getAllByValue(this.table, field, value, this.fromFirestore, limitCount);
   }
 
-  queryAllByValue(field: string, opStr: WhereFilterOperandKeys, value: unknown, limitCount?: number): Promise<T[]>{
-    return this.dao.queryByValue(this.table, field, opStr, value, this.fromFirestore, limitCount);
-  }
-
   queryAllByMultiValue(queries: QueryParam[], limitCount?: number): Promise<T[]>{
     return this.dao.queryAllByMultiValue(this.table, queries, this.fromFirestore, limitCount)
   }
@@ -55,20 +51,12 @@ export class BaseService<T extends BaseModel> {
     return this.dao.streamByValue(this.table, field, value, this.fromFirestore, limitCount, onError)
   }
 
-  streamById(id: string): Observable<T[]>{
-    return this.dao.streamByValue(this.table, 'id', id, this.fromFirestore);
-  }
-
   streamRecord(id: string, callBack): Unsubscribe{
     return this.dao.streamById(id, this.table, callBack, this.fromFirestore);
   }
 
   queryStreamByValue(field: string, opStr: WhereFilterOperandKeys, value: unknown, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     return this.dao.queryStreamByValue(this.table, field, opStr, value, this.fromFirestore, limitCount, onError);
-  }
-
-  queryAllStreamByMultiValue(queries: QueryParam[], limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
-    return this.dao.queryAllStreamByMultiValue(this.table, queries, this.fromFirestore, limitCount, onError);
   }
 
   add(value: T): Promise<T>{
@@ -81,13 +69,5 @@ export class BaseService<T extends BaseModel> {
 
   delete(id: string){
     return this.dao.delete(id, this.table);
-  }
-
-  createInSubcollection(value: T, record_id: string, subcollection: string): Promise<T>{
-    return this.dao.createInSubcollection(value, this.table, record_id, subcollection, this.fromFirestore);
-  }
-
-  getAllFromSubCollection(record_id: string, subcollection: string): Promise<T[]> {
-    return this.dao.getAllFromSubCollection(this.table, record_id, subcollection, this.fromFirestore);
   }
 }

@@ -2,14 +2,13 @@
 import * as functions from "firebase-functions";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
-// NOTE: this still hands GOOGLE_SECRET_KEY/YOUTUBE_PLAYLIST_KEY back to
-// whoever calls it -- requireStaffAuth below means that's now only ever a
-// signed-in admin's own browser, not literally anyone, but the raw secret
-// still reaches client-side JS. The deeper fix (redesign this to make the
-// YouTube API call server-side and return only the resulting data) is
-// tracked separately and deliberately not done here -- this pass is the
-// minimal auth-gate, chosen over the bigger redesign.
-exports.get_youtube_keys = functions
+// Fetches the podcast YouTube playlist server-side and returns only the
+// resulting video items. The YouTube Data API key (GOOGLE_SECRET_KEY) and
+// playlist id (YOUTUBE_PLAYLIST_KEY) never leave the server -- this replaces
+// the old get_youtube_keys, which handed the raw API key back to the browser
+// (where it landed in client JS and request URLs). Still staff-gated: only a
+// signed-in admin's own Firebase Auth session may call it.
+exports.get_youtube_videos = functions
   .runWith({secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]})
   .https.onRequest((request, response) => {
     return restrictedCors(request, response, async () => {
@@ -20,7 +19,46 @@ exports.get_youtube_keys = functions
         return;
       }
 
-      response.send({api_key: process.env.GOOGLE_SECRET_KEY,
-        playlist_key: process.env.YOUTUBE_PLAYLIST_KEY});
+      const apiKey = process.env.GOOGLE_SECRET_KEY;
+      const playlistId = process.env.YOUTUBE_PLAYLIST_KEY;
+      const base = "https://www.googleapis.com/youtube/v3/playlistItems";
+
+      try {
+        const videos: unknown[] = [];
+        let pageToken: string | undefined;
+
+        do {
+          let url = `${base}?key=${apiKey}` +
+            "&part=snippet,contentDetails&maxResults=50" +
+            `&playlistId=${playlistId}`;
+          if (pageToken) {
+            url += "&pageToken=" + pageToken;
+          }
+
+          const ytResponse = await fetch(url);
+          if (!ytResponse.ok) {
+            response.status(502).send({
+              code: 502,
+              error: "Failed to fetch playlist from YouTube",
+            });
+            return;
+          }
+
+          const result = await ytResponse.json() as {
+            items?: unknown[];
+            nextPageToken?: string;
+          };
+
+          if (Array.isArray(result.items)) {
+            videos.push(...result.items);
+          }
+          pageToken = result.nextPageToken;
+        } while (pageToken);
+
+        response.send({videos});
+      } catch (err) {
+        console.log(String(err));
+        response.status(500).send({code: 500, error: "Internal error"});
+      }
     });
   });

@@ -30,9 +30,6 @@ export interface YoutubePlaylistItem {
   providedIn: 'root'
 })
 export class PodCastService extends BaseService<PodCastModel>{
-  API_KEY
-  PLAY_LIST_ID;
-
   constructor(public override dao: FirebaseDAO<PodCastModel>, private authService: AdminAuthService) {
     super(dao)
     this.table="pod_casts"
@@ -50,63 +47,26 @@ export class PodCastService extends BaseService<PodCastModel>{
   async getVideoInfo(){
     this.videos = signal<YoutubePlaylistItem[]>([]);
 
-    // get_youtube_keys now requires a real staff Firebase Auth session
-    // (see functions/src/youtube.functions.ts) - attach the caller's own
-    // ID token, same pattern as shipping-labels.component.ts's
-    // getShippingLabel().
+    // get_youtube_videos requires a real staff Firebase Auth session and
+    // makes the YouTube Data API call server-side, returning only the video
+    // list - the API key never reaches the browser (see
+    // functions/src/youtube.functions.ts). Attach the caller's own ID token,
+    // same pattern as shipping-labels.component.ts's getShippingLabel().
     const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
 
-    const keysResponse = await fetch(environment.youtubeKeyUrl, {
+    const response = await fetch(environment.youtubeVideosUrl, {
       headers: { Authorization: 'Bearer ' + idToken }
     });
 
-    if (!keysResponse.ok) {
-      throw new Error('Failed to fetch client secret');
-    }
-
-    const keysResult = await keysResponse.json();
-
-    this.API_KEY = keysResult.api_key;
-    this.PLAY_LIST_ID = keysResult.playlist_key
-
-    let pageToken: string =  await this.callYoutube(this.PLAY_LIST_ID);
-
-    while (pageToken){
-      pageToken = await this.callYoutube(this.PLAY_LIST_ID, pageToken);
-    }
-
-    return this.videos();
-  }
-
-  private async callYoutube(playlistId: string, pageToken?: string){
-    const videos: YoutubePlaylistItem[] = [];
-
-    let playListItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.API_KEY}&part=snippet,contentDetails&maxResults=50&&playlistId=${playlistId}`;
-
-    if(pageToken){
-      playListItemsUrl += "&pageToken=" + pageToken
-    }
-
-    const response = await fetch(playListItemsUrl);
-
     if (!response.ok) {
-      throw new Error('Failed to fetch client secret');
+      throw new Error('Failed to fetch podcast videos');
     }
 
     const result = await response.json();
 
-    videos.push(...result.items);
+    this.videos.set((result.videos ?? []) as YoutubePlaylistItem[]);
 
-    if(result.nextPageToken){
-      pageToken = result.nextPageToken;
-
-    } else {
-      pageToken = null;
-    }
-
-    this.videos.update(vids => vids = [...vids, ...videos])
-
-    return result.nextPageToken
+    return this.videos();
   }
 }
 

@@ -1,7 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, Observable, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, map, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -30,7 +30,7 @@ import { OrganizationsComponent } from '../organizations/organizations.component
     styleUrls: ['./events.component.scss'],
     standalone: false
 })
-export class EventsComponent implements OnInit {
+export class EventsComponent implements OnInit, OnDestroy {
   // Summit vs regular Events are two separate left-nav items now
   // (events-manager.component.html), both rendering this same component -
   // see nav-config.ts's own comment on why the permission grants are
@@ -153,16 +153,18 @@ export class EventsComponent implements OnInit {
     private route: ActivatedRoute
   ) {}
 
+  private ngUnsubscribe = new Subject<void>();
+
   ngOnInit(): void {
-    this.authService.dao.loggedInUser$.subscribe(() => {
+    this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
       const label = this.summitMode ? 'New Summit' : 'New Event';
       this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label, icon: 'add', onClick: () => this.showAddModal() }] : [];
     });
 
-    this.organizationService.streamAll().subscribe((organizations) => {
+    this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
       this.organizations = organizations;
     });
-    this.locationService.streamAll().subscribe((locations) => {
+    this.locationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((locations) => {
       this.locations = locations;
     });
     this.emailTemplateService.getAll().then((templates) => {
@@ -179,7 +181,7 @@ export class EventsComponent implements OnInit {
       tap(() => this.loading$.next(false))
     );
 
-    this.registrationService.streamAllByValue('newRecordStatus', 'new').subscribe((registrations) => {
+    this.registrationService.streamAllByValue('newRecordStatus', 'new').pipe(takeUntil(this.ngUnsubscribe)).subscribe((registrations) => {
       this.newAttendeeEventIds = new Set(registrations.map((r) => r.eventId).filter((id): id is string => !!id));
     });
 
@@ -188,12 +190,17 @@ export class EventsComponent implements OnInit {
     // tab. Subscribed (not a one-time snapshot read) so clicking the bell
     // again while already sitting on this route still re-opens it, same
     // reasoning as events-manager.component.ts's own ?tab= handling.
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntil(this.ngUnsubscribe)).subscribe((params) => {
       const eventId = params.get('eventId');
       if (eventId) {
         this.openEventFromDeepLink(eventId, params.get('eventTab') ?? 'info');
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   private openEventFromDeepLink(eventId: string, tabKey: string): void {

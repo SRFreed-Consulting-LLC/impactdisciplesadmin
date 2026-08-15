@@ -13,7 +13,7 @@ import { FormSubmissionService } from 'src/app/common/services/data/form-submiss
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { FULFILLMENT_STEPS, segmentState } from '../../customers-manager/fulfillment/fulfillment-steps';
-import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
+import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 
 interface DashboardEventRow {
   id: string;
@@ -176,9 +176,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     Promise.allSettled([
       this.eventService.getAll(),
-      this.locationService.getAll(),
-      this.eventRegistrationService.getAll()
-    ]).then(([eventsResult, locationsResult, registrationsResult]) => {
+      this.locationService.getAll()
+    ]).then(([eventsResult, locationsResult]) => {
       if (eventsResult.status === 'rejected') {
         this.eventsFailed = true;
         this.eventsLoading = false;
@@ -186,27 +185,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
 
       const locations = locationsResult.status === 'fulfilled' ? locationsResult.value : [];
-      // Registration count is a nice-to-have enrichment, not load-bearing -
-      // a failed read here just means every row shows no count, the table
-      // itself still renders.
-      const registrations = registrationsResult.status === 'fulfilled' ? registrationsResult.value : null;
-
-      const countByEventId = new Map<string, number>();
-      // Unseen-signup count per event - same source data as countByEventId
-      // above, just narrowed to newRecordStatus === 'new' (see
-      // new-record-tracking.util.ts). Drives the "+N NEW" badge below;
-      // clears itself once an admin opens that event's Attendees tab, same
-      // as every other new-record indicator in the app.
-      const newCountByEventId = new Map<string, number>();
-      if (registrations) {
-        registrations.forEach((r) => {
-          if (!r.eventId) return;
-          countByEventId.set(r.eventId, (countByEventId.get(r.eventId) ?? 0) + 1);
-          if (r.newRecordStatus === 'new') {
-            newCountByEventId.set(r.eventId, (newCountByEventId.get(r.eventId) ?? 0) + 1);
-          }
-        });
-      }
 
       const now = Date.now();
       this.upcomingEvents = eventsResult.value
@@ -225,8 +203,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
             location: this.locationName(e, locations),
             isOnline: !!e.isOnline,
             isOngoing: startDateMs <= now && endDateMs >= now,
-            registeredCount: registrations ? (countByEventId.get(e.id!) ?? 0) : null,
-            newRegisteredCount: registrations ? (newCountByEventId.get(e.id!) ?? 0) : null
+            // Counts are enriched in below by a bounded query; null until then.
+            registeredCount: null as number | null,
+            newRegisteredCount: null as number | null
           };
         })
         // Future events AND events happening right now - anything whose
@@ -236,6 +215,45 @@ export class DashboardComponent implements OnInit, OnDestroy {
         .slice(0, 8);
 
       this.eventsLoading = false;
+
+      // Registration counts are a nice-to-have enrichment for just the <=8
+      // events shown, so query only those events' registrations (an `in`
+      // query, bounded by the 8-event slice above - well within Firestore's
+      // 10-value `in` cap) instead of downloading the entire, ever-growing
+      // event-registrations collection on every dashboard load (P6). A
+      // failed/empty read just leaves the counts null and the rows still
+      // render.
+      const eventIds = this.upcomingEvents.map((row) => row.id).filter(Boolean);
+      if (!eventIds.length) {
+        return;
+      }
+
+      this.eventRegistrationService
+        .queryAllByMultiValue([new QueryParam('eventId', WhereFilterOperandKeys.in, eventIds)])
+        .then((registrations) => {
+          const countByEventId = new Map<string, number>();
+          // Unseen-signup count per event - same source data, narrowed to
+          // newRecordStatus === 'new' (see new-record-tracking.util.ts).
+          // Drives the "+N NEW" badge; clears once an admin opens that
+          // event's Attendees tab, same as every other new-record indicator.
+          const newCountByEventId = new Map<string, number>();
+          registrations.forEach((r) => {
+            if (!r.eventId) return;
+            countByEventId.set(r.eventId, (countByEventId.get(r.eventId) ?? 0) + 1);
+            if (r.newRecordStatus === 'new') {
+              newCountByEventId.set(r.eventId, (newCountByEventId.get(r.eventId) ?? 0) + 1);
+            }
+          });
+
+          this.upcomingEvents = this.upcomingEvents.map((row) => ({
+            ...row,
+            registeredCount: countByEventId.get(row.id) ?? 0,
+            newRegisteredCount: newCountByEventId.get(row.id) ?? 0
+          }));
+        })
+        .catch(() => {
+          // Counts stay null; the event rows have already rendered.
+        });
     });
   }
 

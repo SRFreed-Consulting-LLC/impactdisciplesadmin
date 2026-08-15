@@ -246,11 +246,39 @@ export const onCustomerCreatedMailchimpSync = onDocumentCreated(
   }
 );
 
+// The exact subset of a customer doc that upsertMailchimpMember pushes to
+// Mailchimp, normalized the same way it is at send time. Used to decide
+// whether an update is worth a sync (see onCustomerUpdatedMailchimpSync).
+function mailchimpFields(c: SyncableCustomer): Record<string, unknown> {
+  return {
+    email: (c.email ?? "").trim().toLowerCase(),
+    firstName: c.firstName ?? "",
+    lastName: c.lastName ?? "",
+    phone: c.phone?.number ?? "",
+    address1: c.shippingAddress?.address1 ?? "",
+    address2: c.shippingAddress?.address2 ?? "",
+    city: c.shippingAddress?.city ?? "",
+    state: c.shippingAddress?.state ?? "",
+    zip: c.shippingAddress?.zip ?? "",
+    country: c.shippingAddress?.country ?? "",
+  };
+}
+
 export const onCustomerUpdatedMailchimpSync = onDocumentUpdated(
   {document: "customers/{id}", secrets: ["MAILCHIMP_API_KEY"]},
   async (event) => {
+    const before = event.data?.before.data();
     const after = event.data?.after.data();
     if (!after) {
+      return;
+    }
+    // Only sync when a field Mailchimp actually receives changed. Other
+    // triggers write to customers docs constantly (pendingChanges appends,
+    // subscription-flag flips, newRecordStatus) - none of which Mailchimp
+    // gets - and each of those would otherwise cost a config read + a
+    // Mailchimp API call for nothing (P13).
+    if (before && JSON.stringify(mailchimpFields(before as SyncableCustomer)) ===
+      JSON.stringify(mailchimpFields(after as SyncableCustomer))) {
       return;
     }
     await upsertMailchimpMember(after as SyncableCustomer);

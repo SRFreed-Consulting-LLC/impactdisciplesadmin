@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
@@ -26,7 +26,7 @@ import { CoachDialogComponent } from './coach-dialog.component';
     styleUrls: ['./coaches.component.scss'],
     standalone: false
 })
-export class CoachesComponent implements OnInit {
+export class CoachesComponent implements OnInit, OnDestroy {
   coaches$: Observable<CoachModel[]>;
 
   columns: DataGridColumn<CoachModel>[] = [
@@ -54,6 +54,8 @@ export class CoachesComponent implements OnInit {
   // Products' categories/series arrays.
   organizations: OrganizationModel[] = [];
 
+  private ngUnsubscribe = new Subject<void>();
+
   constructor(
     private service: CoachService,
     private organizationService: OrganizationService,
@@ -64,13 +66,18 @@ export class CoachesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.organizationService.streamAll().subscribe((organizations) => {
+    this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
       this.organizations = organizations;
     });
 
     this.coaches$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
 
     this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   organizationName(item: CoachModel): string {

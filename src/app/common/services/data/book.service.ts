@@ -1,4 +1,4 @@
-import { Injectable, Injector } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { getFirestore } from '@angular/fire/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
@@ -30,8 +30,8 @@ export class BookService extends BaseService<BookModel> {
   // collections that don't exist there come back "successfully" empty.
   // Live-confirmed via Playwright network capture 2026-08-09 - the failing
   // Listen channels all carried database=...%2Fimpactdiscipleship-books.
-  constructor(app: FirebaseApp, injector: Injector) {
-    super(new FirebaseDAO<BookModel>(getFirestore(app, 'impactdiscipleship-books'), injector));
+  constructor(app: FirebaseApp) {
+    super(new FirebaseDAO<BookModel>(getFirestore(app, 'impactdiscipleship-books')));
     this.table = 'books';
   }
 }

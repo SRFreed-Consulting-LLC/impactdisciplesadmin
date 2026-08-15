@@ -1,7 +1,7 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject, merge } from 'rxjs';
+import { BehaviorSubject, Subject, merge, takeUntil } from 'rxjs';
 import { CouponModel } from 'src/app/common/models/utils/coupon.model';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { TagModel } from 'src/app/common/models/domain/tag.model';
@@ -19,7 +19,7 @@ export interface CouponDialogData {
     styleUrls: ['./coupon-dialog.component.scss'],
     standalone: false
 })
-export class CouponDialogComponent implements OnInit {
+export class CouponDialogComponent implements OnInit, OnDestroy {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
@@ -32,6 +32,8 @@ export class CouponDialogComponent implements OnInit {
   couponTags: TagModel[] = [];
 
   private itemType = 'Coupon';
+
+  private ngUnsubscribe = new Subject<void>();
 
   constructor(
     private dialogRef: MatDialogRef<CouponDialogComponent, boolean>,
@@ -56,7 +58,7 @@ export class CouponDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    merge(this.eventService.streamAll(), this.productService.streamAll()).subscribe((items) => {
+    merge(this.eventService.streamAll(), this.productService.streamAll()).pipe(takeUntil(this.ngUnsubscribe)).subscribe((items) => {
       items.forEach((item) => {
         // item is EventModel | ProductModel - title only exists on the
         // latter, eventName only on the former, so a cast is unavoidable to
@@ -67,6 +69,11 @@ export class CouponDialogComponent implements OnInit {
         }
       });
     });
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   onCancel(): void {

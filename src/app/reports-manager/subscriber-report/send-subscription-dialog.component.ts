@@ -110,7 +110,7 @@ export class SendSubscriptionDialogComponent {
             .replace('{{Date}}', (dateFromTimestamp(date) as Date).toLocaleString());
           html +=
             '<br><br><br><div>If you believe you received this email by mistake, please click ' +
-            "<b><a href='" + environment.unsubscribeUrl + '?email=' + subscriber.email +
+            "<b><a href='" + environment.unsubscribeUrl + '?email=' + encodeURIComponent(subscriber.email) +
             "&type=" + type + "'>here</a></b> to remove your address.</div>";
 
           this.emailService.sendHtmlEmail(subscriber.email, subject, html);

@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ImpactTeamMemberModel } from 'src/app/common/models/domain/impact-team-member.model';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
@@ -31,7 +31,7 @@ import { TeamPageDialogComponent } from './team-page-dialog.component';
     styleUrls: ['./team-page.component.scss'],
     standalone: false
 })
-export class TeamPageComponent implements OnInit {
+export class TeamPageComponent implements OnInit, OnDestroy {
   members$: Observable<ImpactTeamMemberModel[]>;
 
   columns: DataGridColumn<ImpactTeamMemberModel>[] = [
@@ -59,6 +59,8 @@ export class TeamPageComponent implements OnInit {
   // coaches.component.ts's own organizations array.
   organizations: OrganizationModel[] = [];
 
+  private ngUnsubscribe = new Subject<void>();
+
   constructor(
     private service: ImpactTeamService,
     private organizationService: OrganizationService,
@@ -69,13 +71,18 @@ export class TeamPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.organizationService.streamAll().subscribe((organizations) => {
+    this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
       this.organizations = organizations;
     });
 
     this.members$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
 
     this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 
   organizationName(item: ImpactTeamMemberModel): string {

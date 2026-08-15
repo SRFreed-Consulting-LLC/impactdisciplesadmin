@@ -16,15 +16,6 @@ export interface MenuModel {
   highlight?: boolean | string
 }
 
-export interface MobileMenuModel{
-  title: string;
-  link?: string;
-  external?: boolean,
-  highlight?: boolean | string
-  dropdownMenu?: DropdownMenuModel[];
-  visible: boolean;
-}
-
 export interface DropdownMenuModel {
   link: string;
   title: string;
