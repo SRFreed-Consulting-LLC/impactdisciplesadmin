@@ -32,248 +32,442 @@
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' EVENT' }}</h2>
+      <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' ' + (summitMode ? 'SUMMIT' : 'EVENT') }}</h2>
       <span class="editor__spacer"></span>
-      @if (permissionService.canEdit('events-manager.events.info')) {
+      @if (permissionService.canEdit(screenKey + '.info')) {
         <mat-slide-toggle [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
       }
     </mat-toolbar>
     <div class="editor__body">
       <mat-tab-group class="event-tabs" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
-        @if (permissionService.canView('events-manager.events.info')) {
-          <mat-tab label="Info">
-            <div class="tab-content info-layout">
-              <div class="info-form">
-                <div class="type-row">
-                  <div class="type-card" [class.is-active]="isStandardType()" (click)="resetToStandard()">
-                    <span class="type-card__icon">📅</span>
-                    <div class="type-card__title">Standard</div>
-                    <div class="type-card__sub">A regular in-person event</div>
+        @if (summitMode) {
+          <!-- ============================= SUMMIT: full 5-tab editor (unchanged) ============================= -->
+          @if (permissionService.canView(screenKey + '.info')) {
+            <mat-tab label="Info">
+              <div class="tab-content info-layout">
+                <div class="info-form">
+                  <div class="type-row">
+                    <div class="type-card" [class.is-active]="isStandardType()" (click)="resetToStandard()">
+                      <span class="type-card__icon">📅</span>
+                      <div class="type-card__title">Standard</div>
+                      <div class="type-card__sub">A regular in-person event</div>
+                    </div>
+                    <div class="type-card" [class.is-active]="form.get('isSummit')?.value" (click)="toggleControl('isSummit')">
+                      <mat-checkbox formControlName="isSummit" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
+                      <span class="type-card__icon">🎪</span>
+                      <div class="type-card__title">Annual Summit</div>
+                      <div class="type-card__sub">Multi-day, breakouts, promo video</div>
+                    </div>
+                    <div class="type-card" [class.is-active]="form.get('isOnline')?.value" (click)="toggleControl('isOnline')">
+                      <mat-checkbox formControlName="isOnline" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
+                      <span class="type-card__icon">💻</span>
+                      <div class="type-card__title">Online</div>
+                      <div class="type-card__sub">Kajabi-hosted, no venue</div>
+                    </div>
                   </div>
-                  <div class="type-card" [class.is-active]="form.get('isSummit')?.value" (click)="toggleControl('isSummit')">
-                    <mat-checkbox formControlName="isSummit" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
-                    <span class="type-card__icon">🎪</span>
-                    <div class="type-card__title">Annual Summit</div>
-                    <div class="type-card__sub">Multi-day, breakouts, promo video</div>
-                  </div>
-                  <div class="type-card" [class.is-active]="form.get('isOnline')?.value" (click)="toggleControl('isOnline')">
-                    <mat-checkbox formControlName="isOnline" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
-                    <span class="type-card__icon">💻</span>
-                    <div class="type-card__title">Online</div>
-                    <div class="type-card__sub">Kajabi-hosted, no venue</div>
-                  </div>
-                </div>
 
-                <div class="field-row">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Event Name</mat-label>
-                    <input matInput formControlName="eventName" required>
-                    @if (form.get('eventName')?.hasError('required')) {
-                      <mat-error>Event name is required</mat-error>
-                    }
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Email Template</mat-label>
-                    <mat-select formControlName="emailTemplate">
-                      <mat-option [value]="null">(None)</mat-option>
-                      @for (template of emailTemplates; track template) {
-                        <mat-option [value]="template">{{ template }}</mat-option>
-                      }
-                    </mat-select>
-                    @if (form.get('emailTemplate')?.hasError('required')) {
-                      <mat-error>Required for in-person events</mat-error>
-                    }
-                  </mat-form-field>
-                </div>
-                <div class="field-row">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Start Date</mat-label>
-                    <input matInput type="datetime-local" formControlName="startDate" required>
-                    @if (form.get('startDate')?.hasError('required')) {
-                      <mat-error>Required</mat-error>
-                    }
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>End Date</mat-label>
-                    <input matInput type="datetime-local" formControlName="endDate">
-                    @if (form.get('endDate')?.hasError('required')) {
-                      <mat-error>Required for in-person events</mat-error>
-                    }
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Check-In Time</mat-label>
-                    <input matInput type="time" formControlName="checkIn">
-                    @if (form.get('checkIn')?.hasError('required')) {
-                      <mat-error>Required for in-person events</mat-error>
-                    }
-                  </mat-form-field>
-                </div>
-                <mat-form-field appearance="outline" class="cost-field">
-                  <mat-label>Cost</mat-label>
-                  <span matTextPrefix>$&nbsp;</span>
-                  <input matInput type="number" formControlName="costInDollars">
-                </mat-form-field>
-
-                @if (form.get('isSummit')?.value) {
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Promo Video Id</mat-label>
-                    <input matInput formControlName="videoId">
-                  </mat-form-field>
-                }
-                <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
-                @if (form.get('isKajabiCourse')?.value) {
                   <div class="field-row">
                     <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Purchase URL</mat-label>
-                      <input matInput formControlName="kajabiPurchaseURL">
-                      @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
+                      <mat-label>Event Name</mat-label>
+                      <input matInput formControlName="eventName" required>
+                      @if (form.get('eventName')?.hasError('required')) {
+                        <mat-error>Event name is required</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Email Template</mat-label>
+                      <mat-select formControlName="emailTemplate">
+                        <mat-option [value]="null">(None)</mat-option>
+                        @for (template of emailTemplates; track template) {
+                          <mat-option [value]="template">{{ template }}</mat-option>
+                        }
+                      </mat-select>
+                      @if (form.get('emailTemplate')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Start Date</mat-label>
+                      <input matInput type="datetime-local" formControlName="startDate" required>
+                      @if (form.get('startDate')?.hasError('required')) {
                         <mat-error>Required</mat-error>
                       }
                     </mat-form-field>
                     <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Subscribe URL</mat-label>
-                      <input matInput formControlName="kajabiSubscribeURL">
-                      @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
-                        <mat-error>Required</mat-error>
+                      <mat-label>End Date</mat-label>
+                      <input matInput type="datetime-local" formControlName="endDate">
+                      @if (form.get('endDate')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Check-In Time</mat-label>
+                      <input matInput type="time" formControlName="checkIn">
+                      @if (form.get('checkIn')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
                       }
                     </mat-form-field>
                   </div>
-                }
-                <div class="field-row">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Location</mat-label>
-                    <mat-select formControlName="location">
-                      <mat-option [value]="null">(None)</mat-option>
-                      @for (location of locations; track location) {
-                        <mat-option [value]="location.id">{{ location.name }}</mat-option>
-                      }
-                    </mat-select>
-                    @if (form.get('location')?.hasError('required')) {
-                      <mat-error>Required for in-person events</mat-error>
-                    }
+                  <mat-form-field appearance="outline" class="cost-field">
+                    <mat-label>Cost</mat-label>
+                    <span matTextPrefix>$&nbsp;</span>
+                    <input matInput type="number" formControlName="costInDollars">
                   </mat-form-field>
-                  <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Organization</mat-label>
-                    <mat-select formControlName="organization">
-                      <mat-option [value]="null">(None)</mat-option>
-                      @for (org of organizations; track org) {
-                        <mat-option [value]="org.id">{{ org.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
-                </div>
-                <div class="field-row">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Image</mat-label>
-                    <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
-                  </mat-form-field>
-                  <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
-                    {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
-                  </button>
-                </div>
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Web Description</mat-label>
-                  <textarea matInput formControlName="description" rows="6"></textarea>
-                </mat-form-field>
-              </div>
 
-              <div class="info-preview">
-                <div class="preview-card">
-                  <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
-                    @if (card.imageUrl?.url) {
-                      <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-                    } @else {
-                      <span>No image yet</span>
-                    }
-                  </div>
-                  <div class="preview-card__body">
-                    <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
-                    <div class="preview-card__meta">
-                      @if (form.get('startDate')?.value) {
-                        {{ form.get('startDate')?.value | date: 'MMM d, y' }}
-                        @if (form.get('endDate')?.value) {
-                          – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                  @if (form.get('isSummit')?.value) {
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Promo Video Id</mat-label>
+                      <input matInput formControlName="videoId">
+                    </mat-form-field>
+                  }
+                  <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
+                  @if (form.get('isKajabiCourse')?.value) {
+                    <div class="field-row">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Purchase URL</mat-label>
+                        <input matInput formControlName="kajabiPurchaseURL">
+                        @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
+                          <mat-error>Required</mat-error>
                         }
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Subscribe URL</mat-label>
+                        <input matInput formControlName="kajabiSubscribeURL">
+                        @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
+                          <mat-error>Required</mat-error>
+                        }
+                      </mat-form-field>
+                    </div>
+                  }
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Location</mat-label>
+                      <mat-select formControlName="location">
+                        <mat-option [value]="null">(None)</mat-option>
+                        @for (location of locations; track location) {
+                          <mat-option [value]="location.id">{{ location.name }}</mat-option>
+                        }
+                      </mat-select>
+                      @if (form.get('location')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
+                      }
+                    </mat-form-field>
+                    <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Organization</mat-label>
+                      <mat-select formControlName="organization">
+                        <mat-option [value]="null">(None)</mat-option>
+                        @for (org of organizations; track org) {
+                          <mat-option [value]="org.id">{{ org.name }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
+                  </div>
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Image</mat-label>
+                      <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+                    </mat-form-field>
+                    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+                      {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
+                    </button>
+                  </div>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Web Description</mat-label>
+                    <textarea matInput formControlName="description" rows="6"></textarea>
+                  </mat-form-field>
+                </div>
+
+                <div class="info-preview">
+                  <div class="preview-card">
+                    <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
+                      @if (card.imageUrl?.url) {
+                        <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
                       } @else {
-                        No start date set
+                        <span>No image yet</span>
                       }
                     </div>
-                    @if (!form.get('isOnline')?.value) {
-                      <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
-                    }
-                    <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
-                    <div class="preview-card__tags">
-                      @if (isStandardType()) {
-                        <span class="ptag">Standard</span>
+                    <div class="preview-card__body">
+                      <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
+                      <div class="preview-card__meta">
+                        @if (form.get('startDate')?.value) {
+                          {{ form.get('startDate')?.value | date: 'MMM d, y' }}
+                          @if (form.get('endDate')?.value) {
+                            – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                          }
+                        } @else {
+                          No start date set
+                        }
+                      </div>
+                      @if (!form.get('isOnline')?.value) {
+                        <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
                       }
-                      @if (form.get('isSummit')?.value) {
-                        <span class="ptag ptag--summit">Summit</span>
-                      }
-                      @if (form.get('isOnline')?.value) {
-                        <span class="ptag ptag--online">Online</span>
-                      }
-                      @if (form.get('isKajabiCourse')?.value) {
-                        <span class="ptag ptag--kajabi">Kajabi</span>
-                      }
+                      <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
+                      <div class="preview-card__tags">
+                        @if (isStandardType()) {
+                          <span class="ptag">Standard</span>
+                        }
+                        @if (form.get('isSummit')?.value) {
+                          <span class="ptag ptag--summit">Summit</span>
+                        }
+                        @if (form.get('isOnline')?.value) {
+                          <span class="ptag ptag--online">Online</span>
+                        }
+                        @if (form.get('isKajabiCourse')?.value) {
+                          <span class="ptag ptag--kajabi">Kajabi</span>
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </mat-tab>
-        }
-        <!-- matTabContent: unlike DevExtreme's tabbed form (which only ever
-        instantiated a tab's content the first time it was clicked),
-        mat-tab-group eagerly creates every tab's content the moment
-        the group itself mounts. These four embed heavy, stateful
-        components (each opening its own Firestore streams; Agenda in
-        particular assumes a saved event with a location already set)
-        - matTabContent defers creation until a tab is actually
-        selected, matching the original's real behavior instead of
-        firing all four at once on every single Add/Edit open. -->
-        @if (permissionService.canView('events-manager.events.application')) {
-          <mat-tab label="Application">
-            <ng-template matTabContent>
-              <div class="tab-content tab-content--flush">
-                <app-event-application [event]="item"></app-event-application>
+            </mat-tab>
+          }
+          <!-- matTabContent: unlike DevExtreme's tabbed form (which only ever
+          instantiated a tab's content the first time it was clicked),
+          mat-tab-group eagerly creates every tab's content the moment
+          the group itself mounts. These four embed heavy, stateful
+          components (each opening its own Firestore streams; Agenda in
+          particular assumes a saved event with a location already set)
+          - matTabContent defers creation until a tab is actually
+          selected, matching the original's real behavior instead of
+          firing all four at once on every single Add/Edit open. -->
+          @if (permissionService.canView(screenKey + '.application')) {
+            <mat-tab label="Application">
+              <ng-template matTabContent>
+                <div class="tab-content tab-content--flush">
+                  <app-event-application [event]="item"></app-event-application>
+                </div>
+              </ng-template>
+            </mat-tab>
+          }
+          @if (permissionService.canView(screenKey + '.agenda')) {
+            <mat-tab label="Agenda">
+              <ng-template matTabContent>
+                <div class="tab-content tab-content--flush">
+                  <app-event-agenda [event]="item"></app-event-agenda>
+                </div>
+              </ng-template>
+            </mat-tab>
+          }
+          @if (permissionService.canView(screenKey + '.attendees')) {
+            <mat-tab>
+              <ng-template mat-tab-label>
+                Attendees
+                @if (newAttendeeEventIds.has(item.id)) {
+                  <span class="new-badge tab-badge">NEW</span>
+                }
+              </ng-template>
+              <ng-template matTabContent>
+                <div class="tab-content tab-content--flush">
+                  <app-event-attendees [event]="item"></app-event-attendees>
+                </div>
+              </ng-template>
+            </mat-tab>
+          }
+          @if (permissionService.canView(screenKey + '.breakouts')) {
+            <mat-tab label="Break Outs">
+              <ng-template matTabContent>
+                <div class="tab-content tab-content--flush">
+                  <app-event-breakouts [event]="item"></app-event-breakouts>
+                </div>
+              </ng-template>
+            </mat-tab>
+          }
+        } @else {
+          <!-- ============================= EVENTS (regular): quick-create, Details + Attendees ============================= -->
+          @if (permissionService.canView(screenKey + '.info')) {
+            <mat-tab label="Details">
+              <div class="tab-content info-layout">
+                <div class="info-form">
+                  <div class="type-row">
+                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'inperson'" (click)="setRegularAttendanceType('inperson')">
+                      <span class="type-card__icon">🏢</span>
+                      <div class="type-card__title">In-Person</div>
+                      <div class="type-card__sub">Has a venue, no online option</div>
+                    </div>
+                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'online'" (click)="setRegularAttendanceType('online')">
+                      <span class="type-card__icon">💻</span>
+                      <div class="type-card__title">Online</div>
+                      <div class="type-card__sub">Kajabi-hosted, no venue</div>
+                    </div>
+                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'both'" (click)="setRegularAttendanceType('both')">
+                      <span class="type-card__icon">🔀</span>
+                      <div class="type-card__title">Both</div>
+                      <div class="type-card__sub">In-person with a Kajabi option too</div>
+                    </div>
+                  </div>
+
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Event Name</mat-label>
+                      <input matInput formControlName="eventName" required>
+                      @if (form.get('eventName')?.hasError('required')) {
+                        <mat-error>Event name is required</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Email Template</mat-label>
+                      <mat-select formControlName="emailTemplate">
+                        <mat-option [value]="null">(None)</mat-option>
+                        @for (template of emailTemplates; track template) {
+                          <mat-option [value]="template">{{ template }}</mat-option>
+                        }
+                      </mat-select>
+                      @if (form.get('emailTemplate')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Start Date</mat-label>
+                      <input matInput type="datetime-local" formControlName="startDate" required>
+                      @if (form.get('startDate')?.hasError('required')) {
+                        <mat-error>Required</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>End Date</mat-label>
+                      <input matInput type="datetime-local" formControlName="endDate">
+                      @if (form.get('endDate')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Check-In Time</mat-label>
+                      <input matInput type="time" formControlName="checkIn">
+                      @if (form.get('checkIn')?.hasError('required')) {
+                        <mat-error>Required for in-person events</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                  <mat-form-field appearance="outline" class="cost-field">
+                    <mat-label>Cost</mat-label>
+                    <span matTextPrefix>$&nbsp;</span>
+                    <input matInput type="number" formControlName="costInDollars">
+                  </mat-form-field>
+
+                  @if (regularAttendanceType() !== 'online') {
+                    <div class="field-row">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Location</mat-label>
+                        <mat-select formControlName="location">
+                          <mat-option [value]="null">(None)</mat-option>
+                          @for (location of locations; track location) {
+                            <mat-option [value]="location.id">{{ location.name }}</mat-option>
+                          }
+                        </mat-select>
+                        @if (form.get('location')?.hasError('required')) {
+                          <mat-error>Required for in-person events</mat-error>
+                        }
+                      </mat-form-field>
+                      <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Organization</mat-label>
+                        <mat-select formControlName="organization">
+                          <mat-option [value]="null">(None)</mat-option>
+                          @for (org of organizations; track org) {
+                            <mat-option [value]="org.id">{{ org.name }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
+                    </div>
+                  }
+                  @if (regularAttendanceType() !== 'inperson') {
+                    <div class="field-row">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Kajabi Purchase URL</mat-label>
+                        <input matInput formControlName="kajabiPurchaseURL">
+                        @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
+                          <mat-error>Required</mat-error>
+                        }
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Kajabi Subscribe URL</mat-label>
+                        <input matInput formControlName="kajabiSubscribeURL">
+                        @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
+                          <mat-error>Required</mat-error>
+                        }
+                      </mat-form-field>
+                    </div>
+                  }
+                  <div class="field-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Image</mat-label>
+                      <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+                    </mat-form-field>
+                    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+                      {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
+                    </button>
+                  </div>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Web Description</mat-label>
+                    <textarea matInput formControlName="description" rows="6"></textarea>
+                  </mat-form-field>
+                </div>
+
+                <div class="info-preview">
+                  <div class="preview-card">
+                    <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
+                      @if (card.imageUrl?.url) {
+                        <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+                      } @else {
+                        <span>No image yet</span>
+                      }
+                    </div>
+                    <div class="preview-card__body">
+                      <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
+                      <div class="preview-card__meta">
+                        @if (form.get('startDate')?.value) {
+                          {{ form.get('startDate')?.value | date: 'MMM d, y' }}
+                          @if (form.get('endDate')?.value) {
+                            – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                          }
+                        } @else {
+                          No start date set
+                        }
+                      </div>
+                      @if (!form.get('isOnline')?.value) {
+                        <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
+                      }
+                      <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
+                      <div class="preview-card__tags">
+                        @if (regularAttendanceType() === 'inperson') {
+                          <span class="ptag">In-Person</span>
+                        }
+                        @if (regularAttendanceType() === 'online') {
+                          <span class="ptag ptag--online">Online</span>
+                        }
+                        @if (regularAttendanceType() === 'both') {
+                          <span class="ptag ptag--online">In-Person + Online</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </ng-template>
-          </mat-tab>
-        }
-        @if (permissionService.canView('events-manager.events.agenda')) {
-          <mat-tab label="Agenda">
-            <ng-template matTabContent>
-              <div class="tab-content tab-content--flush">
-                <app-event-agenda [event]="item"></app-event-agenda>
-              </div>
-            </ng-template>
-          </mat-tab>
-        }
-        @if (permissionService.canView('events-manager.events.attendees')) {
-          <mat-tab>
-            <ng-template mat-tab-label>
-              Attendees
-              @if (newAttendeeEventIds.has(item.id)) {
-                <span class="new-badge tab-badge">NEW</span>
-              }
-            </ng-template>
-            <ng-template matTabContent>
-              <div class="tab-content tab-content--flush">
-                <app-event-attendees [event]="item"></app-event-attendees>
-              </div>
-            </ng-template>
-          </mat-tab>
-        }
-        @if (permissionService.canView('events-manager.events.breakouts')) {
-          <mat-tab label="Break Outs">
-            <ng-template matTabContent>
-              <div class="tab-content tab-content--flush">
-                <app-event-breakouts [event]="item"></app-event-breakouts>
-              </div>
-            </ng-template>
-          </mat-tab>
+            </mat-tab>
+          }
+          @if (permissionService.canView(screenKey + '.attendees')) {
+            <mat-tab>
+              <ng-template mat-tab-label>
+                Attendees
+                @if (newAttendeeEventIds.has(item.id)) {
+                  <span class="new-badge tab-badge">NEW</span>
+                }
+              </ng-template>
+              <ng-template matTabContent>
+                <div class="tab-content tab-content--flush">
+                  <app-event-attendees [event]="item"></app-event-attendees>
+                </div>
+              </ng-template>
+            </mat-tab>
+          }
         }
       </mat-tab-group>
     </div>

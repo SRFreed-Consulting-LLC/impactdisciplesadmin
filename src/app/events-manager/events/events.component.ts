@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -31,6 +31,13 @@ import { OrganizationsComponent } from '../organizations/organizations.component
     standalone: false
 })
 export class EventsComponent implements OnInit {
+  // Summit vs regular Events are two separate left-nav items now
+  // (events-manager.component.html), both rendering this same component -
+  // see nav-config.ts's own comment on why the permission grants are
+  // deliberately separate rather than sharing one screenKey. Sourced from
+  // NAV_CONFIG's own two slugs ('summit' / 'events'), not duplicated here.
+  @Input() summitMode = false;
+
   mode: 'list' | 'edit' = 'list';
 
   // ---- List state ----
@@ -47,7 +54,17 @@ export class EventsComponent implements OnInit {
 
   itemType = 'Event';
 
-  private readonly screenKey = 'events-manager.events';
+  // Getter, not a plain field - was a hardcoded private string before the
+  // Summit/Events nav split. Public (not private) because the template
+  // also gates each tab's visibility off this same key
+  // (permissionService.canView(screenKey + '.info') etc.) - every existing
+  // canAdd()/canEdit()/canView() call site, in both this class and the
+  // template, reads through this one property, so keying it off
+  // summitMode here is the one place that needs to change for every
+  // permission check to route to the right grant.
+  get screenKey(): string {
+    return this.summitMode ? 'events-manager.summit' : 'events-manager.events';
+  }
 
   headerActions: ListHeaderAction[] = [];
   // Deleting an event has no cascading cleanup of its event-registrations -
@@ -116,7 +133,11 @@ export class EventsComponent implements OnInit {
   // from the same canView() checks the template itself uses, rather than
   // hardcoding a position.
   selectedTabIndex = 0;
-  private readonly tabOrder = ['info', 'application', 'agenda', 'attendees', 'breakouts'];
+  private readonly tabOrderSummit = ['info', 'application', 'agenda', 'attendees', 'breakouts'];
+  // Regular events only ever show Details (still keyed 'info' for
+  // permission/deep-link continuity - see nav-config.ts) and Attendees -
+  // Application/Agenda/Break Outs don't exist on this screen at all.
+  private readonly tabOrderRegular = ['info', 'attendees'];
 
   constructor(
     private service: EventService,
@@ -134,7 +155,8 @@ export class EventsComponent implements OnInit {
 
   ngOnInit(): void {
     this.authService.dao.loggedInUser$.subscribe(() => {
-      this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+      const label = this.summitMode ? 'New Summit' : 'New Event';
+      this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label, icon: 'add', onClick: () => this.showAddModal() }] : [];
     });
 
     this.organizationService.streamAll().subscribe((organizations) => {
@@ -147,7 +169,15 @@ export class EventsComponent implements OnInit {
       this.emailTemplates = templates.map((t) => t.name);
     });
 
-    this.events$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+    // Both Summit and Events read the same collection/stream - filtered
+    // client-side rather than a second scoped Firestore query, since the
+    // whole collection is small (29 documents in dev) and this avoids
+    // needing a composite index for an isSummit-equality query on top of
+    // whatever else this stream might filter on later.
+    this.events$ = this.service.streamAll().pipe(
+      map((items) => items.filter((item) => !!item.isSummit === this.summitMode)),
+      tap(() => this.loading$.next(false))
+    );
 
     this.registrationService.streamAllByValue('newRecordStatus', 'new').subscribe((registrations) => {
       this.newAttendeeEventIds = new Set(registrations.map((r) => r.eventId).filter((id): id is string => !!id));
@@ -177,7 +207,8 @@ export class EventsComponent implements OnInit {
   }
 
   private tabIndexFor(tabKey: string): number {
-    const visible = this.tabOrder.filter((key) => this.permissionService.canView(`${this.screenKey}.${key}`));
+    const tabOrder = this.summitMode ? this.tabOrderSummit : this.tabOrderRegular;
+    const visible = tabOrder.filter((key) => this.permissionService.canView(`${this.screenKey}.${key}`));
     const index = visible.indexOf(tabKey);
     return index >= 0 ? index : 0;
   }
@@ -219,6 +250,34 @@ export class EventsComponent implements OnInit {
     control?.setValue(!control.value);
   }
 
+  // ---- Events (regular) screen: attendance-first pill row ----
+  // Three pills (In-Person / Online / Both) replace the Summit/Online
+  // checkboxes on the regular-event Details tab - they map onto the exact
+  // same isOnline/isKajabiCourse controls, no schema change:
+  //   In-Person -> isOnline: false, isKajabiCourse: false
+  //   Online    -> isOnline: true,  isKajabiCourse: true  (Online is
+  //                inherently Kajabi-hosted, there's no other delivery
+  //                mechanism for it in this app)
+  //   Both      -> isOnline: false, isKajabiCourse: true  (in-person with
+  //                an optional Kajabi add-on - real dev data already has
+  //                more events with a Kajabi URL set than events marked
+  //                Online, so this combination already happens today, it
+  //                just wasn't a first-class choice in the old checkbox UI)
+  // updateConditionalValidators() already toggles required-ness purely off
+  // isOnline, so Location/Check-in stay required for Both (still
+  // in-person) and the Kajabi URLs stay optional for it (a bonus, not the
+  // primary registration path) with no changes needed to that method.
+  regularAttendanceType(): 'inperson' | 'online' | 'both' {
+    if (this.form?.get('isOnline')?.value) return 'online';
+    if (this.form?.get('isKajabiCourse')?.value) return 'both';
+    return 'inperson';
+  }
+
+  setRegularAttendanceType(type: 'inperson' | 'online' | 'both'): void {
+    this.form.get('isOnline')?.setValue(type === 'online');
+    this.form.get('isKajabiCourse')?.setValue(type === 'online' || type === 'both');
+  }
+
   manageLocations(): void {
     this.dialog.open(LocationsComponent, { width: '1000px', maxWidth: '95vw' });
   }
@@ -233,7 +292,7 @@ export class EventsComponent implements OnInit {
     if (!this.permissionService.canAdd(this.screenKey)) {
       return;
     }
-    this.editingItem = { ...new EventModel() };
+    this.editingItem = { ...new EventModel(), isSummit: this.summitMode };
     this.isEdit = false;
     this.card = {};
     this.selectedTabIndex = 0;

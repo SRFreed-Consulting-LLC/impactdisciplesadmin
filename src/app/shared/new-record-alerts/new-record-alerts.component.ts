@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { NewRecordAlertsService, NewRecordCounts } from 'src/app/common/services/data/new-record-alerts.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
+import { EventService } from 'src/app/common/services/data/event.service';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
@@ -44,6 +45,11 @@ interface AlertSource {
 // dropped when that module was removed in favor of Form Submissions
 // - see NewRecordCounts's own comment.
 const ALERT_SOURCES: AlertSource[] = [
+  // tab: 'events' here is only the fallback used when there's no specific
+  // registration to resolve an event from (see openEventRegistrations()) -
+  // the real case looks the target event's own isSummit flag up and routes
+  // to 'summit' instead of 'events' when it's a Summit event, now that
+  // those are two separate nav items/screens (nav-config.ts).
   { key: 'eventRegistrations', label: 'Event Registrations', route: ['/events-manager'], queryParams: { tab: 'events' } },
   { key: 'formSubmissions', label: 'Form Submissions' },
   { key: 'purchases', label: 'Purchases' }
@@ -66,6 +72,7 @@ export class NewRecordAlertsComponent {
   constructor(
     private service: NewRecordAlertsService,
     private registrationService: EventRegistrationService,
+    private eventService: EventService,
     private purchasesService: PurchasesService,
     private formSubmissionService: FormSubmissionService,
     private router: Router
@@ -123,16 +130,29 @@ export class NewRecordAlertsComponent {
   // count and the underlying rows can momentarily disagree - e.g. someone
   // else just marked it seen between the badge rendering and this click).
   private openEventRegistrations(entry: AlertEntry): void {
-    this.registrationService.getAllByValue('newRecordStatus', 'new').then((registrations) => {
+    this.registrationService.getAllByValue('newRecordStatus', 'new').then(async (registrations) => {
       const latest = registrations
         .filter((r) => !!r.eventId)
         .sort((a, b) => toMillis(b.registrationDate) - toMillis(a.registrationDate))[0];
 
-      const queryParams = latest ? { ...entry.queryParams, eventId: latest.eventId, eventTab: 'attendees' } : entry.queryParams;
-      // route is always set for the eventRegistrations entry (the only one
-      // this method is ever called for) - the ?? fallback only matters if
-      // that ever stops being true, so this never silently no-ops.
-      this.router.navigate(entry.route ?? ['/events-manager'], queryParams ? { queryParams } : {});
+      if (!latest) {
+        // route is always set for the eventRegistrations entry (the only
+        // one this method is ever called for) - the ?? fallback only
+        // matters if that ever stops being true, so this never silently
+        // no-ops.
+        this.router.navigate(entry.route ?? ['/events-manager'], entry.queryParams ? { queryParams: entry.queryParams } : {});
+        return;
+      }
+
+      // Summit and regular events are two separate nav items/screens now
+      // (nav-config.ts) - has to resolve the target event's own isSummit
+      // flag and route tab= accordingly, or a Summit event's registration
+      // alert would land on the Events (regular) screen, where that event
+      // doesn't even appear (it's filtered out by events.component.ts's
+      // own isSummit-scoped list).
+      const event = await this.eventService.getById(latest.eventId!);
+      const queryParams = { ...entry.queryParams, tab: event?.isSummit ? 'summit' : 'events', eventId: latest.eventId, eventTab: 'attendees' };
+      this.router.navigate(entry.route ?? ['/events-manager'], { queryParams });
     });
   }
 }
