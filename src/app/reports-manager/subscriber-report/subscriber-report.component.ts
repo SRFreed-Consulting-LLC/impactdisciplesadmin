@@ -1,15 +1,10 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { SelectionModel } from '@angular/cdk/collections';
-import jsPDF from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
 import { CustomerModel, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
-import { EmailList } from 'src/app/common/models/utils/email-list.model';
-import { EmailListService } from 'src/app/common/services/data/email-list.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -18,7 +13,6 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 import { ReportRow, SubscriberQueryRow } from './subscriber-report-row.model';
 import { SubscriberDialogComponent } from './subscriber-dialog.component';
 import { SendSubscriptionDialogComponent } from './send-subscription-dialog.component';
-import { SubscriptionListDialogComponent } from './subscription-list-dialog.component';
 
 interface ColumnDef {
   key: string;
@@ -40,21 +34,16 @@ type DateMode = 'after' | 'between' | 'lastMonths';
 // same OR-across-two-fields pattern Purchase Report already uses for
 // State, see this app's CLAUDE.md).
 //
-// Absorbed the entire old Subscribers screen (customers-manager/
+// Absorbed the old standalone Subscribers screen (customers-manager/
 // subscriptions/, removed 2026-08-15) rather than leaving it as a separate
 // list screen once subscriber management became "just a filtered view of
-// customers" - Add/Edit a subscriber, Send Newsletter/Prayer Request,
-// building/saving an EmailList, and unsubscribing all live here now,
-// scoped to whatever the criteria above currently show. "Filter by List"
-// (a saved EmailList membership filter) came back for exactly this reason -
-// it was deliberately dropped from a read-only report as not worth the
-// extra criterion, but list-building/selection is now a first-class thing
-// this screen does, not just filters it reads. List-scoped actions
-// (Create List/Save List/Export Selected to PDF) only make sense over real
-// individual subscribers, so they're hidden while Group by Type is on -
-// Send Newsletter/Send Prayer Request aren't, since (see
-// SendSubscriptionDialogComponent) they never read the currently displayed
-// rows at all, only `selectedList` or a fresh flag-based query.
+// customers" - Add/Edit a subscriber, Send Newsletter/Send Prayer Request,
+// and unsubscribing all live here now. Deliberately NOT ported: selection
+// checkboxes, "Filter by List", and building/saving an EmailList - the old
+// screen supported carving subscribers into saved sub-lists, but that's
+// not a thing this app does (per the user, explicitly) - every send always
+// targets every subscriber with that flag (see SendSubscriptionDialogComponent),
+// full stop, no per-send audience narrowing.
 @Component({
     selector: 'app-subscriber-report',
     templateUrl: './subscriber-report.component.html',
@@ -97,20 +86,8 @@ export class SubscriberReportComponent {
     }
   ];
 
-  selection = new SelectionModel<ReportRow>(true, []);
-
-  // Kept as 2 separate arrays (rather than one combined list) purely so the
-  // "Filter by List" dropdown can group them under 2 optgroups - both are
-  // scoped fetches (EmailListService's `email_lists` collection also holds
-  // unrelated `type: 'customers'` lists used by the Customers screen, so an
-  // unfiltered getAll() here would leak those into this dropdown too).
-  newsletterLists: EmailList[] = [];
-  prayerLists: EmailList[] = [];
-  selectedList: EmailList | undefined;
-
   constructor(
     private service: CustomerService,
-    private emailListService: EmailListService,
     private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -127,8 +104,6 @@ export class SubscriberReportComponent {
       typeEnabled: [false],
       type: [null, Validators.required]
     });
-
-    this.refreshEmailLists();
   }
 
   get canGenerate(): boolean {
@@ -192,7 +167,6 @@ export class SubscriberReportComponent {
     this.loading = true;
     this.generated = false;
     this.errorMessage = null;
-    this.selection.clear();
 
     try {
       const raw = await this.runQuery();
@@ -290,35 +264,6 @@ export class SubscriberReportComponent {
     });
   }
 
-  // ---- Filter by List ----
-
-  private async refreshEmailLists(): Promise<void> {
-    const [newsletterLists, prayerLists] = await Promise.all([
-      this.emailListService.getAllByValue('type', 'newsletter'),
-      this.emailListService.getAllByValue('type', 'prayer')
-    ]);
-    this.newsletterLists = newsletterLists ?? [];
-    this.prayerLists = prayerLists ?? [];
-  }
-
-  // Selects (doesn't hide/filter) whichever of the CURRENTLY GENERATED
-  // results belong to the chosen list - same semantics the old Subscribers
-  // screen's "Filter by List" had. A list's members won't all be selected
-  // if the current criteria don't happen to include them (e.g. a Prayer
-  // Team list picked while Type is scoped to Newsletter) - set matching
-  // criteria first if you need the full membership on screen.
-  onListFilterChanged(listId: string | null): void {
-    this.selection.clear();
-
-    if (listId) {
-      this.selectedList = [...this.newsletterLists, ...this.prayerLists].find((list) => list.id === listId);
-      const memberIds = new Set(((this.selectedList?.list ?? []) as ReportRow[]).map((s) => s.id));
-      this.results.filter((r) => memberIds.has(r.id)).forEach((r) => this.selection.select(r));
-    } else {
-      this.selectedList = undefined;
-    }
-  }
-
   // ---- Add / Edit ----
 
   showAddModal(): void {
@@ -355,11 +300,10 @@ export class SubscriberReportComponent {
 
   // ---- Send ----
 
-  // Only offers the currently-selected list to the send dialog if it
-  // actually matches the type being sent - picking a Newsletter list in the
-  // "Filter by List" dropdown and then clicking "Send Prayer Request"
-  // falls back to "every Prayer Team subscriber" instead of wrongly
-  // emailing the mismatched list.
+  // Always targets every subscriber currently flagged for this type - see
+  // SendSubscriptionDialogComponent, which queries that fresh itself rather
+  // than reading `results` (this report's criteria are for viewing/
+  // exporting, not for narrowing who a send reaches).
   showSendModal(type: SubscriptionType): void {
     if (!this.canEdit()) {
       return;
@@ -367,43 +311,7 @@ export class SubscriberReportComponent {
     this.dialog.open(SendSubscriptionDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
-      data: { type, selectedList: this.selectedList?.type === type ? this.selectedList : undefined }
-    });
-  }
-
-  // ---- List building ----
-
-  showListModal(): void {
-    if (!this.canEdit()) {
-      return;
-    }
-    // Always starts a brand new list from whatever rows are currently
-    // checked - matches the old Subscribers screen, which reset
-    // selectedList here regardless of any list currently active in the
-    // "Filter by List" filter.
-    this.selectedList = undefined;
-    const dialogRef = this.dialog.open(SubscriptionListDialogComponent, {
-      width: '480px',
-      data: { item: null, members: this.selection.selected }
-    });
-
-    dialogRef.afterClosed().subscribe(async (saved) => {
-      if (saved) {
-        await this.refreshEmailLists();
-      }
-    });
-  }
-
-  onListSave(): void {
-    if (!this.selectedList?.id || !this.canEdit()) {
-      return;
-    }
-    this.emailListService.update(this.selectedList.id, { ...this.selectedList, list: this.selection.selected }).then((item) => {
-      if (item) {
-        this.snackbar.success('List Updated');
-      } else {
-        this.snackbar.error('Some Error Occured');
-      }
+      data: { type }
     });
   }
 
@@ -452,19 +360,5 @@ export class SubscriberReportComponent {
       }
     }));
     exportToExcel(this.results, excelColumns, 'subscriber-report.xlsx');
-  }
-
-  // Exports whatever rows are currently checked - matches the old
-  // Subscribers screen's "Export List" (selected-only PDF), kept alongside
-  // Export to Excel (the report's own, full-results export) rather than
-  // replacing it - they serve different purposes.
-  exportPdf(): void {
-    const doc = new jsPDF();
-    autoTable(doc, {
-      startY: 12,
-      head: [['Last Name', 'First Name', 'Email', 'Type', 'Date']],
-      body: this.selection.selected.map((row) => [row.lastName ?? '', row.firstName ?? '', row.email ?? '', this.typeLabel(row.type), row.date instanceof Date ? row.date.toLocaleDateString() : ''])
-    });
-    doc.save('Subscribers.pdf');
   }
 }

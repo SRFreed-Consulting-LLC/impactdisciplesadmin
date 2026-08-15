@@ -12,10 +12,10 @@ export interface SubscriberQueryRow {
 // comment on why (identical reasoning: a "Group by Type" row is a
 // synthesized aggregate over several subscribers, not one real document).
 // Split into its own file (rather than living directly on
-// subscriber-report.component.ts) purely so the 3 subscriber-report/
-// dialog components can import it without a circular component-to-
-// component import back to SubscriberReportComponent itself - same reason
-// the old Subscribers screen's SubscriberRow got its own file.
+// subscriber-report.component.ts) purely so subscriber-dialog.component.ts
+// can import it without a circular component-to-component import back to
+// SubscriberReportComponent itself - same reason the old Subscribers
+// screen's SubscriberRow got its own file.
 export interface ReportRow {
   id: string;
   type: SubscriptionType;

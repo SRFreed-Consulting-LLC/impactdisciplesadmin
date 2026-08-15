@@ -237,16 +237,13 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
   aggregation (counts + earliest/latest date per type). Type picks which flag/date-field pair to
   query; with Type off, "either type" means querying both flags and merging client-side (same OR-
   across-two-fields pattern as Purchase Report's State criterion, see below) since a customer has no
-  single `type` field any more. Absorbed the entire old standalone Subscribers screen (`customers-
-  manager/subscriptions/`, removed 2026-08-15) rather than leaving it separate once a subscriber
-  became just a filtered view of `customers` - Add/Edit a subscriber, Send Newsletter/Send Prayer
-  Request, unsubscribing, and building/saving an `EmailList` ("Filter by List" criterion, selection-
-  based) all live here now, scoped to whatever the criteria currently show; list-scoped actions hide
-  while Group by Type is on since a grouped row has no real backing customer. Considered dropping the
-  List criterion entirely (a saved-`EmailList`-membership filter, client-side rather than a Firestore
-  query since subscribers don't carry list membership themselves) when this was a read-only report,
-  but it came back once list-building became a first-class action here, not just something to filter
-  by.
+  single `type` field any more. Absorbed the old standalone Subscribers screen (`customers-manager/
+  subscriptions/`, removed 2026-08-15) rather than leaving it separate once a subscriber became just
+  a filtered view of `customers` - Add/Edit a subscriber and unsubscribing (a row action) both live
+  here now. No List criterion, no selection/checkboxes, no saved-list building - the old screen
+  supported carving subscribers into saved sub-lists, but this app doesn't do that (per the user,
+  explicitly): Send Newsletter/Send Prayer Request always target every subscriber currently flagged
+  for that type, full stop, no per-send audience narrowing.
 - **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
   collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
   signup/created-date field at all (customer docs are upserted from purchases/event registrations —

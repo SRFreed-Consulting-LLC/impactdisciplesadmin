@@ -6,12 +6,10 @@ import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
-import { ReportRow } from './subscriber-report-row.model';
 import { NewsletterModel } from 'src/app/common/models/domain/newsletter.model';
 import { NewsletterService } from 'src/app/common/services/data/newletter.service';
 import { PrayerModel } from 'src/app/common/models/domain/prayer.model';
 import { PrayerService } from 'src/app/common/services/data/prayer.service';
-import { EmailList } from 'src/app/common/models/utils/email-list.model';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
@@ -20,37 +18,23 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../shared/rich-text-editor/variable-inserter.component';
 
-// Recipient shape both audience sources (a full flag-based query and a
-// saved EmailList's `list` array of ReportRow) satisfy - the send just
-// needs name + email, not the rest of ReportRow/CustomerModel.
-interface Recipient {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
 export interface SendSubscriptionDialogData {
-  // Which audience this send targets - drives the title, the fallback
-  // "every subscriber" query (CustomerService.getAllByValue against this
-  // type's flag field, NOT a blind getAll() - customers who aren't
-  // subscribed to this specific type must never receive it), the archive
-  // record written afterward (NewsletterModel vs PrayerModel - see below,
-  // that split itself is unchanged/out of scope), and the unsubscribe
-  // link's `type` param.
+  // Which audience this send targets - drives the title, the "every
+  // subscriber" query (CustomerService.getAllByValue against this type's
+  // flag field, NOT a blind getAll() - customers who aren't subscribed to
+  // this specific type must never receive it), the archive record written
+  // afterward (NewsletterModel vs PrayerModel - see below, that split
+  // itself is unchanged/out of scope), and the unsubscribe link's `type`
+  // param. Always the WHOLE audience for this type - no way to narrow who
+  // a send reaches to some subset (per the user, explicitly - this app
+  // doesn't do subscriber sub-lists).
   type: SubscriptionType;
-  // When set (the "Filter by List" dropdown has an active selection
-  // matching this type - see subscriptions.component.ts's showSendModal()),
-  // the email goes to that list's members; otherwise it goes to every
-  // subscriber of this type.
-  selectedList: EmailList | undefined;
 }
 
 // Replaces SendNewsletterDialogComponent + SendPrayerDialogComponent - same
 // Quill compose/variable-insert mechanics for both; content/archive-model
 // still branches on `type` since Newsletter and Prayer Team retain their
-// own distinct outbound-archive collections (newsletters/prayers) - see
-// subscriptions.component.ts's own file comment on why sending stayed 2
-// actions instead of merging into one generic composer.
+// own distinct outbound-archive collections (newsletters/prayers).
 @Component({
     selector: 'app-send-subscription-dialog',
     templateUrl: './send-subscription-dialog.component.html',
@@ -114,11 +98,8 @@ export class SendSubscriptionDialogComponent {
     const type = this.data.type;
 
     const { flagField } = subscriptionFieldsForType(type);
-    const list: Promise<Recipient[]> = this.data.selectedList
-      ? Promise.resolve(this.data.selectedList.list as ReportRow[])
-      : this.service.getAllByValue(flagField, true);
 
-    list
+    this.service.getAllByValue(flagField, true)
       .then((subscribers) => {
         subscribers.forEach((subscriber) => {
           let html = template
@@ -130,7 +111,7 @@ export class SendSubscriptionDialogComponent {
           html +=
             '<br><br><br><div>If you believe you received this email by mistake, please click ' +
             "<b><a href='" + environment.unsubscribeUrl + '?email=' + subscriber.email +
-            "&list=subscriptions&type=" + type + "'>here</a></b> to remove your address.</div>";
+            "&type=" + type + "'>here</a></b> to remove your address.</div>";
 
           this.emailService.sendHtmlEmail(subscriber.email, subject, html);
         });

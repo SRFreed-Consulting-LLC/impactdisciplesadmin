@@ -22,7 +22,6 @@ import { PurchaseReportComponent } from './purchase-report/purchase-report.compo
 import { SubscriberReportComponent } from './subscriber-report/subscriber-report.component';
 import { SubscriberDialogComponent } from './subscriber-report/subscriber-dialog.component';
 import { SendSubscriptionDialogComponent } from './subscriber-report/send-subscription-dialog.component';
-import { SubscriptionListDialogComponent } from './subscriber-report/subscription-list-dialog.component';
 import { CustomerReportComponent } from './customer-report/customer-report.component';
 import { EventReportComponent } from './event-report/event-report.component';
 
@@ -33,7 +32,6 @@ import { EventReportComponent } from './event-report/event-report.component';
     SubscriberReportComponent,
     SubscriberDialogComponent,
     SendSubscriptionDialogComponent,
-    SubscriptionListDialogComponent,
     CustomerReportComponent,
     EventReportComponent
   ],
