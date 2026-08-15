@@ -129,15 +129,32 @@ export const NAV_CONFIG: NavGroup[] = [
     roles: [Role.ADMIN],
     items: [
       {
-        label: 'Events', slug: 'events', roles: [Role.ADMIN],
-        // events.component.html's mat-tab-group - the one screen in the app
-        // with internal edit-view tabs today.
+        label: 'Summit', slug: 'summit', roles: [Role.ADMIN],
+        // Summit events (isSummit: true) only - events.component.ts's
+        // EventsComponent rendered with [summitMode]="true". Own permission
+        // grant, deliberately separate from 'Events' below (confirmed with
+        // the user during the Summit/Events nav split) - Summit is the
+        // higher-stakes, more specialized screen (multi-day agenda,
+        // breakout capacity), an Employee needs it granted explicitly, an
+        // existing 'Events' grant does not carry over.
         tabs: [
           { key: 'info', label: 'Info' },
           { key: 'application', label: 'Application' },
           { key: 'agenda', label: 'Agenda' },
           { key: 'attendees', label: 'Attendees' },
           { key: 'breakouts', label: 'Break Outs' }
+        ]
+      },
+      {
+        label: 'Events', slug: 'events', roles: [Role.ADMIN],
+        // Regular (non-Summit) events only - EventsComponent rendered with
+        // [summitMode]="false". Only 2 internal tabs (Details/Attendees) -
+        // Application/Agenda/Break Outs don't exist on this screen at all,
+        // see events.component.ts/html's own comments on why (real
+        // usage data: those 3 are used by 0-1 of 27 regular events in dev).
+        tabs: [
+          { key: 'info', label: 'Details' },
+          { key: 'attendees', label: 'Attendees' }
         ]
       },
       { label: 'Courses', slug: 'courses', roles: [Role.ADMIN] },

@@ -1,6 +1,10 @@
 <div class="manager-content">
+  @if (selectedTab === 'Summit') {
+    <app-events [summitMode]="true"></app-events>
+  }
+
   @if (selectedTab === 'Events') {
-    <app-events></app-events>
+    <app-events [summitMode]="false"></app-events>
   }
 
   @if (selectedTab === 'Coaches') {
