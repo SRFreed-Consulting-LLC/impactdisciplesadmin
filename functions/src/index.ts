@@ -64,6 +64,10 @@ const eventRegCustomerUpsert =
 exports.onEventRegistrationCustomerUpsert =
   eventRegCustomerUpsert.onEventRegistrationCustomerUpsert;
 
+const libraryLicenseGrant = require("./library-license-grant.functions");
+exports.onPurchaseGrantLibraryLicenses =
+  libraryLicenseGrant.onPurchaseGrantLibraryLicenses;
+
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =
   mailchimpSync.onCustomerCreatedMailchimpSync;
