@@ -123,6 +123,14 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
+  // Render-only label diet for the navy redesign: "CUSTOMERS MANAGER" shows
+  // as "CUSTOMERS" in the drawer. Display concern only - nav-config labels
+  // themselves are untouched because they feed permission screenKeys and the
+  // Reports Manager tab shell reads its group by label conventions.
+  displayGroupLabel(label: string): string {
+    return label.replace(/\s+manager$/i, '');
+  }
+
   toggleGroup(id: string): void {
     if (this.expanded.has(id)) {
       this.expanded.delete(id);

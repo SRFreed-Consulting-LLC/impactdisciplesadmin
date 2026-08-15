@@ -135,8 +135,9 @@ $variants: (
     faint: #5e7089,
     nav-active-bg: rgba(255, 255, 255, 0.1),
     nav-active-ink: #ffffff,
+    // No header-ink override: the app's top bar sits on the navy chrome
+    // (above .portal-content's light canvas), so it keeps the light page ink.
     content-bg: #f2f4f8,
-    header-ink: #1c2536,
     card: #ffffff,
     card-ink: #1e2637,
     card-muted: #7a8494,

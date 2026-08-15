@@ -1,17 +1,10 @@
-// Brand chrome (dark charcoal panel + yellow hover) preserved pixel-for-
-// pixel from the DevExtreme version - this is the app's one distinctive,
-// highly-visible piece of branding, not incidental DevExtreme styling, so
-// it's kept rather than reset to generic Material.
-$panel-bg: #252525;
-$accent: #ffcc00;
-// "You are here" color for the selected/active row - deliberately NOT the
-// hover yellow above: hover is transient mouse feedback, active is a
-// standing "current location" indicator, and sharing one color made them
-// indistinguishable. This is the app's own real Material primary color
-// (see _material-theme.scss's seed comment) - already what every button/
-// link elsewhere in the app uses, so "selected" reads as this app's normal
-// accent rather than an arbitrary new color.
-$selected: #337ab7;
+// Navy-redesign shell chrome. Everything color-ish comes from the active
+// theme's --app-* tokens (src/styles/_theme-variants.scss) so all 10 variants
+// restyle this file for free - no hardcoded hexes. (The old DevExtreme-era
+// charcoal panel + yellow hover chrome this replaced lived here as $panel-bg/
+// $accent/$selected; the yellow-fill hover is gone deliberately - hover is a
+// subtle ink wash now, active is the theme's tinted nav treatment.)
+//
 // Shared with .impact-shell__content--rail-gutter below - the content
 // pane's static left offset (mode="over") has to match this exactly, or
 // the always-present collapsed rail sits on top of real content instead of
@@ -25,15 +18,18 @@ $collapsed-width: 64px;
 
 .impact-shell {
   height: 100%;
+  background: var(--app-ground);
 }
 
 .impact-drawer {
-  // 260px was clipping the widest labels ("Lunch and Learn Requests",
-  // "SUBSCRIPTIONS MANAGER") - measured via each label's own unclamped
-  // scrollWidth, the widest needs ~289px of total row width.
-  width: 300px;
-  background-color: $panel-bg;
-  border-right: none;
+  // 300px predates the nav label diet (group labels render without the
+  // "MANAGER" suffix now - see displayGroupLabel()) and the removal of the
+  // old widest rows ("SUBSCRIPTIONS MANAGER", "Lunch and Learn Requests").
+  // 260px clears today's widest label at the new 13.5px size with room for
+  // the chevron.
+  width: 260px;
+  background: var(--app-side);
+  border-right: 1px solid var(--app-divider);
   border-radius: 0;
   display: flex;
   flex-direction: column;
@@ -108,12 +104,12 @@ $collapsed-width: 64px;
 }
 
 .drawer-logo {
-  margin: 20px 0;
+  margin: 16px 0 12px;
   display: flex;
   justify-content: center;
 
   img {
-    height: 120px;
+    height: 96px;
     transition: height 0.18s ease;
   }
 }
@@ -133,14 +129,14 @@ $collapsed-width: 64px;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 0 12px 12px;
-  border-bottom: 1px solid #ffffff4d;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--app-divider);
   margin-bottom: 4px;
 }
 
 .impact-drawer__pin-drawer-label {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--app-faint);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -163,38 +159,31 @@ $collapsed-width: 64px;
     width: 15px;
     height: 15px;
     line-height: 15px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--app-faint);
     transition: color 0.15s ease, transform 0.15s ease;
   }
 
   &:hover mat-icon {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--app-ink);
   }
 
   &--pinned mat-icon {
-    color: $accent;
+    color: var(--app-accent);
     transform: rotate(45deg);
   }
 }
 
 .impact-drawer__list {
-  border-top: 1px solid #ffffff4d;
-  padding-top: 0;
+  border-top: 1px solid var(--app-divider);
+  padding-top: 4px;
 
-  // Material's nav-list defaults the hover/selected "active indicator" to a
-  // full pill shape (--mat-sys-corner-full, 9999px) inset-looking even
-  // though the item itself is already full-width - the old DevExtreme nav's
-  // highlight was a flat, square-cornered, edge-to-edge row.
+  // The active treatment is our own tinted rounded row (below), not
+  // Material's pill-shaped "active indicator".
   --mat-list-active-indicator-shape: 0;
 
   .mat-mdc-list-item {
     height: auto;
-    // Went narrower than the mockup's own .nrow padding (10px 18px) at
-    // first to compensate for mat-icon defaulting to 24px vs. the mockup's
-    // 17px inline SVGs (identical padding renders taller here than in the
-    // mockup) - landed too short. Settled here by feel across a few rounds
-    // of feedback rather than by matching either number literally.
-    padding: 9px 18px;
+    padding: 7px 14px;
   }
 }
 
@@ -206,14 +195,19 @@ $collapsed-width: 64px;
 
 .impact-drawer__link {
   text-decoration: none;
-  color: #fff;
+  color: var(--app-muted);
+  // Tinted rounded active rows (and matching hover) need the row to be an
+  // inset box rather than edge-to-edge - the margin is what gives the
+  // radius room to read.
+  margin: 1px 8px;
+  border-radius: var(--app-radius-control);
 
   // Manager group headers are a real <button> (they toggle expand/collapse,
   // not navigate) rather than an <a> - mat-list-item's own theme resets most
   // button chrome already, this covers what it doesn't.
   border: none;
   background: none;
-  width: 100%;
+  width: calc(100% - 16px);
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -224,17 +218,17 @@ $collapsed-width: 64px;
   // beat - live-diagnosed via computed styles: after a group button is
   // clicked (real DOM focus, which persists after the mouse moves away -
   // this isn't a :hover effect), the text rendered as Material's default
-  // dark on-surface color instead of white, unreadable against the dark
-  // panel. `!important` is the only override that reliably wins here
-  // regardless of which internal Material selector is currently matching.
+  // on-surface color instead of this row's own color. `!important` is the
+  // only override that reliably wins here regardless of which internal
+  // Material selector is currently matching.
   &-text {
-    // Bumped up from the mockup's own .nrow value (13.5px) on feedback -
-    // matching it exactly read as too small in the real app.
-    font-size: 15px;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     color: inherit !important;
     // Reserve room for the absolutely-positioned chevron (longer labels
-    // like "REQUESTS MANAGER" otherwise run right under it) and truncate
-    // gracefully instead of overlapping.
+    // otherwise run right under it) and truncate gracefully instead of
+    // overlapping.
     display: block;
     padding-right: 22px;
     overflow: hidden;
@@ -243,35 +237,27 @@ $collapsed-width: 64px;
   }
 
   mat-icon {
-    color: #fff !important;
+    color: inherit !important;
   }
 
+  // Subtle ink wash - transient mouse feedback, deliberately quieter than
+  // the standing active state below (the old chrome used a yellow fill
+  // here, which outshouted the actual selection).
   &:hover {
-    background-color: $accent;
-    color: $panel-bg;
-    font-weight: 600;
-
-    mat-icon {
-      color: $panel-bg;
-    }
+    background-color: color-mix(in srgb, var(--app-ink) 8%, transparent);
+    color: var(--app-ink);
   }
 
-  // Deliberately its own color, not $accent - see $selected's own comment.
-  // Nested &:hover on top gives the current selection a distinct (still
-  // blue-family, not a jump to the hover yellow) response of its own when
-  // you mouse over it, rather than either doing nothing or flashing to the
-  // same yellow every unselected row uses.
+  // "You are here": the theme's tinted nav treatment - accent-family tint
+  // + accent-family ink, so the current location reads in the theme's own
+  // voice without a solid accent slab.
   &--active {
-    background-color: $selected;
-    color: #fff;
-    font-weight: 600;
-
-    mat-icon {
-      color: #fff;
-    }
+    background-color: var(--app-nav-active-bg);
+    color: var(--app-nav-active-ink);
+    font-weight: 650;
 
     &:hover {
-      background-color: color-mix(in srgb, #{$selected} 85%, white);
+      background-color: color-mix(in srgb, var(--app-nav-active-bg) 80%, var(--app-nav-active-ink));
     }
   }
 }
@@ -291,8 +277,7 @@ $collapsed-width: 64px;
   top: 50%;
   right: 20px;
   transform: translateY(-50%);
-  opacity: 0.65;
-  color: #fff;
+  color: var(--app-faint);
   transition: transform 0.15s ease;
 
   &--open {
@@ -301,20 +286,20 @@ $collapsed-width: 64px;
 }
 
 // The chevron is a sibling of .impact-drawer__link now, not a child of it,
-// so it can't pick up color from that button's own :hover/&--active rules
-// (or its "mat-icon { color: #fff !important; }") - these general-sibling
-// selectors mirror the same conditions directly. Order matters here the
-// same way it does on .impact-drawer__link itself: :hover and --active are
-// a specificity tie, so --active:hover (both, later in source) has to come
-// last to correctly win over plain :hover when a selected row is hovered.
+// so it can't pick up color from that button's own :hover/&--active rules -
+// these general-sibling selectors mirror the same conditions directly.
+// Order matters here the same way it does on .impact-drawer__link itself:
+// :hover and --active are a specificity tie, so --active:hover (both,
+// later in source) has to come last to correctly win over plain :hover
+// when a selected row is hovered.
 .impact-drawer__link:hover ~ .impact-drawer__chevron {
-  color: $panel-bg;
+  color: var(--app-ink);
 }
 .impact-drawer__link--active ~ .impact-drawer__chevron {
-  color: #fff;
+  color: var(--app-nav-active-ink);
 }
 .impact-drawer__link--active:hover ~ .impact-drawer__chevron {
-  color: #fff;
+  color: var(--app-nav-active-ink);
 }
 
 // Pinned shortcuts (above Home) and each sub-item row inside an expanded
@@ -348,18 +333,18 @@ $collapsed-width: 64px;
     width: 15px;
     height: 15px;
     line-height: 15px;
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--app-faint);
     transition: color 0.15s ease, transform 0.15s ease;
   }
 
   &:hover mat-icon {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-ink);
   }
 
   // Filled-in accent color + a slight tilt reads as "pinned" at a glance,
   // distinct from the plain hover state above.
   &--pinned mat-icon {
-    color: $accent;
+    color: var(--app-accent);
     transform: rotate(45deg);
   }
 }
@@ -384,17 +369,17 @@ $collapsed-width: 64px;
     width: 17px;
     height: 17px;
     line-height: 17px;
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--app-faint);
     transition: color 0.15s ease;
   }
 
   &:hover mat-icon {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-ink);
   }
 }
 
 .impact-drawer__pinned-divider {
-  border-top-color: rgba(255, 255, 255, 0.15);
+  border-top-color: var(--app-divider);
   margin: 4px 0;
 }
 
@@ -410,9 +395,8 @@ $collapsed-width: 64px;
   display: flex;
   flex-direction: column;
   // Slightly recessed so the group/sub-item hierarchy reads at a glance
-  // without a full tree-indent guideline - matches the reviewed mockup's
-  // "Pinned + Collapsible" treatment.
-  background-color: rgba(0, 0, 0, 0.15);
+  // without a full tree-indent guideline.
+  background-color: color-mix(in srgb, black 12%, transparent);
 }
 
 // .impact-drawer__list .mat-mdc-list-item's own padding rule above is
@@ -421,35 +405,32 @@ $collapsed-width: 64px;
 // this override take effect.
 .impact-drawer__list .impact-drawer__sublink {
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.75);
-  // Matches the reviewed mockup's .subrow exactly, except the right side -
-  // widened from the mockup's own 18px to leave room for the absolutely-
-  // positioned .impact-drawer__row-menu-toggle button so it truncates the
-  // label instead of sitting on top of it.
+  color: var(--app-muted);
+  margin: 1px 8px;
+  border-radius: var(--app-radius-control);
   font-size: 12.5px;
-  padding: 8px 36px 8px 50px;
+  padding: 7px 36px 7px 44px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background-color: color-mix(in srgb, var(--app-ink) 8%, transparent);
+    color: var(--app-ink);
   }
 
-  // Same $selected choice, same reason, as .impact-drawer__link--active
-  // above - and the same specificity note: &:hover above and &--active
-  // here compile to an equal-specificity selector pair, so &--active:hover
-  // has to come last (it does) to correctly win when the selected sub-item
-  // is also being hovered, rather than falling back to the plain :hover
-  // treatment above.
+  // Same tinted active treatment, same reason, as .impact-drawer__link--
+  // active above - and the same specificity note: &:hover above and
+  // &--active here compile to an equal-specificity selector pair, so
+  // &--active:hover has to come last (it does) to correctly win when the
+  // selected sub-item is also being hovered.
   &--active {
-    background-color: $selected;
-    color: #fff;
+    background-color: var(--app-nav-active-bg);
+    color: var(--app-nav-active-ink);
     font-weight: 600;
 
     &:hover {
-      background-color: color-mix(in srgb, #{$selected} 85%, white);
+      background-color: color-mix(in srgb, var(--app-nav-active-bg) 80%, var(--app-nav-active-ink));
     }
   }
 }
@@ -457,8 +438,7 @@ $collapsed-width: 64px;
 // Same fix as .impact-drawer__link-text above, same reason: matListItemTitle
 // stamps .mdc-list-item__primary-text onto this span, and Material's own
 // list-item theme sets an explicit color on that class which otherwise beats
-// plain inheritance from .impact-drawer__sublink - this was rendering the
-// sublist almost unreadable (near-black text on a near-black row).
+// plain inheritance from .impact-drawer__sublink.
 .impact-drawer__sublink-text {
   color: inherit !important;
 }
@@ -473,13 +453,14 @@ $collapsed-width: 64px;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--app-ground);
 }
 
 // Unpinned only (mode="over" - see the template's own comment on
 // mat-sidenav's [mode] binding) - a static offset matching the drawer's
 // resting collapsed width, so the always-present icon rail sits beside
 // this pane's content instead of on top of its leftmost 64px. Static, not
-// reactive to hover/menu state: the temporary wider (300px) expansion is
+// reactive to hover/menu state: the temporary wider (260px) expansion is
 // still meant to float OVER this gutter and a bit of real content beyond
 // it - only the permanent collapsed-state overlap needed fixing.
 .impact-shell__content--rail-gutter {
@@ -487,9 +468,11 @@ $collapsed-width: 64px;
 }
 
 .impact-header {
-  height: 60px;
-  min-height: 60px;
-  border-bottom: 1px solid #d9d9d9;
+  height: 48px;
+  min-height: 48px;
+  background: transparent;
+  color: var(--app-header-ink);
+  border-bottom: 1px solid var(--app-divider);
   flex: 0 0 auto;
 }
 
@@ -497,9 +480,13 @@ $collapsed-width: 64px;
   flex: 1 1 auto;
 }
 
+// Harbor Split is the one variant with a light working canvas under navy
+// chrome (--app-content-bg); everywhere else this is transparent and the
+// ground shows through. Side padding instead of the old margin+white-card
+// look - screens' own cards provide the surfaces now.
 .portal-content {
-  margin: 0 25px;
-  background-color: #fff;
+  padding: 0 20px;
+  background: var(--app-content-bg);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -511,11 +498,11 @@ $collapsed-width: 64px;
   align-items: center;
   gap: 4px;
   text-transform: none;
-  color: #444;
+  color: var(--app-header-ink);
 }
 
 .impact-header__user-name {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   max-width: 160px;
   overflow: hidden;
@@ -531,7 +518,9 @@ $collapsed-width: 64px;
 // First block inside the user menu (email + role) - deliberately not a
 // mat-menu-item, just identity context. No click handling needed: MatMenu
 // only closes on a mat-menu-item's own click or the backdrop, not on plain
-// content inside the panel.
+// content inside the panel. Menu panels are --mat-sys-surface cards, so
+// these read from the card ink set (the old rgba-black literals were
+// invisible on dark panels).
 .user-menu__identity {
   padding: 10px 16px 8px;
   cursor: default;
@@ -540,10 +529,10 @@ $collapsed-width: 64px;
 .user-menu__email {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.87);
+  color: var(--mat-sys-on-surface);
 }
 
 .user-menu__role {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--mat-sys-on-surface-variant);
 }

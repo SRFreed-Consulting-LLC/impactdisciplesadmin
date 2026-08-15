@@ -91,7 +91,7 @@
             class="impact-drawer__link"
             [class.impact-drawer__link--active]="activeGroupId === group.id">
             <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
-            <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
+            <span matListItemTitle class="impact-drawer__link-text">{{ displayGroupLabel(group.label) }}</span>
           </a>
         }
         <!-- Manager group - header toggles expand/collapse, doesn't navigate itself.
@@ -113,7 +113,7 @@
               class="impact-drawer__link"
               [class.impact-drawer__link--active]="activeGroupId === group.id && !activeSlug">
               <mat-icon matListItemIcon>{{ group.icon }}</mat-icon>
-              <span matListItemTitle class="impact-drawer__link-text">{{ group.label }}</span>
+              <span matListItemTitle class="impact-drawer__link-text">{{ displayGroupLabel(group.label) }}</span>
             </button>
             <mat-icon class="impact-drawer__chevron" [class.impact-drawer__chevron--open]="expanded.has(group.id)">expand_more</mat-icon>
           </div>
