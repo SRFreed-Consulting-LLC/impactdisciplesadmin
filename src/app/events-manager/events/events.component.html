@@ -199,12 +199,12 @@
           <!-- matTabContent: unlike DevExtreme's tabbed form (which only ever
           instantiated a tab's content the first time it was clicked),
           mat-tab-group eagerly creates every tab's content the moment
-          the group itself mounts. These four embed heavy, stateful
+          the group itself mounts. These three embed heavy, stateful
           components (each opening its own Firestore streams; Agenda in
           particular assumes a saved event with a location already set)
           - matTabContent defers creation until a tab is actually
           selected, matching the original's real behavior instead of
-          firing all four at once on every single Add/Edit open. -->
+          firing all three at once on every single Add/Edit open. -->
           @if (permissionService.canView(screenKey + '.application')) {
             <mat-tab label="Application">
               <ng-template matTabContent>
@@ -234,15 +234,6 @@
               <ng-template matTabContent>
                 <div class="tab-content tab-content--flush">
                   <app-event-attendees [event]="item"></app-event-attendees>
-                </div>
-              </ng-template>
-            </mat-tab>
-          }
-          @if (permissionService.canView(screenKey + '.breakouts')) {
-            <mat-tab label="Break Outs">
-              <ng-template matTabContent>
-                <div class="tab-content tab-content--flush">
-                  <app-event-breakouts [event]="item"></app-event-breakouts>
                 </div>
               </ng-template>
             </mat-tab>

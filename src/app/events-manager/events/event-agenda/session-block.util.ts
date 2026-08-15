@@ -1,7 +1,19 @@
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+
+// Either CoachModel or ImpactTeamMemberModel satisfies this structurally -
+// since the Impact Team split (2026-08, see impact-team.service.ts's own
+// header comment) a breakout instructor can come from either collection,
+// and every place that resolves an id to a display name (coachLabelFor()
+// below, plus the Agenda dialogs/canvas/grid that call it) just needs
+// id/fullname, not either model's full shape - this avoids committing
+// those call sites to importing both concrete models just to type a
+// combined array.
+export interface Instructor {
+  id?: string;
+  fullname: string;
+}
 
 // A "breakout block" - several Course Session AgendaItems (isCourse: true)
 // running in parallel at the same time - isn't a stored concept anywhere:
@@ -125,9 +137,12 @@ export function blockLabel(index: number): string {
 }
 
 // Course-first, AgendaItem-fallback coach display - see CourseModel's own
-// comment on coachIds for why. Returns a joined display string ("Dana
-// Whitfield, Marcus Ellery") or '—' if nobody's assigned either place.
-export function coachLabelFor(item: AgendaItem, course: CourseModel | undefined, coaches: CoachModel[]): string {
+// comment on coachIds for why. `coaches` is expected to be the combined
+// Coaches + Impact Team array (see event-agenda.component.ts's own
+// comment) - coachIds doesn't distinguish source, so lookup doesn't either.
+// Returns a joined display string ("Dana Whitfield, Marcus Ellery") or '—'
+// if nobody's assigned either place.
+export function coachLabelFor(item: AgendaItem, course: CourseModel | undefined, coaches: Instructor[]): string {
   const ids = (course?.coachIds?.length ? course.coachIds : item.coaches) ?? [];
   const names = ids.map((id) => coaches.find((c) => c.id === id)?.fullname).filter((name): name is string => !!name);
   return names.length ? names.join(', ') : '—';

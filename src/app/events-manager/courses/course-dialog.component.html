@@ -40,10 +40,23 @@
   <div class="field-row">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Coaches</mat-label>
+      <!-- Combined picker (2026-08 Impact Team split, see
+      impact-team.service.ts's own header comment) - coachIds can hold ids
+      from either collection, grouped here just so it's clear which is
+      which; both groups render even if one's momentarily empty (a fresh
+      Team Page with 0 members yet), matching the mat-select's own default
+      "no results" affordance rather than hiding a whole group. -->
       <mat-select formControlName="coachIds" multiple>
-        @for (coach of coaches; track coach) {
-          <mat-option [value]="coach.id">{{ coach.fullname }}</mat-option>
-        }
+        <mat-optgroup label="Coaches">
+          @for (coach of coaches; track coach) {
+            <mat-option [value]="coach.id">{{ coach.fullname }}</mat-option>
+          }
+        </mat-optgroup>
+        <mat-optgroup label="Impact Team">
+          @for (member of impactTeamMembers; track member) {
+            <mat-option [value]="member.id">{{ member.fullname }}</mat-option>
+          }
+        </mat-optgroup>
       </mat-select>
     </mat-form-field>
     <button mat-stroked-button type="button" (click)="addCoach()">+ New Coach</button>

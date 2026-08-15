@@ -663,3 +663,16 @@ quill-editor .ql-editor {
 .preview-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface > * {
   padding: 0;
 }
+
+// Breakout Block dialog (event-agenda/breakout-block-dialog.component) -
+// full-screen so its Course/Coach/Room/Max options table has real width to
+// stay aligned instead of a cramped flex row (see that component's own
+// comment). Same global + panelClass technique as .preview-dialog-panel
+// above (a dialog's own overlay chrome lives outside its component's view
+// encapsulation, so it can't be reached from the component's own SCSS).
+// Sizing itself comes from the width/height/maxWidth/maxHeight passed to
+// dialog.open() (all 3 call sites: agenda-wizard/canvas/grid) - this just
+// strips the default rounded corners for a true edge-to-edge surface.
+.breakout-block-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: 0;
+}

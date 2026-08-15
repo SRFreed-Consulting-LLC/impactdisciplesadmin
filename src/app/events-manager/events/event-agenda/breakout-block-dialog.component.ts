@@ -3,17 +3,19 @@ import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
+import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { CourseDialogComponent } from '../../courses/course-dialog.component';
-import { SessionBlock, coachLabelFor } from './session-block.util';
+import { Instructor, SessionBlock, coachLabelFor } from './session-block.util';
 
 export interface BreakoutBlockDialogData {
   block: SessionBlock | null;
   defaultStart: Date;
   courses: CourseModel[];
-  coaches: CoachModel[];
+  // Combined Coaches + Impact Team - see event-agenda.component.ts's own
+  // comment on why this is one merged array, not 2.
+  coaches: Instructor[];
   rooms: TrainingRoomModel[];
 }
 
@@ -60,7 +62,8 @@ export class BreakoutBlockDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: BreakoutBlockDialogData,
     private fb: FormBuilder,
     private dialog: MatDialog,
-    private coachService: CoachService
+    private coachService: CoachService,
+    private impactTeamService: ImpactTeamService
   ) {
     this.isEdit = !!data.block;
     this.originalIds = data.block?.options.map((o) => o.id!) ?? [];
@@ -129,15 +132,15 @@ export class BreakoutBlockDialogComponent {
       // course's coachIds without being in data.coaches yet, which would
       // otherwise leave the read-only Coach label (coachLabel() below)
       // showing "—" until this dialog is closed and reopened. Re-fetching
-      // here (small reference list, same one-time getAll() convention as
-      // event-agenda.component.ts's own initial load) covers that case
-      // unconditionally rather than trying to detect whether one actually
-      // happened. Replaces contents in place (not a reassignment) so this
-      // stays the same array instance threaded down from
-      // event-agenda.component.ts.
-      this.coachService.getAll().then((coaches) => {
+      // both collections here (small reference lists, same one-time
+      // getAll() convention as event-agenda.component.ts's own initial
+      // load) covers that case unconditionally rather than trying to
+      // detect whether one actually happened. Replaces contents in place
+      // (not a reassignment) so this stays the same array instance
+      // threaded down from event-agenda.component.ts.
+      Promise.all([this.coachService.getAll(), this.impactTeamService.getAll()]).then(([coaches, impactTeam]) => {
         this.data.coaches.length = 0;
-        this.data.coaches.push(...coaches);
+        this.data.coaches.push(...coaches, ...impactTeam);
       });
     });
   }

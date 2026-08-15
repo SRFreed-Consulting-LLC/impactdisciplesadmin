@@ -6,14 +6,22 @@ import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
+import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { CourseDialogComponent } from '../../courses/course-dialog.component';
 import { CoachDialogComponent } from '../../coaches/coach-dialog.component';
+import { Instructor } from './session-block.util';
 
 export interface AgendaItemDialogData {
   item: AgendaItem | null;
   defaultStart: Date;
   courses: CourseModel[];
-  coaches: CoachModel[];
+  // Combined Coaches + Impact Team, same as BreakoutBlockDialogData - see
+  // event-agenda.component.ts's own comment. Shown as one flat (ungrouped)
+  // list in this dialog's own Coaches field, unlike course-dialog.component's
+  // - this is the secondary/legacy per-item coach path (course assignment
+  // normally happens via Course.coachIds instead, see CourseModel's own
+  // comment), not worth the extra plumbing for optgroups here too.
+  coaches: Instructor[];
   rooms: TrainingRoomModel[];
 }
 
@@ -44,7 +52,8 @@ export class AgendaItemDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: AgendaItemDialogData,
     private fb: FormBuilder,
     private dialog: MatDialog,
-    private coachService: CoachService
+    private coachService: CoachService,
+    private impactTeamService: ImpactTeamService
   ) {
     this.isEdit = !!data.item;
 
@@ -104,9 +113,9 @@ export class AgendaItemDialogComponent {
       this.data.courses.push(course);
       this.form.get('course')?.setValue(course.id);
 
-      this.coachService.getAll().then((coaches) => {
+      Promise.all([this.coachService.getAll(), this.impactTeamService.getAll()]).then(([coaches, impactTeam]) => {
         this.data.coaches.length = 0;
-        this.data.coaches.push(...coaches);
+        this.data.coaches.push(...coaches, ...impactTeam);
       });
     });
   }

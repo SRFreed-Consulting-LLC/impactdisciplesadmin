@@ -77,6 +77,13 @@ the `cross-env`/`ESLINT_USE_FLAT_CONFIG` bits.
 Firebase deploys of `functions/` predeploy-run `functions/`'s own `lint` and `build` (see
 `firebase.json`).
 
+## Branches
+
+`development` is the default and PR-base branch. `origin/main` no longer exists on GitHub — ignore
+any tooling default that assumes it. `master` is production: never merge or push to it without the
+user explicitly asking, each time — even a general "push to prod" instruction is not standing
+permission to touch `master`.
+
 ## Firebase projects
 
 - `impactdisciplesdev` — dev, hosting target `development`, site `impactdisciplesdev-admin`.
@@ -138,10 +145,9 @@ onto one-time paged fetches, to cut down on standing Firestore listeners:
 - Customers is no longer a special case here (an earlier version of this doc said the grid pagination
   coexisted with a separate full `getAll()` backing "Filter by List"/"Save List" on that screen — that
   affordance is gone post-redesign; `customers.component.ts` today is `PagedCollectionSource` only, no
-  `allCustomers`). List-membership filtering still exists, just on Reports Manager's own **Subscribers**
-  report (`reports-manager/subscriber-report/`), via a separately-saved `EmailList` doc's `list` array,
-  not a Firestore query — see that report's own section below, and the Firestore collection naming note
-  at the bottom of this file.
+  `allCustomers`). List-membership filtering is now gone app-wide — the Subscribers report briefly
+  carried a "Filter by List" criterion after absorbing the old screen, but that was dropped too
+  (commit `8aa09f1`); there is no saved-list building anywhere. See that report's section below.
 
 ### List-screen conventions (Columns + Export + column filters)
 
@@ -194,7 +200,11 @@ by the generic Form Builder (`tools-manager`) + Custom Form Submissions pair. `c
 also owns Purchases/Fulfillment, not `store-manager` — `store-manager` today is Products, Coupons,
 Sales, affiliate-sales/affiliate-payments, product-categories, product-series. `tools-manager` holds
 Web Config, Email Templates, Shipping Labels, Form Builder, and Mailchimp Settings. `reports-manager`
-is new — see below. `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
+is new — see below. `events-manager` exposes two separate nav screens, **Summit** and **Events** —
+both render the same `EventsComponent`, just with `[summitMode]` true/false: Summit is `isSummit`
+events only with the full tab set (Info/Application/Agenda/Attendees), Events is regular events with
+just Details/Attendees, and each has its own permission grant (an existing Events grant deliberately
+does not carry over to Summit — see the comments in `nav-config.ts`). `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
 `dashboard` home route and all feature module outlets. `src/app/shared/` holds cross-feature
 UI (list header, column filter, dialogs, image uploader, table export/loading, paged-table
 infrastructure) and is imported by every feature module. This codebase is deliberately
@@ -260,17 +270,18 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
   breakout-session-grouped report — breakout sign-up isn't its own collection:
   `EventRegistrationModel.trainingSessions` is an array of agenda-item ids, cross-referenced against
   the event's own `agendaItems` (for session time) and the `courses` collection (for the display
-  name). This join is reproduced from `event-breakouts.component.ts`'s own `flatten()`/`buildRows()`
-  rather than reusing that component directly — it's tightly coupled to being an `@Input`-driven tab
-  inside the event-edit screen, with its own live-stream/filter-row state a one-shot report doesn't
-  need. The breakout view is a hand-rolled collapsible `<table>` (plain `@for`/`@if`, not
+  name). This join originated in the Summit event-edit screen's old "Break Outs" tab
+  (`event-breakouts.component.ts`), whose `flatten()`/`buildRows()` were copied here rather than
+  reusing the component; that tab and component were then removed outright (2026-08) as redundant
+  with this report, which is now the app's only breakout view. The breakout view is a hand-rolled
+  collapsible `<table>` (plain `@for`/`@if`, not
   `mat-table`/`DataSource`) — breakout, then (only when a breakout has more than one distinct time)
   a time-slot layer within it, both collapsed by default; a flat mat-table row list fights back
   against collapsing arbitrary subtrees, and a `<td colspan="3">` group-header cell (needed so a
   section's title bar spans every real column, not just the first) isn't expressible through
   mat-table's per-column `matColumnDef` model without the same fight.
 
-Common conventions established by Purchase Report and followed by the other two:
+Common conventions established by Purchase Report and followed by the others:
 
 - A dedicated `ReportRow` interface distinct from the underlying entity model (e.g. `CheckoutForm`)
   — a report row is a flat, report-specific shape, and in grouped/aggregate mode a synthesized
@@ -343,3 +354,21 @@ collection itself is gone (deleted 2026-08-15 in both dev and prod, after the on
 — see `MIGRATION.md` — was run and verified idempotent on both, `impactdisciples-web`'s subscribe form
 was confirmed pointed at the new `subscribe_to_email_list` endpoint instead of writing to it directly,
 and the 2 now-orphaned `onSubscriptionCreated`/`onSubscriptionUpdated` Cloud Functions were deleted).
+
+`coaches` used to serve 2 unrelated purposes at once: driving the public site's "My Team" page
+(via a `teamPageSortOrder` field) AND providing Summit breakout-session instructors. Split 2026-08-15
+into `coaches` (Events Manager > Coaches - breakout-only now, no `teamPageSortOrder`) and `impact_team`
+(Web Manager > Team Page - the public-facing half, its own `sortOrder`; see `ImpactTeamMemberModel`/
+`ImpactTeamService`). Anyone who had `teamPageSortOrder` set was moved (not copied) into `impact_team`
+under the same document id — see `scripts/move-team-page-coaches-to-impact-team.js` and `MIGRATION.md`
+— specifically so any existing `CourseModel.coachIds` referencing that id keeps resolving correctly
+post-split with zero data changes needed on the course side. A breakout instructor can still come from
+either collection: `course-dialog.component.ts`'s Coaches field is a combined, grouped picker
+(`<mat-optgroup>` per source) over both, and every place that resolves a coach id to a display name
+(`coachLabelFor()` in `session-block.util.ts`, the Agenda wizard/canvas/grid) works off one merged
+array assembled once in `event-agenda.component.ts`. The "+ New Coach" quick-create buttons scattered
+through the Agenda/Course dialogs deliberately only create plain Coaches, never Impact Team members —
+those are meant to be administered more deliberately via Web Manager > Team Page, not spur-of-the-
+moment mid-breakout. **`impactdisciples-web`'s own "My Team" page query needs updating separately** (a
+different repo, not editable from this one) to read `impact_team` instead of `coaches` - until that
+happens, the public Team page has nothing to render for these people.

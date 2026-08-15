@@ -3,12 +3,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { AgendaItemDialogComponent, AgendaItemDialogResult } from '../agenda-item-dialog.component';
 import { BreakoutBlockDialogComponent, BreakoutBlockDialogResult } from '../breakout-block-dialog.component';
-import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, SessionBlock } from '../session-block.util';
+import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, Instructor, SessionBlock } from '../session-block.util';
 
 // Fine-tune view (option 2 of 2, see agenda-canvas.component.ts for the
 // other) - a conference-program-style grid, time down the side, rooms
@@ -27,7 +26,7 @@ import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDate
 export class AgendaGridComponent implements OnChanges {
   @Input() event: EventModel;
   @Input() courses: CourseModel[] = [];
-  @Input() coaches: CoachModel[] = [];
+  @Input() coaches: Instructor[] = [];
   @Input() rooms: TrainingRoomModel[] = [];
 
   days: Date[] = [];
@@ -91,9 +90,13 @@ export class AgendaGridComponent implements OnChanges {
   openBlockDialog(block: SessionBlock | null): void {
     const day = this.selectedDay ?? new Date();
     const defaultStart = block ? block.startDate : new Date(day.getTime() + 10 * 60 * 60 * 1000);
+    // Full-screen - see breakout-block-dialog.component.scss's own comment.
     const ref = this.dialog.open<BreakoutBlockDialogComponent, unknown, BreakoutBlockDialogResult>(BreakoutBlockDialogComponent, {
-      width: '820px',
-      maxWidth: '95vw',
+      width: '100vw',
+      maxWidth: '100vw',
+      height: '100vh',
+      maxHeight: '100vh',
+      panelClass: 'breakout-block-dialog-panel',
       data: { block, defaultStart, courses: this.courses, coaches: this.coaches, rooms: this.rooms }
     });
     ref.afterClosed().subscribe((result) => this.applyBlockResult(result));

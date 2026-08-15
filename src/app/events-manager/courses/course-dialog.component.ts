@@ -4,8 +4,10 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { BehaviorSubject } from 'rxjs';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { ImpactTeamMemberModel } from 'src/app/common/models/domain/impact-team-member.model';
 import { CourseService } from 'src/app/common/services/data/course.service';
 import { CoachService } from 'src/app/common/services/data/coach.service';
+import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { CoachDialogComponent } from '../coaches/coach-dialog.component';
 
@@ -30,6 +32,13 @@ export class CourseDialogComponent implements OnInit {
   // file's own comment on why: avoids a burst of simultaneous streamAll()
   // listeners racing on cold load).
   coaches: CoachModel[] = [];
+  // Kept as a separate array from `coaches` (not merged) - the Coaches
+  // field below groups them under 2 distinct <mat-optgroup> labels so an
+  // admin can see which collection an instructor comes from, even though
+  // `coachIds` itself doesn't care (see impact-team.service.ts's own
+  // header comment - it's just a set of ids that can point at either
+  // collection now).
+  impactTeamMembers: ImpactTeamMemberModel[] = [];
 
   private itemType = 'Course';
 
@@ -39,6 +48,7 @@ export class CourseDialogComponent implements OnInit {
     private fb: FormBuilder,
     private service: CourseService,
     private coachService: CoachService,
+    private impactTeamService: ImpactTeamService,
     private dialog: MatDialog,
     private snackbar: SnackbarService
   ) {
@@ -55,6 +65,7 @@ export class CourseDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.coachService.getAll().then((coaches) => { this.coaches = coaches; });
+    this.impactTeamService.getAll().then((members) => { this.impactTeamMembers = members; });
   }
 
   // "+ New Coach" next to the Coaches field - lets an admin building a
@@ -65,6 +76,13 @@ export class CourseDialogComponent implements OnInit {
   // anything to auto-refresh it - then auto-selected into coachIds so the
   // admin doesn't have to immediately re-open the dropdown to pick the
   // coach they just created.
+  //
+  // Deliberately Coach-only, no equivalent "+ New Team Member" button -
+  // Impact Team members are meant to be administered more deliberately via
+  // Web Manager > Team Page (they're public site content), not spur-of-
+  // the-moment from inside a breakout/course flow. Someone who's "just for
+  // Summit" belongs on the Coaches side, per the user's own framing of the
+  // split.
   addCoach(): void {
     const ref = this.dialog.open<CoachDialogComponent, unknown, CoachModel>(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
     ref.afterClosed().subscribe((coach) => {

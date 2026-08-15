@@ -14,6 +14,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
 import { MonthlyNewslettersComponent } from './monthly-newsletters/monthly-newsletters.component';
+import { TeamPageComponent } from './team-page/team-page.component';
+import { TeamPageDialogComponent } from './team-page/team-page-dialog.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
 // see src/app/shared/image-uploader/ for the full rationale. Web Manager
@@ -42,6 +44,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatTabsModule } from '@angular/material/tabs';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
@@ -68,6 +71,7 @@ import { QuillModule } from 'ngx-quill';
     MatMenuModule,
     MatCheckboxModule,
     MatButtonToggleModule,
+    MatTabsModule,
     QuillModule
   ],
   declarations: [
@@ -85,7 +89,9 @@ import { QuillModule } from 'ngx-quill';
     HomePagePopupsComponent,
     HomePagePopupPreviewDialogComponent,
     MonthlyNewslettersComponent,
-    MonthlyNewsletterDialogComponent
+    MonthlyNewsletterDialogComponent,
+    TeamPageComponent,
+    TeamPageDialogComponent
   ],
   providers:[
     PhoneNumberMaskPipe,

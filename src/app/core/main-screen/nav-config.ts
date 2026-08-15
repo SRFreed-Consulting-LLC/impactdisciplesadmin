@@ -138,12 +138,15 @@ export const NAV_CONFIG: NavGroup[] = [
         // higher-stakes, more specialized screen (multi-day agenda,
         // breakout capacity), an Employee needs it granted explicitly, an
         // existing 'Events' grant does not carry over.
+        // Break Outs tab removed (2026-08) - superseded by Reports Manager's
+        // own Event Report breakout view (reports-manager/event-report/),
+        // which covers the same "who's signed up for which breakout"
+        // question without needing a dedicated in-editor tab.
         tabs: [
           { key: 'info', label: 'Info' },
           { key: 'application', label: 'Application' },
           { key: 'agenda', label: 'Agenda' },
-          { key: 'attendees', label: 'Attendees' },
-          { key: 'breakouts', label: 'Break Outs' }
+          { key: 'attendees', label: 'Attendees' }
         ]
       },
       {
@@ -186,7 +189,14 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Home Page Images', slug: 'home-page-images' },
       { label: 'Home Page Popups', slug: 'home-page-popups' },
-      { label: 'Monthly Newsletter', slug: 'monthly-newsletter' }
+      { label: 'Monthly Newsletter', slug: 'monthly-newsletter' },
+      // Split off Coaches (2026-08, Events Manager) - the public-facing
+      // "My Team" page's own records, administered here since Web Manager
+      // owns public site content; still independently pickable as a
+      // breakout instructor (see course-dialog.component.ts's combined
+      // Coaches + Impact Team picker) - see impact-team.service.ts's own
+      // header comment.
+      { label: 'Team Page', slug: 'team-page' }
     ]
   },
   {

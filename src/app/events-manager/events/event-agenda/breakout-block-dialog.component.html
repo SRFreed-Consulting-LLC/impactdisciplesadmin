@@ -1,76 +1,81 @@
 <app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' BREAKOUT BLOCK'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
-  <div class="field-row">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Start Time</mat-label>
-      <input matInput type="datetime-local" formControlName="startDate" required>
-      @if (form.get('startDate')?.hasError('required')) {
-        <mat-error>Required</mat-error>
-      }
-    </mat-form-field>
+  <div class="content-inner">
+    <div class="time-row">
+      <mat-form-field appearance="outline" class="time-field">
+        <mat-label>Start Time</mat-label>
+        <input matInput type="datetime-local" formControlName="startDate" required>
+        @if (form.get('startDate')?.hasError('required')) {
+          <mat-error>Required</mat-error>
+        }
+      </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>End Time</mat-label>
-      <input matInput type="datetime-local" formControlName="endDate" required>
-      @if (form.get('endDate')?.hasError('required')) {
-        <mat-error>Required</mat-error>
-      }
-    </mat-form-field>
-  </div>
+      <mat-form-field appearance="outline" class="time-field">
+        <mat-label>End Time</mat-label>
+        <input matInput type="datetime-local" formControlName="endDate" required>
+        @if (form.get('endDate')?.hasError('required')) {
+          <mat-error>Required</mat-error>
+        }
+      </mat-form-field>
+    </div>
 
-  <div class="options-label">Parallel options — attendees pick one</div>
+    <div class="options-label">Parallel options — attendees pick one</div>
 
-  <div formArrayName="options" class="options-list">
-    @for (group of options.controls; track group; let i = $index) {
-      <div [formGroupName]="i" class="option-row">
-        <mat-form-field appearance="outline" class="course-field">
-          <mat-label>Course</mat-label>
-          <mat-select formControlName="course" required>
-            @for (course of data.courses; track course) {
-              <mat-option [value]="course.id">{{ course.title }}</mat-option>
-            }
-          </mat-select>
-          @if (group.get('course')?.hasError('required')) {
-            <mat-error>Required</mat-error>
-          }
-        </mat-form-field>
-
-        <button mat-icon-button type="button" class="add-course-btn" matTooltip="New Course" (click)="addCourse(i)">
-          <mat-icon>add_circle_outline</mat-icon>
-        </button>
-
-        <div class="coach-display">
-          <span class="coach-display__label">Coach</span>
-          <span class="coach-display__value">{{ coachLabel(i, group.get('course')?.value) }}</span>
-        </div>
-
-        <mat-form-field appearance="outline" class="room-field">
-          <mat-label>Room</mat-label>
-          <mat-select formControlName="room">
-            <mat-option [value]="null">(None)</mat-option>
-            @for (room of data.rooms; track room) {
-              <mat-option [value]="room.id">{{ room.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="cap-field">
-          <mat-label>Max</mat-label>
-          <input matInput type="number" formControlName="maxParticipants">
-        </mat-form-field>
-
-        <button mat-icon-button type="button" matTooltip="Remove this option" [disabled]="options.length === 1" (click)="removeOption(i)">
-          <mat-icon>close</mat-icon>
-        </button>
+    <div formArrayName="options" class="options-table">
+      <div class="options-table__row options-table__row--header">
+        <span>Course</span>
+        <span></span>
+        <span>Coach</span>
+        <span>Room</span>
+        <span>Max</span>
+        <span></span>
       </div>
-    }
-  </div>
 
-  <button mat-stroked-button type="button" class="add-option-btn" (click)="addOption()">
-    <mat-icon>add</mat-icon>
-    Add another option to this block
-  </button>
+      @for (group of options.controls; track group; let i = $index) {
+        <div [formGroupName]="i" class="options-table__row">
+          <mat-form-field appearance="outline" class="course-field" subscriptSizing="dynamic">
+            <mat-select formControlName="course" required>
+              @for (course of data.courses; track course) {
+                <mat-option [value]="course.id">{{ course.title }}</mat-option>
+              }
+            </mat-select>
+            @if (group.get('course')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+
+          <button mat-icon-button type="button" class="add-course-btn" matTooltip="New Course" (click)="addCourse(i)">
+            <mat-icon>add_circle_outline</mat-icon>
+          </button>
+
+          <div class="coach-display">{{ coachLabel(i, group.get('course')?.value) }}</div>
+
+          <mat-form-field appearance="outline" class="room-field" subscriptSizing="dynamic">
+            <mat-select formControlName="room">
+              <mat-option [value]="null">(None)</mat-option>
+              @for (room of data.rooms; track room) {
+                <mat-option [value]="room.id">{{ room.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="cap-field" subscriptSizing="dynamic">
+            <input matInput type="number" formControlName="maxParticipants">
+          </mat-form-field>
+
+          <button mat-icon-button type="button" matTooltip="Remove this option" [disabled]="options.length === 1" (click)="removeOption(i)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+
+    <button mat-stroked-button type="button" class="add-option-btn" (click)="addOption()">
+      <mat-icon>add</mat-icon>
+      Add another option to this block
+    </button>
+  </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

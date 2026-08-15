@@ -1,0 +1,47 @@
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.field-row .full-width {
+  flex: 1 1 0;
+}
+
+// Same "bound .tab-content directly, don't let mat-dialog-content grow to
+// fit it" fix as coach-dialog.component.scss - see its own comment for the
+// full double-scrollbar explanation.
+.tab-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 4px 4px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.image-preview {
+  max-width: 160px;
+  max-height: 160px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 8px 0 4px;
+}
+
+quill-editor {
+  height: 300px;
+}

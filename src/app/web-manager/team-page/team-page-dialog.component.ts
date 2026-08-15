@@ -2,24 +2,31 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
-import { CoachService } from 'src/app/common/services/data/coach.service';
+import { ImpactTeamMemberModel } from 'src/app/common/models/domain/impact-team-member.model';
+import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { SnackbarService } from '../../shared/snackbar.service';
 
-export interface CoachDialogData {
-  item: CoachModel | null;
+export interface TeamPageDialogData {
+  item: ImpactTeamMemberModel | null;
 }
 
+// Mirrors coach-dialog.component.ts closely (same Person-derived fields,
+// same image-uploader/quill-editor conventions) - see this collection's own
+// header comment (impact-team.service.ts) for why it's a separate model/
+// dialog rather than reusing CoachDialogComponent directly: different
+// admin lifecycle (Web Manager, not Events Manager), and no
+// teamPageSortOrder/sortOrder split to carry since this collection only
+// has the one purpose - just `sortOrder`.
 @Component({
-    selector: 'app-coach-dialog',
-    templateUrl: './coach-dialog.component.html',
-    styleUrls: ['./coach-dialog.component.scss'],
+    selector: 'app-team-page-dialog',
+    templateUrl: './team-page-dialog.component.html',
+    styleUrls: ['./team-page-dialog.component.scss'],
     standalone: false
 })
-export class CoachDialogComponent {
+export class TeamPageDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
@@ -30,17 +37,16 @@ export class CoachDialogComponent {
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
   // Backs app-image-uploader's [card]/[field] inputs directly - see
-  // home-page-image-dialog.component.ts (web-manager) for the established
-  // explanation of this pattern.
+  // coach-dialog.component.ts for the established explanation.
   card: { photoUrl?: ImageModel } = {};
 
-  private itemType = 'Coach';
+  private itemType = 'Team Member';
 
   constructor(
-    private dialogRef: MatDialogRef<CoachDialogComponent, CoachModel>,
-    @Inject(MAT_DIALOG_DATA) public data: CoachDialogData,
+    private dialogRef: MatDialogRef<TeamPageDialogComponent, ImpactTeamMemberModel>,
+    @Inject(MAT_DIALOG_DATA) public data: TeamPageDialogData,
     private fb: FormBuilder,
-    private service: CoachService,
+    private service: ImpactTeamService,
     private organizationService: OrganizationService,
     private snackbar: SnackbarService
   ) {
@@ -93,28 +99,13 @@ export class CoachDialogComponent {
     }
 
     this.inProgress$.next(true);
-    // this.card.photoUrl is undefined (not just falsy) for a brand new
-    // coach with no picture uploaded yet (card starts as {}, no photoUrl
-    // key at all) - assigning it unconditionally put an explicit
-    // `photoUrl: undefined` key on the object, which Firestore's addDoc()
-    // rejects outright ("Unsupported field value: undefined"). Live-
-    // diagnosed 2026-08-15 while wiring the "+ New Coach" quick-create
-    // (course-dialog.component.ts) - same class of bug as
-    // PurchasesService.withStatusHistory()/events.component.ts's own
-    // imageUrl fix (see those files' comments): build the key
-    // conditionally so it's omitted rather than present-with-undefined.
-    // Pre-existing on the plain Coaches "New" button too, not just the new
-    // quick-create path - this dialog is shared by both.
-    const value: CoachModel = { ...this.data.item, ...this.form.value, ...(this.card.photoUrl ? { photoUrl: this.card.photoUrl } : {}) };
+    // See coach-dialog.component.ts's identical comment - photoUrl must be
+    // built conditionally, never assigned undefined outright, or
+    // Firestore's addDoc()/setDoc() rejects the whole write.
+    const value: ImpactTeamMemberModel = { ...this.data.item, ...this.form.value, ...(this.card.photoUrl ? { photoUrl: this.card.photoUrl } : {}) };
 
     const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
 
-    // Closes with the saved entity (not just a boolean) - callers that need
-    // the newly-created record back (e.g. course-dialog.component.ts's
-    // "+ New Coach" quick-create) can select it immediately without a
-    // second round-trip; existing callers (coaches.component.ts) already
-    // refresh their own list off a live streamAll() and never read this
-    // result at all, so widening it is a no-op for them.
     request.then((result) => {
       if (result) {
         this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
@@ -124,11 +115,7 @@ export class CoachDialogComponent {
         this.snackbar.error('Some Error Occured');
       }
     }).catch((err) => {
-      // Without this, a rejected write (e.g. the undefined-field case
-      // above, before this fix) left inProgress$ stuck true forever and
-      // the dialog never closed - no error surfaced beyond the browser
-      // console, indistinguishable from a hang.
-      console.error('Coach save failed', err);
+      console.error('Team member save failed', err);
       this.inProgress$.next(false);
       this.snackbar.error('Some Error Occured');
     });

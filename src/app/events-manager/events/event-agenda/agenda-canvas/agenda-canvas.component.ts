@@ -3,12 +3,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { AgendaItemDialogComponent, AgendaItemDialogResult } from '../agenda-item-dialog.component';
 import { BreakoutBlockDialogComponent, BreakoutBlockDialogResult } from '../breakout-block-dialog.component';
-import { blockLabel, buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, SessionBlock } from '../session-block.util';
+import { blockLabel, buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, Instructor, SessionBlock } from '../session-block.util';
 
 // Fine-tune view (option 1 of 2, see agenda-grid.component.ts for the
 // other) - a day's single items and breakout blocks rendered as one
@@ -25,7 +24,7 @@ import { blockLabel, buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, 
 export class AgendaCanvasComponent implements OnChanges {
   @Input() event: EventModel;
   @Input() courses: CourseModel[] = [];
-  @Input() coaches: CoachModel[] = [];
+  @Input() coaches: Instructor[] = [];
   @Input() rooms: TrainingRoomModel[] = [];
 
   days: Date[] = [];
@@ -88,9 +87,16 @@ export class AgendaCanvasComponent implements OnChanges {
   openBlockDialog(block: SessionBlock | null): void {
     const day = this.selectedDay ?? new Date();
     const defaultStart = block ? block.startDate : new Date(day.getTime() + 10 * 60 * 60 * 1000);
+    // Full-screen (not the usual capped-width popup) - see
+    // breakout-block-dialog.component.scss's own comment on why: its
+    // Course/Coach/Room/Max options table needs real width to stay
+    // aligned as a table instead of a cramped flex row.
     const ref = this.dialog.open<BreakoutBlockDialogComponent, unknown, BreakoutBlockDialogResult>(BreakoutBlockDialogComponent, {
-      width: '820px',
-      maxWidth: '95vw',
+      width: '100vw',
+      maxWidth: '100vw',
+      height: '100vh',
+      maxHeight: '100vh',
+      panelClass: 'breakout-block-dialog-panel',
       data: { block, defaultStart, courses: this.courses, coaches: this.coaches, rooms: this.rooms }
     });
     ref.afterClosed().subscribe((result) => this.applyBlockResult(result));

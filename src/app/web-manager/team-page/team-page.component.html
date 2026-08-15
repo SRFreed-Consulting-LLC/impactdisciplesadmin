@@ -1,0 +1,25 @@
+<app-data-grid
+  [showColumnsButton]="false"
+  [showExportButton]="false"
+  title="Team Page"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="(members$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  tableClass="team-page-table"
+  initialSortKey="sortOrder"
+  initialSortDirection="asc"
+  exportFileName="team-page.xlsx"
+  (rowDoubleClick)="showEditModal($event)">
+  <ng-template appDataGridCell="isActive" let-row>
+    <span class="active-template" [style.background-color]="row.isActive ? '#29d029' : 'red'">
+      {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
+    </span>
+  </ng-template>
+  <ng-template appDataGridCell="photoUrl" let-row>
+    @if (row.photoUrl) {
+      <img width="60" [src]="row.photoUrl.url" [alt]="row.firstName + ' ' + row.lastName">
+    }
+  </ng-template>
+</app-data-grid>

@@ -1,11 +1,12 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
+import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { CourseService } from 'src/app/common/services/data/course.service';
 import { LocationService } from 'src/app/common/services/data/location.service';
+import { Instructor } from './session-block.util';
 
 type AgendaMode = 'wizard' | 'canvas' | 'grid';
 
@@ -19,6 +20,13 @@ type AgendaMode = 'wizard' | 'canvas' | 'grid';
 // getAll()/getById().trainingrooms, not streamAll() - see those call
 // sites' own history for why cold-load WebChannel races make that the
 // right call for small reference lists feeding a dialog).
+//
+// `coaches` is the combined Coaches + Impact Team array since the 2026-08
+// split (see impact-team.service.ts's own header comment) - merged once
+// here rather than threading 2 separate arrays through every downstream
+// consumer (wizard/canvas/grid, the breakout/item dialogs, coachLabelFor()
+// in session-block.util.ts), since none of them need to distinguish source,
+// only resolve an id to a display name.
 //
 // `event.agendaItems` is still mutated in place by whichever child is
 // active - nothing here (or in any child) writes to Firestore on its own;
@@ -35,12 +43,13 @@ export class EventAgendaComponent implements OnInit {
   mode: AgendaMode = 'wizard';
 
   courses: CourseModel[] = [];
-  coaches: CoachModel[] = [];
+  coaches: Instructor[] = [];
   rooms: TrainingRoomModel[] = [];
 
   constructor(
     private courseService: CourseService,
     private coachService: CoachService,
+    private impactTeamService: ImpactTeamService,
     private locationService: LocationService
   ) {}
 
@@ -50,7 +59,8 @@ export class EventAgendaComponent implements OnInit {
     }
 
     this.courses = await this.courseService.getAll();
-    this.coaches = await this.coachService.getAll();
+    const [coaches, impactTeam] = await Promise.all([this.coachService.getAll(), this.impactTeamService.getAll()]);
+    this.coaches = [...coaches, ...impactTeam];
 
     const locationId = typeof this.event.location === 'string' ? this.event.location : this.event.location?.id;
     this.rooms = locationId ? ((await this.locationService.getById(locationId))?.trainingrooms ?? []) : [];

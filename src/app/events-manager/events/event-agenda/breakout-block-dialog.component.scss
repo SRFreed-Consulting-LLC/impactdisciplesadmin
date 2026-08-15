@@ -1,73 +1,119 @@
+// Full-screen (see the .breakout-block-dialog-panel global rule in
+// styles.scss for the viewport-filling + chrome-stripping half of this -
+// this file handles what's inside). mat-dialog-content/mat-dialog-actions
+// stay top-level siblings of app-popup-header (Material's own dialog
+// structure, unchanged) - .content-inner just caps line length on an
+// otherwise edge-to-edge surface so the options table doesn't stretch
+// absurdly wide on a large monitor.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+mat-dialog-content {
+  flex: 1 1 auto;
+  padding: 0;
+}
+
+.content-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 32px 32px;
+  box-sizing: border-box;
+}
+
 .full-width {
   width: 100%;
 }
 
-.field-row {
+.time-row {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
+  max-width: 600px;
+  margin-bottom: 28px;
 }
 
-.field-row .full-width {
+.time-field {
   flex: 1 1 0;
 }
 
 .options-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
-  margin: 8px 0 6px;
+  margin-bottom: 10px;
 }
 
-.options-list {
+// Real CSS Grid, not flex-basis approximations - the header row and every
+// option row share the exact same column template, so Course/Coach/Room/
+// Max/actions line up as true columns regardless of how long a course
+// title or coach name gets. Columns: Course | +New Course | Coach | Room |
+// Max | Remove.
+$options-columns: minmax(0, 2fr) 40px minmax(0, 1.4fr) minmax(0, 1fr) 90px 40px;
+
+.options-table {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.option-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+.options-table__row {
+  display: grid;
+  grid-template-columns: $options-columns;
+  align-items: center;
+  column-gap: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+
+  &:not(.options-table__row--header):hover {
+    background: var(--mat-sys-surface-variant, rgba(0, 0, 0, 0.03));
+  }
+
+  &:not(:last-child) {
+    margin-bottom: 2px;
+  }
 }
 
-.course-field {
-  flex: 1.4 1 0;
+.options-table__row--header {
+  padding: 0 8px 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.55));
+  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+}
+
+// mat-form-field's own floating label is no longer needed here - the
+// header row carries the "Course"/"Room"/"Max" labels instead, one line
+// for the whole table instead of one per cell. subscriptSizing="dynamic"
+// (set in the template) collapses the space normally reserved for hint/
+// error text down to 0 when there's nothing to show, so empty rows stay
+// compact - but still expands to actually show "Required" on the Course
+// field when it's genuinely invalid, unlike hiding the subscript wrapper
+// outright would.
+.course-field,
+.room-field,
+.cap-field {
+  width: 100%;
 }
 
 .add-course-btn {
-  margin-top: 6px;
-}
-
-.room-field {
-  flex: 1 1 0;
-}
-
-.cap-field {
-  flex: 0.6 1 0;
+  align-self: center;
 }
 
 .coach-display {
-  display: flex;
-  flex-direction: column;
-  min-width: 140px;
-  padding: 8px 0;
   font-size: 13px;
-}
-
-.coach-display__label {
-  font-size: 11px;
-  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
-}
-
-.coach-display__value {
-  font-weight: 500;
+  color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .add-option-btn {
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
 .spacer {
