@@ -162,9 +162,12 @@ $impact-theme: mat.define-theme((
     primary: $impact-primary-palette,
     tertiary: $impact-tertiary-palette,
   ),
+  // Inter (self-hosted via @fontsource/inter, see angular.json styles array)
+  // replaced Poppins in the navy redesign - Poppins came from a Google Fonts
+  // @import inside the deleted Outstock template CSS.
   typography: (
-    plain-family: 'Poppins, sans-serif',
-    brand-family: 'Poppins, sans-serif',
+    plain-family: 'Inter, system-ui, sans-serif',
+    brand-family: 'Inter, system-ui, sans-serif',
   ),
   density: (
     scale: 0,

@@ -1,0 +1,68 @@
+// Intentional base styles, replacing the old Outstock template's _common.scss
+// (deleted in the navy redesign, along with the rest of src/assets/theme/scss).
+// That file blanket-zeroed margin/padding on *, forced a .3s transition onto
+// nearly every element on the page, and pulled Poppins from Google Fonts.
+// This file keeps only what the app actually relies on, with explicit values:
+// no universal margin reset (the elements that need one are listed), and no
+// global transition - components declare their own where motion is wanted.
+//
+// Inter itself is self-hosted via @fontsource/inter, loaded through
+// angular.json's styles array (same mechanism as quill.snow.css), not from a
+// CDN. The var(--app-*) tokens come from the theme layer; every use here
+// carries a Slate Elevate fallback so this file also works standalone (e.g.
+// during a build where the theme layer hasn't emitted yet).
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--app-ink, #323232);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 0.5em;
+  line-height: 1.25;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  color: inherit;
+  border: none;
+}
+
+// UA form controls don't inherit the body font on their own.
+// Material controls set their own typography; this covers the app's bare
+// inputs (auth form, column filters).
+button, input, select, textarea {
+  font: inherit;
+}
+
+::selection {
+  background: var(--app-accent, #38bdf8);
+  color: var(--app-on-accent, #06283c);
+}
+
+::placeholder {
+  color: var(--app-faint, #8a93a4);
+  opacity: 1;
+}
