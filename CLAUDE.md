@@ -12,7 +12,10 @@ pagination + Columns/Export pattern described below rather than older DevExtreme
 
 There is a sibling public-facing app, `impactdisciples-web`, and another admin-style app,
 `impact-discipleship-library-manager-new`, that share the same Firebase projects and some copied
-patterns (e.g. the login screen). They are not in this repo.
+patterns (e.g. the login screen). They are not part of this git repo, but they are reachable as
+sibling directories one level up (`../impactdisciples - web`, `../impact-discipleship-library-manager-new`,
+note the spaces) on a machine that has both checked out side by side - worth checking for before
+assuming a cross-repo change is out of reach.
 
 ## Commands
 
@@ -369,6 +372,8 @@ either collection: `course-dialog.component.ts`'s Coaches field is a combined, g
 array assembled once in `event-agenda.component.ts`. The "+ New Coach" quick-create buttons scattered
 through the Agenda/Course dialogs deliberately only create plain Coaches, never Impact Team members —
 those are meant to be administered more deliberately via Web Manager > Team Page, not spur-of-the-
-moment mid-breakout. **`impactdisciples-web`'s own "My Team" page query needs updating separately** (a
-different repo, not editable from this one) to read `impact_team` instead of `coaches` - until that
-happens, the public Team page has nothing to render for these people.
+moment mid-breakout. `impactdisciples-web`'s own "My Team" page (`team.component.ts`/
+`team-details.component.ts`) was updated separately, same day, to read `impact_team` instead of
+`coaches` - see that repo's own commit and this file's Firestore collection naming note above for the
+full picture; both repos' `common/` are independent copies (no longer a shared submodule), so this
+kind of fix never propagates automatically and has to be made in each repo.
