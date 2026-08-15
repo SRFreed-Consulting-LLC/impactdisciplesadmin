@@ -366,3 +366,48 @@ What got done, in order:
    orphaned like `users` - see CLAUDE.md's Firestore collection naming
    note) via `firebase firestore:delete subscriptions --recursive`, both
    dev and prod. Confirmed 0 documents remaining in both afterward.
+
+---
+
+## Coaches split into Coaches + Impact Team — RESOLVED 2026-08-15 (admin side)
+
+**Found**: 2026-08-15, mid-implementation. **Admin side (this repo) fully completed** same day, both
+dev and prod. **Not yet done**: `impactdisciples-web`'s own "My Team" page query - a separate repo,
+not editable from this one - still reads the old `coaches` collection. Until that's updated, the
+public Team page has nothing to render for the 13 people who moved. Recorded here for the historical
+record on the admin side; the `impactdisciples-web` half is a follow-up for whoever/whichever session
+has that repo open next.
+
+`coaches` used to serve 2 unrelated purposes at once: driving the public site's "My Team" page (via a
+`teamPageSortOrder` field, separate from the collection's own `sortOrder`) and providing Summit
+breakout-session instructors. See `CLAUDE.md`'s Firestore collection naming note for the full
+before/after shape.
+
+What got done, in order:
+1. New `impact_team` collection/model/service (`ImpactTeamMemberModel`/`ImpactTeamService`) and a new
+   admin screen, Web Manager > Team Page (`web-manager/team-page/`), mirroring
+   `coach-dialog.component.ts` closely minus the now-pointless `teamPageSortOrder` split (just
+   `sortOrder`).
+2. `teamPageSortOrder` removed from `CoachModel`/`coach-dialog.component.ts`/`coaches.component.ts`'s
+   column list - Coaches is breakout-only now.
+3. Every place that resolves a coach id to a display name or offers a coach picker
+   (`course-dialog.component.ts`'s Coaches field, `coachLabelFor()` in `session-block.util.ts`, the
+   Agenda wizard/canvas/grid, the Breakout Block/Agenda Item dialogs) updated to work off a combined
+   Coaches + Impact Team array/picker - see the new shared `Instructor` interface
+   (`session-block.util.ts`) and `course-dialog.component.ts`'s `<mat-optgroup>`-grouped Coaches field.
+4. `scripts/move-team-page-coaches-to-impact-team.js` (dry-run by default, `--execute` to write) run
+   for real against both dev and prod - moves (not copies) every `coaches` doc with
+   `teamPageSortOrder` set into `impact_team` **under the same document id**, deleting the original.
+   Reusing the id (not a fresh auto-id) is what keeps any existing `Course.coachIds` referencing that
+   person resolving correctly post-move, with zero changes needed to any course document. Both
+   environments had the identical 13 of 39 coaches with `teamPageSortOrder` set (dev appears to have
+   been cloned from prod at some point - same 13 document ids on both). Verified idempotent (0
+   remaining) on both after running.
+5. Admin app (both dev and prod hosting) redeployed with all of the above.
+
+**Still open**: `impactdisciples-web`'s "My Team" page needs its own query updated to read
+`impact_team` (ordered by `sortOrder`) instead of `coaches` (ordered by `teamPageSortOrder`) - same
+field shape otherwise. A likely starting point in that repo: `CoachService.getAllByIds()` in this
+repo has a header comment naming `summit.component.ts`/`summit-preview.component.ts` as its (unused-
+in-this-repo) callers - strong evidence those are the components in `impactdisciples-web` that read
+`coaches` directly today.
