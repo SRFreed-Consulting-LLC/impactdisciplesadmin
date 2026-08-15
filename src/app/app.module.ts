@@ -11,6 +11,7 @@ import { environment } from 'src/environments/environment';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { CoreModule } from './core/core.module';
 import { CookieService } from 'ngx-cookie-service';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './core/auth/auth.module';
 
@@ -32,6 +33,12 @@ import { AuthModule } from './core/auth/auth.module';
 
   ],
   providers: [
+    // App-wide form-field defaults for the navy redesign: every one of the
+    // app's mat-form-fields is outline-appearance already (this just makes
+    // the default explicit), and subscriptSizing: 'dynamic' drops the
+    // always-reserved error/hint gap under each field - compact forms, with
+    // the trade-off that a validation message appearing shifts layout.
+    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'outline', subscriptSizing: 'dynamic' } },
     CookieService,
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
     provideFirestore(() => getFirestore()),

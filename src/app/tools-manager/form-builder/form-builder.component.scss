@@ -130,15 +130,8 @@
 
 .editor__name-field {
   width: 320px;
-  // Toolbar's own compact height doesn't leave room for a mat-form-field's
-  // default vertical rhythm/subscript space - shrink it down, same trick
-  // used elsewhere in the app for a form field embedded in a mat-toolbar.
-  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-    display: none;
-  }
-  ::ng-deep .mdc-text-field {
-    padding-top: 0;
-  }
+  // (The old subscript-hiding ::ng-deep hack lived here - obsolete now that
+  // MAT_FORM_FIELD_DEFAULT_OPTIONS sets subscriptSizing: 'dynamic' app-wide.)
 }
 
 .editor__spacer {

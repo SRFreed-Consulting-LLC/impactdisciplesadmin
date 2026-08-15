@@ -15,7 +15,7 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-card-muted);
 
     .mat-icon {
       display: inline-flex;
@@ -41,23 +41,24 @@
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    border: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-    background: transparent;
-    padding: 2px;
+    border: 1px solid var(--app-field-border);
+    border-radius: calc(var(--app-radius-control) - 2px);
+    background: var(--app-field);
+    color: var(--app-card-ink);
+    padding: 3px 8px;
     font: inherit;
     font-size: 12px;
     outline: none;
 
     &:focus {
-      border-bottom-color: var(--mat-sys-primary, #00629f);
+      border-color: var(--app-accent);
     }
   }
 
   &__label {
     font-size: 12px;
     font-style: italic;
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--app-card-muted);
   }
 }
 
@@ -69,7 +70,7 @@
   justify-content: center;
   width: 24px;
   margin-right: 16px;
-  color: rgba(0, 0, 0, 0.54);
+  color: var(--app-card-muted);
 }
 
 .column-filter__menu-glyph {

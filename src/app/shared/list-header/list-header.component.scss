@@ -17,7 +17,11 @@
   // it have nowhere to actually stick. A genuinely bounded flex:1 region
   // doesn't have that problem.
   z-index: 2;
-  background: var(--mat-sys-surface, #fff);
+  // Navy redesign: the header strip sits directly on the ground (or Harbor
+  // Split's light canvas), not on a surface band of its own - screens' own
+  // cards/tables provide the surfaces.
+  background: transparent;
+  color: var(--app-header-ink);
   // Right padding specifically so the last action button (often "Export to
   // Excel" or a kebab menu - not every screen has a trailing "New" button
   // after it, e.g. Purchases) always has its own breathing room before the
@@ -29,7 +33,9 @@
 
   &__title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
   }
 
   &__spacer {

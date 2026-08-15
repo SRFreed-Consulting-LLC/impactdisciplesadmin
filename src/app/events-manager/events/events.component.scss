@@ -93,7 +93,9 @@ app-data-grid {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  // 4px predated subscriptSizing: 'dynamic' (fields used to carry their own
+  // reserved subscript space below; now they don't, so the gap is real).
+  gap: 12px;
   // Widened from 900px - the Info tab pairs several fields per row (see
   // events.component.html), so more width means fewer stacked rows and a
   // shorter tab overall rather than just wider single-column fields.
@@ -153,7 +155,8 @@ $info-accent2-tint: #f1e3fb;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  // Same subscriptSizing note as .tab-content's gap above.
+  gap: 12px;
 }
 
 @media (max-width: 900px) {

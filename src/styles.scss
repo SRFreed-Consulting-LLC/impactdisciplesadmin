@@ -4,6 +4,9 @@
 // Themes / ThemeService), each carrying mat.theme() + --app-* semantic tokens
 // + --mat-sys-* pins. App styles consume --app-* vars, never raw hexes.
 @use './styles/theme-variants';
+// Global Material component restyles (compact fields, overlay panels as
+// cards, dialogs, buttons, .app-card) - see the file's own header comment.
+@use './styles/components';
 // angular-calendar (Event Agenda tab, events-manager) ships plain CSS, not
 // an @use-able module - a bare @import (must come after every @use, per
 // Sass's own module-ordering rule) is still how the library's own docs
@@ -197,35 +200,45 @@ table.mat-mdc-table {
 table.mat-mdc-table tr.mat-mdc-header-row {
   position: sticky;
   z-index: 1;
-  height: 56px;
-  background: var(--mat-sys-surface, #fff);
+  // Navy-redesign density: 44px header rows (was 56). The :nth-of-type(2)
+  // offset below MUST change in lockstep with this height - that pairing is
+  // the entire sticky-stacking contract.
+  height: 44px;
+  background: var(--app-card);
   // box-shadow instead of border-bottom: border-collapse: separate means
   // borders on <tr> itself are simply not rendered at all per spec (only
   // cell borders are, in separate mode) - box-shadow isn't part of the
   // table border model, so it isn't subject to that restriction and paints
   // reliably regardless of collapse mode.
-  box-shadow: 0 1px 0 var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  box-shadow: 0 1px 0 var(--app-card-border);
 
   &:nth-of-type(1) {
     top: 0;
   }
 
   // The filter row's own height is independent of this offset - it's
-  // anchored to row 1's height (unchanged, still 56px), not row 2's own,
-  // so shrinking row 2 below doesn't disturb the sticky math this whole
-  // block depends on.
+  // anchored to row 1's height (44px, above), not row 2's own, so changing
+  // row 2's height doesn't disturb the sticky math this block depends on.
   &:nth-of-type(2) {
-    top: 56px;
+    top: 44px;
   }
 }
 
 // Filter row (every table's 2nd header row, one app-column-filter per
-// filterable column) - shorter and visually distinct from both the
-// column-label row above it and the white data rows below, so it reads as
-// its own filter strip rather than blending into either.
+// filterable column) - shorter and visually recessed toward the field
+// color, so it reads as its own filter strip (controls) rather than
+// blending into the header labels above or the data rows below.
 table.mat-mdc-table tr.mat-mdc-header-row:nth-of-type(2) {
-  height: 40px;
-  background-color: #f0f0f0;
+  height: 36px;
+  background-color: color-mix(in srgb, var(--app-field) 60%, var(--app-card));
+}
+
+// Tables sit on card surfaces in every theme (mat-table's own background
+// comes from Material's surface, already pinned to the card color - this
+// makes it explicit rather than inherited).
+table.mat-mdc-table {
+  background: var(--app-card);
+  color: var(--app-card-ink);
 }
 
 // New-record alert highlight (see new-record-tracking.util.ts) - applied via
@@ -237,8 +250,8 @@ table.mat-mdc-table tr.mat-mdc-header-row:nth-of-type(2) {
 // row--new class, and needs to look identical across 6 different components
 // rather than being duplicated into each one's own encapsulated styles.
 table.mat-mdc-table tr.mat-mdc-row.row--new {
-  background-color: var(--mat-sys-primary-container, #e8f0fe);
-  box-shadow: inset 4px 0 0 var(--mat-sys-primary, #1a73e8);
+  background-color: color-mix(in srgb, var(--app-accent) 14%, var(--app-card));
+  box-shadow: inset 4px 0 0 var(--app-accent);
 }
 
 // Pending-customer-change highlight (see customer.model.ts's
@@ -248,8 +261,8 @@ table.mat-mdc-table tr.mat-mdc-row.row--new {
 // purchase flagged), a different semantic that deserves a different color,
 // same global-selector reasoning as row--new above.
 table.mat-mdc-table tr.mat-mdc-row.row--pending {
-  background-color: #fbf0dc;
-  box-shadow: inset 4px 0 0 #b7791f;
+  background-color: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
+  box-shadow: inset 4px 0 0 var(--app-attention);
 }
 
 // House rule: any thumbnail/image shown directly in a data table cell

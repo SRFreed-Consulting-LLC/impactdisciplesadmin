@@ -1,0 +1,149 @@
+// Global Material restyles for the navy redesign - the single place the
+// app's 234 outlined form fields, 48 selects, 39 dialogs, buttons, and
+// overlay panels get their compact navy treatment. Everything reads --app-*
+// tokens (see _theme-variants.scss) so all 10 variants are covered.
+//
+// Two styling mechanisms, deliberately mixed:
+//  - Material M3 component tokens (--mdc-*/--mat-*) where they exist - they
+//    survive Material upgrades best.
+//  - Direct rules on stable MDC structural classes (.mdc-text-field--
+//    outlined, .mdc-notched-outline__*) where a token either doesn't exist
+//    or didn't take effect against the installed Material minor - verified
+//    live via Playwright computed styles rather than assumed.
+
+// ---------------------------------------------------------------------------
+// Form fields - compact ~36px outlined fields on the theme's field surface.
+// appearance="outline" is used by 100% of the app's mat-form-fields, and
+// MAT_FORM_FIELD_DEFAULT_OPTIONS (app.module.ts) adds subscriptSizing:
+// 'dynamic' so the old reserved-subscript gap (and the per-screen
+// margin-bottom claw-backs that fought it) are gone.
+// ---------------------------------------------------------------------------
+:root {
+  --mat-form-field-container-height: 36px;
+  --mat-form-field-container-vertical-padding: 6px;
+  --mat-form-field-container-text-size: 13px;
+  --mat-form-field-outlined-label-text-populated-size: 12px;
+  --mdc-outlined-text-field-container-shape: var(--app-radius-control);
+  --mdc-outlined-text-field-outline-color: var(--app-field-border);
+  --mdc-outlined-text-field-hover-outline-color: color-mix(in srgb, var(--app-field-border) 55%, var(--app-card-ink));
+  --mdc-outlined-text-field-focus-outline-color: var(--app-accent);
+  --mdc-outlined-text-field-input-text-color: var(--app-card-ink);
+  --mdc-outlined-text-field-label-text-color: var(--app-card-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--app-card-muted);
+  --mdc-outlined-text-field-focus-label-text-color: var(--app-accent);
+  --mdc-outlined-text-field-input-text-placeholder-color: var(--app-faint);
+}
+
+// The field surface: outlined fields are transparent by default - give them
+// the theme's recessed field color so they read as controls on any card.
+.mat-mdc-form-field .mdc-text-field--outlined {
+  background: var(--app-field);
+  border-radius: var(--app-radius-control);
+}
+
+// The mock's focus treatment: accent outline (tokens above) plus a soft
+// accent halo.
+.mat-mdc-form-field.mat-focused .mdc-text-field--outlined {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-accent) 22%, transparent);
+}
+
+// Compact text rhythm inside the field regardless of which internal element
+// carries the font.
+.mat-mdc-form-field,
+.mat-mdc-form-field .mat-mdc-form-field-input-control {
+  font-size: 13px;
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-infix {
+  min-height: 36px;
+}
+
+// mat-select trigger inherits the field work above; keep its value text on
+// the same compact scale.
+.mat-mdc-select {
+  font-size: 13px;
+}
+
+.mat-mdc-select-value {
+  color: var(--app-card-ink);
+}
+
+.mat-mdc-select-arrow {
+  color: var(--app-card-muted);
+}
+
+// ---------------------------------------------------------------------------
+// Overlay panels - select/autocomplete dropdowns and menus become theme
+// cards: card surface, hairline border, theme radius + shadow. (These live
+// in the CDK overlay container, outside any component's encapsulation -
+// global rules are the sanctioned way to reach them, same technique as the
+// existing .preview-dialog-panel escape hatch.)
+// ---------------------------------------------------------------------------
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel,
+.mat-mdc-menu-panel {
+  background: var(--app-card);
+  color: var(--app-card-ink);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-control);
+  box-shadow: var(--app-card-shadow);
+}
+
+.mat-mdc-option {
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.mat-mdc-menu-item {
+  min-height: 36px;
+  font-size: 13px;
+}
+
+// ---------------------------------------------------------------------------
+// Dialogs - cards with a border (shadow alone doesn't separate a dark
+// surface from a dark ground). Radius comes from the shape token set in
+// styles.scss; popup-header supplies the title bar.
+// ---------------------------------------------------------------------------
+:root {
+  --mat-dialog-container-color: var(--app-card);
+  --mdc-dialog-container-color: var(--app-card);
+}
+
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border: 1px solid var(--app-card-border);
+}
+
+// ---------------------------------------------------------------------------
+// Buttons - compact 34px, theme radius (shape tokens in styles.scss), and
+// Abyss Glow's accent halo on filled buttons (inert elsewhere - the token
+// defaults to none).
+// ---------------------------------------------------------------------------
+:root {
+  --mdc-filled-button-container-height: 34px;
+  --mdc-outlined-button-container-height: 34px;
+  --mdc-text-button-container-height: 34px;
+  --mdc-protected-button-container-height: 34px;
+  --mdc-outlined-button-outline-color: var(--app-field-border);
+}
+
+.mat-mdc-unelevated-button:not(:disabled) {
+  box-shadow: var(--app-btn-glow);
+}
+
+// ---------------------------------------------------------------------------
+// Cards - the shared surface class the redesign's screens use (dashboard
+// sections, settings card, report criteria blocks...). mat-card picks up
+// the same treatment so existing cards conform without a template change.
+// ---------------------------------------------------------------------------
+.app-card,
+.mat-mdc-card {
+  background: var(--app-card);
+  color: var(--app-card-ink);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  box-shadow: var(--app-card-shadow);
+}
+
+.app-card {
+  padding: 16px;
+}
