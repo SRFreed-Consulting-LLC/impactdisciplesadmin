@@ -34,7 +34,8 @@ exports.create_payment_intent = functions
         });
       } catch (err) {
         console.error("create_payment_intent failed", err);
-        response.status(400).send({code: 400, error: "Unable to create payment"});
+        response.status(400).send(
+          {code: 400, error: "Unable to create payment"});
       }
     });
   });
@@ -54,7 +55,8 @@ exports.cancel_payment_intent = functions
         });
       } catch (err) {
         console.error("cancel_payment_intent failed", err);
-        response.status(400).send({code: 400, error: "Unable to cancel payment"});
+        response.status(400).send(
+          {code: 400, error: "Unable to cancel payment"});
       }
     });
   });
@@ -83,7 +85,8 @@ exports.refund_payment = functions
         response.send(refund);
       } catch (err) {
         console.error("refund_payment failed", err);
-        response.status(400).send({code: 400, error: "Unable to process refund"});
+        response.status(400).send(
+          {code: 400, error: "Unable to process refund"});
       }
     });
   });
