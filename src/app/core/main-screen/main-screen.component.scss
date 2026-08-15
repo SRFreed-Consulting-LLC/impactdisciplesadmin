@@ -498,6 +498,26 @@ $collapsed-width: 64px;
   align-items: center;
   gap: 4px;
   text-transform: none;
+  // The button label's color comes from Material's text-button token, which
+  // on light-type variants (midnight-paper/harbor-split/horizon - white
+  // cards, so Material thinks "light theme") resolves to a dark ink that's
+  // illegible on the navy header. Pin the token to the header ink so the
+  // name/caret stay readable in every variant - live-caught in Midnight
+  // Paper during the phase-F verification crawl.
+  color: var(--app-header-ink);
+}
+
+// Explicit color on the button's inner elements, not just the button: on
+// light-type variants (midnight-paper/harbor-split/horizon) Material paints
+// the mat-button itself with `color: var(--mat-sys-on-surface)` (= the dark
+// card ink) at higher specificity than our class rule, and token overrides
+// (--mat-button-text-label-text-color / --mdc-text-button-label-text-color)
+// verifiably don't reach that rule - it reads on-surface directly. A direct
+// rule on the child elements always beats color inheritance from the
+// button, regardless of what wins on the button itself. Live-caught in
+// Midnight Paper during the phase-F verification crawl.
+.impact-header__user-name,
+.impact-header__user .mat-icon {
   color: var(--app-header-ink);
 }
 
