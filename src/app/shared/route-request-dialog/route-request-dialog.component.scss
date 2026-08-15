@@ -19,7 +19,7 @@
 .route-request-dialog__source {
   flex: none;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--app-card-muted);
   margin-bottom: 12px;
 }
 
@@ -59,10 +59,10 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--app-card-border);
   border-radius: 6px;
   padding: 12px 14px;
-  background: #fafafa;
+  background: var(--app-field);
 }
 
 .route-request-dialog__preview-label {
@@ -71,7 +71,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   margin-bottom: 8px;
 }
 
@@ -88,10 +88,10 @@
   overflow-y: auto;
   overflow-x: auto;
   font-size: 13px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--app-card-border);
   border-radius: 4px;
   padding: 10px;
-  background: #fff;
+  background: var(--app-card);
 }
 
 .route-request-dialog__actions mat-icon {

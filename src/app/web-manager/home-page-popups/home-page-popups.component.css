@@ -109,7 +109,7 @@ app-data-grid {
 
 .color-row__label {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
 }
 
 .color-row__swatch {

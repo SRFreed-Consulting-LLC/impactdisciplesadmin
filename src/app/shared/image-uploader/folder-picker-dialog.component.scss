@@ -19,7 +19,7 @@
   max-height: 320px;
   min-height: 120px;
   overflow-y: auto;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--app-field-border);
   border-radius: 4px;
 }
 
@@ -31,12 +31,12 @@
   cursor: pointer;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
   }
 }
 
 .picker__icon {
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
 }
 
 .picker__name {
@@ -49,6 +49,6 @@
 .picker__empty {
   padding: 24px;
   text-align: center;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   font-size: 13px;
 }

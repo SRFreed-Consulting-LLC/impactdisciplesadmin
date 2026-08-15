@@ -12,8 +12,8 @@
 // see that file's own comment on the pattern. Drives both the list's "New"
 // column badge and the Attendees tab-label badge below.
 .new-badge {
-  background: #c0392b;
-  color: #fff;
+  background: var(--mat-sys-error);
+  color: var(--mat-sys-on-error);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.6px;
@@ -135,10 +135,14 @@ app-data-grid {
 // consistent with the newer screens rather than this file's older
 // #3f51b5 indigo (.application-nav__item--active, event-application.
 // component.scss) - not touching that one here, out of scope.
-$info-accent: #337ab7;
-$info-accent-tint: #e8f1fa;
-$info-accent2: #6a4e82;
-$info-accent2-tint: #f1e3fb;
+// Tokened for the navy redesign: $info-accent is the app accent itself;
+// $info-accent2 is a deliberately distinct second accent (the old #6a4e82
+// purple's role) derived from the accent + page muted so the two stay
+// visually separable in every theme variant.
+$info-accent: var(--app-accent);
+$info-accent-tint: color-mix(in srgb, var(--app-accent) 15%, var(--app-card));
+$info-accent2: color-mix(in srgb, var(--app-accent) 45%, var(--app-muted));
+$info-accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
 
 // Widened past .tab-content's own 1200px cap so the preview column has
 // real room alongside the form - the Info tab is the one screen here that
@@ -186,15 +190,15 @@ $info-accent2-tint: #f1e3fb;
 
 .type-card {
   position: relative;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border: 1.5px solid var(--app-card-border);
   border-radius: 12px;
   padding: 14px 16px;
   cursor: pointer;
-  background: #fff;
+  background: var(--app-card);
   transition: border-color 0.15s, background-color 0.15s;
 
   &:hover {
-    border-color: rgba($info-accent2, 0.5);
+    border-color: color-mix(in srgb, #{$info-accent2} 50%, transparent);
   }
 
   &.is-active {
@@ -217,7 +221,7 @@ $info-accent2-tint: #f1e3fb;
   font-size: 13.5px;
   font-weight: 650;
   margin-top: 6px;
-  color: rgba(0, 0, 0, 0.87);
+  color: var(--app-card-ink);
 }
 
 .type-card.is-active .type-card__title {
@@ -226,11 +230,16 @@ $info-accent2-tint: #f1e3fb;
 
 .type-card__sub {
   font-size: 11.5px;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   margin-top: 2px;
 }
 
 // ---- Live preview card ----
+// Deliberately NOT theme-tokened: this card is a preview of how the event
+// renders on the PUBLIC site (impactdisciples-web), which is light regardless
+// of the admin theme - so its internals keep the public site's literal light
+// palette (white card, #337ab7/#6a4e82 tag tints). Surrounding chrome
+// (.info-layout etc.) is tokened as usual.
 .info-preview {
   position: sticky;
   top: 0;
@@ -246,7 +255,7 @@ $info-accent2-tint: #f1e3fb;
 
 .preview-card__img {
   height: 220px;
-  background: linear-gradient(135deg, $info-accent-tint, $info-accent2-tint);
+  background: linear-gradient(135deg, #e8f1fa, #f1e3fb);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,14 +305,15 @@ $info-accent2-tint: #f1e3fb;
   background: #eee;
   color: rgba(0, 0, 0, 0.6);
 
+  // Public-site literals, same reason as .preview-card above.
   &--summit {
-    background: $info-accent2-tint;
-    color: $info-accent2;
+    background: #f1e3fb;
+    color: #6a4e82;
   }
 
   &--online {
-    background: $info-accent-tint;
-    color: $info-accent;
+    background: #e8f1fa;
+    color: #337ab7;
   }
 
   &--kajabi {

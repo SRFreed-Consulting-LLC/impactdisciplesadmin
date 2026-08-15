@@ -44,7 +44,7 @@
 }
 
 .no-access-state {
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   font-size: 14px;
   padding: 16px 4px;
 }

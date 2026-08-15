@@ -1,7 +1,7 @@
-$current: #337ab7;
+$current: var(--app-accent);
 
 .empty-state {
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-muted);
   font-size: 14px;
   padding: 24px 4px;
 }
@@ -20,8 +20,8 @@ $current: #337ab7;
 
 .daytoggle {
   display: inline-flex;
-  background: #f0f0f0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
   border-radius: 9px;
   padding: 3px;
   gap: 2px;
@@ -33,11 +33,11 @@ $current: #337ab7;
     font-weight: 700;
     padding: 6px 13px;
     border-radius: 6px;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-muted);
     cursor: pointer;
 
     &.is-on {
-      background: #fff;
+      background: var(--app-card);
       color: $current;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     }
@@ -45,13 +45,13 @@ $current: #337ab7;
 }
 
 .banner {
-  background: #f0f0f0;
-  border: 1px dashed rgba(0, 0, 0, 0.16);
+  background: var(--app-field);
+  border: 1px dashed var(--app-field-border);
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 12.5px;
   font-weight: 650;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--app-muted);
   text-align: center;
   margin-bottom: 8px;
 
@@ -73,7 +73,7 @@ $current: #337ab7;
 .sgrid__room {
   font-size: 10.5px;
   font-weight: 700;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-muted);
   text-align: center;
   padding: 5px 4px;
   text-transform: uppercase;
@@ -82,15 +82,15 @@ $current: #337ab7;
 
 .sgrid__time {
   font-size: 10.5px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-muted);
   padding-top: 9px;
   text-align: right;
   padding-right: 6px;
 }
 
 .cell {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
   border-radius: 8px;
   padding: 8px 9px;
   min-height: 66px;
@@ -109,7 +109,7 @@ $current: #337ab7;
   &--open {
     align-items: center;
     justify-content: center;
-    color: rgba(0, 0, 0, 0.4);
+    color: var(--app-faint);
     font-size: 11.5px;
     font-style: italic;
   }
@@ -124,5 +124,5 @@ $current: #337ab7;
 .cell__coach,
 .cell__cap {
   font-size: 10.3px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
 }

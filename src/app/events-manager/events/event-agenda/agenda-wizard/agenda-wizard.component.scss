@@ -1,18 +1,21 @@
 // Palette matches fulfillment.component.scss's own convention (semantic
 // status colors, not the app's brand yellow; $current reuses the app's
-// real primary blue #337ab7).
-$current: #337ab7;
-$current-tint: #e8f1fa;
-$done: #2e7d4f;
-$done-tint: #e6f4ea;
-$pending: #d5d8dc;
-$accent2: #6a4e82;
-$accent2-tint: #f1e3fb;
-$warn: #92600a;
-$warn-tint: #ffecc7;
+// real primary accent). Tokened for the navy redesign - $accent2 is the old
+// #6a4e82 purple's role, derived from accent + page muted (same expression
+// as events.component.scss's $info-accent2) so it stays distinct from
+// $current in every theme variant.
+$current: var(--app-accent);
+$current-tint: color-mix(in srgb, var(--app-accent) 15%, var(--app-card));
+$done: var(--app-success);
+$done-tint: color-mix(in srgb, var(--app-success) 16%, var(--app-card));
+$pending: var(--app-field-border);
+$accent2: color-mix(in srgb, var(--app-accent) 45%, var(--app-muted));
+$accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
+$warn: var(--app-attention);
+$warn-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
 
 .empty-state {
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-muted);
   font-size: 14px;
   padding: 24px 4px;
 }
@@ -35,9 +38,9 @@ $warn-tint: #ffecc7;
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #f0f0f0;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: rgba(0, 0, 0, 0.5);
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
+  color: var(--app-muted);
   font-size: 11px;
   font-weight: 700;
   display: grid;
@@ -47,18 +50,18 @@ $warn-tint: #ffecc7;
 .wizstep__label {
   font-size: 12px;
   font-weight: 650;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-muted);
   white-space: nowrap;
 }
 
 .wizstep.is-active .wizstep__dot {
   background: $current;
   border-color: $current;
-  color: #fff;
+  color: var(--app-on-accent);
 }
 
 .wizstep.is-active .wizstep__label {
-  color: rgba(0, 0, 0, 0.87);
+  color: var(--app-ink);
 }
 
 .wizstep.is-done .wizstep__dot {
@@ -70,7 +73,7 @@ $warn-tint: #ffecc7;
 .wizline {
   flex: 1 1 auto;
   height: 1px;
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--app-divider);
   margin: 0 6px;
   min-width: 20px;
 }
@@ -83,14 +86,14 @@ $warn-tint: #ffecc7;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-muted);
   margin: 0 0 10px;
   font-weight: 700;
 }
 
 .wizcard {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -125,21 +128,21 @@ $warn-tint: #ffecc7;
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   font-weight: 700;
 }
 
 .field3 .val {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.87);
+  color: var(--app-card-ink);
 }
 
 .blockcard {
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--app-card-border);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 12px;
-  background: #fff;
+  background: var(--app-card);
 
   &--clickable {
     cursor: pointer;
@@ -175,8 +178,8 @@ $warn-tint: #ffecc7;
   grid-template-columns: 1.3fr 1fr 0.8fr;
   gap: 8px;
   align-items: center;
-  background: #fafafa;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--app-field);
+  border: 1px solid var(--app-card-border);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 12px;
@@ -188,16 +191,16 @@ $warn-tint: #ffecc7;
   }
 
   .m {
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-card-muted);
     font-size: 11px;
   }
 }
 
 .addghost {
-  border: 1.5px dashed rgba(0, 0, 0, 0.16);
+  border: 1.5px dashed var(--app-field-border);
   border-radius: 8px;
   padding: 9px 12px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-muted);
   font-size: 12px;
   font-weight: 650;
   text-align: center;
@@ -219,8 +222,8 @@ $warn-tint: #ffecc7;
 }
 
 .reviewstat {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
   border-radius: 10px;
   padding: 14px;
   text-align: center;
@@ -233,7 +236,7 @@ $warn-tint: #ffecc7;
 
   span {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-card-muted);
     font-weight: 650;
   }
 }

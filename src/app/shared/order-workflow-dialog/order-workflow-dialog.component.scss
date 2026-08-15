@@ -1,9 +1,9 @@
 // Same semantic tokens as fulfillment.component.scss/dashboard.component.scss
 // - duplicated, not imported (no shared-SCSS-partial convention in this
 // codebase).
-$done: #2e7d4f;
-$current: #337ab7;
-$pending: #d5d8dc;
+$done: var(--app-success);
+$current: var(--app-accent);
+$pending: var(--app-field-border);
 
 .order-workflow-dialog {
   min-width: 380px;
@@ -12,12 +12,12 @@ $pending: #d5d8dc;
 
 .order-workflow-dialog__customer {
   font-size: 13.5px;
-  color: rgba(0, 0, 0, 0.7);
+  color: var(--app-card-muted);
 }
 
 .order-workflow-dialog__date {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   margin-bottom: 16px;
 }
 
@@ -52,7 +52,7 @@ $pending: #d5d8dc;
   flex: 1 1 0;
   font-size: 9.5px;
   line-height: 1.25;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   text-align: center;
   overflow-wrap: break-word;
   padding: 0 2px;
@@ -66,6 +66,6 @@ $pending: #d5d8dc;
 }
 
 .order-workflow-dialog__done {
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   font-size: 13.5px;
 }

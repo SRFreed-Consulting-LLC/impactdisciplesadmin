@@ -100,7 +100,7 @@ app-data-grid {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
   margin: 8px 0 4px;
 }
 
@@ -108,7 +108,7 @@ app-data-grid {
 
 .permissions-hint {
   font-size: 12.5px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
   margin: 0 0 12px;
   max-width: 700px;
 }
@@ -128,14 +128,14 @@ app-data-grid {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-card-muted);
     padding: 6px 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    border-bottom: 1px solid var(--app-card-border);
   }
 
   td {
     padding: 4px 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid color-mix(in srgb, var(--app-card-ink) 8%, transparent);
   }
 
   .row-label-col {
@@ -150,5 +150,5 @@ app-data-grid {
   .row-label-col {
     font-weight: 700;
   }
-  background: rgba(0, 0, 0, 0.025);
+  background: color-mix(in srgb, var(--app-card-ink) 4%, transparent);
 }

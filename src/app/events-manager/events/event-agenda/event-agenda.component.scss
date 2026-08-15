@@ -1,4 +1,4 @@
-$current: #337ab7;
+$current: var(--app-accent);
 
 .agenda-mode-toolbar {
   display: flex;
@@ -14,8 +14,8 @@ $current: #337ab7;
 
 .viewtoggle {
   display: inline-flex;
-  background: #f0f0f0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
   border-radius: 9px;
   padding: 3px;
   gap: 2px;
@@ -27,11 +27,11 @@ $current: #337ab7;
     font-weight: 700;
     padding: 6px 13px;
     border-radius: 6px;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-muted);
     cursor: pointer;
 
     &.is-on {
-      background: #fff;
+      background: var(--app-card);
       color: $current;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     }

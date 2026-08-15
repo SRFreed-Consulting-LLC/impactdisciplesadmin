@@ -34,7 +34,7 @@
   font-size: 13px;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
   }
 
   &--selected {
@@ -48,7 +48,7 @@
   font-size: 18px;
   width: 18px;
   height: 18px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
 }
 
 .tree-node__name {

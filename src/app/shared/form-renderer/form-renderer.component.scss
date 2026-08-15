@@ -17,11 +17,11 @@
 }
 
 .form-renderer__empty {
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   font-size: 13px;
   padding: 24px 8px;
   text-align: center;
-  border: 1px dashed #d9d9d9;
+  border: 1px dashed var(--app-field-border);
   border-radius: 4px;
 }
 

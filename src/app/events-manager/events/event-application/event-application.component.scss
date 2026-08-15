@@ -1,8 +1,9 @@
-// Real app accent blue (see fulfillment.component.scss's own $current) -
-// updated from this file's previous #3f51b5 indigo now that the layout
-// here is being touched anyway for the 3-column redesign.
-$app-accent: #337ab7;
-$app-accent-tint: #e8f1fa;
+// Theme accent (navy redesign) - was the hardcoded app blue #337ab7.
+// NOTE: the .phone preview below deliberately keeps light literals - it
+// mocks how the application renders on the PUBLIC site (always light),
+// same rationale as events.component.scss's .preview-card.
+$app-accent: var(--app-accent);
+$app-accent-tint: color-mix(in srgb, var(--app-accent) 15%, var(--app-card));
 
 .application-layout {
   display: flex;
@@ -15,7 +16,7 @@ $app-accent-tint: #e8f1fa;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  border-right: 1px solid var(--app-card-border);
   padding-right: 12px;
   overflow-y: auto;
 }
@@ -25,14 +26,14 @@ $app-accent-tint: #e8f1fa;
   padding: 10px 12px;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--app-radius-control);
   font-size: 13px;
   cursor: pointer;
-  color: rgba(0, 0, 0, 0.75);
+  color: var(--app-card-muted);
 }
 
 .application-nav__item:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
 }
 
 .application-nav__item--active {
@@ -70,7 +71,7 @@ $app-accent-tint: #e8f1fa;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--app-faint);
   text-align: center;
   margin-bottom: 10px;
 }

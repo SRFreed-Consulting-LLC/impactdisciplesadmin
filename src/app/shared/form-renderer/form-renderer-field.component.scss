@@ -24,16 +24,16 @@
 // explicitly best-effort; the web renderer (the real target) applies it.
 :host {
   --mdc-outlined-text-field-container-shape: var(--dff-radius, 4px);
-  --mdc-outlined-text-field-outline-color: var(--dff-border, #dddddd);
-  --mdc-outlined-text-field-hover-outline-color: var(--dff-border, #dddddd);
-  --mdc-outlined-text-field-focus-outline-color: var(--dff-accent, #337ab7);
-  --mat-radio-checked-ring-color: var(--dff-accent, #337ab7);
-  --mdc-radio-selected-icon-color: var(--dff-accent, #337ab7);
-  --mdc-radio-selected-focus-icon-color: var(--dff-accent, #337ab7);
-  --mdc-radio-selected-hover-icon-color: var(--dff-accent, #337ab7);
-  --mdc-checkbox-selected-icon-color: var(--dff-accent, #337ab7);
-  --mdc-checkbox-selected-focus-icon-color: var(--dff-accent, #337ab7);
-  --mdc-checkbox-selected-hover-icon-color: var(--dff-accent, #337ab7);
+  --mdc-outlined-text-field-outline-color: var(--dff-border, var(--app-field-border));
+  --mdc-outlined-text-field-hover-outline-color: var(--dff-border, var(--app-field-border));
+  --mdc-outlined-text-field-focus-outline-color: var(--dff-accent, var(--app-accent));
+  --mat-radio-checked-ring-color: var(--dff-accent, var(--app-accent));
+  --mdc-radio-selected-icon-color: var(--dff-accent, var(--app-accent));
+  --mdc-radio-selected-focus-icon-color: var(--dff-accent, var(--app-accent));
+  --mdc-radio-selected-hover-icon-color: var(--dff-accent, var(--app-accent));
+  --mdc-checkbox-selected-icon-color: var(--dff-accent, var(--app-accent));
+  --mdc-checkbox-selected-focus-icon-color: var(--dff-accent, var(--app-accent));
+  --mdc-checkbox-selected-hover-icon-color: var(--dff-accent, var(--app-accent));
 }
 
 .full-width {
@@ -55,7 +55,7 @@
 
 .renderer-field__group-label {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.7);
+  color: var(--app-card-muted);
   margin-bottom: 6px;
   font-weight: 500;
 }
@@ -67,7 +67,7 @@
 }
 
 .renderer-field__error {
-  color: #b3261e;
+  color: var(--mat-sys-error);
   font-size: 12px;
   margin-top: 4px;
 }
@@ -78,13 +78,13 @@
 }
 
 .renderer-field__star {
-  color: #d9d9d9;
+  color: var(--app-faint);
   cursor: pointer;
   user-select: none;
 }
 
 .renderer-field__star--filled {
-  color: #ffcc00;
+  color: var(--app-attention);
 }
 
 .renderer-field__heading {
@@ -95,7 +95,7 @@
 .renderer-field__instructions {
   margin: 4px 0 8px;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.75);
+  color: var(--app-card-ink);
 }
 
 .renderer-field__divider {
@@ -137,9 +137,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--app-faint);
   font-size: 13px;
-  border: 1.5px dashed #d9d9d9;
+  border: 1.5px dashed var(--app-field-border);
   border-radius: 4px;
   padding: 24px 16px;
 }

@@ -84,8 +84,8 @@
   padding: 4px 16px;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.6);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--app-card-muted);
+  border-bottom: 1px solid var(--app-card-border);
 }
 
 .uploader__loading {
@@ -95,7 +95,7 @@
   justify-content: center;
   gap: 8px;
   padding: 32px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
   font-size: 13px;
 }
 
@@ -114,7 +114,7 @@
   cursor: pointer;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
   }
 
   &--selected {
@@ -124,7 +124,7 @@
 
 .uploader__row-icon {
   flex: 0 0 auto;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
 }
 
 .uploader__row-name {
@@ -156,7 +156,7 @@
   box-sizing: border-box;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
   }
 
   &--selected {
@@ -168,7 +168,7 @@
   font-size: 40px;
   width: 40px;
   height: 40px;
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--app-faint);
 }
 
 .uploader__tile-name {
@@ -189,7 +189,7 @@
 .uploader__empty {
   padding: 32px;
   text-align: center;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   font-size: 13px;
 }
 
@@ -199,7 +199,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(25, 118, 210, 0.08);
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
   color: var(--mat-sys-primary, #1976d2);
   font-weight: 600;
   pointer-events: none;
