@@ -246,9 +246,13 @@ export const onCustomerCreatedMailchimpSync = onDocumentCreated(
   }
 );
 
-// The exact subset of a customer doc that upsertMailchimpMember pushes to
-// Mailchimp, normalized the same way it is at send time. Used to decide
-// whether an update is worth a sync (see onCustomerUpdatedMailchimpSync).
+/**
+ * The exact subset of a customer doc that upsertMailchimpMember pushes to
+ * Mailchimp, normalized the same way it is at send time. Used to decide
+ * whether an update is worth a sync (see onCustomerUpdatedMailchimpSync).
+ * @param {SyncableCustomer} c The customer doc to reduce.
+ * @return {Record<string, unknown>} The comparable field subset.
+ */
 function mailchimpFields(c: SyncableCustomer): Record<string, unknown> {
   return {
     email: (c.email ?? "").trim().toLowerCase(),
@@ -277,7 +281,8 @@ export const onCustomerUpdatedMailchimpSync = onDocumentUpdated(
     // subscription-flag flips, newRecordStatus) - none of which Mailchimp
     // gets - and each of those would otherwise cost a config read + a
     // Mailchimp API call for nothing (P13).
-    if (before && JSON.stringify(mailchimpFields(before as SyncableCustomer)) ===
+    if (before &&
+      JSON.stringify(mailchimpFields(before as SyncableCustomer)) ===
       JSON.stringify(mailchimpFields(after as SyncableCustomer))) {
       return;
     }
