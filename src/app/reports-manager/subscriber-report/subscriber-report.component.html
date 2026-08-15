@@ -16,13 +16,6 @@
     Export to Excel
   </button>
 
-  @if (canAdd()) {
-    <button mat-raised-button color="primary" type="button" (click)="showAddModal()">
-      <mat-icon>add</mat-icon>
-      Add Subscriber
-    </button>
-  }
-
   @if (canEdit()) {
     <button mat-raised-button color="primary" type="button" (click)="showSendModal('newsletter')">
       <mat-icon>email</mat-icon>
@@ -95,7 +88,6 @@
     </div>
 
     <div class="criteria__block criteria__block--actions">
-      <mat-slide-toggle [(ngModel)]="groupByType" [ngModelOptions]="{standalone: true}">Group by Type</mat-slide-toggle>
       <button mat-raised-button color="primary" type="button" [disabled]="!canGenerate || loading" (click)="generateReport()">
         <mat-icon>search</mat-icon>
         Generate Report

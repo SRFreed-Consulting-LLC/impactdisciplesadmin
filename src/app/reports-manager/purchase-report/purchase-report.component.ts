@@ -4,7 +4,7 @@ import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/car
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
-import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 import { FULFILLMENT_STEPS } from '../../customers-manager/fulfillment/fulfillment-steps';
@@ -15,9 +15,7 @@ interface ColumnDef {
   visible: boolean;
 }
 
-// Flat, report-specific row shape - not CheckoutForm itself, since a
-// grouped-by-user row is a synthesized aggregate over several purchases,
-// not one real document.
+// Flat, report-specific row shape - not CheckoutForm itself.
 interface ReportRow {
   id: string;
   firstName: string;
@@ -39,10 +37,6 @@ interface ReportRow {
   total: number;
   fulfillmentStatusLabel: string;
   receipt: string;
-  // Grouped-mode-only - 0/blank when ungrouped.
-  purchaseCount: number;
-  totalSpent: number;
-  lastPurchaseDate: Date | null;
 }
 
 type DateMode = 'after' | 'between' | 'lastMonths';
@@ -100,14 +94,8 @@ export class PurchaseReportComponent {
     { key: 'itemsPurchased', label: 'Items Purchased', visible: true },
     { key: 'total', label: 'Total', visible: true },
     { key: 'fulfillmentStatusLabel', label: 'Status', visible: false },
-    { key: 'receipt', label: 'Receipt', visible: false },
-    // Only meaningful once groupByUser is on - see displayedColumns.
-    { key: 'purchaseCount', label: 'Purchase Count', visible: true },
-    { key: 'totalSpent', label: 'Total Spent', visible: true },
-    { key: 'lastPurchaseDate', label: 'Most Recent Purchase', visible: false }
+    { key: 'receipt', label: 'Receipt', visible: false }
   ];
-
-  groupByUser = false;
 
   results: ReportRow[] = [];
   loading = false;
@@ -131,14 +119,8 @@ export class PurchaseReportComponent {
     return this.criteriaForm.value.dateEnabled || this.criteriaForm.value.stateEnabled;
   }
 
-  // Grouped-only columns stay out of the ungrouped table (and vice versa
-  // for anything that'd just repeat the row's own values) - keeps the
-  // column-picker relevant to the mode actually in use.
   get displayedColumns(): string[] {
-    return this.columns
-      .filter((c) => c.visible)
-      .filter((c) => this.groupByUser || (c.key !== 'purchaseCount' && c.key !== 'totalSpent' && c.key !== 'lastPurchaseDate'))
-      .map((c) => c.key);
+    return this.columns.filter((c) => c.visible).map((c) => c.key);
   }
 
   toggleColumn(column: ColumnDef): void {
@@ -150,21 +132,17 @@ export class PurchaseReportComponent {
   }
 
   // Feeds app-data-grid (rendering only - Columns/Export/the criteria form
-  // stay this component's own hand-rolled app-list-header above, since this
-  // screen's column visibility is two-layered: the user's own toggle AND
-  // groupByUser hiding aggregate-only columns, which doesn't fit the grid's
-  // single mutable Column.visible flag. Always pre-filtered to exactly what
-  // should show, so [showHeader]="false" never needs to toggle these itself.
+  // stay this component's own hand-rolled app-list-header above).
   get gridColumns(): DataGridColumn<ReportRow>[] {
     return this.displayedColumns.map((key) => this.toGridColumn(key));
   }
 
   private toGridColumn(key: string): DataGridColumn<ReportRow> {
     const label = this.columnLabel(key);
-    if (key === 'dateProcessed' || key === 'lastPurchaseDate') {
+    if (key === 'dateProcessed') {
       return { key, label, type: 'date', dateFormat: 'short', sortable: false };
     }
-    if (key === 'total' || key === 'totalSpent') {
+    if (key === 'total') {
       return { key, label, type: 'currency', sortable: false };
     }
     return { key, label, sortable: false };
@@ -181,7 +159,7 @@ export class PurchaseReportComponent {
 
     try {
       const raw = await this.runQuery();
-      this.results = this.groupByUser ? this.aggregateByEmail(raw) : raw.map((item) => this.toRow(item));
+      this.results = raw.map((item) => this.toRow(item));
       this.generated = true;
     } catch (err) {
       // Firestore throws a specific "query requires an index" error (with a
@@ -261,37 +239,8 @@ export class PurchaseReportComponent {
       itemsPurchased: (item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', '),
       total: item.total ?? 0,
       fulfillmentStatusLabel: this.getFulfillmentStatusLabel(item.fulfillmentStatus),
-      receipt: item.receipt ?? '',
-      purchaseCount: 0,
-      totalSpent: 0,
-      lastPurchaseDate: null
+      receipt: item.receipt ?? ''
     };
-  }
-
-  private aggregateByEmail(items: CheckoutForm[]): ReportRow[] {
-    const groups = new Map<string, CheckoutForm[]>();
-    items.forEach((item) => {
-      const key = item.email || item.id!;
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key)!.push(item);
-    });
-
-    return Array.from(groups.values()).map((purchases) => {
-      const sorted = [...purchases].sort((a, b) => toMillis(b.dateProcessed) - toMillis(a.dateProcessed));
-      const mostRecent = sorted[0];
-      const row = this.toRow(mostRecent);
-
-      const itemNames = new Set<string>();
-      purchases.forEach((p) => (p.cartItems ?? []).forEach((c) => { if (c.itemName) itemNames.add(c.itemName); }));
-
-      row.itemsPurchased = Array.from(itemNames).join(', ');
-      row.purchaseCount = purchases.length;
-      row.totalSpent = purchases.reduce((sum, p) => sum + (p.total ?? 0), 0);
-      row.lastPurchaseDate = row.dateProcessed;
-      return row;
-    });
   }
 
   private fieldValue(row: ReportRow, key: string): unknown {

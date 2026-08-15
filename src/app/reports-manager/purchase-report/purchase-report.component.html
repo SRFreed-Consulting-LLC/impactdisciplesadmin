@@ -78,7 +78,6 @@
     </div>
 
     <div class="criteria__block criteria__block--actions">
-      <mat-slide-toggle [(ngModel)]="groupByUser" [ngModelOptions]="{standalone: true}">Group by User</mat-slide-toggle>
       <button mat-raised-button color="primary" type="button" [disabled]="!canGenerate || loading" (click)="generateReport()">
         <mat-icon>search</mat-icon>
         Generate Report

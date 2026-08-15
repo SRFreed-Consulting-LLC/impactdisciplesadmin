@@ -229,21 +229,24 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
 `NavLeaf` + a new `@if` block + a declaration in `ReportsManagerModule`, not a new route):
 
 - **Purchase Report** (`purchase-report/`, Reports Manager → Purchases) — over the `purchases`
-  collection, filters on Purchase Date and State, group-by-user aggregation.
+  collection, filters on Purchase Date and State. No group-by mode - removed 2026-08-15 along with
+  Subscriber Report's own (below), per the user: none of these reports aggregate/group any more,
+  every row is always one real document.
 - **Subscriber Report** (`subscriber-report/`, Reports Manager → Subscribers) — over the `customers`
   collection's `subscribedToNewsletter`/`subscribedToPrayerTeam` flags (see the Firestore collection
   naming note below — subscriber state used to be its own `subscriptions` collection), filters on
-  Date Subscribed and Type (newsletter/prayer), both real Firestore queries, with a group-by-type
-  aggregation (counts + earliest/latest date per type). Type picks which flag/date-field pair to
-  query; with Type off, "either type" means querying both flags and merging client-side (same OR-
-  across-two-fields pattern as Purchase Report's State criterion, see below) since a customer has no
-  single `type` field any more. Absorbed the old standalone Subscribers screen (`customers-manager/
-  subscriptions/`, removed 2026-08-15) rather than leaving it separate once a subscriber became just
-  a filtered view of `customers` - Add/Edit a subscriber and unsubscribing (a row action) both live
-  here now. No List criterion, no selection/checkboxes, no saved-list building - the old screen
-  supported carving subscribers into saved sub-lists, but this app doesn't do that (per the user,
-  explicitly): Send Newsletter/Send Prayer Request always target every subscriber currently flagged
-  for that type, full stop, no per-send audience narrowing.
+  Date Subscribed and Type (newsletter/prayer), both real Firestore queries. Type picks which flag/
+  date-field pair to query; with Type off, "either type" means querying both flags and merging
+  client-side (same OR-across-two-fields pattern as Purchase Report's State criterion, see above)
+  since a customer has no single `type` field any more. Absorbed the old standalone Subscribers
+  screen (`customers-manager/subscriptions/`, removed 2026-08-15) rather than leaving it separate
+  once a subscriber became just a filtered view of `customers` - Edit a subscriber (row double-click)
+  and unsubscribing (a row action) both live here now. No manual "add a subscriber" flow (same reason
+  Customers has none, see customer.model.ts's own comment), no List criterion, no selection/
+  checkboxes, no saved-list building - the old screen supported carving subscribers into saved
+  sub-lists, but this app doesn't do that (per the user, explicitly): Send Newsletter/Send Prayer
+  Request always target every subscriber currently flagged for that type, full stop, no per-send
+  audience narrowing.
 - **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
   collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
   signup/created-date field at all (customer docs are upserted from purchases/event registrations —

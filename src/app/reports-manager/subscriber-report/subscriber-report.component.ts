@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { CustomerModel, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
+import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -22,27 +22,27 @@ interface ColumnDef {
 
 type DateMode = 'after' | 'between' | 'lastMonths';
 
-// Reports Manager > Subscribers - a configurable report/contact-list builder
-// over the `customers` collection's 2 subscription flags (see
-// customer.model.ts's own comment: newsletter + prayer team subscriber
-// state used to be its own `subscriptions` collection, now it's just
-// subscribedToNewsletter/subscribedToPrayerTeam booleans + dates on a
-// customer). Date Subscribed and Type are real Firestore queries (see
-// runQuery() below) - Type picks which flag/date-field pair to query
-// (`customers` has no single `type` field to filter on any more, so
-// "either type" means running the query twice, once per flag, and merging -
-// same OR-across-two-fields pattern Purchase Report already uses for
-// State, see this app's CLAUDE.md).
+// Reports Manager > Subscribers - a configurable report over the
+// `customers` collection's 2 subscription flags (see customer.model.ts's
+// own comment: newsletter + prayer team subscriber state used to be its
+// own `subscriptions` collection, now it's just subscribedToNewsletter/
+// subscribedToPrayerTeam booleans + dates on a customer). Date Subscribed
+// and Type are real Firestore queries (see runQuery() below) - Type picks
+// which flag/date-field pair to query (`customers` has no single `type`
+// field to filter on any more, so "either type" means running the query
+// twice, once per flag, and merging - same OR-across-two-fields pattern
+// Purchase Report already uses for State, see this app's CLAUDE.md).
 //
 // Absorbed the old standalone Subscribers screen (customers-manager/
 // subscriptions/, removed 2026-08-15) rather than leaving it as a separate
 // list screen once subscriber management became "just a filtered view of
-// customers" - Add/Edit a subscriber, Send Newsletter/Send Prayer Request,
-// and unsubscribing all live here now. Deliberately NOT ported: selection
-// checkboxes, "Filter by List", and building/saving an EmailList - the old
-// screen supported carving subscribers into saved sub-lists, but that's
-// not a thing this app does (per the user, explicitly) - every send always
-// targets every subscriber with that flag (see SendSubscriptionDialogComponent),
+// customers" - Edit a subscriber (row double-click) and unsubscribing (a
+// row action) both live here now. Deliberately NOT ported: manually
+// adding a subscriber, Group by Type (an aggregate mode), selection
+// checkboxes, "Filter by List", and building/saving an EmailList - none of
+// that is a thing this app does any more (per the user, explicitly).
+// Send Newsletter/Send Prayer Request always targets every subscriber
+// currently flagged for that type (see SendSubscriptionDialogComponent),
 // full stop, no per-send audience narrowing.
 @Component({
     selector: 'app-subscriber-report',
@@ -58,14 +58,8 @@ export class SubscriberReportComponent {
     { key: 'lastName', label: 'Last Name', visible: true },
     { key: 'email', label: 'Email', visible: true },
     { key: 'typeLabel', label: 'Type', visible: true },
-    { key: 'date', label: 'Date Subscribed', visible: true },
-    // Only meaningful once groupByType is on - see displayedColumns.
-    { key: 'subscriberCount', label: 'Subscriber Count', visible: true },
-    { key: 'earliestDate', label: 'Earliest Subscribed', visible: false },
-    { key: 'latestDate', label: 'Most Recent Subscribed', visible: false }
+    { key: 'date', label: 'Date Subscribed', visible: true }
   ];
-
-  groupByType = false;
 
   results: ReportRow[] = [];
   loading = false;
@@ -80,9 +74,7 @@ export class SubscriberReportComponent {
       icon: 'unsubscribe',
       tooltip: 'UNSUBSCRIBE',
       onClick: (row) => this.unsubscribe(row),
-      // Never true for a grouped aggregate row (no backing customer) - see
-      // ReportRow's own comment.
-      visible: (row) => !!row.customer && this.permissionService.canDelete(this.screenKey)
+      visible: () => this.permissionService.canDelete(this.screenKey)
     }
   ];
 
@@ -110,26 +102,12 @@ export class SubscriberReportComponent {
     return this.criteriaForm.value.dateEnabled || this.criteriaForm.value.typeEnabled;
   }
 
-  canAdd(): boolean {
-    return this.permissionService.canAdd(this.screenKey);
-  }
-
   canEdit(): boolean {
     return this.permissionService.canEdit(this.screenKey);
   }
 
-  // Grouped-only columns (a type-level aggregate) stay out of the ungrouped
-  // table (each row there is one real subscriber) and vice versa - same
-  // idea as purchase-report.component.ts's own displayedColumns, just with
-  // identity columns (name/email/date) as the "ungrouped-only" side instead
-  // of "grouped-only", since here a group ISN'T one person, it's a category.
   get displayedColumns(): string[] {
-    const groupedOnlyKeys = ['subscriberCount', 'earliestDate', 'latestDate'];
-    const ungroupedOnlyKeys = ['firstName', 'lastName', 'email', 'date'];
-    return this.columns
-      .filter((c) => c.visible)
-      .filter((c) => (this.groupByType ? !ungroupedOnlyKeys.includes(c.key) : !groupedOnlyKeys.includes(c.key)))
-      .map((c) => c.key);
+    return this.columns.filter((c) => c.visible).map((c) => c.key);
   }
 
   toggleColumn(column: ColumnDef): void {
@@ -146,11 +124,8 @@ export class SubscriberReportComponent {
 
   private toGridColumn(key: string): DataGridColumn<ReportRow> {
     const label = this.columnLabel(key);
-    if (key === 'date' || key === 'earliestDate' || key === 'latestDate') {
+    if (key === 'date') {
       return { key, label, type: 'date', dateFormat: 'short', sortable: false };
-    }
-    if (key === 'subscriberCount') {
-      return { key, label, type: 'number', sortable: false };
     }
     return { key, label, sortable: false };
   }
@@ -170,7 +145,7 @@ export class SubscriberReportComponent {
 
     try {
       const raw = await this.runQuery();
-      this.results = this.groupByType ? this.aggregateByType(raw) : raw.map((item) => this.toRow(item));
+      this.results = raw.map((item) => this.toRow(item));
       this.generated = true;
     } catch (err) {
       this.errorMessage = (err as { message?: string })?.message ?? 'Something went wrong generating the report.';
@@ -229,67 +204,19 @@ export class SubscriberReportComponent {
       email: item.customer.email ?? '',
       typeLabel: this.typeLabel(item.type),
       date: dateFromTimestamp(item.customer[dateField]),
-      subscriberCount: 0,
-      earliestDate: null,
-      latestDate: null,
       customer: item.customer
     };
   }
 
-  private aggregateByType(items: SubscriberQueryRow[]): ReportRow[] {
-    const groups = new Map<SubscriptionType, SubscriberQueryRow[]>();
-    items.forEach((item) => {
-      if (!groups.has(item.type)) {
-        groups.set(item.type, []);
-      }
-      groups.get(item.type)!.push(item);
-    });
+  // ---- Edit ----
 
-    return Array.from(groups.entries()).map(([type, rows]) => {
-      const { dateField } = subscriptionFieldsForType(type);
-      const dates = rows.map((r) => toMillis(r.customer[dateField])).filter((ms) => ms > 0);
-      return {
-        id: type,
-        type,
-        firstName: '',
-        lastName: '',
-        email: '',
-        typeLabel: this.typeLabel(type),
-        date: null,
-        subscriberCount: rows.length,
-        earliestDate: dates.length ? new Date(Math.min(...dates)) : null,
-        latestDate: dates.length ? new Date(Math.max(...dates)) : null
-        // No `customer` - this row doesn't correspond to any single document.
-      };
-    });
-  }
-
-  // ---- Add / Edit ----
-
-  showAddModal(): void {
-    if (!this.canAdd()) {
-      return;
-    }
-    const dialogRef = this.dialog.open(SubscriberDialogComponent, {
-      width: '500px',
-      data: { item: null }
-    });
-    dialogRef.afterClosed().subscribe(async (saved) => {
-      if (saved) {
-        await this.generateReport();
-      }
-    });
-  }
-
-  // No-ops for a grouped aggregate row (no backing customer) - matches
-  // rowActions' own visible() guard above.
   showEditModal(item: ReportRow): void {
-    if (!item.customer || !this.canEdit()) {
+    if (!this.canEdit()) {
       return;
     }
     const dialogRef = this.dialog.open(SubscriberDialogComponent, {
       width: '500px',
-      data: { item: item as ReportRow & { customer: CustomerModel } }
+      data: { item }
     });
     dialogRef.afterClosed().subscribe(async (saved) => {
       if (saved) {
@@ -325,7 +252,7 @@ export class SubscriberReportComponent {
   // unsubscribe link (functions/src/subscriptions.functions.ts's
   // unsubscribe_from_email_list), just triggered from the admin side.
   unsubscribe(item: ReportRow): void {
-    if (!item.customer || !this.permissionService.canDelete(this.screenKey)) {
+    if (!this.permissionService.canDelete(this.screenKey)) {
       return;
     }
     const customer = item.customer;
