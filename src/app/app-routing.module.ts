@@ -59,6 +59,11 @@ const routes: Routes = [
         canActivate: [ authGuard ]
       },
       {
+        path: 'campaigns-manager',
+        loadChildren: () => import('./campaigns-manager/campaigns-manager.module').then(m => m.CampaignsManagerModule),
+        canActivate: [ authGuard ]
+      },
+      {
         path: 'reports-manager',
         loadChildren: () => import('./reports-manager/reports-manager.module').then(m => m.ReportsManagerModule),
         canActivate: [ authGuard ]

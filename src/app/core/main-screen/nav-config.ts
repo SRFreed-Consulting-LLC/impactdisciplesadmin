@@ -213,6 +213,25 @@ export const NAV_CONFIG: NavGroup[] = [
     ]
   },
   {
+    // Added 2026-08-15 (feature/campaign-manager) - marketing campaigns
+    // pushing a product, an event, or a lead-capture offer (name+email for
+    // a store discount). Records + workflow, so its own group rather than a
+    // Tools screen. Both leaves are tab-shell screens; the Composer (create/
+    // edit, incl. the template gallery) is an in-page mode inside each of
+    // them - same "full in-page editor, no route" treatment as Products
+    // (see products.component.ts's own comment) - so it needs no NavLeaf/
+    // screenKey of its own: create/edit rights ride the hosting screen's
+    // add/edit grants.
+    id: 'campaigns-manager',
+    label: 'CAMPAIGNS MANAGER',
+    icon: 'campaign',
+    roles: [Role.ADMIN],
+    items: [
+      { label: 'Campaigns', slug: 'campaigns' },
+      { label: 'Status Board', slug: 'status-board' }
+    ]
+  },
+  {
     id: 'reports-manager',
     label: 'REPORTS MANAGER',
     icon: 'assessment',
