@@ -17,7 +17,7 @@ test('logs in and loads the Customers list via the left nav', async ({ page }) =
   // expand + link-click (not a direct ?tab= URL) so this still exercises
   // the left-nav flow the test name promises.
   await page.goto('/home');
-  await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
+  await page.getByRole('button', { name: 'CUSTOMERS' }).click();
   await page.getByRole('link', { name: 'Customers' }).click();
 
   const table = page.locator('table.customers-table');
