@@ -7,7 +7,9 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f2f4f8;
+  // Theme ground (pre-auth this is :root's Slate Elevate) - the mat-card
+  // login card on top of it picks up the theme card surface globally.
+  background: var(--app-ground);
 }
 
 .login-card {

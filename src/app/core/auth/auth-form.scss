@@ -5,16 +5,20 @@
 // their default look is a different visual language than DevExtreme's
 // filled textbox + flat button and fighting that would be more fragile
 // than just styling plain elements to match exactly.
-$auth-text: #333;
-$auth-text-muted: rgba(51, 51, 51, 0.7);
-$auth-primary: #337ab7;
-$auth-primary-hover: #296293;
-$auth-primary-active: #193d5b;
-$auth-fill-bg: rgba(51, 51, 51, 0.05);
-$auth-border: #ddd;
-$auth-danger: #d9534f;
-$auth-danger-bg: rgba(217, 83, 79, 0.1);
-$auth-radius: 4px;
+// Navy redesign: the old measured-from-DevExtreme hexes became theme-token
+// expressions. Auth screens render pre-auth, where :root carries the full
+// Slate Elevate token set - and they follow the saved theme like everything
+// else once one is applied.
+$auth-text: var(--app-card-ink);
+$auth-text-muted: color-mix(in srgb, var(--app-card-ink) 70%, transparent);
+$auth-primary: var(--app-accent);
+$auth-primary-hover: color-mix(in srgb, var(--app-accent) 85%, white);
+$auth-primary-active: color-mix(in srgb, var(--app-accent) 72%, black);
+$auth-fill-bg: var(--app-field);
+$auth-border: var(--app-field-border);
+$auth-danger: var(--mat-sys-error);
+$auth-danger-bg: color-mix(in srgb, var(--mat-sys-error) 12%, transparent);
+$auth-radius: var(--app-radius-control);
 
 .auth-form {
   display: flex;
@@ -37,7 +41,7 @@ $auth-radius: 4px;
   width: 100%;
   height: 34px;
   padding: 0 32px 0 9px;
-  border: 1px solid transparent;
+  border: 1px solid $auth-border;
   border-radius: $auth-radius;
   background-color: $auth-fill-bg;
   color: $auth-text;
@@ -47,7 +51,7 @@ $auth-radius: 4px;
   transition: border-color 0.15s, background-color 0.15s;
 
   &::placeholder {
-    color: #999;
+    color: var(--app-faint);
   }
 
   &:focus {
@@ -101,7 +105,7 @@ $auth-radius: 4px;
   border: none;
   border-radius: $auth-radius;
   background-color: $auth-primary;
-  color: #fff;
+  color: var(--app-on-accent);
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
@@ -123,7 +127,7 @@ $auth-radius: 4px;
   }
 
   ::ng-deep .mat-mdc-progress-spinner circle {
-    stroke: #fff;
+    stroke: var(--app-on-accent);
   }
 }
 

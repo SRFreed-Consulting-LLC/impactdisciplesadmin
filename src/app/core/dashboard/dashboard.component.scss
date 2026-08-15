@@ -2,16 +2,19 @@
 // imported (this codebase has no shared-SCSS-partial convention; every
 // component hand-rolls its own scoped styles), so Recent Orders' cards here
 // render identically to the real Fulfillment screen's.
-$done: #2e7d4f;
-$current: #337ab7;
-$pending: #d5d8dc;
-$new: #c0392b;
-$new-tint: #fdecea;
+// Navy redesign: the old hex literals became theme-token expressions so all
+// 10 variants read correctly (fulfillment gets the same treatment in the
+// hex sweep - keep the two files aligned).
+$done: var(--app-success);
+$current: var(--app-accent);
+$pending: color-mix(in srgb, var(--app-card-muted) 35%, var(--app-card));
+$new: var(--mat-sys-error);
+$new-tint: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
 // "Happening now" tag on Upcoming Events - deliberately not red/blue/green
 // (already NEW/current/done elsewhere on this same page) so it doesn't get
 // misread as one of those.
-$live: #b45309;
-$live-tint: #fef3c7;
+$live: var(--app-attention);
+$live-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
 
 :host {
   display: flex;
@@ -27,8 +30,17 @@ $live-tint: #fef3c7;
   box-sizing: border-box;
 }
 
+// Each section is an elevated theme card now (the navy redesign's core
+// surface treatment) - the section title/count/table all sit on the card
+// surface and read from the card ink set.
 .dash-section {
-  margin-bottom: 32px;
+  background: var(--app-card);
+  color: var(--app-card-ink);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  box-shadow: var(--app-card-shadow);
+  padding: 14px 18px 8px;
+  margin-bottom: 20px;
 
   &:last-child {
     margin-bottom: 0;
@@ -51,12 +63,13 @@ $live-tint: #fef3c7;
 }
 
 .sec-head__count {
-  background: rgba(0, 0, 0, 0.06);
-  color: rgba(0, 0, 0, 0.6);
+  background: color-mix(in srgb, var(--app-card-ink) 8%, transparent);
+  color: var(--app-card-muted);
   font-size: 11px;
   font-weight: 700;
   padding: 1px 8px;
   border-radius: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 .loading-row {
@@ -66,7 +79,7 @@ $live-tint: #fef3c7;
 }
 
 .empty-state {
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   font-size: 14px;
   padding: 16px 4px;
 }
@@ -77,8 +90,10 @@ $live-tint: #fef3c7;
   gap: 12px;
   color: $new;
   background: $new-tint;
-  border: 1px solid rgba($new, 0.3);
-  border-radius: 6px;
+  // rgba($new, .3) stopped compiling once $new became a CSS var expression -
+  // color-mix is the runtime equivalent.
+  border: 1px solid color-mix(in srgb, var(--mat-sys-error) 30%, transparent);
+  border-radius: var(--app-radius-control);
   font-size: 14px;
   padding: 12px 16px;
   max-width: 640px;
@@ -160,7 +175,7 @@ $live-tint: #fef3c7;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--app-card-muted);
   }
 
   td.mat-mdc-cell {
@@ -177,7 +192,7 @@ $live-tint: #fef3c7;
   cursor: pointer;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.03);
+    background: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
   }
 }
 
