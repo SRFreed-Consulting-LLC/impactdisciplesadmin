@@ -320,10 +320,11 @@ await db.doc('meta/newRecordCounts').set({ eventRegistrations: 0, formSubmission
 
 ---
 
-## Newsletter/Prayer Team subscribers: collection merged into `customers` flags
+## Newsletter/Prayer Team subscribers: collection merged into `customers` flags — RESOLVED 2026-08-15
 
-**Found**: 2026-08-14, mid-implementation - recorded here as the migration
-step still outstanding, not a bug discovered after the fact.
+**Found**: 2026-08-14, mid-implementation. **Fully completed**: 2026-08-15,
+across dev and prod both. Recorded here for the historical record - the
+steps below no longer need doing, this is what happened.
 
 Subscriber state (`SubscriptionModel`) used to live in its own
 `subscriptions` collection (one doc per email+type, itself a 2026-era merge
@@ -332,38 +333,36 @@ collections - see `scripts/recreate-subscriptions.js`'s own header comment
 for that earlier merge). It's now 2 booleans + dates directly on the
 matching `customers` doc instead - `subscribedToNewsletter`/
 `newsletterSubscribedDate`, `subscribedToPrayerTeam`/
-`prayerTeamSubscribedDate` (see `CustomerModel`'s own comment). Both
-directions of the public site's write path
-(`functions/src/subscriptions.functions.ts`'s `subscribe_to_email_list`/
-`unsubscribe_from_email_list`) and every admin-app read/write (Subscribers
-screen, Subscriber Report) already target `customers` as of this change -
-the standalone `subscriptions` collection is dead code's worth of a data
-source starting now, same status as the orphaned `users` collection (see
-CLAUDE.md's Firestore collection naming note).
+`prayerTeamSubscribedDate` (see `CustomerModel`'s own comment).
 
-**What's NOT done yet - this is a real data migration, not just a code
-change**: existing docs in the `subscriptions` collection (dev has an
-unknown-but-nonzero count as of this writing - prod was never migrated onto
-that collection at all per `recreate-subscriptions.js`'s own comment, so
-prod's actual source of truth for existing subscribers is still the *even
-older* `newsletter_subscriptions`/`prayer_team_subscriptions` collections)
-have NOT been backfilled onto `customers`. Until that backfill runs,
-real existing subscribers will not show up on the redesigned Subscribers
-screen or Subscriber Report at all - both only read the new flags.
-
-**Backfill script**: `scripts/migrate-subscriptions-to-customers.js` (dry-run
-by default, `--execute` to write) - for each `subscriptions` doc, matches a
-`customers` doc by email (creates one if none exists, same shape
-`subscribe_to_email_list` creates) and sets that type's flag/date, same
-merge-not-overwrite behavior as the Cloud Function. Run once per project
-(`--project=dev` / `--project=prod`) before treating the old collection as
-safe to ignore. Prod also needs a first pass over the 2 pre-merge
-collections (`newsletter_subscriptions`/`prayer_team_subscriptions`) if
-they were never consolidated into `subscriptions` there - check counts
-before assuming which source collection(s) prod actually needs migrated.
-
-**Not yet updated** (out of reach from this repo): `impactdisciples-web`'s
-own subscribe form(s) - confirm they've moved to POSTing the new
-`subscribe_to_email_list` endpoint instead of whatever direct write against
-the old `subscriptions` collection that repo's code currently does, before
-considering this migration complete end-to-end.
+What got done, in order:
+1. `functions/src/subscriptions.functions.ts`'s `subscribe_to_email_list`/
+   `unsubscribe_from_email_list` rewritten to target `customers` instead of
+   `subscriptions`; every admin-app read/write (Subscribers screen,
+   Subscriber Report) moved the same way.
+2. `scripts/migrate-subscriptions-to-customers.js` (dry-run by default,
+   `--execute` to write) run for real against both dev and prod - matches a
+   `customers` doc by email (creates one if none exists), sets the flag/
+   date. Verified idempotent (re-running found 0 remaining writes needed)
+   on both. Both dev and prod actually had the merged `subscriptions`
+   collection populated (~4,490 docs each) - the pre-merge
+   `newsletter_subscriptions`/`prayer_team_subscriptions` collections
+   turned out empty on both, so no separate pass over those was needed.
+3. Data-quality cleanup on the backfill's output, both environments: 240
+   newly-created customers with no name at all deleted (verified zero
+   purchase/event-registration history first); 75 full-names-crammed-into-
+   firstName split on the last space; 1 period-separated name split; 70
+   remaining single-word names with no order/registration history deleted.
+   Every existing customer keeps both a first and last name as a result.
+4. `impactdisciples-web`'s `SubscriptionService.createSubscription()` (the
+   thing that was actually writing into `subscriptions` directly via the
+   client SDK) rewritten to POST to `subscribe_to_email_list` instead - see
+   that repo's own history. Deployed to its prod hosting.
+5. The now-orphaned `onSubscriptionCreated`/`onSubscriptionUpdated` Cloud
+   Functions (the 4th new-record-alert trigger pair, already removed from
+   source earlier but still deployed since no deploy had targeted them by
+   name) deleted from both dev and prod via `firebase functions:delete`.
+6. The `subscriptions` collection itself deleted outright (not left
+   orphaned like `users` - see CLAUDE.md's Firestore collection naming
+   note) via `firebase firestore:delete subscriptions --recursive`, both
+   dev and prod. Confirmed 0 documents remaining in both afterward.

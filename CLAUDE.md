@@ -331,7 +331,8 @@ a merge of 2 even older `newsletter_subscriptions`/`prayer_team_subscriptions` c
 (see `CustomerModel`'s own comment, and `functions/src/subscriptions.functions.ts` for the 2 endpoints
 that flip those flags from outside the admin app). The Subscribers screen
 (`customers-manager/subscriptions/`) and Reports Manager's Subscriber Report both query `customers` by
-these flags now, not a `subscriptions` collection. The old `subscriptions` collection is left in place
-in Firestore, unmigrated-from, same as `users` above — see `MIGRATION.md` for the one-time backfill
-script that copies its docs onto the matching (or newly-created) `customers` doc before it can be
-considered safe to stop reading anywhere it still might be (e.g. directly in the Firebase console).
+these flags now, not a `subscriptions` collection. Unlike `users` above, the old `subscriptions`
+collection itself is gone (deleted 2026-08-15 in both dev and prod, after the one-time backfill script
+— see `MIGRATION.md` — was run and verified idempotent on both, `impactdisciples-web`'s subscribe form
+was confirmed pointed at the new `subscribe_to_email_list` endpoint instead of writing to it directly,
+and the 2 now-orphaned `onSubscriptionCreated`/`onSubscriptionUpdated` Cloud Functions were deleted).
