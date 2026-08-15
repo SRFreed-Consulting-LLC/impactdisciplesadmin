@@ -22,6 +22,13 @@ export class AdminUser extends Person {
     // fields, simplified to a single light/dark flag + one accent id (that
     // app keeps independent light/dark accent choices via a larger palette
     // catalog - out of scope here, see ThemeService's own comment).
+    /**
+     * @deprecated Superseded by the 10-variant navy theme catalog (see
+     * ThemeService) - each variant fixes its own light/dark character, so
+     * there is no independent dark-mode toggle any more. Kept on the model
+     * so existing Firestore docs round-trip untouched through the full-record
+     * update() writes; never read or written by current code.
+     */
     darkMode?: boolean;
     colorTheme?: string;
 

@@ -6,17 +6,8 @@
       <mat-card-title>Appearance</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <div class="field">
-        <span class="field-label">Dark Mode</span>
-        <mat-slide-toggle
-          [checked]="themeService.darkMode()"
-          (change)="onDarkModeChange($event)"
-          aria-label="Toggle dark mode">
-        </mat-slide-toggle>
-      </div>
-
       <div class="field field--column">
-        <span class="field-label">Color Theme</span>
+        <span class="field-label">Theme</span>
         <div class="accent-options">
           @for (option of colorThemes; track option) {
             <button
@@ -25,8 +16,9 @@
               [class.accent-option--selected]="themeService.colorTheme() === option.id"
               (click)="onColorThemeChange(option.id)">
               <span class="theme-swatch" [ngClass]="swatchClasses(option.id)">
-                <span class="theme-swatch-primary"></span>
-                <span class="theme-swatch-tertiary"></span>
+                <span class="theme-swatch-ground"></span>
+                <span class="theme-swatch-card"></span>
+                <span class="theme-swatch-accent"></span>
               </span>
               <span>{{ option.label }}</span>
             </button>

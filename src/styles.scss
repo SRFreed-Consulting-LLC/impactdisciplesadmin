@@ -1,21 +1,14 @@
-@use '@angular/material' as mat;
 @use './styles/reset';
-@use './assets/theme/scss/material-theme' as impact-material;
-// Dark mode + curated accent classes for the Settings > Themes page (see
-// ThemeService) - a separate partial from material-theme.scss since it
-// only ever adds override classes on top of that file's root theme, never
-// touches it.
-@use './assets/theme/scss/theme-accents';
+// The navy redesign's theme engine: emits the default (Slate Elevate) theme
+// at :root plus one .theme-{id} class per user-selectable variant (Settings >
+// Themes / ThemeService), each carrying mat.theme() + --app-* semantic tokens
+// + --mat-sys-* pins. App styles consume --app-* vars, never raw hexes.
+@use './styles/theme-variants';
 // angular-calendar (Event Agenda tab, events-manager) ships plain CSS, not
 // an @use-able module - a bare @import (must come after every @use, per
 // Sass's own module-ordering rule) is still how the library's own docs
 // say to bring it in.
 @import '../node_modules/angular-calendar/css/angular-calendar.css';
-
-:root {
-  @include mat.core();
-  @include mat.all-component-themes(impact-material.$impact-theme);
-}
 
 // The site theme's header/nav partials (_header.scss, etc.) use z-index values
 // up to 9999, and DevExtreme's own overlays run high too. The CDK overlay
@@ -271,29 +264,28 @@ table.mat-mdc-table td.mat-mdc-cell img {
   margin: 8px 0;
 }
 
-// House rule: no round/pill buttons anywhere in the Material migration.
-// Material 3's default button shape is a fully-rounded pill
-// (--mat-sys-corner-full, 9999px) and icon buttons default to a circular
-// container (50%). Flatten both to a small, consistent corner radius so every
-// current and future mat-button/mat-icon-button/mat-fab picks it up automatically.
+// House rule: no round/pill buttons. Material 3's default button shape is a
+// fully-rounded pill (--mat-sys-corner-full, 9999px) and icon buttons default
+// to a circular container (50%). Flatten both to the active theme's control
+// radius (the old hardcoded 4px predates the navy theme system's per-variant
+// radii) so every current and future mat-button/mat-icon-button/mat-fab picks
+// it up automatically.
 :root {
-  --mat-button-filled-container-shape: 4px;
-  --mat-button-outlined-container-shape: 4px;
-  --mat-button-protected-container-shape: 4px;
-  --mat-button-text-container-shape: 4px;
-  --mat-button-tonal-container-shape: 4px;
-  --mat-icon-button-container-shape: 4px;
-  --mat-fab-container-shape: 4px;
-  --mat-fab-small-container-shape: 4px;
-  --mat-fab-extended-container-shape: 4px;
+  --mat-button-filled-container-shape: var(--app-radius-control);
+  --mat-button-outlined-container-shape: var(--app-radius-control);
+  --mat-button-protected-container-shape: var(--app-radius-control);
+  --mat-button-text-container-shape: var(--app-radius-control);
+  --mat-button-tonal-container-shape: var(--app-radius-control);
+  --mat-icon-button-container-shape: var(--app-radius-control);
+  --mat-fab-container-shape: var(--app-radius-control);
+  --mat-fab-small-container-shape: var(--app-radius-control);
+  --mat-fab-extended-container-shape: var(--app-radius-control);
 }
 
-// dx-popup rendered with square corners (border-radius: 0). Material 3
-// dialogs default to a large rounded corner - flatten to match the old
-// popup shape (kept at 4px rather than a literal 0 to stay consistent with
-// the button-shape flattening above).
+// Material 3 dialogs default to a large rounded corner - use the theme's
+// card radius instead (dialogs are cards in this design system).
 :root {
-  --mat-dialog-container-shape: 4px;
+  --mat-dialog-container-shape: var(--app-radius-card);
 }
 
 // House rule: no screen/tab ever scrolls horizontally unless it truly can't

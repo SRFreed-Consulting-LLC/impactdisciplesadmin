@@ -1,6 +1,7 @@
 import { Component, HostBinding } from '@angular/core';
 import { NavigationEnd, NavigationError, Router } from '@angular/router';
 import { ScreenService } from 'src/app/common/services/utils/screen.service';
+import { ThemeService } from 'src/app/common/services/utils/theme.service';
 
 // Guards recoverFromStaleChunk() below against reload-looping - sessionStorage
 // (not a plain field) so it survives the full page reload the recovery itself
@@ -21,7 +22,11 @@ export class AppComponent {
     return Object.keys(this.screen.sizes).filter(cl => this.screen.sizes[cl]).join(' ');
   }
 
-  constructor(private screen: ScreenService, private router: Router) {
+  // ThemeService is injected purely to instantiate it at boot: a
+  // providedIn: 'root' service isn't constructed until something injects it,
+  // and before this it was only injected by the Settings screen - so an
+  // admin's saved theme wasn't applied until they happened to open Settings.
+  constructor(private screen: ScreenService, private router: Router, private theme: ThemeService) {
     // Every lazy feature module (admin-manager, events-manager, ...) is a
     // content-hashed chunk baked into main.js at build time - see
     // app-routing.module.ts's loadChildren calls. Firebase Hosting deploys

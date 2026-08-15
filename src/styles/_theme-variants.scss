@@ -1,0 +1,465 @@
+// The navy redesign's theme engine: 10 user-selectable variants (Settings >
+// Themes, see ThemeService), each a class on <html> (.theme-{id}). Default is
+// slate-elevate, whose full token set is ALSO emitted at :root so the app is
+// correctly themed before ThemeService's effect() runs (and pre-auth, on the
+// login screen). Values were approved from the "Navy Directions" visual comp -
+// change them there-first if the design evolves.
+//
+// Two layers per variant:
+//   1. --app-* semantic vars - what app CSS consumes (grounds, cards, fields,
+//      accents, radii, shadows). App/component SCSS should use these, never
+//      raw hexes and never --mat-sys-* directly.
+//   2. Material: mat.theme() with the nearest prebuilt M3 palette generates
+//      the full state-layer ramps (hover/focus/disabled), then ~15 --mat-sys-*
+//      pins snap the surfaces/accents to the exact approved values (M3 seed
+//      generation can't hit the exact navy grounds). color-scheme matters:
+//      it drives native control glyphs (datetime-local/time pickers on the
+//      Summit Info form) and scrollbars.
+//
+// theme-type is LIGHT for midnight-paper/harbor-split/horizon: their cards
+// are white and Material components live inside cards - the dark ground is
+// page chrome only, painted via --app-* by the shell. Everything else is dark.
+//
+// Structural specials (kept out of the token layer deliberately):
+//   - glassline: translucent cards + backdrop-filter, see the rule block at
+//     the bottom (backdrop-filter always creates a compositing layer, so it's
+//     an explicit per-theme opt-in, not a blur(0) token everywhere).
+//   - abyss-glow: --app-btn-glow/--app-bar-glow consumed via
+//     box-shadow: var(--app-btn-glow, none) - inert in every other theme.
+//   - quarterdeck's recessed fields fall out of its field being darker than
+//     its card; no special rules.
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+// ---------------------------------------------------------------------------
+// Variant definitions. Keys every variant must provide:
+//   type (light|dark), palette (prebuilt M3), ground (color or gradient),
+//   ground-base (always a solid color - --mat-sys-background can't take a
+//   gradient; equals ground for solid-ground variants), side, divider,
+//   ink, muted, faint, nav-active-bg, nav-active-ink,
+//   card, card-ink, card-muted, card-border, card-shadow,
+//   accent, on-accent, field, field-border,
+//   radius-card, radius-control, success, elev-mix (white|black - which way
+//   surface-container elevation steps lean).
+// Optional: content-bg, header-ink (harbor-split), btn-glow, bar-glow
+// (abyss-glow).
+// ---------------------------------------------------------------------------
+$variants: (
+  slate-elevate: (
+    type: dark,
+    palette: mat.$cyan-palette,
+    ground: #1b2436,
+    ground-base: #1b2436,
+    side: #161e2d,
+    divider: rgba(255, 255, 255, 0.06),
+    ink: #e6ebf4,
+    muted: #93a0b6,
+    faint: #5c6981,
+    nav-active-bg: rgba(56, 189, 248, 0.12),
+    nav-active-ink: #7dd0fa,
+    card: #232e45,
+    card-ink: #e6ebf4,
+    card-muted: #8b98b0,
+    card-border: rgba(255, 255, 255, 0.08),
+    card-shadow: (0 6px 18px -8px rgba(0, 0, 0, 0.5)),
+    accent: #38bdf8,
+    on-accent: #06283c,
+    field: #1a2438,
+    field-border: #313d57,
+    radius-card: 9px,
+    radius-control: 6px,
+    success: #4ade80,
+    elev-mix: white,
+  ),
+  midnight-paper: (
+    type: light,
+    palette: mat.$yellow-palette,
+    ground: #0b1526,
+    ground-base: #0b1526,
+    side: #0b1526,
+    divider: rgba(255, 255, 255, 0.07),
+    ink: #e9edf5,
+    muted: #9daac0,
+    faint: #5f6d87,
+    nav-active-bg: rgba(232, 169, 23, 0.14),
+    nav-active-ink: #f1c355,
+    card: #ffffff,
+    card-ink: #1b2334,
+    card-muted: #77808f,
+    card-border: #e7eaef,
+    card-shadow: (0 10px 28px -10px rgba(0, 0, 0, 0.55)),
+    accent: #e8a917,
+    on-accent: #241a02,
+    field: #f4f6f9,
+    field-border: #dde2ea,
+    radius-card: 10px,
+    radius-control: 6px,
+    success: #1f9d61,
+    elev-mix: black,
+  ),
+  glassline: (
+    type: dark,
+    palette: mat.$violet-palette,
+    ground: (linear-gradient(150deg, #0e1b33 0%, #1c2b52 60%, #22254c 100%)),
+    ground-base: #16254a,
+    side: rgba(255, 255, 255, 0.04),
+    divider: rgba(255, 255, 255, 0.09),
+    ink: #ecf0fa,
+    muted: #a4aecb,
+    faint: #6a749a,
+    nav-active-bg: rgba(167, 139, 250, 0.16),
+    nav-active-ink: #c9b8fc,
+    card: rgba(255, 255, 255, 0.07),
+    card-ink: #ecf0fa,
+    card-muted: #9aa5c6,
+    card-border: rgba(255, 255, 255, 0.14),
+    card-shadow: (0 8px 30px -12px rgba(0, 0, 0, 0.5)),
+    accent: #a78bfa,
+    on-accent: #1d1140,
+    field: rgba(255, 255, 255, 0.06),
+    field-border: rgba(255, 255, 255, 0.18),
+    radius-card: 12px,
+    radius-control: 7px,
+    success: #5eead4,
+    elev-mix: white,
+  ),
+  harbor-split: (
+    type: light,
+    palette: mat.$azure-palette,
+    ground: #122036,
+    ground-base: #122036,
+    side: #122036,
+    divider: rgba(255, 255, 255, 0.07),
+    ink: #e8edf5,
+    muted: #9fb0c8,
+    faint: #5e7089,
+    nav-active-bg: rgba(255, 255, 255, 0.1),
+    nav-active-ink: #ffffff,
+    content-bg: #f2f4f8,
+    header-ink: #1c2536,
+    card: #ffffff,
+    card-ink: #1e2637,
+    card-muted: #7a8494,
+    card-border: #e2e6ed,
+    card-shadow: (0 3px 10px -4px rgba(18, 32, 54, 0.18)),
+    accent: #2563eb,
+    on-accent: #ffffff,
+    field: #f6f8fb,
+    field-border: #dbe1ea,
+    radius-card: 9px,
+    radius-control: 6px,
+    success: #178a54,
+    elev-mix: black,
+  ),
+  abyss-glow: (
+    type: dark,
+    palette: mat.$cyan-palette,
+    ground: #070d1b,
+    ground-base: #070d1b,
+    side: #070d1b,
+    divider: #16223c,
+    ink: #dfe9f5,
+    muted: #8fa0ba,
+    faint: #516180,
+    nav-active-bg: rgba(45, 212, 191, 0.1),
+    nav-active-ink: #5eead4,
+    card: #0d1628,
+    card-ink: #dfe9f5,
+    card-muted: #7c8daa,
+    card-border: #1e2c49,
+    card-shadow: (0 0 0 1px rgba(45, 212, 191, 0.05), 0 10px 30px -12px rgba(0, 0, 0, 0.7)),
+    accent: #2dd4bf,
+    on-accent: #04211c,
+    btn-glow: (0 0 14px rgba(45, 212, 191, 0.45)),
+    bar-glow: (0 0 10px rgba(45, 212, 191, 0.55)),
+    field: #0a1120,
+    field-border: #223252,
+    radius-card: 10px,
+    radius-control: 6px,
+    success: #2dd4bf,
+    elev-mix: white,
+  ),
+  indigo-soft: (
+    type: dark,
+    palette: mat.$violet-palette,
+    ground: #252e52,
+    ground-base: #252e52,
+    side: #202848,
+    divider: rgba(255, 255, 255, 0.07),
+    ink: #edeffa,
+    muted: #a8afd2,
+    faint: #7079a5,
+    nav-active-bg: rgba(179, 165, 248, 0.16),
+    nav-active-ink: #cfc4fb,
+    card: #2e3963,
+    card-ink: #edeffa,
+    card-muted: #9ba3c8,
+    card-border: rgba(255, 255, 255, 0.07),
+    card-shadow: (0 8px 22px -10px rgba(10, 12, 40, 0.55)),
+    accent: #b3a5f8,
+    on-accent: #221650,
+    field: #27315a,
+    field-border: #3d477a,
+    radius-card: 14px,
+    radius-control: 9px,
+    success: #6ee7b7,
+    elev-mix: white,
+  ),
+  steel-rail: (
+    type: dark,
+    palette: mat.$orange-palette,
+    ground: #161d29,
+    ground-base: #161d29,
+    side: #131926,
+    divider: #232c3c,
+    ink: #e4e9f1,
+    muted: #8f9aac,
+    faint: #586378,
+    nav-active-bg: rgba(245, 165, 36, 0.1),
+    nav-active-ink: #f7b955,
+    card: #1c2432,
+    card-ink: #e4e9f1,
+    card-muted: #8593a8,
+    card-border: #2a3344,
+    card-shadow: none,
+    accent: #f5a524,
+    on-accent: #2b1c02,
+    field: #161d29,
+    field-border: #2e3849,
+    radius-card: 6px,
+    radius-control: 4px,
+    success: #4ade80,
+    elev-mix: white,
+  ),
+  horizon: (
+    type: light,
+    palette: mat.$rose-palette,
+    ground: (linear-gradient(180deg, #0f1c3f 0%, #0a1226 100%)),
+    ground-base: #0d1733,
+    side: rgba(255, 255, 255, 0.03),
+    divider: rgba(255, 255, 255, 0.08),
+    ink: #eaeef7,
+    muted: #9fabc4,
+    faint: #61708f,
+    nav-active-bg: rgba(255, 107, 94, 0.14),
+    nav-active-ink: #ff9c92,
+    card: #ffffff,
+    card-ink: #222a3c,
+    card-muted: #7b8496,
+    card-border: #e8eaef,
+    card-shadow: (0 12px 30px -14px rgba(0, 0, 0, 0.6)),
+    accent: #ff6b5e,
+    on-accent: #3c0b06,
+    field: #f5f6f9,
+    field-border: #e0e4eb,
+    radius-card: 10px,
+    radius-control: 6px,
+    success: #1f9d61,
+    elev-mix: black,
+  ),
+  ensign: (
+    type: dark,
+    palette: mat.$yellow-palette,
+    ground: #0f1f3c,
+    ground-base: #0f1f3c,
+    side: #0c1a33,
+    divider: rgba(255, 197, 61, 0.12),
+    ink: #eef0f6,
+    muted: #a3aec6,
+    faint: #647394,
+    nav-active-bg: rgba(255, 197, 61, 0.13),
+    nav-active-ink: #ffd970,
+    card: #17294b,
+    card-ink: #eef0f6,
+    card-muted: #93a0bc,
+    card-border: rgba(255, 197, 61, 0.16),
+    card-shadow: (0 8px 22px -10px rgba(0, 0, 0, 0.5)),
+    accent: #ffc53d,
+    on-accent: #2a1c00,
+    field: #122240,
+    field-border: rgba(255, 197, 61, 0.25),
+    radius-card: 9px,
+    radius-control: 6px,
+    success: #5fd39a,
+    elev-mix: white,
+  ),
+  quarterdeck: (
+    type: dark,
+    palette: mat.$spring-green-palette,
+    ground: #131b2b,
+    ground-base: #131b2b,
+    side: #101724,
+    divider: rgba(255, 255, 255, 0.06),
+    ink: #e6ebf3,
+    muted: #94a0b4,
+    faint: #5b6880,
+    nav-active-bg: rgba(52, 211, 153, 0.1),
+    nav-active-ink: #6fe3b4,
+    card: #1a2438,
+    card-ink: #e6ebf3,
+    card-muted: #8996ad,
+    card-border: rgba(255, 255, 255, 0.07),
+    card-shadow: (0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 24px -12px rgba(0, 0, 0, 0.6)),
+    accent: #34d399,
+    on-accent: #03291a,
+    field: #10192a,
+    field-border: rgba(0, 0, 0, 0.35),
+    radius-card: 10px,
+    radius-control: 7px,
+    success: #34d399,
+    elev-mix: white,
+  ),
+);
+
+$default-variant: slate-elevate;
+
+// Layer 1: the semantic vars every app stylesheet consumes.
+@mixin app-tokens($v) {
+  --app-ground: #{map.get($v, ground)};
+  --app-ground-base: #{map.get($v, ground-base)};
+  --app-side: #{map.get($v, side)};
+  --app-divider: #{map.get($v, divider)};
+  --app-ink: #{map.get($v, ink)};
+  --app-muted: #{map.get($v, muted)};
+  --app-faint: #{map.get($v, faint)};
+  --app-nav-active-bg: #{map.get($v, nav-active-bg)};
+  --app-nav-active-ink: #{map.get($v, nav-active-ink)};
+  --app-card: #{map.get($v, card)};
+  --app-card-ink: #{map.get($v, card-ink)};
+  --app-card-muted: #{map.get($v, card-muted)};
+  --app-card-border: #{map.get($v, card-border)};
+  --app-card-shadow: #{map.get($v, card-shadow)};
+  --app-accent: #{map.get($v, accent)};
+  --app-on-accent: #{map.get($v, on-accent)};
+  --app-field: #{map.get($v, field)};
+  --app-field-border: #{map.get($v, field-border)};
+  --app-radius-card: #{map.get($v, radius-card)};
+  --app-radius-control: #{map.get($v, radius-control)};
+  --app-success: #{map.get($v, success)};
+  // Attention/amber (row--pending, lead-capture chips, ...) is shared: it
+  // reads acceptably on every variant's card, dark or light.
+  --app-attention: #d79b2e;
+
+  // Optional per-variant extras. Explicit fallbacks here (rather than at
+  // every use site) so a theme switch cleanly resets them: a custom property
+  // NOT re-declared by the next theme class would otherwise keep the old
+  // theme's value, since <html> classes all target the same element.
+  --app-content-bg: #{if(map.has-key($v, content-bg), map.get($v, content-bg), transparent)};
+  --app-header-ink: #{if(map.has-key($v, header-ink), map.get($v, header-ink), map.get($v, ink))};
+  --app-btn-glow: #{if(map.has-key($v, btn-glow), map.get($v, btn-glow), none)};
+  --app-bar-glow: #{if(map.has-key($v, bar-glow), map.get($v, bar-glow), none)};
+}
+
+// Layer 2: pin the Material system tokens to the approved values. mat.theme()
+// (called separately, see emit-variant) generates the full ramps; these pins
+// override just the surfaces/accents where "close, from a seed" isn't good
+// enough. Kept to CSS custom properties so they win over mat.theme()'s own
+// emissions by source order within the same selector.
+@mixin sys-pins($v) {
+  $card: map.get($v, card);
+  $mix-to: if(map.get($v, elev-mix) == white, white, black);
+
+  --mat-sys-background: #{map.get($v, ground-base)};
+  --mat-sys-on-background: #{map.get($v, ink)};
+  --mat-sys-surface: #{$card};
+  --mat-sys-on-surface: #{map.get($v, card-ink)};
+  --mat-sys-surface-variant: #{map.get($v, field)};
+  --mat-sys-on-surface-variant: #{map.get($v, card-muted)};
+  --mat-sys-surface-container-lowest: #{map.get($v, ground-base)};
+  --mat-sys-surface-container-low: #{color-mix(in srgb, $card 92%, map.get($v, ground-base))};
+  --mat-sys-surface-container: #{$card};
+  --mat-sys-surface-container-high: #{color-mix(in srgb, $card 95%, $mix-to)};
+  --mat-sys-surface-container-highest: #{color-mix(in srgb, $card 91%, $mix-to)};
+  --mat-sys-surface-dim: #{map.get($v, ground-base)};
+  --mat-sys-surface-bright: #{color-mix(in srgb, $card 88%, $mix-to)};
+  --mat-sys-surface-tint: #{map.get($v, accent)};
+  --mat-sys-outline: #{map.get($v, field-border)};
+  --mat-sys-outline-variant: #{map.get($v, card-border)};
+  --mat-sys-primary: #{map.get($v, accent)};
+  --mat-sys-on-primary: #{map.get($v, on-accent)};
+  --mat-sys-primary-container: #{color-mix(in srgb, map.get($v, accent) 18%, $card)};
+  --mat-sys-on-primary-container: #{map.get($v, card-ink)};
+}
+
+@mixin emit-variant($v) {
+  @include mat.theme((
+    color: (
+      theme-type: map.get($v, type),
+      primary: map.get($v, palette),
+      tertiary: map.get($v, palette),
+    ),
+  ));
+  @include app-tokens($v);
+  @include sys-pins($v);
+  color-scheme: #{map.get($v, type)};
+}
+
+// :root carries the default (slate-elevate) - correct theming before
+// ThemeService runs and on the pre-auth login screen. Typography + density
+// are root-only: theme classes only re-color.
+:root {
+  @include mat.theme((
+    color: (
+      theme-type: dark,
+      primary: mat.$cyan-palette,
+      tertiary: mat.$cyan-palette,
+    ),
+    typography: (
+      plain-family: 'Inter, system-ui, sans-serif',
+      brand-family: 'Inter, system-ui, sans-serif',
+    ),
+    density: (
+      scale: 0,
+    ),
+  ));
+  @include app-tokens(map.get($variants, $default-variant));
+  @include sys-pins(map.get($variants, $default-variant));
+  color-scheme: dark;
+}
+
+@each $id, $v in $variants {
+  .theme-#{$id} {
+    @include emit-variant($v);
+  }
+}
+
+// Glassline's structural opt-in: frosted panels. Scoped tight to the surfaces
+// that float over the gradient ground; backdrop-filter forces a compositing
+// layer per element, so this is per-theme, never a global token.
+.theme-glassline {
+  .mat-mdc-dialog-surface,
+  .mat-mdc-select-panel,
+  .mat-mdc-autocomplete-panel,
+  .mat-mdc-menu-panel,
+  .app-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+// Swatches for the Settings > Themes picker (ThemesComponent wraps each in
+// that option's own .theme-{id} class, so the three dots always render that
+// variant's real ground/card/accent - no hardcoded swatch list to sync).
+.theme-swatch {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.theme-swatch span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--app-ink) 25%, transparent);
+}
+
+.theme-swatch-ground {
+  background: var(--app-ground);
+}
+
+.theme-swatch-card {
+  background: var(--app-card);
+}
+
+.theme-swatch-accent {
+  background: var(--app-accent);
+}
