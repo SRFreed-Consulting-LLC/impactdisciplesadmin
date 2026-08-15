@@ -13,11 +13,16 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialogModule } from '@angular/material/dialog';
+import { QuillModule } from 'ngx-quill';
 import { SharedModule } from '../shared/shared.module';
 import { ReportsManagerRoutingModule } from './reports-manager-routing.module';
 import { ReportsManagerComponent } from './reports-manager.component';
 import { PurchaseReportComponent } from './purchase-report/purchase-report.component';
 import { SubscriberReportComponent } from './subscriber-report/subscriber-report.component';
+import { SubscriberDialogComponent } from './subscriber-report/subscriber-dialog.component';
+import { SendSubscriptionDialogComponent } from './subscriber-report/send-subscription-dialog.component';
+import { SubscriptionListDialogComponent } from './subscriber-report/subscription-list-dialog.component';
 import { CustomerReportComponent } from './customer-report/customer-report.component';
 import { EventReportComponent } from './event-report/event-report.component';
 
@@ -26,6 +31,9 @@ import { EventReportComponent } from './event-report/event-report.component';
     ReportsManagerComponent,
     PurchaseReportComponent,
     SubscriberReportComponent,
+    SubscriberDialogComponent,
+    SendSubscriptionDialogComponent,
+    SubscriptionListDialogComponent,
     CustomerReportComponent,
     EventReportComponent
   ],
@@ -46,7 +54,9 @@ import { EventReportComponent } from './event-report/event-report.component';
     MatNativeDateModule,
     MatSlideToggleModule,
     MatTableModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatDialogModule,
+    QuillModule
   ]
 })
 export class ReportsManagerModule { }

@@ -13,10 +13,6 @@ import { PurchaseDetailsComponent } from './purchase-details/purchase-details.co
 import { FulfillmentComponent } from './fulfillment/fulfillment.component';
 import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
 import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
-import { SubscriptionsComponent } from './subscriptions/subscriptions.component';
-import { SubscriberDialogComponent } from './subscriptions/subscriber-dialog.component';
-import { SendSubscriptionDialogComponent } from './subscriptions/send-subscription-dialog.component';
-import { SubscriptionListDialogComponent } from './subscriptions/subscription-list-dialog.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -36,7 +32,6 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { QuillModule } from 'ngx-quill';
 
 // Everything that's either a customer record or something a customer/site
 // visitor submitted - moved here (from admin-manager, store-manager,
@@ -68,8 +63,7 @@ import { QuillModule } from 'ngx-quill';
     MatMenuModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    MatExpansionModule,
-    QuillModule
+    MatExpansionModule
   ],
   declarations: [
     CustomersManagerComponent,
@@ -81,11 +75,7 @@ import { QuillModule } from 'ngx-quill';
     PurchaseDetailsComponent,
     FulfillmentComponent,
     CustomFormSubmissionsComponent,
-    CustomFormSubmissionDetailDialogComponent,
-    SubscriptionsComponent,
-    SubscriberDialogComponent,
-    SendSubscriptionDialogComponent,
-    SubscriptionListDialogComponent
+    CustomFormSubmissionDetailDialogComponent
   ]
 })
 export class CustomersManagerModule { }

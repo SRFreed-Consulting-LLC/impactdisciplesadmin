@@ -138,11 +138,10 @@ onto one-time paged fetches, to cut down on standing Firestore listeners:
 - Customers is no longer a special case here (an earlier version of this doc said the grid pagination
   coexisted with a separate full `getAll()` backing "Filter by List"/"Save List" on that screen — that
   affordance is gone post-redesign; `customers.component.ts` today is `PagedCollectionSource` only, no
-  `allCustomers`). List-membership filtering still exists, just on the **Subscribers** screen
-  (`customers-manager/subscriptions/`), via a separately-saved `EmailList` doc's `list` array, not a
-  Firestore query — see Reports Manager's Subscriber Report below for the same mechanism reused. The
-  Subscribers screen itself is a filtered view of `customers` now, not its own collection — see the
-  Firestore collection naming note at the bottom of this file.
+  `allCustomers`). List-membership filtering still exists, just on Reports Manager's own **Subscribers**
+  report (`reports-manager/subscriber-report/`), via a separately-saved `EmailList` doc's `list` array,
+  not a Firestore query — see that report's own section below, and the Firestore collection naming note
+  at the bottom of this file.
 
 ### List-screen conventions (Columns + Export + column filters)
 
@@ -183,9 +182,11 @@ Feature areas are lazy-loaded NgModules off `AppRoutingModule` (`src/app/app-rou
 each gated by `authGuard`: `admin-manager` (Admin Users, Log Messages — both `hideFromNav`, reached
 from the user-menu dropdown, not the left nav), `events-manager`, `customers-manager`,
 `web-manager`, `store-manager`, `tools-manager`, `reports-manager`. There is no
-`subscriptions-manager` module any more — it was absorbed into `customers-manager` (subscriber
-records live at `src/app/customers-manager/subscriptions/`), and there is no `requests-manager`
-module either — its one surviving screen, Custom Form Submissions, has moved twice (originally its
+`subscriptions-manager` module any more — it was absorbed into `customers-manager` as a screen
+(`customers-manager/subscriptions/`), then that screen itself was removed outright 2026-08-15 once
+subscriber management folded into Reports Manager's own Subscribers report instead (see that
+section below) — there is no dedicated subscriber-management screen left anywhere, just that report.
+There is no `requests-manager` module either — its one surviving screen, Custom Form Submissions, has moved twice (originally its
 own module, briefly under `web-manager`) and now lives under `customers-manager`
 (`custom-form-submissions/`) as of the August 2026 nav reorg; the other four Requests Manager
 screens (Consultation Requests/Surveys, Lunch and Learn, Seminar) were removed outright, superseded
@@ -236,10 +237,16 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
   aggregation (counts + earliest/latest date per type). Type picks which flag/date-field pair to
   query; with Type off, "either type" means querying both flags and merging client-side (same OR-
   across-two-fields pattern as Purchase Report's State criterion, see below) since a customer has no
-  single `type` field any more. No List criterion — considered (the same saved-`EmailList`-membership
-  mechanism as the Subscribers screen's own "Filter by List", client-side rather than a Firestore
-  query since subscribers don't carry list membership themselves) and deliberately dropped as not
-  worth the extra criterion.
+  single `type` field any more. Absorbed the entire old standalone Subscribers screen (`customers-
+  manager/subscriptions/`, removed 2026-08-15) rather than leaving it separate once a subscriber
+  became just a filtered view of `customers` - Add/Edit a subscriber, Send Newsletter/Send Prayer
+  Request, unsubscribing, and building/saving an `EmailList` ("Filter by List" criterion, selection-
+  based) all live here now, scoped to whatever the criteria currently show; list-scoped actions hide
+  while Group by Type is on since a grouped row has no real backing customer. Considered dropping the
+  List criterion entirely (a saved-`EmailList`-membership filter, client-side rather than a Firestore
+  query since subscribers don't carry list membership themselves) when this was a read-only report,
+  but it came back once list-building became a first-class action here, not just something to filter
+  by.
 - **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
   collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
   signup/created-date field at all (customer docs are upserted from purchases/event registrations —
@@ -329,9 +336,9 @@ a merge of 2 even older `newsletter_subscriptions`/`prayer_team_subscriptions` c
 2 booleans + dates (`subscribedToNewsletter`/`newsletterSubscribedDate`,
 `subscribedToPrayerTeam`/`prayerTeamSubscribedDate`) directly on the matching `customers` doc instead
 (see `CustomerModel`'s own comment, and `functions/src/subscriptions.functions.ts` for the 2 endpoints
-that flip those flags from outside the admin app). The Subscribers screen
-(`customers-manager/subscriptions/`) and Reports Manager's Subscriber Report both query `customers` by
-these flags now, not a `subscriptions` collection. Unlike `users` above, the old `subscriptions`
+that flip those flags from outside the admin app). Reports Manager's Subscriber Report (the sole
+remaining subscriber-management screen - see its own section above) queries `customers` by these
+flags now, not a `subscriptions` collection. Unlike `users` above, the old `subscriptions`
 collection itself is gone (deleted 2026-08-15 in both dev and prod, after the one-time backfill script
 — see `MIGRATION.md` — was run and verified idempotent on both, `impactdisciples-web`'s subscribe form
 was confirmed pointed at the new `subscribe_to_email_list` endpoint instead of writing to it directly,

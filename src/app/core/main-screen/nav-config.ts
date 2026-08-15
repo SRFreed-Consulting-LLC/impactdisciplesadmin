@@ -20,10 +20,12 @@ import { Role } from 'src/app/common/lists/roles.enum';
 // internal app area happened to own it originally:
 //   - Customers Manager: customer records, plus anything a customer/site
 //     visitor submitted - Customers, Purchases (+ Fulfillment, same order
-//     lifecycle, just a different view of it), Custom Form Submissions,
-//     Newsletters, Prayer Team. Absorbs the old Subscriptions Manager
-//     entirely (Newsletters/Prayer Team are subscriber lists - customer
-//     data too, not a separate concern).
+//     lifecycle, just a different view of it), Custom Form Submissions.
+//     Originally absorbed the old Subscriptions Manager (Newsletters/
+//     Prayer Team) here too, but that screen was removed outright
+//     2026-08-15 once subscriber state became just 2 flags on a customer
+//     record - see Reports Manager's own Subscribers report below, which
+//     absorbed its functionality instead.
 //   - Tools Manager: utility/configuration screens, not records - Web
 //     Config, Email Templates, Shipping Labels, Form Builder (the thing
 //     that BUILDS a form, as opposed to Custom Form Submissions, which is
@@ -111,15 +113,14 @@ export const NAV_CONFIG: NavGroup[] = [
       // Slug load-bearing - see NavLeaf.slug. Label reads "Form Submissions"
       // (shortened from "Custom Form Submissions") - the slug/screenKey
       // stay as-is on purpose, only the display label changed.
-      { label: 'Form Submissions', slug: 'custom-form-submissions' },
-      // Replaces the old separate Newsletters + Prayer Team screens, which
-      // in turn had already been merged into one `subscriptions` collection
-      // annotated by `type` - that collection is gone too now, subscriber
-      // state is just 2 booleans + dates on the customer's own `customers`
-      // doc (see customer.model.ts's own comment). Label reads "Subscribers"
-      // (the people on the list) rather than "Subscriptions" (the act) -
-      // slug/screenKey unchanged even though the backing data moved.
-      { label: 'Subscribers', slug: 'subscriptions' }
+      { label: 'Form Submissions', slug: 'custom-form-submissions' }
+      // No more standalone Subscribers screen here (removed 2026-08-15) -
+      // subscriber management (Add/Edit, Unsubscribe, Send Newsletter/
+      // Prayer Request, list-building) folded entirely into Reports
+      // Manager's own Subscribers report (below) once a subscriber became
+      // just a filtered/actionable view of `customers`, not a separate
+      // screen's worth of concern - see subscriber-report.component.ts's
+      // own header comment.
     ]
   },
   {

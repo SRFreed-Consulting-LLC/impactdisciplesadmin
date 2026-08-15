@@ -6,7 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
-import { SubscriberRow } from './subscriber-row.model';
+import { ReportRow } from './subscriber-report-row.model';
 import { NewsletterModel } from 'src/app/common/models/domain/newsletter.model';
 import { NewsletterService } from 'src/app/common/services/data/newletter.service';
 import { PrayerModel } from 'src/app/common/models/domain/prayer.model';
@@ -21,8 +21,8 @@ import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.c
 import { insertQuillVariable } from '../../shared/rich-text-editor/variable-inserter.component';
 
 // Recipient shape both audience sources (a full flag-based query and a
-// saved EmailList's `list` array of SubscriberRow) satisfy - the send just
-// needs name + email, not the rest of SubscriberRow/CustomerModel.
+// saved EmailList's `list` array of ReportRow) satisfy - the send just
+// needs name + email, not the rest of ReportRow/CustomerModel.
 interface Recipient {
   firstName: string;
   lastName: string;
@@ -115,7 +115,7 @@ export class SendSubscriptionDialogComponent {
 
     const { flagField } = subscriptionFieldsForType(type);
     const list: Promise<Recipient[]> = this.data.selectedList
-      ? Promise.resolve(this.data.selectedList.list as SubscriberRow[])
+      ? Promise.resolve(this.data.selectedList.list as ReportRow[])
       : this.service.getAllByValue(flagField, true);
 
     list

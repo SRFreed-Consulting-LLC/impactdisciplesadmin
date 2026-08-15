@@ -7,11 +7,15 @@ import { CustomerModel, SubscriptionType, subscriptionFieldsForType } from 'src/
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { SubscriberRow } from './subscriber-row.model';
+import { ReportRow } from './subscriber-report-row.model';
 import { sendSubscriptionConfirmationEmail } from './subscription-confirmation-email.util';
 
 export interface SubscriberDialogData {
-  item: SubscriberRow | null;
+  // Only ever passed with `customer` set (see SubscriberReportComponent's
+  // showEditModal(), which refuses to open this dialog for a grouped
+  // aggregate row) - narrowed to that effect below rather than threading
+  // ReportRow's optional `customer` through this whole file.
+  item: (ReportRow & { customer: CustomerModel }) | null;
 }
 
 // Replaces NewsletterSubscriberDialogComponent + PrayerSubscriberDialogComponent

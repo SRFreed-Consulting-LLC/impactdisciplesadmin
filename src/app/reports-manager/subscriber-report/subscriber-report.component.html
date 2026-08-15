@@ -15,6 +15,43 @@
     <mat-icon>file_download</mat-icon>
     Export to Excel
   </button>
+
+  @if (canAdd()) {
+    <button mat-raised-button color="primary" type="button" (click)="showAddModal()">
+      <mat-icon>add</mat-icon>
+      Add Subscriber
+    </button>
+  }
+
+  @if (canEdit()) {
+    <button mat-raised-button color="primary" type="button" (click)="showSendModal('newsletter')">
+      <mat-icon>email</mat-icon>
+      Send Newsletter
+    </button>
+    <button mat-raised-button color="primary" type="button" (click)="showSendModal('prayer')">
+      <mat-icon>volunteer_activism</mat-icon>
+      Send Prayer Request
+    </button>
+  }
+
+  <!-- List-building only makes sense over real individual subscribers, not
+       a Group by Type aggregate - see this component's own header comment. -->
+  @if (!groupByType && canEdit()) {
+    <button mat-raised-button color="primary" type="button" (click)="showListModal()">
+      <mat-icon>view_list</mat-icon>
+      Create List
+    </button>
+    @if (selectedList?.name) {
+      <button mat-raised-button color="primary" type="button" (click)="onListSave()">
+        <mat-icon>save</mat-icon>
+        Save List
+      </button>
+    }
+    <button mat-raised-button color="primary" type="button" [disabled]="selection.selected.length === 0" (click)="exportPdf()">
+      <mat-icon>picture_as_pdf</mat-icon>
+      Export Selected to PDF
+    </button>
+  }
 </app-list-header>
 
 <div class="report-content">
@@ -105,13 +142,40 @@
     }
     @if (results.length > 0) {
       <div class="results-wrap">
-        <div class="result-count">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</div>
+        <div class="results-toolbar">
+          <div class="result-count">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</div>
+          @if (!groupByType) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-filter">
+              <mat-label>Filter by List</mat-label>
+              <mat-select [value]="selectedList?.id ?? null" (selectionChange)="onListFilterChanged($event.value)">
+                <mat-option [value]="null">(No List Selected)</mat-option>
+                @if (newsletterLists.length > 0) {
+                  <mat-optgroup label="Newsletter Lists">
+                    @for (list of newsletterLists; track list) {
+                      <mat-option [value]="list.id">{{ list.name }}</mat-option>
+                    }
+                  </mat-optgroup>
+                }
+                @if (prayerLists.length > 0) {
+                  <mat-optgroup label="Prayer Team Lists">
+                    @for (list of prayerLists; track list) {
+                      <mat-option [value]="list.id">{{ list.name }}</mat-option>
+                    }
+                  </mat-optgroup>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        </div>
         <app-data-grid
           [showHeader]="false"
           [showFilterRow]="false"
           [columns]="gridColumns"
           [rows]="results"
-          tableClass="report-table">
+          [selection]="selection"
+          [rowActions]="rowActions"
+          tableClass="report-table"
+          (rowDoubleClick)="showEditModal($event)">
         </app-data-grid>
       </div>
     }
