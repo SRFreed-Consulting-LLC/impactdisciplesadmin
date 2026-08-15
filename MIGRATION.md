@@ -416,5 +416,5 @@ What got done, in order:
    left untouched - both correctly resolve actual breakout instructors, which is still `coaches`'
    job; that data never moved. Verified live against real dev data (12 of 13 active members render
    correctly, 1 inactive correctly filtered, detail page resolves real bio/photo). Deployed to
-   `impactdisciples-web`'s dev hosting; prod deploy for that repo follows its own separate hold (see
-   its CLAUDE.md) pending the user's go-ahead each time, same as this repo's own master-merge rule.
+   `impactdisciples-web`'s dev AND prod hosting (that repo's CLAUDE.md normally holds prod deploys for
+   explicit go-ahead each time, same spirit as this repo's own master-merge rule - given here).
