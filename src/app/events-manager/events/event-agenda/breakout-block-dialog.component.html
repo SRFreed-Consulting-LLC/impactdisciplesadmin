@@ -36,6 +36,10 @@
           }
         </mat-form-field>
 
+        <button mat-icon-button type="button" class="add-course-btn" matTooltip="New Course" (click)="addCourse(i)">
+          <mat-icon>add_circle_outline</mat-icon>
+        </button>
+
         <div class="coach-display">
           <span class="coach-display__label">Coach</span>
           <span class="coach-display__value">{{ coachLabel(i, group.get('course')?.value) }}</span>

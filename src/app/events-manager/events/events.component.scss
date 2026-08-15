@@ -162,15 +162,12 @@ $info-accent2-tint: #f1e3fb;
   }
 }
 
-// ---- Type cards (Standard / Summit / Online) ----
-// Summit/Online are real mat-checkbox controls (formControlName binds
-// straight to isSummit/isOnline, same validators/persistence as before) -
-// the checkbox itself sits in the corner and stops its own click from
-// bubbling to the card's (click) handler (see events.component.html),
-// which is what makes clicking anywhere on the card toggle it without
-// re-implementing checkbox semantics. Standard has no control of its own -
-// it's the derived "neither is checked" state (isStandardType()) with a
-// reset-both click handler, not a new field.
+// ---- Type cards (regular Events screen only: In-Person / Online / Both) ----
+// Summit dropped its own type-card row entirely (2026-08) - every Summit
+// event is in-person with no online course, so isSummit/isOnline are fixed
+// (true/false) rather than admin-toggled there. This class is now only used
+// by the regular Events screen's attendance-first pill row (see
+// regularAttendanceType()/setRegularAttendanceType() in events.component.ts).
 .type-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -245,7 +242,7 @@ $info-accent2-tint: #f1e3fb;
 }
 
 .preview-card__img {
-  height: 96px;
+  height: 220px;
   background: linear-gradient(135deg, $info-accent-tint, $info-accent2-tint);
   display: flex;
   align-items: center;

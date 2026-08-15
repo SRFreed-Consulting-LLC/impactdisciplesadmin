@@ -1,10 +1,13 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
+import { CoachService } from 'src/app/common/services/data/coach.service';
+import { CourseDialogComponent } from '../../courses/course-dialog.component';
+import { CoachDialogComponent } from '../../coaches/coach-dialog.component';
 
 export interface AgendaItemDialogData {
   item: AgendaItem | null;
@@ -39,7 +42,9 @@ export class AgendaItemDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<AgendaItemDialogComponent, AgendaItemDialogResult>,
     @Inject(MAT_DIALOG_DATA) public data: AgendaItemDialogData,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private dialog: MatDialog,
+    private coachService: CoachService
   ) {
     this.isEdit = !!data.item;
 
@@ -81,6 +86,41 @@ export class AgendaItemDialogComponent {
     toggle('text', type !== 'course');
     toggle('description', type !== 'course');
     toggle('course', type === 'course');
+  }
+
+  // "+ New Course"/"+ New Coach" next to their respective fields - same
+  // quick-create pattern as breakout-block-dialog.component.ts's own
+  // addCourse() (see that file's identical comment on why a plain
+  // this.data.coaches.push() isn't enough by itself: the nested course
+  // dialog's own "+ New Coach" only updates its own local coach list, not
+  // this dialog's data.coaches, so a coach created *while* creating the
+  // course needs an explicit re-fetch to become pickable here too).
+  addCourse(): void {
+    const ref = this.dialog.open<CourseDialogComponent, unknown, CourseModel>(CourseDialogComponent, { width: '600px', data: { item: null } });
+    ref.afterClosed().subscribe((course) => {
+      if (!course) {
+        return;
+      }
+      this.data.courses.push(course);
+      this.form.get('course')?.setValue(course.id);
+
+      this.coachService.getAll().then((coaches) => {
+        this.data.coaches.length = 0;
+        this.data.coaches.push(...coaches);
+      });
+    });
+  }
+
+  addCoach(): void {
+    const ref = this.dialog.open<CoachDialogComponent, unknown, CoachModel>(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
+    ref.afterClosed().subscribe((coach) => {
+      if (!coach) {
+        return;
+      }
+      this.data.coaches.push(coach);
+      const coaches = this.form.get('coaches');
+      coaches?.setValue([...(coaches.value ?? []), coach.id]);
+    });
   }
 
   private toInputValue(date: Date): string {

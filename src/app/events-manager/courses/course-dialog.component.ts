@@ -1,12 +1,13 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { CourseService } from 'src/app/common/services/data/course.service';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { CoachDialogComponent } from '../coaches/coach-dialog.component';
 
 export interface CourseDialogData {
   item: CourseModel | null;
@@ -33,11 +34,12 @@ export class CourseDialogComponent implements OnInit {
   private itemType = 'Course';
 
   constructor(
-    private dialogRef: MatDialogRef<CourseDialogComponent, boolean>,
+    private dialogRef: MatDialogRef<CourseDialogComponent, CourseModel>,
     @Inject(MAT_DIALOG_DATA) public data: CourseDialogData,
     private fb: FormBuilder,
     private service: CourseService,
     private coachService: CoachService,
+    private dialog: MatDialog,
     private snackbar: SnackbarService
   ) {
     this.isEdit = !!data.item?.id;
@@ -55,8 +57,28 @@ export class CourseDialogComponent implements OnInit {
     this.coachService.getAll().then((coaches) => { this.coaches = coaches; });
   }
 
+  // "+ New Coach" next to the Coaches field - lets an admin building a
+  // Summit course add a coach that doesn't exist yet without leaving this
+  // dialog to go find the standalone Coaches screen. `coaches` is a
+  // one-time getAll() (see ngOnInit's own comment), not a live stream, so
+  // the new coach is appended here explicitly rather than relying on
+  // anything to auto-refresh it - then auto-selected into coachIds so the
+  // admin doesn't have to immediately re-open the dropdown to pick the
+  // coach they just created.
+  addCoach(): void {
+    const ref = this.dialog.open<CoachDialogComponent, unknown, CoachModel>(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
+    ref.afterClosed().subscribe((coach) => {
+      if (!coach) {
+        return;
+      }
+      this.coaches = [...this.coaches, coach];
+      const coachIds = this.form.get('coachIds');
+      coachIds?.setValue([...(coachIds.value ?? []), coach.id]);
+    });
+  }
+
   onCancel(): void {
-    this.dialogRef.close(false);
+    this.dialogRef.close(undefined);
   }
 
   onSave(): void {
@@ -72,14 +94,25 @@ export class CourseDialogComponent implements OnInit {
       ? this.service.update(value.id!, value)
       : this.service.add(value);
 
+    // Closes with the saved entity - see coach-dialog.component.ts's
+    // identical comment on why (breakout-block-dialog.component.ts's own
+    // "+ New Course" quick-create needs the created course back).
     request.then((result) => {
       if (result) {
         this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
+        this.dialogRef.close(result);
       } else {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
       }
+    }).catch((err) => {
+      // See coach-dialog.component.ts's identical .catch() comment - a
+      // rejected write left inProgress$ stuck true and the dialog open
+      // forever with nothing but a browser-console error, indistinguishable
+      // from a hang, especially now nested 2 deep under the breakout dialog.
+      console.error('Course save failed', err);
+      this.inProgress$.next(false);
+      this.snackbar.error('Some Error Occured');
     });
   }
 }

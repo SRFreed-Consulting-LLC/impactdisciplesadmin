@@ -46,26 +46,6 @@
             <mat-tab label="Info">
               <div class="tab-content info-layout">
                 <div class="info-form">
-                  <div class="type-row">
-                    <div class="type-card" [class.is-active]="isStandardType()" (click)="resetToStandard()">
-                      <span class="type-card__icon">📅</span>
-                      <div class="type-card__title">Standard</div>
-                      <div class="type-card__sub">A regular in-person event</div>
-                    </div>
-                    <div class="type-card" [class.is-active]="form.get('isSummit')?.value" (click)="toggleControl('isSummit')">
-                      <mat-checkbox formControlName="isSummit" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
-                      <span class="type-card__icon">🎪</span>
-                      <div class="type-card__title">Annual Summit</div>
-                      <div class="type-card__sub">Multi-day, breakouts, promo video</div>
-                    </div>
-                    <div class="type-card" [class.is-active]="form.get('isOnline')?.value" (click)="toggleControl('isOnline')">
-                      <mat-checkbox formControlName="isOnline" class="type-card__check" (click)="$event.stopPropagation()"></mat-checkbox>
-                      <span class="type-card__icon">💻</span>
-                      <div class="type-card__title">Online</div>
-                      <div class="type-card__sub">Kajabi-hosted, no venue</div>
-                    </div>
-                  </div>
-
                   <div class="field-row">
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Event Name</mat-label>
@@ -116,12 +96,10 @@
                     <input matInput type="number" formControlName="costInDollars">
                   </mat-form-field>
 
-                  @if (form.get('isSummit')?.value) {
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Promo Video Id</mat-label>
-                      <input matInput formControlName="videoId">
-                    </mat-form-field>
-                  }
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Promo Video Id</mat-label>
+                    <input matInput formControlName="videoId">
+                  </mat-form-field>
                   <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
                   @if (form.get('isKajabiCourse')?.value) {
                     <div class="field-row">
@@ -207,15 +185,7 @@
                       }
                       <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
                       <div class="preview-card__tags">
-                        @if (isStandardType()) {
-                          <span class="ptag">Standard</span>
-                        }
-                        @if (form.get('isSummit')?.value) {
-                          <span class="ptag ptag--summit">Summit</span>
-                        }
-                        @if (form.get('isOnline')?.value) {
-                          <span class="ptag ptag--online">Online</span>
-                        }
+                        <span class="ptag ptag--summit">Summit</span>
                         @if (form.get('isKajabiCourse')?.value) {
                           <span class="ptag ptag--kajabi">Kajabi</span>
                         }

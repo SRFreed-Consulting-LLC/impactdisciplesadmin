@@ -10,6 +10,12 @@
 
 .field-row .full-width {
   flex: 1 1 0;
+  min-width: 0;
+}
+
+.field-row button {
+  flex: 0 0 auto;
+  margin-top: 8px;
 }
 
 .spacer {

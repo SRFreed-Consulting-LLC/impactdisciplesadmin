@@ -230,26 +230,6 @@ export class EventsComponent implements OnInit {
     return this.locations.find((l) => l.id === id)?.name ?? '';
   }
 
-  // "Standard" isn't a real field - it's just the display state when
-  // neither isSummit nor isOnline is checked (see the Info tab's type-card
-  // row). Clicking it is a convenience reset, not a new toggle.
-  isStandardType(): boolean {
-    return !this.form?.get('isSummit')?.value && !this.form?.get('isOnline')?.value;
-  }
-
-  resetToStandard(): void {
-    this.form.get('isSummit')?.setValue(false);
-    this.form.get('isOnline')?.setValue(false);
-  }
-
-  // Backs the type-card row's Summit/Online cards - clicking anywhere on
-  // the card flips the boolean (the actual mat-checkbox inside stops its
-  // own click from double-firing this - see the template).
-  toggleControl(name: string): void {
-    const control = this.form.get(name);
-    control?.setValue(!control.value);
-  }
-
   // ---- Events (regular) screen: attendance-first pill row ----
   // Three pills (In-Person / Online / Both) replace the Summit/Online
   // checkboxes on the regular-event Details tab - they map onto the exact

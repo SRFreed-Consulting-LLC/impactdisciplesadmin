@@ -1,10 +1,12 @@
 import { Component, Inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
+import { CoachService } from 'src/app/common/services/data/coach.service';
+import { CourseDialogComponent } from '../../courses/course-dialog.component';
 import { SessionBlock, coachLabelFor } from './session-block.util';
 
 export interface BreakoutBlockDialogData {
@@ -56,7 +58,9 @@ export class BreakoutBlockDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<BreakoutBlockDialogComponent, BreakoutBlockDialogResult>,
     @Inject(MAT_DIALOG_DATA) public data: BreakoutBlockDialogData,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private dialog: MatDialog,
+    private coachService: CoachService
   ) {
     this.isEdit = !!data.block;
     this.originalIds = data.block?.options.map((o) => o.id!) ?? [];
@@ -97,6 +101,45 @@ export class BreakoutBlockDialogComponent {
 
   courseFor(courseId: string | null): CourseModel | undefined {
     return this.data.courses.find((c) => c.id === courseId);
+  }
+
+  // "+ New Course" next to each option's Course dropdown - lets an admin
+  // building out a Summit's breakout schedule add a course on the spot
+  // instead of leaving the Agenda tab for the standalone Courses screen.
+  // `data.courses` is the same array instance event-agenda.component.ts
+  // loaded once via getAll() and threaded down through the wizard/canvas/
+  // grid @Input()s (see that file's own comment) - pushing onto it here
+  // mutates that one shared array in place, so every other open option's
+  // dropdown (and the parent view once this dialog closes) sees the new
+  // course too, with no extra plumbing/refetch needed. Auto-selects the
+  // new course into the option that triggered the create.
+  addCourse(index: number): void {
+    const ref = this.dialog.open<CourseDialogComponent, unknown, CourseModel>(CourseDialogComponent, { width: '600px', data: { item: null } });
+    ref.afterClosed().subscribe((course) => {
+      if (!course) {
+        return;
+      }
+      this.data.courses.push(course);
+      this.options.at(index).get('course')?.setValue(course.id);
+
+      // The course dialog's own "+ New Coach" (course-dialog.component.ts)
+      // only knows about its own local coach list, not this dialog's
+      // data.coaches - if the admin created a brand-new coach while
+      // creating this course, that coach's id can already be in the new
+      // course's coachIds without being in data.coaches yet, which would
+      // otherwise leave the read-only Coach label (coachLabel() below)
+      // showing "—" until this dialog is closed and reopened. Re-fetching
+      // here (small reference list, same one-time getAll() convention as
+      // event-agenda.component.ts's own initial load) covers that case
+      // unconditionally rather than trying to detect whether one actually
+      // happened. Replaces contents in place (not a reassignment) so this
+      // stays the same array instance threaded down from
+      // event-agenda.component.ts.
+      this.coachService.getAll().then((coaches) => {
+        this.data.coaches.length = 0;
+        this.data.coaches.push(...coaches);
+      });
+    });
   }
 
   coachLabel(index: number, courseId: string | null): string {
