@@ -9,6 +9,7 @@
     "start": "npm run shell",
     "deploy-dev": "firebase use impactdisciplesdev && firebase deploy --only functions",
     "deploy-prod": "firebase use impactdisciples-a82a8 && firebase deploy --only functions",
+    "deploy-dev-safe": "firebase deploy --project impactdisciplesdev --only functions:create_payment_intent,functions:cancel_payment_intent,functions:refund_payment,functions:get_shipping_rates,functions:get_shipping_label,functions:create_paypal_order,functions:capture_paypal_order,functions:subscribe_to_email_list,functions:unsubscribe_from_email_list,functions:get_youtube_videos,functions:createAdminUser,functions:deleteAdminUser,functions:onEventRegistrationCreated,functions:onEventRegistrationUpdated,functions:onFormSubmissionCreated,functions:onFormSubmissionUpdated,functions:onPurchaseCreated,functions:onPurchaseUpdated,functions:onPurchaseFulfillmentEligible,functions:onPurchaseCustomerUpsert,functions:onEventRegistrationCustomerUpsert,functions:onPurchaseGrantLibraryLicenses,functions:onCustomerCreatedMailchimpSync,functions:onCustomerUpdatedMailchimpSync",
     "logs": "firebase functions:log"
   },
   "engines": {
