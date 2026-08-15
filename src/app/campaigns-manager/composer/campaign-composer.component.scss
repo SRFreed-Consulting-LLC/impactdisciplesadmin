@@ -1,0 +1,181 @@
+@import '../campaign-shared';
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.composer__header {
+  background: transparent;
+  padding: 0;
+  gap: 10px;
+}
+
+.composer__title {
+  font-size: 20px;
+  margin: 0;
+}
+
+.composer__spacer {
+  flex: 1;
+}
+
+.composer__meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.started-from {
+  font-size: 13px;
+  color: #66727b;
+}
+
+.composer__body {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.composer__form {
+  flex: 1.1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+
+  .full-width {
+    flex: 1;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+// ---- Preview panel ----
+
+.composer__preview {
+  flex: 1;
+  min-width: 0;
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #66727b;
+}
+
+.preview-card {
+  border: 1px dashed #c9c5ba;
+  border-radius: 8px;
+  background: #faf9f6;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.preview-image {
+  max-width: 60%;
+  max-height: 160px;
+  border-radius: 6px;
+  object-fit: cover;
+
+  &--placeholder {
+    width: 60%;
+    height: 120px;
+    background: #e4e1d8;
+  }
+}
+
+.preview-headline {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.preview-event {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5fa5;
+  margin: 0;
+}
+
+.preview-body {
+  font-size: 14px;
+  color: #66727b;
+  margin: 0;
+  max-width: 85%;
+}
+
+.preview-price {
+  font-size: 14px;
+  margin: 0;
+
+  s {
+    color: #9aa3aa;
+    margin-right: 6px;
+  }
+
+  b {
+    color: #0e7c7b;
+  }
+}
+
+.preview-input {
+  width: 70%;
+  border: 1px solid #d5d2c8;
+  border-radius: 4px;
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #9aa3aa;
+  text-align: left;
+}
+
+.preview-cta {
+  display: inline-block;
+  background: #0e7c7b;
+  color: #fff;
+  border-radius: 5px;
+  padding: 8px 24px;
+  font-size: 14px;
+  font-weight: 700;
+
+  &--lead {
+    background: #b45309;
+  }
+}
+
+.preview-note {
+  font-size: 12px;
+  color: #66727b;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .composer__body {
+    flex-direction: column;
+  }
+
+  .composer__preview {
+    position: static;
+    width: 100%;
+  }
+}

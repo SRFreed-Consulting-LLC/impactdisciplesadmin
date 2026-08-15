@@ -1,0 +1,48 @@
+<div class="gallery">
+  <mat-toolbar class="gallery__header">
+    <button mat-icon-button type="button" matTooltip="Back" (click)="cancelled.emit()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 class="gallery__title">START A CAMPAIGN</h2>
+    <span class="gallery__spacer"></span>
+    <mat-button-toggle-group [(ngModel)]="typeFilter" class="type-toggle">
+      <mat-button-toggle value="all">All</mat-button-toggle>
+      <mat-button-toggle value="product">Product</mat-button-toggle>
+      <mat-button-toggle value="event">Event</mat-button-toggle>
+      <mat-button-toggle value="lead-capture">Lead</mat-button-toggle>
+    </mat-button-toggle-group>
+    <button mat-stroked-button type="button" (click)="picked.emit(null)">Start Blank</button>
+  </mat-toolbar>
+
+  <div class="gallery__grid">
+    @for (template of templates; track template.name) {
+      <button type="button" class="recipe" (click)="picked.emit(template)">
+        <div class="recipe__preview" [class]="'recipe__preview--' + template.type">
+          @if (template.type === 'product') {
+            <div class="thumb-image"></div>
+            <div class="thumb-headline">{{ template.defaults.subject }}</div>
+            <div class="thumb-cta">Shop Now</div>
+          }
+          @if (template.type === 'event') {
+            <div class="thumb-headline">{{ template.defaults.subject }}</div>
+            <div class="thumb-body">{{ template.defaults.message }}</div>
+            <div class="thumb-cta thumb-cta--event">Register Now</div>
+          }
+          @if (template.type === 'lead-capture') {
+            <div class="thumb-headline">{{ template.defaults.headline }}</div>
+            <div class="thumb-input">Email</div>
+            <div class="thumb-cta thumb-cta--lead">Send My Code</div>
+          }
+        </div>
+        <div class="recipe__name">
+          {{ template.name }}
+          <span class="chip" [class]="'type-' + template.type">{{ typeLabels[template.type] }}</span>
+        </div>
+        <div class="recipe__description">{{ template.description }}</div>
+        <div class="recipe__go">Use this template →</div>
+      </button>
+    } @empty {
+      <p class="gallery__empty">No templates found for this type.</p>
+    }
+  </div>
+</div>

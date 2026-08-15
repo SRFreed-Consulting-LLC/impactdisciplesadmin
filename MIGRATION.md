@@ -369,14 +369,17 @@ What got done, in order:
 
 ---
 
-## Coaches split into Coaches + Impact Team — RESOLVED 2026-08-15 (admin side)
+## Coaches split into Coaches + Impact Team — RESOLVED 2026-08-15 (both repos, dev)
 
-**Found**: 2026-08-15, mid-implementation. **Admin side (this repo) fully completed** same day, both
-dev and prod. **Not yet done**: `impactdisciples-web`'s own "My Team" page query - a separate repo,
-not editable from this one - still reads the old `coaches` collection. Until that's updated, the
-public Team page has nothing to render for the 13 people who moved. Recorded here for the historical
-record on the admin side; the `impactdisciples-web` half is a follow-up for whoever/whichever session
-has that repo open next.
+**Found**: 2026-08-15, mid-implementation. **Fully completed** same day: admin side (this repo, dev +
+prod) and `impactdisciples-web`'s own "My Team" page (`impactdisciples-web` commit `47e5707`, dev).
+`impactdisciples-web` turned out to be a sibling directory on disk (`impactdisciples - web`, not a
+separate machine/session needed) - reachable and editable directly, not actually out of reach the way
+first assumed. All 26 remaining `coaches` also bulk-activated (`isActive: true`, both dev and prod -
+see `scripts/activate-all-coaches.js`) at the user's request, since `coaches`' own `sortOrder` field
+is what drives display order on 2 public pages that were never touched by this split (Summit "Featured
+Speakers" carousel, event schedule breakout-speaker lookup - both still correctly read `coaches`,
+unaffected, since that data never moved).
 
 `coaches` used to serve 2 unrelated purposes at once: driving the public site's "My Team" page (via a
 `teamPageSortOrder` field, separate from the collection's own `sortOrder`) and providing Summit
@@ -404,10 +407,14 @@ What got done, in order:
    been cloned from prod at some point - same 13 document ids on both). Verified idempotent (0
    remaining) on both after running.
 5. Admin app (both dev and prod hosting) redeployed with all of the above.
-
-**Still open**: `impactdisciples-web`'s "My Team" page needs its own query updated to read
-`impact_team` (ordered by `sortOrder`) instead of `coaches` (ordered by `teamPageSortOrder`) - same
-field shape otherwise. A likely starting point in that repo: `CoachService.getAllByIds()` in this
-repo has a header comment naming `summit.component.ts`/`summit-preview.component.ts` as its (unused-
-in-this-repo) callers - strong evidence those are the components in `impactdisciples-web` that read
-`coaches` directly today.
+6. `impactdisciples-web`'s own `team.component.ts`/`team-details.component.ts` (the actual `/team` +
+   `/team-details/:id` pages) switched to a new independent `ImpactTeamMemberModel`/`ImpactTeamService`
+   copy in that repo's own `common/` (no longer a shared submodule with this repo - see that repo's own
+   CLAUDE.md), reading `impact_team` ordered by `sortOrder` instead of `coaches` ordered by
+   `teamPageSortOrder`. `summit.component.ts`/`summit-preview.component.ts` (Summit "Featured Speakers"
+   carousel) and `schedule.component.ts` (event registration's breakout-speaker lookup) deliberately
+   left untouched - both correctly resolve actual breakout instructors, which is still `coaches`'
+   job; that data never moved. Verified live against real dev data (12 of 13 active members render
+   correctly, 1 inactive correctly filtered, detail page resolves real bio/photo). Deployed to
+   `impactdisciples-web`'s dev AND prod hosting (that repo's CLAUDE.md normally holds prod deploys for
+   explicit go-ahead each time, same spirit as this repo's own master-merge rule - given here).
