@@ -48,8 +48,9 @@ type LibraryUserEditableField = (typeof LIBRARY_USER_EDITABLE_FIELDS)[number];
 export const updateLibraryUser = onCall(async (request) => {
   await requireAdminRole(request.auth?.uid);
 
-  const {email, ...fields} = (request.data ?? {}) as
-    {email?: string} & Record<string, unknown>;
+  const {email, ...fields} = (request.data ?? {}) as {
+    email?: string;
+  } & Record<string, unknown>;
   if (!email) {
     throw new HttpsError("invalid-argument", "email is required.");
   }
@@ -93,7 +94,11 @@ export const updateLibraryUser = onCall(async (request) => {
         "No library user record for that email."
       );
     }
-    transaction.set(ref, {...updates, updatedAt: Date.now()}, {merge: true});
+    transaction.set(
+      ref,
+      {...updates, updatedAt: Date.now()},
+      {merge: true}
+    );
   });
   return {email: normalized};
 });
@@ -133,7 +138,7 @@ export const setLibraryUserRevoked = onCall(async (request) => {
       await admin.auth().revokeRefreshTokens(userRecord.uid);
     }
   } catch (err) {
-    if ((err as {code?: string}).code === "auth/user-not-found") {
+    if ((err as { code?: string }).code === "auth/user-not-found") {
       authAccountFound = false;
     } else {
       throw err;
@@ -207,9 +212,9 @@ export const grantLibraryUserLicenses = onCall(async (request) => {
     const snap = await transaction.get(ref);
     const data = snap.exists ?
       (snap.data() as {
-        bookLicenses?: Record<string, unknown>[];
-        licensedBookIds?: string[];
-      }) :
+          bookLicenses?: Record<string, unknown>[];
+          licensedBookIds?: string[];
+        }) :
       undefined;
     // Array.isArray guards: legacy docs can carry the 'all' string
     // sentinel in licensedBookIds - spreading a string would explode it
@@ -283,8 +288,9 @@ export const revokeAdminGrantedLicense = onCall(async (request) => {
       bookLicenses?: Record<string, unknown>[];
       licensedBookIds?: string[];
     };
-    const allLicenses =
-      Array.isArray(data.bookLicenses) ? data.bookLicenses : [];
+    const allLicenses = Array.isArray(data.bookLicenses) ?
+      data.bookLicenses :
+      [];
     const bookLicenses = allLicenses.filter(
       (license) =>
         !(license["bookId"] === bookId && license["source"] === "admin-grant")
@@ -293,10 +299,12 @@ export const revokeAdminGrantedLicense = onCall(async (request) => {
     if (!removed) {
       return;
     }
-    const stillLicensed =
-      bookLicenses.some((license) => license["bookId"] === bookId);
-    const priorIds =
-      Array.isArray(data.licensedBookIds) ? data.licensedBookIds : [];
+    const stillLicensed = bookLicenses.some(
+      (license) => license["bookId"] === bookId
+    );
+    const priorIds = Array.isArray(data.licensedBookIds) ?
+      data.licensedBookIds :
+      [];
     const licensedBookIds = stillLicensed ?
       priorIds :
       priorIds.filter((id) => id !== bookId);
@@ -369,10 +377,10 @@ export const sendLibraryUserMessage = onCall(
     const sender = senderSnap.empty ?
       undefined :
       (senderSnap.docs[0].data() as {
-        firstName?: string;
-        lastName?: string;
-        email?: string;
-      });
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+        });
     const sentByName =
       [sender?.firstName, sender?.lastName].filter(Boolean).join(" ") ||
       sender?.email ||

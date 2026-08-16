@@ -9,14 +9,12 @@ import * as logger from "firebase-functions/logger";
  * PushNotificationService, which registers device tokens under
  * libraryUsers/{email}/fcmTokens/{token} in the named
  * 'impactdiscipleship-books' database - owner-only under firestore.rules,
- * read here via the Admin SDK, which bypasses rules. Only the
- * sendLibraryUserMessage callable (library-users.functions.ts) needs this
- * in this codebase - unlike the source app, this codebase does not also
- * host the group-chat/prayer-request/conversation Firestore triggers that
- * send the OTHER kinds of push the source app's own copy of this file
- * backs, so getApprovedMemberEmails and the group-specific PushPayload
- * fields were left out of this port rather than copied unused - add them
- * back if/when a future slice ports those triggers too.
+ * read here via the Admin SDK, which bypasses rules. Originally ported
+ * (Slice 4) just far enough for sendLibraryUserMessage; extended to the
+ * source's full surface (getApprovedMemberEmails, the `groupId` payload
+ * field) once the group-chat/prayer-request/conversation/join-request
+ * Firestore triggers were ported too (library-group-notifications.functions.ts)
+ * - see that file for the callers.
  *
  * Message shape is a notification+data hybrid: the `notification` block
  * lets Android auto-display in the tray while the app is
@@ -32,6 +30,11 @@ export interface LibraryPushPayload {
   /** Event discriminator, e.g. 'admin-message' - for future client
    *  filtering. */
   type: string;
+  /** Present on every group-sourced push; absent for admin announcements
+   *  (sendLibraryUserMessage). Omitted from the FCM `data` block when
+   *  absent - FCM requires every data value to be a string, so it can't
+   *  ride along as undefined/''. */
+  groupId?: string;
   /** Set for bursty sources so a device that was offline shows one
    *  collapsed notification per stream, not the whole backlog. */
   collapseKey?: string;
@@ -99,10 +102,12 @@ export async function sendLibraryPushToUser(
   const result = await messaging.sendEachForMulticast({
     tokens,
     notification: {title: payload.title, body: payload.body},
-    data: {route: payload.route, type: payload.type},
-    android: payload.collapseKey ?
-      {collapseKey: payload.collapseKey} :
-      {},
+    data: {
+      route: payload.route,
+      type: payload.type,
+      ...(payload.groupId ? {groupId: payload.groupId} : {}),
+    },
+    android: payload.collapseKey ? {collapseKey: payload.collapseKey} : {},
     webpush: {
       fcmOptions: {link: `${READER_APP_ORIGIN}${payload.route}`},
     },
@@ -124,4 +129,37 @@ export async function sendLibraryPushToUser(
     })
   );
   return result.successCount;
+}
+
+/**
+ * Emails (doc ids) of every APPROVED member of the group, minus
+ * `excludeEmail` (the sender/author - never notify someone about their
+ * own action). Member doc ids are already lowercased emails by
+ * convention.
+ * @param {Firestore} db The named 'impactdiscipleship-books' database
+ * handle.
+ * @param {string} groupId The Impact Group's id.
+ * @param {string} excludeEmail The sender/author to exclude.
+ * @return {Promise<string[]>} Approved member emails, minus the excluded one.
+ */
+export async function getApprovedMemberEmails(
+  db: Firestore,
+  groupId: string,
+  excludeEmail: string
+): Promise<string[]> {
+  const excluded = excludeEmail.trim().toLowerCase();
+  // .select() with no fields - only the doc id (already the email, by
+  // convention) is ever used, so this trims the whole membership doc off
+  // the wire on every chat message / prayer-request share, not just the
+  // `status` filter field.
+  const snap = await db
+    .collection("discussionGroups")
+    .doc(groupId)
+    .collection("members")
+    .where("status", "==", "approved")
+    .select()
+    .get();
+  return snap.docs
+    .map((d) => d.id)
+    .filter((memberEmail) => memberEmail !== excluded);
 }

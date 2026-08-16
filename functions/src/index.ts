@@ -78,6 +78,47 @@ exports.grantLibraryUserLicenses = libraryUsers.grantLibraryUserLicenses;
 exports.revokeAdminGrantedLicense = libraryUsers.revokeAdminGrantedLicense;
 exports.sendLibraryUserMessage = libraryUsers.sendLibraryUserMessage;
 
+// Phase 2 Slice 6: every remaining Cloud Function moved out of the
+// standalone impact-discipleship-library-manager-new project, per the
+// consolidation plan - see that repo's own memory for the full inventory
+// this closes out.
+const libraryGroupLicenses = require("./library-group-licenses.functions");
+exports.purchaseGroupLicenses = libraryGroupLicenses.purchaseGroupLicenses;
+exports.assignGroupLicense = libraryGroupLicenses.assignGroupLicense;
+exports.revokeGroupLicense = libraryGroupLicenses.revokeGroupLicense;
+exports.leaveGroupAndRevokeLicense =
+  libraryGroupLicenses.leaveGroupAndRevokeLicense;
+exports.copyGroupMembers = libraryGroupLicenses.copyGroupMembers;
+exports.getInviteDetails = libraryGroupLicenses.getInviteDetails;
+exports.declineGroupInvite = libraryGroupLicenses.declineGroupInvite;
+exports.acceptGroupInvite = libraryGroupLicenses.acceptGroupInvite;
+
+const libraryGroupNotifications =
+  require("./library-group-notifications.functions");
+exports.notifyGroupChatMessage =
+  libraryGroupNotifications.notifyGroupChatMessage;
+exports.notifyConversationMessage =
+  libraryGroupNotifications.notifyConversationMessage;
+exports.onGroupMembershipCountChanged =
+  libraryGroupNotifications.onGroupMembershipCountChanged;
+exports.notifyJoinRequestActivity =
+  libraryGroupNotifications.notifyJoinRequestActivity;
+exports.notifyPrayerRequestShared =
+  libraryGroupNotifications.notifyPrayerRequestShared;
+
+const libraryPurchases = require("./library-purchases.functions");
+exports.revokePurchase = libraryPurchases.revokePurchase;
+exports.grantStorePurchaseLicenses =
+  libraryPurchases.grantStorePurchaseLicenses;
+exports.verifyAndGrantReaderStorePurchase =
+  libraryPurchases.verifyAndGrantReaderStorePurchase;
+
+const legacyLibraryStaff = require("./legacy-library-staff.functions");
+exports.bootstrapFirstAdmin = legacyLibraryStaff.bootstrapFirstAdmin;
+exports.createUser = legacyLibraryStaff.createUser;
+exports.linkExistingUser = legacyLibraryStaff.linkExistingUser;
+exports.deleteUser = legacyLibraryStaff.deleteUser;
+
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =
   mailchimpSync.onCustomerCreatedMailchimpSync;
