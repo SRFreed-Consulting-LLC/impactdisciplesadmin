@@ -2,7 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 
-type AdminUserRole = "Admin" | "Employee";
+type AdminUserRole = "Admin" | "Employee" | "Editor";
 
 /**
  * Throws unless `callerUid` has an admin_users record (matched by its
@@ -71,10 +71,10 @@ export const createAdminUser = onCall(async (request) => {
       "email, firstName, lastName, and role are required."
     );
   }
-  if (role !== "Admin" && role !== "Employee") {
+  if (role !== "Admin" && role !== "Employee" && role !== "Editor") {
     throw new HttpsError(
       "invalid-argument",
-      "role must be \"Admin\" or \"Employee\"."
+      "role must be \"Admin\", \"Employee\", or \"Editor\"."
     );
   }
 

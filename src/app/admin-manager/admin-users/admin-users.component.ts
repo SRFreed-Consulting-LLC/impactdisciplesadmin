@@ -72,13 +72,14 @@ export class AdminUsersComponent implements OnInit {
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit = false;
 
-  // Admin Users can only ever be Admin or Employee - Root is deliberately
-  // excluded (single, manually-assigned account, not something assignable
-  // from this dropdown) unless the record being edited is already Root, in
-  // which case it's added so the field shows its real value instead of
-  // rendering blank - still editable (e.g. to correct a mistake), just not
-  // offered to every other user.
-  roles: Role[] = [Role.ADMIN, Role.EMPLOYEE];
+  // Admin Users can be Admin, Employee, or Editor (the former standalone
+  // library-manager app's staff role, ported in - see Role.EDITOR's own
+  // comment) - Root is deliberately excluded (single, manually-assigned
+  // account, not something assignable from this dropdown) unless the
+  // record being edited is already Root, in which case it's added so the
+  // field shows its real value instead of rendering blank - still editable
+  // (e.g. to correct a mistake), just not offered to every other user.
+  roles: Role[] = [Role.ADMIN, Role.EMPLOYEE, Role.EDITOR];
 
   // Every Manager > Screen > Tab row this user could be granted, plus
   // their current view/add/edit/delete state on each - built fresh every
@@ -131,7 +132,7 @@ export class AdminUsersComponent implements OnInit {
   showAddModal(): void {
     this.editingItem = null;
     this.isEdit = false;
-    this.roles = [Role.ADMIN, Role.EMPLOYEE];
+    this.roles = [Role.ADMIN, Role.EMPLOYEE, Role.EDITOR];
     this.buildForm(null);
     this.mode = 'edit';
   }
@@ -139,7 +140,7 @@ export class AdminUsersComponent implements OnInit {
   showEditModal(item: AdminUser): void {
     this.editingItem = item;
     this.isEdit = true;
-    this.roles = item.role === Role.ROOT ? [Role.ADMIN, Role.EMPLOYEE, Role.ROOT] : [Role.ADMIN, Role.EMPLOYEE];
+    this.roles = item.role === Role.ROOT ? [Role.ADMIN, Role.EMPLOYEE, Role.EDITOR, Role.ROOT] : [Role.ADMIN, Role.EMPLOYEE, Role.EDITOR];
     this.buildForm(item);
     this.mode = 'edit';
   }
