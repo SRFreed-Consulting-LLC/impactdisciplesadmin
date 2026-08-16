@@ -297,7 +297,11 @@ export const NAV_CONFIG: NavGroup[] = [
       // (IP-derived login locations) - a plain inline tab here rather than
       // the source app's auto-opening dialog, per the consolidation plan's
       // "becomes a real menu item" decision.
-      { label: 'World Map', slug: 'world-map', employeeGrantable: false }
+      { label: 'World Map', slug: 'world-map', employeeGrantable: false },
+      // Slice 4: admin moderation of Impact Groups (list/edit/hard-delete
+      // any group, regardless of status/visibility) - no dependent Cloud
+      // Functions, both mutations are direct rules-gated Firestore writes.
+      { label: 'Groups', slug: 'groups', employeeGrantable: false }
     ]
   }
 ];
