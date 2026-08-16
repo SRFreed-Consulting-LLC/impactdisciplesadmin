@@ -1,3 +1,11 @@
+// Centers the whole screen in the content area - see
+// lesson-editor.component.scss's identical note.
+:host {
+  display: block;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .subtemplates-header {
   display: flex;
   align-items: center;
@@ -23,7 +31,6 @@
 .table-scroll {
   max-height: calc(100vh - 260px);
   overflow-y: auto;
-  max-width: 700px;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 4px;
 }

@@ -1,3 +1,13 @@
+// Centers the whole screen in the content area - see
+// lesson-editor.component.scss's identical note. Wider than the other
+// library-manager screens since the original/translation table needs the
+// extra columns' worth of room.
+:host {
+  display: block;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
 .translation-header {
   display: flex;
   align-items: center;

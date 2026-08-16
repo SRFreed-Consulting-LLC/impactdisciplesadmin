@@ -1,3 +1,12 @@
+/* Center the whole screen in the content area instead of letting the list
+   stretch edge-to-edge across a wide viewport - matches every other
+   library-manager screen (see lesson-editor.component.scss and friends). */
+:host {
+  display: block;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 .browse-header {
   display: flex;
   align-items: center;

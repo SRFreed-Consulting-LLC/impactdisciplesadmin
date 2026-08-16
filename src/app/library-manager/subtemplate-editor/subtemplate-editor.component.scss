@@ -1,3 +1,11 @@
+// Centers the whole editor in the content area - see
+// lesson-editor.component.scss's identical note.
+:host {
+  display: block;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
 .editor-header {
   display: flex;
   align-items: center;

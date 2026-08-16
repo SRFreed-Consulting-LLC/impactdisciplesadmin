@@ -3,6 +3,14 @@
 // `:host-context(.theme-matrix.dark-theme)` reset block was dropped - see
 // the identical note in lesson-editor.component.scss.
 
+// Centers the whole screen in the content area - see
+// lesson-editor.component.scss's identical note.
+:host {
+  display: block;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .preview-header {
   display: flex;
   align-items: center;

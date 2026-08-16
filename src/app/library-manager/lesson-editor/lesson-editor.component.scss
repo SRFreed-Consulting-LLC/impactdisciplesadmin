@@ -7,6 +7,17 @@
 // visibly clashes with Form.io's Bootstrap styling the same way, revisit
 // with an equivalent reset scoped to this app's own theme classes.
 
+// Centers the whole editor (header + builder) in the content area instead
+// of letting the Form.io builder's two-column layout stretch edge-to-edge
+// across a wide viewport - same reasoning applies to every other
+// library-manager screen (browse, subtemplate/lesson-template editors,
+// translation, preview).
+:host {
+  display: block;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
 .editor-header {
   position: sticky;
   top: 0;
@@ -28,18 +39,18 @@
   gap: 2px;
   margin-bottom: 8px;
   font-size: 0.8125rem;
-  color: var(--mat-sys-outline, #757575);
+  color: var(--mat-sys-on-surface-variant, #757575);
 }
 
 .breadcrumb-sep {
   font-size: 16px;
   width: 16px;
   height: 16px;
-  color: var(--mat-sys-outline, #757575);
+  color: var(--mat-sys-on-surface-variant, #757575);
 }
 
 .breadcrumb-current {
-  color: var(--mat-sys-outline, #757575);
+  color: var(--mat-sys-on-surface-variant, #757575);
 }
 
 .title-actions-row {
@@ -56,7 +67,7 @@
 }
 
 .version-label {
-  color: var(--mat-sys-outline, #757575);
+  color: var(--mat-sys-on-surface-variant, #757575);
   font-size: 0.8125rem;
   white-space: nowrap;
 }
