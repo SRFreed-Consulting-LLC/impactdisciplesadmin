@@ -21,7 +21,7 @@
               "zone.js"
             ],
             "allowedCommonJsDependencies": [
-              "jszip", "lodash",
+              "jszip", "lodash", "@formio/js", "dompurify",
               "raf", "rgbcolor", "html2canvas", "exceljs", "file-saver", "quill-delta",
               "core-js/modules/es.array.index-of.js", "core-js/modules/es.array.iterator.js",
               "core-js/modules/es.array.reduce.js", "core-js/modules/es.array.reverse.js",
