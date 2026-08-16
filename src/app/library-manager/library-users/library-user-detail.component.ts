@@ -23,6 +23,7 @@ import {
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
 import { LibraryBookService } from 'src/app/common/services/data/library/library-book.service';
 import { LibraryPermissionService } from 'src/app/common/services/data/library/library-permission.service';
+import { LibraryErrorLogService } from 'src/app/common/services/data/library/library-error-log.service';
 import {
   LibraryGrantLicensesDialogComponent,
   LibraryGrantLicensesDialogResult,
@@ -82,6 +83,7 @@ export class LibraryUserDetailComponent {
   private readonly fb = inject(FormBuilder);
   private readonly snackbar = inject(SnackbarService);
   private readonly confirmService = inject(ConfirmService);
+  private readonly errorLog = inject(LibraryErrorLogService);
   private readonly dialog = inject(MatDialog);
 
   readonly isAdmin = (): boolean => this.permissionService.isFullAccess();
@@ -187,7 +189,8 @@ export class LibraryUserDetailComponent {
       );
       this.form.markAsPristine();
       this.snackbar.success('Profile updated.');
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('LibraryUserDetailComponent.saveProfile', error);
       this.snackbar.error('Could not save profile changes. Please try again.');
     } finally {
       this.saving.set(false);
@@ -223,7 +226,8 @@ export class LibraryUserDetailComponent {
         ? ''
         : ' (No sign-in account exists for this email - only the library record was flagged.)';
       this.snackbar.success(`${revoking ? 'Access revoked.' : 'Access restored.'}${suffix}`);
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('LibraryUserDetailComponent.toggleRevoked', error);
       this.snackbar.error(`Could not ${revoking ? 'revoke' : 'restore'} access. Please try again.`);
     } finally {
       this.togglingAccess.set(false);
@@ -269,7 +273,8 @@ export class LibraryUserDetailComponent {
         title,
       );
       this.snackbar.success(`License for "${title}" removed.`);
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('LibraryUserDetailComponent.removeLicense', error);
       this.snackbar.error('Could not remove that license. Please try again.');
     }
   }

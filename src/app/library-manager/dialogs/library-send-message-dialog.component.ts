@@ -6,6 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
+import { LibraryErrorLogService } from 'src/app/common/services/data/library/library-error-log.service';
 
 export interface LibrarySendMessageDialogData {
   /** 'all' or explicit lowercased emails - passed straight to the callable. */
@@ -49,6 +50,7 @@ const BODY_MAX = 2000;
 })
 export class LibrarySendMessageDialogComponent {
   private readonly libraryUserService = inject(LibraryUserService);
+  private readonly errorLog = inject(LibraryErrorLogService);
   private readonly dialogRef = inject(
     MatDialogRef<LibrarySendMessageDialogComponent, LibrarySendMessageDialogResult | undefined>,
   );
@@ -86,6 +88,7 @@ export class LibrarySendMessageDialogComponent {
         pushSuccessCount: result.pushSuccessCount,
       });
     } catch (err) {
+      this.errorLog.logError('LibrarySendMessageDialogComponent.send', err);
       this.error.set(err instanceof Error ? err.message : 'Failed to send - please try again.');
     } finally {
       this.sending.set(false);

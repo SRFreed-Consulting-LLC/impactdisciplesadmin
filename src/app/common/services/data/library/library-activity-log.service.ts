@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { addDoc, collection } from '@angular/fire/firestore';
-import { firstValueFrom } from 'rxjs';
+import { addDoc, collection, collectionData, deleteDoc, doc, limit, orderBy, query } from '@angular/fire/firestore';
+import { Observable, firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import {
@@ -11,14 +11,15 @@ import {
 import { libraryFirestore } from './library-firestore.util';
 
 /**
- * Library content-edit audit trail - who created/edited/deleted which
- * series/book/unit/lesson/template. Writes to the `activityLog` collection
- * in the named 'impactdiscipleship-books' database, same shape/table the
+ * Library content-edit + account/access audit trail - who created/edited/
+ * deleted which series/book/unit/lesson/template/permission/config
+ * tier/library user action. Reads/writes the `activityLog` collection in
+ * the named 'impactdiscipleship-books' database, same shape/table the
  * source app used - NOT the same thing as this app's own LoggerService
- * ("log-messages", error/diagnostic logging - see the consolidation plan's
- * "Decided - logging"). Write-only for now (Slice 2's Lesson Editor is the
- * only caller so far) - a viewer screen (matching the source app's own
- * Activity Log) is a later slice; get/delete methods land with it.
+ * ("log-messages", error/diagnostic logging - see LibraryErrorLogService
+ * and the consolidation plan's "Decided - logging"). getAllActivity()/
+ * deleteEntry()/deleteEntries() back the Activity Log viewer (Slice 5) -
+ * log() alone was all Slice 2-4's write-only callers needed.
  */
 @Injectable({
   providedIn: 'root'
@@ -50,5 +51,30 @@ export class LibraryActivityLogService {
       timestamp: Date.now()
     };
     await addDoc(collection(libraryFirestore(this.app), 'activityLog'), entry);
+  }
+
+  /** All events across every user, most recent first - backs the Activity
+   *  Log screen. Filtering there is entirely client-side, so this just
+   *  needs a sane cap rather than true pagination - same 500-entry cap as
+   *  this app's own activity-log-equivalent lists. */
+  getAllActivity(max = 500): Observable<LibraryActivityLogEntry[]> {
+    return collectionData(
+      query(
+        collection(libraryFirestore(this.app), 'activityLog'),
+        orderBy('timestamp', 'desc'),
+        limit(max),
+      ),
+      { idField: 'id' },
+    ) as Observable<LibraryActivityLogEntry[]>;
+  }
+
+  /** Admin-only (see firestore.rules) - the Activity Log screen's per-row
+   *  and bulk delete. */
+  deleteEntry(id: string): Promise<void> {
+    return deleteDoc(doc(libraryFirestore(this.app), 'activityLog', id));
+  }
+
+  async deleteEntries(ids: string[]): Promise<void> {
+    await Promise.all(ids.map((id) => this.deleteEntry(id)));
   }
 }

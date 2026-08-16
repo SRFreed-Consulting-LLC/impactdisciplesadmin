@@ -10,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { LibraryBulkDiscountTierService } from 'src/app/common/services/data/library/library-bulk-discount-tier.service';
+import { LibraryErrorLogService } from 'src/app/common/services/data/library/library-error-log.service';
 import { BulkDiscountTier } from '@impact-common/models/bulk-discount-tier.model';
 import { EditTierDialogComponent, EditTierDialogResult } from '../dialogs/edit-tier-dialog.component';
 
@@ -49,6 +50,7 @@ export class LibraryConfigComponent implements OnInit {
     private confirmService: ConfirmService,
     private snackbar: SnackbarService,
     private dialog: MatDialog,
+    private errorLog: LibraryErrorLogService,
   ) {}
 
   ngOnInit(): void {
@@ -81,6 +83,7 @@ export class LibraryConfigComponent implements OnInit {
       this.snackbar.success('Discount tier created.');
       this.load();
     } catch (error) {
+      this.errorLog.logError('ConfigComponent.openCreateDialog', error);
       const message =
         error instanceof Error
           ? error.message
@@ -102,7 +105,8 @@ export class LibraryConfigComponent implements OnInit {
       await this.tierService.updateTier(result.numberOfBooks, result.percentOff);
       this.snackbar.success('Discount tier updated.');
       this.load();
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('ConfigComponent.openEditDialog', error);
       this.snackbar.error('Something went wrong saving changes. Please try again.');
     }
   }
@@ -121,7 +125,8 @@ export class LibraryConfigComponent implements OnInit {
       await this.tierService.deleteTier(tier.numberOfBooks);
       this.snackbar.success('Discount tier deleted.');
       this.load();
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('ConfigComponent.deleteTier', error);
       this.snackbar.error('Something went wrong deleting the tier. Please try again.');
     }
   }

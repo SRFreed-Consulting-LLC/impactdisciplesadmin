@@ -307,7 +307,11 @@ export const NAV_CONFIG: NavGroup[] = [
       // revoke/restore access, license grants, and messaging are all
       // full-page routes reached from here (library-users/:email,
       // library-users/messages), not further tabs.
-      { label: 'Library Users', slug: 'library-users', employeeGrantable: false }
+      { label: 'Library Users', slug: 'library-users', employeeGrantable: false },
+      // Slice 5: account/access + content-edit audit trail. Named
+      // "Activity Log", not "Events" like the source app - this app
+      // already has a real, unrelated "/events" section.
+      { label: 'Activity Log', slug: 'activity-log', employeeGrantable: false }
     ]
   }
 ];

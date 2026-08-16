@@ -7,6 +7,7 @@ import { LibraryBookService } from 'src/app/common/services/data/library/library
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
 import { LibraryUser } from 'src/app/common/models/domain/library/library-user.model';
 import { LibraryBookModel } from 'src/app/common/models/domain/library/library-book.model';
+import { LibraryErrorLogService } from 'src/app/common/services/data/library/library-error-log.service';
 
 export interface LibraryGrantLicensesDialogData {
   user: LibraryUser;
@@ -38,6 +39,7 @@ export interface LibraryGrantLicensesDialogResult {
 export class LibraryGrantLicensesDialogComponent {
   private readonly bookService = inject(LibraryBookService);
   private readonly libraryUserService = inject(LibraryUserService);
+  private readonly errorLog = inject(LibraryErrorLogService);
   private readonly dialogRef = inject(
     MatDialogRef<LibraryGrantLicensesDialogComponent, LibraryGrantLicensesDialogResult | undefined>,
   );
@@ -109,6 +111,7 @@ export class LibraryGrantLicensesDialogComponent {
         grantedTitles: result.granted.map((id) => titlesById.get(id) ?? id),
       });
     } catch (err) {
+      this.errorLog.logError('LibraryGrantLicensesDialogComponent.grant', err);
       this.error.set(
         err instanceof Error ? err.message : 'Failed to grant licenses - please try again.',
       );

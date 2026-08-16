@@ -11,6 +11,7 @@ import { LibraryConfigComponent } from './config/config.component';
 import { WorldMapComponent } from './world-map/world-map.component';
 import { LibraryGroupsListComponent } from './groups/library-groups-list.component';
 import { LibraryUsersListComponent } from './library-users/library-users-list.component';
+import { LibraryActivityLogListComponent } from './activity-log/library-activity-log-list.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -48,7 +49,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     LibraryConfigComponent,
     WorldMapComponent,
     LibraryGroupsListComponent,
-    LibraryUsersListComponent
+    LibraryUsersListComponent,
+    LibraryActivityLogListComponent
   ],
   declarations: [
     LibraryManagerComponent

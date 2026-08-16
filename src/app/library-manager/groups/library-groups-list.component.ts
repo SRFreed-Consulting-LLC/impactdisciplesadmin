@@ -23,6 +23,7 @@ import {
   GroupWizardResult,
 } from '@impact-common/groups/group-wizard-dialog.component';
 import { groupLocationLabel } from '@impact-common/groups/group-location-label.util';
+import { LibraryErrorLogService } from 'src/app/common/services/data/library/library-error-log.service';
 
 type MeetingType = 'in-person' | 'online' | 'hybrid';
 
@@ -172,6 +173,7 @@ export class LibraryGroupsListComponent {
     private confirmService: ConfirmService,
     private snackbar: SnackbarService,
     private dialog: MatDialog,
+    private errorLog: LibraryErrorLogService,
   ) {
     void this.load();
     // Groups are a live listener (matches the source app - the admin table
@@ -214,7 +216,8 @@ export class LibraryGroupsListComponent {
     try {
       await this.groupsService.updateGroup(group.id, result);
       this.snackbar.success('Impact Group updated.');
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('LibraryGroupsListComponent.openEditDialog', error);
       this.snackbar.error('Something went wrong saving changes. Please try again.');
     }
   }
@@ -232,7 +235,8 @@ export class LibraryGroupsListComponent {
     try {
       await this.groupsService.deleteGroup(group.id);
       this.snackbar.success('Impact Group deleted.');
-    } catch {
+    } catch (error) {
+      this.errorLog.logError('LibraryGroupsListComponent.deleteGroup', error);
       this.snackbar.error('Something went wrong deleting the group. Please try again.');
     }
   }

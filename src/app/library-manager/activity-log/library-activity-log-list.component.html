@@ -1,0 +1,110 @@
+<div class="events-header">
+  <h3>Activity Log</h3>
+</div>
+
+@if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else {
+  <div class="filter-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search</mat-label>
+      <input
+        matInput
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+        placeholder="User, action, details…"
+      />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>User</mat-label>
+      <mat-select [ngModel]="userFilter()" (ngModelChange)="userFilter.set($event)">
+        <mat-option value="">All users</mat-option>
+        @for (option of actorOptions(); track option.uid) {
+          <mat-option [value]="option.uid">{{ option.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Action</mat-label>
+      <mat-select [ngModel]="actionFilter()" (ngModelChange)="actionFilter.set($event)">
+        <mat-option value="">All actions</mat-option>
+        @for (action of actions; track action) {
+          <mat-option [value]="action">{{ actionLabel(action) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="toolbar-row">
+    <button
+      mat-stroked-button
+      (click)="toggleSelectAllVisible()"
+      [disabled]="visibleRows().length === 0"
+    >
+      {{ allVisibleSelected() ? 'Deselect All' : 'Select All' }}
+    </button>
+    @if (selected().size > 1) {
+      <button mat-flat-button color="warn" (click)="deleteSelected()">
+        <mat-icon>delete_outline</mat-icon>
+        Delete Selected Records ({{ selected().size }})
+      </button>
+    }
+  </div>
+
+  @if (visibleRows().length === 0) {
+    <p class="empty-state">No events match the current filters.</p>
+  } @else {
+    <div class="table-scroll">
+      <table class="events-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Details</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of visibleRows(); track row.id) {
+            <tr [class.selected]="isSelected(row.id!)">
+              <td>
+                <mat-checkbox
+                  [checked]="isSelected(row.id!)"
+                  (change)="toggleRow(row.id!, $event)"
+                ></mat-checkbox>
+              </td>
+              <td class="timestamp-cell">{{ row.timestamp | date: 'medium' }}</td>
+              <td>
+                <div class="user-name">{{ row.actorDisplayName }}</div>
+                @if (row.actorEmail) {
+                  <div class="user-email">{{ row.actorEmail }}</div>
+                }
+              </td>
+              <td>{{ actionLabel(row.action) }}</td>
+              <td class="details-cell">
+                @if (row.targetName) {
+                  <div class="target-name">{{ row.targetName }}</div>
+                }
+                @if (row.detail) {
+                  <div class="detail-text">{{ row.detail }}</div>
+                }
+              </td>
+              <td>
+                <button mat-icon-button matTooltip="Delete this event" (click)="deleteOne(row)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
