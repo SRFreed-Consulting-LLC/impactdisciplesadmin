@@ -1,0 +1,9 @@
+<h2 mat-dialog-title>Unsaved changes</h2>
+<div mat-dialog-content>
+  <p>This {{ data.itemLabel }} has changes that haven't been saved yet. Save before leaving?</p>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-stroked-button (click)="choose('discard')">Discard Changes</button>
+  <button mat-flat-button color="primary" (click)="choose('save')">Save and Leave</button>
+</div>

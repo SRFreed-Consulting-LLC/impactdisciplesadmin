@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -16,14 +17,13 @@ import { LibraryLessonModel } from 'src/app/common/models/domain/library/library
 type BrowseLevel = 'series' | 'books' | 'units' | 'lessons';
 
 /**
- * Slice 1 (Phase 2 scaffolding) of the library manager consolidation - a
- * deliberately minimal, READ-ONLY drill-down through Series -> Books ->
- * Units -> Lessons, existing purely to prove the whole new-module/new-nav-
- * entry/named-database-service stack works end to end before Slice 2 builds
- * the real authoring screens (Lesson Editor, Translations, Templates, AI
- * Book Import) on top of it. No create/edit/delete here yet - that arrives
- * with the ported editors, gated by the Library per-content-node grant
- * system (a later slice), not by this screen doing its own thing first.
+ * Started as Slice 1 (Phase 2 scaffolding)'s deliberately minimal, READ-ONLY
+ * drill-down through Series -> Books -> Units -> Lessons, proving the whole
+ * new-module/new-nav-entry/named-database-service stack end to end. Slice 2
+ * wired a lesson row's click to the real, now-ported Lesson Editor
+ * (openLesson) - this screen itself still has no create/edit/delete of its
+ * own for Series/Book/Unit; that (and gating by the Library per-content-node
+ * grant system) arrives with a later slice.
  *
  * Standalone by design (see the consolidation plan's Phase 2 "Decided -
  * module style") - imported into LibraryManagerModule's `imports` rather
@@ -54,7 +54,8 @@ export class LibraryBrowseComponent implements OnInit {
     private seriesService: BookSeriesService,
     private bookService: LibraryBookService,
     private unitService: LibraryUnitService,
-    private lessonService: LibraryLessonService
+    private lessonService: LibraryLessonService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -97,6 +98,12 @@ export class LibraryBrowseComponent implements OnInit {
       this.lessons = lessons.sort((a, b) => a.order - b.order);
       this.loading = false;
     });
+  }
+
+  /** Slice 2: opens the real Lesson Editor instead of just showing the
+   *  title as inert text. */
+  openLesson(lesson: LibraryLessonModel): void {
+    void this.router.navigate(['/library-manager/lessons', lesson.id]);
   }
 
   goUp(): void {

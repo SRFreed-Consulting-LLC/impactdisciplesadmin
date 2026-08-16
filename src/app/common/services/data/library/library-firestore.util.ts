@@ -1,7 +1,22 @@
 import { FirebaseApp } from '@angular/fire/app';
-import { getFirestore } from '@angular/fire/firestore';
+import { Firestore, getFirestore } from '@angular/fire/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { BaseModel } from 'src/app/common/models/base.model';
+
+/**
+ * Raw `Firestore` handle for the named 'impactdiscipleship-books' database -
+ * for the handful of call sites that need the SDK instance directly rather
+ * than a `FirebaseDAO`/`BaseService` wrapper (the shared submodule's query
+ * helpers like `hydrateFormioSchema`, which the reader/manager apps call with
+ * their own injected `Firestore` because THEIR app-wide default database
+ * already IS this one - see those apps' app.config.ts). `getFirestore(app,
+ * name)` returns the same cached instance for a given (app, name) pair on
+ * every call, so this is cheap to call repeatedly rather than needing to be
+ * memoized here.
+ */
+export function libraryFirestore(app: FirebaseApp): Firestore {
+  return getFirestore(app, 'impactdiscipleship-books');
+}
 
 /**
  * Every Library service (BookSeriesService, LibraryBookService,
@@ -23,5 +38,5 @@ import { BaseModel } from 'src/app/common/models/base.model';
  * own object, own `.fs`, never touches the shared singleton at all.
  */
 export function libraryFirestoreDAO<T extends BaseModel>(app: FirebaseApp): FirebaseDAO<T> {
-  return new FirebaseDAO<T>(getFirestore(app, 'impactdiscipleship-books'));
+  return new FirebaseDAO<T>(libraryFirestore(app));
 }

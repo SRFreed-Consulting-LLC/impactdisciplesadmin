@@ -7,6 +7,13 @@ const eslintConfigPrettier = require("eslint-config-prettier");
 
 module.exports = defineConfig([
   {
+    // src/common is a git submodule shared verbatim with the reader app and
+    // impact-discipleship-library-manager-new - it isn't this repo's code to
+    // lint or autofix; changes there belong in the submodule's own repo. Same
+    // exclusion those two apps' own eslint configs already carry.
+    ignores: ["src/common/**"],
+  },
+  {
     files: ["**/*.ts"],
     extends: [
       eslint.configs.recommended,

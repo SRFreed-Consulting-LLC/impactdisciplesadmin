@@ -1,0 +1,94 @@
+<div class="editor-header">
+  <nav class="breadcrumb" aria-label="Library hierarchy">
+    <!-- Plain text, not yet clickable - Browse (Slice 1) has no per-node
+         routes to link to yet. Revisit once it does. -->
+    @if (bookSeries(); as s) {
+      <span>{{ s.title }}</span>
+      <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+    }
+    @if (book(); as b) {
+      <span>{{ b.title }}</span>
+      <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+    }
+    @if (unit(); as u) {
+      <span>{{ u.title }}</span>
+      <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+    }
+    <span class="breadcrumb-current">{{ lesson()?.title ?? 'Lesson' }}</span>
+  </nav>
+
+  <div class="title-actions-row">
+    <div class="title-group">
+      <h2>{{ lesson()?.title ?? 'Lesson' }}</h2>
+      @if (lesson()?.version; as version) {
+        <span class="version-label">v{{ version }}</span>
+      }
+    </div>
+
+    <div class="header-actions">
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="saving() || !!pendingMerge()"
+        (click)="save()"
+      >
+        @if (saving()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          Save Lesson
+        }
+      </button>
+
+      <!-- Preview / Create Translation links intentionally omitted - those
+           screens aren't ported yet (later Slice 2 sub-steps). -->
+
+      <button mat-stroked-button [matMenuTriggerFor]="settingsMenu">
+        <mat-icon>settings</mat-icon>
+        Settings
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #settingsMenu="matMenu">
+        <button mat-menu-item (click)="openDailyReadingDialog()" [disabled]="!lesson()">
+          <mat-icon>menu_book</mat-icon>
+          <span>Daily Reading Plan</span>
+        </button>
+
+        @if (templatableSubtemplates().length > 0) {
+          <button mat-menu-item [matMenuTriggerFor]="subtemplateMenu" [disabled]="!!pendingMerge()">
+            <mat-icon>content_copy</mat-icon>
+            <span>Templates</span>
+          </button>
+        }
+      </mat-menu>
+
+      <mat-menu #subtemplateMenu="matMenu">
+        @for (subtemplate of templatableSubtemplates(); track subtemplate.id) {
+          <button mat-menu-item (click)="addSubtemplate(subtemplate)">
+            {{ subtemplateLabel(subtemplate) }}
+          </button>
+        }
+      </mat-menu>
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+}
+
+@if (pendingMerge(); as pending) {
+  <div class="merge-banner">
+    <mat-icon>info</mat-icon>
+    <span>
+      Previewing "{{ pending.subtemplateTitle }}" added to the {{ pending.placement }} of this
+      lesson. Review the form below, then keep or undo this change.
+    </span>
+    <span class="merge-banner-spacer"></span>
+    <button mat-button (click)="undoMerge()">Undo</button>
+    <button mat-flat-button color="primary" (click)="keepMerge()">Keep Changes</button>
+  </div>
+}
+
+<div #builderContainer class="builder-container" [class.hidden]="loading()"></div>

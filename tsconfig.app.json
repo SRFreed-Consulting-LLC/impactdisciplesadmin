@@ -6,6 +6,9 @@
     "paths": {
       "jszip": [
         "./node_modules/jszip/dist/jszip.min.js"
+      ],
+      "@impact-common/*": [
+        "./src/common/src/*"
       ]
     }
   },

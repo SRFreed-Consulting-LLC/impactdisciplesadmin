@@ -1,0 +1,141 @@
+// Ported from impact-discipleship-library-manager-new's
+// features/lesson-editor/lesson-editor.component.scss. The source file's
+// `:host-context(.theme-matrix.dark-theme)` Form.io/Bootstrap reset block
+// was dropped - that targets the SOURCE app's own theme catalog (see
+// ThemeService there), which this app doesn't share (it has its own,
+// separate 10-variant navy theme catalog). If a dark admin theme here ever
+// visibly clashes with Form.io's Bootstrap styling the same way, revisit
+// with an equivalent reset scoped to this app's own theme classes.
+
+.editor-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--mat-sys-surface, #fff);
+  margin-bottom: 16px;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #c4c7c5);
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  color: var(--mat-sys-outline, #757575);
+}
+
+.breadcrumb-sep {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--mat-sys-outline, #757575);
+}
+
+.breadcrumb-current {
+  color: var(--mat-sys-outline, #757575);
+}
+
+.title-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.version-label {
+  color: var(--mat-sys-outline, #757575);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.merge-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  background: color-mix(in srgb, #ffc107 18%, var(--mat-sys-surface));
+  border: 1px solid color-mix(in srgb, #ffc107 45%, var(--mat-sys-surface));
+
+  mat-icon {
+    color: #ffc107;
+    flex-shrink: 0;
+  }
+
+  span:not(.merge-banner-spacer) {
+    font-size: 0.875rem;
+  }
+}
+
+.merge-banner-spacer {
+  flex: 1 1 auto;
+}
+
+.builder-container {
+  // Authored lesson content can include CSS transforms that visually extend
+  // past this container's own box - clip to bounds so it stays beneath the
+  // sticky header rather than escaping wherever it geometrically lands.
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+
+  // Form.io/Bootstrap content is deliberately not reskinned for dark mode -
+  // pin it to Bootstrap's own native light-mode look regardless of this
+  // app's active theme, or plain text inside it (most of which has no
+  // explicit color) inherits the app's own text color while sitting inside
+  // Bootstrap's light card/well backgrounds - unreadable.
+  background-color: #fff;
+  color: #212529;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  ::ng-deep {
+    .form-check-input:disabled ~ .form-check-label,
+    .form-check-input[disabled] ~ .form-check-label {
+      opacity: 1;
+    }
+
+    .form-control:disabled,
+    .form-control[readonly],
+    select:disabled {
+      opacity: 1;
+      color: #212529;
+      -webkit-text-fill-color: #212529;
+    }
+  }
+
+  &.hidden {
+    display: none;
+  }
+}

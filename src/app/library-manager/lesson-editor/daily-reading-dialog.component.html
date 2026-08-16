@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>Daily Reading Plan</h2>
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div mat-dialog-content>
+    <mat-checkbox formControlName="showDailyReading"
+      >Show daily reading plan for this lesson</mat-checkbox
+    >
+
+    <mat-form-field appearance="outline" style="width: 100%">
+      <mat-label>Memory verse</mat-label>
+      <input matInput formControlName="memoryVerse" cdkFocusInitial />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width: 100%">
+      <mat-label>Goal</mat-label>
+      <textarea matInput formControlName="goal" rows="2"></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width: 100%">
+      <mat-label>Daily reading verse</mat-label>
+      <input matInput formControlName="dailyReadingVerse" />
+    </mat-form-field>
+
+    <div class="weekday-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Monday</mat-label>
+        <input matInput formControlName="monVerse" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Tuesday</mat-label>
+        <input matInput formControlName="tueVerse" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Wednesday</mat-label>
+        <input matInput formControlName="wedVerse" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Thursday</mat-label>
+        <input matInput formControlName="thuVerse" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Friday</mat-label>
+        <input matInput formControlName="friVerse" />
+      </mat-form-field>
+    </div>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Save</button>
+  </div>
+</form>

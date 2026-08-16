@@ -81,9 +81,15 @@
       }
       <mat-nav-list>
         @for (lesson of lessons; track lesson.id) {
-          <span mat-list-item>
+          <a
+            mat-list-item
+            tabindex="0"
+            (click)="openLesson(lesson)"
+            (keydown.enter)="openLesson(lesson)"
+            (keydown.space)="$event.preventDefault(); openLesson(lesson)"
+          >
             <span matListItemTitle>{{ lesson.title }}</span>
-          </span>
+          </a>
         }
       </mat-nav-list>
     }
