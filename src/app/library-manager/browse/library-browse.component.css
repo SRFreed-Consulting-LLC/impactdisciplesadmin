@@ -19,3 +19,26 @@
   color: rgba(0, 0, 0, 0.6);
   padding: 8px 16px;
 }
+
+.error-state {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(211, 47, 47, 0.4);
+  border-radius: 8px;
+  background: rgba(211, 47, 47, 0.06);
+  color: #b71c1c;
+}
+
+.error-state mat-icon {
+  flex-shrink: 0;
+}
+
+.error-state p {
+  margin: 0 0 4px;
+}
+
+.error-hint {
+  font-size: 0.8125rem;
+  opacity: 0.85;
+}

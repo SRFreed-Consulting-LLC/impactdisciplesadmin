@@ -40,6 +40,14 @@ type BrowseLevel = 'series' | 'books' | 'units' | 'lessons';
 export class LibraryBrowseComponent implements OnInit {
   loading = true;
   level: BrowseLevel = 'series';
+  // Set on any read failure (most likely cause: this signed-in account has
+  // no adminUsers/{uid} doc in the impactdiscipleship-books database, so
+  // firestore.rules' isStaff() denies the read - a separate staff system
+  // from this app's own admin_users, not yet reconciled - see the
+  // consolidation plan's Phase 2 Slice 3 "Staff & permissions"). Without
+  // this, a denied read left `loading` stuck true forever with nothing on
+  // screen to explain why - not a missing feature, a silent failure.
+  error: string | null = null;
 
   seriesList: BookSeriesModel[] = [];
   books: LibraryBookModel[] = [];
@@ -64,40 +72,62 @@ export class LibraryBrowseComponent implements OnInit {
 
   private loadSeries(): void {
     this.loading = true;
-    this.seriesService.getAll().then((series) => {
-      this.seriesList = series.sort((a, b) => a.order - b.order);
-      this.loading = false;
-    });
+    this.error = null;
+    this.seriesService
+      .getAll()
+      .then((series) => {
+        this.seriesList = series.sort((a, b) => a.order - b.order);
+        this.loading = false;
+      })
+      .catch((err) => this.fail(err));
   }
 
   openSeries(series: BookSeriesModel): void {
     this.selectedSeries = series;
     this.level = 'books';
     this.loading = true;
-    this.bookService.getBySeries(series.id!).then((books) => {
-      this.books = books.sort((a, b) => a.order - b.order);
-      this.loading = false;
-    });
+    this.error = null;
+    this.bookService
+      .getBySeries(series.id!)
+      .then((books) => {
+        this.books = books.sort((a, b) => a.order - b.order);
+        this.loading = false;
+      })
+      .catch((err) => this.fail(err));
   }
 
   openBook(book: LibraryBookModel): void {
     this.selectedBook = book;
     this.level = 'units';
     this.loading = true;
-    this.unitService.getByBook(book.id!).then((units) => {
-      this.units = units.sort((a, b) => a.order - b.order);
-      this.loading = false;
-    });
+    this.error = null;
+    this.unitService
+      .getByBook(book.id!)
+      .then((units) => {
+        this.units = units.sort((a, b) => a.order - b.order);
+        this.loading = false;
+      })
+      .catch((err) => this.fail(err));
   }
 
   openUnit(unit: LibraryUnitModel): void {
     this.selectedUnit = unit;
     this.level = 'lessons';
     this.loading = true;
-    this.lessonService.getByUnit(unit.id!).then((lessons) => {
-      this.lessons = lessons.sort((a, b) => a.order - b.order);
-      this.loading = false;
-    });
+    this.error = null;
+    this.lessonService
+      .getByUnit(unit.id!)
+      .then((lessons) => {
+        this.lessons = lessons.sort((a, b) => a.order - b.order);
+        this.loading = false;
+      })
+      .catch((err) => this.fail(err));
+  }
+
+  private fail(err: unknown): void {
+    this.loading = false;
+    this.error = err instanceof Error ? err.message : String(err);
+    console.error('LibraryBrowseComponent read failed:', err);
   }
 
   /** Slice 2: opens the real Lesson Editor instead of just showing the

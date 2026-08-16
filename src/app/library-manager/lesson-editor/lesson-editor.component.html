@@ -72,7 +72,19 @@
   </div>
 </div>
 
-@if (loading()) {
+@if (loadError(); as message) {
+  <div class="error-state">
+    <mat-icon>error_outline</mat-icon>
+    <div>
+      <p>Couldn't load this lesson: {{ message }}</p>
+      <p class="error-hint">
+        If this says "Missing or insufficient permissions", your signed-in account likely doesn't
+        have an <code>adminUsers</code> record in the library's own database yet - a separate staff
+        system from this app's, not yet reconciled.
+      </p>
+    </div>
+  </div>
+} @else if (loading()) {
   <div class="loading">
     <mat-spinner diameter="32"></mat-spinner>
   </div>
@@ -91,4 +103,4 @@
   </div>
 }
 
-<div #builderContainer class="builder-container" [class.hidden]="loading()"></div>
+<div #builderContainer class="builder-container" [class.hidden]="loading() || !!loadError()"></div>

@@ -79,6 +79,30 @@
   padding: 48px;
 }
 
+.error-state {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(211, 47, 47, 0.4);
+  border-radius: 8px;
+  background: rgba(211, 47, 47, 0.06);
+  color: #b71c1c;
+
+  mat-icon {
+    flex-shrink: 0;
+  }
+
+  p {
+    margin: 0 0 4px;
+  }
+}
+
+.error-hint {
+  font-size: 0.8125rem;
+  opacity: 0.85;
+}
+
 .merge-banner {
   display: flex;
   align-items: center;

@@ -15,7 +15,20 @@
   </h3>
 </div>
 
-@if (loading) {
+@if (error) {
+  <div class="error-state">
+    <mat-icon>error_outline</mat-icon>
+    <div>
+      <p>Couldn't load the library: {{ error }}</p>
+      <p class="error-hint">
+        If this says "Missing or insufficient permissions", your signed-in account likely doesn't
+        have an <code>adminUsers</code> record in the library's own database yet - a separate staff
+        system from this app's, not yet reconciled. Ask whoever manages the library manager app to
+        confirm your account is provisioned there too.
+      </p>
+    </div>
+  </div>
+} @else if (loading) {
   <div class="loading">
     <mat-spinner diameter="32"></mat-spinner>
   </div>

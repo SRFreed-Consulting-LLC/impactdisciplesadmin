@@ -93,6 +93,12 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   readonly book = signal<LibraryBookModel | undefined>(undefined);
   readonly bookSeries = signal<BookSeriesModel | undefined>(undefined);
   readonly loading = signal(true);
+  // Set on any read failure - most likely cause: this signed-in account has
+  // no adminUsers/{uid} doc in the impactdiscipleship-books database, so
+  // firestore.rules' isStaff() denies the read (see LibraryBrowseComponent's
+  // identical note). Without this, a denied read left `loading` stuck true
+  // forever with nothing on screen to explain why.
+  readonly loadError = signal<string | null>(null);
   readonly saving = signal(false);
   readonly readyForNextSteps = signal(false);
   readonly subtemplates = signal<LibrarySubtemplateModel[]>([]);
@@ -134,44 +140,51 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   private async loadLesson(id: string): Promise<void> {
     this.lessonId = id;
     this.loading.set(true);
+    this.loadError.set(null);
     this.pendingMerge.set(null);
 
-    const [lesson, subtemplates] = await Promise.all([
-      this.lessons.getById(id),
-      this.subtemplateService.getAll(),
-    ]);
-    this.lesson.set(lesson);
-    this.subtemplates.set(subtemplates);
-    this.readyForNextSteps.set(!!lesson?.formSchema);
+    try {
+      const [lesson, subtemplates] = await Promise.all([
+        this.lessons.getById(id),
+        this.subtemplateService.getAll(),
+      ]);
+      this.lesson.set(lesson);
+      this.subtemplates.set(subtemplates);
+      this.readyForNextSteps.set(!!lesson?.formSchema);
 
-    // Ancestor chain for the breadcrumb - each step depends on the previous
-    // id, so these can't be kicked off in parallel with each other.
-    const unit = lesson ? await this.units.getById(lesson.unitId) : undefined;
-    const book = unit ? await this.books.getById(unit.bookId) : undefined;
-    const bookSeries = book ? await this.series.getById(book.seriesId) : undefined;
-    this.unit.set(unit);
-    this.book.set(book);
-    this.bookSeries.set(bookSeries);
+      // Ancestor chain for the breadcrumb - each step depends on the
+      // previous id, so these can't be kicked off in parallel with each
+      // other.
+      const unit = lesson ? await this.units.getById(lesson.unitId) : undefined;
+      const book = unit ? await this.books.getById(unit.bookId) : undefined;
+      const bookSeries = book ? await this.series.getById(book.seriesId) : undefined;
+      this.unit.set(unit);
+      this.book.set(book);
+      this.bookSeries.set(bookSeries);
 
-    this.loading.set(false);
+      // Resolve `lessonimage:{id}` placeholders back to real data URIs
+      // before handing the schema to the builder, so the admin sees actual
+      // images while editing rather than broken-image icons.
+      const hydratedSchema =
+        (await this.lessonImages.hydrateSchema(lesson?.formSchema ?? null)) ?? EMPTY_SCHEMA;
 
-    // Resolve `lessonimage:{id}` placeholders back to real data URIs before
-    // handing the schema to the builder, so the admin sees actual images
-    // while editing rather than broken-image icons.
-    const hydratedSchema =
-      (await this.lessonImages.hydrateSchema(lesson?.formSchema ?? null)) ?? EMPTY_SCHEMA;
-
-    this.builder?.instance?.destroy?.();
-    this.builder = await Formio.builder(
-      this.builderContainer.nativeElement,
-      hydratedSchema,
-      // noDefaultSubmitButton: Form.io's builder otherwise auto-appends a
-      // default "Submit" button to any form/wizard that doesn't already have
-      // one - not something a lesson (as opposed to a data-collecting form)
-      // needs.
-      { builder: { premium: false }, noDefaultSubmitButton: true },
-    );
-    this.lastSavedSchema = JSON.stringify(this.builder.schema);
+      this.builder?.instance?.destroy?.();
+      this.builder = await Formio.builder(
+        this.builderContainer.nativeElement,
+        hydratedSchema,
+        // noDefaultSubmitButton: Form.io's builder otherwise auto-appends a
+        // default "Submit" button to any form/wizard that doesn't already
+        // have one - not something a lesson (as opposed to a
+        // data-collecting form) needs.
+        { builder: { premium: false }, noDefaultSubmitButton: true },
+      );
+      this.lastSavedSchema = JSON.stringify(this.builder.schema);
+    } catch (err) {
+      this.loadError.set(err instanceof Error ? err.message : String(err));
+      console.error('LessonEditorComponent failed to load lesson', id, err);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   ngOnDestroy(): void {
