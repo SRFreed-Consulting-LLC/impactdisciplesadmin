@@ -25,6 +25,11 @@ export class WebConfigModel extends BaseModel{
   adminEmailAddress: string;
   taxImportDate?: Timestamp;
   freeShippingAmount: number;
+  // paypalClientId is a public client identifier, safe to keep here. Secrets
+  // are not: `config` is world-readable under the current firestore.rules, so
+  // anything stored here is effectively published. The apilayer tax key used
+  // to live on this model and now comes from Secret Manager (TAX_API_KEY) in
+  // checkout-pricing.functions.ts instead. Same rule MailchimpConfigModel
+  // documents - keys never go in Firestore.
   paypalClientId?: string;
-  taxApiKey? : string;
 }

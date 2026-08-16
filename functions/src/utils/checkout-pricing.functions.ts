@@ -237,9 +237,12 @@ export async function computeOrderPricing(
     // today, replicated as-is, not "fixed" here). Taxable amount is the
     // pre-coupon-discount, sale-adjusted price on non-event items -- matches
     // tax-rate.service.ts's own math exactly, including its pre-existing
-    // "not coupon-discount-aware" quirk. The apilayer key now comes from
-    // Firestore via the Admin SDK instead of the browser, closing the
-    // client-side key exposure as a side effect of this move.
+    // "not coupon-discount-aware" quirk. The apilayer key comes from Secret
+    // Manager (TAX_API_KEY). It was previously read by the browser, then
+    // moved to this Firestore config doc - which closed the bundle exposure
+    // but not the real one, since firestore.rules leaves `config` readable to
+    // anyone holding the public Firebase config. Same reasoning as
+    // MailchimpConfigModel's: a key in Firestore is a public key.
     if (request.shippingAddress?.state === "Georgia") {
       const taxableAmount = round2(
         pricedItems
@@ -254,7 +257,7 @@ export async function computeOrderPricing(
             "&use_client_ip=false&country=US",
           {
             method: "GET",
-            headers: {apikey: (config.taxApiKey as string) ?? ""},
+            headers: {apikey: process.env.TAX_API_KEY ?? ""},
           }
         );
         const data = response.ok ? await response.json() : null;

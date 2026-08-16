@@ -268,7 +268,7 @@ async function logCheckoutFailure(
 }
 
 exports.create_paypal_order = functions
-  .runWith({secrets: ["PAYPAL_CLIENT_SECRET"]})
+  .runWith({secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]})
   .https.onRequest((request, response) => {
     return restrictedCors(request, response, async () => {
       try {
@@ -418,7 +418,7 @@ exports.create_paypal_order = functions
   });
 
 exports.capture_paypal_order = functions
-  .runWith({secrets: ["PAYPAL_CLIENT_SECRET"]})
+  .runWith({secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]})
   .https.onRequest((request, response) => {
     return restrictedCors(request, response, async () => {
       try {
