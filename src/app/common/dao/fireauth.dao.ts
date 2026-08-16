@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
 import { AuthProvider, browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
   setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut, updatePassword, User, UserCredential } from 'firebase/auth';
-import { BehaviorSubject, Observable, ReplaySubject, fromEventPattern } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, fromEventPattern, of } from 'rxjs';
 import { UserPermissionService } from '../services/data/user-permissions.service';
 import { map, mergeMap, share, shareReplay } from 'rxjs/operators';
 import { UserPermission } from '../models/admin/user-permission.model';
@@ -26,7 +26,7 @@ const ID_TOKEN_COOKIE_NAME = 'crm_token';
 export class FireAuthDao {
   public authSate$ = new BehaviorSubject<boolean>(false);
   public currentUser$: Observable<User>;
-  public loggedInUser$: Observable<AdminUser>;
+  public loggedInUser$: Observable<AdminUser | undefined>;
   public readonly userPermissions$: Observable<UserPermission[]>;
 
   public currentAgent$ = new BehaviorSubject<AdminUser>(undefined);
@@ -65,11 +65,21 @@ export class FireAuthDao {
 
     this.loggedInUser$ = this.currentUser$.pipe(
       mergeMap((user: User) => {
-        const qp: QueryParam[] = [];
-
-        if (user) {
-          qp.push(new QueryParam('email', WhereFilterOperandKeys.equal, user.email));
+        // onAuthStateChanged's very first emission on a fresh page load
+        // (e.g. landing on /login with no session) is null, not a User -
+        // querying `user.email` unconditionally here used to throw
+        // synchronously right into this shared pipe on every single
+        // signed-out page load (live-diagnosed via a console TypeError on
+        // /login before any credentials were even entered). Signed-out is
+        // a real, valid state this stream needs to represent, not an
+        // error - short-circuit to it here instead of ever touching
+        // `user.email` when there's no user.
+        if (!user) {
+          return of(null);
         }
+
+        const qp: QueryParam[] = [];
+        qp.push(new QueryParam('email', WhereFilterOperandKeys.equal, user.email));
         // No retry() here anymore - FirebaseDAO.getAllByValue() (which this
         // calls into) already retries the read itself with the same
         // jittered backoff, entirely inside this one Promise, without
@@ -80,6 +90,15 @@ export class FireAuthDao {
         return this.userService.getAllByValue('email', user.email);
       }),
       map((users) => {
+        // Signed out (see the mergeMap guard above) - distinct from "a
+        // real Firebase Auth user with no matching admin_users record"
+        // below, which logs out and throws; here there was never a
+        // session to begin with, so there's nothing to log out of and no
+        // error to raise.
+        if (users === null) {
+          return undefined;
+        }
+
         if (!Array.isArray(users) || users?.length > 1) {
           throw new Error('More than 1 user found with this email address');
         }
@@ -112,6 +131,12 @@ export class FireAuthDao {
 
     this.userPermissions$ = this.loggedInUser$.pipe(
       mergeMap((agent) => {
+        // Signed out - loggedInUser$ can now legitimately emit undefined
+        // (see its own mergeMap's guard above); nothing to fetch
+        // permissions for.
+        if (!agent) {
+          return of([]);
+        }
         return this.userPermissionService.getAllByValue('owner', agent.id);
       })
     );

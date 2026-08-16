@@ -44,6 +44,11 @@
                 "input": "node_modules/@formio/js/dist"
               },
               {
+                "glob": "*",
+                "input": "node_modules/@formio/js/dist/fonts",
+                "output": "fonts"
+              },
+              {
                 "glob": "leaflet.css",
                 "input": "node_modules/leaflet/dist"
               }
