@@ -14,7 +14,7 @@
     }
   </h3>
   <span class="spacer"></span>
-  @if (level === 'series') {
+  @if (level === 'series' && isFullAccess) {
     <button mat-flat-button color="primary" (click)="openImportBook()">
       <mat-icon>upload_file</mat-icon>
       Import Book
@@ -42,73 +42,113 @@
 } @else {
   @switch (level) {
     @case ('series') {
-      @if (seriesList.length === 0) {
+      @if (seriesRows.length === 0) {
         <p class="empty-state">No series yet.</p>
       }
       <mat-nav-list>
-        @for (series of seriesList; track series.id) {
+        @for (row of seriesRows; track row.id) {
           <a
             mat-list-item
             tabindex="0"
-            (click)="openSeries(series)"
-            (keydown.enter)="openSeries(series)"
-            (keydown.space)="$event.preventDefault(); openSeries(series)"
+            (click)="openSeries(row)"
+            (keydown.enter)="openSeries(row)"
+            (keydown.space)="$event.preventDefault(); openSeries(row)"
           >
-            <span matListItemTitle>{{ series.title }}</span>
+            <span matListItemTitle>{{ row.title }}</span>
+            @if (isFullAccess) {
+              <button
+                mat-icon-button
+                matListItemMeta
+                matTooltip="Manage Permissions"
+                (click)="openManagePermissions('series', row, $event)"
+              >
+                <mat-icon>admin_panel_settings</mat-icon>
+              </button>
+            }
           </a>
         }
       </mat-nav-list>
     }
     @case ('books') {
-      @if (books.length === 0) {
+      @if (bookRows.length === 0) {
         <p class="empty-state">No books in this series yet.</p>
       }
       <mat-nav-list>
-        @for (book of books; track book.id) {
+        @for (row of bookRows; track row.id) {
           <a
             mat-list-item
             tabindex="0"
-            (click)="openBook(book)"
-            (keydown.enter)="openBook(book)"
-            (keydown.space)="$event.preventDefault(); openBook(book)"
+            (click)="openBook(row)"
+            (keydown.enter)="openBook(row)"
+            (keydown.space)="$event.preventDefault(); openBook(row)"
           >
-            <span matListItemTitle>{{ book.title }}</span>
+            <span matListItemTitle>{{ row.title }}</span>
+            @if (isFullAccess) {
+              <button
+                mat-icon-button
+                matListItemMeta
+                matTooltip="Manage Permissions"
+                (click)="openManagePermissions('book', row, $event)"
+              >
+                <mat-icon>admin_panel_settings</mat-icon>
+              </button>
+            }
           </a>
         }
       </mat-nav-list>
     }
     @case ('units') {
-      @if (units.length === 0) {
+      @if (unitRows.length === 0) {
         <p class="empty-state">No units in this book yet.</p>
       }
       <mat-nav-list>
-        @for (unit of units; track unit.id) {
+        @for (row of unitRows; track row.id) {
           <a
             mat-list-item
             tabindex="0"
-            (click)="openUnit(unit)"
-            (keydown.enter)="openUnit(unit)"
-            (keydown.space)="$event.preventDefault(); openUnit(unit)"
+            (click)="openUnit(row)"
+            (keydown.enter)="openUnit(row)"
+            (keydown.space)="$event.preventDefault(); openUnit(row)"
           >
-            <span matListItemTitle>{{ unit.title }}</span>
+            <span matListItemTitle>{{ row.title }}</span>
+            @if (isFullAccess) {
+              <button
+                mat-icon-button
+                matListItemMeta
+                matTooltip="Manage Permissions"
+                (click)="openManagePermissions('unit', row, $event)"
+              >
+                <mat-icon>admin_panel_settings</mat-icon>
+              </button>
+            }
           </a>
         }
       </mat-nav-list>
     }
     @case ('lessons') {
-      @if (lessons.length === 0) {
+      @if (lessonRows.length === 0) {
         <p class="empty-state">No lessons in this unit yet.</p>
       }
       <mat-nav-list>
-        @for (lesson of lessons; track lesson.id) {
+        @for (row of lessonRows; track row.id) {
           <a
             mat-list-item
             tabindex="0"
-            (click)="openLesson(lesson)"
-            (keydown.enter)="openLesson(lesson)"
-            (keydown.space)="$event.preventDefault(); openLesson(lesson)"
+            (click)="openLesson(row)"
+            (keydown.enter)="openLesson(row)"
+            (keydown.space)="$event.preventDefault(); openLesson(row)"
           >
-            <span matListItemTitle>{{ lesson.title }}</span>
+            <span matListItemTitle>{{ row.title }}</span>
+            @if (isFullAccess) {
+              <button
+                mat-icon-button
+                matListItemMeta
+                matTooltip="Manage Permissions"
+                (click)="openManagePermissions('lesson', row, $event)"
+              >
+                <mat-icon>admin_panel_settings</mat-icon>
+              </button>
+            }
           </a>
         }
       </mat-nav-list>

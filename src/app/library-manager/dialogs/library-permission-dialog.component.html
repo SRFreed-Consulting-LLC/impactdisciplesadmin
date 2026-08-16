@@ -1,0 +1,56 @@
+<h2 mat-dialog-title>Manage Permissions for "{{ data.nodeTitle }}"</h2>
+<div mat-dialog-content>
+  <p class="hint">
+    Granting a permission here also applies to everything underneath this item. Admin/Root always
+    have full access and aren't shown here.
+  </p>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="permission-table">
+        <thead>
+          <tr>
+            <th class="user-col">Editor</th>
+            <th>View</th>
+            <th>Add</th>
+            <th>Edit</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.docId) {
+            <tr>
+              <td class="user-col">
+                <div class="user-name">{{ row.displayName }}</div>
+                <div class="user-email">{{ row.email }}</div>
+              </td>
+              <td>
+                <mat-checkbox [checked]="row.view" (change)="toggle(row, 'view', $event)"></mat-checkbox>
+              </td>
+              <td>
+                <mat-checkbox [checked]="row.add" (change)="toggle(row, 'add', $event)"></mat-checkbox>
+              </td>
+              <td>
+                <mat-checkbox [checked]="row.edit" (change)="toggle(row, 'edit', $event)"></mat-checkbox>
+              </td>
+              <td>
+                <mat-checkbox [checked]="row.delete" (change)="toggle(row, 'delete', $event)"></mat-checkbox>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (rows().length === 0) {
+      <p class="empty-state">No Editor accounts yet - create one from Admin Users first.</p>
+    }
+  }
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</div>

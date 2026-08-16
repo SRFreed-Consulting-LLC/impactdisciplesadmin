@@ -1,0 +1,56 @@
+.hint {
+  margin-top: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+}
+
+.table-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+}
+
+.permission-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    position: sticky;
+    top: 0;
+    background: var(--mat-sys-surface-container, var(--mat-sys-surface));
+    text-align: left;
+    font-weight: 500;
+    padding: 8px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    z-index: 1;
+  }
+
+  td {
+    padding: 8px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  th:not(.user-col),
+  td:not(.user-col) {
+    text-align: center;
+  }
+}
+
+.user-name {
+  font-weight: 500;
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.empty-state {
+  color: var(--mat-sys-on-surface-variant);
+}

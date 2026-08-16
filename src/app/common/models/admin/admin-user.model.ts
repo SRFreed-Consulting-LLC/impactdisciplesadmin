@@ -2,6 +2,7 @@ import { Role } from "../../lists/roles.enum";
 import { OrganizationModel } from "../domain/organization.model";
 import { Person } from "../domain/utils/person.model";
 import { ScreenPermission } from "./screen-permission.model";
+import { LibraryNodePermission } from "../domain/library/library-node-permission.model";
 
 export class AdminUser extends Person {
     email: string;
@@ -15,6 +16,16 @@ export class AdminUser extends Person {
     // [] means "deliberately zero grants" (a brand-new Employee, or an
     // existing one an Admin has revoked everything from).
     permissions?: ScreenPermission[];
+
+    // Only meaningful when role === Role.EDITOR - the Library section's own
+    // per-content-node grants (a specific series/book/unit/lesson), parallel
+    // to `permissions` above but for a dynamic Firestore content tree
+    // instead of the static NAV_CONFIG screen list - see
+    // LibraryPermissionService for how these are read/interpreted. undefined
+    // and [] both mean "no grants yet" here (there is no pre-existing-
+    // account migration case to distinguish, unlike `permissions` - every
+    // Editor account is created after this field already existed).
+    libraryPermissions?: LibraryNodePermission[];
 
     // Appearance preferences, set from the Settings page (see ThemeService) -
     // persisted per-admin so they follow this person across devices/sessions,

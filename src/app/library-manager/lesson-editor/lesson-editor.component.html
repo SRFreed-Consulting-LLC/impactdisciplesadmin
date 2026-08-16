@@ -26,18 +26,20 @@
     </div>
 
     <div class="header-actions">
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="saving() || !!pendingMerge()"
-        (click)="save()"
-      >
-        @if (saving()) {
-          <mat-spinner diameter="18"></mat-spinner>
-        } @else {
-          Save Lesson
-        }
-      </button>
+      @if (permission().edit) {
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="saving() || !!pendingMerge()"
+          (click)="save()"
+        >
+          @if (saving()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          } @else {
+            Save Lesson
+          }
+        </button>
+      }
 
       @if (readyForNextSteps()) {
         <a mat-stroked-button [routerLink]="['/library-manager/lessons', lessonId, 'preview']">
@@ -46,22 +48,26 @@
         </a>
       }
 
-      <button mat-stroked-button [matMenuTriggerFor]="settingsMenu">
-        <mat-icon>settings</mat-icon>
-        Settings
-        <mat-icon>arrow_drop_down</mat-icon>
-      </button>
-      <mat-menu #settingsMenu="matMenu">
-        <button mat-menu-item (click)="openDailyReadingDialog()" [disabled]="!lesson()">
-          <mat-icon>menu_book</mat-icon>
-          <span>Daily Reading Plan</span>
+      @if (permission().edit || readyForNextSteps()) {
+        <button mat-stroked-button [matMenuTriggerFor]="settingsMenu">
+          <mat-icon>settings</mat-icon>
+          Settings
+          <mat-icon>arrow_drop_down</mat-icon>
         </button>
-
-        @if (templatableSubtemplates().length > 0) {
-          <button mat-menu-item [matMenuTriggerFor]="subtemplateMenu" [disabled]="!!pendingMerge()">
-            <mat-icon>content_copy</mat-icon>
-            <span>Templates</span>
+      }
+      <mat-menu #settingsMenu="matMenu">
+        @if (permission().edit) {
+          <button mat-menu-item (click)="openDailyReadingDialog()" [disabled]="!lesson()">
+            <mat-icon>menu_book</mat-icon>
+            <span>Daily Reading Plan</span>
           </button>
+
+          @if (templatableSubtemplates().length > 0) {
+            <button mat-menu-item [matMenuTriggerFor]="subtemplateMenu" [disabled]="!!pendingMerge()">
+              <mat-icon>content_copy</mat-icon>
+              <span>Templates</span>
+            </button>
+          }
         }
 
         @if (readyForNextSteps()) {
@@ -98,6 +104,15 @@
 } @else if (loading()) {
   <div class="loading">
     <mat-spinner diameter="32"></mat-spinner>
+  </div>
+}
+
+@if (!loading() && !loadError() && !permission().edit) {
+  <div class="merge-banner">
+    <mat-icon>visibility</mat-icon>
+    <span>
+      You have view-only access to this lesson. Changes made in the builder below won't be saved.
+    </span>
   </div>
 }
 

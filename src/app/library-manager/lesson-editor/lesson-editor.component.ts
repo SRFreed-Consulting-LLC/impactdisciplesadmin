@@ -26,6 +26,7 @@ import { LibraryBookService } from 'src/app/common/services/data/library/library
 import { BookSeriesService } from 'src/app/common/services/data/library/book-series.service';
 import { LibraryLessonImageService } from 'src/app/common/services/data/library/library-lesson-image.service';
 import { LibrarySubtemplateService } from 'src/app/common/services/data/library/library-subtemplate.service';
+import { LibraryEffectivePermission, LibraryPermissionService } from 'src/app/common/services/data/library/library-permission.service';
 import { ensureLibraryFormioComponentsRegistered } from 'src/app/common/services/data/library/library-formio-registration.util';
 import { ensureLibraryVendorStylesheet } from 'src/app/common/services/data/library/library-vendor-stylesheet.util';
 import { mergeSubtemplateIntoSchema } from 'src/app/common/services/data/library/library-template-merge.util';
@@ -38,6 +39,7 @@ import { LibrarySubtemplateModel } from 'src/app/common/models/domain/library/li
 import { DailyReadingDialogComponent } from './daily-reading-dialog.component';
 
 const EMPTY_SCHEMA: LibraryFormioSchema = { display: 'form', components: [] };
+const NONE_PERMISSION: LibraryEffectivePermission = { view: false, add: false, edit: false, delete: false };
 
 interface PendingSubtemplateMerge {
   subtemplateTitle: string;
@@ -55,6 +57,11 @@ interface PendingSubtemplateMerge {
  * - No Help icon - this app has no in-app help system like the source app's.
  * Preview and Create Translation are both ported now (LessonPreviewComponent,
  * LessonTranslationComponent).
+ *
+ * Slice 3 adds real per-node permission gating (Admin/Root always full
+ * access; an Editor needs an explicit or inherited grant on this specific
+ * lesson - see LibraryPermissionService). Previously any Editor could edit
+ * any lesson once inside the Library section at all.
  */
 @Component({
   selector: 'app-lesson-editor',
@@ -81,6 +88,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   private readonly series = inject(BookSeriesService);
   private readonly lessonImages = inject(LibraryLessonImageService);
   private readonly subtemplateService = inject(LibrarySubtemplateService);
+  private readonly permissionService = inject(LibraryPermissionService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
@@ -98,6 +106,10 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   // identical note). Without this, a denied read left `loading` stuck true
   // forever with nothing on screen to explain why.
   readonly loadError = signal<string | null>(null);
+  // This lesson's own resolved permission - gates Save/the Templates menu/
+  // Daily Reading Plan (edit) and, if false even for view, blocks loading
+  // the builder at all (see loadLesson()).
+  readonly permission = signal<LibraryEffectivePermission>(NONE_PERMISSION);
   readonly saving = signal(false);
   readonly readyForNextSteps = signal(false);
   readonly subtemplates = signal<LibrarySubtemplateModel[]>([]);
@@ -143,6 +155,13 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
     this.pendingMerge.set(null);
 
     try {
+      const permission = await this.permissionService.resolveEffectivePermission('lesson', id);
+      this.permission.set(permission);
+      if (!permission.view) {
+        this.loadError.set("You don't have permission to view this lesson.");
+        return;
+      }
+
       const [lesson, subtemplates] = await Promise.all([
         this.lessons.getById(id),
         this.subtemplateService.getAll(),
@@ -215,7 +234,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
    *  directly from its type (Header -> top, Footer -> bottom), so there's
    *  nothing left to ask the user. */
   async addSubtemplate(subtemplate: LibrarySubtemplateModel): Promise<void> {
-    if (!this.builder || this.pendingMerge()) {
+    if (!this.builder || this.pendingMerge() || !this.permission().edit) {
       return;
     }
     const placement: 'top' | 'bottom' = subtemplate.type === 'header' ? 'top' : 'bottom';
@@ -248,7 +267,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   }
 
   async save(): Promise<void> {
-    if (!this.builder || this.pendingMerge()) {
+    if (!this.builder || this.pendingMerge() || !this.permission().edit) {
       return;
     }
     this.saving.set(true);
@@ -277,7 +296,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
 
   openDailyReadingDialog(): void {
     const lesson = this.lesson();
-    if (!lesson) {
+    if (!lesson || !this.permission().edit) {
       return;
     }
     const ref = this.dialog.open(DailyReadingDialogComponent, {

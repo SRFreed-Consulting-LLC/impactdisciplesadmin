@@ -16,7 +16,8 @@ export type LibraryActivityAction =
   | 'template_deleted'
   | 'translation_created'
   | 'translation_updated'
-  | 'translation_deleted';
+  | 'translation_deleted'
+  | 'permission_changed';
 
 export interface LibraryActivityLogEntry {
   id?: string;
