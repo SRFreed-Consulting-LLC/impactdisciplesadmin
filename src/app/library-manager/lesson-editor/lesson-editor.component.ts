@@ -11,7 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Formio } from '@formio/js';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -53,15 +53,15 @@ interface PendingSubtemplateMerge {
  *   per-series/book/unit routes yet, only its own internal drill-down state.
  *   Revisit once Browse gets real deep-linkable routes.
  * - No Help icon - this app has no in-app help system like the source app's.
- * - No Preview link / Create Translation link - Lesson Preview and
- *   Translations are later Slice 2 sub-steps, not built yet.
- * `readyForNextSteps` is kept (harmless, and those two links will read off
- * it once they exist).
+ * - No Create Translation link - Translations are a later Slice 2 sub-step,
+ *   not built yet. Preview IS ported (LessonPreviewComponent, without its
+ *   language switcher - see that component's own doc comment).
  */
 @Component({
   selector: 'app-lesson-editor',
   standalone: true,
   imports: [
+    RouterLink,
     MatButtonModule,
     MatDialogModule,
     MatIconModule,

@@ -39,8 +39,15 @@
         }
       </button>
 
-      <!-- Preview / Create Translation links intentionally omitted - those
-           screens aren't ported yet (later Slice 2 sub-steps). -->
+      @if (readyForNextSteps()) {
+        <a mat-stroked-button [routerLink]="['/library-manager/lessons', lessonId, 'preview']">
+          <mat-icon>visibility</mat-icon>
+          Preview
+        </a>
+      }
+
+      <!-- Create Translation link intentionally omitted - Translations
+           aren't ported yet (a later Slice 2 sub-step). -->
 
       <button mat-stroked-button [matMenuTriggerFor]="settingsMenu">
         <mat-icon>settings</mat-icon>

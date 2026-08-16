@@ -1,0 +1,81 @@
+// Ported from impact-discipleship-library-manager-new's
+// features/lesson-preview/lesson-preview.component.scss. The source file's
+// `:host-context(.theme-matrix.dark-theme)` reset block was dropped - see
+// the identical note in lesson-editor.component.scss.
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--mat-sys-surface, #fff);
+  margin-bottom: 16px;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #c4c7c5);
+
+  h2 {
+    margin: 0;
+    flex: 1 1 auto;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.empty-state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error-state {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(211, 47, 47, 0.4);
+  border-radius: 8px;
+  background: rgba(211, 47, 47, 0.06);
+  color: #b71c1c;
+
+  p {
+    margin: 0;
+  }
+}
+
+.form-container {
+  max-width: 800px;
+  // Form.io/Bootstrap content is deliberately not reskinned for dark mode -
+  // pin to Bootstrap's own native light-mode look regardless of this app's
+  // active theme, same reasoning as lesson-editor.component.scss's
+  // .builder-container.
+  background-color: #fff;
+  color: #212529;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  padding: 16px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+
+  // Form.io's readOnly mode disables every native control, and Bootstrap's
+  // default disabled styling (50% opacity) is designed for "temporarily
+  // unavailable," not "the intended way to read finished content" - restore
+  // full-strength text while leaving controls genuinely non-interactive.
+  ::ng-deep {
+    .form-check-input:disabled ~ .form-check-label,
+    .form-check-input[disabled] ~ .form-check-label {
+      opacity: 1;
+    }
+
+    .form-control:disabled,
+    .form-control[readonly],
+    select:disabled {
+      opacity: 1;
+      color: #212529;
+      -webkit-text-fill-color: #212529;
+    }
+  }
+}

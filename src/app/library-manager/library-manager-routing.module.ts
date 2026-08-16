@@ -14,6 +14,11 @@ const routes: Routes = [
       import('./lesson-editor/lesson-editor.component').then((m) => m.LessonEditorComponent),
     canDeactivate: [lessonEditorCanDeactivateGuard],
   },
+  {
+    path: 'lessons/:id/preview',
+    loadComponent: () =>
+      import('./lesson-preview/lesson-preview.component').then((m) => m.LessonPreviewComponent),
+  },
 ];
 
 @NgModule({

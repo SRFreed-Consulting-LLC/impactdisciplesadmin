@@ -1,0 +1,22 @@
+<div class="preview-header">
+  <button mat-button (click)="backToEditor()">
+    <mat-icon>arrow_back</mat-icon>
+    Back to editor
+  </button>
+  <h2>{{ lesson?.title ?? 'Lesson' }} &mdash; Preview</h2>
+</div>
+
+@if (loadError) {
+  <div class="error-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>Couldn't load this lesson: {{ loadError }}</p>
+  </div>
+} @else if (loading) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else if (!lesson?.formSchema) {
+  <p class="empty-state">This lesson has no saved content yet.</p>
+}
+
+<div #formContainer class="form-container"></div>
