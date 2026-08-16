@@ -292,7 +292,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // Slice 4: app-wide Library staff config - currently just the
       // bulk-purchase discount tiers a group leader's license purchase is
       // priced against.
-      { label: 'Config', slug: 'config', employeeGrantable: false }
+      { label: 'Config', slug: 'config', employeeGrantable: false },
+      // Slice 4: world map of where library users are using the reader app
+      // (IP-derived login locations) - a plain inline tab here rather than
+      // the source app's auto-opening dialog, per the consolidation plan's
+      // "becomes a real menu item" decision.
+      { label: 'World Map', slug: 'world-map', employeeGrantable: false }
     ]
   }
 ];

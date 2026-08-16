@@ -21,7 +21,7 @@
               "zone.js"
             ],
             "allowedCommonJsDependencies": [
-              "jszip", "lodash", "@formio/js", "dompurify",
+              "jszip", "lodash", "@formio/js", "dompurify", "leaflet",
               "raf", "rgbcolor", "html2canvas", "exceljs", "file-saver", "quill-delta",
               "core-js/modules/es.array.index-of.js", "core-js/modules/es.array.iterator.js",
               "core-js/modules/es.array.reduce.js", "core-js/modules/es.array.reverse.js",
@@ -42,6 +42,10 @@
               {
                 "glob": "formio.full.min.css",
                 "input": "node_modules/@formio/js/dist"
+              },
+              {
+                "glob": "leaflet.css",
+                "input": "node_modules/leaflet/dist"
               }
             ],
             "styles": [

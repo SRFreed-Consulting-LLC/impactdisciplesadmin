@@ -1,0 +1,33 @@
+<div class="map-page">
+  <div class="map-header">
+    <h1>
+      Disciples of Jesus Christ
+      @if (!loading()) {
+        <span class="user-count">({{ userCount() }} online)</span>
+      }
+    </h1>
+  </div>
+
+  <div class="map-body">
+    <div class="map-frame">
+      <div #mapContainer class="map-container"></div>
+    </div>
+
+    @if (loading()) {
+      <div class="map-loading">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    }
+
+    <div class="map-legend">
+      <div class="map-legend-item">
+        <span class="map-legend-swatch map-legend-swatch--steady"></span>
+        Disciple location
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-swatch map-legend-swatch--glow"></span>
+        Just logged in or moved
+      </div>
+    </div>
+  </div>
+</div>

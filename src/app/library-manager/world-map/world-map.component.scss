@@ -1,0 +1,190 @@
+// Fills whatever height .manager-content's flex layout gives this tab -
+// see library-manager.component.css's own comment (".manager-content" is a
+// real flex:1 1 auto child with a definite height, so height:100% here
+// resolves correctly instead of collapsing to 0).
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.map-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+// Already follows the active Color Theme "for free" - both reference
+// --mat-sys-primary/--mat-sys-surface/--mat-sys-on-surface, which change
+// with every theme via the same mechanism as every other themed element in
+// the app.
+.map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--mat-sys-primary, #00458f);
+  color: var(--mat-sys-on-primary, #fff);
+  border-radius: 8px 8px 0 0;
+
+  h1 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .user-count {
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.85;
+  }
+}
+
+.map-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.map-frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+}
+
+// Leaflet requires an explicit height on its container - without this the
+// map silently renders at 0px tall.
+.map-container {
+  height: 100%;
+  width: 100%;
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--mat-sys-surface, #fff) 70%, transparent);
+}
+
+// Bottom-left, clear of Leaflet's own zoom control (top-left) and
+// attribution (bottom-right) - explains what the two marker colors below
+// mean. z-index above Leaflet's panes/controls (which top out around 1000).
+.map-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--mat-sys-surface, #fff) 92%, transparent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface, #1a1a1a);
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Mirrors the actual marker colors (see .map-marker-dot/--glow below) so
+// the legend never drifts out of sync with what's really on the map - both
+// follow the active theme via the same CSS variables.
+.map-legend-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+
+  &--steady {
+    background: var(--mat-sys-tertiary, #3f8ae0);
+    border: 2px solid var(--mat-sys-primary, #00458f);
+  }
+
+  &--glow {
+    background: #ffb300;
+    border: 2px solid #ff8f00;
+    box-shadow: 0 0 6px 2px rgba(255, 179, 0, 0.85);
+  }
+}
+
+// Library-user marker (WorldMapComponent's markerIcon) - a steady dot plus
+// an expanding, fading ring behind it for the "pulsating" effect. Colors
+// follow the active theme (--mat-sys-primary/tertiary), same as every other
+// themed element in the app. ::ng-deep because Leaflet inserts this markup
+// with plain DOM APIs, not through Angular's template compiler, so it never
+// gets Angular's view-encapsulation attribute.
+::ng-deep .map-marker {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+::ng-deep .map-marker-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--mat-sys-tertiary, #3f8ae0);
+  border: 2px solid var(--mat-sys-primary, #00458f);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+::ng-deep .map-marker-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--mat-sys-primary, #3f8ae0);
+  opacity: 0.55;
+  animation: map-marker-pulse 2.2s ease-out infinite;
+}
+
+@keyframes map-marker-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+// Applied for GLOW_DURATION_MS when a marker is genuinely added or moved
+// (see WorldMapComponent.glow) - a distinct amber that fades back to the
+// normal steady theme-colored pulse, so a staff member watching the map
+// notices exactly which library user just showed up or moved.
+::ng-deep .map-marker--glow .map-marker-dot {
+  background: #ffb300;
+  border-color: #ff8f00;
+  box-shadow: 0 0 10px 4px rgba(255, 179, 0, 0.85);
+}
+
+::ng-deep .map-marker--glow .map-marker-pulse {
+  background: #ffb300;
+  opacity: 0.8;
+  animation-duration: 1s;
+}

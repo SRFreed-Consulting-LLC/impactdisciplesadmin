@@ -8,6 +8,7 @@ import { LibraryBrowseComponent } from './browse/library-browse.component';
 import { SubtemplatesListComponent } from './subtemplates/subtemplates-list.component';
 import { LessonTemplatesListComponent } from './lesson-templates/lesson-templates-list.component';
 import { LibraryConfigComponent } from './config/config.component';
+import { WorldMapComponent } from './world-map/world-map.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -42,7 +43,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     LibraryBrowseComponent,
     SubtemplatesListComponent,
     LessonTemplatesListComponent,
-    LibraryConfigComponent
+    LibraryConfigComponent,
+    WorldMapComponent
   ],
   declarations: [
     LibraryManagerComponent
