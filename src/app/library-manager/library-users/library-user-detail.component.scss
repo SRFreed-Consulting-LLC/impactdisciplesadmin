@@ -1,0 +1,146 @@
+// Centers the whole screen in the content area - see
+// lesson-editor.component.scss's identical note.
+:host {
+  display: block;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--mat-sys-surface, #fff);
+  margin-bottom: 16px;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #c4c7c5);
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.header-spacer {
+  flex: 1 1 auto;
+}
+
+.revoked-chip ::ng-deep .mat-mdc-chip {
+  --mdc-chip-container-height: 24px;
+  background: var(--mat-sys-error-container, #f9dedc);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.empty-state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: minmax(320px, 480px) minmax(360px, 1fr);
+  gap: 24px;
+  align-items: start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.detail-card {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  padding: 16px 20px 20px;
+
+  h3 {
+    margin: 0 0 12px;
+  }
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.name-row {
+  display: flex;
+  gap: 12px;
+
+  mat-form-field {
+    flex: 1 1 0;
+  }
+}
+
+.form-actions {
+  margin-top: 16px;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.info-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.all-books-note {
+  margin: 0 0 12px;
+}
+
+.table-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 4px;
+}
+
+.licenses-table {
+  width: 100%;
+
+  ::ng-deep .mat-mdc-header-cell {
+    background: var(--mat-sys-surface-container, var(--mat-sys-surface));
+  }
+}
+
+.locked-license {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 20px;
+  vertical-align: middle;
+}

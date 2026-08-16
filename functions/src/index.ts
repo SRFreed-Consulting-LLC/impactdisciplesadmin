@@ -71,6 +71,13 @@ exports.onPurchaseGrantLibraryLicenses =
 const bookImport = require("./book-import.functions");
 exports.importBookFromPdf = bookImport.importBookFromPdf;
 
+const libraryUsers = require("./library-users.functions");
+exports.updateLibraryUser = libraryUsers.updateLibraryUser;
+exports.setLibraryUserRevoked = libraryUsers.setLibraryUserRevoked;
+exports.grantLibraryUserLicenses = libraryUsers.grantLibraryUserLicenses;
+exports.revokeAdminGrantedLicense = libraryUsers.revokeAdminGrantedLicense;
+exports.sendLibraryUserMessage = libraryUsers.sendLibraryUserMessage;
+
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =
   mailchimpSync.onCustomerCreatedMailchimpSync;

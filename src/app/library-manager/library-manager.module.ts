@@ -10,6 +10,7 @@ import { LessonTemplatesListComponent } from './lesson-templates/lesson-template
 import { LibraryConfigComponent } from './config/config.component';
 import { WorldMapComponent } from './world-map/world-map.component';
 import { LibraryGroupsListComponent } from './groups/library-groups-list.component';
+import { LibraryUsersListComponent } from './library-users/library-users-list.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -46,7 +47,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     LessonTemplatesListComponent,
     LibraryConfigComponent,
     WorldMapComponent,
-    LibraryGroupsListComponent
+    LibraryGroupsListComponent,
+    LibraryUsersListComponent
   ],
   declarations: [
     LibraryManagerComponent

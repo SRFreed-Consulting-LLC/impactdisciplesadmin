@@ -301,7 +301,13 @@ export const NAV_CONFIG: NavGroup[] = [
       // Slice 4: admin moderation of Impact Groups (list/edit/hard-delete
       // any group, regardless of status/visibility) - no dependent Cloud
       // Functions, both mutations are direct rules-gated Firestore writes.
-      { label: 'Groups', slug: 'groups', employeeGrantable: false }
+      { label: 'Groups', slug: 'groups', employeeGrantable: false },
+      // Slice 4 part 4: reader-app library users roster (a different
+      // population from this app's own admin_users staff) - detail/edit,
+      // revoke/restore access, license grants, and messaging are all
+      // full-page routes reached from here (library-users/:email,
+      // library-users/messages), not further tabs.
+      { label: 'Library Users', slug: 'library-users', employeeGrantable: false }
     ]
   }
 ];

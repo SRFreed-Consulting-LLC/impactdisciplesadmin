@@ -20,7 +20,13 @@ export type LibraryActivityAction =
   | 'permission_changed'
   | 'config_tier_created'
   | 'config_tier_updated'
-  | 'config_tier_deleted';
+  | 'config_tier_deleted'
+  | 'library_user_updated'
+  | 'library_user_revoked'
+  | 'library_user_reinstated'
+  | 'library_user_license_granted'
+  | 'library_user_license_revoked'
+  | 'admin_message_sent';
 
 export interface LibraryActivityLogEntry {
   id?: string;

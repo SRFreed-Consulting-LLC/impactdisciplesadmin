@@ -1,0 +1,30 @@
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 420px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.recipient-summary {
+  margin: 0 0 4px;
+}
+
+.delivery-note {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error-message {
+  color: var(--mat-sys-error, #b3261e);
+  margin: 0;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}

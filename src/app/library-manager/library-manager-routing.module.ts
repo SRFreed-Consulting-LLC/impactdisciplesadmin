@@ -50,6 +50,21 @@ const routes: Routes = [
       ),
     canDeactivate: [lessonTemplateEditorCanDeactivateGuard],
   },
+  // Slice 4 part 4: Library Users. 'messages' MUST be registered before
+  // ':email' - Angular matches routes in order, so the static segment has
+  // to win before the param route would otherwise swallow it as an email.
+  {
+    path: 'library-users/messages',
+    loadComponent: () =>
+      import('./library-users/message-history.component').then((m) => m.MessageHistoryComponent),
+  },
+  {
+    path: 'library-users/:email',
+    loadComponent: () =>
+      import('./library-users/library-user-detail.component').then(
+        (m) => m.LibraryUserDetailComponent,
+      ),
+  },
 ];
 
 @NgModule({

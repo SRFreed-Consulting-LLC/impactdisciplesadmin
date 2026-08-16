@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>Grant book licenses</h2>
+<mat-dialog-content>
+  <p class="grant-target">
+    For: <strong>{{ data.user.email || data.user.id }}</strong>
+  </p>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else {
+    <div class="book-list">
+      @for (book of books(); track book.id) {
+        <mat-checkbox
+          [checked]="isLicensed(book.id!) || isSelected(book.id!)"
+          [disabled]="isLicensed(book.id!) || submitting()"
+          (change)="toggle(book.id!, $event)"
+        >
+          {{ book.title }}
+          @if (isLicensed(book.id!)) {
+            <span class="already-licensed">(already licensed)</span>
+          }
+        </mat-checkbox>
+      }
+    </div>
+  }
+
+  @if (error(); as message) {
+    <p class="error-message">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" [disabled]="submitting()">Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="grant()"
+    [disabled]="selectedCount() === 0 || submitting()"
+  >
+    @if (submitting()) {
+      <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
+    }
+    Grant {{ selectedCount() > 0 ? selectedCount() : '' }} license{{
+      selectedCount() === 1 ? '' : 's'
+    }}
+  </button>
+</mat-dialog-actions>

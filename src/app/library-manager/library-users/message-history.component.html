@@ -1,0 +1,54 @@
+<div class="history-header">
+  <h3>Sent Messages</h3>
+</div>
+
+@if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else if (messages().length === 0) {
+  <p class="empty-state">No messages have been sent yet.</p>
+} @else {
+  <div class="table-scroll">
+    <table mat-table [dataSource]="messages()" [trackBy]="trackByMessageId" class="history-table">
+      <ng-container matColumnDef="sentAt">
+        <th mat-header-cell *matHeaderCellDef>Sent</th>
+        <td mat-cell *matCellDef="let message">{{ message.sentAt | date: 'medium' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Title</th>
+        <td mat-cell *matCellDef="let message">{{ message.title }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="sentBy">
+        <th mat-header-cell *matHeaderCellDef>Sent by</th>
+        <td mat-cell *matCellDef="let message">{{ message.sentByName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="recipients">
+        <th mat-header-cell *matHeaderCellDef>Recipients</th>
+        <td mat-cell *matCellDef="let message">{{ scopeLabel(message) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="delivered">
+        <th mat-header-cell *matHeaderCellDef>Push delivered</th>
+        <td mat-cell *matCellDef="let message">
+          <span
+            matTooltip="Recipients whose device notification was delivered. Everyone also gets the message in their reader-app inbox."
+          >
+            {{ message.pushSuccessCount }}/{{ message.recipientCount }}
+          </span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="clickable-row"
+        (click)="openDetail(row)"
+      ></tr>
+    </table>
+  </div>
+}

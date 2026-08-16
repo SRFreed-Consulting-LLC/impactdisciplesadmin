@@ -1,0 +1,39 @@
+mat-dialog-content {
+  min-width: 400px;
+}
+
+.grant-target {
+  margin: 0 0 12px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+// Bounded internal scroll, same convention as every table in this app.
+.book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.already-licensed {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.85rem;
+  margin-left: 4px;
+}
+
+.error-message {
+  color: var(--mat-sys-error, #b3261e);
+  margin: 12px 0 0;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}

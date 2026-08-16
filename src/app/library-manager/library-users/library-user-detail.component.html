@@ -1,0 +1,201 @@
+<div class="detail-header">
+  <h2>{{ displayName() }}</h2>
+  @if (profile()?.revoked) {
+    <mat-chip-set class="revoked-chip">
+      <mat-chip matTooltip="Access revoked - sign-in disabled. Restore below."
+        >Access revoked</mat-chip
+      >
+    </mat-chip-set>
+  }
+  <span class="header-spacer"></span>
+  <button mat-stroked-button (click)="openSendMessage()" [disabled]="!profile()">
+    <mat-icon>send</mat-icon>
+    Send message
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else if (!profile()) {
+  <p class="empty-state">No library user record exists for {{ email }}.</p>
+} @else {
+  <div class="detail-columns">
+    <div class="detail-column">
+      <section class="detail-card">
+        <h3>Profile</h3>
+        <form [formGroup]="form" (ngSubmit)="saveProfile()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput [value]="profile()!.email || profile()!.id" disabled />
+            <mat-hint>Email is the record's identity and can't be changed.</mat-hint>
+          </mat-form-field>
+          <div class="name-row">
+            <mat-form-field appearance="outline">
+              <mat-label>First name</mat-label>
+              <input matInput formControlName="firstName" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Last name</mat-label>
+              <input matInput formControlName="lastName" />
+            </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="phone" />
+          </mat-form-field>
+          <mat-checkbox
+            formControlName="internationalUser"
+            matTooltip="Grants free access to every book. Note: the reader app re-sets this automatically on the user's next sign-in from outside the US."
+          >
+            International user (free all-book access)
+          </mat-checkbox>
+          <div class="form-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              [disabled]="!form.dirty || saving()"
+            >
+              @if (saving()) {
+                <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
+              }
+              Save
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="detail-card">
+        <h3>Access</h3>
+        @if (profile()!.revoked) {
+          <p>
+            Access was revoked
+            @if (profile()!.revokedAt) {
+              on {{ profile()!.revokedAt | date: 'medium' }}
+            }
+            - this user cannot sign in to the reader app.
+          </p>
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="toggleRevoked()"
+            [disabled]="togglingAccess()"
+          >
+            Restore access
+          </button>
+        } @else {
+          <p>
+            Revoking disables the user's sign-in and blocks all book content, but keeps their
+            record, licenses, and history. It can be undone here at any time.
+          </p>
+          <button
+            mat-stroked-button
+            color="warn"
+            (click)="toggleRevoked()"
+            [disabled]="togglingAccess()"
+          >
+            Revoke access
+          </button>
+        }
+      </section>
+
+      <section class="detail-card">
+        <h3>Account details</h3>
+        <dl class="info-list">
+          <dt>Last login</dt>
+          <dd>
+            {{ profile()!.lastLogin ? (profile()!.lastLogin | date: 'medium') : 'Never recorded' }}
+          </dd>
+          <dt>Login location</dt>
+          <dd>{{ locationLabel(profile()!) || 'Unknown' }}</dd>
+          <dt>Preferred language</dt>
+          <dd>{{ profile()!.preferredLanguage || 'Not set' }}</dd>
+          <dt>Push notifications</dt>
+          <dd>{{ profile()!.notificationsEnabled === false ? 'Opted out' : 'Enabled' }}</dd>
+          <dt>Sign-in account</dt>
+          <dd>{{ profile()!.userId ? 'Linked' : 'None yet (has never signed in)' }}</dd>
+          @if (profile()!.legacyImport) {
+            <dt>Origin</dt>
+            <dd>Imported from the legacy system</dd>
+          }
+          <dt>Record created</dt>
+          <dd>{{ profile()!.createdAt ? (profile()!.createdAt | date: 'medium') : '—' }}</dd>
+        </dl>
+      </section>
+    </div>
+
+    <div class="detail-column">
+      <section class="detail-card">
+        <div class="card-header">
+          <h3>Book licenses</h3>
+          <button mat-stroked-button (click)="openGrantLicenses()">
+            <mat-icon>add</mat-icon>
+            Grant licenses
+          </button>
+        </div>
+        @if (hasAllBooks()) {
+          <p class="all-books-note">
+            This user effectively has access to <strong>all books</strong>
+            {{ profile()!.internationalUser ? '(international user)' : "(legacy 'all' access)" }} -
+            the per-book licenses below are informational.
+          </p>
+        }
+        @if (licenses().length === 0) {
+          <p class="empty-state">No individual book licenses.</p>
+        } @else {
+          <div class="table-scroll">
+            <table
+              mat-table
+              [dataSource]="licenses()"
+              [trackBy]="trackByLicenseBookId"
+              class="licenses-table"
+            >
+              <ng-container matColumnDef="book">
+                <th mat-header-cell *matHeaderCellDef>Book</th>
+                <td mat-cell *matCellDef="let license">{{ bookTitle(license.bookId) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="source">
+                <th mat-header-cell *matHeaderCellDef>Source</th>
+                <td mat-cell *matCellDef="let license">{{ sourceLabel(license) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let license">
+                  {{ license.purchaseDate ? (license.purchaseDate | date: 'mediumDate') : '—' }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let license">
+                  @if (license.source === 'admin-grant') {
+                    <button
+                      mat-icon-button
+                      matTooltip="Remove this granted license"
+                      (click)="removeLicense(license)"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  } @else {
+                    <mat-icon
+                      class="locked-license"
+                      [matTooltip]="
+                        license.source === 'group-license'
+                          ? 'Assigned via an Impact Group license - manage it from the group'
+                          : 'Purchased - refund it from the Purchases screen'
+                      "
+                      >lock</mat-icon
+                    >
+                  }
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="licenseColumns; sticky: true"></tr>
+              <tr mat-row *matRowDef="let row; columns: licenseColumns"></tr>
+            </table>
+          </div>
+        }
+      </section>
+    </div>
+  </div>
+}
