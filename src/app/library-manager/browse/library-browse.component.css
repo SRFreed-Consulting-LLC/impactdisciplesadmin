@@ -9,6 +9,10 @@
   margin: 0;
 }
 
+.spacer {
+  flex: 1 1 auto;
+}
+
 .loading {
   display: flex;
   justify-content: center;

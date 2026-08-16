@@ -68,6 +68,9 @@ const libraryLicenseGrant = require("./library-license-grant.functions");
 exports.onPurchaseGrantLibraryLicenses =
   libraryLicenseGrant.onPurchaseGrantLibraryLicenses;
 
+const bookImport = require("./book-import.functions");
+exports.importBookFromPdf = bookImport.importBookFromPdf;
+
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =
   mailchimpSync.onCustomerCreatedMailchimpSync;

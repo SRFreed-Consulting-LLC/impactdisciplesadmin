@@ -5,6 +5,7 @@ import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
+import { getStorage, provideStorage } from '@angular/fire/storage';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { environment } from 'src/environments/environment';
@@ -53,6 +54,10 @@ import { AuthModule } from './core/auth/auth.module';
     // callable directly (AdminUserService.createAdminUser) instead of
     // getFunctions().
     provideFunctions(() => getFunctions()),
+    // Needed for the Library section's AI Book Import - uploads a PDF to a
+    // temporary Storage object for importBookFromPdf to read server-side.
+    // See storage.rules for the scoped book-imports/{uid}/ upload rule.
+    provideStorage(() => getStorage()),
     // Function-based provider, not the BrowserAnimationsModule NgModule form -
     // see the NG05100 fix history for why a root-only NgModule that re-exports
     // BrowserModule internally is exactly the bug class to avoid here.

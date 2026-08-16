@@ -1,0 +1,184 @@
+<h2 mat-dialog-title>Import Book from PDF</h2>
+
+<div mat-dialog-content class="import-dialog-content">
+  @if (error(); as message) {
+    <div class="import-error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ message }}</span>
+    </div>
+  }
+
+  <!-- STEP 1: inputs -->
+  @if (step() === 'form') {
+    <form [formGroup]="form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Series</mat-label>
+        <mat-select formControlName="seriesId">
+          <mat-option [value]="NEW_SERIES">➕ Create a new series</mat-option>
+          @for (series of seriesList(); track series.id) {
+            <mat-option [value]="series.id">{{ series.title }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (creatingNewSeries) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>New series title</mat-label>
+          <input matInput formControlName="newSeriesTitle" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>New series description (optional)</mat-label>
+          <textarea matInput rows="2" formControlName="newSeriesDescription"></textarea>
+        </mat-form-field>
+      }
+
+      <div class="row">
+        <mat-form-field appearance="outline" class="grow">
+          <mat-label>Book code</mat-label>
+          <input matInput formControlName="code" placeholder="e.g. dmc" />
+          <mat-hint>Short lowercase id used for this book (letters/numbers).</mat-hint>
+          @if (form.controls.code.touched && form.controls.code.invalid) {
+            <mat-error>At least 2 characters.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="order-field">
+          <mat-label>Order</mat-label>
+          <input matInput type="number" formControlName="order" />
+        </mat-form-field>
+      </div>
+
+      <div class="file-picker">
+        <button mat-stroked-button type="button" (click)="fileInput.click()">
+          <mat-icon>upload_file</mat-icon>
+          Choose PDF
+        </button>
+        <span class="file-name">{{ file()?.name ?? 'No file selected' }}</span>
+        <input
+          #fileInput
+          type="file"
+          accept="application/pdf"
+          hidden
+          (change)="onFileSelected($event)"
+        />
+      </div>
+
+      <p class="hint-text">
+        The book is read by AI to detect its units, lessons, questions and images. You'll review the
+        detected structure before anything is saved.
+      </p>
+    </form>
+  }
+
+  <!-- STEP 2: plan preview -->
+  @if (step() === 'preview' && plan(); as p) {
+    <div class="preview">
+      <div class="book-head">
+        <h3>{{ p.book.title }}</h3>
+        @if (p.book.author) {
+          <span class="muted">by {{ p.book.author }}</span>
+        }
+      </div>
+      @if (p.book.description) {
+        <p class="muted">{{ p.book.description }}</p>
+      }
+
+      <div class="summary-chips">
+        <span class="chip">{{ p.units.length }} units</span>
+        <span class="chip">{{ totalLessons(p) }} lessons</span>
+        <span class="chip">{{ interactiveLessons(p) }} with questions</span>
+        <span class="chip">{{ imageLessons(p) }} with images</span>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <div class="tree">
+        @for (unit of p.units; track $index) {
+          <div class="unit">
+            <div class="unit-title"><mat-icon>folder</mat-icon>{{ unit.title }}</div>
+            @for (lesson of unit.lessons; track $index) {
+              <div class="lesson">
+                <mat-icon class="lesson-icon">description</mat-icon>
+                <span class="lesson-title">{{ lesson.title }}</span>
+                @if (lesson.hasQuestions) {
+                  <mat-icon class="badge submit" matTooltip="Interactive — Save/submit added">
+                    quiz
+                  </mat-icon>
+                }
+                @if (lesson.imageCount > 0) {
+                  <mat-icon
+                    class="badge image"
+                    [matTooltip]="lesson.imageCount + ' image(s) — add in editor'"
+                  >
+                    image
+                  </mat-icon>
+                }
+                @if (lesson.hasDailyReading) {
+                  <mat-icon class="badge reading" matTooltip="Daily reading plan">
+                    event_note
+                  </mat-icon>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <p class="hint-text">
+        Lessons with questions get answer fields and a Save button. Images become placeholders you
+        finish in the Lesson Editor. The book is created <strong>unpublished</strong>.
+      </p>
+    </div>
+  }
+
+  <!-- STEP 3: running -->
+  @if (step() === 'running' && progress(); as pr) {
+    <div class="running">
+      <p class="progress-message">{{ pr.message }}</p>
+      @if (pr.lessonsTotal > 0 && pr.phase === 'generating') {
+        <mat-progress-bar mode="determinate" [value]="(pr.lessonsDone / pr.lessonsTotal) * 100" />
+        <p class="muted">{{ pr.lessonsDone }} / {{ pr.lessonsTotal }} lessons</p>
+      } @else {
+        <mat-progress-bar mode="indeterminate" />
+      }
+    </div>
+  }
+
+  <!-- STEP 4: done -->
+  @if (step() === 'done') {
+    <div class="done">
+      <div class="done-head">
+        <mat-icon>check_circle</mat-icon>
+        <span>Import complete — the book is now in the library tree (unpublished).</span>
+      </div>
+      @if (progress()?.flagged?.length) {
+        <p class="muted">These lessons contain images to add manually in the Lesson Editor:</p>
+        <ul class="flagged">
+          @for (item of progress()!.flagged; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</div>
+
+<div mat-dialog-actions align="end">
+  @switch (step()) {
+    @case ('form') {
+      <button mat-button type="button" (click)="cancel()">Cancel</button>
+      <button mat-flat-button color="primary" type="button" (click)="analyze()">Analyze PDF</button>
+    }
+    @case ('preview') {
+      <button mat-button type="button" (click)="backToForm()">Back</button>
+      <button mat-flat-button color="primary" type="button" (click)="runImport()">
+        Import {{ totalLessons(plan()!) }} lessons
+      </button>
+    }
+    @case ('running') {
+      <button mat-button type="button" disabled>Working…</button>
+    }
+    @case ('done') {
+      <button mat-flat-button color="primary" type="button" (click)="close()">Done</button>
+    }
+  }
+</div>

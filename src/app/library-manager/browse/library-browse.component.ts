@@ -1,10 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog } from '@angular/material/dialog';
 import { BookSeriesService } from 'src/app/common/services/data/library/book-series.service';
 import { LibraryBookService } from 'src/app/common/services/data/library/library-book.service';
 import { LibraryUnitService } from 'src/app/common/services/data/library/library-unit.service';
@@ -13,6 +15,7 @@ import { BookSeriesModel } from 'src/app/common/models/domain/library/book-serie
 import { LibraryBookModel } from 'src/app/common/models/domain/library/library-book.model';
 import { LibraryUnitModel } from 'src/app/common/models/domain/library/library-unit.model';
 import { LibraryLessonModel } from 'src/app/common/models/domain/library/library-lesson.model';
+import { ImportBookDialogComponent } from '../dialogs/import-book-dialog.component';
 
 type BrowseLevel = 'series' | 'books' | 'units' | 'lessons';
 
@@ -63,7 +66,8 @@ export class LibraryBrowseComponent implements OnInit {
     private bookService: LibraryBookService,
     private unitService: LibraryUnitService,
     private lessonService: LibraryLessonService,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -134,6 +138,26 @@ export class LibraryBrowseComponent implements OnInit {
    *  title as inert text. */
   openLesson(lesson: LibraryLessonModel): void {
     void this.router.navigate(['/library-manager/lessons', lesson.id]);
+  }
+
+  /** Entry point for AI Book Import - only shown at the top (series) level,
+   *  matching the source app's hamburger-menu placement conceptually
+   *  ("start managing the library"). Refreshes the series list on a
+   *  successful import so the new (unpublished) book's series shows up
+   *  immediately without a manual reload. */
+  async openImportBook(): Promise<void> {
+    const ref = this.dialog.open(ImportBookDialogComponent, {
+      autoFocus: false,
+      // The import can run for a while (a Cloud Function call per lesson) -
+      // keep the dialog modal and non-dismissable so a stray click can't
+      // abandon a run midway; it closes itself via its own Cancel/Done
+      // buttons.
+      disableClose: true,
+    });
+    const imported = await firstValueFrom(ref.afterClosed());
+    if (imported) {
+      this.loadSeries();
+    }
   }
 
   goUp(): void {

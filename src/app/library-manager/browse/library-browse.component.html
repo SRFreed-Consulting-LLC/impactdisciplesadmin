@@ -13,6 +13,13 @@
       @case ('lessons') { {{ selectedUnit?.title }} }
     }
   </h3>
+  <span class="spacer"></span>
+  @if (level === 'series') {
+    <button mat-flat-button color="primary" (click)="openImportBook()">
+      <mat-icon>upload_file</mat-icon>
+      Import Book
+    </button>
+  }
 </div>
 
 @if (error) {

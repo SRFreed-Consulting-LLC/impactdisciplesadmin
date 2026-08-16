@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Cloud Storage rules for this app's bucket.
+//
+// Ported from impact-discipleship-library-manager-new's storage.rules - the
+// ONLY use is the AI Book Import flow, which drops a temporary source PDF
+// under book-imports/{uid}/ for the importBookFromPdf Cloud Function to read
+// via the Admin SDK (which bypasses these rules) and then deletes it.
+// Everything else stays denied.
+//
+// Deploy explicitly with `firebase deploy --only storage` - not part of
+// npm run deploy:dev, to avoid touching the bucket by surprise. Admin
+// authorization for the import itself is enforced server-side by the
+// callable's requireAdminRole - these rules only need to keep the temp
+// upload area scoped to its own signed-in user. (A staff role check is
+// deliberately omitted here even though this app's admin_users DOES live in
+// the same default database Storage rules' firestore.get() can reach -
+// unlike the source app's - because admin_users isn't keyed by uid the way
+// a firestore.get() needs an exact document path; it's found by a
+// `where firebaseUID == uid` query, which these rules have no way to run.)
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /book-imports/{uid}/{fileName} {
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 32 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+      // The Cloud Function reads via the Admin SDK; clients never need to read.
+      allow read: if false;
+    }
+
+    // Everything else stays locked (unchanged from Firebase's default).
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
