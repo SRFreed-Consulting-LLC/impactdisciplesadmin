@@ -1,0 +1,39 @@
+<div class="editor-header">
+  <mat-form-field appearance="outline" class="title-field">
+    <mat-label>Name</mat-label>
+    <input matInput [ngModel]="titleDraft()" (ngModelChange)="titleDraft.set($event)" />
+  </mat-form-field>
+
+  <div class="header-actions">
+    <mat-form-field appearance="outline" class="type-select">
+      <mat-label>Type</mat-label>
+      <mat-select [ngModel]="type()" (ngModelChange)="type.set($event)">
+        <mat-option value="header">Header</mat-option>
+        <mat-option value="footer">Footer</mat-option>
+        <mat-option value="layout">Layout</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-flat-button color="primary" [disabled]="saving()" (click)="save()">
+      @if (saving()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        Save Subtemplate
+      }
+    </button>
+
+    <button mat-stroked-button [disabled]="saving()" (click)="cancel()">Cancel</button>
+  </div>
+</div>
+
+@if (loadError(); as message) {
+  <div class="error-state">
+    <p>Couldn't load this subtemplate: {{ message }}</p>
+  </div>
+} @else if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+}
+
+<div #builderContainer class="builder-container" [class.hidden]="loading() || !!loadError()"></div>

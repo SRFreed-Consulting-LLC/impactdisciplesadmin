@@ -278,7 +278,13 @@ export const NAV_CONFIG: NavGroup[] = [
       // real authoring screens (Lesson Editor, Translations, Templates, AI
       // Book Import), Users, Library Users, Groups, Config, Activity Log,
       // World Map - each its own NavLeaf here as it lands.
-      { label: 'Browse', slug: 'browse', employeeGrantable: false }
+      { label: 'Browse', slug: 'browse', employeeGrantable: false },
+      // Slice 2: list/create/delete subtemplates (header/footer/layout
+      // pieces reused across lessons). Editing one opens the full-page
+      // Subtemplate Editor route (library-manager/subtemplates/:id), not a
+      // tab - same "tab-shell lists, full page edits" split as Lesson
+      // Editor/Preview vs. Browse.
+      { label: 'Subtemplates', slug: 'subtemplates', employeeGrantable: false }
     ]
   }
 ];

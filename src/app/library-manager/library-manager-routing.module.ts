@@ -2,12 +2,12 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LibraryManagerComponent } from './library-manager.component';
 import { lessonEditorCanDeactivateGuard } from './lesson-editor/lesson-editor.guard';
+import { subtemplateEditorCanDeactivateGuard } from './subtemplate-editor/subtemplate-editor.guard';
 
 const routes: Routes = [
   { path: '', component: LibraryManagerComponent },
-  // Full-page editor, not one of the tab-shell's own NavLeaf screens (same
-  // as impact-discipleship-library-manager-new's own top-level /lessons/:id
-  // route) - reached from Browse, resolves to /library-manager/lessons/:id.
+  // Full-page editors, not tab-shell NavLeaf screens (same split the source
+  // app itself uses - a top-level route per editor, not a tab).
   {
     path: 'lessons/:id',
     loadComponent: () =>
@@ -18,6 +18,14 @@ const routes: Routes = [
     path: 'lessons/:id/preview',
     loadComponent: () =>
       import('./lesson-preview/lesson-preview.component').then((m) => m.LessonPreviewComponent),
+  },
+  {
+    path: 'subtemplates/:id',
+    loadComponent: () =>
+      import('./subtemplate-editor/subtemplate-editor.component').then(
+        (m) => m.SubtemplateEditorComponent,
+      ),
+    canDeactivate: [subtemplateEditorCanDeactivateGuard],
   },
 ];
 

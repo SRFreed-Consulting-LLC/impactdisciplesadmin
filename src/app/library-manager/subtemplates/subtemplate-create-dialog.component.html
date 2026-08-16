@@ -1,0 +1,31 @@
+<h2 mat-dialog-title>New Subtemplate</h2>
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div mat-dialog-content>
+    <mat-form-field appearance="outline" style="width: 100%">
+      <mat-label>Subtemplate name</mat-label>
+      <input matInput formControlName="name" cdkFocusInitial />
+      @if (form.controls.name.hasError('required')) {
+        <mat-error>This field is required</mat-error>
+      }
+      @if (form.controls.name.hasError('minlength')) {
+        <mat-error>Enter at least 2 characters</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width: 100%">
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type">
+        <mat-option value="header">Header</mat-option>
+        <mat-option value="footer">Footer</mat-option>
+        <mat-option value="layout">Layout</mat-option>
+      </mat-select>
+      @if (form.controls.type.hasError('required')) {
+        <mat-error>Choose a type</mat-error>
+      }
+    </mat-form-field>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Create</button>
+  </div>
+</form>
