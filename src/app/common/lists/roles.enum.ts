@@ -7,7 +7,18 @@ export enum Role     {
     // AdminUserDialogComponent's assignable `roles` list on purpose - it's
     // not meant to be self-serve creatable from the UI yet. See hasRole()
     // below for how it inherits Admin's access.
-    ROOT = 'Root'
+    ROOT = 'Root',
+    // The former impact-discipleship-library-manager-new app's own staff,
+    // ported over as this app absorbs its CMS (see that app's consolidation
+    // plan). Hard-scoped in PermissionService.canView()/effectivePermission()
+    // to the 'library-manager' NAV_CONFIG group and nothing else - an Editor
+    // never sees Store/Events/Customers/etc, by construction (checked before
+    // any ScreenPermission grant lookup), not via a grants convention an
+    // Admin could misconfigure. Distinct from Employee on purpose: Employee
+    // covers the other 8 "business" managers via per-screen grants, Editor
+    // covers Library exclusively via its own per-content-node grant system
+    // (series/book/unit/lesson - see LibraryPermissionService).
+    EDITOR = 'Editor'
 }
 
 // Every role-gating check in this app ultimately reduces to "is the

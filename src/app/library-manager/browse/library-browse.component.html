@@ -1,0 +1,91 @@
+<div class="browse-header">
+  @if (level !== 'series') {
+    <button mat-stroked-button (click)="goUp()">
+      <mat-icon>arrow_upward</mat-icon>
+      Back
+    </button>
+  }
+  <h3>
+    @switch (level) {
+      @case ('series') { Series }
+      @case ('books') { {{ selectedSeries?.title }} }
+      @case ('units') { {{ selectedBook?.title }} }
+      @case ('lessons') { {{ selectedUnit?.title }} }
+    }
+  </h3>
+</div>
+
+@if (loading) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else {
+  @switch (level) {
+    @case ('series') {
+      @if (seriesList.length === 0) {
+        <p class="empty-state">No series yet.</p>
+      }
+      <mat-nav-list>
+        @for (series of seriesList; track series.id) {
+          <a
+            mat-list-item
+            tabindex="0"
+            (click)="openSeries(series)"
+            (keydown.enter)="openSeries(series)"
+            (keydown.space)="$event.preventDefault(); openSeries(series)"
+          >
+            <span matListItemTitle>{{ series.title }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    }
+    @case ('books') {
+      @if (books.length === 0) {
+        <p class="empty-state">No books in this series yet.</p>
+      }
+      <mat-nav-list>
+        @for (book of books; track book.id) {
+          <a
+            mat-list-item
+            tabindex="0"
+            (click)="openBook(book)"
+            (keydown.enter)="openBook(book)"
+            (keydown.space)="$event.preventDefault(); openBook(book)"
+          >
+            <span matListItemTitle>{{ book.title }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    }
+    @case ('units') {
+      @if (units.length === 0) {
+        <p class="empty-state">No units in this book yet.</p>
+      }
+      <mat-nav-list>
+        @for (unit of units; track unit.id) {
+          <a
+            mat-list-item
+            tabindex="0"
+            (click)="openUnit(unit)"
+            (keydown.enter)="openUnit(unit)"
+            (keydown.space)="$event.preventDefault(); openUnit(unit)"
+          >
+            <span matListItemTitle>{{ unit.title }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    }
+    @case ('lessons') {
+      @if (lessons.length === 0) {
+        <p class="empty-state">No lessons in this unit yet.</p>
+      }
+      <mat-nav-list>
+        @for (lesson of lessons; track lesson.id) {
+          <span mat-list-item>
+            <span matListItemTitle>{{ lesson.title }}</span>
+          </span>
+        }
+      </mat-nav-list>
+    }
+  }
+}

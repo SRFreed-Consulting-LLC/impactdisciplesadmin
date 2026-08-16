@@ -61,6 +61,23 @@ export class PermissionService {
     return hasRole(this.currentUser?.role, [Role.ADMIN]);
   }
 
+  // Role.EDITOR (the former library manager app's staff) is hard-scoped to
+  // the Library section - NOT full access (must stay false so
+  // canManagePermissions/canManageAdminUsers/canManageLogs, all gated on
+  // isFullAccess(), still deny Editors), and NOT just another Employee-style
+  // grant (Editors never get ScreenPermission entries at all - see
+  // roles.enum.ts's own comment on why this is a distinct role). Checked
+  // explicitly in canView()/effectivePermission() before the Employee-grant
+  // fallthrough, so this guarantee holds regardless of what an Employee-style
+  // `permissions` array might ever contain on an Editor's own AdminUser doc.
+  private isLibraryEditor(): boolean {
+    return this.currentUser?.role === Role.EDITOR;
+  }
+
+  private isLibraryKey(key: string): boolean {
+    return key === 'library-manager' || key.startsWith('library-manager.');
+  }
+
   private grant(key: string): ScreenPermission | undefined {
     return this.currentUser?.permissions?.find((p) => p.screenKey === key);
   }
@@ -73,6 +90,16 @@ export class PermissionService {
   effectivePermission(key: string): EffectivePermission {
     if (this.isFullAccess()) {
       return ALL;
+    }
+    if (this.isLibraryEditor()) {
+      // View-only here, unconditionally, until Library's own per-content-
+      // node grant system (LibraryPermissionService, a later slice) exists
+      // to actually decide add/edit/delete - avoids this generic service
+      // silently implying edit rights on Library screens it doesn't govern
+      // the specifics of. Screens needing finer control read that service
+      // instead, once it exists; this only ever answers "can an Editor see
+      // the Library section's own nav/shell at all".
+      return this.isLibraryKey(key) ? { view: true, add: false, edit: false, delete: false } : NONE;
     }
     const g = this.grant(key);
     if (!g) {
@@ -103,6 +130,14 @@ export class PermissionService {
   canView(key: string, employeeGrantable = true): boolean {
     if (this.isFullAccess()) {
       return true;
+    }
+    if (this.isLibraryEditor()) {
+      // Hard block on every non-Library key, unconditionally - see this
+      // class's isLibraryEditor() comment. Every Library NavLeaf also sets
+      // employeeGrantable: false (nav-config.ts) so buildPermissionTree()
+      // never offers Library screens as grantable to an Employee either -
+      // this check is the other half, for Editors reaching a Library key.
+      return this.isLibraryKey(key);
     }
     if (!employeeGrantable) {
       return false;

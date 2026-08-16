@@ -256,5 +256,29 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Logs', slug: 'logs', employeeGrantable: false, hideFromNav: true },
       { label: 'Admin Users', slug: 'admin-users', employeeGrantable: false, hideFromNav: true }
     ]
+  },
+  {
+    // Added as part of the impact-discipleship-library-manager-new
+    // consolidation (Phase 2, Slice 1 - scaffolding). Visible to Admin/Root
+    // (full access, as everywhere) and Role.EDITOR (the former library
+    // manager app's own staff, hard-scoped to only this group - see
+    // PermissionService.canView()'s own comment). Not Employee - every item
+    // below is employeeGrantable: false so it never appears in the Employee
+    // permissions-editing table at all, on top of PermissionService's own
+    // hard block. `roles` here is otherwise-unused vestigial documentation
+    // in this codebase (see PermissionService/MainScreenComponent - actual
+    // gating is canView()-driven, not this field) but left accurate anyway.
+    id: 'library-manager',
+    label: 'LIBRARY MANAGER',
+    icon: 'menu_book',
+    roles: [Role.ADMIN, Role.EDITOR],
+    items: [
+      // Slice 1: read-only Series/Book/Unit/Lesson drill-down, proving the
+      // named-database service pattern end to end. Later slices add the
+      // real authoring screens (Lesson Editor, Translations, Templates, AI
+      // Book Import), Users, Library Users, Groups, Config, Activity Log,
+      // World Map - each its own NavLeaf here as it lands.
+      { label: 'Browse', slug: 'browse', employeeGrantable: false }
+    ]
   }
 ];

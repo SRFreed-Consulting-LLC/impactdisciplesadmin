@@ -67,6 +67,11 @@ const routes: Routes = [
         path: 'reports-manager',
         loadChildren: () => import('./reports-manager/reports-manager.module').then(m => m.ReportsManagerModule),
         canActivate: [ authGuard ]
+      },
+      {
+        path: 'library-manager',
+        loadChildren: () => import('./library-manager/library-manager.module').then(m => m.LibraryManagerModule),
+        canActivate: [ authGuard ]
       }
     ]
   },
