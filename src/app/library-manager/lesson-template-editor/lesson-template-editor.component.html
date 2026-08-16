@@ -1,0 +1,91 @@
+<div class="editor-header">
+  <mat-form-field appearance="outline" class="title-field">
+    <mat-label>Name</mat-label>
+    <input matInput [ngModel]="titleDraft()" (ngModelChange)="titleDraft.set($event)" />
+  </mat-form-field>
+
+  <div class="header-actions">
+    <button mat-flat-button color="primary" [disabled]="saving() || loading()" (click)="save()">
+      @if (saving()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        Save Lesson Template
+      }
+    </button>
+
+    <button mat-stroked-button [disabled]="saving()" (click)="cancel()">Cancel</button>
+  </div>
+</div>
+
+@if (loadError(); as message) {
+  <div class="error-state">
+    <p>Couldn't load this lesson template: {{ message }}</p>
+  </div>
+} @else if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+}
+
+<div class="editor-body" [class.hidden]="loading() || !!loadError()">
+  <div class="slots-form">
+    <div class="slot-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Header</mat-label>
+        <mat-select [ngModel]="headerSubtemplateId()" (ngModelChange)="onHeaderChange($event)">
+          <mat-option value="">None</mat-option>
+          @for (subtemplate of headerSubtemplates(); track subtemplate.id) {
+            <mat-option [value]="subtemplate.id">{{ subtemplate.title }}</mat-option>
+          }
+        </mat-select>
+        @if (headerSubtemplates().length === 0) {
+          <mat-hint>No header subtemplates yet.</mat-hint>
+        }
+      </mat-form-field>
+      <button mat-icon-button matTooltip="New header subtemplate" (click)="createSubtemplate('header')">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+
+    <div class="slot-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Layout</mat-label>
+        <mat-select [ngModel]="layoutSubtemplateId()" (ngModelChange)="onLayoutChange($event)">
+          <mat-option value="">None</mat-option>
+          @for (subtemplate of layoutSubtemplates(); track subtemplate.id) {
+            <mat-option [value]="subtemplate.id">{{ subtemplate.title }}</mat-option>
+          }
+        </mat-select>
+        @if (layoutSubtemplates().length === 0) {
+          <mat-hint>No layout subtemplates yet.</mat-hint>
+        }
+      </mat-form-field>
+      <button mat-icon-button matTooltip="New layout subtemplate" (click)="createSubtemplate('layout')">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+
+    <div class="slot-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Footer</mat-label>
+        <mat-select [ngModel]="footerSubtemplateId()" (ngModelChange)="onFooterChange($event)">
+          <mat-option value="">None</mat-option>
+          @for (subtemplate of footerSubtemplates(); track subtemplate.id) {
+            <mat-option [value]="subtemplate.id">{{ subtemplate.title }}</mat-option>
+          }
+        </mat-select>
+        @if (footerSubtemplates().length === 0) {
+          <mat-hint>No footer subtemplates yet.</mat-hint>
+        }
+      </mat-form-field>
+      <button mat-icon-button matTooltip="New footer subtemplate" (click)="createSubtemplate('footer')">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="preview-panel">
+    <h3>Preview</h3>
+    <div #previewContainer class="preview-container"></div>
+  </div>
+</div>

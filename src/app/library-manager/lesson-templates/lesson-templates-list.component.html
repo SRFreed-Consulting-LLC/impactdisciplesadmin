@@ -1,0 +1,73 @@
+<div class="templates-header">
+  <h3>Lesson Templates</h3>
+  <button mat-flat-button color="primary" (click)="createLessonTemplate()">
+    <mat-icon>post_add</mat-icon>
+    New Lesson Template
+  </button>
+</div>
+
+@if (loading) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else if (lessonTemplates.length === 0) {
+  <p class="empty-state">No lesson templates yet.</p>
+} @else {
+  <div class="table-scroll">
+    <table
+      mat-table
+      [dataSource]="lessonTemplates"
+      [trackBy]="trackByTemplateId"
+      class="templates-table"
+    >
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Title</th>
+        <td mat-cell *matCellDef="let lessonTemplate">{{ lessonTemplate.title }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="header">
+        <th mat-header-cell *matHeaderCellDef>Header</th>
+        <td mat-cell *matCellDef="let lessonTemplate">
+          {{ slotLabel(lessonTemplate.headerSubtemplateId) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="layout">
+        <th mat-header-cell *matHeaderCellDef>Layout</th>
+        <td mat-cell *matCellDef="let lessonTemplate">
+          {{ slotLabel(lessonTemplate.layoutSubtemplateId) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="footer">
+        <th mat-header-cell *matHeaderCellDef>Footer</th>
+        <td mat-cell *matCellDef="let lessonTemplate">
+          {{ slotLabel(lessonTemplate.footerSubtemplateId) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let lessonTemplate" class="actions-cell">
+          <button
+            mat-icon-button
+            matTooltip="Delete"
+            (click)="deleteLessonTemplate(lessonTemplate, $event)"
+          >
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="template-row"
+        tabindex="0"
+        (click)="openLessonTemplate(row)"
+        (keydown.enter)="openLessonTemplate(row)"
+      ></tr>
+    </table>
+  </div>
+}

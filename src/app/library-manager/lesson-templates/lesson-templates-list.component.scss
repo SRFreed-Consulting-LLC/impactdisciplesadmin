@@ -1,0 +1,49 @@
+.templates-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    flex: 1 1 auto;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.empty-state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.table-scroll {
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  max-width: 900px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 4px;
+}
+
+.templates-table {
+  width: 100%;
+
+  ::ng-deep .mat-mdc-header-cell {
+    background: var(--mat-sys-surface-container, var(--mat-sys-surface));
+  }
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.template-row {
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+  }
+}

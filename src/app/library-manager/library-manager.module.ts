@@ -6,6 +6,7 @@ import { LibraryManagerComponent } from './library-manager.component';
 import { LibraryManagerRoutingModule } from './library-manager-routing.module';
 import { LibraryBrowseComponent } from './browse/library-browse.component';
 import { SubtemplatesListComponent } from './subtemplates/subtemplates-list.component';
+import { LessonTemplatesListComponent } from './lesson-templates/lesson-templates-list.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -13,8 +14,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 // Library Manager - the former impact-discipleship-library-manager-new
 // app's CMS, being folded in as its own manager module (see that app's
 // consolidation plan, Phase 2). Slice 1: module/routing/shell + read-only
-// Browse. Slice 2 (in progress): Lesson Editor/Preview, Subtemplates -
-// Translations/Lesson Templates/AI Book Import still queued.
+// Browse. Slice 2 (in progress): Lesson Editor/Preview, Subtemplates, Lesson
+// Templates - Translations/AI Book Import still queued.
 //
 // Every screen this module gains stays a standalone component as originally
 // authored - imported here rather than declared, per the plan's "NgModule
@@ -36,7 +37,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatButtonModule,
     MatProgressSpinnerModule,
     LibraryBrowseComponent,
-    SubtemplatesListComponent
+    SubtemplatesListComponent,
+    LessonTemplatesListComponent
   ],
   declarations: [
     LibraryManagerComponent

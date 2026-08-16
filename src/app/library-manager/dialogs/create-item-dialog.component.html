@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>{{ data.title }}</h2>
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div mat-dialog-content>
+    <mat-form-field appearance="outline" style="width: 100%">
+      <mat-label>{{ data.label }}</mat-label>
+      <input matInput formControlName="name" cdkFocusInitial />
+      @if (form.controls.name.hasError('required')) {
+        <mat-error>This field is required</mat-error>
+      }
+      @if (form.controls.name.hasError('minlength')) {
+        <mat-error>Enter at least 2 characters</mat-error>
+      }
+    </mat-form-field>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">
+      {{ data.confirmLabel ?? 'Create' }}
+    </button>
+  </div>
+</form>

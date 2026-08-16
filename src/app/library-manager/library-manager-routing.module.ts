@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LibraryManagerComponent } from './library-manager.component';
 import { lessonEditorCanDeactivateGuard } from './lesson-editor/lesson-editor.guard';
 import { subtemplateEditorCanDeactivateGuard } from './subtemplate-editor/subtemplate-editor.guard';
+import { lessonTemplateEditorCanDeactivateGuard } from './lesson-template-editor/lesson-template-editor.guard';
 
 const routes: Routes = [
   { path: '', component: LibraryManagerComponent },
@@ -26,6 +27,14 @@ const routes: Routes = [
         (m) => m.SubtemplateEditorComponent,
       ),
     canDeactivate: [subtemplateEditorCanDeactivateGuard],
+  },
+  {
+    path: 'lesson-templates/:id',
+    loadComponent: () =>
+      import('./lesson-template-editor/lesson-template-editor.component').then(
+        (m) => m.LessonTemplateEditorComponent,
+      ),
+    canDeactivate: [lessonTemplateEditorCanDeactivateGuard],
   },
 ];
 

@@ -284,7 +284,11 @@ export const NAV_CONFIG: NavGroup[] = [
       // Subtemplate Editor route (library-manager/subtemplates/:id), not a
       // tab - same "tab-shell lists, full page edits" split as Lesson
       // Editor/Preview vs. Browse.
-      { label: 'Subtemplates', slug: 'subtemplates', employeeGrantable: false }
+      { label: 'Subtemplates', slug: 'subtemplates', employeeGrantable: false },
+      // Slice 2: composes a header/layout/footer subtemplate combo for reuse
+      // at lesson-creation time (not wired up yet - Browse has no "New
+      // Lesson" flow, see LessonTemplateEditorComponent's own doc comment).
+      { label: 'Lesson Templates', slug: 'lesson-templates', employeeGrantable: false }
     ]
   }
 ];

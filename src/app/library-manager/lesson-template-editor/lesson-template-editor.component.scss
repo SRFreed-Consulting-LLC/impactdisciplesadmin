@@ -1,0 +1,121 @@
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--mat-sys-surface, #fff);
+  margin-bottom: 16px;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #c4c7c5);
+}
+
+.title-field {
+  flex: 1 1 auto;
+  max-width: 420px;
+
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    height: 48px;
+  }
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.error-state {
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(211, 47, 47, 0.4);
+  border-radius: 8px;
+  background: rgba(211, 47, 47, 0.06);
+  color: #b71c1c;
+
+  p {
+    margin: 0;
+  }
+}
+
+.editor-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+
+  &.hidden {
+    display: none;
+  }
+}
+
+.slots-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 400px;
+}
+
+.slot-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+
+  mat-form-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.preview-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  h3 {
+    margin: 0 0 8px;
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 500;
+  }
+}
+
+.preview-container {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  min-height: 200px;
+  background-color: #fff;
+  color: #212529;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  ::ng-deep {
+    .form-check-input:disabled ~ .form-check-label,
+    .form-check-input[disabled] ~ .form-check-label {
+      opacity: 1;
+    }
+
+    .form-control:disabled,
+    .form-control[readonly],
+    select:disabled {
+      opacity: 1;
+      color: #212529;
+      -webkit-text-fill-color: #212529;
+    }
+  }
+}
