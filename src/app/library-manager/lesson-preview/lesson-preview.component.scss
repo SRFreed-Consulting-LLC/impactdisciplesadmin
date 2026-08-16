@@ -21,6 +21,14 @@
   }
 }
 
+.language-select {
+  width: 220px;
+
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    height: 48px;
+  }
+}
+
 .loading {
   display: flex;
   justify-content: center;
@@ -48,6 +56,7 @@
 
 .form-container {
   max-width: 800px;
+  transition: opacity 0.15s ease;
   // Form.io/Bootstrap content is deliberately not reskinned for dark mode -
   // pin to Bootstrap's own native light-mode look regardless of this app's
   // active theme, same reasoning as lesson-editor.component.scss's
@@ -77,5 +86,9 @@
       color: #212529;
       -webkit-text-fill-color: #212529;
     }
+  }
+
+  &.rendering {
+    opacity: 0.5;
   }
 }

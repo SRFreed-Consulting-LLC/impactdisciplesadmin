@@ -46,9 +46,6 @@
         </a>
       }
 
-      <!-- Create Translation link intentionally omitted - Translations
-           aren't ported yet (a later Slice 2 sub-step). -->
-
       <button mat-stroked-button [matMenuTriggerFor]="settingsMenu">
         <mat-icon>settings</mat-icon>
         Settings
@@ -65,6 +62,13 @@
             <mat-icon>content_copy</mat-icon>
             <span>Templates</span>
           </button>
+        }
+
+        @if (readyForNextSteps()) {
+          <a mat-menu-item [routerLink]="['/library-manager/lessons', lessonId, 'translate']">
+            <mat-icon>translate</mat-icon>
+            <span>Create Translation</span>
+          </a>
         }
       </mat-menu>
 

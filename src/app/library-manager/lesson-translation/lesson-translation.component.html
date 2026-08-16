@@ -1,0 +1,146 @@
+<div class="translation-header">
+  <button mat-button (click)="backToEditor()">
+    <mat-icon>arrow_back</mat-icon>
+    Back to editor
+  </button>
+  <h2>{{ lesson()?.title ?? 'Lesson' }} &mdash; Translations</h2>
+</div>
+
+@if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+} @else if (mode() === 'list') {
+  <div class="list-mode">
+    <button mat-flat-button color="primary" (click)="createTranslation()">
+      <mat-icon>add</mat-icon>
+      New Translation
+    </button>
+
+    @if (translationList().length === 0) {
+      <p class="empty-state">No translations yet for this lesson.</p>
+    } @else {
+      <mat-list>
+        @for (translation of translationList(); track translation.id) {
+          <a mat-list-item tabindex="0" (click)="openTranslation(translation)" (keydown.enter)="openTranslation(translation)">
+            <mat-icon matListItemIcon>translate</mat-icon>
+            <span matListItemTitle>{{ translation.localeLabel }} ({{ translation.locale }})</span>
+            <span matListItemLine>{{ translation.fields.length }} translatable fields</span>
+            <button mat-icon-button matListItemMeta (click)="deleteTranslation(translation, $event)">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </a>
+        }
+      </mat-list>
+    }
+  </div>
+} @else {
+  <div class="edit-mode">
+    @if (!editingTranslation()) {
+      <p class="empty-state">Translation not found.</p>
+    } @else {
+      <div class="edit-header">
+        <h3>{{ editingTranslation()?.localeLabel }} ({{ editingTranslation()?.locale }})</h3>
+        <button mat-flat-button color="primary" [disabled]="saving()" (click)="saveTranslation()">
+          @if (saving()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          } @else {
+            Save Translation
+          }
+        </button>
+      </div>
+
+      @if (dailyReadingRows().length > 0) {
+        <h3 class="section-heading">Daily Reading Plan</h3>
+        <div class="table-scroll daily-reading-scroll">
+          <table class="translation-table daily-reading-table">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Original</th>
+                <th>Translation</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of dailyReadingRows(); track row.key; let i = $index) {
+                <tr>
+                  <td class="field-label">{{ row.label }}</td>
+                  <td class="original-text">{{ row.originalText }}</td>
+                  <td>
+                    <mat-form-field appearance="outline" style="width: 100%">
+                      <textarea
+                        matInput
+                        [ngModel]="row.translatedText"
+                        (ngModelChange)="updateDailyReadingField(i, $event)"
+                        rows="1"
+                      ></textarea>
+                    </mat-form-field>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (fields().length === 0) {
+        <p class="empty-state">
+          This lesson's form has no translatable text fields yet. Add labeled text fields or content
+          components in the lesson editor.
+        </p>
+      } @else {
+        <div class="table-scroll">
+          <table class="translation-table">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Original</th>
+                <th>Translation</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (field of fields(); track field.key; let i = $index) {
+                <tr>
+                  <td class="field-key">{{ field.key }}</td>
+                  @if (imageSrcFor(field); as originalImageSrc) {
+                    <td class="original-image">
+                      <img [src]="originalImageSrc" width="200" alt="" />
+                    </td>
+                    <td class="translation-image">
+                      <img [src]="translatedImageSrc(field, originalImageSrc)" width="200" alt="" />
+                      <input type="file" accept="image/*" (change)="onImageSelected(i, $event)" />
+                    </td>
+                  } @else {
+                    <td class="original-text">{{ field.originalText || '(no text)' }}</td>
+                    @if (isCommonPhrase(field)) {
+                      <td class="common-cell">
+                        <p class="common-value">
+                          {{ field.translatedText || 'Not translated yet' }}
+                        </p>
+                        <span class="common-hint">
+                          <mat-icon inline>info_outline</mat-icon>
+                          Shared across lessons - edit centrally (screen not built yet)
+                        </span>
+                      </td>
+                    } @else {
+                      <td>
+                        <mat-form-field appearance="outline" style="width: 100%">
+                          <textarea
+                            matInput
+                            [ngModel]="field.translatedText"
+                            (ngModelChange)="updateFieldText(i, $event)"
+                            rows="2"
+                          ></textarea>
+                        </mat-form-field>
+                      </td>
+                    }
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </div>
+}

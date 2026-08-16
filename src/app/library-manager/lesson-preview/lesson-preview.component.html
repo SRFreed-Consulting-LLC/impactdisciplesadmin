@@ -3,7 +3,19 @@
     <mat-icon>arrow_back</mat-icon>
     Back to editor
   </button>
-  <h2>{{ lesson?.title ?? 'Lesson' }} &mdash; Preview</h2>
+  <h2>{{ displayTitle }} &mdash; Preview</h2>
+
+  @if (translations.length > 0) {
+    <mat-form-field appearance="outline" class="language-select">
+      <mat-label>Language</mat-label>
+      <mat-select [value]="selectedTranslationId" (selectionChange)="onTranslationChange($event.value)">
+        <mat-option value="">Original</mat-option>
+        @for (translation of translations; track translation.id) {
+          <mat-option [value]="translation.id">{{ translation.localeLabel }} ({{ translation.locale }})</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
 </div>
 
 @if (loadError) {
@@ -19,4 +31,4 @@
   <p class="empty-state">This lesson has no saved content yet.</p>
 }
 
-<div #formContainer class="form-container"></div>
+<div #formContainer class="form-container" [class.rendering]="renderingTranslation"></div>

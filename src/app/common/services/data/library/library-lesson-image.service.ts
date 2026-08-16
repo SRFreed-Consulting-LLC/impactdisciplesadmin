@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc } from '@angular/fire/firestore';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { firstValueFrom } from 'rxjs';
 import { BASE64_IMAGE_RE, HTML_TYPES } from '@impact-common/formio/form-translation.util';
-import { hydrateFormioSchema } from '@impact-common/queries/lesson-image-queries';
+import { hydrateFormioSchema, hydrateTranslationResource } from '@impact-common/queries/lesson-image-queries';
 import {
   LibraryFormioComponent,
   LibraryFormioSchema,
@@ -20,8 +20,6 @@ import { libraryHashText } from './library-hash.util';
  * doc comment for the full rationale. `hydrateSchema`/`dehydrateSchema` deep-
  * clone and never mutate the caller's copy.
  *
- * `getImageDataUri`/`hydrateTranslationResource` deliberately not ported yet
- * - both are Translations-screen-only, arriving with that later slice.
  */
 @Injectable({
   providedIn: 'root'
@@ -51,6 +49,20 @@ export class LibraryLessonImageService {
 
   hydrateSchema(schema: LibraryFormioSchema | null): Promise<LibraryFormioSchema | null> {
     return hydrateFormioSchema(libraryFirestore(this.app), schema);
+  }
+
+  /** Fetches a single image's data URI by id, or undefined if it doesn't
+   *  exist. For callers working directly with extracted translation strings
+   *  (not a Form.io schema) - see LessonTranslationComponent. */
+  async getImageDataUri(id: string): Promise<string | undefined> {
+    const snap = await getDoc(doc(libraryFirestore(this.app), 'lessonImages', id));
+    return snap.exists() ? ((snap.data()['dataUri'] as string) ?? undefined) : undefined;
+  }
+
+  /** Resolves `lessonimage:{id}` placeholders inside a translation's i18n
+   *  resource map values. */
+  hydrateTranslationResource(resource: Record<string, string>): Promise<Record<string, string>> {
+    return hydrateTranslationResource(libraryFirestore(this.app), resource);
   }
 
   async dehydrateSchema(schema: LibraryFormioSchema): Promise<LibraryFormioSchema> {

@@ -53,9 +53,8 @@ interface PendingSubtemplateMerge {
  *   per-series/book/unit routes yet, only its own internal drill-down state.
  *   Revisit once Browse gets real deep-linkable routes.
  * - No Help icon - this app has no in-app help system like the source app's.
- * - No Create Translation link - Translations are a later Slice 2 sub-step,
- *   not built yet. Preview IS ported (LessonPreviewComponent, without its
- *   language switcher - see that component's own doc comment).
+ * Preview and Create Translation are both ported now (LessonPreviewComponent,
+ * LessonTranslationComponent).
  */
 @Component({
   selector: 'app-lesson-editor',

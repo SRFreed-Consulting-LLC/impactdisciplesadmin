@@ -21,6 +21,20 @@ const routes: Routes = [
       import('./lesson-preview/lesson-preview.component').then((m) => m.LessonPreviewComponent),
   },
   {
+    path: 'lessons/:id/translate',
+    loadComponent: () =>
+      import('./lesson-translation/lesson-translation.component').then(
+        (m) => m.LessonTranslationComponent,
+      ),
+  },
+  {
+    path: 'lessons/:id/translate/:translationId',
+    loadComponent: () =>
+      import('./lesson-translation/lesson-translation.component').then(
+        (m) => m.LessonTranslationComponent,
+      ),
+  },
+  {
     path: 'subtemplates/:id',
     loadComponent: () =>
       import('./subtemplate-editor/subtemplate-editor.component').then(

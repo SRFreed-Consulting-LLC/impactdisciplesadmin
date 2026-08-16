@@ -13,7 +13,10 @@ export type LibraryActivityAction =
   | 'node_deleted'
   | 'template_created'
   | 'template_updated'
-  | 'template_deleted';
+  | 'template_deleted'
+  | 'translation_created'
+  | 'translation_updated'
+  | 'translation_deleted';
 
 export interface LibraryActivityLogEntry {
   id?: string;

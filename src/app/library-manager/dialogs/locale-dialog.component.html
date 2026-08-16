@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Add Language</h2>
+<div mat-dialog-content>
+  <mat-form-field appearance="outline" style="width: 100%">
+    <mat-label>Language</mat-label>
+    <mat-select [ngModel]="selectedCode()" (ngModelChange)="selectedCode.set($event)">
+      @for (option of options(); track option.code) {
+        <mat-option [value]="option.code">{{ option.label }} ({{ option.code }})</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" [disabled]="!selectedCode()" (click)="submit()">
+    Add
+  </button>
+</div>
