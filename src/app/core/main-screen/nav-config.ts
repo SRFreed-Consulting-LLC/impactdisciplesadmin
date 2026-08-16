@@ -288,7 +288,11 @@ export const NAV_CONFIG: NavGroup[] = [
       // Slice 2: composes a header/layout/footer subtemplate combo for reuse
       // at lesson-creation time (not wired up yet - Browse has no "New
       // Lesson" flow, see LessonTemplateEditorComponent's own doc comment).
-      { label: 'Lesson Templates', slug: 'lesson-templates', employeeGrantable: false }
+      { label: 'Lesson Templates', slug: 'lesson-templates', employeeGrantable: false },
+      // Slice 4: app-wide Library staff config - currently just the
+      // bulk-purchase discount tiers a group leader's license purchase is
+      // priced against.
+      { label: 'Config', slug: 'config', employeeGrantable: false }
     ]
   }
 ];

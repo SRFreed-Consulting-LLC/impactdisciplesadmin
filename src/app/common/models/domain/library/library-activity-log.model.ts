@@ -17,7 +17,10 @@ export type LibraryActivityAction =
   | 'translation_created'
   | 'translation_updated'
   | 'translation_deleted'
-  | 'permission_changed';
+  | 'permission_changed'
+  | 'config_tier_created'
+  | 'config_tier_updated'
+  | 'config_tier_deleted';
 
 export interface LibraryActivityLogEntry {
   id?: string;
