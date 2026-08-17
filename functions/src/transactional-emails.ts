@@ -7,9 +7,18 @@ import * as admin from "firebase-admin";
 // per function) - the Trigger Email extension picks the docs up exactly
 // as before, nothing about delivery changes.
 
+// Environment-aware (same switch as READER_APP_ORIGIN below,
+// library-push-notifications.ts, and the PayPal base URL). This was
+// hardcoded to the dev project, so every production email's unsubscribe link
+// flipped the flag in the WRONG database: the recipient saw a success page
+// and kept receiving mail. That is a CAN-SPAM exposure, not just a broken
+// link - an unsubscribe request has to actually take effect.
 const UNSUBSCRIBE_URL =
-  "https://us-central1-impactdisciplesdev.cloudfunctions.net/" +
-  "unsubscribe_from_email_list";
+  process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
+    "https://us-central1-impactdisciples-a82a8.cloudfunctions.net/" +
+      "unsubscribe_from_email_list" :
+    "https://us-central1-impactdisciplesdev.cloudfunctions.net/" +
+      "unsubscribe_from_email_list";
 const FREE_EBOOK_URL =
   "https://firebasestorage.googleapis.com/v0/b/" +
   "impactdisciples-a82a8.appspot.com/o/EBooks%2FM-7-Journal.pdf" +
