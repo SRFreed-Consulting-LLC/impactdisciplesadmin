@@ -112,9 +112,10 @@ exports.notifyPrayerRequestShared =
 // library purchases are no longer recorded at all (the web store's own
 // `purchases` is the system of record), and the old manager app's
 // adminUsers staff model is dead per the consolidation plan.
+// grantStorePurchaseLicenses (the shared-secret HTTP bridge) was retired
+// in Phase 4, 2026-08-17 - onPurchaseGrantLibraryLicenses grants directly
+// in-process now; see library-license-grant.functions.ts.
 const libraryPurchases = require("./library-purchases.functions");
-exports.grantStorePurchaseLicenses =
-  libraryPurchases.grantStorePurchaseLicenses;
 exports.verifyAndGrantReaderStorePurchase =
   libraryPurchases.verifyAndGrantReaderStorePurchase;
 

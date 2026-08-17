@@ -34,10 +34,10 @@ export interface StorePurchaseGrantResult {
  * same two fields, kept here rather than inlined so the
  * bookLicenses/licensedBookIds merge stays comparable across all three.
  *
- * Called by the grantStorePurchaseLicenses endpoint, which the store
- * project's own `onPurchaseGrantLibraryLicenses` purchases trigger
- * invokes (see library-license-grant.functions.ts, this app's own caller
- * of that endpoint).
+ * Called by the `onPurchaseGrantLibraryLicenses` purchases trigger
+ * (library-license-grant.functions.ts - directly in-process since Phase 4
+ * retired the old shared-secret HTTP endpoint) and by
+ * verifyAndGrantReaderStorePurchase (the reader's own checkout).
  *
  * Like applyLicenseGrant, deliberately never writes `userId`: the buyer
  * may have no reader account yet, and that field must only ever hold the
