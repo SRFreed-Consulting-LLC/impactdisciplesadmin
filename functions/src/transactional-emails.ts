@@ -14,9 +14,12 @@ const FREE_EBOOK_URL =
   "https://firebasestorage.googleapis.com/v0/b/" +
   "impactdisciples-a82a8.appspot.com/o/EBooks%2FM-7-Journal.pdf" +
   "?alt=media&token=50e3282f-6fa1-46aa-ad3a-a486e4024af1";
-// Same constant used by library-push-notifications.ts - must change at
-// the production cutover, together with WEB_APP_DOMAIN.
-const READER_APP_ORIGIN = "https://impactdisciplesdev-library.web.app";
+// Environment-aware (same switch as library-push-notifications.ts and the
+// PayPal base URL): production project -> real reader domain, else dev.
+const READER_APP_ORIGIN =
+  process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
+    "https://library.impactdisciples.com" :
+    "https://impactdisciplesdev-library.web.app";
 
 const usd = new Intl.NumberFormat("en-US", {
   style: "currency",

@@ -40,8 +40,15 @@ import {escapeHtml} from "./transactional-emails";
  */
 const db = admin.firestore();
 
+// Server-pinned domain for the breakout-registration link in the
+// confirmation email. Env override wins; otherwise the production project
+// uses the real web domain and every other project the dev origin (same
+// GCLOUD_PROJECT switch as the PayPal base URL / READER_APP_ORIGIN).
 const WEB_APP_DOMAIN =
-  process.env.WEB_APP_DOMAIN || "https://impactdisciplesdev.web.app";
+  process.env.WEB_APP_DOMAIN ||
+  (process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
+    "https://impactdisciples.com" :
+    "https://impactdisciplesdev.web.app");
 
 /**
  * Crude but sufficient HTML-to-text for the email's plain-text part -

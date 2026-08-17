@@ -45,7 +45,13 @@ export interface LibraryPushPayload {
  *  FCM requires to be an absolute https URL. Must change at the eventual
  *  impactdisciples-a82a8 production cutover, same as this project's own
  *  Firebase config. */
-const READER_APP_ORIGIN = "https://impactdisciplesdev-library.web.app";
+// Environment-aware: the production project uses the real reader domain,
+// every other project uses the dev hosting origin. Same GCLOUD_PROJECT
+// switch the PayPal base URL uses.
+const READER_APP_ORIGIN =
+  process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
+    "https://library.impactdisciples.com" :
+    "https://impactdisciplesdev-library.web.app";
 
 /**
  * Truncates `text` to `max` characters, appending an ellipsis if it was
