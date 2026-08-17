@@ -296,7 +296,11 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       total,
       receipt,
       ...(coupon ? {couponCode: trimmedCode} : {}),
-      dateProcessed: now,
+      // A Firestore Timestamp, NOT the raw ms number - the admin Purchases
+      // list orders by dateProcessed and Firestore sorts mixed types by
+      // TYPE (numbers before timestamps), so a number here buries the
+      // purchase behind every web-checkout doc, past pagination.
+      dateProcessed: admin.firestore.Timestamp.fromMillis(now),
       ...(payPalOrderId ?
         {paypalEnvironment: paypalEnvironment ?? "live"} :
         {}),

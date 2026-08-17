@@ -273,7 +273,11 @@ export const purchaseGroupLicenses = onCall(
       discount: discount ?? 0,
       total: total ?? 0,
       receipt: payPalOrderId ?? "FREE ONLY",
-      dateProcessed: now,
+      // A Firestore Timestamp, NOT the raw ms number - the admin Purchases
+      // list orders by dateProcessed and Firestore sorts mixed types by
+      // TYPE (numbers before timestamps), so a number here buries the
+      // purchase behind every web-checkout doc, past pagination.
+      dateProcessed: admin.firestore.Timestamp.fromMillis(now),
       ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
       ...(payPalOrderId ?
         {paypalEnvironment: paypalEnvironment ?? "live"} :

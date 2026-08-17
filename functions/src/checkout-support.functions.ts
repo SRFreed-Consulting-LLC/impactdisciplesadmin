@@ -116,9 +116,13 @@ export const onPurchaseTaxSummary = onDocumentCreated(
     if (!zip || !data.taxRate || !taxes) {
       return;
     }
-    const year = new Date(
-      typeof data.dateProcessed === "number" ? data.dateProcessed : Date.now()
-    ).getFullYear().toString();
+    const processedMs =
+      typeof data.dateProcessed?.toMillis === "function" ?
+        data.dateProcessed.toMillis() :
+        typeof data.dateProcessed === "number" ?
+          data.dateProcessed :
+          Date.now();
+    const year = new Date(processedMs).getFullYear().toString();
 
     await db.runTransaction(async (transaction) => {
       const fresh = await transaction.get(snap.ref);
