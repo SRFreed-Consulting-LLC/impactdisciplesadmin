@@ -25,7 +25,7 @@
   } @else {
     @for (entry of schedule(); track (entry.kind === 'item' ? entry.item.id : entry.block.key)) {
       @if (entry.kind === 'item') {
-        <div class="banner banner--clickable" (click)="openItemDialog(entry.item)">
+        <div class="banner banner--clickable" role="button" tabindex="0" (click)="openItemDialog(entry.item)" (keydown.enter)="openItemDialog(entry.item)">
           {{ entry.item.startDate | date: 'shortTime' }} — {{ entry.item.text || '(Untitled)' }}
         </div>
       } @else {
@@ -37,13 +37,13 @@
           <div class="sgrid__time">{{ entry.block.startDate | date: 'shortTime' }}</div>
           @for (room of gridRooms(); track room) {
             @if (optionForRoom(entry.block, room.id); as option) {
-              <div class="cell cell--clickable" (click)="openBlockDialog(entry.block)">
+              <div class="cell cell--clickable" role="button" tabindex="0" (click)="openBlockDialog(entry.block)" (keydown.enter)="openBlockDialog(entry.block)">
                 <div class="cell__course">{{ courseTitle(option.course) }}</div>
                 <div class="cell__coach">{{ coachLabel(option) }}</div>
                 <div class="cell__cap">Cap {{ option.maxParticipants ?? '—' }}</div>
               </div>
             } @else {
-              <div class="cell cell--open cell--clickable" (click)="openBlockDialog(entry.block)">Room open</div>
+              <div class="cell cell--open cell--clickable" role="button" tabindex="0" (click)="openBlockDialog(entry.block)" (keydown.enter)="openBlockDialog(entry.block)">Room open</div>
             }
           }
         </div>

@@ -245,17 +245,17 @@
               <div class="tab-content info-layout">
                 <div class="info-form">
                   <div class="type-row">
-                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'inperson'" (click)="setRegularAttendanceType('inperson')">
+                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'inperson'" role="button" tabindex="0" (click)="setRegularAttendanceType('inperson')" (keydown.enter)="setRegularAttendanceType('inperson')">
                       <span class="type-card__icon">🏢</span>
                       <div class="type-card__title">In-Person</div>
                       <div class="type-card__sub">Has a venue, no online option</div>
                     </div>
-                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'online'" (click)="setRegularAttendanceType('online')">
+                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'online'" role="button" tabindex="0" (click)="setRegularAttendanceType('online')" (keydown.enter)="setRegularAttendanceType('online')">
                       <span class="type-card__icon">💻</span>
                       <div class="type-card__title">Online</div>
                       <div class="type-card__sub">Kajabi-hosted, no venue</div>
                     </div>
-                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'both'" (click)="setRegularAttendanceType('both')">
+                    <div class="type-card" [class.is-active]="regularAttendanceType() === 'both'" role="button" tabindex="0" (click)="setRegularAttendanceType('both')" (keydown.enter)="setRegularAttendanceType('both')">
                       <span class="type-card__icon">🔀</span>
                       <div class="type-card__title">Both</div>
                       <div class="type-card__sub">In-person with a Kajabi option too</div>

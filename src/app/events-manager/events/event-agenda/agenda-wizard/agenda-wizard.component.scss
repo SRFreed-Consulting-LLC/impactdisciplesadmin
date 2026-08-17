@@ -124,7 +124,10 @@ $warn-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
   gap: 4px;
 }
 
-.field3 label {
+// .flabel: static display captions that used to be bare <label> elements -
+// same look, but a <label> with no associated control is an a11y-lint error.
+.field3 label,
+.field3 .flabel {
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;

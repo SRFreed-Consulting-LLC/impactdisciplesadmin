@@ -25,7 +25,7 @@
   <div class="canvas">
     @for (entry of schedule(); track (entry.kind === 'item' ? entry.item.id : entry.block.key)) {
       @if (entry.kind === 'item') {
-        <div class="kcard kcard--plain kcard--clickable" (click)="openItemDialog(entry.item)">
+        <div class="kcard kcard--plain kcard--clickable" role="button" tabindex="0" (click)="openItemDialog(entry.item)" (keydown.enter)="openItemDialog(entry.item)">
           <div class="kcard__title">{{ entry.item.text || '(Untitled)' }}</div>
           <div class="kcard__time">{{ entry.item.startDate | date: 'shortTime' }}</div>
         </div>

@@ -1,20 +1,20 @@
 <div class="wizsteps">
-  <div class="wizstep" [class.is-active]="step === 1" [class.is-done]="step > 1" (click)="goToStep(1)">
+  <div class="wizstep" [class.is-active]="step === 1" [class.is-done]="step > 1" role="button" tabindex="0" (click)="goToStep(1)" (keydown.enter)="goToStep(1)">
     <span class="wizstep__dot">{{ step > 1 ? '✓' : '1' }}</span>
     <span class="wizstep__label">Days &amp; Rooms</span>
   </div>
   <div class="wizline"></div>
-  <div class="wizstep" [class.is-active]="step === 2" [class.is-done]="step > 2" (click)="goToStep(2)">
+  <div class="wizstep" [class.is-active]="step === 2" [class.is-done]="step > 2" role="button" tabindex="0" (click)="goToStep(2)" (keydown.enter)="goToStep(2)">
     <span class="wizstep__dot">{{ step > 2 ? '✓' : '2' }}</span>
     <span class="wizstep__label">Single Items</span>
   </div>
   <div class="wizline"></div>
-  <div class="wizstep" [class.is-active]="step === 3" [class.is-done]="step > 3" (click)="goToStep(3)">
+  <div class="wizstep" [class.is-active]="step === 3" [class.is-done]="step > 3" role="button" tabindex="0" (click)="goToStep(3)" (keydown.enter)="goToStep(3)">
     <span class="wizstep__dot">{{ step > 3 ? '✓' : '3' }}</span>
     <span class="wizstep__label">Breakout Blocks</span>
   </div>
   <div class="wizline"></div>
-  <div class="wizstep" [class.is-active]="step === 4" (click)="goToStep(4)">
+  <div class="wizstep" [class.is-active]="step === 4" role="button" tabindex="0" (click)="goToStep(4)" (keydown.enter)="goToStep(4)">
     <span class="wizstep__dot">4</span>
     <span class="wizstep__label">Review &amp; Publish</span>
   </div>
@@ -40,8 +40,8 @@
       @for (room of rooms; track room) {
         <div class="wizcard">
           <div class="wizrow4">
-            <div class="field3"><label>Room</label><div class="val">{{ room.name }}</div></div>
-            <div class="field3"><label>Capacity</label><div class="val">{{ room.capacity ?? '—' }}</div></div>
+            <div class="field3"><span class="flabel">Room</span><div class="val">{{ room.name }}</div></div>
+            <div class="field3"><span class="flabel">Capacity</span><div class="val">{{ room.capacity ?? '—' }}</div></div>
           </div>
         </div>
       }
@@ -54,12 +54,12 @@
       <div class="wizday">
         <h4>Day {{ dayIndex + 1 }} — {{ day | date: 'MMM d' }}</h4>
         @for (item of singleItemsForDay(day); track item.id) {
-          <div class="wizcard wizcard--clickable" (click)="openItemDialog(item, day)">
+          <div class="wizcard wizcard--clickable" role="button" tabindex="0" (click)="openItemDialog(item, day)" (keydown.enter)="openItemDialog(item, day)">
             <div class="wizrow4">
-              <div class="field3"><label>Item</label><div class="val">{{ item.text || '(Untitled)' }}</div></div>
-              <div class="field3"><label>Time</label><div class="val">{{ item.startDate | date: 'shortTime' }} – {{ item.endDate | date: 'shortTime' }}</div></div>
-              <div class="field3"><label>Speaker</label><div class="val">{{ (item.coaches?.length ? item.coaches!.length + ' assigned' : '—') }}</div></div>
-              <div class="field3"><label>Room</label><div class="val">{{ roomName(item.room) }}</div></div>
+              <div class="field3"><span class="flabel">Item</span><div class="val">{{ item.text || '(Untitled)' }}</div></div>
+              <div class="field3"><span class="flabel">Time</span><div class="val">{{ item.startDate | date: 'shortTime' }} – {{ item.endDate | date: 'shortTime' }}</div></div>
+              <div class="field3"><span class="flabel">Speaker</span><div class="val">{{ (item.coaches?.length ? item.coaches!.length + ' assigned' : '—') }}</div></div>
+              <div class="field3"><span class="flabel">Room</span><div class="val">{{ roomName(item.room) }}</div></div>
             </div>
           </div>
         }
@@ -77,7 +77,7 @@
       <div class="wizday">
         <h4>Day {{ dayIndex + 1 }} — {{ day | date: 'MMM d' }}</h4>
         @for (block of blocksForDay(day); track block.key; let blockIndex = $index) {
-          <div class="blockcard blockcard--clickable" (click)="openBlockDialog(block, day)">
+          <div class="blockcard blockcard--clickable" role="button" tabindex="0" (click)="openBlockDialog(block, day)" (keydown.enter)="openBlockDialog(block, day)">
             <div class="blockcard__head">
               <b>{{ blockLabel(blockIndex) }}</b>
               <span class="badge">{{ block.startDate | date: 'shortTime' }} – {{ block.endDate | date: 'shortTime' }}</span>
