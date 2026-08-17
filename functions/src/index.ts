@@ -127,6 +127,15 @@ exports.recordMyLogin = libraryProfile.recordMyLogin;
 exports.createMyReaderProfile = libraryProfile.createMyReaderProfile;
 exports.updateMyPreferences = libraryProfile.updateMyPreferences;
 
+const libraryGroups = require("./library-groups.functions");
+exports.createGroup = libraryGroups.createGroup;
+exports.requestToJoinGroup = libraryGroups.requestToJoinGroup;
+exports.approveGroupMembership = libraryGroups.approveGroupMembership;
+exports.rejectGroupMembership = libraryGroups.rejectGroupMembership;
+exports.closeMyGroup = libraryGroups.closeMyGroup;
+exports.sendGroupInvite = libraryGroups.sendGroupInvite;
+exports.cancelGroupInvite = libraryGroups.cancelGroupInvite;
+
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =
   mailchimpSync.onCustomerCreatedMailchimpSync;
