@@ -127,6 +127,9 @@ exports.recordMyLogin = libraryProfile.recordMyLogin;
 exports.createMyReaderProfile = libraryProfile.createMyReaderProfile;
 exports.updateMyPreferences = libraryProfile.updateMyPreferences;
 
+const adminClaims = require("./admin-claims.functions");
+exports.onAdminUserRoleSync = adminClaims.onAdminUserRoleSync;
+
 const libraryGroups = require("./library-groups.functions");
 exports.createGroup = libraryGroups.createGroup;
 exports.requestToJoinGroup = libraryGroups.requestToJoinGroup;
