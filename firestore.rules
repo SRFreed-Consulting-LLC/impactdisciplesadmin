@@ -355,6 +355,33 @@ service cloud.firestore {
     match /{path=**}/translations/{translationId} {
       allow read: if signedIn();
     }
+    // Collection-group reads - the nested match blocks above do NOT apply
+    // to collectionGroup() queries, and Phase 3's "drill up by bare id"
+    // architecture reads books/units/lessons through UNCONSTRAINED
+    // collection-group scans filtered client-side. An unconstrained list
+    // can only ever pass caller-scoped conditions (a per-book license
+    // check is unprovable for it), so these are signedIn-gated.
+    // PRE-PROD note: this means lesson CONTENT license enforcement is
+    // client-side for scan-based reads (direct path gets stay gated by
+    // canReadBook above) - restoring server enforcement would mean moving
+    // the reader's unit/lesson reads back to constrained nested-path
+    // queries. Accepted for now; book metadata was always signedIn-open.
+    match /{path=**}/books/{bookId} {
+      allow read: if signedIn();
+    }
+    match /{path=**}/units/{unitId} {
+      allow read: if signedIn();
+    }
+    match /{path=**}/lessons/{lessonId} {
+      allow read: if signedIn();
+    }
+    // "My memberships" - the reader queries the members collection-group
+    // filtered by its own email; the equality filter makes the
+    // owner-scoping provable. Admin sees all.
+    match /{path=**}/members/{memberEmail} {
+      allow read: if signedIn() &&
+        (resource.data.email == callerEmail() || isAdminRole());
+    }
 
     // Library staff authoring artifacts.
     match /subtemplates/{id} {
