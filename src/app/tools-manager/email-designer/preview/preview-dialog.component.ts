@@ -25,27 +25,31 @@ export class PreviewDialogComponent {
   device: 'desktop' | 'mobile' = 'desktop';
   withSampleData = false;
 
-  private readonly compiledHtml: string;
+  // Both variants are built ONCE - a getter that re-wrapped the html in a
+  // fresh SafeHtml per change-detection cycle makes Angular rebind [srcdoc]
+  // every cycle, which reloads the iframe in a loop (live-diagnosed as a
+  // flaky, often-blank preview).
+  private readonly rawSrcdoc: SafeHtml;
+  private readonly sampleSrcdoc: SafeHtml;
 
   constructor(
     private dialogRef: MatDialogRef<PreviewDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: PreviewDialogData,
-    private sanitizer: DomSanitizer
+    sanitizer: DomSanitizer
   ) {
-    this.compiledHtml = compileEmailDesign(data.design, { title: data.title });
+    // srcdoc of a sandboxed iframe (no scripts allowed by the sandbox
+    // attr); the content is our own compiler's output.
+    const compiled = compileEmailDesign(data.design, { title: data.title });
+    this.rawSrcdoc = sanitizer.bypassSecurityTrustHtml(compiled);
+    this.sampleSrcdoc = sanitizer.bypassSecurityTrustHtml(renderMergeTags(compiled, sampleMergeContext()));
   }
 
   get frameWidth(): number {
     return this.device === 'mobile' ? 375 : 680;
   }
 
-  // srcdoc of a sandboxed iframe (no scripts allowed by the sandbox attr);
-  // the content is our own compiler's output.
   get srcdoc(): SafeHtml {
-    const html = this.withSampleData
-      ? renderMergeTags(this.compiledHtml, sampleMergeContext())
-      : this.compiledHtml;
-    return this.sanitizer.bypassSecurityTrustHtml(html);
+    return this.withSampleData ? this.sampleSrcdoc : this.rawSrcdoc;
   }
 
   onClose(): void {

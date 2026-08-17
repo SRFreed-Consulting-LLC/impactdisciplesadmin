@@ -19,6 +19,10 @@
 </div>
 
 <div class="preview-body">
-  <iframe class="preview-frame" sandbox="" title="Email preview"
+  <!-- allow-same-origin WITHOUT allow-scripts: no JS can run in the frame
+       (the content is our own compiler's static output anyway), while the
+       frame stays same-origin-inspectable (a fully opaque sandbox="" frame
+       rendered blank in some Chrome versions and is unreachable to e2e). -->
+  <iframe class="preview-frame" sandbox="allow-same-origin" title="Email preview"
           [style.width.px]="frameWidth" [srcdoc]="srcdoc"></iframe>
 </div>

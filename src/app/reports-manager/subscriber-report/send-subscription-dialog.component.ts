@@ -13,6 +13,7 @@ import { PrayerService } from 'src/app/common/services/data/prayer.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
 import { environment } from 'src/environments/environment';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
@@ -102,12 +103,19 @@ export class SendSubscriptionDialogComponent {
     this.service.getAllByValue(flagField, true)
       .then((subscribers) => {
         subscribers.forEach((subscriber) => {
-          let html = template
-            .replace('{{Recipient First Name}}', subscriber.firstName)
-            .replace('{{Recipient Last Name}}', subscriber.lastName)
-            .replace('{{Sender First Name}}', user.firstName)
-            .replace('{{Sender Last Name}}', user.lastName)
-            .replace('{{Date}}', (dateFromTimestamp(date) as Date).toLocaleString());
+          // One engine for all token spellings ({{Recipient First Name}},
+          // {{firstName}}, *|FNAME|*), replacing EVERY occurrence - the
+          // chained String.replace() this replaces only hit the first one.
+          let html = renderMergeTags(template, {
+            firstName: subscriber.firstName,
+            lastName: subscriber.lastName,
+            email: subscriber.email,
+            senderFirstName: user.firstName,
+            senderLastName: user.lastName,
+            date: (dateFromTimestamp(date) as Date).toLocaleString(),
+            unsubscribeUrl:
+              environment.unsubscribeUrl + '?email=' + encodeURIComponent(subscriber.email) + '&type=' + type
+          });
           html +=
             '<br><br><br><div>If you believe you received this email by mistake, please click ' +
             "<b><a href='" + environment.unsubscribeUrl + '?email=' + encodeURIComponent(subscriber.email) +
