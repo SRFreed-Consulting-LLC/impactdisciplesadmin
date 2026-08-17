@@ -72,7 +72,7 @@ export class LibraryDiscussionGroupService {
   async deleteGroup(groupId: string): Promise<void> {
     const firestore = this.firestore;
     const refs: DocumentReference[] = [];
-    for (const sub of ['members', 'chatMessages']) {
+    for (const sub of ['members', 'chatMessages', 'prayerRequests']) {
       const snap = await getDocs(collection(firestore, 'discussionGroups', groupId, sub));
       refs.push(...snap.docs.map((d) => d.ref));
     }
