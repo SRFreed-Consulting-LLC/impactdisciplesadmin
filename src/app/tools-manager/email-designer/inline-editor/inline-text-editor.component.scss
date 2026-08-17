@@ -1,0 +1,76 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+.inline-editor {
+  position: relative;
+}
+
+.merge-tag-affordance {
+  position: absolute;
+  top: -38px;
+  right: 0;
+  z-index: 20;
+}
+
+.merge-tag-button {
+  background: #ffffff;
+  font-size: 12px;
+  height: 30px;
+  padding: 0 10px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.merge-tag-label {
+  margin-right: 12px;
+}
+
+.merge-tag-token {
+  font-size: 11px;
+  color: #0b5a5a;
+  background: #e7f1f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+// The editor should sit invisibly inside the block - the block's own
+// wrapper already draws the outline; Quill just needs to lose its borders.
+//
+// styles.scss's global quill rules (see its long comment block) lock every
+// quill-editor into the "fixed chrome, internally-scrolling content"
+// pattern: flex column, .ql-container flex-grown, .ql-editor absolutely
+// positioned with inset: 0. That's right for the app's form editors but
+// exactly wrong for a click-to-edit block that must auto-size to its text -
+// an absolute .ql-editor in an auto-height host collapses to nothing. The
+// higher-specificity (and later-loaded) overrides below restore normal
+// in-flow auto-height layout just for the inline editor.
+::ng-deep .inline-editor {
+  quill-editor {
+    display: block !important;
+    height: auto;
+  }
+
+  quill-editor .ql-container {
+    display: block !important;
+    flex: none;
+    height: auto;
+    border: none;
+    font-size: inherit;
+    font-family: inherit;
+  }
+
+  quill-editor .ql-editor {
+    position: static;
+    inset: auto;
+    padding: 0;
+    min-height: 1.4em;
+    line-height: inherit;
+    overflow-y: visible;
+  }
+}

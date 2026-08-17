@@ -1,0 +1,176 @@
+﻿@if (selectedBlock || selectedSection || state.selection$.value?.kind === 'row') {
+  <!-- ============================================= contextual settings -->
+  <div class="panel-header">
+    <span class="panel-title">{{ selectionTitle }}</span>
+    <button mat-icon-button matTooltip="Close" (click)="closeSettings()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="panel-body">
+    @if (selectedBlock; as block) {
+      @switch (block.type) {
+        @case ('heading') {
+          <div class="field-row">
+            <span class="field-label">Heading level</span>
+            <mat-button-toggle-group hideSingleSelectionIndicator [value]="asHeading(block).props.level"
+                (change)="commitBlockChange(setHeadingLevel(block, $event.value))">
+              <mat-button-toggle [value]="1">H1</mat-button-toggle>
+              <mat-button-toggle [value]="2">H2</mat-button-toggle>
+              <mat-button-toggle [value]="3">H3</mat-button-toggle>
+              <mat-button-toggle [value]="4">H4</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+          <p class="hint">Click the heading on the canvas to edit its text in place.</p>
+        }
+        @case ('text') {
+          <p class="hint">Click the text on the canvas to edit it in place. Use the Merge tag
+            button that appears while editing to personalize.</p>
+        }
+        @case ('image') {
+          <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
+        }
+        @case ('logo') {
+          <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
+        }
+        @case ('button') {
+          <div class="field-row">
+            <span class="field-label">Label</span>
+            <input class="text-input" [value]="asButton(block).props.label"
+                   (change)="commitBlockChange(setButtonLabel(block, $any($event.target).value))">
+          </div>
+          <div class="field-row">
+            <span class="field-label">Link to</span>
+            <input class="text-input" placeholder="https://" [value]="asButton(block).props.href"
+                   (change)="commitBlockChange(setButtonHref(block, $any($event.target).value))">
+          </div>
+          <div class="field-row">
+            <mat-slide-toggle [checked]="asButton(block).props.fullWidth"
+                (change)="commitBlockChange(setButtonFullWidth(block, $event.checked))">
+              Full width
+            </mat-slide-toggle>
+          </div>
+        }
+        @case ('spacer') {
+          <div class="field-row">
+            <span class="field-label">Height (px)</span>
+            <input class="text-input narrow" type="number" min="4" max="200"
+                   [value]="asSpacer(block).props.height"
+                   (change)="commitBlockChange(setSpacerHeight(block, $any($event.target).value))">
+          </div>
+        }
+        @case ('divider') {
+          <p class="hint">The divider follows the email's Styles defaults. Per-divider styling
+            arrives with the Styles panel.</p>
+        }
+        @default {
+          <p class="hint">Settings for this block type are coming in the next build phase.</p>
+        }
+      }
+    } @else if (selectedSection; as section) {
+      <div class="field-row">
+        <span class="field-label">Background color</span>
+        <input class="color-input" type="color" [value]="section.backgroundColor ?? '#ffffff'"
+               (change)="commitBlockChange(setSectionBackground(section, $any($event.target).value))">
+        <button mat-button class="clear-button" (click)="commitBlockChange(setSectionBackground(section, null))">
+          Clear
+        </button>
+      </div>
+    } @else {
+      <p class="hint">Drag the row by its handle to reorder it, or delete it from its hover
+        toolbar. Row styling arrives with the Styles panel.</p>
+    }
+  </div>
+} @else {
+  <!-- ============================================= add / styles tabs -->
+  <div class="panel-tabs">
+    <button class="panel-tab" [class.on]="activeTab === 'add'" (click)="activeTab = 'add'">Add</button>
+    <button class="panel-tab" [class.on]="activeTab === 'styles'" (click)="activeTab = 'styles'">Styles</button>
+  </div>
+
+  @if (activeTab === 'add') {
+    <div class="panel-body">
+      <p class="palette-label">CONTENT BLOCKS</p>
+      <div class="chip-grid" cdkDropList [id]="blockPaletteId" [cdkDropListData]="paletteTypes"
+           [cdkDropListConnectedTo]="state.columnDropIds()" [cdkDropListSortingDisabled]="true">
+        @for (entry of palette; track entry.type) {
+          <div class="chip" cdkDrag [cdkDragData]="entry.type">
+            <mat-icon>{{ entry.icon }}</mat-icon>
+            <span>{{ entry.label }}</span>
+          </div>
+        }
+      </div>
+
+      <p class="palette-label">LAYOUTS</p>
+      <div class="layout-grid" cdkDropList [id]="layoutPaletteId" [cdkDropListData]="layoutPresets"
+           [cdkDropListConnectedTo]="state.rowDropIds()" [cdkDropListSortingDisabled]="true">
+        @for (preset of layoutPresets; track preset.label) {
+          <div class="layout-tile" cdkDrag [cdkDragData]="preset" [matTooltip]="preset.label">
+            @for (width of preset.widths; track $index) {
+              <i [style.flex-grow]="width"></i>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="panel-body">
+      <p class="hint">Email-wide styles (backgrounds, text, links, buttons, dividers) arrive in
+        the next build phase.</p>
+    </div>
+  }
+}
+
+<ng-template #imageSettings let-block>
+  <div class="field-row">
+    <span class="field-label">Image</span>
+    <div class="image-picker-row">
+      @if (asImage(block).props.src) {
+        <img class="image-thumb" [src]="asImage(block).props.src" alt="">
+      }
+      <button mat-stroked-button (click)="openImagePicker(asImage(block).props)">
+        {{ asImage(block).props.src ? 'Replace' : 'Choose image' }}
+      </button>
+    </div>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Sizing</span>
+    <mat-button-toggle-group hideSingleSelectionIndicator [value]="asImage(block).props.sizing"
+        (change)="commitBlockChange(setImageSizing(block, $event.value))">
+      <mat-button-toggle value="original">Original</mat-button-toggle>
+      <mat-button-toggle value="fill">Fill</mat-button-toggle>
+      <mat-button-toggle value="scale">Scale</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+  @if (asImage(block).props.sizing === 'scale') {
+    <div class="field-row">
+      <span class="field-label">Scale ({{ asImage(block).props.scalePercent }}%)</span>
+      <input class="range-input" type="range" min="10" max="100"
+             [value]="asImage(block).props.scalePercent"
+             (change)="commitBlockChange(setImageScale(block, $any($event.target).value))">
+    </div>
+  }
+  <div class="field-row">
+    <span class="field-label">Link to</span>
+    <input class="text-input" placeholder="https://" [value]="asImage(block).props.href ?? ''"
+           (change)="commitBlockChange(setImageHref(block, $any($event.target).value))">
+  </div>
+  <div class="field-row">
+    <mat-slide-toggle [checked]="asImage(block).props.openInNewTab"
+        (change)="commitBlockChange(setImageNewTab(block, $event.checked))">
+      Open link in new tab
+    </mat-slide-toggle>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Alt text</span>
+    <input class="text-input" [value]="asImage(block).props.alt"
+           (change)="commitBlockChange(setImageAlt(block, $any($event.target).value))">
+  </div>
+</ng-template>
+
+@if (imageUploaderVisible$ | async) {
+  <app-image-uploader [card]="imageCard" [isList]="false" [field]="'image'"
+      [selectionMode]="'single'" [imageSelectVisible]="imageUploaderVisible$ | async"
+      (imageSelectClosed)="onImagePickerClosed()">
+  </app-image-uploader>
+}

@@ -206,6 +206,11 @@ export const NAV_CONFIG: NavGroup[] = [
     roles: [Role.ADMIN],
     items: [
       { label: 'Web Config', slug: 'web-config' },
+      // The full-screen email builder route (/tools-manager/email-designer/
+      // new | :id) deliberately has NO NavLeaf/screenKey of its own - it is
+      // Email Templates' editing surface and rides this entry's grants
+      // (EmailDesignerComponent checks canAdd/canEdit on
+      // tools-manager.email-templates and bounces back here if denied).
       { label: 'Email Templates', slug: 'email-templates' },
       { label: 'Shipping Labels', slug: 'shipping-labels' },
       { label: 'Form Builder', slug: 'form-builder' },

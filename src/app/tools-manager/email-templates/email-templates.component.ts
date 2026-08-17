@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
@@ -21,7 +22,11 @@ export class EmailTemplatesComponent implements OnInit {
 
   columns: DataGridColumn<MailTemplateModel>[] = [
     { key: 'name', label: 'Name' },
-    { key: 'subject', label: 'Subject' }
+    { key: 'subject', label: 'Subject' },
+    // Which editor authored the template - presence of `design` marks a
+    // builder template (edits in the full-screen designer), absence a
+    // legacy rich-text one (edits in the Quill dialog).
+    { key: 'editorType', label: 'Editor', value: (row) => (row.design ? 'Email Builder' : 'Rich Text') }
   ];
 
   itemType = 'Email Template';
@@ -40,13 +45,28 @@ export class EmailTemplatesComponent implements OnInit {
     private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.templates$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
 
-    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+    // Two creation paths: the full-screen Mailchimp-style builder (new
+    // default) and the legacy Quill dialog for lighter rich-text templates.
+    this.headerActions = this.permissionService.canAdd(this.screenKey)
+      ? [
+          { label: 'New Email Design', icon: 'add', onClick: () => this.newEmailDesign() },
+          { label: 'New Rich Text Template', icon: 'notes', onClick: () => this.showAddModal() }
+        ]
+      : [];
+  }
+
+  newEmailDesign(): void {
+    if (!this.permissionService.canAdd(this.screenKey)) {
+      return;
+    }
+    this.router.navigate(['/tools-manager/email-designer/new']);
   }
 
   showAddModal(): void {
@@ -61,6 +81,12 @@ export class EmailTemplatesComponent implements OnInit {
 
   showEditModal(item: MailTemplateModel): void {
     if (!this.permissionService.canEdit(this.screenKey)) {
+      return;
+    }
+    // Builder templates edit in the full-screen designer; legacy templates
+    // keep the Quill dialog.
+    if (item.design) {
+      this.router.navigate(['/tools-manager/email-designer', item.id]);
       return;
     }
     this.dialog.open(EmailTemplateDialogComponent, {

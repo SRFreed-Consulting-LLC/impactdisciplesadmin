@@ -1,0 +1,61 @@
+<div class="canvas-scroll" tabindex="-1" (click)="onBackgroundClick()"
+     (keydown.escape)="onBackgroundClick()"
+     [style.background-color]="globalStyles.emailBackgroundColor">
+  <div class="page" tabindex="-1" [style.width.px]="pageWidth"
+       [style.background-color]="globalStyles.bodyBackgroundColor"
+       (click)="$event.stopPropagation()" (keydown.escape)="onBackgroundClick()">
+
+    @for (section of state.design.sections; track section.id) {
+      <div class="section" tabindex="0" [class.selected]="state.isSelected('section', section.id)"
+           [style.background-color]="sectionBackground(section)"
+           (click)="onSectionClick(section, $event)"
+           (keyup.enter)="onSectionClick(section, $event)">
+        <span class="section-tag" tabindex="0" (click)="onSectionClick(section, $event)"
+              (keyup.enter)="onSectionClick(section, $event)">{{ section.kind | uppercase }}</span>
+
+        <div class="section-rows" cdkDropList [id]="'rows-' + section.id"
+             [cdkDropListData]="section.rows" [cdkDropListConnectedTo]="state.rowDropIds()"
+             (cdkDropListDropped)="onRowDrop($any($event))">
+
+          @if (section.rows.length === 0) {
+            <div class="empty-hint">Drag a layout or block here</div>
+          }
+
+          @for (row of section.rows; track row.id) {
+            <div class="row" cdkDrag [cdkDragData]="row" tabindex="0"
+                 [class.selected]="state.isSelected('row', row.id)"
+                 [ngStyle]="rowStyles(row)"
+                 (click)="onRowClick(row, $event)"
+                 (keyup.enter)="onRowClick(row, $event)">
+              <div class="row-toolbar">
+                <mat-icon class="row-tool" cdkDragHandle matTooltip="Move row">drag_indicator</mat-icon>
+                <mat-icon class="row-tool" matTooltip="Delete row"
+                          (click)="onRowDelete(section, row, $event)">delete_outline</mat-icon>
+              </div>
+
+              <div class="columns" [class.stacked]="state.viewMode === 'mobile'">
+                @for (column of row.columns; track column.id) {
+                  <div class="column" [style.flex-basis.%]="column.widthPercent">
+                    <div class="column-drop" cdkDropList [id]="'col-' + column.id"
+                         [cdkDropListData]="column.blocks"
+                         [cdkDropListConnectedTo]="state.columnDropIds()"
+                         (cdkDropListDropped)="onBlockDrop($any($event))">
+                      @if (column.blocks.length === 0) {
+                        <div class="empty-hint small">Drop content here</div>
+                      }
+                      @for (block of column.blocks; track block.id) {
+                        <app-block-host cdkDrag [cdkDragData]="block"
+                                        [cdkDragDisabled]="state.editingBlockId === block.id"
+                                        [block]="block" [column]="column"></app-block-host>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
