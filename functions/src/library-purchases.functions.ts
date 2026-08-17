@@ -252,6 +252,25 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       );
     }
 
+    // Idempotency (sweep 2026-08-17): a client retry with the SAME
+    // payPalOrderId must not create a second purchase record + receipt
+    // email. receipt == payPalOrderId on a paid order, so a prior success
+    // is detectable; return it unchanged. (The grant itself is already
+    // idempotent on purchaseId, but the purchase doc + email are not.)
+    if (payPalOrderId) {
+      const prior = await libraryDb.collection("purchases")
+        .where("receipt", "==", payPalOrderId).limit(1).get();
+      if (!prior.empty) {
+        return {
+          granted: true,
+          purchaseId: prior.docs[0].id,
+          grantedBookIds: [],
+          skippedBookIds: lineItems.map((item) => item.digitalBookId),
+          alreadyProcessed: true,
+        };
+      }
+    }
+
     // Buyer identity fields for the purchase record - same fields the web
     // storefront's checkout collects, best-effort from the patron's own
     // library profile (customer-upsert tolerates their absence).

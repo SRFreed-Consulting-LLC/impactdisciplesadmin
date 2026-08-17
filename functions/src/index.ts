@@ -64,6 +64,13 @@ const eventRegCustomerUpsert =
 exports.onEventRegistrationCustomerUpsert =
   eventRegCustomerUpsert.onEventRegistrationCustomerUpsert;
 
+// Sweep 2026-08-17: language registry backs the reader's language picker
+// so translation docs no longer need an open collection-group read.
+const languageRegistry = require("./library-language-registry.functions");
+exports.onTranslationLocaleRegistry =
+  languageRegistry.onTranslationLocaleRegistry;
+exports.rebuildLanguageRegistry = languageRegistry.rebuildLanguageRegistry;
+
 const libraryLicenseGrant = require("./library-license-grant.functions");
 exports.onPurchaseGrantLibraryLicenses =
   libraryLicenseGrant.onPurchaseGrantLibraryLicenses;

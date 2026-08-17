@@ -51,6 +51,47 @@ function callerIdentity(request: CallableRequest): {
 }
 
 /**
+ * Server-side country resolution from the caller's real IP (sweep
+ * 2026-08-17). internationalUser gates FREE reading of all paid books, and
+ * it used to be derived from the client-CLAIMED location.countryCode - so
+ * any patron could POST {location:{countryCode:'GB'}} and unlock the whole
+ * library for free. The international grant is now decided ONLY from this
+ * server-resolved country. Fails CLOSED: any lookup problem yields
+ * undefined (treated as domestic/no free grant) - a patron who is
+ * genuinely international and hits a lookup blip just doesn't get the
+ * sticky flag this session and can retry; they can never mint free access
+ * by lying.
+ * @param {CallableRequest} request The callable request (for the IP).
+ * @return {Promise<string | undefined>} Uppercase ISO country, or undefined.
+ */
+async function resolveCountryFromIp(
+  request: CallableRequest
+): Promise<string | undefined> {
+  const fwd = request.rawRequest?.headers["x-forwarded-for"];
+  const ip = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(",")[0]?.trim() ||
+    request.rawRequest?.ip;
+  if (!ip) {
+    return undefined;
+  }
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const resp = await fetch(
+      `https://ipapi.co/${encodeURIComponent(ip)}/country/`,
+      {signal: controller.signal}
+    );
+    clearTimeout(timer);
+    if (!resp.ok) {
+      return undefined;
+    }
+    const code = (await resp.text()).trim().toUpperCase();
+    return /^[A-Z]{2}$/.test(code) ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Validates and narrows a client-reported location to exactly the fields
  * the LibraryUserLocation model defines - anything malformed is dropped
  * (best-effort data, never worth failing a login over).
@@ -92,8 +133,10 @@ function cleanLocation(raw: unknown): LocationInput | undefined {
 export const recordMyLogin = onCall(async (request) => {
   const {email, uid} = callerIdentity(request);
   const location = cleanLocation((request.data ?? {}).location);
-  const isInternational =
-    !!location?.countryCode && location.countryCode !== "US";
+  // internationalUser is decided from the SERVER-resolved country only
+  // (sweep 2026-08-17), never the client-claimed location.countryCode.
+  const serverCountry = await resolveCountryFromIp(request);
+  const isInternational = !!serverCountry && serverCountry !== "US";
 
   const ref = db.collection("libraryUsers").doc(email);
   const now = Date.now();
@@ -142,8 +185,9 @@ export const createMyReaderProfile = onCall(async (request) => {
     );
   }
   const location = cleanLocation((request.data ?? {}).location);
-  const isInternational =
-    !!location?.countryCode && location.countryCode !== "US";
+  // Server-resolved country only (sweep 2026-08-17) - see recordMyLogin.
+  const serverCountry = await resolveCountryFromIp(request);
+  const isInternational = !!serverCountry && serverCountry !== "US";
 
   const ref = db.collection("libraryUsers").doc(email);
   const now = Date.now();

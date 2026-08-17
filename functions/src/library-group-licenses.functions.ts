@@ -219,6 +219,25 @@ export const purchaseGroupLicenses = onCall(
         );
       }
       verifiedCaptureId = capture.captureId;
+
+      // Idempotency (sweep 2026-08-17): a client retry with the SAME
+      // payPalOrderId must not mint a second batch of licenses. The
+      // purchase doc stamps receipt == payPalOrderId, so a prior success
+      // is detectable - return its existing purchase + licenses instead of
+      // creating duplicates. (PayPal itself only captures an order once,
+      // but the license/purchase writes happen after that and can be
+      // replayed by a retried callable.)
+      const prior = await libraryDb.collection("purchases")
+        .where("receipt", "==", payPalOrderId).limit(1).get();
+      if (!prior.empty) {
+        const priorId = prior.docs[0].id;
+        const priorLicenses = await libraryDb.collection("groupLicenses")
+          .where("purchaseId", "==", priorId).get();
+        return {
+          purchaseId: priorId,
+          licenseIds: priorLicenses.docs.map((d) => d.id),
+        };
+      }
     }
 
     const now = Date.now();

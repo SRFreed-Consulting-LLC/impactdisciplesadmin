@@ -295,10 +295,13 @@ export async function queueWebOrderEmails(
   if (!templateSnap.empty) {
     const template =
       templateSnap.docs[0].data() as {subject?: string; html?: string};
+    // Buyer-supplied fields are HTML-escaped before substitution
+    // (sweep 2026-08-17). product_list is builder-generated markup (its own
+    // interpolations are already escaped), so it is inserted as-is.
     const model: Record<string, string> = {
-      firstName: form.firstName ?? "",
-      lastName: form.lastName ?? "",
-      email,
+      firstName: escapeHtml(form.firstName ?? ""),
+      lastName: escapeHtml(form.lastName ?? ""),
+      email: escapeHtml(email),
       product_list: buildWebProductListHtml(form),
     };
     let html = template.html ?? "";
@@ -320,9 +323,9 @@ export async function queueWebOrderEmails(
       html?: string};
     let html = followUp.html ?? "";
     const model: Record<string, string> = {
-      firstName: form.firstName ?? "",
-      lastName: form.lastName ?? "",
-      email: email.toLowerCase(),
+      firstName: escapeHtml(form.firstName ?? ""),
+      lastName: escapeHtml(form.lastName ?? ""),
+      email: escapeHtml(email.toLowerCase()),
     };
     for (const [key, value] of Object.entries(model)) {
       html = html.split("{{" + key + "}}").join(value);

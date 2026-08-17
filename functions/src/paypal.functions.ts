@@ -144,6 +144,39 @@ function buildCheckoutForm(
 }
 
 /**
+ * Records a coupon/affiliate sale server-side (sweep 2026-08-17). The web
+ * client used to write affilliate_sales directly, which meant the
+ * collection had to allow anonymous create - letting anyone forge
+ * attribution rows. Now the server writes it from the same
+ * server-computed checkout form, and the rule is closed. No-op when no
+ * coupon was applied.
+ * @param {Record<string, unknown>} checkoutForm The server checkout form.
+ * @param {string} receiptId The order's receipt/confirmation id.
+ * @return {Promise<void>} Resolves when written (or immediately if no coupon).
+ */
+async function recordAffiliateSale(
+  checkoutForm: Record<string, unknown>,
+  receiptId: string
+): Promise<void> {
+  const code = checkoutForm.couponCode;
+  if (typeof code !== "string" || code.trim() === "") {
+    return;
+  }
+  const total = typeof checkoutForm.total === "number" ?
+    checkoutForm.total : 0;
+  const discount = typeof checkoutForm.discount === "number" ?
+    checkoutForm.discount : 0;
+  await admin.firestore().collection("affilliate_sales").add({
+    code,
+    date: admin.firestore.Timestamp.now(),
+    email: checkoutForm.email ?? "",
+    totalBeforeDiscount: total,
+    totalAfterDiscount: total - discount,
+    receipt: receiptId,
+  });
+}
+
+/**
  * Builds the `payPalReceipt` value in the shape the admin app's
  * purchases.component.ts already expects (`IClientAuthorizeCallbackData`,
  * the shape ngx-paypal's old client-side onClientAuthorization callback
@@ -327,6 +360,14 @@ exports.create_paypal_order = functions
             await queueWebOrderEmails(admin.firestore(), checkoutForm);
           } catch (err) {
             console.error("Failed to queue order emails (free path)", err);
+          }
+          // Sweep #: affiliate sale recorded server-side now.
+          try {
+            await recordAffiliateSale(
+              checkoutForm, checkoutForm.receipt as string
+            );
+          } catch (err) {
+            console.error("Failed to record affiliate sale (free)", err);
           }
 
           response.send({
@@ -545,6 +586,12 @@ exports.capture_paypal_order = functions
             console.error(
               "Failed to queue order emails (captured path)", err
             );
+          }
+          // Sweep #: affiliate sale recorded server-side now.
+          try {
+            await recordAffiliateSale(checkoutForm, orderId);
+          } catch (err) {
+            console.error("Failed to record affiliate sale (captured)", err);
           }
 
           response.send({checkoutForm: {...checkoutForm, id: docRef.id}});

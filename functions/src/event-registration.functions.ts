@@ -3,6 +3,7 @@ import {FieldValue, Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
+import {escapeHtml} from "./transactional-emails";
 
 /**
  * Pre-prod checklist #2: the public event-registration flows, moved
@@ -109,12 +110,17 @@ async function queueConfirmationEmail(
           minute: "2-digit",
         }) :
       "";
+    // firstName/lastName/email are attacker-controlled (public register
+    // endpoint), so they are HTML-escaped before interpolation
+    // (sweep 2026-08-17). eventName is staff-authored but escaped too for
+    // consistency; editRegistration is a server-built link with a
+    // server-pinned domain and an unguessable id, safe as-is.
     const model: Record<string, string> = {
-      firstName: who.firstName,
-      lastName: who.lastName,
-      email: who.email,
-      eventName: (event.eventName as string) ?? "",
-      startDate: startText,
+      firstName: escapeHtml(who.firstName),
+      lastName: escapeHtml(who.lastName),
+      email: escapeHtml(who.email),
+      eventName: escapeHtml((event.eventName as string) ?? ""),
+      startDate: escapeHtml(startText),
       editRegistration:
         "<a href='" +
         WEB_APP_DOMAIN +
@@ -129,9 +135,11 @@ async function queueConfirmationEmail(
     for (const [key, value] of Object.entries(model)) {
       html = html.split("{{" + key + "}}").join(value);
     }
+    // Subject is plain text (not HTML), so use the raw event name here,
+    // not the HTML-escaped model value.
     const subject = (template.subject ?? "").replace(
       "{{eventName}}",
-      model.eventName
+      (event.eventName as string) ?? ""
     );
 
     const mailRef = await db.collection("mail").add({
