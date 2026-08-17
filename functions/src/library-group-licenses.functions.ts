@@ -1,5 +1,4 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {getFirestore} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import {defineSecret} from "firebase-functions/params";
 import {
@@ -23,19 +22,21 @@ import {selectMembersToCopy} from "./library-group-members-copy";
  * match the group's creatorEmail), not staff-role - distinct from
  * requireAdminRole, which nothing in this file needs.
  *
- * `purchases` is the one exception: Phase 3 deliberately did NOT migrate
- * it (see the consolidation plan's own note - it's headed for archival,
- * not a live migration), so purchaseGroupLicenses still writes its
- * purchase record to the legacy named database via legacyPurchasesDb -
- * see that function's own comment on why this means it can no longer
- * batch the purchase + license writes together.
+ * As of 2026-08-17, purchaseGroupLicenses no longer writes a purchase
+ * record at all - the library's separate `purchases` collection was
+ * retired along with the legacy named database (the web store's own
+ * `purchases` is the system of record for sales going forward; see
+ * library-purchases.functions.ts's identical note). The `purchaseId`
+ * stamped on each license doc is now the verified PayPal order id (or a
+ * synthesized id for a 100%-discount purchase), kept because the reader
+ * app's My License Purchases screen groups a bulk purchase's licenses
+ * by that field.
  *
  * `books` is nested (librarySeries/{s}/books/{b}), so getInviteDetails'
  * book lookup goes through a `collectionGroup('books')` scan matched by
  * doc id, same pattern this app's own LibraryBookService.getById() uses.
  */
 const libraryDb = admin.firestore();
-const legacyPurchasesDb = getFirestore(admin.app(), "impactdiscipleship-books");
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
@@ -90,11 +91,13 @@ export const purchaseGroupLicenses = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
+    // subtotal/discount still arrive from the (unchanged) reader client
+    // but aren't read any more - they only ever fed the retired purchase
+    // record. total/percentOff stay: they're what the PayPal capture is
+    // verified against.
     const {
       groupId,
       quantity,
-      subtotal,
-      discount,
       total,
       percentOff,
       payPalOrderId,
@@ -102,8 +105,6 @@ export const purchaseGroupLicenses = onCall(
     } = (request.data ?? {}) as {
       groupId?: string;
       quantity?: number;
-      subtotal?: number;
-      discount?: number;
       total?: number;
       percentOff?: number;
       payPalOrderId?: string;
@@ -192,50 +193,16 @@ export const purchaseGroupLicenses = onCall(
     }
 
     const now = Date.now();
-    const purchaseRef = legacyPurchasesDb.collection("purchases").doc();
+    // No purchase record is written any more (see the top-of-file
+    // comment) - the PayPal order id IS the purchase's identity, with a
+    // synthesized fallback for the verified-100%-discount free path.
+    // Still stamped on every license in the batch because the reader
+    // app's My License Purchases screen groups licenses by purchaseId.
+    const purchaseId =
+      payPalOrderId ?? libraryDb.collection("groupLicenses").doc().id;
     const licenseRefs = Array.from({length: quantity}, () =>
       libraryDb.collection("groupLicenses").doc()
     );
-    const unitPrice = subtotal ? subtotal / quantity : 0;
-    const unitDiscountPrice = total ? total / quantity : 0;
-
-    // The purchase record lives on the legacy named database (see this
-    // file's own top-of-file comment on why), while the license pool now
-    // lives on this project's default database - two different Firestore
-    // databases can't share one WriteBatch, so this is two separate write
-    // operations rather than the single combined batch it used to be. A
-    // failure between the two would leave a purchase record with no
-    // license pool behind it yet; acceptable here since this mirrors the
-    // same non-atomicity every PayPal-then-Firestore write in this
-    // codebase already has (the payment itself can't be transactional
-    // with Firestore either).
-    await purchaseRef.set({
-      email,
-      userId: uid,
-      cartItems: [
-        {
-          id: bookId,
-          itemName: group.title,
-          price: unitPrice,
-          orderQuantity: quantity,
-          discount: discount ?? 0,
-          discountPrice: unitDiscountPrice,
-          isDigitalBook: true,
-          digitalBookId: bookId,
-        },
-      ],
-      subtotal: subtotal ?? 0,
-      discount: discount ?? 0,
-      total: total ?? 0,
-      receipt: payPalOrderId ?? "FREE ONLY",
-      processedStatus: "NEW",
-      dateProcessed: now,
-      createdAt: now,
-      ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
-      ...(payPalOrderId ?
-        {paypalEnvironment: paypalEnvironment ?? "live"} :
-        {}),
-    });
 
     // Chunked rather than one batch() - Firestore caps a WriteBatch at
     // 500 operations and `quantity` alone can reach 1000.
@@ -246,16 +213,17 @@ export const purchaseGroupLicenses = onCall(
         batch.set(ref, {
           leaderEmail: email,
           bookId,
-          purchaseId: purchaseRef.id,
+          purchaseId,
           status: "unassigned",
           createdAt: now,
+          ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
         });
       }
       await batch.commit();
     }
 
     return {
-      purchaseId: purchaseRef.id,
+      purchaseId,
       licenseIds: licenseRefs.map((r) => r.id),
     };
   }

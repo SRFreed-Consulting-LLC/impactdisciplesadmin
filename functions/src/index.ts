@@ -106,18 +106,17 @@ exports.notifyJoinRequestActivity =
 exports.notifyPrayerRequestShared =
   libraryGroupNotifications.notifyPrayerRequestShared;
 
+// revokePurchase and the 4 legacy staff functions (bootstrapFirstAdmin/
+// createUser/linkExistingUser/deleteUser) were retired 2026-08-17 along
+// with the named 'impactdiscipleship-books' database they operated on -
+// library purchases are no longer recorded at all (the web store's own
+// `purchases` is the system of record), and the old manager app's
+// adminUsers staff model is dead per the consolidation plan.
 const libraryPurchases = require("./library-purchases.functions");
-exports.revokePurchase = libraryPurchases.revokePurchase;
 exports.grantStorePurchaseLicenses =
   libraryPurchases.grantStorePurchaseLicenses;
 exports.verifyAndGrantReaderStorePurchase =
   libraryPurchases.verifyAndGrantReaderStorePurchase;
-
-const legacyLibraryStaff = require("./legacy-library-staff.functions");
-exports.bootstrapFirstAdmin = legacyLibraryStaff.bootstrapFirstAdmin;
-exports.createUser = legacyLibraryStaff.createUser;
-exports.linkExistingUser = legacyLibraryStaff.linkExistingUser;
-exports.deleteUser = legacyLibraryStaff.deleteUser;
 
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =

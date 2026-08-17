@@ -1,16 +1,12 @@
 import {timingSafeEqual} from "crypto";
 import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
-import {getFirestore} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import {requireAdminRole} from "./admin-users.functions";
 import {
   PaypalEnvironment,
   getAccessToken,
-  getCaptureId,
   getOrderCapture,
-  refundCapture,
 } from "./library-paypal";
 import {
   applyStorePurchaseGrant,
@@ -18,45 +14,30 @@ import {
 } from "./library-store-license-grant";
 
 /**
- * Ported from impact-discipleship-library-manager-new's own purchase-
- * related Cloud Functions (functions/src/index.ts): revokePurchase (admin
- * refund/revoke of a reader-app PayPal book purchase),
- * grantStorePurchaseLicenses (the cross-project bridge
- * library-license-grant.functions.ts's onPurchaseGrantLibraryLicenses
- * calls to actually grant a license after a impactdisciples-web store
- * purchase), and verifyAndGrantReaderStorePurchase (the reader app's own
- * StoreComponent checkout, PayPal-verified server-side).
+ * Store-purchase license granting for the Impact Discipleship Library:
+ * grantStorePurchaseLicenses (the bridge impactdisciples-web's
+ * onPurchaseGrantLibraryLicenses trigger calls after a digital-book sale
+ * in the real web store) and verifyAndGrantReaderStorePurchase (the
+ * reader app's own StoreComponent checkout, PayPal-verified server-side;
+ * slated for retirement in Phase 5 when the in-app store goes away in
+ * favor of linking out to the web store).
  *
- * Two different databases in play here, deliberately:
- * - `purchases` (the library's own PayPal book-purchase records - a
- *   DIFFERENT collection from this project's own native `purchases`,
- *   store orders) stays on the legacy named 'impactdiscipleship-books'
- *   database via legacyPurchasesDb - Phase 3 deliberately did NOT migrate
- *   it (see the consolidation plan's own note: it's headed for archival,
- *   not a live migration, once the reader's paid-checkout path retires).
- * - `libraryUsers` (license grants/revokes) and `books` (existence
- *   checks) were migrated to THIS project's own default database via
- *   libraryDb - `books` is nested (librarySeries/{s}/books/{b}), so every
- *   lookup below goes through a `collectionGroup('books')` scan rather
- *   than a direct doc() read, same pattern this app's own
- *   LibraryBookService.getById() uses.
+ * As of 2026-08-17 these no longer write ANY purchase record of their
+ * own - the library's separate `purchases` collection (which lived on
+ * the legacy named 'impactdiscipleship-books' database) is retired along
+ * with that database; the web store's own `purchases` collection is the
+ * one system of record for sales going forward. The `purchaseId` these
+ * functions stamp on granted licenses / return to callers is now the
+ * verified PayPal order id (or a synthesized token for the $0 path),
+ * kept only so license provenance and the reader app's existing response
+ * handling stay intact. revokePurchase (admin refund/revoke over those
+ * old purchase records - never wired into this app's UI) was deleted at
+ * the same time.
  *
- * Because the two collections these functions touch now live in
- * different databases, revokePurchase can no longer update the purchase
- * doc and the libraryUsers doc in one Firestore transaction - see that
- * function's own comment on how it stays as safe as it can across two
- * separate transactions instead.
- *
- * revokePurchase's admin check is adapted from the source's own
- * requireAdmin (which checked the legacy, named-database `adminUsers`
- * collection) to this app's own requireAdminRole (admin_users) - matches
- * every other admin-facing Library function already ported (Library
- * Users, Groups). grantStorePurchaseLicenses/verifyAndGrantReaderStorePurchase
- * need no such check - the former authenticates via a shared secret (a
- * cross-project server call, no Firebase Auth context at all), the
- * latter via the calling patron's own Firebase Auth session.
+ * `books` is nested (librarySeries/{s}/books/{b}), so existence checks
+ * scan a `collectionGroup('books')` and match by doc id - same pattern
+ * this app's own LibraryBookService.getById() uses.
  */
-const legacyPurchasesDb = getFirestore(admin.app(), "impactdiscipleship-books");
 const libraryDb = admin.firestore();
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
@@ -65,274 +46,6 @@ const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 // trigger to grantStorePurchaseLicenses below. Set the SAME value in both
 // projects: firebase functions:secrets:set LIBRARY_GRANT_SECRET
 const storeGrantSecret = defineSecret("LIBRARY_GRANT_SECRET");
-
-interface PurchaseRevocation {
-  /** digitalBookIds revoked together in this one call - a single admin
-   *  action, possibly covering more than one book. */
-  bookIds: string[];
-  revokedAt: number;
-  /** uid of the admin who performed this specific revoke. */
-  revokedBy: string;
-  /** PayPal's refund id, set only when this action actually called
-   *  PayPal's refund API. */
-  paypalRefundId?: string;
-  /** Dollar amount refunded via PayPal for this action specifically
-   *  (partial for a partial revoke) - absent whenever paypalRefundId is
-   *  absent. */
-  refundedAmount?: number;
-}
-
-/**
- * Revokes one or more books from a Store purchase (impact-discipleship-
- * library-new) and, unless the caller opts out or there's nothing to
- * refund, actually refunds the customer via PayPal's REST API. Removes
- * the revoked book(s) from the purchasing patron's
- * libraryUsers/{email}.bookLicenses/licensedBookIds and appends an entry
- * to the purchase doc's `revocations` array (rather than overwriting a
- * single "last revoked" snapshot) so a bundled purchase can get partially
- * refunded in more than one action.
- *
- * The PayPal call (when made) happens *before* any Firestore write - if
- * it fails, nothing else in this function runs, so a customer never
- * loses book access for a refund that didn't actually happen.
- */
-export const revokePurchase = onCall(
-  // Explicit timeout (default is 60s): up to three sequential PayPal HTTP
-  // round trips (auth, order lookup, refund) happen before the Firestore
-  // transaction even starts.
-  {secrets: [paypalSandboxSecret, paypalLiveSecret], timeoutSeconds: 120},
-  async (request) => {
-    await requireAdminRole(request.auth?.uid);
-
-    const {purchaseId, bookIds, refundViaPaypal} = (request.data ?? {}) as {
-      purchaseId?: string;
-      bookIds?: string[];
-      refundViaPaypal?: boolean;
-    };
-    if (!purchaseId) {
-      throw new HttpsError("invalid-argument", "purchaseId is required.");
-    }
-
-    const purchaseRef =
-      legacyPurchasesDb.collection("purchases").doc(purchaseId);
-    const purchaseSnap = await purchaseRef.get();
-    if (!purchaseSnap.exists) {
-      throw new HttpsError("not-found", "Purchase not found.");
-    }
-    const purchase = purchaseSnap.data() as {
-      email: string;
-      receipt: string;
-      cartItems: { digitalBookId: string; discountPrice: number }[];
-      revocations?: PurchaseRevocation[];
-      paypalEnvironment?: PaypalEnvironment;
-      paypalCaptureId?: string;
-      correlationId?: string;
-    };
-
-    const allBookIds = purchase.cartItems.map((item) => item.digitalBookId);
-    const priorRevocations = purchase.revocations ?? [];
-    const alreadyRevoked = new Set(priorRevocations.flatMap((r) => r.bookIds));
-    // Ignore any requested id that isn't actually part of this purchase
-    // or was already revoked in an earlier partial-refund call, rather
-    // than erroring - lets the client just re-send "everything the admin
-    // checked" without having to track what a prior call already did.
-    const toRevoke = (bookIds?.length ? bookIds : allBookIds).filter(
-      (id) => allBookIds.includes(id) && !alreadyRevoked.has(id)
-    );
-    if (toRevoke.length === 0) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Nothing to revoke - selected book(s) already refunded."
-      );
-    }
-
-    // Nothing to refund via PayPal for a purchase no money was ever
-    // collected for (a 100%-off coupon, or the $0 "Get Books" path) - and
-    // the admin may have already refunded manually in PayPal's own
-    // dashboard before using this tool.
-    const skipsPaypal =
-      refundViaPaypal === false ||
-      purchase.receipt === "COUPON" ||
-      purchase.receipt === "FREE ONLY";
-
-    let paypalRefundId: string | undefined;
-    let refundedAmount: number | undefined;
-    let newlyResolvedCaptureId: string | undefined;
-
-    if (!skipsPaypal) {
-      // Pre-existing purchases predate this field entirely - default to
-      // 'live' rather than silently skipping a real refund; a mismatched
-      // environment just fails cleanly below.
-      const env: PaypalEnvironment = purchase.paypalEnvironment ?? "live";
-      const clientSecret = (
-        env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
-      ).value();
-
-      let accessToken: string;
-      try {
-        accessToken = await getAccessToken(env, clientSecret);
-      } catch {
-        throw new HttpsError("internal", "Could not authenticate with PayPal.");
-      }
-
-      let captureId = purchase.paypalCaptureId;
-      if (!captureId) {
-        try {
-          captureId = await getCaptureId(env, accessToken, purchase.receipt);
-        } catch {
-          throw new HttpsError(
-            "not-found",
-            "Could not find a matching PayPal payment for this purchase."
-          );
-        }
-        newlyResolvedCaptureId = captureId;
-      }
-
-      // Only omit the amount (full remaining refund) for a single
-      // one-shot full revoke - any other case sends an explicit amount
-      // for just this call's books, so a prior action's already-refunded
-      // amount is never refunded again.
-      const isSingleFullRevoke =
-        priorRevocations.length === 0 && toRevoke.length === allBookIds.length;
-      const amount = isSingleFullRevoke ?
-        undefined :
-        purchase.cartItems
-          .filter((item) => toRevoke.includes(item.digitalBookId))
-          .reduce((sum, item) => sum + item.discountPrice, 0);
-
-      // Deterministic (not random) so a genuine retry of the exact same
-      // action reuses PayPal's own idempotency window instead of risking
-      // a second refund if this function dies after the PayPal call but
-      // before the Firestore write below.
-      const idempotencyKey =
-        `revoke-${purchaseId}-${[...toRevoke].sort().join("_")}`;
-
-      try {
-        const refund = await refundCapture(
-          env,
-          accessToken,
-          captureId,
-          amount,
-          idempotencyKey
-        );
-        paypalRefundId = refund.id;
-        refundedAmount =
-          amount ??
-          purchase.cartItems.reduce((sum, item) => sum + item.discountPrice, 0);
-      } catch (err) {
-        throw new HttpsError(
-          "failed-precondition",
-          err instanceof Error ? err.message : "PayPal refund failed."
-        );
-      }
-    }
-
-    const email = purchase.email.trim().toLowerCase();
-    const libraryUserRef = libraryDb.collection("libraryUsers").doc(email);
-
-    // The PayPal refund above can't itself be part of a Firestore
-    // transaction, so re-read the purchase doc fresh here rather than
-    // trusting purchaseSnap/the pre-refund toRevoke check - two
-    // concurrent revoke calls on the same purchase would otherwise each
-    // compute their array update from stale data and one write would
-    // silently clobber the other's revocation record.
-    let fullyRefunded = false;
-    await legacyPurchasesDb.runTransaction(async (transaction) => {
-      const freshPurchaseSnap = await transaction.get(purchaseRef);
-      if (!freshPurchaseSnap.exists) {
-        throw new HttpsError("not-found", "Purchase not found.");
-      }
-      const freshPriorRevocations =
-        (freshPurchaseSnap.data() as { revocations?: PurchaseRevocation[] })
-          .revocations ?? [];
-      const freshAlreadyRevoked = new Set(
-        freshPriorRevocations.flatMap((r) => r.bookIds)
-      );
-      if (toRevoke.some((id) => freshAlreadyRevoked.has(id))) {
-        throw new HttpsError(
-          "aborted",
-          "This purchase was modified by another action while this " +
-            "refund was processing. If a PayPal refund was issued " +
-            "above, check the purchase's revocation history before " +
-            "retrying."
-        );
-      }
-
-      const revocations: PurchaseRevocation[] = [
-        ...freshPriorRevocations,
-        {
-          bookIds: toRevoke,
-          revokedAt: Date.now(),
-          revokedBy: request.auth!.uid,
-          ...(paypalRefundId ? {paypalRefundId, refundedAmount} : {}),
-        },
-      ];
-      fullyRefunded = allBookIds.every((id) =>
-        revocations.some((r) => r.bookIds.includes(id))
-      );
-      transaction.update(purchaseRef, {
-        revocations,
-        processedStatus: fullyRefunded ? "REFUNDED" : "NEW",
-        ...(newlyResolvedCaptureId ?
-          {paypalCaptureId: newlyResolvedCaptureId} :
-          {}),
-      });
-    });
-
-    // Separate transaction on the default database, where libraryUsers
-    // now lives - `purchases` and `libraryUsers` are two different
-    // Firestore databases now (see this file's own top comment), so they
-    // can no longer be updated in one transaction the way they used to
-    // be. The purchase record above is the source of truth once it
-    // commits; if this second step fails, re-running revokePurchase for
-    // the same book ids will report "Nothing to revoke" (the purchase
-    // doc's revocations array already covers them) rather than retrying
-    // just the license removal - a genuinely dropped write here needs a
-    // manual revokeAdminGrantedLicense-style fix, not an automatic retry.
-    await libraryDb.runTransaction(async (transaction) => {
-      const freshLibraryUserSnap = await transaction.get(libraryUserRef);
-      if (!freshLibraryUserSnap.exists) {
-        return;
-      }
-      const revokeSet = new Set(toRevoke);
-      const data = freshLibraryUserSnap.data() as {
-        bookLicenses?: { bookId: string; source?: string }[];
-        licensedBookIds?: string[];
-      };
-      // Only purchase-origin bookLicenses entries (no `source` field)
-      // belong to this refund path. A group- or admin-sourced license
-      // for the same book must survive the refund, so the flat
-      // licensedBookIds entry is only dropped when no remaining entry
-      // still covers that book.
-      const allLicenses = Array.isArray(data.bookLicenses) ?
-        data.bookLicenses :
-        [];
-      const bookLicenses = allLicenses.filter(
-        (license) => !(revokeSet.has(license.bookId) && !license.source)
-      );
-      const priorIds = Array.isArray(data.licensedBookIds) ?
-        data.licensedBookIds :
-        [];
-      const licensedBookIds = priorIds.filter(
-        (id) =>
-          !revokeSet.has(id) ||
-          bookLicenses.some((license) => license.bookId === id)
-      );
-      transaction.update(libraryUserRef, {
-        bookLicenses,
-        licensedBookIds,
-        updatedAt: Date.now(),
-      });
-    });
-
-    return {
-      revokedBookIds: toRevoke,
-      fullyRefunded,
-      paypalRefundId,
-      refundedAmount,
-    };
-  }
-);
 
 /**
  * Grants book licenses for a digital-book purchase made in
@@ -453,20 +166,20 @@ export const grantStorePurchaseLicenses = onRequest(
 );
 
 /**
- * Verifies and records a reader-app patron's own individual book purchase
+ * Verifies and grants a reader-app patron's own individual book purchase
  * (StoreComponent's checkout).
  *
  * PayPal path (payPalOrderId present): fully verified here - the
  * captured amount/status is independently confirmed with PayPal before
  * any license is granted, same as purchaseGroupLicenses.
  *
- * Coupon/$0 path (no payPalOrderId): CANNOT be verified here today.
- * Coupon records live in the legacy impactdisciples-a82a8 project's
- * default database, which this project's Cloud Functions have no Admin
- * SDK access to. Rather than trust an unverifiable free claim, this
- * records the attempted purchase as pending and grants NOTHING
- * automatically - an admin follows up via the existing
- * grantLibraryUserLicenses tool.
+ * Coupon/$0 path (no payPalOrderId): CANNOT be verified here (coupon
+ * records live in the legacy impactdisciples-a82a8 project, which this
+ * project's Cloud Functions have no Admin SDK access to). Rather than
+ * trust an unverifiable free claim, this grants NOTHING automatically
+ * and logs the attempt for an admin to follow up via the existing
+ * grantLibraryUserLicenses tool. No purchase record is written on either
+ * path any more - see the top-of-file comment.
  */
 export const verifyAndGrantReaderStorePurchase = onCall(
   {secrets: [paypalSandboxSecret, paypalLiveSecret], timeoutSeconds: 120},
@@ -479,8 +192,6 @@ export const verifyAndGrantReaderStorePurchase = onCall(
 
     const {
       cartItems,
-      subtotal,
-      discount,
       total,
       couponCode,
       payPalOrderId,
@@ -512,10 +223,8 @@ export const verifyAndGrantReaderStorePurchase = onCall(
 
     // Confirm every claimed book actually exists here - same guard
     // grantStorePurchaseLicenses uses, so a bogus id can't be "granted"
-    // and silently do nothing forever. A bare book id doesn't say which
-    // series/book it's nested under, so this scans every series' `books`
-    // subcollection once via a collectionGroup query rather than one
-    // lookup per id.
+    // and silently do nothing forever. Same collectionGroup-scan
+    // reasoning as there.
     const uniqueBookIds = [...new Set(bookIds)];
     const knownBookIds = new Set(
       (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
@@ -530,67 +239,45 @@ export const verifyAndGrantReaderStorePurchase = onCall(
 
     const now = Date.now();
     const claimedTotal = total ?? 0;
-    const receipt = payPalOrderId ?? (couponCode ? "COUPON" : "FREE ONLY");
+    // The PayPal order id doubles as the purchase's identity now that no
+    // purchase doc is written - stamped on the granted licenses for
+    // provenance and returned to the client, which already expects a
+    // purchaseId field. The $0/coupon path gets a synthesized token (it
+    // grants nothing automatically anyway - see below).
+    const purchaseId = payPalOrderId ?? `unrecorded-${now}`;
 
-    let verifiedCaptureId: string | undefined;
-    let granted = false;
-
-    if (payPalOrderId) {
-      const env: PaypalEnvironment = paypalEnvironment ?? "live";
-      const clientSecret = (
-        env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
-      ).value();
-      const accessToken = await getAccessToken(env, clientSecret);
-      const capture = await getOrderCapture(env, accessToken, payPalOrderId);
-      if (capture.status !== "COMPLETED") {
-        throw new HttpsError(
-          "failed-precondition",
-          `PayPal order is not completed (status: ${capture.status}).`
-        );
-      }
-      if (
-        capture.currencyCode !== "USD" ||
-        Math.abs(capture.amount - claimedTotal) > 0.01
-      ) {
-        throw new HttpsError(
-          "failed-precondition",
-          `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
-            `does not match the claimed total ($${claimedTotal.toFixed(2)}).`
-        );
-      }
-      verifiedCaptureId = capture.captureId;
-      granted = true;
-    }
-
-    const purchaseRef = legacyPurchasesDb.collection("purchases").doc();
-    await purchaseRef.set({
-      email,
-      userId: uid,
-      cartItems,
-      ...(couponCode ? {couponCode} : {}),
-      subtotal: subtotal ?? 0,
-      discount: discount ?? 0,
-      total: claimedTotal,
-      receipt,
-      processedStatus: granted ? "NEW" : "PENDING_MANUAL_REVIEW",
-      dateProcessed: now,
-      createdAt: now,
-      ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
-      ...(payPalOrderId ?
-        {paypalEnvironment: paypalEnvironment ?? "live"} :
-        {}),
-    });
-
-    if (!granted) {
-      // Coupon/$0 claims can't be independently verified here yet - flag
-      // for a human instead of auto-granting.
-      logger.warn("Unverified $0/coupon purchase recorded - NOT auto-granted", {
-        purchaseId: purchaseRef.id,
+    if (!payPalOrderId) {
+      // Coupon/$0 claims can't be independently verified here - flag for
+      // a human instead of auto-granting.
+      logger.warn("Unverified $0/coupon purchase attempt - NOT auto-granted", {
         email,
         bookIds: uniqueBookIds,
         couponCode,
       });
-      return {granted: false, purchaseId: purchaseRef.id, pending: true};
+      return {granted: false, purchaseId, pending: true};
+    }
+
+    const env: PaypalEnvironment = paypalEnvironment ?? "live";
+    const clientSecret = (
+      env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
+    ).value();
+    const accessToken = await getAccessToken(env, clientSecret);
+    const capture = await getOrderCapture(env, accessToken, payPalOrderId);
+    if (capture.status !== "COMPLETED") {
+      throw new HttpsError(
+        "failed-precondition",
+        `PayPal order is not completed (status: ${capture.status}).`
+      );
+    }
+    if (
+      capture.currencyCode !== "USD" ||
+      Math.abs(capture.amount - claimedTotal) > 0.01
+    ) {
+      throw new HttpsError(
+        "failed-precondition",
+        `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
+          `does not match the claimed total ($${claimedTotal.toFixed(2)}).`
+      );
     }
 
     const recipientRef = libraryDb.collection("libraryUsers").doc(email);
@@ -606,14 +293,14 @@ export const verifyAndGrantReaderStorePurchase = onCall(
         recipientSnap: snap,
         recipientEmail: email,
         books: uniqueBookIds.map((bookId) => ({bookId})),
-        purchaseId: purchaseRef.id,
+        purchaseId,
         now,
       });
     });
 
     return {
       granted: true,
-      purchaseId: purchaseRef.id,
+      purchaseId,
       grantedBookIds: result.granted,
       skippedBookIds: result.skipped,
     };
