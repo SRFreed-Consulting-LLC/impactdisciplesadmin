@@ -825,6 +825,33 @@ export const acceptGroupInvite = onCall(async (request) => {
 
   const groupId = invite.groupId as string;
   const bookId = invite.bookId as string;
+
+  // An invite is SINGLE-USE. Only a still-pending invite joins the group and
+  // pulls a license; an already-accepted one is a no-op that returns success
+  // (idempotent for a double-click/retry). Without this, a member could
+  // leaveGroupAndRevokeLicense - which deletes the member doc and returns the
+  // license to the pool - then re-POST the same inviteId to re-join and pull
+  // a FRESH license, making revokeGroupLicense unenforceable (Sweep 3,
+  // 2026-08-17). The membership-set + grant are gated on isPending below.
+  const isPending = invite.status === "pending";
+
+  // The invite freezes bookId at send time; if the group's book was changed
+  // afterward, honoring the frozen book would grant a license for a book the
+  // group no longer studies. assignGroupLicense already guards this.
+  if (isPending) {
+    const groupBookSnap = await libraryDb
+      .collection("discussionGroups")
+      .doc(groupId)
+      .get();
+    const groupBookId = groupBookSnap.data()?.bookId as string | undefined;
+    if (groupBookId && groupBookId !== bookId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "This group's book has changed since the invite was sent - " +
+          "please ask the leader for a new invite."
+      );
+    }
+  }
   const memberRef = libraryDb
     .collection("discussionGroups")
     .doc(groupId)
@@ -861,7 +888,9 @@ export const acceptGroupInvite = onCall(async (request) => {
 
     const alreadyApproved =
       memberSnap.exists && memberSnap.data()?.status === "approved";
-    if (!alreadyApproved) {
+    // Only a still-pending invite joins/grants; a re-accept after leaving
+    // (invite already 'accepted') falls through to a no-op success.
+    if (isPending && !alreadyApproved) {
       transaction.set(memberRef, {
         groupId,
         email,
@@ -880,6 +909,7 @@ export const acceptGroupInvite = onCall(async (request) => {
     let licenseGranted = false;
     let grantedLicenseId: string | undefined;
     if (
+      isPending &&
       !alreadyApproved &&
       licenseRef &&
       licenseSnap?.exists &&
@@ -901,7 +931,7 @@ export const acceptGroupInvite = onCall(async (request) => {
       grantedLicenseId = candidateLicenseId;
     }
 
-    if (invite.status !== "accepted") {
+    if (isPending) {
       transaction.update(inviteRef, {
         status: "accepted",
         respondedAt: Date.now(),

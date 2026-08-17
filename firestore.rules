@@ -651,7 +651,12 @@ service cloud.firestore {
           request.resource.data.text is string &&
           request.resource.data.text.size() < 4000;
         allow update: if false;
-        allow delete: if resource.data.authorEmail == callerEmail() || isAdminRole();
+        // Author OR the group creator (moderation) OR admin. The creator
+        // term was missing (Sweep 3, 2026-08-17): the reader shows a Remove
+        // button on any prayer to the leader, but every leader-moderation
+        // delete threw permission-denied and logged an error.
+        allow delete: if resource.data.authorEmail == callerEmail() ||
+          isGroupCreator(groupId) || isAdminRole();
       }
       // 1:1 leader<->member conversations: the conversation doc id is the
       // NON-creator participant's email; the thread is always between the
