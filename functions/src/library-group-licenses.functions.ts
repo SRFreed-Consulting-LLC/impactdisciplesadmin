@@ -40,6 +40,36 @@ const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 
 /**
+ * Whether a libraryUsers snapshot already holds ANY license for `bookId`.
+ * Guards every group-license grant path (purchase self-assign, manual
+ * assign, invite acceptance): applyLicenseGrant REPLACES an existing
+ * same-book bookLicenses entry, so granting a group license to someone
+ * who bought (or was admin-granted) the book would silently downgrade
+ * their permanent license to a revocable group one - the leader could
+ * then effectively take away a book the member paid for, which is
+ * exactly what applyLicenseRevoke's own provenance care exists to
+ * prevent. A non-array licensedBookIds (the staff 'all' sentinel) also
+ * counts as licensed.
+ * @param {FirebaseFirestore.DocumentSnapshot} snap The recipient's
+ * libraryUsers doc snapshot.
+ * @param {string} bookId The book in question.
+ * @return {boolean} Whether they already hold a license for it.
+ */
+function alreadyLicensedFor(
+  snap: FirebaseFirestore.DocumentSnapshot,
+  bookId: string
+): boolean {
+  if (!snap.exists) {
+    return false;
+  }
+  const ids = (snap.data() as {licensedBookIds?: unknown}).licensedBookIds;
+  return (
+    (ids !== undefined && !Array.isArray(ids)) ||
+    (Array.isArray(ids) && ids.includes(bookId))
+  );
+}
+
+/**
  * Throws unless `email` (the caller's own token email) matches
  * discussionGroups/{groupId}.creatorEmail - the authorization model for
  * every group-license function below. Returns the group's own data so
@@ -272,25 +302,14 @@ export const purchaseGroupLicenses = onCall(
 
     // Auto-assign ONE of the just-purchased licenses to the leader
     // themselves (2026-08-17 request: buy 5 -> 1 self-assigned, 4 left to
-    // hand out), UNLESS they already hold a license for this book - not
-    // just to avoid wasting a unit: applyLicenseGrant REPLACES an
-    // existing same-book bookLicenses entry, so self-assigning to an
-    // already-licensed leader would silently swap their purchase/admin
-    // provenance for a revocable group-license entry (leaving the group
-    // could then strip a book they'd paid for). A non-array
-    // licensedBookIds (the staff 'all' sentinel) also skips - full
-    // access already, nothing to add.
+    // hand out), UNLESS they already hold a license for this book - see
+    // alreadyLicensedFor for why granting anyway would be worse than
+    // wasteful.
     let selfAssignedLicenseId: string | undefined;
     const leaderRef = libraryDb.collection("libraryUsers").doc(email);
     await libraryDb.runTransaction(async (transaction) => {
       const leaderSnap = await transaction.get(leaderRef);
-      const ids = leaderSnap.exists ?
-        (leaderSnap.data() as {licensedBookIds?: unknown}).licensedBookIds :
-        undefined;
-      const alreadyLicensed =
-        (ids !== undefined && !Array.isArray(ids)) ||
-        (Array.isArray(ids) && ids.includes(bookId));
-      if (alreadyLicensed) {
+      if (alreadyLicensedFor(leaderSnap, bookId)) {
         return;
       }
       applyLicenseGrant({
@@ -381,6 +400,16 @@ export const assignGroupLicense = onCall(async (request) => {
       throw new HttpsError(
         "failed-precondition",
         "The recipient must be an approved member of this Impact Group."
+      );
+    }
+    // A clear error rather than a silent skip: the leader clicked Assign
+    // and should learn why nothing was consumed. See alreadyLicensedFor.
+    if (alreadyLicensedFor(recipientSnap, license.bookId as string)) {
+      throw new HttpsError(
+        "failed-precondition",
+        "This member already has this book (purchased or granted " +
+          "separately) - the license was not assigned and remains " +
+          "available."
       );
     }
 
@@ -805,13 +834,19 @@ export const acceptGroupInvite = onCall(async (request) => {
       });
     }
 
+    // Skip (never fail) the grant when the invitee already holds a
+    // license for this book - membership is still approved, the invite
+    // still completes, and the license stays UNASSIGNED in the leader's
+    // pool for someone who actually needs it. See alreadyLicensedFor for
+    // why granting anyway would be worse than wasteful.
     let licenseGranted = false;
     let grantedLicenseId: string | undefined;
     if (
       !alreadyApproved &&
       licenseRef &&
       licenseSnap?.exists &&
-      licenseSnap.data()?.status === "unassigned"
+      licenseSnap.data()?.status === "unassigned" &&
+      !alreadyLicensedFor(recipientSnap!, bookId)
     ) {
       applyLicenseGrant({
         transaction,
