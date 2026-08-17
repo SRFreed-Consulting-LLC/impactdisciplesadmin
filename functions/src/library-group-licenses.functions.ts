@@ -91,10 +91,10 @@ async function requireGroupLeader(
     .collection("discussionGroups")
     .doc(groupId)
     .get();
-  if (!groupSnap.exists) {
+  const group = groupSnap.data();
+  if (!groupSnap.exists || !group) {
     throw new HttpsError("not-found", "Impact Group not found.");
   }
-  const group = groupSnap.data()!;
   if (group.creatorEmail !== email.trim().toLowerCase()) {
     throw new HttpsError(
       "permission-denied",
@@ -394,10 +394,10 @@ export const assignGroupLicense = onCall(async (request) => {
       transaction.get(memberRef),
       transaction.get(recipientRef),
     ]);
-    if (!licenseSnap.exists) {
+    const license = licenseSnap.data();
+    if (!licenseSnap.exists || !license) {
       throw new HttpsError("not-found", "License not found.");
     }
-    const license = licenseSnap.data()!;
     if (license.leaderEmail !== email) {
       throw new HttpsError(
         "permission-denied",
@@ -469,10 +469,10 @@ export const revokeGroupLicense = onCall(async (request) => {
 
   await libraryDb.runTransaction(async (transaction) => {
     const licenseSnap = await transaction.get(licenseRef);
-    if (!licenseSnap.exists) {
+    const license = licenseSnap.data();
+    if (!licenseSnap.exists || !license) {
       throw new HttpsError("not-found", "License not found.");
     }
-    const license = licenseSnap.data()!;
     if (license.leaderEmail !== email) {
       throw new HttpsError(
         "permission-denied",
@@ -687,10 +687,10 @@ export const getInviteDetails = onCall(async (request) => {
     .collection("groupInvites")
     .doc(inviteId)
     .get();
-  if (!inviteSnap.exists) {
+  const invite = inviteSnap.data();
+  if (!inviteSnap.exists || !invite) {
     throw new HttpsError("not-found", "This invite could not be found.");
   }
-  const invite = inviteSnap.data()!;
 
   // A bare book id doesn't say which series/book it's nested under - scans
   // every series' `books` subcollection once via a collectionGroup query
@@ -700,7 +700,10 @@ export const getInviteDetails = onCall(async (request) => {
     libraryDb.collection("discussionGroups").doc(invite.groupId).get(),
     libraryDb.collectionGroup("books").get(),
   ]);
-  const group = groupSnap.exists ? groupSnap.data()! : undefined;
+  // .data() already returns undefined for a non-existent doc, so this is
+  // equivalent to the previous `groupSnap.exists ? groupSnap.data()! :
+  // undefined` without needing the assertion.
+  const group = groupSnap.data();
   const book = booksSnap.docs.find((d) => d.id === invite.bookId)?.data();
 
   // Deliberately NOT reporting whether `inviteeEmail` already has an
@@ -745,10 +748,10 @@ export const declineGroupInvite = onCall(async (request) => {
     typeof reason === "string" ? reason.trim().slice(0, 4000) : undefined;
   const inviteRef = libraryDb.collection("groupInvites").doc(inviteId);
   const inviteSnap = await inviteRef.get();
-  if (!inviteSnap.exists) {
+  const invite = inviteSnap.data();
+  if (!inviteSnap.exists || !invite) {
     throw new HttpsError("not-found", "This invite could not be found.");
   }
-  const invite = inviteSnap.data()!;
   const justDeclined = invite.status === "pending";
   if (justDeclined) {
     await inviteRef.update({
@@ -806,10 +809,10 @@ export const acceptGroupInvite = onCall(async (request) => {
 
   const inviteRef = libraryDb.collection("groupInvites").doc(inviteId);
   const inviteSnap = await inviteRef.get();
-  if (!inviteSnap.exists) {
+  const invite = inviteSnap.data();
+  if (!inviteSnap.exists || !invite) {
     throw new HttpsError("not-found", "This invite could not be found.");
   }
-  const invite = inviteSnap.data()!;
   if (invite.inviteeEmail !== email) {
     throw new HttpsError(
       "permission-denied",
@@ -912,17 +915,18 @@ export const acceptGroupInvite = onCall(async (request) => {
       isPending &&
       !alreadyApproved &&
       licenseRef &&
+      candidateLicenseId &&
       licenseSnap?.exists &&
       licenseSnap.data()?.status === "unassigned" &&
-      !alreadyLicensedFor(recipientSnap!, bookId)
+      !alreadyLicensedFor(recipientSnap, bookId)
     ) {
       applyLicenseGrant({
         transaction,
         licenseRef,
         recipientRef,
-        recipientSnap: recipientSnap!,
+        recipientSnap,
         bookId,
-        licenseId: candidateLicenseId!,
+        licenseId: candidateLicenseId,
         groupId,
         recipientEmail: email,
         now: Date.now(),

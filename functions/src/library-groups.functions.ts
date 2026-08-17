@@ -62,10 +62,10 @@ async function requireCreator(
   groupId: string
 ): Promise<FirebaseFirestore.DocumentData> {
   const snap = await db.collection("discussionGroups").doc(groupId).get();
-  if (!snap.exists) {
+  const group = snap.data();
+  if (!snap.exists || !group) {
     throw new HttpsError("not-found", "Impact Group not found.");
   }
-  const group = snap.data()!;
   if (group.creatorEmail !== email) {
     throw new HttpsError(
       "permission-denied",
@@ -223,7 +223,8 @@ export const requestToJoinGroup = onCall(async (request) => {
     .collection("discussionGroups")
     .doc(groupId)
     .get();
-  if (!groupSnap.exists || groupSnap.data()!.status !== "open") {
+  const groupData = groupSnap.data();
+  if (!groupSnap.exists || !groupData || groupData.status !== "open") {
     throw new HttpsError(
       "failed-precondition",
       "This Impact Group is not open to join."
@@ -231,7 +232,7 @@ export const requestToJoinGroup = onCall(async (request) => {
   }
   const memberRef = groupSnap.ref.collection("members").doc(email);
   const existing = await memberRef.get();
-  if (existing.exists && existing.data()!.status === "approved") {
+  if (existing.exists && existing.data()?.status === "approved") {
     // Never downgrade an approved membership to pending - a double-tap
     // or stale UI must not eject someone from a group they're in.
     return {requested: false, alreadyMember: true};
@@ -461,10 +462,10 @@ export const cancelGroupInvite = onCall(async (request) => {
   }
   const ref = db.collection("groupInvites").doc(inviteId);
   const snap = await ref.get();
-  if (!snap.exists) {
+  const invite = snap.data();
+  if (!snap.exists || !invite) {
     throw new HttpsError("not-found", "Invite not found.");
   }
-  const invite = snap.data()!;
   if (invite.leaderEmail !== email) {
     throw new HttpsError(
       "permission-denied",

@@ -118,7 +118,14 @@ export const verifyAndGrantReaderStorePurchase = onCall(
           `Product ${productIds[i]} is not an available digital book.`
         );
       }
-      return {id: productIds[i], data};
+      // digitalBookId is confirmed truthy by the guard above -- carrying
+      // that as part of the returned type (rather than asserting `!` again
+      // at every later usage site below) keeps the "trust point" to
+      // exactly where it's actually validated.
+      return {
+        id: productIds[i],
+        data: data as ProductDoc & {digitalBookId: string},
+      };
     });
 
     // Confirm every product's book actually exists - a stale digitalBookId
@@ -129,7 +136,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
     );
     const missingBooks = products
-      .filter((p) => !knownBookIds.has(p.data.digitalBookId!))
+      .filter((p) => !knownBookIds.has(p.data.digitalBookId))
       .map((p) => p.id);
     if (missingBooks.length > 0) {
       throw new HttpsError(
@@ -176,7 +183,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
         cost: data.cost ?? 0,
         salePrice: data.salePrice,
         imageUrl: data.imageUrl,
-        digitalBookId: data.digitalBookId!,
+        digitalBookId: data.digitalBookId,
         effectivePrice: price,
         discount,
         finalPrice: round2(price - discount),

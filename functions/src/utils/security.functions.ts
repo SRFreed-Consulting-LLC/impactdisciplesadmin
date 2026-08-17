@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as admin from "firebase-admin";
+import * as functions from "firebase-functions";
 
 // Known origins allowed to call these HTTP functions from a browser. Update
 // this list if a new hosting domain (prod/dev/admin) is added.
@@ -54,12 +55,12 @@ export const restrictedCors = require("cors")({
  * use this on functions the public/guest checkout or unsubscribe flows need
  * to call -- those users never sign in.
  *
- * @param {any} request The Express-style request passed to an onRequest
- * handler.
+ * @param {functions.https.Request} request The request passed to an
+ * onRequest handler.
  * @return {Promise<admin.auth.DecodedIdToken>} The decoded, verified token.
  */
 export async function requireStaffAuth(
-  request: any
+  request: functions.https.Request
 ): Promise<admin.auth.DecodedIdToken> {
   const authHeader: string = request.headers.authorization || "";
   const match = /^Bearer (.+)$/.exec(authHeader);

@@ -42,10 +42,10 @@ async function getGroupForPush(
     .collection("discussionGroups")
     .doc(groupId)
     .get();
-  if (!snap.exists) {
+  const data = snap.data();
+  if (!snap.exists || !data) {
     return null;
   }
-  const data = snap.data()!;
   return {
     title: data.title as string,
     creatorEmail: (data.creatorEmail as string).toLowerCase(),

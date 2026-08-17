@@ -119,6 +119,12 @@ export const updateLibraryUser = onCall(async (request) => {
  */
 export const setLibraryUserRevoked = onCall(async (request) => {
   await requireAdminRole(request.auth?.uid);
+  // requireAdminRole throws for a missing/invalid uid, so request.auth is
+  // genuinely defined below -- this makes that explicit for TypeScript
+  // too, rather than asserting it at each later usage site.
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Sign in required.");
+  }
 
   const {email, revoked} = (request.data ?? {}) as {
     email?: string;
@@ -155,7 +161,7 @@ export const setLibraryUserRevoked = onCall(async (request) => {
       {
         revoked: true,
         revokedAt: now,
-        revokedBy: request.auth!.uid,
+        revokedBy: request.auth.uid,
         updatedAt: now,
       } :
       {
@@ -180,6 +186,12 @@ export const setLibraryUserRevoked = onCall(async (request) => {
  */
 export const grantLibraryUserLicenses = onCall(async (request) => {
   await requireAdminRole(request.auth?.uid);
+  // requireAdminRole throws for a missing/invalid uid, so request.auth is
+  // genuinely defined below -- this makes that explicit for TypeScript
+  // too, rather than asserting it at each later usage site.
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Sign in required.");
+  }
 
   const {email, bookIds} = (request.data ?? {}) as {
     email?: string;
@@ -239,7 +251,7 @@ export const grantLibraryUserLicenses = onCall(async (request) => {
         bookId,
         purchaseDate: now,
         source: "admin-grant",
-        grantedBy: request.auth!.uid,
+        grantedBy: request.auth.uid,
       });
       granted.push(bookId);
     }
@@ -343,6 +355,12 @@ export const sendLibraryUserMessage = onCall(
   {timeoutSeconds: 300},
   async (request) => {
     await requireAdminRole(request.auth?.uid);
+    // requireAdminRole throws for a missing/invalid uid, so request.auth is
+    // genuinely defined below -- this makes that explicit for TypeScript
+    // too, rather than asserting it at each later usage site.
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Sign in required.");
+    }
 
     const {recipients, title, body} = (request.data ?? {}) as {
       recipients?: string[] | "all";
@@ -379,7 +397,7 @@ export const sendLibraryUserMessage = onCall(
     const senderSnap = await admin
       .firestore()
       .collection("admin_users")
-      .where("firebaseUID", "==", request.auth!.uid)
+      .where("firebaseUID", "==", request.auth.uid)
       .limit(1)
       .get();
     const sender = senderSnap.empty ?
@@ -468,7 +486,7 @@ export const sendLibraryUserMessage = onCall(
           title: trimmedTitle,
           body: trimmedBody,
           sentAt: now,
-          sentBy: request.auth!.uid,
+          sentBy: request.auth.uid,
           sentByName,
           read: false,
           adminMessageId: messageId,
@@ -500,7 +518,7 @@ export const sendLibraryUserMessage = onCall(
       title: trimmedTitle,
       body: trimmedBody,
       sentAt: now,
-      sentBy: request.auth!.uid,
+      sentBy: request.auth.uid,
       sentByName,
       recipientScope,
       ...(recipientScope === "selected" ? {recipients: emails} : {}),

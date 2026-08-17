@@ -197,7 +197,8 @@ export const registerForEventHttp = onRequest((request, response) => {
     }
 
     const eventSnap = await db.collection("events").doc(eventId).get();
-    if (!eventSnap.exists || eventSnap.data()?.isActive === false) {
+    const eventData = eventSnap.data();
+    if (!eventSnap.exists || !eventData || eventData.isActive === false) {
       response.status(400).send({error: "Event not found or inactive."});
       return;
     }
@@ -214,7 +215,7 @@ export const registerForEventHttp = onRequest((request, response) => {
     });
 
     const receiptEmailId = await queueConfirmationEmail(
-      eventSnap.data()!,
+      eventData,
       eventId,
       registrationRef.id,
       {firstName, lastName, email}
@@ -251,11 +252,11 @@ export const getEventRegistrationHttp = onRequest((request, response) => {
       .collection("event-registrations")
       .doc(registrationId)
       .get();
-    if (!snap.exists) {
+    const data = snap.data();
+    if (!snap.exists || !data) {
       response.send({registration: null});
       return;
     }
-    const data = snap.data()!;
     response.send({
       registration: {
         id: snap.id,
