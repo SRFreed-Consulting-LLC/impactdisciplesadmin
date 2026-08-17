@@ -135,6 +135,16 @@ exports.lookup_coupon = checkoutSupport.lookupCouponHttp;
 exports.lookupCoupon = checkoutSupport.lookupCoupon;
 exports.onPurchaseTaxSummary = checkoutSupport.onPurchaseTaxSummary;
 
+// Pre-prod #2: the public event-registration flows (snake_case exports =
+// the web app's fetch()-style onRequest convention).
+const eventRegistration = require("./event-registration.functions");
+exports.register_for_event = eventRegistration.registerForEventHttp;
+exports.get_event_registration = eventRegistration.getEventRegistrationHttp;
+exports.update_my_sessions = eventRegistration.updateMySessionsHttp;
+exports.check_registration_exists =
+  eventRegistration.checkRegistrationExistsHttp;
+exports.get_session_counts = eventRegistration.getSessionCountsHttp;
+
 const libraryGroups = require("./library-groups.functions");
 exports.createGroup = libraryGroups.createGroup;
 exports.requestToJoinGroup = libraryGroups.requestToJoinGroup;

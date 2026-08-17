@@ -205,14 +205,17 @@ service cloud.firestore {
       allow create: if true;                // public contact/consultation forms
       allow read, update, delete: if isBusinessStaff();
     }
-    // PRE-PROD (sharpest edge): anonymous get/list exposes registrant
-    // names/emails per event, and anonymous update rewrites whole docs -
-    // required today by the public RSVP/schedule/breakout pages.
+    // Staff-only since pre-prod hardening #2: every public flow (RSVP
+    // create + confirmation email, emailed-link lookup, breakout session
+    // changes, duplicate check, capacity counts) goes through the
+    // event-registration Cloud Functions now - credentialed by the
+    // registration's own unguessable id from the emailed link, with
+    // disclosure reduced to per-session counts. The old anonymous
+    // read/create/update surface (roster enumeration, whole-doc
+    // overwrites, email-as-credential lookups) is closed.
     match /event-registrations/{id} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if isBusinessStaff();
+      allow read, update, delete: if isBusinessStaff();
+      allow create: if false;
     }
     // PRE-PROD: open create = open email relay (Trigger Email extension
     // sends whatever lands here). Web receipts/confirmations + the reader's
