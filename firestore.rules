@@ -246,15 +246,11 @@ service cloud.firestore {
       allow read: if isBusinessStaff();
       allow write: if false;
     }
-    // PRE-PROD: the LEGACY digital-library user store (web-only; the reader
-    // app reads libraryUsers, not this). Anonymous email lookup + license
-    // writes preserved only because checkout-success still performs them -
-    // likely fully vestigial; verify and deny outright when hardening.
-    match /impact-users/{id} {
-      allow read: if true;
-      allow create, update: if true;
-      allow delete: if false;
-    }
+    // impact-users (the LEGACY digital-library license store) was retired
+    // 2026-08-17 (pre-prod #3): verified write-only-with-no-reader across
+    // all repos, empty in this database, and its checkout-success write
+    // flow removed from the web app - unmatched here on purpose, so it
+    // falls to the default deny.
 
     // ========================================================================
     // SECTION 3 - Staff / server-only business collections
