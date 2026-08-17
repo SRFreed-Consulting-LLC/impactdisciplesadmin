@@ -6,6 +6,9 @@ import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { LibraryActivityLogService } from './library-activity-log.service';
 import { LibraryLessonImageService } from './library-lesson-image.service';
+import { LibraryBookService } from './library-book.service';
+import { LibraryUnitService } from './library-unit.service';
+import { LibraryLessonService } from './library-lesson.service';
 import { assembleLibraryLessonSchema } from './library-book-schema-assembler.util';
 import { LibraryFormioSchema } from 'src/app/common/models/domain/library/library-lesson.model';
 import {
@@ -54,7 +57,10 @@ export class LibraryImportBookService {
     private storage: Storage,
     private authService: AdminAuthService,
     private activityLog: LibraryActivityLogService,
-    private lessonImages: LibraryLessonImageService
+    private lessonImages: LibraryLessonImageService,
+    private bookService: LibraryBookService,
+    private unitService: LibraryUnitService,
+    private lessonService: LibraryLessonService
   ) {}
 
   private async uid(): Promise<string> {
@@ -78,8 +84,28 @@ export class LibraryImportBookService {
     return { plan, storagePath };
   }
 
-  /** Phase 2: generate every lesson's content and write the library docs. */
+  /** Phase 2: generate every lesson's content and write the library docs.
+   *  Always invalidates LibraryBookService/LibraryUnitService/
+   *  LibraryLessonService's memoized id -> ref maps afterwards - in a
+   *  finally, since even a mid-run failure may already have created docs -
+   *  so those services' next lookup re-scans and can resolve the newly
+   *  created series/book/units/lessons (this is the ONLY code path in the
+   *  app that creates docs in the librarySeries tree). */
   async generateAndWrite(
+    request: LibraryImportBookRequest,
+    plan: LibraryBookPlan,
+    storagePath: string,
+  ): Promise<LibraryImportResult> {
+    try {
+      return await this.doGenerateAndWrite(request, plan, storagePath);
+    } finally {
+      this.bookService.invalidateRefs();
+      this.unitService.invalidateRefs();
+      this.lessonService.invalidateRefs();
+    }
+  }
+
+  private async doGenerateAndWrite(
     request: LibraryImportBookRequest,
     plan: LibraryBookPlan,
     storagePath: string,

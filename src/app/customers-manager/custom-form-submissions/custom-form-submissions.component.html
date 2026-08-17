@@ -5,12 +5,9 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(submissions$ | async) ?? []"
-  [loading]="(loading$ | async) ?? false"
+  [pagedSource]="paged"
   [rowClass]="rowClass"
   tableClass="custom-form-submissions-table"
-  initialSortKey="submittedAt"
-  initialSortDirection="desc"
   (rowDoubleClick)="view($event)">
   <ng-template appDataGridCell="formName" let-row>
     {{ row.formName }}

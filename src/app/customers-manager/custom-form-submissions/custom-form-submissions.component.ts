@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
@@ -9,6 +8,7 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
+import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submission-detail-dialog.component';
 import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
 
@@ -27,7 +27,14 @@ import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/r
     standalone: false
 })
 export class CustomFormSubmissionsComponent implements OnInit {
-  submissions$: Observable<FormSubmissionModel[]>;
+  // One-time paged fetches (newest first) instead of the whole-collection
+  // streamAll() this screen started with - see purchases.component.ts/
+  // log-messages.component.ts for the established pattern this mirrors.
+  // Trade-off (same as those screens): rows don't update live from other
+  // sessions, and the filter row only searches rows loaded so far. This
+  // screen's own mutations (forward/reopen/delete) reload page 1 explicitly
+  // so their status/row changes still show up immediately.
+  paged: PagedCollectionSource<FormSubmissionModel>;
 
   columns: DataGridColumn<FormSubmissionModel>[] = [
     { key: 'submittedAt', label: 'Submitted', type: 'date', dateFormat: 'MMM d, y, h:mm a' },
@@ -52,10 +59,6 @@ export class CustomFormSubmissionsComponent implements OnInit {
     { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }
   ];
 
-  // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
-
   // See new-record-tracking.util.ts - marks newly-arrived submissions seen
   // the moment this screen loads, and keeps them highlighted for this page view.
   tracker: NewRecordTracker<FormSubmissionModel>;
@@ -68,13 +71,25 @@ export class CustomFormSubmissionsComponent implements OnInit {
     private snackbar: SnackbarService
   ) {
     this.tracker = new NewRecordTracker(this.service);
+    this.paged = new PagedCollectionSource<FormSubmissionModel>(
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'submittedAt', 'desc'),
+      50
+    );
   }
 
   ngOnInit(): void {
-    this.submissions$ = this.service.streamAll().pipe(
-      tap((items) => this.tracker.capture(items)),
-      tap(() => this.loading$.next(false))
-    );
+    // Each page already comes back ordered by submittedAt desc from
+    // Firestore, and pages are appended in fetch order - no client-side
+    // re-sort needed, so the template no longer sets [initialSortKey].
+    this.paged.loadFirstPage();
+
+    // NewRecordTracker.capture() only ever needs whatever's currently
+    // loaded (it marks-seen once, on first call, and no-ops after) - with
+    // streamAll() that first emission used to be the whole collection, now
+    // it's just page 1. A "new" submission is inherently recent, so page 1
+    // in submittedAt-desc order should always include it in practice - see
+    // purchases.component.ts for the same note on this behavior change.
+    this.paged.rows$.subscribe((items) => this.tracker.capture(items));
   }
 
   rowClass = (row: FormSubmissionModel): string => (this.tracker.newIds.has(row.id!) ? 'row--new' : '');
@@ -95,6 +110,8 @@ export class CustomFormSubmissionsComponent implements OnInit {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
           this.snackbar.success(this.itemType + ' Deleted');
+          // Paged rows don't update live - reload so the row disappears.
+          this.paged.loadFirstPage();
         });
       }
     });
@@ -108,11 +125,17 @@ export class CustomFormSubmissionsComponent implements OnInit {
   }
 
   forward(item: FormSubmissionModel): void {
+    // The dialog closes with `true` only after a successful send+update -
+    // paged rows don't update live, so reload to pick up the new status.
     this.dialog.open(RouteRequestDialogComponent, {
       width: '860px',
       maxWidth: '95vw',
       maxHeight: '85vh',
       data: { item }
+    }).afterClosed().subscribe((routed) => {
+      if (routed) {
+        this.paged.loadFirstPage();
+      }
     });
   }
 
@@ -124,6 +147,8 @@ export class CustomFormSubmissionsComponent implements OnInit {
   reopen(item: FormSubmissionModel): void {
     this.service.update(item.id!, { ...item, status: 'open' }).then(() => {
       this.snackbar.success('Request reopened');
+      // Paged rows don't update live - reload so the status flip shows.
+      this.paged.loadFirstPage();
     });
   }
 }

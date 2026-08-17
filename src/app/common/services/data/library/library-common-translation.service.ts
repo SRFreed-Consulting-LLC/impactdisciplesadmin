@@ -42,10 +42,15 @@ function commonTranslationId(originalText: string, locale: string): string {
 // isn't ported yet - only getCommonTranslations() is currently exercised
 // (by Lesson Editor/Preview/Translation), but keeping this method here now
 // means that screen can be added later without touching this service again.
-// It now scans via a `collectionGroup('lessons')` query rather than a flat
+// It scans via a `collectionGroup('lessons')` query rather than a flat
 // top-level `lessons` collection read, since Phase 3 nested lessons under
-// librarySeries/{s}/books/{b}/units/{u} - see LibraryLessonService's own
-// comment on this same collectionGroup-scan pattern.
+// librarySeries/{s}/books/{b}/units/{u}. Unlike LibraryLessonService's
+// memoized id -> ref resolution, this full-content scan is NOT memoized and
+// deliberately stays a per-call read: it genuinely needs every lesson's
+// fresh formSchema (a cached ref map can't provide content, and 161
+// individual getDoc()s would download the same bytes in more round trips).
+// That's fine because it only ever runs on an explicit admin "find
+// candidates" action - never on editor open or save.
 @Injectable({
   providedIn: 'root'
 })

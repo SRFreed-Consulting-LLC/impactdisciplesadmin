@@ -269,17 +269,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.requestsLoading = true;
     this.requestsFailed = false;
 
-    // Live, via streamAll() rather than a scoped queryStreamByValue() like
-    // Recent Orders above - "still open" here means status !== 'routed' OR
+    // Live, but bounded: the 100 most recent submissions (submittedAt desc)
+    // rather than the old whole-collection streamAll(). The still-open
+    // filter stays client-side - "still open" means status !== 'routed' OR
     // completely missing (every submission that existed before this status
     // field shipped, see the filter's own comment below), and Firestore's
     // != excludes docs missing the field entirely, the opposite of what's
-    // needed - there's no single query that expresses this. Custom Form
-    // Submissions is a small, staff-facing collection (not the public
-    // storefront's high-volume Purchases), so a live whole-collection
-    // listener here doesn't carry the same cost concern that kept Recent
-    // Orders off streamAll().
-    this.formSubmissionService.streamAll(undefined, () => { this.requestsFailed = true; })
+    // needed - there's no single query that expresses this. A plain
+    // orderBy + limit needs no composite index, and this panel only ever
+    // shows 8 rows, so 100 recent candidates is plenty; an open request
+    // older than the 100 newest submissions would drop off this panel, but
+    // it stays fully visible/actionable on Web Manager's Custom Form
+    // Submissions screen.
+    this.formSubmissionService.streamAllOrdered('submittedAt', 'desc', 100, () => { this.requestsFailed = true; })
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((items) => {
         this.newRequests = items

@@ -44,6 +44,13 @@ export class BaseService<T extends BaseModel> {
     return this.dao.streamAll(this.table, this.fromFirestore, limitCount, onError)
   }
 
+  // Live like streamAll(), but ordered + capped server-side - see
+  // FirebaseDAO.streamAllOrdered()'s comment (no composite index needed,
+  // docs missing orderByField are excluded).
+  streamAllOrdered(orderByField: string, orderDirection: OrderByDirection = 'desc', limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+    return this.dao.streamAllOrdered(this.table, orderByField, orderDirection, this.fromFirestore, limitCount, onError);
+  }
+
   // onError - see FirebaseDAO.streamAll()'s own comment. Added to these
   // three alongside streamAll() so every stream method can distinguish
   // "really empty" from "failed to load", not just this one.

@@ -146,6 +146,29 @@ export class FirebaseDAO<T extends BaseModel> {
     );
   }
 
+  // Live like streamAll(), but ordered server-side and meant to be paired
+  // with a limitCount so "the N most recent docs" is what the listener
+  // actually subscribes to, instead of the whole collection. A bare
+  // orderBy + limit (no where clause) needs no composite index - Firestore's
+  // automatic single-field indexes cover it. Docs missing orderByField
+  // entirely are excluded by Firestore's orderBy semantics - fine for a
+  // required field like a created/submitted timestamp, not for optional ones.
+  public streamAllOrdered(table: string, orderByField: string, orderDirection: OrderByDirection = 'desc', fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+    const constraints: QueryConstraint[] = [orderBy(orderByField, orderDirection)];
+    if (limitCount) constraints.push(limit(limitCount));
+
+    return collectionData(query(collection(this.fs, '/' + table), ...constraints), {idField: 'id'}).pipe(
+      map(docs => {
+        return this.getDocListFromStream(docs, fromFirestore);
+      }),
+      catchError(err => {
+        console.error(`FirebaseDAO.streamAllOrdered('${table}', '${orderByField}') failed:`, err);
+        onError?.(err);
+        return of([]);
+      })
+    );
+  }
+
   public streamByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));

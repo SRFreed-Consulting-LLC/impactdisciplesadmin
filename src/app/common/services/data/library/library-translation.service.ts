@@ -15,9 +15,11 @@ export type LibraryDailyReadingTranslation = Pick<
 // than before Phase 3's migration (lessons themselves are now nested under
 // librarySeries/{s}/books/{b}/units/{u}, not a flat top-level collection),
 // so every method here resolves the lesson's own doc reference via
-// LibraryLessonService.docRef() first (a collectionGroup scan - see that
-// service's own comment) rather than addressing `lessons/{lessonId}`
-// directly the way the old flat schema allowed.
+// LibraryLessonService.docRef() first (served from that service's memoized
+// id -> ref map - one collectionGroup scan per session, see its lessonRefs()
+// comment) rather than addressing `lessons/{lessonId}` directly the way the
+// old flat schema allowed. Writing translations never moves the lesson doc
+// itself, so nothing here needs to invalidate that memo.
 @Injectable({
   providedIn: 'root'
 })
