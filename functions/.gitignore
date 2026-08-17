@@ -7,4 +7,4 @@ typings/
 
 # Node.js dependency directory
 node_modules/
-*.local
+*.localfirebase-debug.log
