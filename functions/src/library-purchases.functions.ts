@@ -25,12 +25,27 @@ import {
  * library-license-grant.functions.ts's onPurchaseGrantLibraryLicenses
  * calls to actually grant a license after a impactdisciples-web store
  * purchase), and verifyAndGrantReaderStorePurchase (the reader app's own
- * StoreComponent checkout, PayPal-verified server-side). All three
- * operate on the named 'impactdiscipleship-books' database's `purchases`
- * collection - a DIFFERENT collection from this project's own native
- * `purchases` (store orders); see the consolidation plan's Phase 3 note
- * on why the named database's `purchases` is headed for archival, not a
- * live migration.
+ * StoreComponent checkout, PayPal-verified server-side).
+ *
+ * Two different databases in play here, deliberately:
+ * - `purchases` (the library's own PayPal book-purchase records - a
+ *   DIFFERENT collection from this project's own native `purchases`,
+ *   store orders) stays on the legacy named 'impactdiscipleship-books'
+ *   database via legacyPurchasesDb - Phase 3 deliberately did NOT migrate
+ *   it (see the consolidation plan's own note: it's headed for archival,
+ *   not a live migration, once the reader's paid-checkout path retires).
+ * - `libraryUsers` (license grants/revokes) and `books` (existence
+ *   checks) were migrated to THIS project's own default database via
+ *   libraryDb - `books` is nested (librarySeries/{s}/books/{b}), so every
+ *   lookup below goes through a `collectionGroup('books')` scan rather
+ *   than a direct doc() read, same pattern this app's own
+ *   LibraryBookService.getById() uses.
+ *
+ * Because the two collections these functions touch now live in
+ * different databases, revokePurchase can no longer update the purchase
+ * doc and the libraryUsers doc in one Firestore transaction - see that
+ * function's own comment on how it stays as safe as it can across two
+ * separate transactions instead.
  *
  * revokePurchase's admin check is adapted from the source's own
  * requireAdmin (which checked the legacy, named-database `adminUsers`
@@ -41,7 +56,8 @@ import {
  * cross-project server call, no Firebase Auth context at all), the
  * latter via the calling patron's own Firebase Auth session.
  */
-const libraryDb = getFirestore(admin.app(), "impactdiscipleship-books");
+const legacyPurchasesDb = getFirestore(admin.app(), "impactdiscipleship-books");
+const libraryDb = admin.firestore();
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
@@ -97,7 +113,8 @@ export const revokePurchase = onCall(
       throw new HttpsError("invalid-argument", "purchaseId is required.");
     }
 
-    const purchaseRef = libraryDb.collection("purchases").doc(purchaseId);
+    const purchaseRef =
+      legacyPurchasesDb.collection("purchases").doc(purchaseId);
     const purchaseSnap = await purchaseRef.get();
     if (!purchaseSnap.exists) {
       throw new HttpsError("not-found", "Purchase not found.");
@@ -214,17 +231,14 @@ export const revokePurchase = onCall(
     const libraryUserRef = libraryDb.collection("libraryUsers").doc(email);
 
     // The PayPal refund above can't itself be part of a Firestore
-    // transaction, so re-read both docs fresh here rather than trusting
-    // purchaseSnap/the pre-refund toRevoke check - two concurrent revoke
-    // calls on the same purchase would otherwise each compute their
-    // array update from stale data and one write would silently clobber
-    // the other's revocation record.
+    // transaction, so re-read the purchase doc fresh here rather than
+    // trusting purchaseSnap/the pre-refund toRevoke check - two
+    // concurrent revoke calls on the same purchase would otherwise each
+    // compute their array update from stale data and one write would
+    // silently clobber the other's revocation record.
     let fullyRefunded = false;
-    await libraryDb.runTransaction(async (transaction) => {
-      const [freshPurchaseSnap, freshLibraryUserSnap] = await Promise.all([
-        transaction.get(purchaseRef),
-        transaction.get(libraryUserRef),
-      ]);
+    await legacyPurchasesDb.runTransaction(async (transaction) => {
+      const freshPurchaseSnap = await transaction.get(purchaseRef);
       if (!freshPurchaseSnap.exists) {
         throw new HttpsError("not-found", "Purchase not found.");
       }
@@ -263,38 +277,52 @@ export const revokePurchase = onCall(
           {paypalCaptureId: newlyResolvedCaptureId} :
           {}),
       });
+    });
 
-      if (freshLibraryUserSnap.exists) {
-        const revokeSet = new Set(toRevoke);
-        const data = freshLibraryUserSnap.data() as {
-          bookLicenses?: { bookId: string; source?: string }[];
-          licensedBookIds?: string[];
-        };
-        // Only purchase-origin bookLicenses entries (no `source` field)
-        // belong to this refund path. A group- or admin-sourced license
-        // for the same book must survive the refund, so the flat
-        // licensedBookIds entry is only dropped when no remaining entry
-        // still covers that book.
-        const allLicenses = Array.isArray(data.bookLicenses) ?
-          data.bookLicenses :
-          [];
-        const bookLicenses = allLicenses.filter(
-          (license) => !(revokeSet.has(license.bookId) && !license.source)
-        );
-        const priorIds = Array.isArray(data.licensedBookIds) ?
-          data.licensedBookIds :
-          [];
-        const licensedBookIds = priorIds.filter(
-          (id) =>
-            !revokeSet.has(id) ||
-            bookLicenses.some((license) => license.bookId === id)
-        );
-        transaction.update(libraryUserRef, {
-          bookLicenses,
-          licensedBookIds,
-          updatedAt: Date.now(),
-        });
+    // Separate transaction on the default database, where libraryUsers
+    // now lives - `purchases` and `libraryUsers` are two different
+    // Firestore databases now (see this file's own top comment), so they
+    // can no longer be updated in one transaction the way they used to
+    // be. The purchase record above is the source of truth once it
+    // commits; if this second step fails, re-running revokePurchase for
+    // the same book ids will report "Nothing to revoke" (the purchase
+    // doc's revocations array already covers them) rather than retrying
+    // just the license removal - a genuinely dropped write here needs a
+    // manual revokeAdminGrantedLicense-style fix, not an automatic retry.
+    await libraryDb.runTransaction(async (transaction) => {
+      const freshLibraryUserSnap = await transaction.get(libraryUserRef);
+      if (!freshLibraryUserSnap.exists) {
+        return;
       }
+      const revokeSet = new Set(toRevoke);
+      const data = freshLibraryUserSnap.data() as {
+        bookLicenses?: { bookId: string; source?: string }[];
+        licensedBookIds?: string[];
+      };
+      // Only purchase-origin bookLicenses entries (no `source` field)
+      // belong to this refund path. A group- or admin-sourced license
+      // for the same book must survive the refund, so the flat
+      // licensedBookIds entry is only dropped when no remaining entry
+      // still covers that book.
+      const allLicenses = Array.isArray(data.bookLicenses) ?
+        data.bookLicenses :
+        [];
+      const bookLicenses = allLicenses.filter(
+        (license) => !(revokeSet.has(license.bookId) && !license.source)
+      );
+      const priorIds = Array.isArray(data.licensedBookIds) ?
+        data.licensedBookIds :
+        [];
+      const licensedBookIds = priorIds.filter(
+        (id) =>
+          !revokeSet.has(id) ||
+          bookLicenses.some((license) => license.bookId === id)
+      );
+      transaction.update(libraryUserRef, {
+        bookLicenses,
+        licensedBookIds,
+        updatedAt: Date.now(),
+      });
     });
 
     return {
@@ -373,12 +401,16 @@ export const grantStorePurchaseLicenses = onRequest(
     }
 
     const uniqueBooks = [...new Map(books.map((b) => [b.bookId, b])).values()];
-    const bookSnaps = await Promise.all(
-      uniqueBooks.map((b) => libraryDb.collection("books").doc(b.bookId).get())
+    // A bare book id doesn't say which series/book it's nested under -
+    // scans every series' `books` subcollection once via a
+    // collectionGroup query rather than one lookup per id. Fine at this
+    // library's real scale (a handful of books total).
+    const knownBookIds = new Set(
+      (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
     );
-    const known = uniqueBooks.filter((_, i) => bookSnaps[i].exists);
+    const known = uniqueBooks.filter((b) => knownBookIds.has(b.bookId));
     const unknown = uniqueBooks
-      .filter((_, i) => !bookSnaps[i].exists)
+      .filter((b) => !knownBookIds.has(b.bookId))
       .map((b) => b.bookId);
 
     if (unknown.length > 0) {
@@ -480,12 +512,15 @@ export const verifyAndGrantReaderStorePurchase = onCall(
 
     // Confirm every claimed book actually exists here - same guard
     // grantStorePurchaseLicenses uses, so a bogus id can't be "granted"
-    // and silently do nothing forever.
+    // and silently do nothing forever. A bare book id doesn't say which
+    // series/book it's nested under, so this scans every series' `books`
+    // subcollection once via a collectionGroup query rather than one
+    // lookup per id.
     const uniqueBookIds = [...new Set(bookIds)];
-    const bookSnaps = await Promise.all(
-      uniqueBookIds.map((id) => libraryDb.collection("books").doc(id).get())
+    const knownBookIds = new Set(
+      (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
     );
-    const unknown = uniqueBookIds.filter((_, i) => !bookSnaps[i].exists);
+    const unknown = uniqueBookIds.filter((id) => !knownBookIds.has(id));
     if (unknown.length > 0) {
       throw new HttpsError(
         "invalid-argument",
@@ -527,7 +562,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       granted = true;
     }
 
-    const purchaseRef = libraryDb.collection("purchases").doc();
+    const purchaseRef = legacyPurchasesDb.collection("purchases").doc();
     await purchaseRef.set({
       email,
       userId: uid,

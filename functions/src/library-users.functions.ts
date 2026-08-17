@@ -1,5 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {FieldPath, FieldValue, getFirestore} from "firebase-admin/firestore";
+import {FieldPath, FieldValue} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
 import * as admin from "firebase-admin";
 import {requireAdminRole} from "./admin-users.functions";
@@ -13,9 +13,13 @@ import {sendLibraryPushToUser, truncate} from "./library-push-notifications";
  * every admin mutation must run here with the Admin SDK. libraryUsers doc
  * ids are lowercased emails, so every function normalizes the same way.
  *
- * Reads/writes the named 'impactdiscipleship-books' database (NOT this
- * project's own default database, where admin_users/every other admin
- * collection lives) - see libraryDb below.
+ * Reads/writes THIS project's own default database (Phase 3 migration
+ * target) - libraryUsers/adminMessages were migrated here alongside every
+ * other Library-owned/reader-owned collection, so this no longer needs the
+ * named 'impactdiscipleship-books' database - see libraryDb below.
+ * `books` is nested (librarySeries/{s}/books/{b}), so the one book lookup
+ * below goes through a `collectionGroup('books')` scan matched by doc id,
+ * same pattern this app's own LibraryBookService.getById() uses.
  *
  * Adapted from the source, not a verbatim copy:
  * - requireAdmin -> requireAdminRole (this app's own admin_users, matched
@@ -27,7 +31,7 @@ import {sendLibraryPushToUser, truncate} from "./library-push-notifications";
  *   this codebase (admin-users.functions.ts, book-import.functions.ts) -
  *   this codebase has no equivalent wrapper.
  */
-const libraryDb = getFirestore(admin.app(), "impactdiscipleship-books");
+const libraryDb = admin.firestore();
 const messaging = getMessaging(admin.app());
 
 const LIBRARY_USER_EDITABLE_FIELDS = [
@@ -193,10 +197,14 @@ export const grantLibraryUserLicenses = onCall(async (request) => {
     );
   }
   const uniqueBookIds = Array.from(new Set(bookIds));
-  const bookSnaps = await Promise.all(
-    uniqueBookIds.map((id) => libraryDb.collection("books").doc(id).get())
+  // A bare book id doesn't say which series/book it's nested under - scans
+  // every series' `books` subcollection once via a collectionGroup query
+  // rather than one lookup per id. Fine at this library's real scale (a
+  // handful of books total).
+  const knownBookIds = new Set(
+    (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
   );
-  const missing = uniqueBookIds.filter((_, i) => !bookSnaps[i].exists);
+  const missing = uniqueBookIds.filter((id) => !knownBookIds.has(id));
   if (missing.length > 0) {
     throw new HttpsError("not-found", `No such book(s): ${missing.join(", ")}`);
   }

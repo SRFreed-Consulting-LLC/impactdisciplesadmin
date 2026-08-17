@@ -14,15 +14,28 @@ import {selectMembersToCopy} from "./library-group-members-copy";
 /**
  * Ported from impact-discipleship-library-manager-new's own Impact Group
  * license/invite Cloud Functions (functions/src/index.ts). Reads/writes
- * the named 'impactdiscipleship-books' database via libraryDb below -
- * these are called directly by the READER APP's client code
- * (group-license.service.ts/group-invite.service.ts), not by this app's
- * own UI at all. Authorization here is patron-level (requireGroupLeader:
- * the caller's own email must match the group's creatorEmail), not
- * staff-role - distinct from requireAdminRole, which nothing in this file
- * needs.
+ * THIS project's own default database (Phase 3 migration target) via
+ * libraryDb below - discussionGroups/groupLicenses/groupInvites/
+ * libraryUsers/bulkDiscountTiers were all migrated here. These are called
+ * directly by the READER APP's client code (group-license.service.ts/
+ * group-invite.service.ts), not by this app's own UI at all. Authorization
+ * here is patron-level (requireGroupLeader: the caller's own email must
+ * match the group's creatorEmail), not staff-role - distinct from
+ * requireAdminRole, which nothing in this file needs.
+ *
+ * `purchases` is the one exception: Phase 3 deliberately did NOT migrate
+ * it (see the consolidation plan's own note - it's headed for archival,
+ * not a live migration), so purchaseGroupLicenses still writes its
+ * purchase record to the legacy named database via legacyPurchasesDb -
+ * see that function's own comment on why this means it can no longer
+ * batch the purchase + license writes together.
+ *
+ * `books` is nested (librarySeries/{s}/books/{b}), so getInviteDetails'
+ * book lookup goes through a `collectionGroup('books')` scan matched by
+ * doc id, same pattern this app's own LibraryBookService.getById() uses.
  */
-const libraryDb = getFirestore(admin.app(), "impactdiscipleship-books");
+const libraryDb = admin.firestore();
+const legacyPurchasesDb = getFirestore(admin.app(), "impactdiscipleship-books");
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
@@ -179,68 +192,64 @@ export const purchaseGroupLicenses = onCall(
     }
 
     const now = Date.now();
-    const purchaseRef = libraryDb.collection("purchases").doc();
+    const purchaseRef = legacyPurchasesDb.collection("purchases").doc();
     const licenseRefs = Array.from({length: quantity}, () =>
       libraryDb.collection("groupLicenses").doc()
     );
     const unitPrice = subtotal ? subtotal / quantity : 0;
     const unitDiscountPrice = total ? total / quantity : 0;
 
-    // Chunked rather than one batch() - Firestore caps a WriteBatch at
-    // 500 operations, and `quantity` alone can reach 1000 (the purchase
-    // doc makes 1001 in the worst case), which would throw at commit()
-    // and fail the whole purchase after payment was already verified
-    // above.
-    const allWrites: {
-      ref: FirebaseFirestore.DocumentReference;
-      data: Record<string, unknown>;
-    }[] = [
-      {
-        ref: purchaseRef,
-        data: {
-          email,
-          userId: uid,
-          cartItems: [
-            {
-              id: bookId,
-              itemName: group.title,
-              price: unitPrice,
-              orderQuantity: quantity,
-              discount: discount ?? 0,
-              discountPrice: unitDiscountPrice,
-              isDigitalBook: true,
-              digitalBookId: bookId,
-            },
-          ],
-          subtotal: subtotal ?? 0,
+    // The purchase record lives on the legacy named database (see this
+    // file's own top-of-file comment on why), while the license pool now
+    // lives on this project's default database - two different Firestore
+    // databases can't share one WriteBatch, so this is two separate write
+    // operations rather than the single combined batch it used to be. A
+    // failure between the two would leave a purchase record with no
+    // license pool behind it yet; acceptable here since this mirrors the
+    // same non-atomicity every PayPal-then-Firestore write in this
+    // codebase already has (the payment itself can't be transactional
+    // with Firestore either).
+    await purchaseRef.set({
+      email,
+      userId: uid,
+      cartItems: [
+        {
+          id: bookId,
+          itemName: group.title,
+          price: unitPrice,
+          orderQuantity: quantity,
           discount: discount ?? 0,
-          total: total ?? 0,
-          receipt: payPalOrderId ?? "FREE ONLY",
-          processedStatus: "NEW",
-          dateProcessed: now,
-          createdAt: now,
-          ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
-          ...(payPalOrderId ?
-            {paypalEnvironment: paypalEnvironment ?? "live"} :
-            {}),
+          discountPrice: unitDiscountPrice,
+          isDigitalBook: true,
+          digitalBookId: bookId,
         },
-      },
-      ...licenseRefs.map((ref) => ({
-        ref,
-        data: {
+      ],
+      subtotal: subtotal ?? 0,
+      discount: discount ?? 0,
+      total: total ?? 0,
+      receipt: payPalOrderId ?? "FREE ONLY",
+      processedStatus: "NEW",
+      dateProcessed: now,
+      createdAt: now,
+      ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
+      ...(payPalOrderId ?
+        {paypalEnvironment: paypalEnvironment ?? "live"} :
+        {}),
+    });
+
+    // Chunked rather than one batch() - Firestore caps a WriteBatch at
+    // 500 operations and `quantity` alone can reach 1000.
+    const CHUNK_SIZE = 400;
+    for (let i = 0; i < licenseRefs.length; i += CHUNK_SIZE) {
+      const batch = libraryDb.batch();
+      for (const ref of licenseRefs.slice(i, i + CHUNK_SIZE)) {
+        batch.set(ref, {
           leaderEmail: email,
           bookId,
           purchaseId: purchaseRef.id,
           status: "unassigned",
           createdAt: now,
-        },
-      })),
-    ];
-    const CHUNK_SIZE = 400;
-    for (let i = 0; i < allWrites.length; i += CHUNK_SIZE) {
-      const batch = libraryDb.batch();
-      for (const {ref, data} of allWrites.slice(i, i + CHUNK_SIZE)) {
-        batch.set(ref, data);
+        });
       }
       await batch.commit();
     }
@@ -580,12 +589,16 @@ export const getInviteDetails = onCall(async (request) => {
   }
   const invite = inviteSnap.data()!;
 
-  const [groupSnap, bookSnap] = await Promise.all([
+  // A bare book id doesn't say which series/book it's nested under - scans
+  // every series' `books` subcollection once via a collectionGroup query
+  // rather than a direct doc() lookup. Fine at this library's real scale
+  // (a handful of books total).
+  const [groupSnap, booksSnap] = await Promise.all([
     libraryDb.collection("discussionGroups").doc(invite.groupId).get(),
-    libraryDb.collection("books").doc(invite.bookId).get(),
+    libraryDb.collectionGroup("books").get(),
   ]);
   const group = groupSnap.exists ? groupSnap.data()! : undefined;
-  const book = bookSnap.exists ? bookSnap.data()! : undefined;
+  const book = booksSnap.docs.find((d) => d.id === invite.bookId)?.data();
 
   // Deliberately NOT reporting whether `inviteeEmail` already has an
   // account here - would turn this into a free account-enumeration

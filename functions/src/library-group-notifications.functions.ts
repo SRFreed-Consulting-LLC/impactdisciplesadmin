@@ -2,7 +2,7 @@ import {
   onDocumentCreated,
   onDocumentWritten,
 } from "firebase-functions/v2/firestore";
-import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {FieldValue} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
@@ -17,13 +17,17 @@ import {
  * notification Firestore triggers (functions/src/index.ts) - group chat,
  * 1:1 conversations, join requests, and prayer requests, plus the
  * memberCount/pendingCount denormalization trigger the Library Groups
- * admin screen's table reads. EVERY trigger below must pass
- * `database: PUSH_TRIGGER_DB` - without it the trigger binds to the empty
- * "(default)" database, deploys successfully, and simply never fires.
+ * admin screen's table reads. `discussionGroups` was migrated to THIS
+ * project's own default database (Phase 3 migration target), so every
+ * trigger below now uses the plain string document-path form (no
+ * `database:` option) - the same convention every other default-db
+ * trigger in this codebase already uses. (Previously each one had to pass
+ * `database: 'impactdiscipleship-books'` or silently bind to the empty
+ * "(default)" database and never fire - that's no longer relevant now
+ * that "(default)" IS the database this data actually lives in.)
  */
-const libraryDb = getFirestore(admin.app(), "impactdiscipleship-books");
+const libraryDb = admin.firestore();
 const messaging = getMessaging(admin.app());
-const PUSH_TRIGGER_DB = "impactdiscipleship-books";
 
 /** One group-doc read shared by every trigger - title for the
  *  notification heading, creatorEmail for leader-addressed events.
@@ -50,10 +54,7 @@ async function getGroupForPush(
 
 /** Group chat message -> every approved member except the sender. */
 export const notifyGroupChatMessage = onDocumentCreated(
-  {
-    document: "discussionGroups/{groupId}/chatMessages/{messageId}",
-    database: PUSH_TRIGGER_DB,
-  },
+  "discussionGroups/{groupId}/chatMessages/{messageId}",
   async (event) => {
     const message = event.data?.data();
     if (!message) {
@@ -90,12 +91,8 @@ export const notifyGroupChatMessage = onDocumentCreated(
  *  email, so: member sent it -> notify the creator; creator sent it ->
  *  notify the member. */
 export const notifyConversationMessage = onDocumentCreated(
-  {
-    document:
-      "discussionGroups/{groupId}/conversations/{otherEmail}" +
-      "/messages/{messageId}",
-    database: PUSH_TRIGGER_DB,
-  },
+  "discussionGroups/{groupId}/conversations/{otherEmail}" +
+    "/messages/{messageId}",
   async (event) => {
     const message = event.data?.data();
     if (!message) {
@@ -143,10 +140,7 @@ export const notifyConversationMessage = onDocumentCreated(
  * server-side regardless of write ordering.
  */
 export const onGroupMembershipCountChanged = onDocumentWritten(
-  {
-    document: "discussionGroups/{groupId}/members/{email}",
-    database: PUSH_TRIGGER_DB,
-  },
+  "discussionGroups/{groupId}/members/{email}",
   async (event) => {
     const beforeStatus = event.data?.before.exists ?
       (event.data.before.data()?.status as string | undefined) :
@@ -202,10 +196,7 @@ export const onGroupMembershipCountChanged = onDocumentWritten(
  *  copyGroupMembers clones, and acceptGroupInvite all CREATE docs already
  *  'approved' (a bulk clone must not spam), and deletes are leave/remove. */
 export const notifyJoinRequestActivity = onDocumentWritten(
-  {
-    document: "discussionGroups/{groupId}/members/{email}",
-    database: PUSH_TRIGGER_DB,
-  },
+  "discussionGroups/{groupId}/members/{email}",
   async (event) => {
     const before = event.data?.before;
     const after = event.data?.after;
@@ -263,10 +254,7 @@ export const notifyJoinRequestActivity = onDocumentWritten(
  *  correct, each group's members get their own group-titled
  *  notification. */
 export const notifyPrayerRequestShared = onDocumentCreated(
-  {
-    document: "discussionGroups/{groupId}/prayerRequests/{requestId}",
-    database: PUSH_TRIGGER_DB,
-  },
+  "discussionGroups/{groupId}/prayerRequests/{requestId}",
   async (event) => {
     const prayer = event.data?.data();
     if (!prayer) {

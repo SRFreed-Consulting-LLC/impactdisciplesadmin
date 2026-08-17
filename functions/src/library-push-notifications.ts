@@ -7,8 +7,8 @@ import * as logger from "firebase-functions/logger";
  * push-notifications.ts - send-side logic for a push notification to a
  * reader-app library user. Receive-side lives in the reader app's
  * PushNotificationService, which registers device tokens under
- * libraryUsers/{email}/fcmTokens/{token} in the named
- * 'impactdiscipleship-books' database - owner-only under firestore.rules,
+ * libraryUsers/{email}/fcmTokens/{token} in THIS project's own default
+ * database (Phase 3 migration target) - owner-only under firestore.rules,
  * read here via the Admin SDK, which bypasses rules. Originally ported
  * (Slice 4) just far enough for sendLibraryUserMessage; extended to the
  * source's full surface (getApprovedMemberEmails, the `groupId` payload
@@ -74,8 +74,7 @@ const DEAD_TOKEN_CODES = [
  * number of successful sends; 0 (silently) when the recipient has opted
  * out (notificationsEnabled === false - ABSENT means enabled) or has no
  * registered devices. Deletes token docs FCM reports as dead.
- * @param {Firestore} db The named 'impactdiscipleship-books' database
- * handle.
+ * @param {Firestore} db This project's own default database handle.
  * @param {Messaging} messaging The Admin SDK Messaging instance.
  * @param {string} email The recipient's library user email (doc id).
  * @param {LibraryPushPayload} payload The notification to send.
@@ -136,8 +135,7 @@ export async function sendLibraryPushToUser(
  * `excludeEmail` (the sender/author - never notify someone about their
  * own action). Member doc ids are already lowercased emails by
  * convention.
- * @param {Firestore} db The named 'impactdiscipleship-books' database
- * handle.
+ * @param {Firestore} db This project's own default database handle.
  * @param {string} groupId The Impact Group's id.
  * @param {string} excludeEmail The sender/author to exclude.
  * @return {Promise<string[]>} Approved member emails, minus the excluded one.
