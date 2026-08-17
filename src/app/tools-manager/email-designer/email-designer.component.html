@@ -32,6 +32,12 @@
 
     <span class="topbar-spacer"></span>
 
+    <button mat-button class="topbar-action" [disabled]="loading$ | async" (click)="onPreview()">
+      Preview
+    </button>
+    <button mat-stroked-button class="topbar-action" [disabled]="loading$ | async" (click)="onSendTest()">
+      Send Test
+    </button>
     <button mat-flat-button color="primary" class="save-button"
             [disabled]="(saving$ | async) || (loading$ | async)" (click)="onSave()">
       @if (saving$ | async) { Saving… } @else { Save }

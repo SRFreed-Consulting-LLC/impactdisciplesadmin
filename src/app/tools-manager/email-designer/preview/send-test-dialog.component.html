@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Send a Test Email</h2>
+
+<mat-dialog-content>
+  <p class="test-hint">Sends the compiled email with sample merge data ({{ '*|FNAME|*' }} becomes
+    &quot;Alex&quot;, the unsubscribe link targets this recipient) through the same delivery
+    pipeline as real sends.</p>
+  <span class="field-label">Send to</span>
+  <input class="text-input" type="email" [(ngModel)]="to" placeholder="you@example.com"
+         (keyup.enter)="onSend()" aria-label="Test recipient email">
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-flat-button color="primary" [disabled]="sending$ | async" (click)="onSend()">
+    @if (sending$ | async) { Sending… } @else { Send Test }
+  </button>
+</mat-dialog-actions>

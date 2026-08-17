@@ -1,5 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, filter, take } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
@@ -11,6 +12,9 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { DesignerStateService } from './designer-state.service';
+import { PreviewDialogComponent } from './preview/preview-dialog.component';
+import { SendTestDialogComponent } from './preview/send-test-dialog.component';
+import { TemplatePickerDialogComponent } from './template-picker/template-picker-dialog.component';
 
 // Full-screen Mailchimp-style email builder. Reached from Tools Manager >
 // Email Templates ("New Email Design" / editing a builder template) at
@@ -31,6 +35,7 @@ export class EmailDesignerComponent implements OnInit {
 
   private templateId: string | null = null;
   private existing: MailTemplateModel | null = null;
+  private currentUserEmail = '';
 
   constructor(
     public state: DesignerStateService,
@@ -40,7 +45,8 @@ export class EmailDesignerComponent implements OnInit {
     private permissionService: PermissionService,
     private authService: AdminAuthService,
     private confirmService: ConfirmService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -58,7 +64,10 @@ export class EmailDesignerComponent implements OnInit {
         filter((user) => !!user),
         take(1)
       )
-      .subscribe(() => this.checkAccessAndLoad());
+      .subscribe((user) => {
+        this.currentUserEmail = user?.email ?? '';
+        this.checkAccessAndLoad();
+      });
   }
 
   private checkAccessAndLoad(): void {
@@ -73,6 +82,16 @@ export class EmailDesignerComponent implements OnInit {
     if (!this.templateId) {
       this.state.load(createDefaultDesign());
       this.loading$.next(false);
+      // "Start from" gallery: starters + copies of existing builder
+      // templates. Cancel keeps the blank default.
+      this.dialog
+        .open(TemplatePickerDialogComponent, { width: '640px' })
+        .afterClosed()
+        .subscribe((design) => {
+          if (design) {
+            this.state.load(design);
+          }
+        });
       return;
     }
 
@@ -127,6 +146,27 @@ export class EmailDesignerComponent implements OnInit {
     // Router navigation runs the CanDeactivate guard, which handles the
     // dirty prompt - no separate confirm here.
     this.backToList();
+  }
+
+  onPreview(): void {
+    this.dialog.open(PreviewDialogComponent, {
+      width: '900px',
+      height: '90vh',
+      maxWidth: '95vw',
+      data: { design: this.state.design, subject: this.templateSubject, title: this.templateName }
+    });
+  }
+
+  onSendTest(): void {
+    this.dialog.open(SendTestDialogComponent, {
+      width: '440px',
+      data: {
+        design: this.state.design,
+        subject: this.templateSubject,
+        title: this.templateName,
+        defaultTo: this.currentUserEmail
+      }
+    });
   }
 
   onSave(): void {

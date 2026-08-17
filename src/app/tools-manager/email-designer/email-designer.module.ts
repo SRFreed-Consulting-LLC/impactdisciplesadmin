@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -24,6 +25,9 @@ import { InlineTextEditorComponent } from './inline-editor/inline-text-editor.co
 import { DesignerSidePanelComponent } from './side-panel/designer-side-panel.component';
 import { BlockStyleEditorComponent } from './side-panel/block-style-editor.component';
 import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.component';
+import { PreviewDialogComponent } from './preview/preview-dialog.component';
+import { SendTestDialogComponent } from './preview/send-test-dialog.component';
+import { TemplatePickerDialogComponent } from './template-picker/template-picker-dialog.component';
 
 // The Mailchimp-style email builder - its own lazy chunk under
 // /tools-manager/email-designer so the (large) editor never weighs down the
@@ -39,6 +43,7 @@ import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.com
     ImageUploaderModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatDialogModule,
     MatIconModule,
     MatMenuModule,
     MatProgressSpinnerModule,
@@ -54,7 +59,10 @@ import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.com
     InlineTextEditorComponent,
     DesignerSidePanelComponent,
     BlockStyleEditorComponent,
-    GlobalStylesPanelComponent
+    GlobalStylesPanelComponent,
+    PreviewDialogComponent,
+    SendTestDialogComponent,
+    TemplatePickerDialogComponent
   ]
 })
 export class EmailDesignerModule {}
