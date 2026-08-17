@@ -50,6 +50,23 @@
               Full width
             </mat-slide-toggle>
           </div>
+          <div class="field-row">
+            <span class="field-label">Colors (blank = email default)</span>
+            <div class="inline-controls">
+              <input class="color-input" type="color"
+                     [value]="asButton(block).props.backgroundColor ?? '#1f3a5f'"
+                     (change)="commitBlockChange(setButtonOverrideColor(block, 'backgroundColor', $any($event.target).value))"
+                     aria-label="Button background override">
+              <input class="color-input" type="color"
+                     [value]="asButton(block).props.color ?? '#ffffff'"
+                     (change)="commitBlockChange(setButtonOverrideColor(block, 'color', $any($event.target).value))"
+                     aria-label="Button text color override">
+              <button mat-button class="clear-button"
+                      (click)="commitBlockChange(setButtonOverrideColor(block, 'backgroundColor', null)); commitBlockChange(setButtonOverrideColor(block, 'color', null))">
+                Use defaults
+              </button>
+            </div>
+          </div>
         }
         @case ('spacer') {
           <div class="field-row">
@@ -60,11 +77,144 @@
           </div>
         }
         @case ('divider') {
-          <p class="hint">The divider follows the email's Styles defaults. Per-divider styling
-            arrives with the Styles panel.</p>
+          <div class="field-row">
+            <span class="field-label">Line (blank = email default)</span>
+            <div class="inline-controls">
+              <select class="grow" [value]="asDivider(block).props.style ?? ''"
+                      (change)="commitBlockChange(setDividerOverride(block, 'style', $any($event.target).value || null))"
+                      aria-label="Divider line style">
+                <option value="">Default</option>
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="double">Double</option>
+                <option value="inset">Inset</option>
+                <option value="outset">Outset</option>
+                <option value="groove">Groove</option>
+                <option value="ridge">Ridge</option>
+              </select>
+              <input class="text-input narrow" type="number" min="1" max="12" placeholder="px"
+                     [value]="asDivider(block).props.thickness ?? ''"
+                     (change)="commitBlockChange(setDividerOverride(block, 'thickness', $any($event.target).value || null))"
+                     aria-label="Divider thickness">
+              <input class="color-input" type="color" [value]="asDivider(block).props.color ?? '#dfe3e8'"
+                     (change)="commitBlockChange(setDividerOverride(block, 'color', $any($event.target).value))"
+                     aria-label="Divider color">
+            </div>
+          </div>
         }
-        @default {
-          <p class="hint">Settings for this block type are coming in the next build phase.</p>
+        @case ('video') {
+          <div class="field-row">
+            <span class="field-label">Video URL (YouTube or Vimeo)</span>
+            <input class="text-input" placeholder="https://youtube.com/watch?v=..."
+                   [value]="asVideo(block).props.url"
+                   (change)="onVideoUrlChange(block, $any($event.target).value)">
+          </div>
+          @if (asVideo(block).props.provider !== 'other' || asVideo(block).props.url) {
+            <p class="hint subtle">
+              @switch (asVideo(block).props.provider) {
+                @case ('youtube') { YouTube video detected - thumbnail fetched automatically. }
+                @case ('vimeo') { Vimeo video detected - thumbnail fetched automatically. }
+                @default { Unrecognized source - add a thumbnail image below. }
+              }
+            </p>
+          }
+          <div class="field-row">
+            <span class="field-label">Thumbnail</span>
+            <div class="image-picker-row">
+              @if (asVideo(block).props.thumbnailUrl) {
+                <img class="image-thumb" [src]="asVideo(block).props.thumbnailUrl" alt="">
+              }
+              <button mat-stroked-button (click)="openVideoThumbnailPicker(block)">
+                {{ asVideo(block).props.thumbnailUrl ? 'Replace' : 'Choose image' }}
+              </button>
+            </div>
+            @if (asVideo(block).props.customThumbnail) {
+              <button mat-button class="clear-button" (click)="useSourceThumbnail(block)">
+                Use source thumbnail
+              </button>
+            }
+          </div>
+          <div class="field-row">
+            <span class="field-label">Caption / accessible label</span>
+            <input class="text-input" [value]="asVideo(block).props.caption"
+                   (change)="commitBlockChange(setVideoCaption(block, $any($event.target).value))">
+          </div>
+          <p class="hint">Recipients see the thumbnail with a play button; clicking opens the video
+            in their browser (email clients can't embed players).</p>
+        }
+        @case ('social') {
+          @for (network of asSocial(block).props.networks; track $index) {
+            <div class="social-row">
+              <div class="social-row-head">
+                <span class="social-name">{{ network.label }}</span>
+                <span class="social-tools">
+                  <button mat-icon-button (click)="moveSocialNetwork(block, $index, -1)" matTooltip="Move up" [disabled]="$index === 0">
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="moveSocialNetwork(block, $index, 1)" matTooltip="Move down"
+                          [disabled]="$index === asSocial(block).props.networks.length - 1">
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="removeSocialNetwork(block, $index)" matTooltip="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <input class="text-input" placeholder="https://" [value]="network.url"
+                     (change)="commitBlockChange(setSocialUrl(block, $index, $any($event.target).value))"
+                     [attr.aria-label]="network.label + ' URL'">
+            </div>
+          }
+          <button mat-stroked-button class="add-network" [matMenuTriggerFor]="networkMenu">
+            <mat-icon>add</mat-icon> Add network
+          </button>
+          <mat-menu #networkMenu="matMenu">
+            @for (preset of networkPresets; track preset.network) {
+              <button mat-menu-item (click)="addSocialNetwork(block, preset)">{{ preset.label }}</button>
+            }
+          </mat-menu>
+          <div class="field-row" style="margin-top: 14px;">
+            <span class="field-label">Icon size / spacing (px)</span>
+            <div class="inline-controls">
+              <input class="text-input narrow" type="number" min="16" max="64"
+                     [value]="asSocial(block).props.iconSize"
+                     (change)="commitBlockChange(setSocialIconSize(block, $any($event.target).value))"
+                     aria-label="Icon size">
+              <input class="text-input narrow" type="number" min="0" max="40"
+                     [value]="asSocial(block).props.spacing"
+                     (change)="commitBlockChange(setSocialSpacing(block, $any($event.target).value))"
+                     aria-label="Icon spacing">
+            </div>
+          </div>
+        }
+        @case ('footer') {
+          <div class="field-row">
+            <span class="field-label">Organization address</span>
+            <textarea class="text-input" rows="3" placeholder="Impact Disciples&#10;1234 Street Rd, City, ST 00000"
+                      [value]="footerAddressText(block)"
+                      (change)="commitBlockChange(setFooterAddress(block, $any($event.target).value))"></textarea>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Permission reminder</span>
+            <textarea class="text-input" rows="2" [value]="asFooter(block).props.permissionReminder"
+                      (change)="commitBlockChange(setFooterReminder(block, $any($event.target).value))"></textarea>
+          </div>
+          <div class="field-row">
+            <mat-slide-toggle [checked]="asFooter(block).props.includeUnsubscribe"
+                (change)="commitBlockChange(setFooterUnsubscribe(block, $event.checked))">
+              Include unsubscribe link
+            </mat-slide-toggle>
+          </div>
+          @if (asFooter(block).props.includeUnsubscribe) {
+            <div class="field-row">
+              <span class="field-label">Unsubscribe link text</span>
+              <input class="text-input" [value]="asFooter(block).props.unsubscribeLabel"
+                     (change)="commitBlockChange(setFooterUnsubscribeLabel(block, $any($event.target).value))">
+            </div>
+          }
+          <p class="hint">The unsubscribe link sends as the *&#124;UNSUB&#124;* merge tag and resolves to the
+            right unsubscribe URL per recipient at send time.</p>
         }
       }
       <app-block-style-editor [target]="block"></app-block-style-editor>

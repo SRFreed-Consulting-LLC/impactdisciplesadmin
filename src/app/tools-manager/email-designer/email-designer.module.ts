@@ -1,5 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+// The app has no global HttpClient provider (everything else talks to
+// Firestore through @angular/fire) - the designer needs it only for Vimeo's
+// oEmbed thumbnail lookup, so it's provided here in the lazy chunk.
+import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +32,7 @@ import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.com
 @NgModule({
   imports: [
     CommonModule,
+    HttpClientModule,
     FormsModule,
     DragDropModule,
     EmailDesignerRoutingModule,
