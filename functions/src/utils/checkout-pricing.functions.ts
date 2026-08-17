@@ -120,6 +120,43 @@ async function getActiveSales(): Promise<admin.firestore.DocumentData[]> {
 export async function computeOrderPricing(
   request: PricingRequest
 ): Promise<PricingResult> {
+  // Reject any cart item with a non-integer, non-positive, or absurdly
+  // large quantity before doing any pricing math or even fetching product
+  // data. Previously unvalidated: a negative orderQuantity (e.g. -1) makes
+  // `subtotal` negative, which collapses `itemsTotal`/`total` to exactly 0
+  // below, which skips PayPal entirely (see create_paypal_order's
+  // `pricing.total <= 0` branch) and writes a real, verified-looking
+  // Purchase record for a real product/event/digital-book with no payment
+  // at all -- the server never re-derives quantity from anything else, so
+  // it has to be validated here as untrusted input, same as every other
+  // numeric field a client supplies. 1000 is a generous sanity cap, not a
+  // real business limit -- large enough for any plausible bulk order,
+  // small enough to reject clearly abusive/malformed input.
+  const MAX_ORDER_QUANTITY = 1000;
+  for (const item of request.cartItems) {
+    if (
+      typeof item.orderQuantity !== "number" ||
+      !Number.isInteger(item.orderQuantity) ||
+      item.orderQuantity < 1 ||
+      item.orderQuantity > MAX_ORDER_QUANTITY
+    ) {
+      throw new Error(`Invalid orderQuantity for item ${item.id}`);
+    }
+  }
+
+  // shippingRate is trusted as a real-time quote from get_shipping_rates
+  // by explicit scope decision (see below), but must still be a
+  // non-negative finite number -- an unvalidated negative value would
+  // otherwise reduce the computed total below the real item cost, the
+  // same class of issue as orderQuantity above.
+  if (
+    typeof request.shippingRate !== "number" ||
+    !Number.isFinite(request.shippingRate) ||
+    request.shippingRate < 0
+  ) {
+    throw new Error("Invalid shippingRate");
+  }
+
   const db = admin.firestore();
 
   // These reads (config, active sales, coupon lookup, and every cart

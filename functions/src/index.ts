@@ -39,6 +39,7 @@ exports.unsubscribe_from_email_list = subscriptions.unsubscribe_from_email_list;
 
 const youtube = require("./youtube.functions");
 exports.get_youtube_videos = youtube.get_youtube_videos;
+exports.get_youtube_videos_public = youtube.get_youtube_videos_public;
 
 const adminUsers = require("./admin-users.functions");
 exports.createAdminUser = adminUsers.createAdminUser;

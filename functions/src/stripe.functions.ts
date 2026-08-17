@@ -4,6 +4,20 @@ import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 let stripe;
 
+// Stripe's `amount` is the smallest currency unit (cents for USD), an
+// integer. This function has no product/event to look up server-side to
+// verify a donation amount against (unlike store checkout's
+// computeOrderPricing) -- the donor's own chosen amount genuinely *is*
+// the correct amount. What it's missing is sanity bounds: today nothing
+// stops a negative, zero, non-numeric, or absurd value reaching Stripe
+// (this endpoint's only current caller, give.component.ts, has no
+// client-side validation either -- see its own "TODO: validate give
+// forms"). $1-$1,000,000 is a generous sanity ceiling, not a real
+// business limit -- it exists to reject clearly malformed/abusive input,
+// not to constrain a legitimate large gift.
+const MIN_DONATION_CENTS = 100;
+const MAX_DONATION_CENTS = 100_000_000;
+
 exports.create_payment_intent = functions
   .runWith({secrets: ["STRIPE_SECRET_KEY"]})
   .https.onRequest((request, response) => {
@@ -13,9 +27,24 @@ exports.create_payment_intent = functions
       let total = 0;
 
       try {
+        if (!Array.isArray(request.body.items) ||
+            request.body.items.length === 0) {
+          response.status(400).send({code: 400, error: "items is required"});
+          return;
+        }
+
         request.body.items.forEach((item) => {
           total += item.amount;
         });
+
+        if (
+          !Number.isInteger(total) ||
+          total < MIN_DONATION_CENTS ||
+          total > MAX_DONATION_CENTS
+        ) {
+          response.status(400).send({code: 400, error: "Invalid amount"});
+          return;
+        }
 
         const paymentIntent = await stripe.paymentIntents.create({
           amount: total,
