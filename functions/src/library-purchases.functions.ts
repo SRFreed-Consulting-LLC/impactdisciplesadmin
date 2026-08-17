@@ -1,7 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import {
   PaypalEnvironment,
   getAccessToken,
@@ -11,47 +10,92 @@ import {applyStorePurchaseGrant} from "./library-store-license-grant";
 
 /**
  * verifyAndGrantReaderStorePurchase - the reader app's own StoreComponent
- * checkout, PayPal-verified server-side; slated for retirement in Phase 5
- * when the in-app store goes away in favor of linking out to the web
- * store. (grantStorePurchaseLicenses, the shared-secret HTTP endpoint
- * that used to live here too, was retired in Phase 4 - the web store's
- * purchases trigger now grants directly in-process, see
- * library-license-grant.functions.ts.)
+ * checkout, verified server-side end to end:
  *
- * As of 2026-08-17 this no longer writes ANY purchase record of its own -
- * the web store's `purchases` collection is the one system of record for
- * sales. The `purchaseId` stamped on granted licenses / returned to the
- * caller is the verified PayPal order id (or a synthesized token for the
- * $0 path), kept only so license provenance and the reader app's existing
- * response handling stay intact.
+ * - Pricing is recomputed HERE from the `products` collection (cost/
+ *   salePrice) and the coupon's own doc (percentOff + tags scoping,
+ *   case-insensitive code match, isActive) - mirroring the reader's
+ *   store-pricing.ts math exactly - so a tampered client can neither
+ *   invent prices nor forge a coupon. The client's claimed totals are
+ *   ignored.
+ * - PayPal path: the captured amount/status is confirmed with PayPal and
+ *   must match the SERVER-computed total.
+ * - No-PayPal path: only legitimate when the server-computed total (with
+ *   the verified coupon applied) is exactly $0 - otherwise rejected.
  *
- * `books` is nested (librarySeries/{s}/books/{b}), so existence checks
- * scan a `collectionGroup('books')` and match by doc id - same pattern
- * this app's own LibraryBookService.getById() uses.
+ * On success this writes a purchase record into this project's shared
+ * `purchases` collection - the same table the web storefront's checkout
+ * writes - per the 2026-08-17 direction that every real sale (coupons
+ * included) lands there. That write fans out through the existing
+ * purchases triggers: onPurchaseCustomerUpsert (buyer becomes a customer
+ * + Mailchimp contact, intentionally), onPurchaseFulfillmentEligible
+ * (digital-only carts auto-close), and onPurchaseGrantLibraryLicenses
+ * (grants keyed per (bookId, purchaseDocId), so its grant and the direct
+ * in-process grant below converge idempotently - the trigger's
+ * retry: true doubles as the safety net if this function dies between
+ * the doc write and its own grant). Free access paths (admin grants,
+ * international patrons) never create purchase records - and therefore
+ * never become customers/Mailchimp contacts - by design.
  */
 const libraryDb = admin.firestore();
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 
+interface ProductDoc {
+  title?: string;
+  cost?: number;
+  salePrice?: number;
+  isActive?: boolean;
+  isDigitalBook?: boolean;
+  digitalBookId?: string;
+  imageUrl?: {url: string; name?: string};
+}
+
+interface CouponDoc {
+  code?: string;
+  isActive?: boolean;
+  percentOff?: number | null;
+  tags?: {id: string}[];
+}
+
 /**
- * Verifies and grants a reader-app patron's own individual book purchase
- * (StoreComponent's checkout).
- *
- * PayPal path (payPalOrderId present): fully verified here - the
- * captured amount/status is independently confirmed with PayPal before
- * any license is granted, same as purchaseGroupLicenses.
- *
- * Coupon/$0 path (no payPalOrderId): not verified here YET. (Historical:
- * coupons used to live in the legacy impactdisciples-a82a8 project, out
- * of this project's Admin SDK reach, making verification impossible;
- * since Phase 4 they live in this project's own `coupons` collection, so
- * server-side coupon verification is now buildable - just not built.)
- * Until then, rather than trust an unverified free claim, this grants
- * NOTHING automatically and logs the attempt for an admin to follow up
- * via the existing grantLibraryUserLicenses tool. No purchase record is
- * written on either path any more - see the top-of-file comment.
+ * Cent-rounding, identical to the reader's store-pricing.ts round2 - the
+ * two must agree or a legitimate PayPal charge computed client-side would
+ * fail the server-side amount match below.
+ * @param {number} value Raw amount.
+ * @return {number} Rounded to 2 decimal places.
  */
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * salePrice only counts when it's a positive number strictly below cost -
+ * mirrors the reader's effectivePrice.
+ * @param {ProductDoc} product The product doc's data.
+ * @return {number} The price a buyer actually pays before coupons.
+ */
+function effectivePrice(product: ProductDoc): number {
+  const cost = product.cost ?? 0;
+  return product.salePrice && product.salePrice > 0 &&
+    product.salePrice < cost ?
+    product.salePrice :
+    cost;
+}
+
+/**
+ * A coupon with no tags applies to every product; otherwise only to
+ * products whose id is tagged - mirrors the reader's couponAppliesTo.
+ * @param {CouponDoc} coupon The coupon doc's data.
+ * @param {string} productId The product's doc id.
+ * @return {boolean} Whether the coupon discounts this product.
+ */
+function couponAppliesTo(coupon: CouponDoc, productId: string): boolean {
+  return !coupon.tags?.length ||
+    coupon.tags.some((tag) => tag.id === productId);
+}
+
 export const verifyAndGrantReaderStorePurchase = onCall(
   {secrets: [paypalSandboxSecret, paypalLiveSecret], timeoutSeconds: 120},
   async (request) => {
@@ -61,95 +105,202 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
-    const {
-      cartItems,
-      total,
-      couponCode,
-      payPalOrderId,
-      paypalEnvironment,
-    } = (request.data ?? {}) as {
-      cartItems?: Record<string, unknown>[];
-      subtotal?: number;
-      discount?: number;
-      total?: number;
-      couponCode?: string;
-      payPalOrderId?: string;
-      paypalEnvironment?: PaypalEnvironment;
-    };
+    const {cartItems, couponCode, payPalOrderId, paypalEnvironment} =
+      (request.data ?? {}) as {
+        cartItems?: {id?: string}[];
+        couponCode?: string;
+        payPalOrderId?: string;
+        paypalEnvironment?: PaypalEnvironment;
+      };
 
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
       throw new HttpsError("invalid-argument", "cartItems is required.");
     }
-    const bookIds = cartItems.map((item) =>
-      typeof item["digitalBookId"] === "string" ?
-        (item["digitalBookId"] as string).trim() :
-        ""
-    );
-    if (bookIds.some((id) => !id)) {
+    const productIds = [
+      ...new Set(
+        cartItems.map((item) =>
+          typeof item?.id === "string" ? item.id.trim() : ""
+        )
+      ),
+    ];
+    if (productIds.some((id) => !id)) {
       throw new HttpsError(
         "invalid-argument",
-        "Every cart item needs a digitalBookId."
+        "Every cart item needs a product id."
       );
     }
 
-    // Confirm every claimed book actually exists here - same guard
-    // onPurchaseGrantLibraryLicenses uses, so a bogus id can't be
-    // "granted" and silently do nothing forever. Same collectionGroup-
-    // scan reasoning as there.
-    const uniqueBookIds = [...new Set(bookIds)];
+    // Server-side product truth - price, digitalBookId, active status all
+    // come from the product docs, never from the client's claims.
+    const productSnaps = await Promise.all(
+      productIds.map((id) => libraryDb.collection("products").doc(id).get())
+    );
+    const products = productSnaps.map((snap, i) => {
+      const data = snap.exists ? (snap.data() as ProductDoc) : undefined;
+      if (
+        !data ||
+        data.isActive === false ||
+        data.isDigitalBook !== true ||
+        !data.digitalBookId
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          `Product ${productIds[i]} is not an available digital book.`
+        );
+      }
+      return {id: productIds[i], data};
+    });
+
+    // Confirm every product's book actually exists - a stale digitalBookId
+    // can't be "granted" and silently do nothing forever. A bare book id
+    // doesn't say which series it's nested under, so scan the `books`
+    // collectionGroup once and match by doc id.
     const knownBookIds = new Set(
       (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
     );
-    const unknown = uniqueBookIds.filter((id) => !knownBookIds.has(id));
-    if (unknown.length > 0) {
+    const missingBooks = products
+      .filter((p) => !knownBookIds.has(p.data.digitalBookId!))
+      .map((p) => p.id);
+    if (missingBooks.length > 0) {
       throw new HttpsError(
         "invalid-argument",
-        `Unknown book id(s): ${unknown.join(", ")}.`
+        `Product(s) reference unknown book(s): ${missingBooks.join(", ")}.`
       );
     }
+
+    // Coupon verification - now possible since Phase 4 moved `coupons`
+    // into this project's own database. Case-insensitive comparison
+    // against every coupon (small collection), same as the reader's own
+    // StoreService.findCoupon, since stored codes aren't consistently
+    // cased.
+    let coupon: CouponDoc | undefined;
+    const trimmedCode = (couponCode ?? "").trim();
+    if (trimmedCode) {
+      const couponsSnap = await libraryDb.collection("coupons").get();
+      coupon = couponsSnap.docs
+        .map((d) => d.data() as CouponDoc)
+        .find(
+          (c) =>
+            c.isActive === true &&
+            (c.code ?? "").toLowerCase() === trimmedCode.toLowerCase()
+        );
+      if (!coupon) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Invalid or inactive coupon code."
+        );
+      }
+    }
+
+    // Rebuild the line items server-side - mirrors the reader's
+    // buildLineItems exactly.
+    const lineItems = products.map(({id, data}) => {
+      const price = effectivePrice(data);
+      const discount =
+        coupon && couponAppliesTo(coupon, id) ?
+          round2((price * (coupon.percentOff ?? 0)) / 100) :
+          0;
+      return {
+        id,
+        title: data.title ?? id,
+        cost: data.cost ?? 0,
+        salePrice: data.salePrice,
+        imageUrl: data.imageUrl,
+        digitalBookId: data.digitalBookId!,
+        effectivePrice: price,
+        discount,
+        finalPrice: round2(price - discount),
+      };
+    });
+    const discountTotal = round2(
+      lineItems.reduce((sum, item) => sum + item.discount, 0)
+    );
+    const total = round2(
+      lineItems.reduce((sum, item) => sum + item.finalPrice, 0)
+    );
+
+    if (payPalOrderId) {
+      const env: PaypalEnvironment = paypalEnvironment ?? "live";
+      const clientSecret = (
+        env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
+      ).value();
+      const accessToken = await getAccessToken(env, clientSecret);
+      const capture = await getOrderCapture(env, accessToken, payPalOrderId);
+      if (capture.status !== "COMPLETED") {
+        throw new HttpsError(
+          "failed-precondition",
+          `PayPal order is not completed (status: ${capture.status}).`
+        );
+      }
+      if (
+        capture.currencyCode !== "USD" ||
+        Math.abs(capture.amount - total) > 0.01
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
+            `does not match the computed total ($${total.toFixed(2)}).`
+        );
+      }
+    } else if (total > 0.005) {
+      // No PayPal order and the verified pricing isn't free - a forged
+      // "free" claim, or a client bug. Either way, no grant.
+      throw new HttpsError(
+        "failed-precondition",
+        `This order totals $${total.toFixed(2)} and requires payment.`
+      );
+    }
+
+    // Buyer identity fields for the purchase record - same fields the web
+    // storefront's checkout collects, best-effort from the patron's own
+    // library profile (customer-upsert tolerates their absence).
+    const profileSnap = await libraryDb
+      .collection("libraryUsers")
+      .doc(email)
+      .get();
+    const profile = profileSnap.exists ?
+      (profileSnap.data() as {
+          firstName?: string;
+          lastName?: string;
+          phone?: string;
+        }) :
+      undefined;
 
     const now = Date.now();
-    const claimedTotal = total ?? 0;
-    // The PayPal order id doubles as the purchase's identity now that no
-    // purchase doc is written - stamped on the granted licenses for
-    // provenance and returned to the client, which already expects a
-    // purchaseId field. The $0/coupon path gets a synthesized token (it
-    // grants nothing automatically anyway - see below).
-    const purchaseId = payPalOrderId ?? `unrecorded-${now}`;
+    const receipt = payPalOrderId ?? (coupon ? "COUPON" : "FREE ONLY");
+    const purchaseRef = libraryDb.collection("purchases").doc();
 
-    if (!payPalOrderId) {
-      // Coupon/$0 claims can't be independently verified here - flag for
-      // a human instead of auto-granting.
-      logger.warn("Unverified $0/coupon purchase attempt - NOT auto-granted", {
-        email,
-        bookIds: uniqueBookIds,
-        couponCode,
-      });
-      return {granted: false, purchaseId, pending: true};
-    }
-
-    const env: PaypalEnvironment = paypalEnvironment ?? "live";
-    const clientSecret = (
-      env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
-    ).value();
-    const accessToken = await getAccessToken(env, clientSecret);
-    const capture = await getOrderCapture(env, accessToken, payPalOrderId);
-    if (capture.status !== "COMPLETED") {
-      throw new HttpsError(
-        "failed-precondition",
-        `PayPal order is not completed (status: ${capture.status}).`
-      );
-    }
-    if (
-      capture.currencyCode !== "USD" ||
-      Math.abs(capture.amount - claimedTotal) > 0.01
-    ) {
-      throw new HttpsError(
-        "failed-precondition",
-        `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
-          `does not match the claimed total ($${claimedTotal.toFixed(2)}).`
-      );
-    }
+    // The purchase record - written BEFORE the direct grant below so the
+    // onPurchaseGrantLibraryLicenses trigger (retry: true) is a safety
+    // net if this function dies mid-way; both grants key on this doc's id
+    // so they converge idempotently.
+    await purchaseRef.set({
+      email,
+      userId: uid,
+      ...(profile?.firstName ? {firstName: profile.firstName} : {}),
+      ...(profile?.lastName ? {lastName: profile.lastName} : {}),
+      ...(profile?.phone ? {phone: profile.phone} : {}),
+      cartItems: lineItems.map((item) => ({
+        id: item.id,
+        itemName: item.title,
+        price: item.cost,
+        ...(item.salePrice ? {salePrice: item.salePrice} : {}),
+        orderQuantity: 1,
+        discount: item.discount,
+        discountPrice: item.finalPrice,
+        isDigitalBook: true,
+        digitalBookId: item.digitalBookId,
+        ...(item.imageUrl ? {img: item.imageUrl} : {}),
+      })),
+      discount: discountTotal,
+      total,
+      receipt,
+      ...(coupon ? {couponCode: trimmedCode} : {}),
+      dateProcessed: now,
+      ...(payPalOrderId ?
+        {paypalEnvironment: paypalEnvironment ?? "live"} :
+        {}),
+    });
 
     const recipientRef = libraryDb.collection("libraryUsers").doc(email);
     let result: { granted: string[]; skipped: string[] } = {
@@ -163,15 +314,15 @@ export const verifyAndGrantReaderStorePurchase = onCall(
         recipientRef,
         recipientSnap: snap,
         recipientEmail: email,
-        books: uniqueBookIds.map((bookId) => ({bookId})),
-        purchaseId,
+        books: lineItems.map((item) => ({bookId: item.digitalBookId})),
+        purchaseId: purchaseRef.id,
         now,
       });
     });
 
     return {
       granted: true,
-      purchaseId,
+      purchaseId: purchaseRef.id,
       grantedBookIds: result.granted,
       skippedBookIds: result.skipped,
     };

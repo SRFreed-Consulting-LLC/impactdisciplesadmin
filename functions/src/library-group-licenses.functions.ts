@@ -22,15 +22,13 @@ import {selectMembersToCopy} from "./library-group-members-copy";
  * match the group's creatorEmail), not staff-role - distinct from
  * requireAdminRole, which nothing in this file needs.
  *
- * As of 2026-08-17, purchaseGroupLicenses no longer writes a purchase
- * record at all - the library's separate `purchases` collection was
- * retired along with the legacy named database (the web store's own
- * `purchases` is the system of record for sales going forward; see
- * library-purchases.functions.ts's identical note). The `purchaseId`
- * stamped on each license doc is now the verified PayPal order id (or a
- * synthesized id for a 100%-discount purchase), kept because the reader
- * app's My License Purchases screen groups a bulk purchase's licenses
- * by that field.
+ * purchaseGroupLicenses records each verified sale in this project's
+ * SHARED `purchases` collection (the same table the web storefront and
+ * the reader's own store checkout write - the library's old separate
+ * purchases table died with the legacy named database). See the inline
+ * comment in that function for how its cart item is shaped so the
+ * purchases triggers treat it correctly (no personal book grant for the
+ * leader, no fulfillment queue entry).
  *
  * `books` is nested (librarySeries/{s}/books/{b}), so getInviteDetails'
  * book lookup goes through a `collectionGroup('books')` scan matched by
@@ -91,13 +89,11 @@ export const purchaseGroupLicenses = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
-    // subtotal/discount still arrive from the (unchanged) reader client
-    // but aren't read any more - they only ever fed the retired purchase
-    // record. total/percentOff stay: they're what the PayPal capture is
-    // verified against.
     const {
       groupId,
       quantity,
+      subtotal,
+      discount,
       total,
       percentOff,
       payPalOrderId,
@@ -105,6 +101,8 @@ export const purchaseGroupLicenses = onCall(
     } = (request.data ?? {}) as {
       groupId?: string;
       quantity?: number;
+      subtotal?: number;
+      discount?: number;
       total?: number;
       percentOff?: number;
       payPalOrderId?: string;
@@ -193,19 +191,69 @@ export const purchaseGroupLicenses = onCall(
     }
 
     const now = Date.now();
-    // No purchase record is written any more (see the top-of-file
-    // comment) - the PayPal order id IS the purchase's identity, with a
-    // synthesized fallback for the verified-100%-discount free path.
-    // Still stamped on every license in the batch because the reader
-    // app's My License Purchases screen groups licenses by purchaseId.
-    const purchaseId =
-      payPalOrderId ?? libraryDb.collection("groupLicenses").doc().id;
+    const purchaseRef = libraryDb.collection("purchases").doc();
     const licenseRefs = Array.from({length: quantity}, () =>
       libraryDb.collection("groupLicenses").doc()
     );
+    const unitPrice = subtotal ? subtotal / quantity : 0;
+    const unitDiscountPrice = total ? total / quantity : 0;
+
+    // Group-license sales land in the shared `purchases` table like every
+    // other sale (2026-08-17 direction), so they show in admin's
+    // Purchases screen and the leader becomes a customer/Mailchimp
+    // contact via onPurchaseCustomerUpsert like any other buyer. The
+    // cart item is deliberately shaped `isDigitalBook: true` with NO
+    // `digitalBookId`: that combination is invisible to BOTH
+    // onPurchaseGrantLibraryLicenses (which requires digitalBookId - the
+    // licenses are for assignment to members, the leader must not be
+    // personally granted the book) and hasPhysicalItem (so fulfillment
+    // auto-closes it instead of queueing a shippable order).
+    const leaderProfileSnap = await libraryDb
+      .collection("libraryUsers")
+      .doc(email)
+      .get();
+    const leaderProfile = leaderProfileSnap.exists ?
+      (leaderProfileSnap.data() as {
+          firstName?: string;
+          lastName?: string;
+          phone?: string;
+        }) :
+      undefined;
+    await purchaseRef.set({
+      email,
+      userId: uid,
+      ...(leaderProfile?.firstName ?
+        {firstName: leaderProfile.firstName} :
+        {}),
+      ...(leaderProfile?.lastName ? {lastName: leaderProfile.lastName} : {}),
+      ...(leaderProfile?.phone ? {phone: leaderProfile.phone} : {}),
+      cartItems: [
+        {
+          id: bookId,
+          itemName:
+            `${group.title} - ${quantity} group license` +
+            `${quantity === 1 ? "" : "s"}`,
+          price: unitPrice,
+          orderQuantity: quantity,
+          discount: discount ?? 0,
+          discountPrice: unitDiscountPrice,
+          isDigitalBook: true,
+        },
+      ],
+      discount: discount ?? 0,
+      total: total ?? 0,
+      receipt: payPalOrderId ?? "FREE ONLY",
+      dateProcessed: now,
+      ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
+      ...(payPalOrderId ?
+        {paypalEnvironment: paypalEnvironment ?? "live"} :
+        {}),
+    });
 
     // Chunked rather than one batch() - Firestore caps a WriteBatch at
-    // 500 operations and `quantity` alone can reach 1000.
+    // 500 operations and `quantity` alone can reach 1000. purchaseId is
+    // the purchase doc's own id again - the reader's My License Purchases
+    // screen groups a bulk buy's licenses by this field.
     const CHUNK_SIZE = 400;
     for (let i = 0; i < licenseRefs.length; i += CHUNK_SIZE) {
       const batch = libraryDb.batch();
@@ -213,7 +261,7 @@ export const purchaseGroupLicenses = onCall(
         batch.set(ref, {
           leaderEmail: email,
           bookId,
-          purchaseId,
+          purchaseId: purchaseRef.id,
           status: "unassigned",
           createdAt: now,
           ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
@@ -223,7 +271,7 @@ export const purchaseGroupLicenses = onCall(
     }
 
     return {
-      purchaseId,
+      purchaseId: purchaseRef.id,
       licenseIds: licenseRefs.map((r) => r.id),
     };
   }
