@@ -528,7 +528,9 @@ service cloud.firestore {
         allow read: if isAdminRole() || isGroupCreator(groupId) ||
           isApprovedGroupMember(groupId);
         allow create: if isApprovedGroupMember(groupId) &&
-          request.resource.data.senderEmail == callerEmail();
+          request.resource.data.senderEmail == callerEmail() &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() < 4000;
         allow update: if false;
         allow delete: if isAdminRole();
       }
@@ -536,7 +538,9 @@ service cloud.firestore {
         allow read: if isAdminRole() || isGroupCreator(groupId) ||
           isApprovedGroupMember(groupId);
         allow create: if isApprovedGroupMember(groupId) &&
-          request.resource.data.authorEmail == callerEmail();
+          request.resource.data.authorEmail == callerEmail() &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() < 4000;
         allow update: if false;
         allow delete: if resource.data.authorEmail == callerEmail() || isAdminRole();
       }
