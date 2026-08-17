@@ -63,7 +63,23 @@ async function getPayPalAccessToken(clientId: string): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to obtain a PayPal access token");
+    // A 401 here is nearly always a credential/environment mismatch: three
+    // things have to agree and each is provisioned separately - the API host
+    // (from GCLOUD_PROJECT), config.paypalClientId, and PAYPAL_CLIENT_SECRET.
+    // Getting a live id with a sandbox secret (or the reverse) 401s here and
+    // takes the whole storefront down, so name all three in the error rather
+    // than leaving a bare "failed". Only the client id's last 6 characters
+    // are logged - enough to tell two apps apart, not enough to be a
+    // credential - and the secret is never logged.
+    throw new Error(
+      `Failed to obtain a PayPal access token (HTTP ${response.status}) ` +
+      `from ${PAYPAL_API_BASE} using clientId ending ...` +
+      `${clientId.slice(-6)} and PAYPAL_CLIENT_SECRET ` +
+      `(${process.env.PAYPAL_CLIENT_SECRET ? "set" : "NOT SET"}). ` +
+      "A 401 means the id, the secret and the host do not all belong to the " +
+      "same PayPal app - check that this project's secret is the LIVE " +
+      "credential and config.paypalClientId is the LIVE client id."
+    );
   }
 
   const data = await response.json();
@@ -81,11 +97,25 @@ async function getPayPalAccessToken(clientId: string): Promise<string> {
  * @return {Promise<string>} The PayPal client id.
  */
 async function getPaypalClientId(): Promise<string> {
-  const configSnap = await admin.firestore()
-    .collection("config").limit(1).get();
+  // Deliberately NOT .limit(1): `config` is treated as a singleton
+  // everywhere, but nothing enforces that, and limit(1) returns an arbitrary
+  // document when there is more than one. Silently picking the wrong config
+  // in production means charging against the wrong PayPal app - read the
+  // collection and refuse to guess instead.
+  const configSnap = await admin.firestore().collection("config").get();
+  if (configSnap.size > 1) {
+    throw new Error(
+      `Expected a single config document, found ${configSnap.size} ` +
+      `(${configSnap.docs.map((d) => d.id).join(", ")}). Refusing to guess ` +
+      "which one holds the live paypalClientId - remove the extras."
+    );
+  }
   const clientId = configSnap.docs[0]?.data()?.paypalClientId;
   if (!clientId) {
-    throw new Error("config.paypalClientId is not set");
+    throw new Error(
+      "config.paypalClientId is not set in project " +
+      `${process.env.GCLOUD_PROJECT ?? "(unknown)"} - checkout cannot start.`
+    );
   }
   return clientId;
 }
