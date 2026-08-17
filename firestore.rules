@@ -498,10 +498,52 @@ service cloud.firestore {
       allow read, delete: if isAdminRole();
       allow update: if false;
     }
-    match /errorLogs/{id} {                 // reader client error reporting
-      allow create: if signedIn();
+    // Basic type/size bounds on a logged error entry - the pre-auth create
+    // path below needs no signed-in identity at all, so without this an
+    // anonymous caller could write unbounded message/stack strings or a
+    // fabricated userEmail attributing a fake "failed login" to a real
+    // patron. Bounds are generous, not exact - abuse prevention, not strict
+    // schema validation. (Ported from the pre-consolidation rules; the
+    // consolidation had collapsed errorLogs to bare create-if-signedIn +
+    // update-false, which silently broke BaseErrorLogHandler's pre-auth
+    // failure logging AND its repeat-suppression recurrence updates - both
+    // restored below.)
+    function isValidErrorLogEntry() {
+      return request.resource.data.message is string && request.resource.data.message.size() < 2000
+        && request.resource.data.location is string && request.resource.data.location.size() < 200
+        && (!('detail' in request.resource.data) || (request.resource.data.detail is string && request.resource.data.detail.size() < 2000))
+        && (!('stack' in request.resource.data) || (request.resource.data.stack is string && request.resource.data.stack.size() < 8000))
+        && (!('userEmail' in request.resource.data) || request.resource.data.userEmail == null
+            || (request.resource.data.userEmail is string && request.resource.data.userEmail.size() < 320));
+    }
+    match /errorLogs/{id} {
+      // Client error reporting - see BaseErrorLogHandler. Two create paths:
+      // a signed-in user logging their OWN error (self-attributed), or a
+      // FAILED LOGIN/SIGNUP/FORGOT-PASSWORD attempt - the one deliberate
+      // unauthenticated-write exception in this file, tightly scoped: uid
+      // null, location limited to those three values, app limited to the
+      // client-writable values ('functions'-sourced entries only ever come
+      // via the Admin SDK, which bypasses rules - so clients can't spoof
+      // one).
       allow read, delete: if isAdminRole();
-      allow update: if false;
+      allow create: if isValidErrorLogEntry() &&
+        ((signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.app in ['reader', 'manager'])
+         || (!signedIn() && request.resource.data.uid == null
+             && request.resource.data.app in ['reader', 'manager']
+             && request.resource.data.location in ['login', 'signup', 'forgotPassword']));
+      // Repeat suppression (see BaseErrorLogHandler): a rapidly-recurring
+      // error updates its episode's FIRST entry instead of creating one doc
+      // per occurrence. The only mutation ever allowed, and only on the
+      // author's own entries: exactly repeatCount + lastOccurredAt, count
+      // monotonically increasing, last-seen never before the entry's own
+      // start. Pre-auth (uid == null) entries have no update path at all.
+      allow update: if signedIn() && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['repeatCount', 'lastOccurredAt'])
+        && request.resource.data.repeatCount is int
+        && request.resource.data.repeatCount >= 2
+        && (!('repeatCount' in resource.data) || request.resource.data.repeatCount >= resource.data.repeatCount)
+        && request.resource.data.lastOccurredAt is int
+        && request.resource.data.lastOccurredAt >= resource.data.timestamp;
     }
 
     // ========================================================================
@@ -534,14 +576,21 @@ service cloud.firestore {
       match /fcmTokens/{token} {
         allow read, write: if callerEmail() == email;
       }
-      // Inbox copies are function-written (sendLibraryUserMessage); the
-      // owner may only flip the read flag, and may not delete (account
-      // deletion goes through deleteMyAccount, which bypasses rules).
+      // Inbox copies are function-written (sendLibraryUserMessage). The
+      // owner's permitted mutations, restored from the pre-consolidation
+      // rules (the port had closed delete entirely, silently breaking the
+      // reader's inbox delete action - MessageService.deleteMessage):
+      // flipping `read` to true (never editing content or un-reading), and
+      // deleting a message they have ALREADY READ - an unread announcement
+      // can't be dismissed unseen, and the adminMessages summary keeps the
+      // sent record either way.
       match /messages/{id} {
         allow read: if callerEmail() == email;
         allow update: if callerEmail() == email &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-        allow create, delete: if false;
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+          request.resource.data.read == true;
+        allow delete: if callerEmail() == email && resource.data.read == true;
+        allow create: if false;
       }
     }
     // Cross-user highlight discovery is not a thing; but lessonStatus etc.

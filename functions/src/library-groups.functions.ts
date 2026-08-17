@@ -116,6 +116,32 @@ export const createGroup = onCall(async (request) => {
     );
   }
 
+  // A group can only be STARTED around a book the creator personally holds
+  // a license for; international patrons (free all-book access, never asked
+  // to pay) count as licensed for every book. Deliberately NO staff bypass -
+  // same choice the pre-consolidation rules' create gate made
+  // (hasBookLicense || isInternationalPatron), which was lost when group
+  // creation moved from a rules-gated client write to this callable.
+  // `revoked` is second-layer defense: setLibraryUserRevoked also disables
+  // the Auth account, but a live token can outlast that by up to an hour.
+  const profileSnap =
+    await db.collection("libraryUsers").doc(email).get();
+  const profile = profileSnap.data() ?? {};
+  if (profile.revoked === true) {
+    throw new HttpsError(
+      "permission-denied",
+      "This account's library access has been revoked."
+    );
+  }
+  const licensed = Array.isArray(profile.licensedBookIds) &&
+    profile.licensedBookIds.includes(bookId);
+  if (!licensed && profile.internationalUser !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "You need a license for this book to start an Impact Group around it."
+    );
+  }
+
   // Structured location passes through with per-field narrowing; the
   // legacy free-text inPersonLocation shape is still accepted for parity.
   let location: Record<string, unknown> | undefined;

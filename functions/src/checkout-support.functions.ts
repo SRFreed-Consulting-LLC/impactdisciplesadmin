@@ -1,4 +1,4 @@
-import {onCall, onRequest} from "firebase-functions/v2/https";
+import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
@@ -88,8 +88,15 @@ export const lookupCouponHttp = onRequest((request, response) => {
   });
 });
 
-/** The reader app's face: callable, same result shape. */
+/** The reader app's face: callable, same result shape. Unlike the web's
+ *  onRequest face above (which must stay auth-free - the web has no
+ *  Firebase Auth), the reader is always signed in by the time its store
+ *  screen exists, so this face requires it - shrinking the anonymous
+ *  brute-force surface to just the endpoint that genuinely needs it. */
 export const lookupCoupon = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Sign in required.");
+  }
   const code =
     typeof (request.data ?? {}).code === "string" ? request.data.code : "";
   return {coupon: await findCouponByCode(code)};
