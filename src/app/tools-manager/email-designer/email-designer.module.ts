@@ -18,6 +18,8 @@ import { DesignCanvasComponent } from './canvas/design-canvas.component';
 import { BlockHostComponent } from './canvas/block-host.component';
 import { InlineTextEditorComponent } from './inline-editor/inline-text-editor.component';
 import { DesignerSidePanelComponent } from './side-panel/designer-side-panel.component';
+import { BlockStyleEditorComponent } from './side-panel/block-style-editor.component';
+import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.component';
 
 // The Mailchimp-style email builder - its own lazy chunk under
 // /tools-manager/email-designer so the (large) editor never weighs down the
@@ -45,7 +47,9 @@ import { DesignerSidePanelComponent } from './side-panel/designer-side-panel.com
     DesignCanvasComponent,
     BlockHostComponent,
     InlineTextEditorComponent,
-    DesignerSidePanelComponent
+    DesignerSidePanelComponent,
+    BlockStyleEditorComponent,
+    GlobalStylesPanelComponent
   ]
 })
 export class EmailDesignerModule {}

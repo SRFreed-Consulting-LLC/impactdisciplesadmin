@@ -4,6 +4,7 @@ import {
   BlockType,
   ButtonBlock,
   EmailBlock,
+  EmailRow,
   EmailSection,
   HeadingBlock,
   ImageBlock,
@@ -69,6 +70,14 @@ export class DesignerSidePanelComponent {
       return null;
     }
     return this.state.findBlock(selection.id)?.block ?? null;
+  }
+
+  get selectedRow(): EmailRow | null {
+    const selection = this.state.selection$.value;
+    if (selection?.kind !== 'row') {
+      return null;
+    }
+    return this.state.findRow(selection.id)?.row ?? null;
   }
 
   get selectedSection(): EmailSection | null {

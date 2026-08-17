@@ -1,0 +1,80 @@
+<div class="style-editor">
+  <div class="device-row">
+    <button class="device-pill" [class.on]="activeDevice === 'desktop'" (click)="setDevice('desktop')">Desktop</button>
+    <button class="device-pill" [class.on]="activeDevice === 'mobile'" (click)="setDevice('mobile')">Mobile</button>
+    <button class="link-toggle" (click)="toggleLinked()"
+            [matTooltip]="target.stylesLinked ? 'Unlink to set mobile-only styles' : 'Relink mobile to desktop styles'">
+      <mat-icon>{{ target.stylesLinked ? 'link' : 'link_off' }}</mat-icon>
+      {{ target.stylesLinked ? 'Linked' : 'Unlinked' }}
+    </button>
+  </div>
+
+  @if (activeDevice === 'mobile' && target.stylesLinked) {
+    <p class="hint">Mobile follows desktop while linked. Unlink to customize phone-only styles.</p>
+  } @else {
+    @if (editingMobileOverrides) {
+      <p class="hint subtle">Editing mobile-only overrides.</p>
+    }
+
+    <div class="field-row">
+      <span class="field-label">Alignment</span>
+      <mat-button-toggle-group hideSingleSelectionIndicator [value]="edited.align"
+          (change)="setAlign($event.value)">
+        <mat-button-toggle value="left"><mat-icon>format_align_left</mat-icon></mat-button-toggle>
+        <mat-button-toggle value="center"><mat-icon>format_align_center</mat-icon></mat-button-toggle>
+        <mat-button-toggle value="right"><mat-icon>format_align_right</mat-icon></mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Padding (top / right / bottom / left)</span>
+      <div class="four-grid">
+        <input type="number" min="0" [value]="edited.padding.top" (change)="setPadding('top', $any($event.target).value)" aria-label="Padding top">
+        <input type="number" min="0" [value]="edited.padding.right" (change)="setPadding('right', $any($event.target).value)" aria-label="Padding right">
+        <input type="number" min="0" [value]="edited.padding.bottom" (change)="setPadding('bottom', $any($event.target).value)" aria-label="Padding bottom">
+        <input type="number" min="0" [value]="edited.padding.left" (change)="setPadding('left', $any($event.target).value)" aria-label="Padding left">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Border</span>
+      <div class="border-grid">
+        <select class="border-select" [value]="edited.border?.style ?? 'none'"
+                (change)="setBorderStyle($any($event.target).value)" aria-label="Border style">
+          <option value="none">None</option>
+          @for (style of borderStyles; track style) {
+            <option [value]="style">{{ style }}</option>
+          }
+        </select>
+        @if (edited.border) {
+          <input type="number" min="0" max="12" [value]="edited.border.width"
+                 (change)="setBorderWidth($any($event.target).value)" aria-label="Border width">
+          <input type="color" class="color-input" [value]="edited.border.color"
+                 (change)="setBorderColor($any($event.target).value)" aria-label="Border color">
+        }
+      </div>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Rounded corners (TL / TR / BR / BL)</span>
+      <div class="four-grid">
+        <input type="number" min="0" [value]="edited.borderRadius.topLeft" (change)="setRadius('topLeft', $any($event.target).value)" aria-label="Radius top left">
+        <input type="number" min="0" [value]="edited.borderRadius.topRight" (change)="setRadius('topRight', $any($event.target).value)" aria-label="Radius top right">
+        <input type="number" min="0" [value]="edited.borderRadius.bottomRight" (change)="setRadius('bottomRight', $any($event.target).value)" aria-label="Radius bottom right">
+        <input type="number" min="0" [value]="edited.borderRadius.bottomLeft" (change)="setRadius('bottomLeft', $any($event.target).value)" aria-label="Radius bottom left">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Background</span>
+      <input type="color" class="color-input" [value]="edited.backgroundColor ?? '#ffffff'"
+             (change)="setBackground($any($event.target).value)" aria-label="Background color">
+      <button mat-button class="clear-button" (click)="setBackground(null)">Clear</button>
+    </div>
+  }
+
+  <button mat-button class="restore-button" (click)="restoreDefaults()">
+    <mat-icon>restart_alt</mat-icon>
+    Restore default styles
+  </button>
+</div>

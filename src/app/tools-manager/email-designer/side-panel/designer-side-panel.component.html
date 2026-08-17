@@ -67,6 +67,7 @@
           <p class="hint">Settings for this block type are coming in the next build phase.</p>
         }
       }
+      <app-block-style-editor [target]="block"></app-block-style-editor>
     } @else if (selectedSection; as section) {
       <div class="field-row">
         <span class="field-label">Background color</span>
@@ -76,9 +77,10 @@
           Clear
         </button>
       </div>
-    } @else {
+    } @else if (selectedRow; as row) {
       <p class="hint">Drag the row by its handle to reorder it, or delete it from its hover
-        toolbar. Row styling arrives with the Styles panel.</p>
+        toolbar. Styles below apply to the whole row.</p>
+      <app-block-style-editor [target]="row"></app-block-style-editor>
     }
   </div>
 } @else {
@@ -115,8 +117,7 @@
     </div>
   } @else {
     <div class="panel-body">
-      <p class="hint">Email-wide styles (backgrounds, text, links, buttons, dividers) arrive in
-        the next build phase.</p>
+      <app-global-styles-panel></app-global-styles-panel>
     </div>
   }
 }

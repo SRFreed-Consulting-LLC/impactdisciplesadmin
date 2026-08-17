@@ -1,6 +1,18 @@
+// Explicit text/control colors throughout: the app-wide (dark) theme styles
+// bare inputs/selects/headings for dark surfaces, which reads as invisible
+// or off-theme on this panel's white background (live-diagnosed - the panel
+// title and select text inherited near-white).
 :host {
   display: block;
   font-size: 13px;
+  color: #39414c;
+
+  input,
+  select {
+    background: #ffffff;
+    color: #22282f;
+    color-scheme: light;
+  }
 }
 
 // ------------------------------------------------------------ tabs
@@ -46,6 +58,7 @@
   font-weight: 700;
   font-size: 14px;
   text-transform: capitalize;
+  color: #22282f;
 }
 
 .panel-body {
