@@ -277,7 +277,7 @@ function buildWebProductListHtml(form: ReceiptCheckoutForm): string {
  * Best-effort by contract: callers wrap this so an email failure can
  * never fail an order that already saved.
  * @param {FirebaseFirestore.Firestore} db Firestore handle.
- * @param {ReceiptCheckoutForm} form The saved checkout form.
+ * @param {unknown} checkoutForm The saved checkout form.
  * @return {Promise<void>} Resolves when all emails are queued.
  */
 export async function queueWebOrderEmails(
