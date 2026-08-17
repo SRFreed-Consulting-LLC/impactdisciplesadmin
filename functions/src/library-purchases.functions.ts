@@ -7,6 +7,7 @@ import {
   getOrderCapture,
 } from "./library-paypal";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
+import {queueReaderReceiptEmail} from "./transactional-emails";
 
 /**
  * verifyAndGrantReaderStorePurchase - the reader app's own StoreComponent
@@ -323,6 +324,27 @@ export const verifyAndGrantReaderStorePurchase = onCall(
         now,
       });
     });
+
+    // Pre-prod #1: the purchase receipt email is queued here now (the
+    // reader's StoreComponent no longer writes `mail`). Best-effort - the
+    // purchase and grant above already succeeded.
+    try {
+      await queueReaderReceiptEmail(
+        libraryDb,
+        email,
+        profile?.firstName,
+        lineItems.map((item) => ({
+          title: item.title,
+          effectivePrice: item.effectivePrice,
+          discount: item.discount,
+          finalPrice: item.finalPrice,
+        })),
+        total,
+        receipt
+      );
+    } catch (mailErr) {
+      console.error("Failed to queue reader receipt email", mailErr);
+    }
 
     return {
       granted: true,

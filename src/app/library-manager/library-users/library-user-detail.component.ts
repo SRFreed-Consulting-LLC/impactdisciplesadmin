@@ -253,6 +253,36 @@ export class LibraryUserDetailComponent {
     }
   }
 
+  /** Pre-prod #6: manual removal of a STORE-PURCHASED license (no refund
+   *  involved - refunds live on the Purchases screen and strip their own
+   *  licenses when asked). */
+  async removeStoreLicense(license: LibraryUserBookLicense): Promise<void> {
+    if (!this.isAdmin() || license.source !== 'store-purchase') {
+      return;
+    }
+    const title = this.bookTitle(license.bookId);
+    const confirmed = await this.confirmService.confirm(
+      `Remove the store-purchased license for "${title}" from ${this.displayName()}? ` +
+        'This does NOT refund the purchase - refunds are issued from the Purchases screen.',
+      'Remove purchased license',
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.libraryUserService.revokeStoreLicense(
+        this.email,
+        license.bookId,
+        this.displayName(),
+        title,
+      );
+      this.snackbar.success(`License for "${title}" removed.`);
+    } catch (error) {
+      this.errorLog.logError('LibraryUserDetailComponent.removeStoreLicense', error);
+      this.snackbar.error('Could not remove that license. Please try again.');
+    }
+  }
+
   async removeLicense(license: LibraryUserBookLicense): Promise<void> {
     if (!this.isAdmin() || license.source !== 'admin-grant') {
       return;

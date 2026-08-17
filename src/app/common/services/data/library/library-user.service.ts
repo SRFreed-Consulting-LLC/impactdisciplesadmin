@@ -173,6 +173,36 @@ export class LibraryUserService {
     return result.data.removed;
   }
 
+  /** Pre-prod #6: removes a store-purchased license WITHOUT refunding
+   *  (revokeStorePurchasedLicense Cloud Function) - the refund path on the
+   *  Purchases screen strips its own licenses when the admin asks it to.
+   *  Admin-grant and group licenses keep their own revocation paths. */
+  async revokeStoreLicense(
+    email: string,
+    bookId: string,
+    targetName: string,
+    bookTitle: string,
+  ): Promise<boolean> {
+    const correlationId = newCorrelationId();
+    const fn = httpsCallable<
+      { email: string; bookId: string; correlationId: string },
+      { removed: boolean }
+    >(this.functions, 'revokeStorePurchasedLicense');
+    let result;
+    try {
+      result = await fn({ email, bookId, correlationId });
+    } catch (err) {
+      throw attachCorrelationId(err, correlationId);
+    }
+    if (result.data.removed) {
+      await this.activityLog.log('library_user_license_revoked', {
+        targetName,
+        detail: `${bookTitle} (store purchase)`,
+      });
+    }
+    return result.data.removed;
+  }
+
   /** Sends an announcement (sendLibraryUserMessage Cloud Function): inbox
    *  doc per recipient + device push + one adminMessages history summary. */
   async sendMessage(

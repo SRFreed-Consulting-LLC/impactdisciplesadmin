@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -12,6 +13,7 @@ import { FULFILLMENT_STEPS, FulfillmentStep } from '../fulfillment/fulfillment-s
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { CustomerDetailsDialogComponent } from '../customers/customer-details-dialog.component';
+import { RefundDialogComponent, RefundDialogData, RefundDialogResult } from './refund-dialog.component';
 
 export interface TimelineNode {
   step: FulfillmentStep;
@@ -55,6 +57,7 @@ export class PurchaseDetailsComponent {
 
   printing = false;
   viewingCustomer = false;
+  refunding = false;
 
   constructor(
     public service: PurchasesService,
@@ -72,6 +75,51 @@ export class PurchaseDetailsComponent {
 
   isVisible(roles: string[]): boolean {
     return hasRole(this.currentUserRole, roles);
+  }
+
+  // ---- Refund (pre-prod #6) ----
+
+  canRefund(): boolean {
+    return this.isVisible(['Admin']) &&
+      !this.selectedItem.refunded &&
+      !!this.selectedItem.id;
+  }
+
+  private hasDigitalItems(): boolean {
+    return (this.selectedItem.cartItems ?? [])
+      .some(item => item.isDigitalBook || item.isEBook);
+  }
+
+  async openRefundDialog(): Promise<void> {
+    if (this.refunding) {
+      return;
+    }
+    const data: RefundDialogData = {
+      total: this.service.getChargedDisplayAmount(this.selectedItem),
+      email: this.selectedItem.email,
+      hasDigitalItems: this.hasDigitalItems(),
+    };
+    const result = await firstValueFrom(
+      this.dialog
+        .open<RefundDialogComponent, RefundDialogData, RefundDialogResult>(RefundDialogComponent, { data, width: '480px' })
+        .afterClosed()
+    );
+    if (!result?.confirmed) {
+      return;
+    }
+    this.refunding = true;
+    try {
+      const outcome = await this.service.refundPurchase(this.selectedItem.id, result.revokeLicenses);
+      this.selectedItem.refunded = true;
+      this.snackbar.success(
+        (outcome.paypalRefunded ? 'Refund issued through PayPal.' : 'Order marked refunded (no payment was taken).') +
+        (outcome.revokedBookIds.length > 0 ? ` ${outcome.revokedBookIds.length} library license(s) revoked.` : '')
+      );
+    } catch (err) {
+      this.snackbar.error('Refund failed: ' + ((err as Error)?.message ?? 'unknown error'));
+    } finally {
+      this.refunding = false;
+    }
   }
 
   // ---- Addresses ----

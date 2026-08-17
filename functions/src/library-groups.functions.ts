@@ -1,5 +1,9 @@
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {
+  escapeHtml,
+  queueGroupInviteEmail,
+} from "./transactional-emails";
 
 /**
  * Phase 6 port of the reader app's Impact Groups MEMBERSHIP write surface
@@ -318,10 +322,12 @@ export const closeMyGroup = onCall(async (request) => {
  *  from the group doc, never from the client. */
 export const sendGroupInvite = onCall(async (request) => {
   const email = callerEmail(request);
-  const {groupId, inviteeEmail, licenseIntent} = (request.data ?? {}) as {
+  const {groupId, inviteeEmail, licenseIntent, bookTitle} =
+    (request.data ?? {}) as {
     groupId?: string;
     inviteeEmail?: string;
     licenseIntent?: boolean;
+    bookTitle?: string;
   };
   const invitee = (inviteeEmail ?? "").trim().toLowerCase();
   if (!groupId || !invitee || !invitee.includes("@")) {
@@ -331,19 +337,93 @@ export const sendGroupInvite = onCall(async (request) => {
     );
   }
   const group = await requireCreator(email, groupId);
+  const leaderDisplayName =
+    (group.creatorDisplayName as string | undefined) ?? email;
   const ref = await db.collection("groupInvites").add({
     groupId,
     groupTitle: group.title,
     bookId: group.bookId,
     leaderEmail: email,
-    leaderDisplayName: group.creatorDisplayName ?? email,
+    leaderDisplayName,
     inviteeEmail: invitee,
     licenseIntent: licenseIntent === true,
     status: "pending",
     createdAt: Date.now(),
   });
+
+  // Pre-prod #1: the invite email is queued here now (the reader's
+  // InviteMemberDialogComponent no longer writes `mail`). Meeting details
+  // come from the GROUP DOC, not the client; bookTitle is display-only
+  // text and HTML-escaped by the builder. Best-effort - the invite doc
+  // above already saved, and the dialog still shows success either way.
+  try {
+    await queueGroupInviteEmail(
+      db,
+      invitee,
+      ref.id,
+      leaderDisplayName,
+      (group.title as string | undefined) ?? "Impact Group",
+      typeof bookTitle === "string" ? bookTitle.slice(0, 200) : "",
+      buildMeetingLine(group)
+    );
+  } catch (mailErr) {
+    console.error("Failed to queue group invite email", mailErr);
+  }
+
   return {inviteId: ref.id};
 });
+
+/**
+ * "When/where" line for the invite email - server-side equivalent of the
+ * reader's formatGroupDateTime + groupLocationLabel composition. Returns
+ * pre-escaped HTML (each part is escaped individually).
+ * @param {Record<string, unknown>} group The group doc's data.
+ * @return {string} Escaped meeting-details line.
+ */
+function buildMeetingLine(group: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const startDate = group.startDate;
+  if (typeof startDate === "number") {
+    const zone = typeof group.startTimeZone === "string" ?
+      group.startTimeZone : "America/New_York";
+    try {
+      parts.push(escapeHtml(new Intl.DateTimeFormat("en-US", {
+        timeZone: zone,
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }).format(new Date(startDate))));
+    } catch {
+      parts.push(escapeHtml(new Date(startDate).toUTCString()));
+    }
+  }
+  const location = group.location as Record<string, unknown> | undefined;
+  if (location) {
+    const locParts: string[] = [];
+    if (location.addressVisible && typeof location.address1 === "string") {
+      locParts.push(location.address1);
+    }
+    if (typeof location.city === "string") {
+      locParts.push(location.city);
+    }
+    if (typeof location.state === "string" && location.state) {
+      locParts.push(location.state);
+    }
+    if (typeof location.country === "string" && location.country !== "US") {
+      locParts.push(location.country);
+    }
+    if (locParts.length > 0) {
+      parts.push(escapeHtml(locParts.join(", ")));
+    }
+  }
+  if (typeof group.onlineInfo === "string" && group.onlineInfo) {
+    parts.push("Online: " + escapeHtml(group.onlineInfo));
+  }
+  return parts.length > 0 ? parts.join(" | ") : "Details to follow";
+}
 
 /** Cancels the caller's own still-pending invite - accepted/declined
  *  invites stay as historical records. */

@@ -71,6 +71,12 @@ exports.onPurchaseGrantLibraryLicenses =
 const bookImport = require("./book-import.functions");
 exports.importBookFromPdf = bookImport.importBookFromPdf;
 
+// Pre-prod #6: refund + revoke-on-refund (admin's choice at refund time)
+// and the manual store-license revoke tool.
+const storeRefund = require("./store-refund.functions");
+exports.refundStorePurchase = storeRefund.refundStorePurchase;
+exports.revokeStorePurchasedLicense = storeRefund.revokeStorePurchasedLicense;
+
 const libraryUsers = require("./library-users.functions");
 exports.updateLibraryUser = libraryUsers.updateLibraryUser;
 exports.setLibraryUserRevoked = libraryUsers.setLibraryUserRevoked;

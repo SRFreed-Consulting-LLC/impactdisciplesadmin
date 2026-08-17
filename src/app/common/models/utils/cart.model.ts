@@ -120,6 +120,15 @@ export class CheckoutForm extends BaseModel {
   refundAmount?: number = 0;
   refundId?: string;
 
+  // Pre-prod #6 (refundStorePurchase Cloud Function): full-order refund
+  // state. licensesRevoked records which digital-book licenses were
+  // stripped alongside the refund (empty when the admin unchecked it).
+  refunded?: boolean;
+  refundedAt?: Timestamp | Date;
+  refundedBy?: string;
+  refundStatus?: string;
+  licensesRevoked?: string[];
+
   // Distinct from fulfillmentStatus (order-status field, see its own
   // comment above) - this tracks the new-record alert badge instead. See
   // EventRegistrationModel.newRecordStatus for what sets/clears it.

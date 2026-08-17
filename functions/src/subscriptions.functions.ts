@@ -1,6 +1,7 @@
 import admin = require("firebase-admin");
 import * as functions from "firebase-functions";
 import {restrictedCors} from "./utils/security.functions";
+import {queueSubscriptionConfirmation} from "./transactional-emails";
 
 // Newsletter/Prayer Team subscription state used to be its own collection
 // (`subscriptions`, one doc per email+type) - it's now just 2 booleans on
@@ -106,6 +107,21 @@ exports.subscribe_to_email_list = functions
             [flagField]: true,
             [dateField]: now,
           });
+        }
+
+        // Pre-prod #1: the confirmation email is queued here now (the web
+        // client's SubscriptionService.sendConfirmationEmail is retired,
+        // and the `mail` collection no longer accepts anonymous creates).
+        // Fresh subscribes only - same behavior the client had. Best-effort:
+        // the subscription itself already saved.
+        if (!alreadySubscribed) {
+          try {
+            await queueSubscriptionConfirmation(db, type, firstName, email);
+          } catch (mailErr) {
+            functions.logger.error(
+              "Failed to queue subscription confirmation", mailErr
+            );
+          }
         }
 
         response.send({subscribed: true, alreadySubscribed});

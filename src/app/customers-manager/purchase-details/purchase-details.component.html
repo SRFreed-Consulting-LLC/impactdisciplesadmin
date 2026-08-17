@@ -13,6 +13,14 @@
         <mat-icon>account_circle</mat-icon>
         View Customer Record
       </button>
+      @if (selectedItem.refunded) {
+        <span class="pill pill--warn" matTooltip="This purchase was refunded{{ selectedItem.refundedBy ? ' by ' + selectedItem.refundedBy : '' }}">REFUNDED</span>
+      } @else if (canRefund()) {
+        <button mat-button color="warn" type="button" [disabled]="refunding" (click)="openRefundDialog()">
+          <mat-icon>currency_exchange</mat-icon>
+          {{ refunding ? 'Refunding…' : 'Refund' }}
+        </button>
+      }
     </div>
     <div class="addr-card">
       <p class="addr-card__label">Billing</p>

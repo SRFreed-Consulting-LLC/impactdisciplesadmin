@@ -7,6 +7,7 @@ import {
   getOrderCapture,
 } from "./library-paypal";
 import {applyLicenseGrant} from "./library-group-license-grant";
+import {queueInviteDeclineEmail} from "./transactional-emails";
 import {applyLicenseRevoke} from "./library-group-license-revoke";
 import {selectMembersToCopy} from "./library-group-members-copy";
 
@@ -740,6 +741,24 @@ export const declineGroupInvite = onCall(async (request) => {
       respondedAt: Date.now(),
       ...(trimmedReason ? {declineReason: trimmedReason} : {}),
     });
+
+    // Pre-prod #1: the leader's decline notification is queued here now
+    // (the reader's InviteLandingComponent no longer writes `mail`).
+    // Best-effort, matching the client's old behavior - a failed
+    // notification never blocks the invitee's own decline.
+    try {
+      await queueInviteDeclineEmail(
+        libraryDb,
+        invite.leaderEmail as string,
+        (invite.leaderDisplayName as string | undefined) ??
+          (invite.leaderEmail as string),
+        (invite.groupTitle as string | undefined) ?? "your Impact Group",
+        invite.inviteeEmail as string,
+        trimmedReason
+      );
+    } catch (mailErr) {
+      console.error("Failed to queue invite-decline email", mailErr);
+    }
   }
   return {
     justDeclined,

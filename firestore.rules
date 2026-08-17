@@ -222,11 +222,18 @@ service cloud.firestore {
     // own LegacyMailService both write it; the extension itself uses the
     // Admin SDK. Shape-constrained to the exact fields both apps write.
     match /mail/{id} {
-      // Two legitimate shapes: {to, date, message{subject,html?,text?}} and
-      // {to, date, template{name,data}} - the template form has NO message
-      // field, so the message-shape check must be conditional (accessing a
-      // missing key in rules throws, which reads as a deny).
-      allow create: if request.resource.data.keys().hasOnly(['to', 'date', 'message', 'template']) &&
+      // Pre-prod hardening #1: anonymous create is CLOSED. Every public
+      // mail path (order receipts, follow-ups, subscription confirmations,
+      // event-registration confirmations, group invites/declines, reader
+      // store receipts) is queued by a Cloud Function via the Admin SDK
+      // now. Client-side creates remain only for the admin app's own
+      // staff-composed emails (attendee blasts, resends). Shape stays
+      // constrained: {to, date, message{...}} or {to, date, template{...}}
+      // - the template form has NO message field, so the message-shape
+      // check must be conditional (accessing a missing key throws, which
+      // reads as a deny).
+      allow create: if isBusinessStaff() &&
+        request.resource.data.keys().hasOnly(['to', 'date', 'message', 'template']) &&
         (!('message' in request.resource.data) ||
           request.resource.data.message.keys().hasOnly(['subject', 'html', 'text']));
       allow read, update, delete: if isBusinessStaff();

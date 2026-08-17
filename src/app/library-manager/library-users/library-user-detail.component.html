@@ -177,13 +177,21 @@
                     >
                       <mat-icon>delete_outline</mat-icon>
                     </button>
+                  } @else if (license.source === 'store-purchase') {
+                    <button
+                      mat-icon-button
+                      matTooltip="Remove this purchased license (does NOT refund - refunds live on the Purchases screen)"
+                      (click)="removeStoreLicense(license)"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
                   } @else {
                     <mat-icon
                       class="locked-license"
                       [matTooltip]="
                         license.source === 'group-license'
                           ? 'Assigned via an Impact Group license - manage it from the group'
-                          : 'Purchased - refund it from the Purchases screen'
+                          : 'Legacy purchase entry - contact support to change it'
                       "
                       >lock</mat-icon
                     >

@@ -2,6 +2,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import {restrictedCors} from "./utils/security.functions";
+import {queueWebOrderEmails} from "./transactional-emails";
 import {
   computeOrderPricing,
   PricingResult,
@@ -319,6 +320,15 @@ exports.create_paypal_order = functions
             return;
           }
 
+          // Pre-prod #1: receipt + follow-up emails are queued here now
+          // (the client no longer writes `mail`). Best-effort - the order
+          // is already saved.
+          try {
+            await queueWebOrderEmails(admin.firestore(), checkoutForm);
+          } catch (err) {
+            console.error("Failed to queue order emails (free path)", err);
+          }
+
           response.send({
             free: true,
             checkoutForm: {...checkoutForm, id: docRef.id},
@@ -525,6 +535,17 @@ exports.capture_paypal_order = functions
             capturedAt: admin.firestore.Timestamp.now(),
             purchaseId: docRef.id,
           });
+
+          // Pre-prod #1: receipt + follow-up emails are queued here now
+          // (the client no longer writes `mail`). Best-effort - payment
+          // is captured and the order is saved.
+          try {
+            await queueWebOrderEmails(admin.firestore(), checkoutForm);
+          } catch (err) {
+            console.error(
+              "Failed to queue order emails (captured path)", err
+            );
+          }
 
           response.send({checkoutForm: {...checkoutForm, id: docRef.id}});
         } catch (err) {

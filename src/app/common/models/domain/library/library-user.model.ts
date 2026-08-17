@@ -11,15 +11,21 @@
 // `libraryUsers` writes to the owner's own email).
 
 /** One entry in a library user's `bookLicenses` provenance array. `source`
- *  is absent for reader-app Store purchases, 'group-license' for group
- *  assignments, 'admin-grant' for licenses comped by staff - only
- *  admin-grant entries are removable from an admin screen (each source has
- *  its own revocation path). */
+ *  is 'store-purchase' for store checkouts (web storefront + reader
+ *  store, both stamped by applyStorePurchaseGrant with the purchase doc
+ *  id), 'group-license' for group assignments, 'admin-grant' for licenses
+ *  comped by staff, and absent only on legacy pre-consolidation entries.
+ *  admin-grant and store-purchase entries are removable from the Library
+ *  Users screen (store removals via revokeStorePurchasedLicense - no
+ *  refund attached); group licenses are managed from their group; the
+ *  refund path (refundStorePurchase) strips store-purchase entries
+ *  itself when the admin asks it to. */
 export interface LibraryUserBookLicense {
   bookId: string;
   purchaseDate?: number;
-  source?: 'group-license' | 'admin-grant';
+  source?: 'group-license' | 'admin-grant' | 'store-purchase';
   groupLicenseId?: string;
+  storePurchaseId?: string;
   grantedBy?: string;
   language?: string;
   type?: string;

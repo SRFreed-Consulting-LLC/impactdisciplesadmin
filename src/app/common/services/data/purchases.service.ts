@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { CheckoutForm, FulfillmentStatus, StatusHistoryEntry } from 'src/app/common/models/utils/cart.model';
@@ -28,6 +29,24 @@ export class PurchasesService extends BaseService<CheckoutForm>{
 
     return data;
   };
+
+  private functions = inject(Functions);
+
+  /** Pre-prod #6: full refund via the refundStorePurchase Cloud Function
+   *  (PayPal capture refund server-side; $0 coupon orders just get
+   *  marked). revokeLicenses is the refund dialog's "also revoke library
+   *  access" checkbox - default checked, admin's call. */
+  async refundPurchase(
+    purchaseId: string,
+    revokeLicenses: boolean
+  ): Promise<{ refunded: boolean; paypalRefunded: boolean; refundId: string | null; revokedBookIds: string[] }> {
+    const fn = httpsCallable<
+      { purchaseId: string; revokeLicenses: boolean },
+      { refunded: boolean; paypalRefunded: boolean; refundId: string | null; revokedBookIds: string[] }
+    >(this.functions, 'refundStorePurchase');
+    const result = await fn({ purchaseId, revokeLicenses });
+    return result.data;
+  }
 
 
 
