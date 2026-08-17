@@ -201,8 +201,30 @@ service cloud.firestore {
     // pre-prod checklist). Until then: create-only wherever possible, and
     // reads locked to staff wherever no public flow needs them.
     // ========================================================================
+    // Create stays anonymous (public contact/consultation forms) but is
+    // shape-constrained to the exact fields the two real writers send (the
+    // web app's dynamic-form.component.ts and the admin form builder's
+    // test-submit dialog): no extra keys, typed fields, generous size caps
+    // on the free-text ones. `values` is the visitor's answers map - its
+    // per-answer text is uncapped here (rules can't iterate map values);
+    // Firestore's own 1MB doc limit is the backstop.
     match /form_submissions/{id} {
-      allow create: if true;                // public contact/consultation forms
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'formId', 'formName', 'fieldSnapshot', 'values', 'submittedAt',
+          'newRecordStatus', 'isTest'
+        ]) &&
+        request.resource.data.formId is string &&
+        request.resource.data.formId.size() <= 500 &&
+        request.resource.data.formName is string &&
+        request.resource.data.formName.size() <= 500 &&
+        request.resource.data.fieldSnapshot is list &&
+        request.resource.data.values is map &&
+        request.resource.data.submittedAt is timestamp &&
+        (!('newRecordStatus' in request.resource.data) ||
+          request.resource.data.newRecordStatus in ['new', 'seen']) &&
+        (!('isTest' in request.resource.data) ||
+          request.resource.data.isTest is bool);
       allow read, update, delete: if isBusinessStaff();
     }
     // Staff-only since pre-prod hardening #2: every public flow (RSVP
@@ -217,6 +239,10 @@ service cloud.firestore {
       allow read, update, delete: if isBusinessStaff();
       allow create: if false;
     }
+    // eventSessionCounts (per-event session-count counters, maintained by
+    // the onEventRegistrationSessionCounts trigger and served through
+    // get_session_counts) is functions-only - unmatched here on purpose, so
+    // it falls to the default deny.
     // PRE-PROD: open create = open email relay (Trigger Email extension
     // sends whatever lands here). Web receipts/confirmations + the reader's
     // own LegacyMailService both write it; the extension itself uses the
@@ -239,9 +265,28 @@ service cloud.firestore {
       allow read, update, delete: if isBusinessStaff();
     }
     // Anonymous create is REQUIRED even for the admin app: failed-login
-    // logging happens before a session exists.
+    // logging happens before a session exists. Shape-constrained to what
+    // LoggerService.logMessage actually writes (identical model in the web
+    // and admin apps; both always stamp id/date/type/message/error_code/
+    // archived and include `data` only when truthy - `data` itself is
+    // arbitrary diagnostic JSON, left untyped, with Firestore's 1MB doc
+    // limit as the backstop). The LogMessage constructor never assigns its
+    // created_by param, so no writer sends that field.
     match /log-messages/{id} {
-      allow create: if true;
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'id', 'date', 'type', 'message', 'data', 'error_code', 'archived'
+        ]) &&
+        request.resource.data.id is string &&
+        request.resource.data.id.size() <= 100 &&
+        request.resource.data.date is timestamp &&
+        request.resource.data.type is string &&
+        request.resource.data.type.size() <= 500 &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() <= 10000 &&
+        request.resource.data.error_code is string &&
+        request.resource.data.error_code.size() <= 500 &&
+        request.resource.data.archived is bool;
       allow read, update, delete: if isAdminRole();
     }
     match /affilliate_sales/{id} {          // (sic - 3 L's, matches the code)
@@ -433,8 +478,15 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if isLibraryStaff();
     }
+    // Image docs are only ever fetched by known doc id (a content hash the
+    // reader resolves from a license-gated lesson's own 'lessonimage:{id}'
+    // schema placeholders, verified across the reader/manager/admin apps -
+    // no client lists this collection). A signedIn() LIST would have let
+    // any patron enumerate every book's lesson images without a license,
+    // so listing is staff-only.
     match /lessonImages/{id} {
-      allow read: if signedIn();
+      allow get: if signedIn();
+      allow list: if isLibraryStaff();
       allow write: if isLibraryStaff();
     }
     match /bulkDiscountTiers/{id} {

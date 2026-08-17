@@ -16,6 +16,7 @@ import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { countryFlagEmoji } from '@impact-common/util/country-flag.util';
 import { LibraryUser } from 'src/app/common/models/domain/library/library-user.model';
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
+import { PagedCollectionSource } from 'src/app/shared/paged-collection-source';
 import {
   LibraryRowSelection,
   createLibraryRowSelection,
@@ -34,6 +35,16 @@ import {
  * detail/edit screen (`/library-manager/library-users/:email`); the
  * checkbox column feeds "Message selected"/"Message all". Adapted to this
  * app's tab-shell convention (no "Back to library"/Help header).
+ *
+ * Paged (PagedCollectionSource over getLibraryUsersPage, ordered by doc
+ * id = email) instead of the whole-collection live listener this started
+ * with - same conversion as Products/Customers/Log Messages. Trade-offs,
+ * same as those screens: rows don't update live from other sessions, and
+ * the search box + "select all visible" only cover rows loaded so far
+ * (scrolling to the bottom keeps loading more until the roster is fully
+ * in). "Message all" is unaffected - the Cloud Function resolves 'all'
+ * server-side, never from the loaded rows. The World Map keeps its own
+ * whole-collection live feed (it needs every location dot at once).
  */
 @Component({
   selector: 'app-library-users-list',
@@ -67,7 +78,11 @@ export class LibraryUsersListComponent {
   ];
   users: LibraryUser[] = [];
   loading = true;
+  loadingMore = false;
+  hasMore = true;
   filter = '';
+
+  readonly paged: PagedCollectionSource<LibraryUser>;
 
   /** Selected doc ids (lowercased emails). */
   private readonly selection: LibraryRowSelection = createLibraryRowSelection();
@@ -103,11 +118,29 @@ export class LibraryUsersListComponent {
     private snackbar: SnackbarService,
     private router: Router,
   ) {
-    this.libraryUserService.getLibraryUsers().subscribe((users) => {
+    this.paged = new PagedCollectionSource<LibraryUser>(
+      (pageSize, cursor) => this.libraryUserService.getLibraryUsersPage(pageSize, cursor),
+      50,
+    );
+    this.paged.rows$.subscribe((users) => {
       this.users = users;
-      this.loading = false;
       this.selection.pruneToLiveIds(users.map((user) => user.id));
     });
+    this.paged.loading$.subscribe((loading) => (this.loading = loading));
+    this.paged.loadingMore$.subscribe((loadingMore) => (this.loadingMore = loadingMore));
+    this.paged.hasMore$.subscribe((hasMore) => (this.hasMore = hasMore));
+    void this.paged.loadFirstPage();
+  }
+
+  /** Same near-bottom threshold as InfiniteScrollDirective (which isn't
+   *  importable here - it's declared in the non-standalone SharedModule):
+   *  kicks off the next page before the admin actually hits the bottom. */
+  onTableScroll(event: Event): void {
+    const element = event.target as HTMLElement;
+    const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+    if (distanceFromBottom < 300) {
+      void this.paged.loadNextPage();
+    }
   }
 
   userName(user: LibraryUser): string {

@@ -1,7 +1,21 @@
 import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
-import { Firestore, collection, collectionData, doc, docData, limit, orderBy, query } from '@angular/fire/firestore';
+import {
+  Firestore,
+  collection,
+  collectionData,
+  doc,
+  docData,
+  documentId,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+} from '@angular/fire/firestore';
+import { DocumentData, QueryConstraint, QueryDocumentSnapshot } from 'firebase/firestore';
 import { Observable, map, shareReplay } from 'rxjs';
+import { PagedResult } from 'src/app/common/dao/firebase.dao';
 import { newCorrelationId, attachCorrelationId } from '@impact-common/errors/correlation-id';
 import { AdminMessage } from '@impact-common/models/library-user-message.model';
 import { LibraryUser } from 'src/app/common/models/domain/library/library-user.model';
@@ -53,8 +67,35 @@ export class LibraryUserService {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
+  /** The World Map's feed - it genuinely needs every user's location dot,
+   *  so the whole-collection live listener above stays for it. List-style
+   *  screens should use getLibraryUsersPage() instead. */
   getLibraryUsers(): Observable<LibraryUser[]> {
     return this.libraryUsers$;
+  }
+
+  /** One-time paged fetch for the Library Users roster (PagedCollectionSource
+   *  pattern - see paged-collection-source.ts), replacing that screen's old
+   *  whole-collection live listener. Ordered by document id (= lowercased
+   *  email): the only field guaranteed present on every doc - orderBy on an
+   *  optional field like firstName would silently EXCLUDE docs missing it. */
+  async getLibraryUsersPage(
+    pageSize: number,
+    cursor: QueryDocumentSnapshot<DocumentData> | null,
+  ): Promise<PagedResult<LibraryUser>> {
+    const constraints: QueryConstraint[] = [orderBy(documentId())];
+    if (cursor) {
+      constraints.push(startAfter(cursor));
+    }
+    constraints.push(limit(pageSize));
+
+    const snap = await getDocs(query(collection(this.firestore, 'libraryUsers'), ...constraints));
+    const items = snap.docs.map((d) => ({ ...(d.data() as LibraryUser), id: d.id }));
+    return {
+      items,
+      cursor: snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null,
+      hasMore: snap.docs.length === pageSize,
+    };
   }
 
   getLibraryUser(email: string): Observable<LibraryUser | undefined> {

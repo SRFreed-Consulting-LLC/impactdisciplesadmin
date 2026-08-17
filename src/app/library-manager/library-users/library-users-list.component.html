@@ -34,10 +34,27 @@
   </div>
 } @else if (filteredUsers.length === 0) {
   <p class="empty-state">
-    {{ filter ? 'No library users match this search.' : 'No library users yet.' }}
+    {{
+      filter
+        ? hasMore
+          ? 'No loaded library users match this search.'
+          : 'No library users match this search.'
+        : 'No library users yet.'
+    }}
   </p>
+  @if (filter && hasMore) {
+    <!-- Search only covers rows loaded so far - let the admin keep pulling
+         pages in from here instead of dead-ending on a hidden table. -->
+    <div class="load-more-row">
+      @if (loadingMore) {
+        <mat-spinner diameter="24"></mat-spinner>
+      } @else {
+        <button mat-stroked-button (click)="paged.loadNextPage()">Load more users</button>
+      }
+    </div>
+  }
 } @else {
-  <div class="table-scroll">
+  <div class="table-scroll" (scroll)="onTableScroll($event)">
     <table
       mat-table
       [dataSource]="filteredUsers"
@@ -135,5 +152,17 @@
         (click)="openDetail(row)"
       ></tr>
     </table>
+
+    @if (hasMore) {
+      <div class="load-more-row">
+        @if (loadingMore) {
+          <mat-spinner diameter="24"></mat-spinner>
+        } @else {
+          <!-- Scroll-to-bottom also loads the next page (onTableScroll);
+               the button covers the not-actually-scrollable edge case. -->
+          <button mat-stroked-button (click)="paged.loadNextPage()">Load more</button>
+        }
+      </div>
+    }
   </div>
 }

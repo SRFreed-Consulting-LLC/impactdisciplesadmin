@@ -5,6 +5,7 @@ import {restrictedCors} from "./utils/security.functions";
 import {queueWebOrderEmails} from "./transactional-emails";
 import {
   computeOrderPricing,
+  PricingCartItemInput,
   PricingResult,
 } from "./utils/checkout-pricing.functions";
 
@@ -90,6 +91,85 @@ async function getPaypalClientId(): Promise<string> {
 }
 
 /**
+ * Trims and length-caps an untrusted string field, mirroring the
+ * event-registration endpoints' 100/200-char pattern - these values are
+ * persisted to purchases/pending_orders and interpolated into branded
+ * receipt emails, so they must not be unbounded.
+ * @param {unknown} value The raw client-supplied value.
+ * @param {number} max Maximum length to keep.
+ * @return {string | undefined} The trimmed/capped string, or undefined for
+ * non-strings (ignoreUndefinedProperties drops it from the written doc).
+ */
+function capString(value: unknown, max: number): string | undefined {
+  return typeof value === "string" ?
+    value.trim().slice(0, max) :
+    undefined;
+}
+
+/**
+ * Length-caps every string field of a client-supplied address object
+ * (Address model: address1/address2/city/state/zip/country - all flat
+ * strings). Non-string values pass through untouched; a non-object input
+ * comes back undefined.
+ * @param {unknown} value The raw billing/shipping address.
+ * @return {Record<string, unknown> | undefined} The capped address.
+ */
+function capAddress(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  const capped: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    capped[key.slice(0, 100)] =
+      typeof entry === "string" ? entry.trim().slice(0, 200) : entry;
+  }
+  return capped;
+}
+
+/**
+ * Sanitizes the client-supplied cart items before pricing: computeOrder-
+ * Pricing spreads each input item into the PricedCartItem that lands on
+ * the purchase doc, so the free-selection strings (size/color/language/
+ * followUpEmailId + each attendee's fields) get the same trim+cap
+ * treatment as the customer fields. Item `id` is additionally verified by
+ * computeOrderPricing's own existence lookup; unknown extra keys are
+ * dropped. Numbers/booleans pass through as-is - the pricing math already
+ * ignores anything non-numeric.
+ * @param {unknown[]} rawItems The raw request body's cartItems array.
+ * @return {Array<Record<string, unknown>>} The capped cart items.
+ */
+function capCartItems(rawItems: unknown[]): Array<Record<string, unknown>> {
+  return rawItems.map((raw) => {
+    const item = (raw ?? {}) as Record<string, unknown>;
+    const attendees = Array.isArray(item.attendees) ?
+      item.attendees.slice(0, 200).map((attendee) => {
+        if (typeof attendee !== "object" || attendee === null) {
+          return attendee;
+        }
+        const capped: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(attendee)) {
+          capped[key.slice(0, 100)] =
+            typeof value === "string" ? value.trim().slice(0, 200) : value;
+        }
+        return capped;
+      }) :
+      undefined;
+    return {
+      id: capString(item.id, 200),
+      isEvent: item.isEvent === true,
+      isEBook: item.isEBook === true,
+      isDigitalBook: item.isDigitalBook === true,
+      orderQuantity: item.orderQuantity,
+      size: capString(item.size, 100),
+      color: capString(item.color, 100),
+      language: capString(item.language, 100),
+      followUpEmailId: capString(item.followUpEmailId, 200),
+      attendees,
+    };
+  });
+}
+
+/**
  * Assembles the server-authoritative CheckoutForm-shaped object that
  * ultimately gets written to the "purchases" collection, matching
  * impactdisciples-web's CheckoutForm shape field-for-field so
@@ -109,15 +189,15 @@ function buildCheckoutForm(
   pricing: PricingResult
 ): Record<string, unknown> {
   return {
-    firstName: body.firstName,
-    lastName: body.lastName,
-    email: body.email,
-    phone: body.phone,
-    isShippingSameAsBilling: body.isShippingSameAsBilling,
-    billingAddress: body.billingAddress,
-    shippingAddress: body.shippingAddress,
+    firstName: capString(body.firstName, 100),
+    lastName: capString(body.lastName, 100),
+    email: capString(body.email, 200),
+    phone: capString(body.phone, 100),
+    isShippingSameAsBilling: body.isShippingSameAsBilling === true,
+    billingAddress: capAddress(body.billingAddress),
+    shippingAddress: capAddress(body.shippingAddress),
     cartItems: pricing.cartItems,
-    isNewsletter: body.isNewsletter,
+    isNewsletter: body.isNewsletter === true,
     // "total" means the pre-discount item subtotal throughout this system
     // (admin's purchases.component.ts fallback helpers, and
     // checkout-success.component.ts#recordAffiliateSale's own
@@ -322,7 +402,9 @@ exports.create_paypal_order = functions
         }
 
         const pricing = await computeOrderPricing({
-          cartItems: body.cartItems,
+          cartItems: capCartItems(
+            body.cartItems
+          ) as unknown as PricingCartItemInput[],
           couponCode: body.couponCode,
           shippingAddress: body.shippingAddress,
           shippingRate: body.shippingRate ?? 0,

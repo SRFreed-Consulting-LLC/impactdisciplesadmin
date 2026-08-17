@@ -53,12 +53,16 @@ exports.subscribe_to_email_list = functions
     return restrictedCors(request, response, async () => {
       try {
         const body = request.body ?? {};
+        // Trim + length-cap (same 100/200 pattern as the event-registration
+        // endpoints) - these land on a customers doc and get interpolated
+        // into the branded confirmation email, so they must not be
+        // unbounded.
         const email = typeof body.email === "string" ?
-          body.email.trim().toLowerCase() : "";
+          body.email.trim().toLowerCase().slice(0, 200) : "";
         const firstName = typeof body.firstName === "string" ?
-          body.firstName.trim() : "";
+          body.firstName.trim().slice(0, 100) : "";
         const lastName = typeof body.lastName === "string" ?
-          body.lastName.trim() : "";
+          body.lastName.trim().slice(0, 100) : "";
         const type = body.type;
 
         if (typeof type !== "string" || !ALLOWED_TYPES.includes(type)) {

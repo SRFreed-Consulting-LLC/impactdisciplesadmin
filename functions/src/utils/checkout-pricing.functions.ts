@@ -122,19 +122,32 @@ export async function computeOrderPricing(
 ): Promise<PricingResult> {
   const db = admin.firestore();
 
-  const configSnap = await db.collection("config").limit(1).get();
+  // These reads (config, active sales, coupon lookup, and every cart
+  // item's product/event doc) are independent of one another - fetched in
+  // parallel so the public checkout path pays one round trip, not one per
+  // read. The pricing logic itself below is unchanged.
+  const [configSnap, activeSales, couponSnap, itemSnaps] = await Promise.all([
+    db.collection("config").limit(1).get(),
+    getActiveSales(),
+    request.couponCode ?
+      db.collection("coupons")
+        .where("code", "==", request.couponCode)
+        .limit(1)
+        .get() :
+      Promise.resolve(undefined),
+    Promise.all(request.cartItems.map((input) =>
+      db.collection(input.isEvent ? "events" : "products")
+        .doc(input.id).get()
+    )),
+  ]);
+
   const config = configSnap.docs[0]?.data() ?? {};
 
-  const activeSales = await getActiveSales();
   const productSale = activeSales.find((sale) => sale.isProducts);
   const shippingSale = activeSales.find((sale) => sale.isShipping);
 
   let coupon: admin.firestore.DocumentData | undefined;
-  if (request.couponCode) {
-    const couponSnap = await db.collection("coupons")
-      .where("code", "==", request.couponCode)
-      .limit(1)
-      .get();
+  if (couponSnap) {
     const candidate = couponSnap.docs[0]?.data();
     if (candidate?.isActive) {
       coupon = candidate;
@@ -143,9 +156,9 @@ export async function computeOrderPricing(
 
   const pricedItems: PricedCartItem[] = [];
 
-  for (const input of request.cartItems) {
+  for (const [index, input] of request.cartItems.entries()) {
     const collectionName = input.isEvent ? "events" : "products";
-    const docSnap = await db.collection(collectionName).doc(input.id).get();
+    const docSnap = itemSnaps[index];
 
     if (!docSnap.exists) {
       throw new Error(`${collectionName} ${input.id} not found`);

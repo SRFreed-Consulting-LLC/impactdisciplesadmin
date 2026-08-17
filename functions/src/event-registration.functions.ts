@@ -1,4 +1,5 @@
 import {onRequest} from "firebase-functions/v2/https";
+import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {FieldValue, Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
@@ -338,9 +339,144 @@ export const checkRegistrationExistsHttp = onRequest((request, response) => {
   });
 });
 
+/**
+ * Extracts a registration's trainingSessions as a de-duplicated list of
+ * string session ids (defensive: the field is arrayUnion-maintained so it
+ * should already be unique strings, but a hand-edited doc must not be able
+ * to skew the counters).
+ * @param {FirebaseFirestore.DocumentData | undefined} data A registration
+ * doc's data (or undefined for the missing side of a create/delete).
+ * @return {string[]} The unique session ids.
+ */
+function sessionIdsOf(
+  data: FirebaseFirestore.DocumentData | undefined
+): string[] {
+  const raw = data?.trainingSessions;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return [...new Set(raw.filter((s): s is string => typeof s === "string"))];
+}
+
+/**
+ * Recomputes an event's per-session counts from the registrations
+ * themselves. select() keeps this a single-field read - no names/emails
+ * ever leave Firestore for this.
+ * @param {string} eventId The event whose registrations to count.
+ * @param {FirebaseFirestore.Transaction} [tx] Optional transaction to read
+ * within (used by the self-seeding path).
+ * @return {Promise<Record<string, number>>} sessionId -> registration count.
+ */
+async function computeSessionCounts(
+  eventId: string,
+  tx?: FirebaseFirestore.Transaction
+): Promise<Record<string, number>> {
+  const query = db
+    .collection("event-registrations")
+    .where("eventId", "==", eventId)
+    .select("trainingSessions");
+  const snap = tx ? await tx.get(query) : await query.get();
+  const counts: Record<string, number> = {};
+  for (const d of snap.docs) {
+    for (const session of sessionIdsOf(d.data())) {
+      counts[session] = (counts[session] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+/**
+ * Live per-event session-count counters ('eventSessionCounts/{eventId}',
+ * shape {counts: {sessionId: n}, updatedAt, seeded}) so the public
+ * schedule's capacity display no longer re-reads every registration doc on
+ * each page view (get_session_counts below serves the meta doc instead).
+ * Diffs the trainingSessions arrays across the write and applies
+ * FieldValue.increment deltas: create = all +1, delete = all -1, update =
+ * the symmetric difference. A registration switching eventId (impossible
+ * via the public endpoints, handled defensively for admin/manual edits)
+ * moves all its sessions from the old event's counter doc to the new one's.
+ * Counter docs are functions-only (no firestore.rules match = default
+ * deny); negatives from any missed/misordered event are clamped to 0 at
+ * serve time.
+ */
+export const onEventRegistrationSessionCounts = onDocumentWritten(
+  "event-registrations/{id}",
+  async (event) => {
+    const beforeSnap = event.data?.before;
+    const afterSnap = event.data?.after;
+    const beforeData = beforeSnap?.exists ? beforeSnap.data() : undefined;
+    const afterData = afterSnap?.exists ? afterSnap.data() : undefined;
+
+    const beforeEventId =
+      typeof beforeData?.eventId === "string" ? beforeData.eventId : "";
+    const afterEventId =
+      typeof afterData?.eventId === "string" ? afterData.eventId : "";
+    const beforeSessions = sessionIdsOf(beforeData);
+    const afterSessions = sessionIdsOf(afterData);
+
+    // Per-event, per-session deltas for this write.
+    const deltas = new Map<string, Map<string, number>>();
+    const bump = (eventId: string, sessionId: string, by: number) => {
+      if (!eventId || !sessionId) {
+        return;
+      }
+      const forEvent = deltas.get(eventId) ?? new Map<string, number>();
+      forEvent.set(sessionId, (forEvent.get(sessionId) ?? 0) + by);
+      deltas.set(eventId, forEvent);
+    };
+
+    if (beforeEventId === afterEventId) {
+      for (const s of afterSessions) {
+        if (!beforeSessions.includes(s)) {
+          bump(afterEventId, s, 1);
+        }
+      }
+      for (const s of beforeSessions) {
+        if (!afterSessions.includes(s)) {
+          bump(beforeEventId, s, -1);
+        }
+      }
+    } else {
+      // eventId changed (or create/delete, where one side is ''): the old
+      // event loses every session, the new event gains every session.
+      for (const s of beforeSessions) {
+        bump(beforeEventId, s, -1);
+      }
+      for (const s of afterSessions) {
+        bump(afterEventId, s, 1);
+      }
+    }
+
+    for (const [eventId, sessions] of deltas) {
+      const counts: Record<string, FieldValue> = {};
+      let hasDelta = false;
+      for (const [sessionId, delta] of sessions) {
+        if (delta !== 0) {
+          counts[sessionId] = FieldValue.increment(delta);
+          hasDelta = true;
+        }
+      }
+      if (!hasDelta) {
+        continue;
+      }
+      await db.collection("eventSessionCounts").doc(eventId).set(
+        {counts, updatedAt: Timestamp.now()},
+        {merge: true}
+      );
+    }
+  }
+);
+
 /** Per-session registration counts for the schedule's capacity display -
  *  the only thing the public page ever needed from the full roster.
- *  POST {eventId}. */
+ *  POST {eventId}. Served from the 'eventSessionCounts/{eventId}' counter
+ *  doc the trigger above maintains; a not-yet-seeded event self-seeds by
+ *  recomputing from the registrations (single-field select(), no PII) and
+ *  persisting the result - no manual backfill step. The transaction makes
+ *  seeding overwrite-safe against concurrent trigger increments (a
+ *  conflicting increment forces a retry that recounts). `seeded` (not bare
+ *  existence) gates serving, since the trigger may have created the doc
+ *  with only post-deploy deltas before the first read ever happened. */
 export const getSessionCountsHttp = onRequest((request, response) => {
   return restrictedCors(request, response, async () => {
     if (request.method !== "POST") {
@@ -355,17 +491,27 @@ export const getSessionCountsHttp = onRequest((request, response) => {
       response.status(400).send({error: "eventId is required."});
       return;
     }
-    const snap = await db
-      .collection("event-registrations")
-      .where("eventId", "==", eventId)
-      .get();
-    const counts: Record<string, number> = {};
-    for (const d of snap.docs) {
-      const sessions = (d.data().trainingSessions ?? []) as string[];
-      for (const session of sessions) {
-        counts[session] = (counts[session] ?? 0) + 1;
+    const metaRef = db.collection("eventSessionCounts").doc(eventId);
+    const counts = await db.runTransaction(async (tx) => {
+      const metaSnap = await tx.get(metaRef);
+      const meta = metaSnap.exists ? metaSnap.data() : undefined;
+      if (meta?.seeded === true) {
+        return (meta.counts ?? {}) as Record<string, number>;
       }
+      const seededCounts = await computeSessionCounts(eventId, tx);
+      tx.set(metaRef, {
+        counts: seededCounts,
+        seeded: true,
+        updatedAt: Timestamp.now(),
+      });
+      return seededCounts;
+    });
+    // Serve-time clamp: a stray negative (missed event, out-of-order
+    // delivery) must never render as a negative headcount.
+    const clamped: Record<string, number> = {};
+    for (const [sessionId, n] of Object.entries(counts)) {
+      clamped[sessionId] = typeof n === "number" ? Math.max(0, n) : 0;
     }
-    response.send({counts});
+    response.send({counts: clamped});
   });
 });

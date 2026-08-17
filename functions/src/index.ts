@@ -157,6 +157,8 @@ exports.update_my_sessions = eventRegistration.updateMySessionsHttp;
 exports.check_registration_exists =
   eventRegistration.checkRegistrationExistsHttp;
 exports.get_session_counts = eventRegistration.getSessionCountsHttp;
+exports.onEventRegistrationSessionCounts =
+  eventRegistration.onEventRegistrationSessionCounts;
 
 const libraryGroups = require("./library-groups.functions");
 exports.createGroup = libraryGroups.createGroup;
