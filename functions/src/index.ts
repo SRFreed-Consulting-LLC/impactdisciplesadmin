@@ -119,6 +119,9 @@ const libraryPurchases = require("./library-purchases.functions");
 exports.verifyAndGrantReaderStorePurchase =
   libraryPurchases.verifyAndGrantReaderStorePurchase;
 
+const libraryAccount = require("./library-account.functions");
+exports.deleteMyAccount = libraryAccount.deleteMyAccount;
+
 const mailchimpSync = require("./mailchimp-sync.functions");
 exports.onCustomerCreatedMailchimpSync =
   mailchimpSync.onCustomerCreatedMailchimpSync;
