@@ -82,17 +82,39 @@
             (keydown.enter)="openBook(row)"
             (keydown.space)="$event.preventDefault(); openBook(row)"
           >
-            <span matListItemTitle>{{ row.title }}</span>
-            @if (isFullAccess) {
-              <button
-                mat-icon-button
-                matListItemMeta
-                matTooltip="Manage Permissions"
-                (click)="openManagePermissions('book', row, $event)"
-              >
-                <mat-icon>admin_panel_settings</mat-icon>
-              </button>
-            }
+            <span matListItemTitle [class.unpublished]="!isPublished(row)">
+              {{ row.title }}
+              @if (!isPublished(row)) {
+                <span class="unpublished-tag">Unpublished</span>
+              }
+            </span>
+            <!-- One matListItemMeta per row: the toggle and the permissions
+                 button share this container rather than each claiming it. -->
+            <span matListItemMeta class="row-actions">
+              @if (row.permission.edit) {
+                <mat-slide-toggle
+                  [checked]="isPublished(row)"
+                  [matTooltip]="
+                    isPublished(row)
+                      ? 'Visible in the reader app - switch off to hide it'
+                      : 'Hidden from the reader app - switch on to publish it'
+                  "
+                  [attr.aria-label]="'Published: ' + row.title"
+                  (click)="$event.stopPropagation()"
+                  (keydown)="$event.stopPropagation()"
+                  (change)="togglePublished(row, $event.checked)"
+                ></mat-slide-toggle>
+              }
+              @if (isFullAccess) {
+                <button
+                  mat-icon-button
+                  matTooltip="Manage Permissions"
+                  (click)="openManagePermissions('book', row, $event)"
+                >
+                  <mat-icon>admin_panel_settings</mat-icon>
+                </button>
+              }
+            </span>
           </a>
         }
       </mat-nav-list>

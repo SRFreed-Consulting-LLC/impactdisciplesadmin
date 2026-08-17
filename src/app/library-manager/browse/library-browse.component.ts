@@ -6,8 +6,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { BookSeriesService } from 'src/app/common/services/data/library/book-series.service';
 import { LibraryBookService } from 'src/app/common/services/data/library/library-book.service';
 import { LibraryUnitService } from 'src/app/common/services/data/library/library-unit.service';
@@ -53,7 +55,15 @@ interface Row<T> {
 @Component({
   selector: 'app-library-browse',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatListModule, MatProgressSpinnerModule, MatTooltipModule],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatListModule,
+    MatProgressSpinnerModule,
+    MatSlideToggleModule,
+    MatTooltipModule
+  ],
   templateUrl: './library-browse.component.html',
   styleUrl: './library-browse.component.css'
 })
@@ -94,8 +104,57 @@ export class LibraryBrowseComponent implements OnInit {
     private lessonService: LibraryLessonService,
     private permissionService: LibraryPermissionService,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
   ) {}
+
+  /** A book with no `published` field at all predates the flag and is
+   *  treated as published - see LibraryBookModel. Only an explicit `false`
+   *  hides it, so the toggle must not read `undefined` as "off". */
+  isPublished(row: Row<LibraryBookModel>): boolean {
+    return row.item.published !== false;
+  }
+
+  /**
+   * Publishes/unpublishes a book straight from the list row.
+   *
+   * Optimistic: the toggle already moved when this fires, so the model is
+   * updated to match immediately and rolled back if the write fails -
+   * otherwise the switch would sit in a state the database disagrees with.
+   *
+   * Takes no Event: MatSlideToggleChange carries no DOM event, and the row
+   * is a navigation target, so the template stops click AND keydown
+   * propagation on the toggle itself instead. Without the keydown half,
+   * toggling with the keyboard would also fire the row's own
+   * (keydown.enter)/(keydown.space) handlers and drill into the book.
+   * @param {Row<LibraryBookModel>} row The book row being toggled.
+   * @param {boolean} published The toggle's new position.
+   * @return {Promise<void>} Resolves once persisted or rolled back.
+   */
+  async togglePublished(row: Row<LibraryBookModel>, published: boolean): Promise<void> {
+    const seriesId = this.selectedSeries?.id;
+    if (!seriesId) {
+      return;
+    }
+    const previous = row.item.published;
+    row.item.published = published;
+    try {
+      await this.bookService.setPublished(seriesId, row.id, published, row.title);
+      this.snackBar.open(
+        `${row.title} is now ${published ? 'published' : 'unpublished'}.`,
+        'Dismiss',
+        { duration: 3000 }
+      );
+    } catch (err) {
+      row.item.published = previous;
+      console.error('Failed to change published state:', err);
+      this.snackBar.open(
+        `Couldn't update ${row.title}. ${err instanceof Error ? err.message : String(err)}`,
+        'Dismiss',
+        { duration: 6000 }
+      );
+    }
+  }
 
   ngOnInit(): void {
     this.loadSeries();

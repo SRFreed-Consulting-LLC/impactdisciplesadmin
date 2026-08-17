@@ -8,9 +8,13 @@ import {
   doc,
   getDoc,
   getDocs,
+  updateDoc,
 } from '@angular/fire/firestore';
+import { firstValueFrom } from 'rxjs';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { LibraryBookModel } from 'src/app/common/models/domain/library/library-book.model';
 import { parseBookPath } from './library-nested-path.util';
+import { LibraryActivityLogService } from './library-activity-log.service';
 
 // Reads the `books` subcollection nested under `librarySeries/{seriesId}`
 // in THIS app's own default database (Phase 3 migration target) - see
@@ -21,12 +25,14 @@ import { parseBookPath } from './library-nested-path.util';
 // on the pre-existing, differently-shaped BookService/BookModel this
 // deliberately avoids colliding with.
 //
-// Only getAll()/getById()/getBySeries()/getByIdInSeries() (plus the
-// refById() ref-resolution helper) are implemented - confirmed via a full
-// grep of every Library screen that no create/update/delete call on this
-// service exists anywhere. The one writer into the librarySeries tree is
-// LibraryImportBookService, which calls invalidateRefs() after creating
-// docs - see the ref-memo comment on bookRefs() below.
+// Reads plus ONE write: setPublished(), added for the publish/unpublish
+// toggle on the Browse screen's book list. Everything else here is
+// read-only - no create or delete call on this service exists anywhere.
+// The other writer into the librarySeries tree is LibraryImportBookService,
+// which calls invalidateRefs() after creating docs - see the ref-memo
+// comment on bookRefs() below. setPublished deliberately does NOT
+// invalidate: updateDoc changes a field, it never moves or creates a doc,
+// so the memoized id -> ref map cannot go stale from it.
 @Injectable({
   providedIn: 'root'
 })
@@ -35,7 +41,54 @@ export class LibraryBookService {
    *  subcollection. See bookRefs() for the memoization contract. */
   private refsPromise: Promise<Map<string, DocumentReference>> | null = null;
 
-  constructor(private firestore: Firestore) {}
+  constructor(
+    private firestore: Firestore,
+    private authService: AdminAuthService,
+    private activityLog: LibraryActivityLogService
+  ) {}
+
+  private async uid(): Promise<string> {
+    const user = await firstValueFrom(this.authService.dao.loggedInUser$);
+    return user?.firebaseUID ?? user?.id ?? '';
+  }
+
+  /**
+   * Publishes or unpublishes a book. `published: false` hides it from the
+   * reader app; true (or the field being absent entirely - see
+   * LibraryBookModel) shows it.
+   *
+   * Partial `updateDoc()`, not `setDoc()` - the book doc carries title,
+   * order, author, languages and more that this call must not touch. The
+   * seriesId is required because books are nested under
+   * librarySeries/{seriesId}/books/{bookId}; callers that already know the
+   * parent series (the Browse screen does) address the doc directly and
+   * skip the collectionGroup scan refById() would otherwise cost.
+   *
+   * Writes `published` explicitly even when setting it true, which
+   * normalizes the legacy "field absent = published" shape into a real
+   * boolean the first time a book is ever toggled.
+   * @param {string} seriesId Parent series id.
+   * @param {string} bookId The book to update.
+   * @param {boolean} published Whether the reader app should show it.
+   * @param {string} title Book title, for the activity-log entry only.
+   * @return {Promise<void>} Resolves once written and logged.
+   */
+  async setPublished(
+    seriesId: string,
+    bookId: string,
+    published: boolean,
+    title: string
+  ): Promise<void> {
+    await updateDoc(doc(this.firestore, 'librarySeries', seriesId, 'books', bookId), {
+      published,
+      updatedAt: Date.now(),
+      updatedBy: await this.uid()
+    });
+    await this.activityLog.log('node_updated', {
+      targetName: title,
+      detail: published ? 'Published Book' : 'Unpublished Book'
+    });
+  }
 
   private fromDoc(d: QueryDocumentSnapshot): LibraryBookModel {
     const { seriesId } = parseBookPath(d.ref);
