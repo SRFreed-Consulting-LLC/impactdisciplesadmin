@@ -22,6 +22,22 @@ const API_HOST: Record<PaypalEnvironment, string> = {
 };
 
 /**
+ * The PayPal environment payments MUST be verified against, derived from the
+ * deployed project - NEVER from client input. A caller who could choose this
+ * would point a live grant at a self-minted SANDBOX capture (fake money) and
+ * still receive real books/licenses. Only the production project
+ * (impactdisciples-a82a8) verifies against live PayPal; every other project
+ * (dev, emulator) is sandbox. Mirrors paypal.functions.ts's own
+ * GCLOUD_PROJECT switch.
+ * @return {PaypalEnvironment} The server-authoritative environment.
+ */
+export function resolvePaypalEnvironment(): PaypalEnvironment {
+  return process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
+    "live" :
+    "sandbox";
+}
+
+/**
  * Resolves after `ms` milliseconds.
  * @param {number} ms Delay in milliseconds.
  * @return {Promise<void>} Resolves after the delay.

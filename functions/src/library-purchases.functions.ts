@@ -2,11 +2,12 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import {
-  PaypalEnvironment,
   getAccessToken,
   getOrderCapture,
+  resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
+import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
 import {queueReaderReceiptEmail} from "./transactional-emails";
 
 /**
@@ -43,46 +44,11 @@ const libraryDb = admin.firestore();
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 
-interface ProductDoc {
-  title?: string;
-  cost?: number;
-  salePrice?: number;
-  isActive?: boolean;
-  isDigitalBook?: boolean;
-  digitalBookId?: string;
-  imageUrl?: {url: string; name?: string};
-}
-
 interface CouponDoc {
   code?: string;
   isActive?: boolean;
   percentOff?: number | null;
   tags?: {id: string}[];
-}
-
-/**
- * Cent-rounding, identical to the reader's store-pricing.ts round2 - the
- * two must agree or a legitimate PayPal charge computed client-side would
- * fail the server-side amount match below.
- * @param {number} value Raw amount.
- * @return {number} Rounded to 2 decimal places.
- */
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-/**
- * salePrice only counts when it's a positive number strictly below cost -
- * mirrors the reader's effectivePrice.
- * @param {ProductDoc} product The product doc's data.
- * @return {number} The price a buyer actually pays before coupons.
- */
-function effectivePrice(product: ProductDoc): number {
-  const cost = product.cost ?? 0;
-  return product.salePrice && product.salePrice > 0 &&
-    product.salePrice < cost ?
-    product.salePrice :
-    cost;
 }
 
 /**
@@ -106,13 +72,16 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
-    const {cartItems, couponCode, payPalOrderId, paypalEnvironment} =
+    const {cartItems, couponCode, payPalOrderId} =
       (request.data ?? {}) as {
         cartItems?: {id?: string}[];
         couponCode?: string;
         payPalOrderId?: string;
-        paypalEnvironment?: PaypalEnvironment;
       };
+    // Server-authoritative, NOT from request.data (a client-chosen value
+    // would let a sandbox capture satisfy a live grant - fake money for
+    // real books). See resolvePaypalEnvironment.
+    const env = resolvePaypalEnvironment();
 
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
       throw new HttpsError("invalid-argument", "cartItems is required.");
@@ -221,7 +190,6 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     );
 
     if (payPalOrderId) {
-      const env: PaypalEnvironment = paypalEnvironment ?? "live";
       const clientSecret = (
         env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
       ).value();
@@ -321,9 +289,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       // TYPE (numbers before timestamps), so a number here buries the
       // purchase behind every web-checkout doc, past pagination.
       dateProcessed: admin.firestore.Timestamp.fromMillis(now),
-      ...(payPalOrderId ?
-        {paypalEnvironment: paypalEnvironment ?? "live"} :
-        {}),
+      ...(payPalOrderId ? {paypalEnvironment: env} : {}),
     });
 
     const recipientRef = libraryDb.collection("libraryUsers").doc(email);

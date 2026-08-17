@@ -2,11 +2,12 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {defineSecret} from "firebase-functions/params";
 import {
-  PaypalEnvironment,
   getAccessToken,
   getOrderCapture,
+  resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyLicenseGrant} from "./library-group-license-grant";
+import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
 import {queueInviteDeclineEmail} from "./transactional-emails";
 import {applyLicenseRevoke} from "./library-group-license-revoke";
 import {selectMembersToCopy} from "./library-group-members-copy";
@@ -120,25 +121,12 @@ export const purchaseGroupLicenses = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
-    const {
-      groupId,
-      quantity,
-      subtotal,
-      discount,
-      total,
-      percentOff,
-      payPalOrderId,
-      paypalEnvironment,
-    } = (request.data ?? {}) as {
-      groupId?: string;
-      quantity?: number;
-      subtotal?: number;
-      discount?: number;
-      total?: number;
-      percentOff?: number;
-      payPalOrderId?: string;
-      paypalEnvironment?: PaypalEnvironment;
-    };
+    const {groupId, quantity, payPalOrderId} =
+      (request.data ?? {}) as {
+        groupId?: string;
+        quantity?: number;
+        payPalOrderId?: string;
+      };
     if (
       !groupId ||
       !quantity ||
@@ -151,15 +139,31 @@ export const purchaseGroupLicenses = onCall(
         "groupId and a whole quantity between 1 and 1000 are required."
       );
     }
-    if (!payPalOrderId && (total ?? 0) > 0) {
-      throw new HttpsError(
-        "invalid-argument",
-        "payPalOrderId is required for a non-zero total."
-      );
-    }
 
     const group = await requireGroupLeader(email, groupId);
     const bookId = group.bookId as string;
+
+    // SERVER-AUTHORITATIVE PRICING. Everything below is recomputed from the
+    // product doc + the discount-tier collection; the client's own
+    // subtotal/discount/total/percentOff/paypalEnvironment are ignored
+    // entirely. (Sweep 3, 2026-08-17: the old code compared the PayPal
+    // capture only to the CLIENT-supplied `total`, so paying $0.01 minted up
+    // to 1000 licenses. verifyAndGrantReaderStorePurchase already rebuilds
+    // from `products`; this now matches.)
+    const productsSnap = await libraryDb
+      .collection("products")
+      .where("digitalBookId", "==", bookId)
+      .get();
+    const product = productsSnap.docs
+      .map((d) => d.data() as ProductDoc)
+      .find((p) => p.isDigitalBook === true && p.isActive !== false);
+    if (!product) {
+      throw new HttpsError(
+        "invalid-argument",
+        "No active digital-book product exists for this group's book."
+      );
+    }
+    const unitPrice = effectivePrice(product);
 
     const tiersSnap = await libraryDb.collection("bulkDiscountTiers").get();
     const tiers = tiersSnap.docs.map(
@@ -173,27 +177,22 @@ export const purchaseGroupLicenses = onCall(
             t.numberOfBooks > (best?.numberOfBooks ?? -1) ? t : best,
           undefined
         )?.percentOff ?? 0;
-    if (percentOff !== undefined && percentOff !== resolvedPercentOff) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Discount pricing has changed - please refresh and try again."
-      );
-    }
-    // A free (<=0) total is only legitimate at a full 100% discount, the
-    // one thing provable from data this project actually has - a claimed
-    // free grant with a lesser (or zero) resolved discount can only mean
-    // the true, unverifiable price was dropped, not honestly zero.
-    if ((total ?? 0) <= 0 && resolvedPercentOff < 100) {
+
+    const subtotal = round2(unitPrice * quantity);
+    const discount = round2((subtotal * resolvedPercentOff) / 100);
+    const total = round2(subtotal - discount);
+    const unitDiscountPrice = quantity ? round2(total / quantity) : 0;
+
+    if (!payPalOrderId && total > 0) {
       throw new HttpsError(
         "invalid-argument",
-        "A zero-cost purchase requires a 100% discount and a matching " +
-          "PayPal-free confirmation."
+        "payPalOrderId is required for a non-zero total."
       );
     }
 
     let verifiedCaptureId: string | undefined;
     if (payPalOrderId) {
-      const env: PaypalEnvironment = paypalEnvironment ?? "live";
+      const env = resolvePaypalEnvironment();
       const clientSecret = (
         env === "sandbox" ? paypalSandboxSecret : paypalLiveSecret
       ).value();
@@ -205,17 +204,17 @@ export const purchaseGroupLicenses = onCall(
           `PayPal order is not completed (status: ${capture.status}).`
         );
       }
-      // Cent-level tolerance for floating point/rounding, never treated
-      // as equality.
-      const claimedTotal = total ?? 0;
+      // Verify against the SERVER-computed total, cent-level tolerance for
+      // rounding only.
       if (
         capture.currencyCode !== "USD" ||
-        Math.abs(capture.amount - claimedTotal) > 0.01
+        Math.abs(capture.amount - total) > 0.01
       ) {
         throw new HttpsError(
           "failed-precondition",
           `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
-            `does not match the claimed total ($${claimedTotal.toFixed(2)}).`
+            `does not match the price for ${quantity} license` +
+            `${quantity === 1 ? "" : "s"} ($${total.toFixed(2)}).`
         );
       }
       verifiedCaptureId = capture.captureId;
@@ -245,9 +244,6 @@ export const purchaseGroupLicenses = onCall(
     const licenseRefs = Array.from({length: quantity}, () =>
       libraryDb.collection("groupLicenses").doc()
     );
-    const unitPrice = subtotal ? subtotal / quantity : 0;
-    const unitDiscountPrice = total ? total / quantity : 0;
-
     // Group-license sales land in the shared `purchases` table like every
     // other sale (2026-08-17 direction), so they show in admin's
     // Purchases screen and the leader becomes a customer/Mailchimp
@@ -285,13 +281,13 @@ export const purchaseGroupLicenses = onCall(
             `${quantity === 1 ? "" : "s"}`,
           price: unitPrice,
           orderQuantity: quantity,
-          discount: discount ?? 0,
+          discount: discount,
           discountPrice: unitDiscountPrice,
           isDigitalBook: true,
         },
       ],
-      discount: discount ?? 0,
-      total: total ?? 0,
+      discount: discount,
+      total: total,
       receipt: payPalOrderId ?? "FREE ONLY",
       // A Firestore Timestamp, NOT the raw ms number - the admin Purchases
       // list orders by dateProcessed and Firestore sorts mixed types by
@@ -300,7 +296,7 @@ export const purchaseGroupLicenses = onCall(
       dateProcessed: admin.firestore.Timestamp.fromMillis(now),
       ...(verifiedCaptureId ? {paypalCaptureId: verifiedCaptureId} : {}),
       ...(payPalOrderId ?
-        {paypalEnvironment: paypalEnvironment ?? "live"} :
+        {paypalEnvironment: resolvePaypalEnvironment()} :
         {}),
     });
 
