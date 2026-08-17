@@ -1,19 +1,17 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
+import { Firestore, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { getTitleTranslationsByNode } from '@impact-common/queries/translation-queries';
 import { LibraryNodeType, TitleTranslation } from '@impact-common/models/translation.models';
-import { libraryFirestore } from './library-firestore.util';
 import { LibraryActivityLogService } from './library-activity-log.service';
 
 function titleTranslationId(nodeType: LibraryNodeType, nodeId: string, locale: string): string {
   return `${nodeType}_${nodeId}_${locale}`;
 }
 
-// Reads/writes the `titleTranslations` collection in the named
-// 'impactdiscipleship-books' database - ported from
+// Reads/writes the `titleTranslations` collection in THIS app's own
+// default database (Phase 3 migration target) - ported from
 // impact-discipleship-library-manager-new's TitleTranslationService,
 // converted to one-shot reads (see LibraryTranslationService's own comment).
 @Injectable({
@@ -21,7 +19,7 @@ function titleTranslationId(nodeType: LibraryNodeType, nodeId: string, locale: s
 })
 export class LibraryTitleTranslationService {
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private authService: AdminAuthService,
     private activityLog: LibraryActivityLogService
   ) {}
@@ -32,7 +30,7 @@ export class LibraryTitleTranslationService {
   }
 
   getTitleTranslations(nodeId: string): Promise<TitleTranslation[]> {
-    return firstValueFrom(getTitleTranslationsByNode(libraryFirestore(this.app), nodeId));
+    return firstValueFrom(getTitleTranslationsByNode(this.firestore, nodeId));
   }
 
   /** Every distinct locale used anywhere in the library so far - merged from
@@ -42,7 +40,7 @@ export class LibraryTitleTranslationService {
    *  shareReplay'd like the source's live version) - matches this app's own
    *  one-shot convention; re-run per dialog open rather than kept live. */
   async getKnownLocales(): Promise<{ locale: string; localeLabel: string }[]> {
-    const fs = libraryFirestore(this.app);
+    const fs = this.firestore;
     const [fromTitles, fromContent] = await Promise.all([
       getDocs(collection(fs, 'titleTranslations')),
       getDocs(collectionGroup(fs, 'translations')),
@@ -67,7 +65,7 @@ export class LibraryTitleTranslationService {
     title: string,
     nodeTitle: string
   ): Promise<void> {
-    const ref = doc(libraryFirestore(this.app), 'titleTranslations', titleTranslationId(nodeType, nodeId, locale));
+    const ref = doc(this.firestore, 'titleTranslations', titleTranslationId(nodeType, nodeId, locale));
     const existing = await getDoc(ref);
     const now = Date.now();
     const uid = await this.uid();
@@ -95,7 +93,7 @@ export class LibraryTitleTranslationService {
     localeLabel: string,
     nodeTitle: string
   ): Promise<void> {
-    await deleteDoc(doc(libraryFirestore(this.app), 'titleTranslations', titleTranslationId(nodeType, nodeId, locale)));
+    await deleteDoc(doc(this.firestore, 'titleTranslations', titleTranslationId(nodeType, nodeId, locale)));
     await this.activityLog.log('translation_deleted', {
       targetName: nodeTitle,
       detail: `Title translation (${localeLabel})`

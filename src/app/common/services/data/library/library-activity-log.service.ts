@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { addDoc, collection, collectionData, deleteDoc, doc, limit, orderBy, query } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, collectionData, deleteDoc, doc, limit, orderBy, query } from '@angular/fire/firestore';
 import { Observable, firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
@@ -8,25 +7,27 @@ import {
   LibraryActivityAction,
   LibraryActivityLogEntry,
 } from 'src/app/common/models/domain/library/library-activity-log.model';
-import { libraryFirestore } from './library-firestore.util';
 
 /**
  * Library content-edit + account/access audit trail - who created/edited/
  * deleted which series/book/unit/lesson/template/permission/config
  * tier/library user action. Reads/writes the `activityLog` collection in
- * the named 'impactdiscipleship-books' database, same shape/table the
- * source app used - NOT the same thing as this app's own LoggerService
- * ("log-messages", error/diagnostic logging - see LibraryErrorLogService
- * and the consolidation plan's "Decided - logging"). getAllActivity()/
- * deleteEntry()/deleteEntries() back the Activity Log viewer (Slice 5) -
- * log() alone was all Slice 2-4's write-only callers needed.
+ * THIS app's own default database (Phase 3 migration target) - NOT the
+ * same thing as this app's own LoggerService ("log-messages", error/
+ * diagnostic logging - see the consolidation plan's "Decided - logging").
+ * Per explicit instruction, historical activityLog entries from the old
+ * named database were deliberately NOT migrated (deleted, not carried
+ * forward) - this collection starts empty and accumulates fresh entries
+ * going forward only. getAllActivity()/deleteEntry()/deleteEntries() back
+ * the Activity Log viewer (Slice 5) - log() alone was all Slice 2-4's
+ * write-only callers needed.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class LibraryActivityLogService {
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private authService: AdminAuthService
   ) {}
 
@@ -50,7 +51,7 @@ export class LibraryActivityLogService {
       detail: context.detail ?? null,
       timestamp: Date.now()
     };
-    await addDoc(collection(libraryFirestore(this.app), 'activityLog'), entry);
+    await addDoc(collection(this.firestore, 'activityLog'), entry);
   }
 
   /** All events across every user, most recent first - backs the Activity
@@ -60,7 +61,7 @@ export class LibraryActivityLogService {
   getAllActivity(max = 500): Observable<LibraryActivityLogEntry[]> {
     return collectionData(
       query(
-        collection(libraryFirestore(this.app), 'activityLog'),
+        collection(this.firestore, 'activityLog'),
         orderBy('timestamp', 'desc'),
         limit(max),
       ),
@@ -71,7 +72,7 @@ export class LibraryActivityLogService {
   /** Admin-only (see firestore.rules) - the Activity Log screen's per-row
    *  and bulk delete. */
   deleteEntry(id: string): Promise<void> {
-    return deleteDoc(doc(libraryFirestore(this.app), 'activityLog', id));
+    return deleteDoc(doc(this.firestore, 'activityLog', id));
   }
 
   async deleteEntries(ids: string[]): Promise<void> {

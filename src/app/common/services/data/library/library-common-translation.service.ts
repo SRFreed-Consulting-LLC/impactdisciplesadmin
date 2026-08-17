@@ -1,13 +1,11 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
+import { Firestore, collectionGroup, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { extractImageSrc, extractTranslatableFields } from '@impact-common/formio/form-translation.util';
 import { getCommonTranslations } from '@impact-common/queries/translation-queries';
 import { CommonTranslation, TranslationFieldKind } from '@impact-common/models/translation.models';
 import { LibraryFormioSchema } from 'src/app/common/models/domain/library/library-lesson.model';
-import { libraryFirestore } from './library-firestore.util';
 import { libraryHashText } from './library-hash.util';
 import { LibraryActivityLogService } from './library-activity-log.service';
 
@@ -32,8 +30,8 @@ function commonTranslationId(originalText: string, locale: string): string {
   return `${libraryHashText(originalText)}_${locale}`;
 }
 
-// Reads/writes the `commonTranslations` collection in the named
-// 'impactdiscipleship-books' database - ported from
+// Reads/writes the `commonTranslations` collection in THIS app's own
+// default database (Phase 3 migration target) - ported from
 // impact-discipleship-library-manager-new's CommonTranslationService,
 // converted to a one-shot read (see LibraryTranslationService's own
 // comment) - no shareReplay needed since nothing here holds a live
@@ -44,12 +42,16 @@ function commonTranslationId(originalText: string, locale: string): string {
 // isn't ported yet - only getCommonTranslations() is currently exercised
 // (by Lesson Editor/Preview/Translation), but keeping this method here now
 // means that screen can be added later without touching this service again.
+// It now scans via a `collectionGroup('lessons')` query rather than a flat
+// top-level `lessons` collection read, since Phase 3 nested lessons under
+// librarySeries/{s}/books/{b}/units/{u} - see LibraryLessonService's own
+// comment on this same collectionGroup-scan pattern.
 @Injectable({
   providedIn: 'root'
 })
 export class LibraryCommonTranslationService {
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private authService: AdminAuthService,
     private activityLog: LibraryActivityLogService
   ) {}
@@ -60,11 +62,11 @@ export class LibraryCommonTranslationService {
   }
 
   getCommonTranslations(): Promise<CommonTranslation[]> {
-    return firstValueFrom(getCommonTranslations(libraryFirestore(this.app)));
+    return firstValueFrom(getCommonTranslations(this.firestore));
   }
 
   async findCommonPhrases(): Promise<LibraryCommonPhraseCandidate[]> {
-    const lessonsSnap = await getDocs(collection(libraryFirestore(this.app), 'lessons'));
+    const lessonsSnap = await getDocs(collectionGroup(this.firestore, 'lessons'));
     const countByText = new Map<string, { kind: TranslationFieldKind; count: number }>();
 
     for (let i = 0; i < lessonsSnap.docs.length; i += SCAN_BATCH_SIZE) {
@@ -107,7 +109,7 @@ export class LibraryCommonTranslationService {
     localeLabel: string,
     translatedText: string
   ): Promise<void> {
-    const ref = doc(libraryFirestore(this.app), 'commonTranslations', commonTranslationId(originalText, locale));
+    const ref = doc(this.firestore, 'commonTranslations', commonTranslationId(originalText, locale));
     const existing = await getDoc(ref);
     const now = Date.now();
     const uid = await this.uid();
@@ -129,7 +131,7 @@ export class LibraryCommonTranslationService {
   }
 
   async deleteCommonTranslation(originalText: string, locale: string, localeLabel: string): Promise<void> {
-    await deleteDoc(doc(libraryFirestore(this.app), 'commonTranslations', commonTranslationId(originalText, locale)));
+    await deleteDoc(doc(this.firestore, 'commonTranslations', commonTranslationId(originalText, locale)));
     await this.activityLog.log('translation_deleted', {
       targetName: originalText.slice(0, 60),
       detail: `Common translation (${localeLabel})`

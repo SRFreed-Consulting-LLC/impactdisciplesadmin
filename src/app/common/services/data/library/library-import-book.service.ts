@@ -1,11 +1,9 @@
 import { Injectable, signal } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { doc, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
+import { DocumentReference, Firestore, doc, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Storage, deleteObject, ref, uploadBytes } from '@angular/fire/storage';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { libraryFirestore } from './library-firestore.util';
 import { LibraryActivityLogService } from './library-activity-log.service';
 import { LibraryLessonImageService } from './library-lesson-image.service';
 import { assembleLibraryLessonSchema } from './library-book-schema-assembler.util';
@@ -51,7 +49,7 @@ export class LibraryImportBookService {
   readonly progress = this._progress.asReadonly();
 
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private functions: Functions,
     private storage: Storage,
     private authService: AdminAuthService,
@@ -94,8 +92,8 @@ export class LibraryImportBookService {
     this.setProgress('writing', 'Creating series and book…', 0, lessonsTotal);
     const seriesId = await this.ensureSeries(request, code, stamp);
     const bookId = `${code}-book`;
-    await this.guardedWrite('books', bookId, stamp, {
-      seriesId,
+    const bookRef = doc(this.firestore, 'librarySeries', seriesId, 'books', bookId);
+    await this.guardedWrite(bookRef, stamp, {
       title: plan.book.title,
       description: plan.book.description ?? '',
       ...(plan.book.author ? { author: plan.book.author } : {}),
@@ -109,8 +107,8 @@ export class LibraryImportBookService {
     for (let u = 0; u < plan.units.length; u++) {
       const unit = plan.units[u];
       const unitId = `${code}-u${u}`;
-      await this.guardedWrite('units', unitId, stamp, {
-        bookId,
+      const unitRef = doc(bookRef, 'units', unitId);
+      await this.guardedWrite(unitRef, stamp, {
         title: unit.title,
         order: u,
       });
@@ -136,9 +134,8 @@ export class LibraryImportBookService {
         const dehydrated = await this.lessonImages.dehydrateSchema(schema);
 
         const lessonId = `${code}-u${u}-l${globalLessonIndex}`;
-        await this.guardedWrite('lessons', lessonId, stamp, {
-          unitId,
-          bookId,
+        const lessonRef = doc(unitRef, 'lessons', lessonId);
+        await this.guardedWrite(lessonRef, stamp, {
           title: planned.title,
           order: globalLessonIndex,
           status: 'draft',
@@ -185,7 +182,8 @@ export class LibraryImportBookService {
       return request.series.seriesId;
     }
     const seriesId = `${code}-series`;
-    await this.guardedWrite('series', seriesId, stamp, {
+    const seriesRef = doc(this.firestore, 'librarySeries', seriesId);
+    await this.guardedWrite(seriesRef, stamp, {
       title: request.series.newSeriesTitle ?? plannedSeriesFallback(request),
       description: request.series.newSeriesDescription ?? '',
       order: Date.now(),
@@ -194,14 +192,18 @@ export class LibraryImportBookService {
   }
 
   /** Upsert that never overwrites a doc it didn't create. Preserves
-   *  createdAt/createdBy on re-run; always bumps updatedAt/updatedBy. */
+   *  createdAt/createdBy on re-run; always bumps updatedAt/updatedBy. Takes
+   *  a full doc reference (not a collection name + id) since Phase 3's
+   *  nested schema means every doc but series lives at a different depth -
+   *  callers build the ref themselves, walking down from the parent ref
+   *  they already have in hand (series -> book -> unit -> lesson), and no
+   *  longer stamp a seriesId/bookId/unitId field on the written data since
+   *  those are hydrated from the doc's own path at read time instead. */
   private async guardedWrite(
-    collectionName: string,
-    id: string,
+    ref: DocumentReference,
     stamp: string,
     data: Record<string, unknown>,
   ): Promise<void> {
-    const ref = doc(libraryFirestore(this.app), collectionName, id);
     const snap = await getDoc(ref);
     const now = Date.now();
     const uid = await this.uid();
@@ -209,7 +211,7 @@ export class LibraryImportBookService {
       const existing = snap.data();
       if (existing['importSource'] !== stamp) {
         throw new Error(
-          `${collectionName}/${id} already exists and was not created by this importer — aborting to avoid overwriting existing content.`,
+          `${ref.path} already exists and was not created by this importer — aborting to avoid overwriting existing content.`,
         );
       }
       await updateDoc(ref, { ...data, updatedAt: now, updatedBy: uid });

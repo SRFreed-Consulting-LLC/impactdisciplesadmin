@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
 import {
   DocumentReference,
+  Firestore,
   collection,
   deleteField,
   doc,
@@ -13,30 +13,27 @@ import { Observable } from 'rxjs';
 import { DiscussionGroup, GroupMembership } from '@impact-common/models/discussion-group.model';
 import { GroupWizardResult } from '@impact-common/groups/group-wizard-dialog.component';
 import { getAllGroups, getGroupMembers } from '@impact-common/queries/discussion-group-queries';
-import { libraryFirestore } from './library-firestore.util';
 
 /**
  * Ported from impact-discipleship-library-manager-new's own
  * DiscussionGroupService - admin-side writer for the Impact Groups module
  * (list/edit/hard-delete any group), distinct from the reader app's own
  * DiscussionGroupService (which only ever acts on behalf of a library
- * user's own actions). Reads/writes `discussionGroups` in the named
- * 'impactdiscipleship-books' database via libraryFirestore(app) - see that
- * factory's own comment for why this MUST NOT go through the shared
- * injected Firestore instance. getAllGroups()/getGroupMembers() are the
- * shared submodule's plain-function queries (same ones the reader app
- * uses), not reimplemented here.
+ * user's own actions). Reads/writes `discussionGroups` in THIS app's own
+ * default database (Phase 3 migration target). getAllGroups()/
+ * getGroupMembers() are the shared submodule's plain-function queries
+ * (same ones the reader app uses), not reimplemented here.
  */
 @Injectable({ providedIn: 'root' })
 export class LibraryDiscussionGroupService {
-  constructor(private app: FirebaseApp) {}
+  constructor(private firestore: Firestore) {}
 
   getAllGroups(): Observable<DiscussionGroup[]> {
-    return getAllGroups(libraryFirestore(this.app));
+    return getAllGroups(this.firestore);
   }
 
   getGroupMembers(groupId: string): Observable<GroupMembership[]> {
-    return getGroupMembers(libraryFirestore(this.app), groupId);
+    return getGroupMembers(this.firestore, groupId);
   }
 
   /** Full edit of any group's content - book, title, description, meeting
@@ -51,7 +48,7 @@ export class LibraryDiscussionGroupService {
    *  `location` (or its absence). Creator/leader is intentionally not
    *  editable here. */
   async updateGroup(groupId: string, input: GroupWizardResult): Promise<void> {
-    await updateDoc(doc(libraryFirestore(this.app), 'discussionGroups', groupId), {
+    await updateDoc(doc(this.firestore, 'discussionGroups', groupId), {
       bookId: input.bookId,
       title: input.title,
       description: input.description ?? deleteField(),
@@ -73,7 +70,7 @@ export class LibraryDiscussionGroupService {
    *  a busy/long-running group's chat or conversation history could easily
    *  be hundreds of documents. */
   async deleteGroup(groupId: string): Promise<void> {
-    const firestore = libraryFirestore(this.app);
+    const firestore = this.firestore;
     const refs: DocumentReference[] = [];
     for (const sub of ['members', 'chatMessages']) {
       const snap = await getDocs(collection(firestore, 'discussionGroups', groupId, sub));
@@ -108,7 +105,7 @@ export class LibraryDiscussionGroupService {
   private async commitDeletesInChunks(refs: DocumentReference[]): Promise<void> {
     const CHUNK_SIZE = 400;
     for (let i = 0; i < refs.length; i += CHUNK_SIZE) {
-      const batch = writeBatch(libraryFirestore(this.app));
+      const batch = writeBatch(this.firestore);
       for (const ref of refs.slice(i, i + CHUNK_SIZE)) {
         batch.delete(ref);
       }

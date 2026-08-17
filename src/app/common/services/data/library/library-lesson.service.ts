@@ -1,14 +1,19 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { doc, getDoc, updateDoc } from '@angular/fire/firestore';
+import {
+  Firestore,
+  QueryDocumentSnapshot,
+  collectionGroup,
+  getDoc,
+  getDocs,
+  updateDoc,
+} from '@angular/fire/firestore';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { firstValueFrom } from 'rxjs';
-import { BaseService } from '../base.service';
 import {
   LibraryFormioSchema,
   LibraryLessonModel,
 } from 'src/app/common/models/domain/library/library-lesson.model';
-import { libraryFirestore, libraryFirestoreDAO } from './library-firestore.util';
+import { parseLessonPath } from './library-nested-path.util';
 import { LibraryActivityLogService } from './library-activity-log.service';
 
 export type LibraryDailyReadingPlan = Pick<
@@ -35,24 +40,69 @@ function nextLessonVersion(previous: string | undefined): string {
   return `${today}.${count}`;
 }
 
-// Reads/writes the `lessons` collection in the named 'impactdiscipleship-books'
-// database - see library-firestore.util.ts's own comment for why this MUST
-// construct its DAO through that factory rather than injecting the shared one.
+// Reads/writes the `lessons` subcollection nested under
+// `librarySeries/{seriesId}/books/{bookId}/units/{unitId}` in THIS app's
+// own default database (Phase 3 migration target) - see
+// library-nested-path.util.ts's own comment on why `unitId`/`bookId` stay
+// fields on LibraryLessonModel (populated from the doc's own path at read
+// time) even though they're no longer stored in Firestore itself.
+//
+// Only getById()/getByUnit() plus the two custom write methods below are
+// implemented - confirmed via a full grep of every Library screen that no
+// generic create/update/delete call on this service exists anywhere.
 @Injectable({
   providedIn: 'root'
 })
-export class LibraryLessonService extends BaseService<LibraryLessonModel> {
+export class LibraryLessonService {
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private authService: AdminAuthService,
     private activityLog: LibraryActivityLogService
-  ) {
-    super(libraryFirestoreDAO<LibraryLessonModel>(app));
-    this.table = 'lessons';
+  ) {}
+
+  private fromDoc(d: QueryDocumentSnapshot): LibraryLessonModel {
+    const { unitId, bookId } = parseLessonPath(d.ref);
+    return { id: d.id, unitId, bookId, ...d.data() } as LibraryLessonModel;
+  }
+
+  /** A lesson id alone doesn't say which unit it's nested under - scans
+   *  every unit's `lessons` subcollection via a collectionGroup query and
+   *  matches by the doc's own id. This is the one every full-page editor
+   *  route (Lesson Editor, Preview, Translation - all reached via just
+   *  `/lessons/:id`) depends on. Fine at this library's real scale (161
+   *  lessons total). */
+  async getById(id: string): Promise<LibraryLessonModel | undefined> {
+    const snap = await this.lessonsCollectionGroup();
+    const found = snap.docs.find((d) => d.id === id);
+    return found ? this.fromDoc(found) : undefined;
   }
 
   getByUnit(unitId: string): Promise<LibraryLessonModel[]> {
-    return this.getAllByValue('unitId', unitId);
+    return this.lessonsCollectionGroup().then((snap) =>
+      snap.docs
+        .filter((d) => d.ref.parent.parent?.id === unitId)
+        .map((d) => this.fromDoc(d)),
+    );
+  }
+
+  private lessonsCollectionGroup() {
+    return getDocs(collectionGroup(this.firestore, 'lessons'));
+  }
+
+  /** Resolves a lesson id to its full Firestore doc reference - every
+   *  write method below needs this since a bare lessonId alone can't be
+   *  addressed directly under the nested schema the way it could when
+   *  `lessons` was still a flat top-level collection. Public (not just
+   *  this class's own private helper) so LibraryTranslationService can
+   *  resolve a lesson's `translations` subcollection the same way,
+   *  without duplicating this same collectionGroup scan. */
+  async docRef(lessonId: string) {
+    const snap = await this.lessonsCollectionGroup();
+    const found = snap.docs.find((d) => d.id === lessonId);
+    if (!found) {
+      throw new Error(`No lesson found with id ${lessonId}.`);
+    }
+    return found.ref;
   }
 
   private async uid(): Promise<string> {
@@ -60,18 +110,18 @@ export class LibraryLessonService extends BaseService<LibraryLessonModel> {
     return user?.firebaseUID ?? user?.id ?? '';
   }
 
-  /** Partial `updateDoc()`, NOT `BaseService.update()` - that does a full
-   *  `setDoc` with no merge (see FirebaseDAO.update()'s own implementation),
-   *  which would blow away every field on the lesson doc this method doesn't
-   *  explicitly pass (title, order, unitId, bookId, ...). Returns the new
-   *  version string so callers can reflect it without a re-fetch. `title` is
-   *  only for the activity log entry - the doc's own title isn't changed here. */
+  /** Partial `updateDoc()` - blowing away every other field on the lesson
+   *  doc this method doesn't explicitly pass (title, order, ...) would be
+   *  a real regression, same reasoning as before this app had any Library
+   *  content at all. Returns the new version string so callers can
+   *  reflect it without a re-fetch. `title` is only for the activity log
+   *  entry - the doc's own title isn't changed here. */
   async saveLessonForm(
     lessonId: string,
     formSchema: LibraryFormioSchema,
     title: string
   ): Promise<string> {
-    const ref = doc(libraryFirestore(this.app), 'lessons', lessonId);
+    const ref = await this.docRef(lessonId);
     const snapshot = await getDoc(ref);
     const version = nextLessonVersion(snapshot.data()?.['version'] as string | undefined);
     await updateDoc(ref, {
@@ -93,7 +143,7 @@ export class LibraryLessonService extends BaseService<LibraryLessonModel> {
     plan: LibraryDailyReadingPlan,
     title: string
   ): Promise<void> {
-    const ref = doc(libraryFirestore(this.app), 'lessons', lessonId);
+    const ref = await this.docRef(lessonId);
     await updateDoc(ref, {
       ...plan,
       updatedAt: Date.now(),

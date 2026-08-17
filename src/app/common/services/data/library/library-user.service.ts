@@ -1,32 +1,29 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
 import { Functions, httpsCallable } from '@angular/fire/functions';
-import { collection, collectionData, doc, docData, limit, orderBy, query } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, doc, docData, limit, orderBy, query } from '@angular/fire/firestore';
 import { Observable, map, shareReplay } from 'rxjs';
 import { newCorrelationId, attachCorrelationId } from '@impact-common/errors/correlation-id';
 import { AdminMessage } from '@impact-common/models/library-user-message.model';
 import { LibraryUser } from 'src/app/common/models/domain/library/library-user.model';
-import { libraryFirestore } from './library-firestore.util';
 import { LibraryActivityLogService } from './library-activity-log.service';
 
 /**
  * The `libraryUsers` collection - owned and written by the reader app
- * (impact-discipleship-library-new), read here via `libraryFirestore(app)`
- * (the named 'impactdiscipleship-books' database - see that factory's own
- * comment for why this MUST NOT go through the shared injected `Firestore`
- * instance). Ported from impact-discipleship-library-manager-new's own
- * LibraryUserService - first just the read side (Slice 4 part 2, backing
- * the World Map), now extended with the write methods (Slice 4 part 4,
- * the Library Users screen) - every write here goes through one of the 5
- * Library Users Cloud Functions ported into this app's own `functions/src`
- * (library-users.functions.ts), never a direct client write:
- * firestore.rules scopes `libraryUsers` writes to the owner's own email, so
- * an admin's client session can never write another user's doc.
+ * (impact-discipleship-library-new), read here in THIS app's own default
+ * database (Phase 3 migration target). Ported from
+ * impact-discipleship-library-manager-new's own LibraryUserService - first
+ * just the read side (Slice 4 part 2, backing the World Map), now extended
+ * with the write methods (Slice 4 part 4, the Library Users screen) -
+ * every write here goes through one of the 5 Library Users Cloud Functions
+ * ported into this app's own `functions/src` (library-users.functions.ts),
+ * never a direct client write: firestore.rules scopes `libraryUsers`
+ * writes to the owner's own email, so an admin's client session can never
+ * write another user's doc.
  */
 @Injectable({ providedIn: 'root' })
 export class LibraryUserService {
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private functions: Functions,
     private activityLog: LibraryActivityLogService,
   ) {}
@@ -42,7 +39,7 @@ export class LibraryUserService {
    *  listener down once nothing is subscribed, rather than leaking it for
    *  the rest of the session. */
   private readonly libraryUsers$ = (
-    collectionData(collection(libraryFirestore(this.app), 'libraryUsers'), {
+    collectionData(collection(this.firestore, 'libraryUsers'), {
       idField: 'id',
     }) as Observable<LibraryUser[]>
   ).pipe(
@@ -61,7 +58,7 @@ export class LibraryUserService {
   }
 
   getLibraryUser(email: string): Observable<LibraryUser | undefined> {
-    const ref = doc(libraryFirestore(this.app), 'libraryUsers', email.trim().toLowerCase());
+    const ref = doc(this.firestore, 'libraryUsers', email.trim().toLowerCase());
     return docData(ref, { idField: 'id' }) as Observable<LibraryUser | undefined>;
   }
 
@@ -70,7 +67,7 @@ export class LibraryUserService {
    *  history list" safety-net pattern as this app's own activity log -
    *  broadcasts are infrequent in practice. */
   getAdminMessages(): Observable<AdminMessage[]> {
-    const ref = collection(libraryFirestore(this.app), 'adminMessages');
+    const ref = collection(this.firestore, 'adminMessages');
     return collectionData(query(ref, orderBy('sentAt', 'desc'), limit(500)), {
       idField: 'id',
     }) as Observable<AdminMessage[]>;

@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { addDoc, collection, deleteDoc, doc, updateDoc } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, deleteDoc, doc, updateDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { BaseService } from '../base.service';
+import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { LibraryLessonTemplateModel } from 'src/app/common/models/domain/library/library-lesson-template.model';
-import { libraryFirestore, libraryFirestoreDAO } from './library-firestore.util';
 import { LibraryActivityLogService } from './library-activity-log.service';
 
 export type LibraryLessonTemplateSlots = Pick<
@@ -13,20 +12,22 @@ export type LibraryLessonTemplateSlots = Pick<
   'headerSubtemplateId' | 'layoutSubtemplateId' | 'footerSubtemplateId'
 >;
 
-// Reads/writes the `lessonTemplates` collection in the named
-// 'impactdiscipleship-books' database - see library-firestore.util.ts's own
-// comment for why this MUST construct its DAO through that factory rather
-// than injecting the shared one.
+// Reads/writes the `lessonTemplates` collection in THIS app's own default
+// database (Phase 3 migration target) - the injected `FirebaseDAO` is the
+// same shared singleton every other service in this app uses now that
+// there's no longer a separate named database to avoid colliding with (see
+// library-firestore.util.ts, now unused).
 @Injectable({
   providedIn: 'root'
 })
 export class LibraryLessonTemplateService extends BaseService<LibraryLessonTemplateModel> {
   constructor(
-    private app: FirebaseApp,
+    public override dao: FirebaseDAO<LibraryLessonTemplateModel>,
+    private firestore: Firestore,
     private authService: AdminAuthService,
     private activityLog: LibraryActivityLogService
   ) {
-    super(libraryFirestoreDAO<LibraryLessonTemplateModel>(app));
+    super(dao);
     this.table = 'lessonTemplates';
   }
 
@@ -36,7 +37,7 @@ export class LibraryLessonTemplateService extends BaseService<LibraryLessonTempl
   }
 
   async createLessonTemplate(title: string): Promise<string> {
-    const docRef = await addDoc(collection(libraryFirestore(this.app), 'lessonTemplates'), {
+    const docRef = await addDoc(collection(this.firestore, 'lessonTemplates'), {
       title,
       headerSubtemplateId: null,
       layoutSubtemplateId: null,
@@ -57,13 +58,13 @@ export class LibraryLessonTemplateService extends BaseService<LibraryLessonTempl
     slots: LibraryLessonTemplateSlots,
     title: string
   ): Promise<void> {
-    const ref = doc(libraryFirestore(this.app), 'lessonTemplates', lessonTemplateId);
+    const ref = doc(this.firestore, 'lessonTemplates', lessonTemplateId);
     await updateDoc(ref, { ...slots, title, updatedAt: Date.now(), updatedBy: await this.uid() });
     await this.activityLog.log('template_updated', { targetName: title, detail: 'Lesson Template' });
   }
 
   async deleteLessonTemplate(lessonTemplateId: string, title: string): Promise<void> {
-    await deleteDoc(doc(libraryFirestore(this.app), 'lessonTemplates', lessonTemplateId));
+    await deleteDoc(doc(this.firestore, 'lessonTemplates', lessonTemplateId));
     await this.activityLog.log('template_deleted', { targetName: title, detail: 'Lesson Template' });
   }
 }

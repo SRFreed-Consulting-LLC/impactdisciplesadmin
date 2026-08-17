@@ -10,8 +10,8 @@ import { ProductCategoriesService } from 'src/app/common/services/data/product-c
 import { SeriesModel } from 'src/app/common/models/utils/series.model';
 import { SeriesService } from 'src/app/common/services/data/series.service';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
-import { BookModel } from 'src/app/common/models/domain/book.model';
-import { BookService } from 'src/app/common/services/data/book.service';
+import { LibraryBookModel } from 'src/app/common/models/domain/library/library-book.model';
+import { LibraryBookService } from 'src/app/common/services/data/library/library-book.service';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -79,7 +79,7 @@ export class ProductsComponent implements OnInit {
   richTextModules = RICH_TEXT_TOOLBAR;
 
   productTags: TagModel[] = [];
-  books: BookModel[] = [];
+  books: LibraryBookModel[] = [];
   emails: { id: string; name: string }[] = [];
   uoms: string[] = EnumHelper.getUOMTypesAsArray();
 
@@ -98,7 +98,7 @@ export class ProductsComponent implements OnInit {
     private productCategoriesService: ProductCategoriesService,
     private seriesService: SeriesService,
     private emailTemplatesService: EMailTemplatesService,
-    private bookService: BookService,
+    private bookService: LibraryBookService,
     private permissionService: PermissionService,
     private fb: FormBuilder,
     private dialog: MatDialog,

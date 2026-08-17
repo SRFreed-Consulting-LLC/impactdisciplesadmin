@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import { addDoc, collection, deleteDoc, doc, getDoc, updateDoc } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, deleteDoc, doc, getDoc, getDocs, updateDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { getTranslations } from '@impact-common/queries/translation-queries';
 import { LessonTranslation, TranslationField } from '@impact-common/models/translation.models';
-import { libraryFirestore } from './library-firestore.util';
+import { LibraryLessonService } from './library-lesson.service';
 import { LibraryActivityLogService } from './library-activity-log.service';
 
 export type LibraryDailyReadingTranslation = Pick<
@@ -13,19 +11,21 @@ export type LibraryDailyReadingTranslation = Pick<
   'memoryVerse' | 'goal' | 'dailyReadingVerse' | 'monVerse' | 'tueVerse' | 'wedVerse' | 'thuVerse' | 'friVerse'
 >;
 
-// Reads/writes `lessons/{id}/translations` in the named
-// 'impactdiscipleship-books' database - ported from
-// impact-discipleship-library-manager-new's TranslationService, converted
-// from live listeners to one-shot reads to match this app's own services'
-// convention (every screen so far reloads explicitly after a mutation
-// rather than relying on a standing listener).
+// Reads/writes `.../lessons/{lessonId}/translations` - one level deeper
+// than before Phase 3's migration (lessons themselves are now nested under
+// librarySeries/{s}/books/{b}/units/{u}, not a flat top-level collection),
+// so every method here resolves the lesson's own doc reference via
+// LibraryLessonService.docRef() first (a collectionGroup scan - see that
+// service's own comment) rather than addressing `lessons/{lessonId}`
+// directly the way the old flat schema allowed.
 @Injectable({
   providedIn: 'root'
 })
 export class LibraryTranslationService {
   constructor(
-    private app: FirebaseApp,
+    private firestore: Firestore,
     private authService: AdminAuthService,
+    private lessons: LibraryLessonService,
     private activityLog: LibraryActivityLogService
   ) {}
 
@@ -34,16 +34,19 @@ export class LibraryTranslationService {
     return user?.firebaseUID ?? user?.id ?? '';
   }
 
-  private translationsRef(lessonId: string) {
-    return collection(libraryFirestore(this.app), 'lessons', lessonId, 'translations');
+  private async translationsRef(lessonId: string) {
+    const lessonRef = await this.lessons.docRef(lessonId);
+    return collection(lessonRef, 'translations');
   }
 
-  getTranslations(lessonId: string): Promise<LessonTranslation[]> {
-    return firstValueFrom(getTranslations(libraryFirestore(this.app), lessonId));
+  async getTranslations(lessonId: string): Promise<LessonTranslation[]> {
+    const snap = await getDocs(await this.translationsRef(lessonId));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as LessonTranslation);
   }
 
   async getTranslation(lessonId: string, translationId: string): Promise<LessonTranslation | undefined> {
-    const snap = await getDoc(doc(libraryFirestore(this.app), 'lessons', lessonId, 'translations', translationId));
+    const lessonRef = await this.lessons.docRef(lessonId);
+    const snap = await getDoc(doc(lessonRef, 'translations', translationId));
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as LessonTranslation) : undefined;
   }
 
@@ -55,7 +58,7 @@ export class LibraryTranslationService {
     lessonTitle: string
   ): Promise<string> {
     const uid = await this.uid();
-    const docRef = await addDoc(this.translationsRef(lessonId), {
+    const docRef = await addDoc(await this.translationsRef(lessonId), {
       lessonId,
       locale,
       localeLabel,
@@ -80,7 +83,8 @@ export class LibraryTranslationService {
     localeLabel: string,
     lessonTitle: string
   ): Promise<void> {
-    const ref = doc(libraryFirestore(this.app), 'lessons', lessonId, 'translations', translationId);
+    const lessonRef = await this.lessons.docRef(lessonId);
+    const ref = doc(lessonRef, 'translations', translationId);
     await updateDoc(ref, { fields, ...dailyReading, updatedAt: Date.now(), updatedBy: await this.uid() });
     await this.activityLog.log('translation_updated', {
       targetName: `${localeLabel} translation of "${lessonTitle}"`,
@@ -94,7 +98,8 @@ export class LibraryTranslationService {
     localeLabel: string,
     lessonTitle: string
   ): Promise<void> {
-    await deleteDoc(doc(libraryFirestore(this.app), 'lessons', lessonId, 'translations', translationId));
+    const lessonRef = await this.lessons.docRef(lessonId);
+    await deleteDoc(doc(lessonRef, 'translations', translationId));
     await this.activityLog.log('translation_deleted', {
       targetName: `${localeLabel} translation of "${lessonTitle}"`,
       detail: 'Lesson translation'
