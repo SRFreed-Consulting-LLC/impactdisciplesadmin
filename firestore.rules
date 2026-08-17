@@ -1,9 +1,505 @@
 rules_version = '2';
 
+// ============================================================================
+// Unified rules for impactdisciplesdev's (default) database - Phase 7 of the
+// consolidation plan. ONE file, owned by THIS repo (impactdisciples-admin);
+// the web and reader repos deliberately deploy no Firestore rules (their
+// firebase.json firestore blocks were removed so a stray deploy can't clobber
+// this).
+//
+// Three client populations:
+//   - The public web site (impactdisciples-web): NO Firebase Auth at all -
+//     every request is anonymous. Public catalog collections stay
+//     world-readable; a handful of checkout/registration flows keep
+//     narrowly-scoped anonymous writes (marked PRE-PROD below - each is
+//     slated to move behind a Cloud Function before real public traffic).
+//   - Admin staff (impactdisciples-admin): identified by the `role` CUSTOM
+//     CLAIM ('Admin'|'Root'|'Employee'|'Editor'), synced from admin_users by
+//     the onAdminUserRoleSync trigger. Rules can NOT look admin_users up by
+//     uid (auto-id docs, firebaseUID is a field), so the claim is the only
+//     mechanism. Deploy order matters: trigger + backfill BEFORE these rules,
+//     and staff must refresh their ID token (sign out/in) to pick claims up.
+//   - Reader patrons (impact-discipleship-library): signed-in Firebase Auth
+//     users identified by their token EMAIL (libraryUsers is email-keyed).
+//     Their mutations largely go through Cloud Functions (Phase 6); the
+//     writes deliberately left direct (offline-preserving split) are locked
+//     to owner-path scope below.
+//
+// Cloud Functions use the Admin SDK and BYPASS all of this - "write: false"
+// on a collection functions write to is intentional lockdown, not breakage.
+// ============================================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---- Identity helpers --------------------------------------------------
+    function signedIn() {
+      return request.auth != null;
+    }
+    // The staff role custom claim; '' for patrons/anonymous. token.get()
+    // (not token.role) so accounts without the claim don't error.
+    function role() {
+      return signedIn() ? request.auth.token.get('role', '') : '';
+    }
+    function isAdminRole() {
+      return role() in ['Admin', 'Root'];
+    }
+    // Any staff tier at all - the read floor for the staff registry itself.
+    function isStaffAny() {
+      return role() in ['Admin', 'Root', 'Employee', 'Editor'];
+    }
+    // Business staff: the admin app's store/events/customers/... managers.
+    // Editors are deliberately excluded - their scope is the library only.
+    function isBusinessStaff() {
+      return role() in ['Admin', 'Root', 'Employee'];
+    }
+    // Library content authors. Employees are deliberately excluded - they
+    // never see the Library section.
+    function isLibraryStaff() {
+      return role() in ['Admin', 'Root', 'Editor'];
+    }
+    function callerEmail() {
+      return signedIn() ? request.auth.token.email.lower() : '';
+    }
+
+    // ---- Reader access helpers (ported from the library submodule rules,
+    // ---- staff checks swapped from the dead adminUsers lookup to claims) --
+    function hasBookLicense(bookId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/libraryUsers/$(callerEmail())) &&
+        get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.get('revoked', false) != true &&
+        bookId in get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.licensedBookIds;
+    }
+    function isInternationalPatron() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/libraryUsers/$(callerEmail())) &&
+        get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.get('revoked', false) != true &&
+        get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.get('internationalUser', false) == true;
+    }
+    function canReadBook(bookId) {
+      return isLibraryStaff() || isInternationalPatron() || hasBookLicense(bookId);
+    }
+    // Approved membership in an Impact Group - backs the stay-direct chat/
+    // prayer content writes.
+    function isApprovedGroupMember(groupId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/discussionGroups/$(groupId)/members/$(callerEmail())) &&
+        get(/databases/$(database)/documents/discussionGroups/$(groupId)/members/$(callerEmail())).data.status == 'approved';
+    }
+    function isGroupCreator(groupId) {
+      return signedIn() &&
+        get(/databases/$(database)/documents/discussionGroups/$(groupId)).data.creatorEmail == callerEmail();
+    }
+
+    // ========================================================================
+    // SECTION 1 - Public catalog (web site reads anonymously; staff author)
+    // ========================================================================
+    match /config/{id} {
+      allow read: if true;                  // paypalClientId, business info -
+      allow write: if isAdminRole();        // model docs say: NO secrets here
+    }
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /product_categories/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /product_tags/{id} {
+      allow read: if isBusinessStaff();
+      allow write: if isBusinessStaff();
+    }
+    match /sales/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /series/{id} {                    // Store Manager's Product Series -
+      allow read: if true;                  // NOT library series (librarySeries)
+      allow write: if isBusinessStaff();
+    }
+    match /events/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /courses/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /coaches/{id} {
+      allow read: if true;                  // documentId()-in queries = list
+      allow write: if isBusinessStaff();
+    }
+    match /impact_team/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /locations/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /testimonials/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /home_page_images/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /home_page_popups/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /pod_casts/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /pod_cast_categories/{id} {
+      allow read: if isBusinessStaff();
+      allow write: if isBusinessStaff();
+    }
+    match /pod_cast_tags/{id} {
+      allow read: if isBusinessStaff();
+      allow write: if isBusinessStaff();
+    }
+    match /dmms/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /monthly-newsletter/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    match /faq/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    // Dynamic form definitions: public pages load ONE form by id; only staff
+    // may browse the registry.
+    match /forms/{id} {
+      allow get: if true;
+      allow list: if isBusinessStaff();
+      allow write: if isBusinessStaff();
+    }
+    // Read by the web's client-side email sender (template by name/id).
+    match /mail_templates/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    // PRE-PROD: anonymous list lets anyone enumerate discount codes. The
+    // server pricing function already validates coupons - the client-side
+    // lookup should move there, then this becomes staff-only.
+    match /coupons/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+
+    // ========================================================================
+    // SECTION 2 - Anonymous-write flows the public site depends on.
+    // PRE-PROD: every ANON write below is slated to move behind a Cloud
+    // Function before real public traffic (see the consolidation plan's
+    // pre-prod checklist). Until then: create-only wherever possible, and
+    // reads locked to staff wherever no public flow needs them.
+    // ========================================================================
+    match /form_submissions/{id} {
+      allow create: if true;                // public contact/consultation forms
+      allow read, update, delete: if isBusinessStaff();
+    }
+    // PRE-PROD (sharpest edge): anonymous get/list exposes registrant
+    // names/emails per event, and anonymous update rewrites whole docs -
+    // required today by the public RSVP/schedule/breakout pages.
+    match /event-registrations/{id} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isBusinessStaff();
+    }
+    // PRE-PROD: open create = open email relay (Trigger Email extension
+    // sends whatever lands here). Web receipts/confirmations + the reader's
+    // own LegacyMailService both write it; the extension itself uses the
+    // Admin SDK. Shape-constrained to the exact fields both apps write.
+    match /mail/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['to', 'date', 'message', 'template']) &&
+        request.resource.data.message.keys().hasOnly(['subject', 'html', 'text']);
+      allow read, update, delete: if isBusinessStaff();
+    }
+    // Anonymous create is REQUIRED even for the admin app: failed-login
+    // logging happens before a session exists.
+    match /log-messages/{id} {
+      allow create: if true;
+      allow read, update, delete: if isAdminRole();
+    }
+    match /affilliate_sales/{id} {          // (sic - 3 L's, matches the code)
+      allow create: if true;                // coupon attribution at checkout
+      allow read, update, delete: if isBusinessStaff();
+    }
+    // PRE-PROD: anonymous read-modify-write of running tax totals.
+    match /tax_rate_summaries/{id} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if false;
+    }
+    // PRE-PROD: the LEGACY digital-library user store (web-only; the reader
+    // app reads libraryUsers, not this). Anonymous email lookup + license
+    // writes preserved only because checkout-success still performs them -
+    // likely fully vestigial; verify and deny outright when hardening.
+    match /impact-users/{id} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if false;
+    }
+
+    // ========================================================================
+    // SECTION 3 - Staff / server-only business collections
+    // ========================================================================
+    // Staff registry. Reads: every staff role resolves its own doc by email
+    // query at sign-in. Writes: role/permission edits are Admin/Root-only
+    // client updates; create/delete go through Cloud Functions (Admin SDK).
+    // A write here propagates into the role CLAIM via onAdminUserRoleSync -
+    // that's why update is the only client verb and is admin-gated.
+    match /admin_users/{id} {
+      allow read: if isStaffAny();
+      allow update: if isAdminRole();
+      allow create, delete: if false;
+    }
+    match /user_permissions/{id} {          // legacy per-user grants, loaded
+      allow read: if isStaffAny();          // at sign-in for every role
+      allow write: if isAdminRole();
+    }
+    match /customers/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    // Created by Cloud Functions only (PayPal checkout, reader store, group
+    // licenses); staff update fulfillment fields from the admin UI.
+    match /purchases/{id} {
+      allow read, update: if isBusinessStaff();
+      allow create, delete: if false;
+    }
+    match /pending_orders/{id} {            // functions-only staging
+      allow read, write: if false;
+    }
+    match /meta/{id} {                      // newRecordCounts alert counters -
+      allow read: if isBusinessStaff();     // written by functions only
+      allow write: if false;
+    }
+    match /integration_settings/{id} {
+      allow read, write: if isAdminRole();
+    }
+    match /shipping-labels/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /shipping-label-batches/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /affilliate_payments/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /campaigns/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /prayers/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /newsletters/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /organizations/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /event-announcements/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    match /customer_emails/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    // Dead collections (migrated away / never used) - deny outright.
+    match /subscriptions/{id} {
+      allow read, write: if false;
+    }
+    match /shipments/{id} {
+      allow read, write: if false;
+    }
+
+    // ========================================================================
+    // SECTION 4 - Library content (nested schema, Phase 3)
+    // ========================================================================
+    match /librarySeries/{seriesId} {
+      allow read: if signedIn();
+      allow write: if isLibraryStaff();
+
+      // Book metadata is readable by any signed-in patron regardless of
+      // license (Groups needs titles for unowned books); lesson CONTENT is
+      // license-gated below. bookId is the rules PATH variable - always
+      // present, no denormalized field or get() needed.
+      match /books/{bookId} {
+        allow read: if signedIn();
+        allow write: if isLibraryStaff();
+
+        match /units/{unitId} {
+          allow read: if canReadBook(bookId);
+          allow write: if isLibraryStaff();
+
+          match /lessons/{lessonId} {
+            allow read: if canReadBook(bookId);
+            allow write: if isLibraryStaff();
+
+            match /translations/{translationId} {
+              allow read: if signedIn();
+              allow write: if isLibraryStaff();
+            }
+          }
+        }
+      }
+    }
+    // Language-list discovery across every lesson's translations.
+    match /{path=**}/translations/{translationId} {
+      allow read: if signedIn();
+    }
+
+    // Library staff authoring artifacts.
+    match /subtemplates/{id} {
+      allow read, write: if isLibraryStaff();
+    }
+    match /lessonTemplates/{id} {
+      allow read, write: if isLibraryStaff();
+    }
+    match /titleTranslations/{id} {
+      allow read: if signedIn();
+      allow write: if isLibraryStaff();
+    }
+    match /commonTranslations/{id} {
+      allow read: if signedIn();
+      allow write: if isLibraryStaff();
+    }
+    match /lessonImages/{id} {
+      allow read: if signedIn();
+      allow write: if isLibraryStaff();
+    }
+    match /bulkDiscountTiers/{id} {
+      allow read: if signedIn();            // patrons price group licenses
+      allow write: if isAdminRole();
+    }
+    match /activityLog/{id} {
+      allow create: if isLibraryStaff();    // content-edit audit entries
+      allow read, delete: if isAdminRole();
+      allow update: if false;
+    }
+    match /errorLogs/{id} {                 // reader client error reporting
+      allow create: if signedIn();
+      allow read, delete: if isAdminRole();
+      allow update: if false;
+    }
+
+    // ========================================================================
+    // SECTION 5 - Reader-owned data
+    // ========================================================================
+    // Profile docs: ALL writes go through Cloud Functions now (Phase 6) -
+    // recordMyLogin/createMyReaderProfile/updateMyPreferences + the license
+    // grant/revoke functions. Nothing client-written remains on the doc, so
+    // client writes are closed entirely: the old self-license-granting
+    // vulnerability class is structurally gone.
+    match /libraryUsers/{email} {
+      allow read: if callerEmail() == email || isAdminRole();
+      allow write: if false;
+
+      // Stay-direct owner subcollections (offline-preserving split): the
+      // owner's own study data, path-scoped - identity is the PATH, not a
+      // spoofable field.
+      match /lessonStatus/{lessonId} {
+        allow read: if callerEmail() == email || isAdminRole();
+        allow write: if callerEmail() == email;
+      }
+      match /lessonHighlights/{lessonId} {
+        allow read: if callerEmail() == email || isAdminRole();
+        allow write: if callerEmail() == email;
+      }
+      match /submissions/{lessonId} {
+        allow read: if callerEmail() == email || isAdminRole();
+        allow write: if callerEmail() == email;
+      }
+      match /fcmTokens/{token} {
+        allow read, write: if callerEmail() == email;
+      }
+      // Inbox copies are function-written (sendLibraryUserMessage); the
+      // owner may only flip the read flag, and may not delete (account
+      // deletion goes through deleteMyAccount, which bypasses rules).
+      match /messages/{id} {
+        allow read: if callerEmail() == email;
+        allow update: if callerEmail() == email &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow create, delete: if false;
+      }
+    }
+    // Cross-user highlight discovery is not a thing; but lessonStatus etc.
+    // are only ever read via their owner's path above - no collectionGroup
+    // reads needed for patron data.
+
+    match /discussionGroups/{groupId} {
+      // Browse/detail for any signed-in patron; membership create/update
+      // and group create/close go through Cloud Functions (Phase 6).
+      // Admin's Groups screen still edits/deletes groups directly.
+      allow read: if signedIn();
+      allow update, delete: if isAdminRole();
+      allow create: if false;
+
+      match /members/{memberEmail} {
+        allow read: if signedIn();
+        allow delete: if isAdminRole();     // admin hard-delete cleanup
+        allow create, update: if false;     // functions only
+      }
+      // Stay-direct interactive content: authored-as-self by an approved
+      // member (one get() per write - the price of instant local echo).
+      match /chatMessages/{id} {
+        allow read: if signedIn();
+        allow create: if isApprovedGroupMember(groupId) &&
+          request.resource.data.senderEmail == callerEmail();
+        allow update: if false;
+        allow delete: if isAdminRole();
+      }
+      match /prayerRequests/{id} {
+        allow read: if signedIn();
+        allow create: if isApprovedGroupMember(groupId) &&
+          request.resource.data.authorEmail == callerEmail();
+        allow update: if false;
+        allow delete: if resource.data.authorEmail == callerEmail() || isAdminRole();
+      }
+      // 1:1 leader<->member conversations: the conversation doc id is the
+      // NON-creator participant's email; both participants read/write.
+      match /conversations/{otherEmail} {
+        allow read, create, update: if callerEmail() == otherEmail || isGroupCreator(groupId);
+        allow delete: if isAdminRole();
+
+        match /messages/{id} {
+          allow read: if callerEmail() == otherEmail || isGroupCreator(groupId);
+          allow create: if (callerEmail() == otherEmail || isGroupCreator(groupId)) &&
+            request.resource.data.senderEmail == callerEmail();
+          allow update, delete: if false;
+        }
+      }
+    }
+
+    // License pool: every mutation is a Cloud Function; leaders list their
+    // own via leaderEmail-filtered queries, group stores read per-group.
+    match /groupLicenses/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    // Send/cancel are functions now; leaders list their own sent invites.
+    // Invitee preview/accept/decline all go through functions too.
+    match /groupInvites/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /adminMessages/{id} {             // broadcast history (admin screen)
+      allow read: if isAdminRole();
+      allow write: if false;
+    }
+
+    // ========================================================================
+    // Default deny - any collection not explicitly matched above.
+    // ========================================================================
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
