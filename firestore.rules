@@ -186,12 +186,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
-    // PRE-PROD: anonymous list lets anyone enumerate discount codes. The
-    // server pricing function already validates coupons - the client-side
-    // lookup should move there, then this becomes staff-only.
+    // Staff-only since pre-prod hardening #5: both storefronts resolve a
+    // single code through the lookup_coupon/lookupCoupon functions now, so
+    // nothing legitimate lists this collection from a client any more (a
+    // world-readable list let anyone enumerate every discount code).
     match /coupons/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
+      allow read, write: if isBusinessStaff();
     }
 
     // ========================================================================
@@ -233,11 +233,13 @@ service cloud.firestore {
       allow create: if true;                // coupon attribution at checkout
       allow read, update, delete: if isBusinessStaff();
     }
-    // PRE-PROD: anonymous read-modify-write of running tax totals.
+    // Closed since pre-prod hardening #4: totals are rolled up SERVER-side
+    // by the onPurchaseTaxSummary purchases trigger now (idempotent,
+    // derived from the purchase doc itself) - the old checkout-success
+    // anonymous read-modify-write is gone. Staff can read for reporting.
     match /tax_rate_summaries/{id} {
-      allow read: if true;
-      allow create, update: if true;
-      allow delete: if false;
+      allow read: if isBusinessStaff();
+      allow write: if false;
     }
     // PRE-PROD: the LEGACY digital-library user store (web-only; the reader
     // app reads libraryUsers, not this). Anonymous email lookup + license

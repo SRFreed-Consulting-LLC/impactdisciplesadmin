@@ -130,6 +130,11 @@ exports.updateMyPreferences = libraryProfile.updateMyPreferences;
 const adminClaims = require("./admin-claims.functions");
 exports.onAdminUserRoleSync = adminClaims.onAdminUserRoleSync;
 
+const checkoutSupport = require("./checkout-support.functions");
+exports.lookup_coupon = checkoutSupport.lookupCouponHttp;
+exports.lookupCoupon = checkoutSupport.lookupCoupon;
+exports.onPurchaseTaxSummary = checkoutSupport.onPurchaseTaxSummary;
+
 const libraryGroups = require("./library-groups.functions");
 exports.createGroup = libraryGroups.createGroup;
 exports.requestToJoinGroup = libraryGroups.requestToJoinGroup;
