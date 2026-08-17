@@ -67,9 +67,16 @@ function callerIdentity(request: CallableRequest): {
 async function resolveCountryFromIp(
   request: CallableRequest
 ): Promise<string | undefined> {
-  const fwd = request.rawRequest?.headers["x-forwarded-for"];
-  const ip = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(",")[0]?.trim() ||
-    request.rawRequest?.ip;
+  // Take the LAST X-Forwarded-For entry, not the first. Cloud Run preserves
+  // a caller-supplied XFF and APPENDS the real peer IP, so the leftmost
+  // entry is attacker-chosen (Sweep 3, 2026-08-17: a forged
+  // `X-Forwarded-For: 1.2.3.4` for a non-US IP would otherwise permanently
+  // set the sticky internationalUser flag = free read of the whole paid
+  // library). The rightmost entry is the one Google's infrastructure added.
+  const fwdHeader = request.rawRequest?.headers["x-forwarded-for"];
+  const fwd = Array.isArray(fwdHeader) ? fwdHeader.join(",") : fwdHeader;
+  const parts = (fwd ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  const ip = parts.length ? parts[parts.length - 1] : request.rawRequest?.ip;
   if (!ip) {
     return undefined;
   }

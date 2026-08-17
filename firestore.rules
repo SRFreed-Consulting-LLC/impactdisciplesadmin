@@ -90,6 +90,14 @@ service cloud.firestore {
       return signedIn() &&
         get(/databases/$(database)/documents/discussionGroups/$(groupId)).data.creatorEmail == callerEmail();
     }
+    // A member doc EXISTS for this email in this group, ANY status. Weaker
+    // than isApprovedGroupMember on purpose: a conversation with a pending or
+    // rejected applicant must keep working (see DiscussionGroupService), but
+    // a total non-member must not.
+    function groupMemberExists(groupId, email) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/discussionGroups/$(groupId)/members/$(email));
+    }
 
     // ========================================================================
     // SECTION 1 - Public catalog (web site reads anonymously; staff author)
@@ -646,16 +654,33 @@ service cloud.firestore {
         allow delete: if resource.data.authorEmail == callerEmail() || isAdminRole();
       }
       // 1:1 leader<->member conversations: the conversation doc id is the
-      // NON-creator participant's email; both participants read/write.
+      // NON-creator participant's email; the thread is always between the
+      // creator and that one member. Membership-gated (Sweep 3, 2026-08-17):
+      // the otherEmail participant must have a member doc, and the caller
+      // must be either that participant or the creator. Without this, any
+      // signed-in patron could DM (and, via notifyConversationMessage, push
+      // to) any leader, and a creator could open conversations/{anyEmail} to
+      // push arbitrary text at any user whose email they know. isAdminRole()
+      // read/delete lets moderation hard-delete the subtree.
       match /conversations/{otherEmail} {
-        allow read, create, update: if callerEmail() == otherEmail || isGroupCreator(groupId);
+        allow read: if isAdminRole() ||
+          (groupMemberExists(groupId, otherEmail) &&
+            (callerEmail() == otherEmail || isGroupCreator(groupId)));
+        allow create, update: if groupMemberExists(groupId, otherEmail) &&
+          (callerEmail() == otherEmail || isGroupCreator(groupId));
         allow delete: if isAdminRole();
 
         match /messages/{id} {
-          allow read: if callerEmail() == otherEmail || isGroupCreator(groupId);
-          allow create: if (callerEmail() == otherEmail || isGroupCreator(groupId)) &&
-            request.resource.data.senderEmail == callerEmail();
-          allow update, delete: if false;
+          allow read: if isAdminRole() ||
+            (groupMemberExists(groupId, otherEmail) &&
+              (callerEmail() == otherEmail || isGroupCreator(groupId)));
+          allow create: if groupMemberExists(groupId, otherEmail) &&
+            (callerEmail() == otherEmail || isGroupCreator(groupId)) &&
+            request.resource.data.senderEmail == callerEmail() &&
+            request.resource.data.text is string &&
+            request.resource.data.text.size() < 4000;
+          allow update: if false;
+          allow delete: if isAdminRole();     // moderation hard-delete
         }
       }
     }
