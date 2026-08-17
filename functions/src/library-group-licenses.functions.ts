@@ -270,9 +270,47 @@ export const purchaseGroupLicenses = onCall(
       await batch.commit();
     }
 
+    // Auto-assign ONE of the just-purchased licenses to the leader
+    // themselves (2026-08-17 request: buy 5 -> 1 self-assigned, 4 left to
+    // hand out), UNLESS they already hold a license for this book - not
+    // just to avoid wasting a unit: applyLicenseGrant REPLACES an
+    // existing same-book bookLicenses entry, so self-assigning to an
+    // already-licensed leader would silently swap their purchase/admin
+    // provenance for a revocable group-license entry (leaving the group
+    // could then strip a book they'd paid for). A non-array
+    // licensedBookIds (the staff 'all' sentinel) also skips - full
+    // access already, nothing to add.
+    let selfAssignedLicenseId: string | undefined;
+    const leaderRef = libraryDb.collection("libraryUsers").doc(email);
+    await libraryDb.runTransaction(async (transaction) => {
+      const leaderSnap = await transaction.get(leaderRef);
+      const ids = leaderSnap.exists ?
+        (leaderSnap.data() as {licensedBookIds?: unknown}).licensedBookIds :
+        undefined;
+      const alreadyLicensed =
+        (ids !== undefined && !Array.isArray(ids)) ||
+        (Array.isArray(ids) && ids.includes(bookId));
+      if (alreadyLicensed) {
+        return;
+      }
+      applyLicenseGrant({
+        transaction,
+        licenseRef: licenseRefs[0],
+        recipientRef: leaderRef,
+        recipientSnap: leaderSnap,
+        bookId,
+        licenseId: licenseRefs[0].id,
+        groupId,
+        recipientEmail: email,
+        now,
+      });
+      selfAssignedLicenseId = licenseRefs[0].id;
+    });
+
     return {
       purchaseId: purchaseRef.id,
       licenseIds: licenseRefs.map((r) => r.id),
+      ...(selfAssignedLicenseId ? {selfAssignedLicenseId} : {}),
     };
   }
 );
