@@ -55,3 +55,32 @@
   font-size: 0.8125rem;
   opacity: 0.85;
 }
+
+/* Both the publish toggle and the Manage Permissions button live inside a
+   single matListItemMeta - Material allows only one per row - so they need
+   their own inline layout. */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* An unpublished book is still fully manageable here, it just isn't visible
+   in the reader app - dim it rather than hide or disable anything, so the
+   list still scans top-to-bottom as one set. */
+.unpublished {
+  opacity: 0.65;
+}
+
+.unpublished-tag {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.08);
+}
