@@ -219,8 +219,13 @@ service cloud.firestore {
     // own LegacyMailService both write it; the extension itself uses the
     // Admin SDK. Shape-constrained to the exact fields both apps write.
     match /mail/{id} {
+      // Two legitimate shapes: {to, date, message{subject,html?,text?}} and
+      // {to, date, template{name,data}} - the template form has NO message
+      // field, so the message-shape check must be conditional (accessing a
+      // missing key in rules throws, which reads as a deny).
       allow create: if request.resource.data.keys().hasOnly(['to', 'date', 'message', 'template']) &&
-        request.resource.data.message.keys().hasOnly(['subject', 'html', 'text']);
+        (!('message' in request.resource.data) ||
+          request.resource.data.message.keys().hasOnly(['subject', 'html', 'text']));
       allow read, update, delete: if isBusinessStaff();
     }
     // Anonymous create is REQUIRED even for the admin app: failed-login
