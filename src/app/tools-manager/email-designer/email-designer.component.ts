@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, filter, take } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
-import { createDefaultDesign } from 'src/app/common/models/admin/email-design.model';
+import { createDefaultDesign, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
 import { stripUndefinedDeep } from 'src/app/common/utils/strip-undefined';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
@@ -96,17 +96,18 @@ export class EmailDesignerComponent implements OnInit {
     }
 
     this.service.getById(this.templateId).then((template) => {
-      if (!template?.design) {
-        // Not a builder template (legacy Quill templates edit in the old
-        // dialog) or gone - nothing for this editor to do.
-        this.snackbar.error('Template not found or not an Email Builder template');
+      if (!template) {
+        this.snackbar.error('Template not found');
         this.backToList();
         return;
       }
       this.existing = template;
       this.templateName = template.name;
       this.templateSubject = template.subject ?? '';
-      this.state.load(template.design);
+      // Builder templates load their design; legacy (Quill/html-only)
+      // templates are imported as one full-width text block - content
+      // preserved verbatim, converted to a builder template on first save.
+      this.state.load(template.design ?? createDesignFromLegacyHtml(template.html ?? ''));
       this.loading$.next(false);
     });
   }

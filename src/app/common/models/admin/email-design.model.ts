@@ -407,6 +407,24 @@ export function createDefaultDesign(): EmailDesign {
   };
 }
 
+// Imports a legacy (Quill-authored, html-only) template into the builder:
+// the whole document becomes one full-width text block in the body, styled
+// left-aligned like the original flowed content. The template only BECOMES
+// a builder template when saved from the designer (which then stamps
+// `design` and recompiles `html`); merely opening it changes nothing.
+export function createDesignFromLegacyHtml(html: string): EmailDesign {
+  const design = createDefaultDesign();
+  const row = createRow(1);
+  const block = createBlock('text');
+  if (block.type === 'text') {
+    block.props.html = html ?? '';
+  }
+  block.styles.align = 'left';
+  row.columns[0].blocks = [block];
+  design.sections[1].rows = [row];
+  return design;
+}
+
 // One resolver for "what styles actually apply on phones", shared by the
 // canvas renderers and the HTML compiler so the editor preview and the sent
 // email can never disagree.

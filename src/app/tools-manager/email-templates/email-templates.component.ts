@@ -83,16 +83,12 @@ export class EmailTemplatesComponent implements OnInit {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    // Builder templates edit in the full-screen designer; legacy templates
-    // keep the Quill dialog.
-    if (item.design) {
-      this.router.navigate(['/tools-manager/email-designer', item.id]);
-      return;
-    }
-    this.dialog.open(EmailTemplateDialogComponent, {
-      width: '800px',
-      data: { item }
-    });
+    // EVERY template edits in the full-screen designer (per the user,
+    // 2026-08-17 - not just builder-authored ones). Legacy html-only
+    // templates are imported there as a single text block and become
+    // builder templates on their first save; until then the Editor column
+    // keeps showing Rich Text.
+    this.router.navigate(['/tools-manager/email-designer', item.id]);
   }
 
   delete(item: MailTemplateModel): void {

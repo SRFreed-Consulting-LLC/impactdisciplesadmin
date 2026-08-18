@@ -132,12 +132,27 @@ test.describe('Email designer', () => {
     await expect(page).toHaveURL(/email-designer\/new/);
   });
 
-  test('legacy rich-text templates still open the Quill dialog from the list', async ({ page }) => {
+  test('legacy rich-text templates open in the designer with their content imported', async ({ page }) => {
     await page.goto('/tools-manager?tab=email-templates');
     // Every legacy row shows Rich Text in the Editor column.
     const legacyRow = page.locator('tr:has-text("Rich Text")').first();
     await legacyRow.waitFor();
     await legacyRow.dblclick();
-    await expect(page.locator('app-email-template-dialog')).toBeVisible();
+
+    // Lands in the full-screen designer, the legacy html imported as a
+    // text block on the canvas (NOT the old Quill dialog).
+    await expect(page).toHaveURL(/\/tools-manager\/email-designer\//);
+    await expect(page.locator('.designer-shell')).toBeVisible();
+    const imported = page.locator('.text-view').first();
+    await expect(imported).toBeVisible();
+    await expect
+      .poll(() => imported.evaluate((el) => (el.textContent ?? '').trim().length))
+      .toBeGreaterThan(0);
+
+    // Merely opening an imported template is NOT dirty - leaving must not
+    // prompt, and nothing about the stored template changed.
+    await page.click('mat-toolbar button:has(mat-icon:text("arrow_back"))');
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
+    await expect(page).toHaveURL(/tab=email-templates/);
   });
 });
