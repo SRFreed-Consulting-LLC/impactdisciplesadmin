@@ -213,8 +213,7 @@ export const NAV_CONFIG: NavGroup[] = [
       // tools-manager.email-templates and bounces back here if denied).
       { label: 'Email Templates', slug: 'email-templates' },
       { label: 'Shipping Labels', slug: 'shipping-labels' },
-      { label: 'Form Builder', slug: 'form-builder' },
-      { label: 'Mailchimp', slug: 'mailchimp' }
+      { label: 'Form Builder', slug: 'form-builder' }
     ]
   },
   {
@@ -238,7 +237,14 @@ export const NAV_CONFIG: NavGroup[] = [
       // rather than Tools because they exist to feed campaign audiences -
       // they're campaign infrastructure, and keeping them in this group
       // keeps the "can work campaigns" permission story one grant.
-      { label: 'Tag Rules', slug: 'tag-rules' }
+      { label: 'Tag Rules', slug: 'tag-rules' },
+      // Moved from Tools Manager 2026-08-18 under the app's email taxonomy
+      // (transactional emails = system-sent receipts/confirmations, campaign
+      // emails = admin-initiated outreach): the Mailchimp sync is audience
+      // infrastructure for campaign email, not a generic utility. No stored
+      // grants existed on the old tools-manager.mailchimp key in dev or prod
+      // at move time, so no grant migration was needed.
+      { label: 'Mailchimp', slug: 'mailchimp' }
     ]
   },
   {
