@@ -82,6 +82,64 @@ function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
+// Per-warm-instance cache of apilayer Georgia tax-rate lookups by zip.
+// The live lookup sat uncached and untimed on create_paypal_order's
+// critical path - a slow apilayer response directly delayed the PayPal
+// buttons for every Georgia order. Rates change ~yearly; 12h is generous.
+const taxRateCache = new Map<string, {
+  taxRate: number; taxSource: string; expiresAt: number;
+}>();
+const TAX_RATE_TTL_MS = 12 * 60 * 60 * 1000;
+const TAX_LOOKUP_TIMEOUT_MS = 3000;
+
+/**
+ * Georgia tax rate for a zip via apilayer, with a per-instance 12h cache
+ * and a hard timeout - on any failure or slow response it falls back to
+ * the same 7% default the uncached code used. Only successful service
+ * responses are cached (a cached fallback would stick the default for
+ * 12h even after apilayer recovers).
+ * @param {string} zip The shipping zip code.
+ * @return {Promise<{taxRate: number, taxSource: string}>} Rate + source.
+ */
+async function lookupGeorgiaTaxRate(
+  zip: string
+): Promise<{taxRate: number; taxSource: string}> {
+  const cached = taxRateCache.get(zip);
+  if (cached && cached.expiresAt > Date.now()) {
+    return {taxRate: cached.taxRate, taxSource: cached.taxSource};
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(), TAX_LOOKUP_TIMEOUT_MS
+    );
+    const response = await fetch(
+      "https://api.apilayer.com/tax_data/tax_rates?zip=" +
+        encodeURIComponent(zip) +
+        "&use_client_ip=false&country=US",
+      {
+        method: "GET",
+        headers: {apikey: process.env.TAX_API_KEY ?? ""},
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timer);
+    const data = response.ok ? await response.json() : null;
+
+    if (typeof data?.combined_rate === "number") {
+      const result = {taxRate: data.combined_rate, taxSource: "service"};
+      taxRateCache.set(zip, {
+        ...result, expiresAt: Date.now() + TAX_RATE_TTL_MS,
+      });
+      return result;
+    }
+    return {taxRate: 0.07, taxSource: "default"};
+  } catch {
+    return {taxRate: 0.07, taxSource: "default"};
+  }
+}
+
 /**
  * Loads every currently-active, currently-in-date-range Sale document.
  * Mirrors product-details.component.ts / checkout.component.ts's own
@@ -300,25 +358,11 @@ export async function computeOrderPricing(
           .reduce((sum, item) => sum + item.price * item.orderQuantity, 0)
       );
 
-      try {
-        const response = await fetch(
-          "https://api.apilayer.com/tax_data/tax_rates?zip=" +
-            encodeURIComponent(request.shippingAddress.zip ?? "") +
-            "&use_client_ip=false&country=US",
-          {
-            method: "GET",
-            headers: {apikey: process.env.TAX_API_KEY ?? ""},
-          }
-        );
-        const data = response.ok ? await response.json() : null;
-
-        taxRate = typeof data?.combined_rate === "number" ?
-          data.combined_rate : 0.07;
-        taxSource = data ? "service" : "default";
-      } catch {
-        taxRate = 0.07;
-        taxSource = "default";
-      }
+      const rate = await lookupGeorgiaTaxRate(
+        request.shippingAddress.zip ?? ""
+      );
+      taxRate = rate.taxRate;
+      taxSource = rate.taxSource;
 
       estimatedTaxes = round2(taxableAmount * taxRate);
     }

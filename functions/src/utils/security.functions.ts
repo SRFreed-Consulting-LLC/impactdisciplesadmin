@@ -42,6 +42,12 @@ export const restrictedCors = require("cors")({
       callback(new Error("Not allowed by CORS"));
     }
   },
+  // Access-Control-Max-Age: without it, EVERY JSON POST from the browser is
+  // preceded by an OPTIONS preflight that also invokes (and can cold-start)
+  // the function - on the storefront checkout that doubled the round trips
+  // on get_shipping_rates and create_paypal_order. One hour lets a checkout
+  // session preflight each endpoint once.
+  maxAge: 3600,
 });
 
 /**

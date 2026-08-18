@@ -325,13 +325,17 @@ export async function queueWebOrderEmails(
     await queueMail(db, email, template.subject ?? "Sales Receipt", html);
   }
 
+  // Per-item follow-ups run CONCURRENTLY (they used to be a serial
+  // read-then-queue loop, which sat on capture_paypal_order's critical
+  // path - the customer stared at "Finishing your order..." while each
+  // template was fetched one at a time).
   const followUps = (form.cartItems ?? [])
     .filter((item) => !!item.followUpEmailId);
-  for (const item of followUps) {
+  await Promise.all(followUps.map(async (item) => {
     const followUpSnap = await db.collection("mail_templates")
       .doc(item.followUpEmailId as string).get();
     if (!followUpSnap.exists) {
-      continue;
+      return;
     }
     const followUp = followUpSnap.data() as {subject?: string;
       html?: string};
@@ -345,7 +349,7 @@ export async function queueWebOrderEmails(
       html = html.split("{{" + key + "}}").join(value);
     }
     await queueMail(db, email, followUp.subject ?? "", html);
-  }
+  }));
 }
 
 export interface ReaderReceiptLine {

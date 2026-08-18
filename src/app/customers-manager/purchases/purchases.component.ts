@@ -5,7 +5,6 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
@@ -64,9 +63,14 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     { key: 'refundAmount', label: 'Refunded', type: 'currency' }
   ];
 
+  // No delete action: firestore.rules deliberately denies client-side
+  // purchase deletes (`allow create, delete: if false` - purchases are
+  // financial records, hardened pre-prod). The delete button this grid used
+  // to render could never succeed - deleteDoc was rejected by rules and the
+  // failure was silent (no catch, no snackbar), which read as "delete does
+  // nothing" (live-diagnosed 2026-08-18).
   rowActions: DataGridRowAction<CheckoutForm>[] = [
-    { icon: 'local_shipping', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.permissionService.canEdit(this.screenKey) && this.isShippingButtonVisible(item) },
-    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }
+    { icon: 'local_shipping', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.permissionService.canEdit(this.screenKey) && this.isShippingButtonVisible(item) }
   ];
 
   private readonly screenKey = 'customers-manager.purchases';
@@ -97,7 +101,6 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     public service: PurchasesService,
     private permissionService: PermissionService,
     private fb: FormBuilder,
-    private confirmService: ConfirmService,
     private snackbar: SnackbarService,
     private route: ActivatedRoute,
     private router: Router
@@ -185,16 +188,6 @@ export class PurchasesComponent implements OnInit, OnDestroy {
   // exact same figures as the edit view (now entirely app-purchase-details -
   // see its own getOrderItemCount()) - call `service.xxx()` directly instead
   // of a component wrapper.
-
-  delete(item: CheckoutForm): void {
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
-  }
 
   isShippingButtonVisible(item: CheckoutForm): boolean {
     return (item.shippingRate ?? 0) > 0;
