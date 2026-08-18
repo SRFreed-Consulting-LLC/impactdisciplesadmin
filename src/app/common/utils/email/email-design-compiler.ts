@@ -23,6 +23,7 @@
 import {
   BlockStyles,
   ButtonBlock,
+  DEFAULT_SOCIAL_ICON_URLS,
   DividerBlock,
   EmailBlock,
   EmailColumn,
@@ -32,6 +33,7 @@ import {
   FooterBlock,
   GlobalStyleSet,
   HeadingBlock,
+  HtmlBlock,
   ImageBlock,
   ImageProps,
   LogoBlock,
@@ -39,6 +41,7 @@ import {
   SpacerBlock,
   TextBlock,
   VideoBlock,
+  ZERO_SIDES,
   resolveMobileGlobalStyles,
   resolveMobileStyles
 } from '../../models/admin/email-design.model';
@@ -133,8 +136,9 @@ function renderHeading(block: HeadingBlock, ctx: RenderContext): string {
   const sizeByLevel = { 1: h.sizes.h1, 2: h.sizes.h2, 3: h.sizes.h3, 4: h.sizes.h4 };
   const size = sizeByLevel[block.props.level];
   const tag = 'h' + block.props.level;
+  const family = block.props.fontFamily ?? h.fontFamily;
   return (
-    `<${tag} class="eml-h" style="margin:0;font-family:${h.fontFamily};` +
+    `<${tag} class="eml-h" style="margin:0;font-family:${family};` +
     `font-size:${size}px;line-height:1.25;color:${h.color};">` +
     inlineLinkStyles(block.props.html, ctx.global) +
     `</${tag}>`
@@ -143,12 +147,19 @@ function renderHeading(block: HeadingBlock, ctx: RenderContext): string {
 
 function renderText(block: TextBlock, ctx: RenderContext): string {
   const p = ctx.global.paragraph;
+  const family = block.props.fontFamily ?? p.fontFamily;
   return (
-    `<div class="eml-p" style="font-family:${p.fontFamily};font-size:${p.fontSize}px;` +
+    `<div class="eml-p" style="font-family:${family};font-size:${p.fontSize}px;` +
     `line-height:${p.lineHeight};color:${p.color};">` +
     inlineLinkStyles(block.props.html, ctx.global) +
     `</div>`
   );
+}
+
+// Raw-markup passthrough: sanitized (scripts stripped) at edit time by the
+// designer; the compiler trusts it as authored.
+function renderHtml(block: HtmlBlock): string {
+  return block.props.html ?? '';
 }
 
 function imageWidth(props: ImageProps, available: number): number {
@@ -239,9 +250,13 @@ function renderSocial(block: SocialBlock): string {
   const items = block.props.networks
     .map((n) => {
       const href = escapeEmailHtml(n.url || '#');
-      const inner = n.iconUrl
-        ? `<img src="${escapeEmailHtml(n.iconUrl)}" alt="${escapeEmailHtml(n.label)}" ` +
-          `width="${block.props.iconSize}" style="display:inline-block;border:0;">`
+      // Per-network explicit icon, else the shared hosted default set,
+      // else a text link.
+      const iconUrl = n.iconUrl || DEFAULT_SOCIAL_ICON_URLS[n.network] || '';
+      const inner = iconUrl
+        ? `<img src="${escapeEmailHtml(iconUrl)}" alt="${escapeEmailHtml(n.label)}" ` +
+          `width="${block.props.iconSize}" height="${block.props.iconSize}" ` +
+          `style="display:inline-block;border:0;border-radius:6px;">`
         : escapeEmailHtml(n.label);
       return (
         `<a href="${href}" target="_blank" style="display:inline-block;margin:0 ${Math.round(block.props.spacing / 2)}px;` +
@@ -295,17 +310,51 @@ function renderBlockInner(block: EmailBlock, ctx: RenderContext): string {
       return renderSocial(block);
     case 'footer':
       return renderFooter(block, ctx);
+    case 'html':
+      return renderHtml(block);
   }
 }
 
 function renderBlock(block: EmailBlock, ctx: RenderContext): string {
+  // Hidden entirely: excluded from the compiled email (Mailchimp's
+  // slashed-eye semantics - grayed on canvas, absent from sends).
+  if (block.hidden) {
+    return '';
+  }
+
+  const margin = block.styles.margin ?? ZERO_SIDES;
+  const hasMargin = margin.top || margin.right || margin.bottom || margin.left;
+
+  // hideOnDesktop: hidden inline (desktop clients + Outlook via the mso
+  // conditional), un-hidden on phones by the @media rule buildMobileCss()
+  // emits for .show-mob-<id>. hideOnMobile: visible inline, hidden by the
+  // @media rule for .hide-mob-<id>.
+  const visibilityClass = block.hideOnMobile ?
+    ` hide-mob-${block.id}` :
+    (block.hideOnDesktop ? ` show-mob-${block.id}` : '');
+  const desktopHiddenCss = block.hideOnDesktop ?
+    'display:none;max-height:0;overflow:hidden;mso-hide:all;' : '';
+
   // Buttons and social rows center via the td's text-align; images too.
-  return (
+  const inner =
     `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>` +
     `<td class="m-${block.id}" align="${block.styles.align}" style="${blockTdCss(block.styles)}">` +
     renderBlockInner(block, ctx) +
-    `</td></tr></table>`
-  );
+    `</td></tr></table>`;
+
+  // Margin = transparent padding on an OUTER wrapper cell, so it sits
+  // outside the block's own background/border (real margins are unreliable
+  // in email clients). The wrapper also carries the visibility class.
+  if (hasMargin || visibilityClass || desktopHiddenCss) {
+    const marginCss = hasMargin ?
+      `padding:${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px;` : '';
+    return (
+      `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"` +
+      ` class="blk-${block.id}${visibilityClass}" style="${desktopHiddenCss}"><tr>` +
+      `<td style="${marginCss}">` + inner + `</td></tr></table>`
+    );
+  }
+  return inner;
 }
 
 // ---------------------------------------------------------------- layout
@@ -389,6 +438,13 @@ function buildMobileCss(design: EmailDesign): string {
               rules.push(`.m-${block.id}{${diff};}`);
             }
           }
+          // Per-device visibility (see renderBlock's wrapper classes).
+          if (block.hideOnMobile && !block.hidden) {
+            rules.push(`.hide-mob-${block.id}{display:none !important;max-height:0 !important;overflow:hidden !important;}`);
+          }
+          if (block.hideOnDesktop && !block.hidden && !block.hideOnMobile) {
+            rules.push(`.show-mob-${block.id}{display:table !important;max-height:none !important;overflow:visible !important;}`);
+          }
         }
       }
     }
@@ -424,8 +480,20 @@ export function compileEmailDesign(design: EmailDesign, opts?: CompileOptions): 
 
   const sections = design.sections.map((section) => renderSection(section, global, width)).join('');
 
+  // The inbox snippet line. Hidden in the rendered email but read by
+  // clients as the preview text; the trailing zero-width/non-breaking
+  // padding stops clients from pulling visible body copy in after it.
+  const preheaderText = (design.preheader ?? '').trim();
+  const preheader = preheaderText ?
+    `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;` +
+    `opacity:0;overflow:hidden;mso-hide:all;">` +
+    escapeEmailHtml(preheaderText) +
+    '&#8199;&#847;'.repeat(30) +
+    `</div>` : '';
+
   const body =
     `<body style="margin:0;padding:0;background-color:${global.emailBackgroundColor};">` +
+    preheader +
     `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" ` +
     `bgcolor="${global.emailBackgroundColor}" style="background-color:${global.emailBackgroundColor};">` +
     `<tr><td align="center" style="padding:24px 8px;">` +

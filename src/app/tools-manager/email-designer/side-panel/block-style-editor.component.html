@@ -37,6 +37,16 @@
     </div>
 
     <div class="field-row">
+      <span class="field-label">Margin - outside border/background (T / R / B / L)</span>
+      <div class="four-grid">
+        <input type="number" min="0" [value]="editedMargin.top" (change)="setMargin('top', $any($event.target).value)" aria-label="Margin top">
+        <input type="number" min="0" [value]="editedMargin.right" (change)="setMargin('right', $any($event.target).value)" aria-label="Margin right">
+        <input type="number" min="0" [value]="editedMargin.bottom" (change)="setMargin('bottom', $any($event.target).value)" aria-label="Margin bottom">
+        <input type="number" min="0" [value]="editedMargin.left" (change)="setMargin('left', $any($event.target).value)" aria-label="Margin left">
+      </div>
+    </div>
+
+    <div class="field-row">
       <span class="field-label">Border</span>
       <div class="border-grid">
         <select class="border-select" [value]="edited.border?.style ?? 'none'"

@@ -6,6 +6,18 @@
   position: relative;
   cursor: pointer;
 
+  // hidden = excluded from sends entirely; view-hidden = hidden on the
+  // device the canvas is currently previewing. Both stay visible-but-faded
+  // here so they remain editable.
+  &.block--hidden {
+    opacity: 0.35;
+    filter: grayscale(0.8);
+  }
+
+  &.block--view-hidden:not(.block--hidden) {
+    opacity: 0.45;
+  }
+
   &:hover:not(.selected):not(.editing) {
     outline: 2px dashed #7fb6b2;
     outline-offset: -2px;
@@ -21,6 +33,36 @@
     outline: 2px solid #0e6e6e;
     outline-offset: -2px;
   }
+}
+
+.hidden-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 16;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #21272e;
+  color: #eafffb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  &--device {
+    background: #6a7280;
+  }
+}
+
+.html-view {
+  overflow-wrap: break-word;
+  min-height: 20px;
 }
 
 .block-toolbar {

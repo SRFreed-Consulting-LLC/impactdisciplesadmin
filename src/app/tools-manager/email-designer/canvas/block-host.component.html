@@ -1,9 +1,23 @@
 <div class="block" tabindex="0" [class.selected]="selected" [class.editing]="editing"
+     [class.block--hidden]="block.hidden" [class.block--view-hidden]="hiddenInViewMode"
      [ngStyle]="wrapperStyle" (click)="onClick($event)" (keyup.enter)="onClick($event)">
+
+  @if (block.hidden) {
+    <span class="hidden-badge" matTooltip="Hidden - excluded from the sent email">
+      <mat-icon>visibility_off</mat-icon>
+    </span>
+  } @else if (hiddenInViewMode) {
+    <span class="hidden-badge hidden-badge--device"
+          [matTooltip]="'Hidden on ' + state.viewMode + ' - shown faded here for editing'">
+      <mat-icon>mobile_off</mat-icon>
+    </span>
+  }
 
   @if (selected && !editing) {
     <div class="block-toolbar">
       <mat-icon class="block-tool grab" matTooltip="Drag to move">drag_indicator</mat-icon>
+      <mat-icon class="block-tool" [matTooltip]="block.hidden ? 'Show (include in sends)' : 'Hide (exclude from sends)'"
+                (click)="onToggleHidden($event)">{{ block.hidden ? 'visibility' : 'visibility_off' }}</mat-icon>
       <mat-icon class="block-tool" matTooltip="Duplicate" (click)="onDuplicate($event)">content_copy</mat-icon>
       <mat-icon class="block-tool" matTooltip="Delete" (click)="onDelete($event)">delete_outline</mat-icon>
     </div>
@@ -76,14 +90,18 @@
           <span class="social-item" [style.width.px]="$any(block).props.iconSize"
                 [style.height.px]="$any(block).props.iconSize"
                 [style.margin]="'0 ' + ($any(block).props.spacing / 2) + 'px'">
-            @if (network.iconUrl) {
-              <img [src]="network.iconUrl" [alt]="network.label" [style.width.px]="$any(block).props.iconSize">
+            @if (socialIconUrl(network)) {
+              <img [src]="socialIconUrl(network)" [alt]="network.label" [style.width.px]="$any(block).props.iconSize">
             } @else {
               {{ network.label.charAt(0) }}
             }
           </span>
         }
       </div>
+    }
+    @case ('html') {
+      <!-- Sanitized (scripts stripped) when saved in the settings panel. -->
+      <div class="html-view" [innerHTML]="trustHtml($any(block).props.html)"></div>
     }
     @case ('footer') {
       <div class="footer-view"

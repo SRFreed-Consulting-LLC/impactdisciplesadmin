@@ -6,7 +6,8 @@ import {
   EmailDesign,
   EmailRow,
   EmailSection,
-  createDefaultDesign
+  createDefaultDesign,
+  normalizeDesign
 } from 'src/app/common/models/admin/email-design.model';
 
 export type SelectionKind = 'block' | 'row' | 'section';
@@ -51,7 +52,9 @@ export class DesignerStateService {
   private static readonly MAX_HISTORY = 50;
 
   load(design: EmailDesign): void {
-    this.design = design;
+    // Backfill fields added after older designs were saved (margins,
+    // visibility flags, preheader, section names).
+    this.design = normalizeDesign(design);
     this.undoStack = [];
     this.redoStack = [];
     this.dirty = false;

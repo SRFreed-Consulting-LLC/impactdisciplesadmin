@@ -175,6 +175,67 @@ describe('compileEmailDesign', () => {
     const html = compileEmailDesign(createDefaultDesign(), { title: 'A <b>&</b> B' });
     expect(html).toContain('<title>A &lt;b&gt;&amp;&lt;/b&gt; B</title>');
   });
+
+  // ---- P1 gap-closure features ----
+
+  it('compiles margin as transparent padding on an outer wrapper cell', () => {
+    const text = createBlock('text') as TextBlock;
+    text.styles.margin = { top: 5, right: 6, bottom: 7, left: 8 };
+    const html = compileEmailDesign(bodyRowWithBlocks(text));
+    expect(html).toContain('padding:5px 6px 7px 8px;');
+  });
+
+  it('excludes hidden blocks from the compiled email entirely', () => {
+    const text = createBlock('text') as TextBlock;
+    text.props.html = '<p>secret-draft-content</p>';
+    text.hidden = true;
+    const html = compileEmailDesign(bodyRowWithBlocks(text));
+    expect(html).not.toContain('secret-draft-content');
+  });
+
+  it('emits hide-on-mobile and hide-on-desktop visibility rules', () => {
+    const mobileHidden = createBlock('text') as TextBlock;
+    mobileHidden.hideOnMobile = true;
+    const desktopHidden = createBlock('text') as TextBlock;
+    desktopHidden.hideOnDesktop = true;
+    const html = compileEmailDesign(bodyRowWithBlocks(mobileHidden, desktopHidden));
+    expect(html).toContain(`hide-mob-${mobileHidden.id}`);
+    expect(html).toContain(`.hide-mob-${mobileHidden.id}{display:none !important`);
+    expect(html).toContain(`show-mob-${desktopHidden.id}`);
+    expect(html).toContain('mso-hide:all');
+    expect(html).toContain(`.show-mob-${desktopHidden.id}{display:table !important`);
+  });
+
+  it('renders a hidden preheader div when preview text is set', () => {
+    const design = createDefaultDesign();
+    design.preheader = 'The inbox snippet line';
+    const html = compileEmailDesign(design);
+    expect(html).toContain('The inbox snippet line');
+    expect(html).toMatch(/<div style="display:none[^>]*>The inbox snippet line/);
+  });
+
+  it('omits the preheader div when preview text is empty', () => {
+    const design = createDefaultDesign();
+    design.preheader = '   ';
+    const html = compileEmailDesign(design);
+    expect(html).not.toContain('display:none;font-size:1px');
+  });
+
+  it('passes an html block through untouched', () => {
+    const raw = createBlock('html');
+    if (raw.type === 'html') {
+      raw.props.html = '<table><tr><td>custom-markup</td></tr></table>';
+    }
+    const html = compileEmailDesign(bodyRowWithBlocks(raw));
+    expect(html).toContain('<table><tr><td>custom-markup</td></tr></table>');
+  });
+
+  it('honors a per-block font family over the global default', () => {
+    const text = createBlock('text') as TextBlock;
+    text.props.fontFamily = 'Courier New, Courier, monospace';
+    const html = compileEmailDesign(bodyRowWithBlocks(text));
+    expect(html).toContain('font-family:Courier New, Courier, monospace');
+  });
 });
 
 describe('escapeEmailHtml', () => {

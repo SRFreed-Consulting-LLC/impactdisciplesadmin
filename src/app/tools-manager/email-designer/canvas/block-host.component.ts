@@ -2,9 +2,11 @@ import { Component, Input } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
   BlockStyles,
+  DEFAULT_SOCIAL_ICON_URLS,
   EmailBlock,
   EmailColumn,
   GlobalStyleSet,
+  SocialNetworkLink,
   newDesignId,
   resolveMobileGlobalStyles,
   resolveMobileStyles
@@ -47,8 +49,12 @@ export class BlockHostComponent {
 
   get wrapperStyle(): Record<string, string> {
     const s = this.styles;
+    const m = s.margin;
     const style: Record<string, string> = {
       padding: `${s.padding.top}px ${s.padding.right}px ${s.padding.bottom}px ${s.padding.left}px`,
+      ...(m && (m.top || m.right || m.bottom || m.left)
+        ? { margin: `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px` }
+        : {}),
       'text-align': s.align
     };
     if (s.backgroundColor) {
@@ -86,6 +92,22 @@ export class BlockHostComponent {
     }
   }
 
+  // Mailchimp's slashed-eye: grayed on the canvas, excluded from sends.
+  onToggleHidden(event: Event): void {
+    event.stopPropagation();
+    const block = this.block;
+    this.state.commit(() => {
+      block.hidden = !block.hidden;
+    });
+  }
+
+  // Whether this block is invisible in the CURRENT canvas view mode
+  // (per-device hide preview) - distinct from `hidden` which kills it
+  // everywhere.
+  get hiddenInViewMode(): boolean {
+    return this.state.viewMode === 'mobile' ? !!this.block.hideOnMobile : !!this.block.hideOnDesktop;
+  }
+
   onDuplicate(event: Event): void {
     event.stopPropagation();
     const clone = JSON.parse(JSON.stringify(this.block)) as EmailBlock;
@@ -104,6 +126,13 @@ export class BlockHostComponent {
       this.column.blocks.splice(this.column.blocks.indexOf(this.block), 1);
     });
     this.state.deselect();
+  }
+
+  // The icon the canvas shows for a social network: explicit per-network
+  // icon, else the shared hosted default set (same resolution the compiler
+  // uses), else a letter circle.
+  socialIconUrl(network: SocialNetworkLink): string {
+    return network.iconUrl || DEFAULT_SOCIAL_ICON_URLS[network.network] || '';
   }
 
   headingSize(): number {

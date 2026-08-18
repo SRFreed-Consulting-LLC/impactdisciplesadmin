@@ -7,7 +7,12 @@ import { loginAsAdmin } from './support/auth';
 // than Playwright's dragAndDrop() (which dispatches too few move events for
 // CDK to track reliably).
 async function dragTo(page: Page, source: Locator, target: Locator): Promise<void> {
+  // The palette scrolls - a source below the fold (e.g. the layout tiles,
+  // pushed down when the HTML chip landed) yields viewport-relative coords
+  // outside the window and the drag never starts.
+  await source.scrollIntoViewIfNeeded();
   const from = await source.boundingBox();
+  await target.scrollIntoViewIfNeeded();
   const to = await target.boundingBox();
   if (!from || !to) {
     throw new Error('dragTo: element not visible');
