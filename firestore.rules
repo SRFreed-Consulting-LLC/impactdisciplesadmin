@@ -367,6 +367,26 @@ service cloud.firestore {
     match /campaigns/{id} {
       allow read, write: if isBusinessStaff();
     }
+    // Customer tag rules (Campaigns Manager > Tag Rules) - staff-authored.
+    match /tag_rules/{id} {
+      allow read, write: if isBusinessStaff();
+    }
+    // Per-(customer, tag) application record - when/why a tag landed, and
+    // the anchor date the auto-campaign scheduler counts from. Normally
+    // written by the Admin SDK (upsert triggers / retroactive sweep); the
+    // client's only legitimate writes are the manual add/remove on the
+    // customer-details tag chips. Updates never happen (a tag application
+    // is immutable - remove and re-add instead).
+    match /tag_applications/{id} {
+      allow read, create, delete: if isBusinessStaff();
+      allow update: if false;
+    }
+    // Auto-campaign per-customer send ledger - scheduler-only writes
+    // (Admin SDK); staff can read it for auditing.
+    match /campaign_sends/{id} {
+      allow read: if isBusinessStaff();
+      allow write: if false;
+    }
     match /prayers/{id} {
       allow read, write: if isBusinessStaff();
     }

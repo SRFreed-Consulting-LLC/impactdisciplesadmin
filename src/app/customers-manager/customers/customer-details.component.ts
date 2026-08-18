@@ -9,6 +9,8 @@ import { CustomerNoteModel } from 'src/app/common/models/domain/utils/customer-n
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
+import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
+import { TagApplicationService } from 'src/app/common/services/data/tag-application.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
@@ -94,6 +96,17 @@ export class CustomerDetailsComponent implements OnInit {
   pendingChanges: PendingCustomerChange[] = [];
   notes: CustomerNoteModel[] = [];
 
+  // Customer tags - working copy edited by the chips UI, persisted on Save
+  // (buildUpdatedCustomer folds it in). initialTags is what was on the doc
+  // when this editor opened, so the save path can diff and mirror the
+  // manual adds/removes into tag_applications (see TagApplicationService -
+  // manual tags participate in auto-campaigns too).
+  tags: string[] = [];
+  newTag = '';
+  private initialTags: string[] = [];
+  // Distinct tag names across all rules - one-click add suggestions.
+  private ruleTags: string[] = [];
+
   // Only pushed to on add/delete (a real shape change) - an in-place edit to
   // an existing note's text/private flag doesn't need timeline$ to re-run,
   // the template's ngModel bindings already read the same note object
@@ -111,6 +124,8 @@ export class CustomerDetailsComponent implements OnInit {
     private service: CustomerService,
     private purchasesService: PurchasesService,
     private eventRegistrationService: EventRegistrationService,
+    private tagRuleService: TagRuleService,
+    private tagApplicationService: TagApplicationService,
     private authService: AdminAuthService,
     private snackbar: SnackbarService,
     private confirmService: ConfirmService,
@@ -126,6 +141,12 @@ export class CustomerDetailsComponent implements OnInit {
     this.notes = this.selectedItem.notes ? [...this.selectedItem.notes] : [];
     this.notesSubject.next(this.notes);
     this.pendingChanges = this.selectedItem.pendingChanges ? [...this.selectedItem.pendingChanges] : [];
+
+    this.tags = [...(this.selectedItem.tags ?? [])];
+    this.initialTags = [...this.tags];
+    this.tagRuleService.getAll().then((rules) => {
+      this.ruleTags = Array.from(new Set(rules.map((rule) => rule.tag?.trim()).filter(Boolean))) as string[];
+    });
 
     this.form = this.fb.group({
       firstName: [this.selectedItem.firstName ?? '', Validators.required],
@@ -338,6 +359,7 @@ export class CustomerDetailsComponent implements OnInit {
 
     this.service.update(value.id!, value).then((result) => {
       if (result) {
+        this.syncTagApplications();
         this.snackbar.success(this.itemType + ' Updated');
         this.saved.emit();
       } else {
@@ -360,9 +382,56 @@ export class CustomerDetailsComponent implements OnInit {
     if (raw.isBillingSameAsShipping) {
       raw.billingAddress = { ...raw.shippingAddress };
     }
-    const value: CustomerModel = { ...this.selectedItem, ...raw, notes: this.notes, pendingChanges: this.pendingChanges };
+    const value: CustomerModel = { ...this.selectedItem, ...raw, notes: this.notes, pendingChanges: this.pendingChanges, tags: this.tags };
     this.stampSubscriptionDates(value);
     return value;
+  }
+
+  // ---- Tags ----
+
+  tagSuggestions(): string[] {
+    return this.ruleTags.filter((tag) => !this.tags.includes(tag));
+  }
+
+  addTag(tag?: string): void {
+    const value = (tag ?? this.newTag).trim();
+    // No '/' - the tag becomes part of a tag_applications doc id (same
+    // validation as the Tag Rules screen).
+    if (!value || value.includes('/') || this.tags.includes(value)) {
+      if (value.includes('/')) {
+        this.snackbar.error("Tags can't contain \"/\".");
+      }
+      return;
+    }
+    this.tags = [...this.tags, value];
+    this.newTag = '';
+  }
+
+  removeTag(tag: string): void {
+    this.tags = this.tags.filter((candidate) => candidate !== tag);
+  }
+
+  // Mirrors manual chip adds/removes into tag_applications after a
+  // successful save, so manually-tagged customers participate in
+  // auto-campaigns (and removals stop qualifying them). Fire-and-forget
+  // with logging - a mirror failure shouldn't fail the customer save that
+  // already happened.
+  private syncTagApplications(): void {
+    const email = (this.selectedItem.email ?? '').trim().toLowerCase();
+    if (!email) {
+      return;
+    }
+    const added = this.tags.filter((tag) => !this.initialTags.includes(tag));
+    const removed = this.initialTags.filter((tag) => !this.tags.includes(tag));
+    for (const tag of added) {
+      this.tagApplicationService.recordManualApplication(email, tag)
+        .catch((err) => console.error('tag_applications create failed', tag, err));
+    }
+    for (const tag of removed) {
+      this.tagApplicationService.removeApplication(email, tag)
+        .catch((err) => console.error('tag_applications delete failed', tag, err));
+    }
+    this.initialTags = [...this.tags];
   }
 
   // Checking a subscription box writes the flag exactly like the

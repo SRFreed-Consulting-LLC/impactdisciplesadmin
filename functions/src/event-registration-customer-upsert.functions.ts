@@ -5,6 +5,10 @@ import {
   normalizedName,
 } from "./utils/customer-match.functions";
 import {addMailchimpSourceTag} from "./mailchimp-sync.functions";
+import {
+  activityFromRegistration,
+  applyTagRulesForActivity,
+} from "./tag-rules.functions";
 
 // Event registrations now also create/update a "customers" record, same as
 // purchases do (customer-upsert.functions.ts) - see
@@ -65,18 +69,25 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
       .limit(1)
       .get();
 
+    // Tag rules evaluate on EVERY registration, both branches - see
+    // tag-rules.functions.ts (and the note there about the backfill-script
+    // mirror contract: tagging is NOT mirrored into the scripts).
+    const activity = activityFromRegistration(data, event.params.id, email);
+
     if (existingSnap.empty) {
       // Brand new customer - nothing to compare against yet, so nothing is
       // ever queued as pending on creation. No phone/address to seed -
       // registrations never carry either.
-      await db.collection("customers").add({
+      const newRef = await db.collection("customers").add({
         firstName: data.firstName ?? "",
         lastName: data.lastName ?? "",
         email,
         role: "Customer",
         notes: [],
         pendingChanges: [],
+        tags: [],
       });
+      await applyTagRulesForActivity(db, activity, newRef);
       return;
     }
 
@@ -130,5 +141,7 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
     if (changed) {
       await customerDoc.ref.update({...directUpdates, pendingChanges: pending});
     }
+
+    await applyTagRulesForActivity(db, activity, customerDoc.ref);
   }
 );

@@ -59,6 +59,14 @@ export class CustomerModel extends Person {
     subscribedToPrayerTeam?: boolean;
     prayerTeamSubscribedDate?: Timestamp;
 
+    // Customer tags, applied automatically by tag rules (see
+    // TagRuleModel / functions/src/tag-rules.functions.ts) and manually on
+    // Customer Details. A plain string[] so campaigns can target it with
+    // an arrayContains query; WHEN/WHY each tag landed (the auto-campaign
+    // scheduler's anchor date) lives in the tag_applications collection,
+    // one doc per (email, tag).
+    tags?: string[];
+
     // Mirrors CheckoutForm's own isShippingSameAsBilling (cart.model.ts),
     // direction flipped to match how Customer Details presents the 2
     // sections (Shipping first, Billing collapses into it) - when true,

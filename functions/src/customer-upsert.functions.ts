@@ -7,6 +7,10 @@ import {
   normalizedPhoneDigits,
 } from "./utils/customer-match.functions";
 import {addMailchimpSourceTag} from "./mailchimp-sync.functions";
+import {
+  activityFromPurchase,
+  applyTagRulesForActivity,
+} from "./tag-rules.functions";
 
 // Every purchase now creates or updates a "customers" record - see
 // src/app/common/models/domain/utils/customer.model.ts's own comment (this
@@ -135,10 +139,18 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
       (sameAsBilling ? data.shippingAddress : data.billingAddress) :
       undefined;
 
+    // Tag rules (see tag-rules.functions.ts) evaluate on EVERY purchase,
+    // both branches below - the customer ref is captured so the brand-new
+    // branch can tag too. NOTE for the mirror contract with
+    // scripts/backfill-customers-from-purchases.js: tagging is deliberately
+    // NOT mirrored into that script - historic tagging is the
+    // applyTagRuleRetroactively callable's job.
+    const activity = activityFromPurchase(data, event.params.id, email);
+
     if (existingSnap.empty) {
       // Brand new customer - nothing to compare against yet, so nothing is
       // ever queued as pending on creation.
-      await db.collection("customers").add({
+      const newRef = await db.collection("customers").add({
         firstName: data.firstName ?? "",
         lastName: data.lastName ?? "",
         email,
@@ -148,7 +160,9 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
         role: "Customer",
         notes: [],
         pendingChanges: [],
+        tags: [],
       });
+      await applyTagRulesForActivity(db, activity, newRef);
       return;
     }
 
@@ -257,5 +271,7 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
     if (changed) {
       await customerDoc.ref.update({...directUpdates, pendingChanges: pending});
     }
+
+    await applyTagRulesForActivity(db, activity, customerDoc.ref);
   }
 );

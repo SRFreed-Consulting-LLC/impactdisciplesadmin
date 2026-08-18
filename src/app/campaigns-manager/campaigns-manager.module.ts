@@ -20,6 +20,8 @@ import { CampaignsComponent } from './campaigns/campaigns.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
 import { TemplateGalleryComponent } from './composer/template-gallery.component';
 import { CampaignComposerComponent } from './composer/campaign-composer.component';
+import { TagRulesComponent } from './tag-rules/tag-rules.component';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @NgModule({
   declarations: [
@@ -27,7 +29,8 @@ import { CampaignComposerComponent } from './composer/campaign-composer.componen
     CampaignsComponent,
     StatusBoardComponent,
     TemplateGalleryComponent,
-    CampaignComposerComponent
+    CampaignComposerComponent,
+    TagRulesComponent
   ],
   imports: [
     CommonModule,
@@ -46,7 +49,8 @@ import { CampaignComposerComponent } from './composer/campaign-composer.componen
     MatNativeDateModule,
     MatToolbarModule,
     MatTooltipModule,
-    MatDialogModule
+    MatDialogModule,
+    MatSlideToggleModule
   ]
 })
 export class CampaignsManagerModule { }
