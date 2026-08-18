@@ -13,13 +13,26 @@
         <mat-icon>account_circle</mat-icon>
         View Customer Record
       </button>
-      @if (selectedItem.refunded) {
-        <span class="pill pill--warn" matTooltip="This purchase was refunded{{ selectedItem.refundedBy ? ' by ' + selectedItem.refundedBy : '' }}">REFUNDED</span>
-      } @else if (canRefund()) {
-        <button mat-button color="warn" type="button" [disabled]="refunding" (click)="openRefundDialog()">
-          <mat-icon>currency_exchange</mat-icon>
-          {{ refunding ? 'Refunding…' : 'Refund' }}
-        </button>
+      @if (service.getRefundStateLabel(selectedItem); as refundLabel) {
+        <!-- pill--critical (not the never-defined pill--warn the old
+             template referenced) for the full-refund state. -->
+        <span class="pill" [class.pill--critical]="refundLabel === 'REFUNDED'"
+              [class.pill--accent]="refundLabel === 'PARTIALLY REFUNDED'"
+              [matTooltip]="refundLabel === 'REFUNDED'
+                ? ('This purchase was fully refunded' + (selectedItem.refundedBy ? ' by ' + selectedItem.refundedBy : ''))
+                : ((selectedItem.refundAmount | currency) + ' of ' + (service.getChargedDisplayAmount(selectedItem) | currency) + ' refunded')">
+          {{ refundLabel }}
+        </span>
+      }
+      @if (canRefund()) {
+        <app-indicator-button
+          [title]="(selectedItem.refundAmount ?? 0) > 0 ? 'REFUND MORE' : 'REFUND'"
+          [isInProgress]="refunding"
+          [disabled]="refunding"
+          stylingMode="outlined"
+          cssClass="refund-button"
+          (clicked)="openRefundDialog()">
+        </app-indicator-button>
       }
     </div>
     <div class="addr-card">
@@ -132,6 +145,24 @@
           </div>
         }
       </div>
+
+      @if (refundHistory().length > 0) {
+        <p class="section-label">Refunds</p>
+        <div class="tl__events">
+          @for (refund of refundHistory(); track $index) {
+            <div class="tl__event tl__event--refund">
+              <b>{{ refund.amount | currency }} refunded</b>
+              <div class="tl__when">
+                {{ $any(refund.date) | date: 'medium' }}@if (refund.by) { &middot; {{ refund.by }} }
+                @if (refund.refundId) { &middot; PayPal {{ refund.refundId }} }
+              </div>
+              @if (refund.licensesRevoked?.length) {
+                <div class="tl__when">{{ refund.licensesRevoked!.length }} library license(s) revoked</div>
+              }
+            </div>
+          }
+        </div>
+      }
     </div>
     <div>
       <p class="section-label">Items</p>

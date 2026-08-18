@@ -67,6 +67,10 @@ export class OrderWorkflowDialogComponent {
     return segmentState(this.item.fulfillmentStatus, index);
   }
 
+  refundStateLabel(): 'REFUNDED' | 'PARTIALLY REFUNDED' | null {
+    return this.service.getRefundStateLabel(this.item);
+  }
+
   itemSummary(): string {
     return (this.item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', ') || '—';
   }

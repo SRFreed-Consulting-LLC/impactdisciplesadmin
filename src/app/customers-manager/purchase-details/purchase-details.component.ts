@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { CartItem, CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
+import { CartItem, CheckoutForm, FulfillmentStatus, PurchaseRefundEntry } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { CustomerService } from 'src/app/common/services/data/customer.service';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -77,12 +77,13 @@ export class PurchaseDetailsComponent {
     return hasRole(this.currentUserRole, roles);
   }
 
-  // ---- Refund (pre-prod #6) ----
+  // ---- Refund ----
 
   canRefund(): boolean {
     return this.isVisible(['Admin']) &&
       !this.selectedItem.refunded &&
-      !!this.selectedItem.id;
+      !!this.selectedItem.id &&
+      this.service.getRemainingRefundable(this.selectedItem) > 0;
   }
 
   private hasDigitalItems(): boolean {
@@ -90,14 +91,42 @@ export class PurchaseDetailsComponent {
       .some(item => item.isDigitalBook || item.isEBook);
   }
 
+  // Whether a real PayPal charge exists to partially refund - mirrors the
+  // server's needsPaypalRefund gate ($0/coupon orders can only be marked
+  // fully refunded, no amount entry).
+  private allowPartial(): boolean {
+    const receipt = (this.selectedItem.receipt ?? '').trim();
+    return (this.selectedItem.total ?? 0) > 0 &&
+      receipt !== '' && receipt !== 'COUPON' && receipt !== 'FREE ONLY';
+  }
+
+  // The refunds history the timeline card renders - legacy fully-refunded
+  // purchases (pre-refunds[]) get one synthesized row from refundedAt/
+  // refundedBy so their history isn't blank.
+  refundHistory(): PurchaseRefundEntry[] {
+    const refunds = this.selectedItem.refunds ?? [];
+    if (refunds.length === 0 && this.selectedItem.refunded) {
+      return [{
+        amount: this.selectedItem.refundAmount || this.service.getChargedDisplayAmount(this.selectedItem),
+        date: this.selectedItem.refundedAt as Timestamp,
+        ...(this.selectedItem.refundedBy ? { by: this.selectedItem.refundedBy } : {}),
+        ...(this.selectedItem.refundId ? { refundId: this.selectedItem.refundId } : {})
+      }];
+    }
+    return refunds;
+  }
+
   async openRefundDialog(): Promise<void> {
     if (this.refunding) {
       return;
     }
+    const remaining = this.service.getRemainingRefundable(this.selectedItem);
     const data: RefundDialogData = {
-      total: this.service.getChargedDisplayAmount(this.selectedItem),
+      remaining,
+      alreadyRefunded: this.selectedItem.refundAmount ?? 0,
       email: this.selectedItem.email,
       hasDigitalItems: this.hasDigitalItems(),
+      allowPartial: this.allowPartial(),
     };
     const result = await firstValueFrom(
       this.dialog
@@ -109,10 +138,34 @@ export class PurchaseDetailsComponent {
     }
     this.refunding = true;
     try {
-      const outcome = await this.service.refundPurchase(this.selectedItem.id, result.revokeLicenses);
-      this.selectedItem.refunded = true;
+      const isFull = Math.round(result.amount * 100) === Math.round(remaining * 100);
+      const outcome = await this.service.refundPurchase(
+        this.selectedItem.id, result.revokeLicenses, isFull ? undefined : result.amount
+      );
+      // Update local state from the callable's answer - no refetch needed.
+      this.selectedItem.refundAmount = outcome.refundAmount;
+      this.selectedItem.refunds = [
+        ...(this.selectedItem.refunds ?? []),
+        {
+          amount: isFull ? remaining : result.amount,
+          date: Timestamp.now(),
+          ...(outcome.refundId ? { refundId: outcome.refundId } : {})
+        }
+      ];
+      if (outcome.fullyRefunded) {
+        this.selectedItem.refunded = true;
+      }
+      if (outcome.fulfillmentClosed) {
+        this.selectedItem.fulfillmentStatus = 'closed';
+        this.selectedItem.statusHistory = [
+          ...(this.selectedItem.statusHistory ?? []),
+          { status: 'closed', date: Timestamp.now() }
+        ];
+      }
       this.snackbar.success(
-        (outcome.paypalRefunded ? 'Refund issued through PayPal.' : 'Order marked refunded (no payment was taken).') +
+        (outcome.fullyRefunded ?
+          (outcome.paypalRefunded ? 'Full refund issued through PayPal - order closed.' : 'Order marked refunded (no payment was taken).') :
+          `Partial refund of $${result.amount.toFixed(2)} issued through PayPal - order stays open.`) +
         (outcome.revokedBookIds.length > 0 ? ` ${outcome.revokedBookIds.length} library license(s) revoked.` : '')
       );
     } catch (err) {

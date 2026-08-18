@@ -69,6 +69,19 @@ export interface StatusHistoryEntry {
   by?: string;
 }
 
+// One successful refund against this purchase (full or partial), written
+// server-side by refundStorePurchase. refundId/refundStatus absent on the
+// $0/coupon "mark refunded" path; licensesRevoked only on the full-refund
+// entry that stripped digital-book licenses.
+export interface PurchaseRefundEntry {
+  amount: number;
+  date: Timestamp;
+  by?: string;
+  refundId?: string;
+  refundStatus?: string;
+  licensesRevoked?: string[];
+}
+
 export interface Attendee {
   firstName: string;
   lastName: string;
@@ -117,12 +130,24 @@ export class CheckoutForm extends BaseModel {
   //url to shipping label
   shippingLabel?: ShippingLabelResponse;
 
+  // Cumulative dollars refunded so far - written by refundStorePurchase on
+  // every (full or partial) refund. Read by the Purchases grid's "Refunded"
+  // column and the customer record's refunded/lifetime-spend figures.
   refundAmount?: number = 0;
+  // The LATEST PayPal refund id (back-compat field; the full per-refund
+  // list lives in refunds[] below).
   refundId?: string;
 
-  // Pre-prod #6 (refundStorePurchase Cloud Function): full-order refund
-  // state. licensesRevoked records which digital-book licenses were
-  // stripped alongside the refund (empty when the admin unchecked it).
+  // One entry per successful refund, oldest first - mirrors the reader
+  // library's PurchaseRevocation[] precedent. Written server-side only
+  // (refundStorePurchase).
+  refunds?: PurchaseRefundEntry[];
+
+  // Pre-prod #6 (refundStorePurchase Cloud Function). `refunded: true`
+  // means FULLY refunded (refundAmount has reached the charged amount) -
+  // partial refunds leave it false. licensesRevoked records which
+  // digital-book licenses were stripped alongside a full refund (empty
+  // when the admin unchecked it; partials never revoke).
   refunded?: boolean;
   refundedAt?: Timestamp | Date;
   refundedBy?: string;

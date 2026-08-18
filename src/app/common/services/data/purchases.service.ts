@@ -10,6 +10,17 @@ import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { FULFILLMENT_STEPS } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
 import { BaseService } from './base.service';
 
+// refundStorePurchase's response shape (functions/src/store-refund.functions.ts).
+export interface RefundResult {
+  refunded: boolean;
+  fullyRefunded: boolean;
+  refundAmount: number;
+  fulfillmentClosed: boolean;
+  paypalRefunded: boolean;
+  refundId: string | null;
+  revokedBookIds: string[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,20 +43,42 @@ export class PurchasesService extends BaseService<CheckoutForm>{
 
   private functions = inject(Functions);
 
-  /** Pre-prod #6: full refund via the refundStorePurchase Cloud Function
-   *  (PayPal capture refund server-side; $0 coupon orders just get
-   *  marked). revokeLicenses is the refund dialog's "also revoke library
-   *  access" checkbox - default checked, admin's call. */
+  /** Refund via the refundStorePurchase Cloud Function - the full
+   *  remaining amount when `amount` is omitted, or an admin-chosen partial
+   *  (dollars). PayPal capture refund happens server-side; $0 coupon
+   *  orders just get marked. revokeLicenses is the refund dialog's "also
+   *  revoke library access" checkbox - full refunds only, admin's call. */
   async refundPurchase(
     purchaseId: string,
-    revokeLicenses: boolean
-  ): Promise<{ refunded: boolean; paypalRefunded: boolean; refundId: string | null; revokedBookIds: string[] }> {
+    revokeLicenses: boolean,
+    amount?: number
+  ): Promise<RefundResult> {
     const fn = httpsCallable<
-      { purchaseId: string; revokeLicenses: boolean },
-      { refunded: boolean; paypalRefunded: boolean; refundId: string | null; revokedBookIds: string[] }
+      { purchaseId: string; revokeLicenses: boolean; amount?: number },
+      RefundResult
     >(this.functions, 'refundStorePurchase');
-    const result = await fn({ purchaseId, revokeLicenses });
+    const result = await fn({ purchaseId, revokeLicenses, ...(amount != null ? { amount } : {}) });
     return result.data;
+  }
+
+  /** Shared by the purchase-details pills, the workflow dialog, and any
+   *  other refund-state badge - one definition of what the two states mean:
+   *  `refunded` = fully refunded; a nonzero refundAmount without it = a
+   *  partial refund so far. */
+  getRefundStateLabel(item: CheckoutForm): 'REFUNDED' | 'PARTIALLY REFUNDED' | null {
+    if (item.refunded) {
+      return 'REFUNDED';
+    }
+    return (item.refundAmount ?? 0) > 0 ? 'PARTIALLY REFUNDED' : null;
+  }
+
+  /** Dollars still refundable on this purchase (charged minus cumulative
+   *  refunds, floored at 0) - drives canRefund() and the dialog's amount
+   *  validation. Cents-rounded to dodge float dust. */
+  getRemainingRefundable(item: CheckoutForm): number {
+    const chargedCents = Math.round(this.getChargedDisplayAmount(item) * 100);
+    const refundedCents = Math.round((item.refundAmount ?? 0) * 100);
+    return Math.max(0, chargedCents - refundedCents) / 100;
   }
 
 
