@@ -54,4 +54,13 @@
       }
     }
   </div>
+
+  @if (canViewPurchase()) {
+    <div class="order-workflow-dialog__footer">
+      <button mat-button color="primary" type="button" (click)="viewPurchase()">
+        <mat-icon>receipt_long</mat-icon>
+        View Purchase
+      </button>
+    </div>
+  }
 </mat-dialog-content>

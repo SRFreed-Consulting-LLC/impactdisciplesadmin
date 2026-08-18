@@ -109,6 +109,24 @@ $new-tint: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
   color: var(--app-card-muted);
 }
 
+.order-card__header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.order-card__view {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+
+  mat-icon {
+    font-size: 19px;
+    width: 19px;
+    height: 19px;
+  }
+}
+
 .segbar {
   display: flex;
   gap: 3px;

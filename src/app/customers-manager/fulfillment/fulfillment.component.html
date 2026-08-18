@@ -32,7 +32,15 @@
             </div>
             <div class="order-card__customer">{{ customerName(item) }} &mdash; {{ itemSummary(item) }}</div>
           </div>
-          <div class="order-card__date">{{ $any(item.dateProcessed) | date: 'short' }}</div>
+          <div class="order-card__header-right">
+            <div class="order-card__date">{{ $any(item.dateProcessed) | date: 'short' }}</div>
+            @if (canViewPurchase()) {
+              <button mat-icon-button class="order-card__view" matTooltip="View purchase record"
+                      type="button" (click)="viewPurchase(item)">
+                <mat-icon>receipt_long</mat-icon>
+              </button>
+            }
+          </div>
         </div>
         <div class="segbar">
           @for (step of steps; track step; let i = $index) {

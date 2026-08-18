@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -23,7 +24,7 @@ import { PagedCollectionSource } from '../../shared/paged-collection-source';
     styleUrls: ['./purchases.component.scss'],
     standalone: false
 })
-export class PurchasesComponent implements OnInit {
+export class PurchasesComponent implements OnInit, OnDestroy {
   mode: 'list' | 'edit' = 'list';
 
   // ---- List state ----
@@ -81,6 +82,13 @@ export class PurchasesComponent implements OnInit {
 
   editingItem: CheckoutForm | null = null;
 
+  // Deep-link support (?tab=purchases&purchaseId=<id>, used by the
+  // dashboard's order-workflow dialog and the Fulfillment cards): remembers
+  // the last id handled so the param-clearing navigation below doesn't
+  // re-trigger the open.
+  private lastHandledPurchaseId: string | null = null;
+  private ngUnsubscribe = new Subject<void>();
+
   constructor(
     // Public - the template calls its display-amount/label methods directly
     // (service.getChargedDisplayAmount(item), etc.) rather than through
@@ -90,7 +98,9 @@ export class PurchasesComponent implements OnInit {
     private permissionService: PermissionService,
     private fb: FormBuilder,
     private confirmService: ConfirmService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.tracker = new NewRecordTracker(this.service);
     this.paged = new PagedCollectionSource<CheckoutForm>(
@@ -113,6 +123,58 @@ export class PurchasesComponent implements OnInit {
     // this is a real behavior change from "sees literally everything"
     // worth knowing about if a new-record badge is ever missed.
     this.paged.rows$.subscribe((items) => this.tracker.capture(items));
+
+    // Deep link: opening /customers-manager?tab=purchases&purchaseId=<id>
+    // (dashboard workflow dialog, Fulfillment cards) drops the admin
+    // straight into that purchase's edit view. The row is fetched by id -
+    // it need not be in the loaded page.
+    this.route.queryParamMap.pipe(takeUntil(this.ngUnsubscribe)).subscribe((params) => {
+      const purchaseId = params.get('purchaseId');
+      if (!purchaseId || purchaseId === this.lastHandledPurchaseId) {
+        return;
+      }
+      this.lastHandledPurchaseId = purchaseId;
+      this.openById(purchaseId);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
+  }
+
+  private async openById(id: string): Promise<void> {
+    if (!this.permissionService.canEdit(this.screenKey)) {
+      // No edit rights: don't leave a dead param in the URL.
+      this.clearPurchaseIdParam();
+      return;
+    }
+    try {
+      // getById resolves undefined (not a rejection) for a missing doc.
+      const item = await this.service.getById(id);
+      if (!item) {
+        this.snackbar.error('Purchase not found - it may have been deleted.');
+        this.clearPurchaseIdParam();
+        return;
+      }
+      this.showEditModal(item);
+    } catch {
+      this.snackbar.error("Couldn't load that purchase - please try again.");
+      this.clearPurchaseIdParam();
+    }
+  }
+
+  // Removes purchaseId from the URL (keeping ?tab=purchases so the manager
+  // shell stays on this tab) without adding a history entry - browser Back
+  // from the list must not bounce straight into the edit view again.
+  private clearPurchaseIdParam(): void {
+    this.lastHandledPurchaseId = null;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { purchaseId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   // getProductTotalDisplayAmount/getDiscountDisplayAmount/
@@ -172,6 +234,7 @@ export class PurchasesComponent implements OnInit {
 
   onCancel(): void {
     this.inProgress$.next(false);
+    this.clearPurchaseIdParam();
     this.mode = 'list';
   }
 
@@ -182,6 +245,7 @@ export class PurchasesComponent implements OnInit {
     this.service.update(value.id!, value).then((result) => {
       if (result) {
         this.snackbar.success('Purchase Updated');
+        this.clearPurchaseIdParam();
         this.mode = 'list';
         this.inProgress$.next(false);
       } else {

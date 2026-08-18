@@ -1,7 +1,9 @@
 import { Component, Inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { FULFILLMENT_STEPS, segmentState } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
 import { SnackbarService } from '../snackbar.service';
 
@@ -41,9 +43,24 @@ export class OrderWorkflowDialogComponent {
     private dialogRef: MatDialogRef<OrderWorkflowDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) data: OrderWorkflowDialogData,
     private service: PurchasesService,
+    private permissionService: PermissionService,
+    private router: Router,
     private snackbar: SnackbarService
   ) {
     this.item = data.item;
+  }
+
+  // Same gate PurchasesComponent.showEditModal() applies - never render a
+  // link that would land somewhere the click gets silently swallowed.
+  canViewPurchase(): boolean {
+    return !!this.item.id && this.permissionService.canEdit('customers-manager.purchases');
+  }
+
+  viewPurchase(): void {
+    this.dialogRef.close();
+    this.router.navigate(['/customers-manager'], {
+      queryParams: { tab: 'purchases', purchaseId: this.item.id }
+    });
   }
 
   segmentState(index: number): 'done' | 'current' | 'pending' {
