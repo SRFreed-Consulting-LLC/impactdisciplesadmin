@@ -12,7 +12,15 @@ import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-conf
     standalone: false
 })
 export class CampaignsManagerComponent implements OnInit, OnDestroy {
-  selectedTab = 'Campaigns';
+  // Starts EMPTY (admin-manager's pattern), not pre-seeded with the default
+  // tab: a synchronous default renders that tab's component before the
+  // first loggedInUser$ emission on a cold page load, so anything the child
+  // computes once from PermissionService in ngOnInit (e.g. the New
+  // Campaign header action) silently comes up missing (live-diagnosed
+  // 2026-08-18 on this very shell). Empty means no child renders until the
+  // combineLatest below has real permissions - exactly how every
+  // NON-default tab already behaves.
+  selectedTab = '';
 
   // Sourced from nav-config.ts (the left nav's own data) rather than a
   // second, locally-duplicated list - same shell pattern as ReportsManager.

@@ -13,7 +13,10 @@ import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-conf
 })
 export class StoreManagerComponent implements OnInit, OnDestroy {
 
-  selectedTab = 'Products';
+  // Empty until the first loggedInUser$ emission - see
+  // campaigns-manager.component.ts's comment on the cold-load permission
+  // race a pre-seeded default tab causes.
+  selectedTab = '';
 
   // Sourced from nav-config.ts (the left nav's own data) rather than a
   // second, locally-duplicated list - also where the new-record-alerts
