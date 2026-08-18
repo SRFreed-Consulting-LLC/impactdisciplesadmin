@@ -7,7 +7,14 @@ import { toMillis } from '../../utils/date-from-timestamp';
 // below is actually in play; the Composer only ever shows/writes the group
 // matching the type. See the Campaigns Manager section the feature was
 // designed against (feature/campaign-manager branch) for the screen set.
-export type CampaignType = 'product' | 'event' | 'lead-capture';
+// 'auto' (2026-08-18): tag-triggered automated sends - "everyone tagged
+// Impact 1 gets this email N days after the purchase/registration that
+// tagged them". Targets customers.tags (see TagRuleModel); the hourly
+// autoCampaignScheduler Cloud Function does the sending while the campaign
+// is effectively live. Distinct from the newsletter/prayer blasts and
+// their no-audience-narrowing rule - this is a new send type, not a
+// narrowing of those.
+export type CampaignType = 'product' | 'event' | 'lead-capture' | 'auto';
 
 // `status` is what's STORED; display always goes through effectiveStatus()
 // below, which auto-promotes scheduled->live and live->ended as the dates
@@ -55,6 +62,14 @@ export class CampaignModel extends BaseModel {
   subject?: string | null;
   message?: string | null;
   emailTemplateId?: string | null;
+  // -- auto (tag-triggered automated send; also uses subject/message/
+  //    emailTemplateId above for the email content) --
+  // Customers holding ANY of these tags qualify.
+  targetTags?: string[] | null;
+  // Days after the tag's anchorDate (the triggering purchase/registration)
+  // before the send fires; 0 = on the next scheduler run after tagging.
+  sendAfterDays?: number | null;
+
   // -- lead capture --
   headline?: string | null;
   supportingText?: string | null;
@@ -97,5 +112,6 @@ export const effectiveStatus = (c: CampaignModel): CampaignStatus => {
 export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
   'product': 'PRODUCT',
   'event': 'EVENT',
-  'lead-capture': 'LEAD'
+  'lead-capture': 'LEAD',
+  'auto': 'AUTO'
 };

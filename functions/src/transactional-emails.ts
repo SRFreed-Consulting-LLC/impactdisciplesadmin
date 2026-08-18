@@ -13,7 +13,9 @@ import * as admin from "firebase-admin";
 // flipped the flag in the WRONG database: the recipient saw a success page
 // and kept receiving mail. That is a CAN-SPAM exposure, not just a broken
 // link - an unsubscribe request has to actually take effect.
-const UNSUBSCRIBE_URL =
+// Exported since 2026-08-18: campaign-auto-send.functions.ts builds each
+// recipient's *|UNSUB|* link from the same per-environment endpoint.
+export const UNSUBSCRIBE_URL =
   process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
     "https://us-central1-impactdisciples-a82a8.cloudfunctions.net/" +
       "unsubscribe_from_email_list" :
