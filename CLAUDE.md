@@ -446,8 +446,19 @@ host; 200/hour pacing is deliberate. UI: campaign-wizard (goal/audience/window; 
 visible but disabled until Phase 5) + email-touch-editor (template-snapshot content — editing a
 template later never rewrites campaign history; send now / schedule / tag-trigger; send-test).
 Composite indexes `campaign_sends(status, createdAt)` + `campaign_sends(emailId, status)`.
-Remaining: Phase 3 open/click tracking, Phase 4 attribution, Phase 5 web popups (purchase/open
-stats read "not tracked yet" until then).
+
+**Phase 3 (tracking, 2026-08-18)**: `functions/src/campaign-tracking.functions.ts` — `campaign_open`
+(1x1 GIF pixel, `?t=<token>`; opens++ always, uniqueOpens gated by the ledger's `openedAt`) and
+`campaign_click` (`?t=&l=`; LINK-MAP redirect — the target comes from the touch's stored
+`links {l1: url}`, never the query string, so there is no open-redirect surface; clicks/uniqueClicks,
+and a click backfills the unique open for image-blocked clients). The send path builds the link map
+lazily at first send (`ensureLinkMap`, covers all three modes), rewrites hrefs per recipient, and
+injects the pixel; public-site links get `?cid=<campaignId>&ceid=<emailId>` appended in the map —
+Phase 4's attribution capture reads those on landing. Unsubscribe links are NEVER routed through
+tracking. Every hit also lands in `campaign_events` (staff-read/write-false). Opens are approximate
+(proxy prefetch) — clicks/purchases are the trustworthy stages.
+Remaining: Phase 4 attribution (web repo), Phase 5 web popups (purchase stats read "not tracked
+yet" until Phase 4).
 
 ### Firestore collection naming note
 

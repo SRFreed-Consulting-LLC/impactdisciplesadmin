@@ -84,6 +84,12 @@ exports.sendCampaignTestEmail = campaignSend.sendCampaignTestEmail;
 exports.campaignSendScheduler = campaignSend.campaignSendScheduler;
 exports.onCampaignMailDelivered = campaignSend.onCampaignMailDelivered;
 
+// Phase 3: our own engagement tracking - the open pixel and the link-map
+// click redirect (recipients resolved by ledger token, never by email).
+const campaignTracking = require("./campaign-tracking.functions");
+exports.campaign_open = campaignTracking.campaign_open;
+exports.campaign_click = campaignTracking.campaign_click;
+
 // Sweep 2026-08-17: language registry backs the reader's language picker
 // so translation docs no longer need an open collection-group read.
 const languageRegistry = require("./library-language-registry.functions");

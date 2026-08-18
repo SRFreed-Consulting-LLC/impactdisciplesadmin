@@ -389,9 +389,15 @@ service cloud.firestore {
       allow read, create, delete: if isBusinessStaff();
       allow update: if false;
     }
-    // Auto-campaign per-customer send ledger - scheduler-only writes
+    // Per-recipient campaign send ledger - send-engine-only writes
     // (Admin SDK); staff can read it for auditing.
     match /campaign_sends/{id} {
+      allow read: if isBusinessStaff();
+      allow write: if false;
+    }
+    // Raw engagement event stream (opens/clicks/attribution) - written
+    // only by the tracking endpoints (Admin SDK); staff read for audit.
+    match /campaign_events/{id} {
       allow read: if isBusinessStaff();
       allow write: if false;
     }

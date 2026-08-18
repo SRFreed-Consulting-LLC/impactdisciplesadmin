@@ -5,6 +5,7 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import {requireAdminRole} from "./admin-users.functions";
 import {queueMail, UNSUBSCRIBE_URL} from "./transactional-emails";
+import {TRACKING_BASE} from "./campaign-tracking.functions";
 import {renderMergeTags} from "./utils/merge-tags.functions";
 import {toMillis} from "./utils/date-normalize.functions";
 
@@ -66,12 +67,106 @@ interface TouchDoc {
   subject?: string;
   html?: string;
   status?: string;
+  links?: Record<string, string> | null;
   sendConfig?: {
     mode?: "now" | "scheduled" | "tagTriggered";
     scheduledAt?: unknown;
     tagTrigger?: {tags?: string[]; afterDays?: number} | null;
   } | null;
   audienceOverride?: AudienceSpec | null;
+}
+
+// ---- Phase 3: link map + per-recipient tracking rewrite ----
+
+/**
+ * Extracts every http(s) href from a touch's html, in order, deduped by
+ * raw attribute value. Deterministic on immutable touch html, so ids stay
+ * stable across render calls.
+ * @param {string} html The touch html (pre-merge-render).
+ * @return {object[]} Link entries ({id, raw}).
+ */
+function extractLinks(html: string): Array<{id: string; raw: string}> {
+  const seen = new Map<string, string>();
+  for (const match of html.matchAll(/href="([^"]+)"/g)) {
+    const raw = match[1];
+    if (!/^https?:\/\//i.test(raw) || seen.has(raw)) {
+      continue;
+    }
+    seen.set(raw, `l${seen.size + 1}`);
+  }
+  return [...seen.entries()].map(([raw, id]) => ({id, raw}));
+}
+
+/**
+ * The redirect target stored in the link map: the decoded original URL,
+ * decorated with ?cid/&ceid when it points at the public site so Phase
+ * 4's attribution capture can pick it up on landing.
+ * @param {string} raw Raw href attribute value (may be &amp;-encoded).
+ * @param {string} campaignId Campaign doc id.
+ * @param {string} emailId Touch doc id.
+ * @return {string} Final redirect target.
+ */
+function linkTarget(raw: string, campaignId: string, emailId: string): string {
+  const url = raw.replace(/&amp;/g, "&");
+  if (!/^https?:\/\/([a-z0-9-]+\.)*impactdisciples\.com(\/|$|\?)/i.test(url)) {
+    return url;
+  }
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}cid=${encodeURIComponent(campaignId)}` +
+    `&ceid=${encodeURIComponent(emailId)}`;
+}
+
+/**
+ * Ensures the touch has its link map stored (built once, first send wins;
+ * lazily here so every mode - now/scheduled/tagTriggered - gets one).
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @param {TouchDoc} touch The touch (mutated with the map).
+ * @return {Promise<void>} Resolves when the map exists.
+ */
+async function ensureLinkMap(
+  db: FirebaseFirestore.Firestore,
+  touch: TouchDoc
+): Promise<void> {
+  if (touch.links && Object.keys(touch.links).length > 0) {
+    return;
+  }
+  const links: Record<string, string> = {};
+  for (const {id, raw} of extractLinks(touch.html ?? "")) {
+    links[id] = linkTarget(raw, touch.campaignId ?? "", touch.id);
+  }
+  touch.links = links;
+  if (Object.keys(links).length > 0) {
+    await db.collection("campaign_emails").doc(touch.id)
+      .update({links}).catch(() => undefined);
+  }
+}
+
+/**
+ * Per-recipient tracking pass over the RENDERED html: every mapped href
+ * becomes a campaign_click redirect carrying (token, linkId), and the
+ * open pixel lands before </body>. Merge rendering never touches http
+ * hrefs (*|UNSUB|* is not http), so raw-string replacement is exact.
+ * @param {string} renderedHtml Merge-rendered html.
+ * @param {string} touchHtml The touch's stored html (for extraction).
+ * @param {string} token This recipient's ledger token.
+ * @return {string} Tracked html.
+ */
+function applyTracking(
+  renderedHtml: string,
+  touchHtml: string,
+  token: string
+): string {
+  let html = renderedHtml;
+  for (const {id, raw} of extractLinks(touchHtml)) {
+    const tracked =
+      `${TRACKING_BASE}/campaign_click?t=${token}&amp;l=${id}`;
+    html = html.split(`href="${raw}"`).join(`href="${tracked}"`);
+  }
+  const pixel = `<img src="${TRACKING_BASE}/campaign_open?t=${token}" ` +
+    "width=\"1\" height=\"1\" alt=\"\" style=\"display:none\">";
+  return html.includes("</body>") ?
+    html.replace("</body>", pixel + "</body>") :
+    html + pixel;
 }
 
 /**
@@ -293,7 +388,15 @@ async function sendLedgerDoc(
       date: new Date().toLocaleDateString("en-US"),
       unsubscribeUrl,
     };
+    await ensureLinkMap(db, touch);
     let html = renderMergeTags(touch.html ?? "", context);
+    // Phase 3: rewrite mapped links to the click redirect + inject the
+    // open pixel, both keyed by this recipient's ledger token. The
+    // unsubscribe link (merge-rendered / fallback below) stays DIRECT -
+    // opting out must never depend on the tracking endpoint.
+    if (ledger.token) {
+      html = applyTracking(html, touch.html ?? "", ledger.token);
+    }
     // Campaign email is marketing - it ALWAYS carries an unsubscribe link.
     // Templates using *|UNSUB|* place their own; anything else gets the
     // fallback footer (appended only when missing, so no double links -
