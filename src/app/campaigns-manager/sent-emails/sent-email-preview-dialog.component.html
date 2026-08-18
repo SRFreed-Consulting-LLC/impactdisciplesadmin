@@ -1,0 +1,24 @@
+<div class="preview-header">
+  <span class="preview-title">{{ data.title }}</span>
+  <span class="preview-subject">{{ data.subject || 'No subject' }}</span>
+
+  <mat-button-toggle-group hideSingleSelectionIndicator [(value)]="device">
+    <mat-button-toggle value="desktop" matTooltip="Desktop width">
+      <mat-icon>desktop_windows</mat-icon>
+    </mat-button-toggle>
+    <mat-button-toggle value="mobile" matTooltip="Phone width">
+      <mat-icon>smartphone</mat-icon>
+    </mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <button mat-icon-button matTooltip="Close" (click)="onClose()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<div class="preview-body">
+  <!-- allow-same-origin WITHOUT allow-scripts - see the designer's
+       preview-dialog.component.html for the full reasoning. -->
+  <iframe class="preview-frame" sandbox="allow-same-origin" title="Sent email preview"
+          [style.width.px]="frameWidth" [srcdoc]="srcdoc"></iframe>
+</div>

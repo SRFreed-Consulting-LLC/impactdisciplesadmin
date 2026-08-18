@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { CAMPAIGN_TYPE_LABELS, CampaignModel, CampaignStatus, CampaignType, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { ACTIVE_CAMPAIGN_TYPES, CAMPAIGN_TYPE_LABELS, CampaignModel, CampaignStatus, CampaignType, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { CampaignTemplate } from 'src/app/common/models/domain/campaign-template.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -58,12 +59,16 @@ export class StatusBoardComponent implements OnInit {
     this.load();
   }
 
-  // One-time getAll(), reloaded after every Composer save - campaigns is a
-  // small collection and this screen re-derives everything (columns,
-  // calendar bars, drafts strip) from the one array.
+  // One-time fetch, reloaded after every Composer save - the working
+  // campaign set is small and this screen re-derives everything (columns,
+  // calendar bars, drafts strip) from the one array. Active types only:
+  // the 477 imported 'email' history docs are all ended and would flood
+  // the Ended column - they live on the Sent Emails screen instead.
   private load(): void {
     this.loading = true;
-    this.service.getAll().then((campaigns) => {
+    this.service.queryAllByMultiValue([
+      new QueryParam('type', WhereFilterOperandKeys.in, ACTIVE_CAMPAIGN_TYPES)
+    ]).then((campaigns) => {
       this.campaigns = campaigns;
       this.loading = false;
     });

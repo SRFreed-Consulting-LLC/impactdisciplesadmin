@@ -109,6 +109,73 @@
   padding: 26px 0;
 }
 
+// ---- Past Emails (collapsed history section) ----
+
+.past-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  border-top: 1px solid #eef1f4;
+  cursor: pointer;
+  text-align: left;
+  color: #8a93a0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.past-toggle__label {
+  margin: 0;
+}
+
+.past-toggle__hint {
+  font-size: 11.5px;
+  color: #a8b0bb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.past-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.past-filter__field {
+  width: 280px;
+  // The navy theme paints form fields for dark surfaces - this dialog is a
+  // light surface (same fix as the designer shell's own inputs).
+  color-scheme: light;
+}
+
+.past-filter__hint {
+  font-size: 11.5px;
+  color: #a8b0bb;
+}
+
+.tcard__loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.past-more {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 4px;
+}
+
 .gallery-empty {
   color: #8a93a0;
   font-size: 13px;

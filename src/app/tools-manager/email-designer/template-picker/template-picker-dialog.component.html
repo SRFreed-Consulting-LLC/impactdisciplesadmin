@@ -49,6 +49,56 @@
       }
     </div>
   }
+
+  <button type="button" class="past-toggle" (click)="togglePast()">
+    <mat-icon>{{ pastExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+    <span class="picker-label past-toggle__label">PAST EMAILS</span>
+    <span class="past-toggle__hint">Every email already sent (imported history included) - start a copy from any of them</span>
+  </button>
+
+  @if (pastExpanded) {
+    <div class="past-filter">
+      <mat-form-field appearance="outline" class="past-filter__field" subscriptSizing="dynamic">
+        <mat-label>Filter loaded emails</mat-label>
+        <input matInput [(ngModel)]="pastFilter" placeholder="Name or subject">
+      </mat-form-field>
+      <span class="past-filter__hint">Searches what's loaded - use Load More to pull older emails in.</span>
+    </div>
+
+    @if (filteredPastCards.length === 0 && !loadingPast) {
+      <p class="gallery-empty">No sent emails found.</p>
+    } @else {
+      <div class="card-grid">
+        @for (card of filteredPastCards; track card.key) {
+          <div class="tcard">
+            <div class="tcard__preview">
+              @if (card.srcdoc) {
+                <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
+                        [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
+              } @else {
+                <div class="tcard__loading"><mat-spinner diameter="26"></mat-spinner></div>
+              }
+              <div class="tcard__hover">
+                <button mat-flat-button color="primary" [disabled]="!card.html" (click)="usePastCard(card)">Use</button>
+              </div>
+            </div>
+            <div class="tcard__meta">
+              <span class="tcard__name">{{ card.name }}</span>
+              <span class="tcard__sub">{{ [card.subject, card.sentLabel].join(' · ') }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (loadingPast) {
+      <div class="gallery-loading"><mat-spinner diameter="30"></mat-spinner></div>
+    } @else if (pastHasMore) {
+      <div class="past-more">
+        <button mat-stroked-button (click)="loadMorePast()">Load More</button>
+      </div>
+    }
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

@@ -233,6 +233,10 @@ export const NAV_CONFIG: NavGroup[] = [
     items: [
       { label: 'Campaigns', slug: 'campaigns' },
       { label: 'Status Board', slug: 'status-board' },
+      // Email-campaign HISTORY (type 'email' - the imported Mailchimp
+      // archive today, this app's own future one-time sends later).
+      // Read-only: preview + copy-into-designer, never edit/re-send.
+      { label: 'Sent Emails', slug: 'sent-emails' },
       // Customer tag rules ("purchased X => tag 'Impact 1'") live here
       // rather than Tools because they exist to feed campaign audiences -
       // they're campaign infrastructure, and keeping them in this group

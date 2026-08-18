@@ -4,7 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, filter, take } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
-import { createDefaultDesign, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
+import { createDefaultDesign, createDesignFromFullHtml, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
+import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
 import { stripUndefinedDeep } from 'src/app/common/utils/strip-undefined';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
@@ -42,6 +43,7 @@ export class EmailDesignerComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private service: EMailTemplatesService,
+    private campaignEmailService: CampaignEmailService,
     private permissionService: PermissionService,
     private authService: AdminAuthService,
     private confirmService: ConfirmService,
@@ -91,6 +93,24 @@ export class EmailDesignerComponent implements OnInit {
     }
 
     if (!this.templateId) {
+      // ?fromEmail=<id>: seed a NEW design from a past sent email's body
+      // (Sent Emails screen's "Open in designer" action; the campaign_emails
+      // doc is never touched). Skips the picker - the user already chose.
+      const fromEmailId = this.route.snapshot.queryParamMap.get('fromEmail');
+      if (fromEmailId) {
+        this.campaignEmailService.getById(fromEmailId).then((email) => {
+          if (!email?.html) {
+            this.snackbar.error('No stored email body for that record.');
+            this.backToList();
+            return;
+          }
+          this.state.load(createDesignFromFullHtml(email.html));
+          this.templateSubject = email.subject ?? '';
+          this.loading$.next(false);
+        });
+        return;
+      }
+
       this.state.load(createDefaultDesign());
       this.loading$.next(false);
       // The template catalogue: card previews of starters + saved

@@ -1,11 +1,16 @@
 import { Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { EmailDesign, newDesignId } from 'src/app/common/models/admin/email-design.model';
+import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { EmailDesign, createDesignFromFullHtml, newDesignId } from 'src/app/common/models/admin/email-design.model';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
 import { STARTER_TEMPLATES } from 'src/app/common/utils/email/starter-templates';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
+import { CampaignService } from 'src/app/common/services/data/campaign.service';
+import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
+import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
+import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 
 // What the shell does with the choice: start a new email from a COPY of
 // the design, or jump to editing the template itself.
@@ -28,10 +33,25 @@ interface TemplateCard {
   build: () => EmailDesign;
 }
 
+// A past sent email (a type-'email' campaign; its body html sits in
+// campaign_emails and is fetched lazily, one page of cards at a time -
+// 477 up-front html fetches would be ~12MB for a dialog).
+interface PastEmailCard {
+  key: string;
+  name: string;
+  subject: string | null;
+  sentLabel: string;
+  srcdoc: SafeHtml | null; // null while its html is still loading
+  html: string | null;
+}
+
 // The template catalogue: card-style gallery of built-in starters plus
 // every saved builder template, each card showing a LIVE scaled preview of
 // its compiled email. "Use" starts a new email from a copy (fresh ids,
-// never linked); "Edit" opens the template itself in the designer.
+// never linked); "Edit" opens the template itself in the designer. A
+// collapsed "Past Emails" section pages through the sent-email history
+// (Sent Emails screen's data) - Use only, since history isn't editable;
+// the copy it creates is.
 @Component({
     selector: 'app-template-picker-dialog',
     templateUrl: './template-picker-dialog.component.html',
@@ -43,9 +63,20 @@ export class TemplatePickerDialogComponent {
   savedCards: TemplateCard[] = [];
   loadingSaved = true;
 
+  // ---- Past Emails (collapsed until opened; paged) ----
+  pastExpanded = false;
+  pastCards: PastEmailCard[] = [];
+  pastFilter = '';
+  loadingPast = false;
+  pastHasMore = true;
+  private pastCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+  private readonly pastPageSize = 12;
+
   constructor(
     private dialogRef: MatDialogRef<TemplatePickerDialogComponent, TemplatePickerResult>,
     private sanitizer: DomSanitizer,
+    private campaignService: CampaignService,
+    private campaignEmailService: CampaignEmailService,
     templatesService: EMailTemplatesService
   ) {
     this.starterCards = STARTER_TEMPLATES.map((starter) => {
@@ -83,6 +114,63 @@ export class TemplatePickerDialogComponent {
   onCancel(): void {
     // null = caller keeps the blank default.
     this.dialogRef.close(null);
+  }
+
+  // ---- Past Emails ----
+
+  togglePast(): void {
+    this.pastExpanded = !this.pastExpanded;
+    if (this.pastExpanded && this.pastCards.length === 0 && this.pastHasMore) {
+      this.loadMorePast();
+    }
+  }
+
+  // The filter only searches what's loaded so far (Firestore has no text
+  // search) - the hint next to the input says so.
+  get filteredPastCards(): PastEmailCard[] {
+    const needle = this.pastFilter.trim().toLowerCase();
+    if (!needle) {
+      return this.pastCards;
+    }
+    return this.pastCards.filter((card) =>
+      card.name.toLowerCase().includes(needle) || (card.subject ?? '').toLowerCase().includes(needle));
+  }
+
+  loadMorePast(): void {
+    if (this.loadingPast || !this.pastHasMore) {
+      return;
+    }
+    this.loadingPast = true;
+    this.campaignService.getPage(this.pastPageSize, this.pastCursor, 'startDate', 'desc',
+      [new QueryParam('type', WhereFilterOperandKeys.equal, 'email')]
+    ).then((page) => {
+      this.pastCursor = page.cursor;
+      this.pastHasMore = page.hasMore;
+      for (const campaign of page.items) {
+        const card: PastEmailCard = {
+          key: campaign.id!,
+          name: campaign.name,
+          subject: campaign.subject || null,
+          sentLabel: dateFromTimestamp(campaign.startDate)?.toLocaleDateString() ?? '',
+          srcdoc: null,
+          html: null
+        };
+        this.pastCards.push(card);
+        // Body html loads per-card, only for pages actually opened.
+        this.campaignEmailService.getById(campaign.id!).then((email) => {
+          card.html = email?.html ?? '';
+          card.srcdoc = this.sanitizer.bypassSecurityTrustHtml(card.html);
+        });
+      }
+      this.loadingPast = false;
+    });
+  }
+
+  usePastCard(card: PastEmailCard): void {
+    if (!card.html) {
+      return; // still loading - the button stays disabled until then
+    }
+    this.dialogRef.close({ kind: 'use', design: createDesignFromFullHtml(card.html), subject: card.subject });
   }
 
   private cardForTemplate(template: MailTemplateModel): TemplateCard {

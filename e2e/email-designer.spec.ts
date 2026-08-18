@@ -145,6 +145,26 @@ test.describe('Email designer', () => {
     await expect(page).toHaveURL(/email-designer\/new/);
   });
 
+  test('past emails section pages sent history and starts a copy', async ({ page }) => {
+    const templateCards = await page.locator('.tcard').count();
+
+    // Collapsed by default; expanding loads the first page of history cards
+    // (their bodies fetch lazily from campaign_emails).
+    await page.locator('.past-toggle').click();
+    await expect
+      .poll(() => page.locator('.tcard').count(), { timeout: 15000 })
+      .toBeGreaterThan(templateCards);
+
+    // Use on a history card starts a new email from a copy - the full sent
+    // document lands as one HTML block.
+    const pastCard = page.locator('.tcard').nth(templateCards);
+    await pastCard.scrollIntoViewIfNeeded();
+    await pastCard.hover();
+    await pastCard.getByRole('button', { name: 'Use' }).click();
+    await expect(page.locator('.html-view').first()).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(/email-designer\/new/);
+  });
+
   test('legacy rich-text templates open in the designer with their content imported', async ({ page }) => {
     await page.goto('/tools-manager?tab=email-templates');
     // Every legacy row shows Rich Text in the Editor column.

@@ -150,7 +150,9 @@ export class CampaignComposerComponent implements OnInit {
       'product': ['productId', 'subject'],
       'event': ['eventId', 'subject'],
       'lead-capture': ['headline', 'couponId', 'placement'],
-      'auto': ['subject', 'targetTags', 'sendAfterDays']
+      'auto': ['subject', 'targetTags', 'sendAfterDays'],
+      // 'email' is history (imported/recorded sends) - never composed here.
+      'email': []
     };
     const all = ['productId', 'eventId', 'couponId', 'subject', 'headline', 'placement', 'targetTags', 'sendAfterDays'];
 

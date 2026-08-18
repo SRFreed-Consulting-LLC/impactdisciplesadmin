@@ -407,6 +407,20 @@ submissions today only feed the bell-badge counters (`new-record-alerts.function
 Submissions screen; the only surviving form-related email is the admin-initiated Route Request
 forward. Use this vocabulary in UI copy and code comments rather than inventing new terms.
 
+**Templates vs. history** (2026-08-18): `mail_templates` holds only true, reusable TEMPLATES.
+Historical *sent* emails are campaigns — `CampaignType 'email'` docs in `campaigns` (subject,
+send date, opens/clicks stats) paired with the rendered body in `campaign_emails` (same doc id;
+kept separate so ~25KB of html per email never rides on list pages). The entire Mailchimp campaign
+archive (477 sent campaigns, 2020–2026) was imported this way via
+`scripts/import-mailchimp-campaigns.js` (idempotent — doc ids are `mc_<mailchimpCampaignId>`;
+Mailchimp campaigns are email sends only, so the one type covers everything), which also removed
+the 15 `mail_templates` docs that were really sent-campaign history. Surfaces: Campaigns Manager >
+**Sent Emails** (paged read-only list, preview dialog, "open in designer" via the designer's
+`?fromEmail=<id>` seed) and the designer picker's collapsed **Past Emails** section (paged cards,
+Use-only). The working Campaigns list and Status Board query `ACTIVE_CAMPAIGN_TYPES` only —
+composite indexes `campaigns(type, name)` / `campaigns(type, startDate)` back the split. A future
+in-app one-time send should write the same campaign + campaign_emails pair to appear in history.
+
 ### Firestore collection naming note
 
 The Admin Users collection is `admin_users` (renamed from `users`; see commit `3ffcbd4`) — both the

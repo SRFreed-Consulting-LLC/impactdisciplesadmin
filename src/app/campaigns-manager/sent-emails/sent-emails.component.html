@@ -1,0 +1,10 @@
+<app-data-grid
+  [title]="'Sent Emails'"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [pagedSource]="paged"
+  tableClass="sent-emails-table"
+  exportFileName="sent-emails.xlsx"
+  emptyMessage="No sent emails found."
+  (rowDoubleClick)="preview($event)">
+</app-data-grid>

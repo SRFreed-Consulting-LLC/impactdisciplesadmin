@@ -516,6 +516,31 @@ export function createDesignFromLegacyHtml(html: string): EmailDesign {
   return design;
 }
 
+// Imports a FULL email document (a past sent email from `campaign_emails`,
+// e.g. a Mailchimp-rendered campaign) as one full-width HTML block: head
+// <style> blocks + body content are extracted (nesting a second <html>
+// document inside the builder's own skeleton would be invalid) and scripts
+// stripped. Client twin of scripts/import-mailchimp-campaigns.js's
+// designWithHtmlBlock()/extractEmbeddable() - keep them in sync.
+export function createDesignFromFullHtml(fullHtml: string): EmailDesign {
+  const source = fullHtml ?? '';
+  const styles = (source.match(/<style[\s\S]*?<\/style>/gi) ?? []).join('\n');
+  const bodyMatch = source.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const embeddable = (styles + '\n' + (bodyMatch ? bodyMatch[1] : source))
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .trim();
+
+  const design = createDefaultDesign();
+  const row = createRow(1);
+  const block = createBlock('html');
+  if (block.type === 'html') {
+    block.props.html = embeddable;
+  }
+  row.columns[0].blocks = [block];
+  design.sections[1].rows = [row];
+  return design;
+}
+
 // One resolver for "what styles actually apply on phones", shared by the
 // canvas renderers and the HTML compiler so the editor preview and the sent
 // email can never disagree.
