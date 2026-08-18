@@ -45,6 +45,14 @@ async function gotoNewDesigner(page: Page): Promise<void> {
   throw new Error('email designer never mounted at /tools-manager/email-designer/new');
 }
 
+// The template catalogue shows cards whose Use/Edit actions live in a
+// hover overlay - hover the card first, then click.
+async function useGalleryCard(page: Page, name: string): Promise<void> {
+  const card = page.locator('.tcard').filter({ hasText: name }).first();
+  await card.hover();
+  await card.getByRole('button', { name: 'Use' }).click();
+}
+
 test.describe('Email designer', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
@@ -54,7 +62,7 @@ test.describe('Email designer', () => {
   });
 
   test('start-from gallery loads a starter onto the canvas', async ({ page }) => {
-    await page.click('.tile:has-text("Simple newsletter")');
+    await useGalleryCard(page, 'Simple newsletter');
     await expect(page.locator('app-block-host').first()).toBeVisible();
     expect(await page.locator('app-block-host').count()).toBeGreaterThanOrEqual(5);
   });
@@ -85,7 +93,7 @@ test.describe('Email designer', () => {
   });
 
   test('preview compiles the design and substitutes sample merge data', async ({ page }) => {
-    await page.click('.tile:has-text("Simple newsletter")');
+    await useGalleryCard(page, 'Simple newsletter');
     // The picker's afterClosed() fires after its close animation - wait for
     // the starter to actually land on the canvas before opening Preview,
     // or the preview compiles the still-blank default design.

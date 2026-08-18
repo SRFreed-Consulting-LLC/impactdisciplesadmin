@@ -1,24 +1,51 @@
 <h2 mat-dialog-title>Start Your Email</h2>
 
-<mat-dialog-content>
+<mat-dialog-content class="gallery-content">
   <p class="picker-label">STARTERS</p>
-  <div class="tile-grid">
-    @for (starter of starters; track starter.id) {
-      <button class="tile" (click)="pickStarter(starter)">
-        <span class="tile-name">{{ starter.name }}</span>
-        <span class="tile-desc">{{ starter.description }}</span>
-      </button>
+  <div class="card-grid">
+    @for (card of starterCards; track card.key) {
+      <div class="tcard">
+        <div class="tcard__preview">
+          <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
+                  [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
+          <div class="tcard__hover">
+            <button mat-flat-button color="primary" (click)="useCard(card)">Use</button>
+          </div>
+        </div>
+        <div class="tcard__meta">
+          <span class="tcard__name">{{ card.name }}</span>
+          @if (card.description) {
+            <span class="tcard__sub">{{ card.description }}</span>
+          }
+        </div>
+      </div>
     }
   </div>
 
-  @if (savedTemplates.length > 0) {
-    <p class="picker-label">YOUR EMAIL DESIGNS</p>
-    <div class="tile-grid">
-      @for (template of savedTemplates; track template.id) {
-        <button class="tile" (click)="pickSaved(template)">
-          <span class="tile-name">{{ template.name }}</span>
-          <span class="tile-desc">{{ template.subject || 'Start from a copy of this design' }}</span>
-        </button>
+  <p class="picker-label">YOUR TEMPLATES</p>
+  @if (loadingSaved) {
+    <div class="gallery-loading"><mat-spinner diameter="30"></mat-spinner></div>
+  } @else if (savedCards.length === 0) {
+    <p class="gallery-empty">No saved templates yet - any email design you save appears here.</p>
+  } @else {
+    <div class="card-grid">
+      @for (card of savedCards; track card.key) {
+        <div class="tcard">
+          <div class="tcard__preview">
+            <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
+                    [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
+            <div class="tcard__hover">
+              <button mat-flat-button color="primary" (click)="useCard(card)">Use</button>
+              <button mat-stroked-button class="tcard__edit" (click)="editCard(card)">Edit</button>
+            </div>
+          </div>
+          <div class="tcard__meta">
+            <span class="tcard__name">{{ card.name }}</span>
+            @if (card.subject) {
+              <span class="tcard__sub">{{ card.subject }}</span>
+            }
+          </div>
+        </div>
       }
     </div>
   }
