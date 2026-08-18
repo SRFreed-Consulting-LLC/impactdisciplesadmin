@@ -1,3 +1,7 @@
+@if (mode === 'editTouch') {
+  <app-email-touch-editor [campaign]="campaign" [touch]="editingTouch"
+    (closed)="onEditorClosed($event)"></app-email-touch-editor>
+} @else {
 <div class="detail-header">
   <button mat-icon-button matTooltip="Back to Campaigns" (click)="back()">
     <mat-icon>arrow_back</mat-icon>
@@ -30,6 +34,17 @@
       }
     </div>
   </div>
+  <span class="detail-header__spacer"></span>
+  @if (canEditCampaign()) {
+    <button mat-stroked-button (click)="edit.emit(campaign)">
+      <mat-icon>edit</mat-icon> EDIT CAMPAIGN
+    </button>
+  }
+  @if (canAddEmail()) {
+    <button mat-flat-button color="primary" (click)="newEmail()">
+      <mat-icon>add</mat-icon> NEW EMAIL
+    </button>
+  }
 </div>
 
 <div class="funnel">
@@ -54,13 +69,20 @@
   } @else {
     <div class="touch-list">
       @for (touch of touches; track touch.id) {
-        <div class="touch">
+        <div class="touch" [class.touch--editable]="isEditableTouch(touch)"
+          [tabindex]="isEditableTouch(touch) ? 0 : -1"
+          (click)="editTouch(touch)" (keyup.enter)="editTouch(touch)">
           <div class="touch__main">
-            <span class="touch__subject">{{ touch.label || touch.subject }}</span>
+            <span class="touch__subject">{{ touch.label || touch.subject || '(untitled)' }}</span>
             @if (touch.label && touch.subject) {
               <span class="touch__sub">{{ touch.subject }}</span>
             }
           </div>
+          @if (touch.status !== 'sent') {
+            <span class="chip" [class]="touch.status === 'sending' ? 'status-live' : 'status-draft'">
+              {{ touchStatusLabel(touch) }}
+            </span>
+          }
           <span class="touch__date">{{ toDate(touch.sentAt) | date:'mediumDate' }}</span>
           <span class="touch__stat">{{ touch.stats.sent | number }} sent</span>
           <span class="touch__stat">
@@ -71,11 +93,13 @@
           </span>
           <span class="touch__stat">{{ touch.stats.clicks | number }} clicks</span>
           <span class="touch__actions">
-            <button mat-icon-button matTooltip="PREVIEW" (click)="preview(touch)">
+            <button mat-icon-button matTooltip="PREVIEW"
+              (click)="$event.stopPropagation(); preview(touch)">
               <mat-icon>visibility</mat-icon>
             </button>
             @if (canOpenInDesigner()) {
-              <button mat-icon-button matTooltip="OPEN IN DESIGNER" (click)="openInDesigner(touch)">
+              <button mat-icon-button matTooltip="OPEN IN DESIGNER"
+                (click)="$event.stopPropagation(); openInDesigner(touch)">
                 <mat-icon>brush</mat-icon>
               </button>
             }
@@ -85,3 +109,4 @@
     </div>
   }
 </div>
+}

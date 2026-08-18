@@ -5,6 +5,15 @@
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 18px;
+
+  button[mat-stroked-button],
+  button[mat-flat-button] {
+    margin-top: 4px;
+  }
+}
+
+.detail-header__spacer {
+  flex: 1;
 }
 
 .detail-header__titles {
@@ -101,6 +110,14 @@
   border: 1px solid color-mix(in srgb, var(--app-card-ink) 10%, transparent);
   border-radius: 10px;
   padding: 10px 16px;
+}
+
+.touch--editable {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--app-accent);
+  }
 }
 
 .touch__main {

@@ -112,6 +112,22 @@
         { "fieldPath": "campaignId", "order": "ASCENDING" },
         { "fieldPath": "sentAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "campaign_sends",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "campaign_sends",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "emailId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

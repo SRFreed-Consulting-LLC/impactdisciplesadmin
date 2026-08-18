@@ -24,6 +24,7 @@
   }
   <app-data-grid
     [title]="itemType + 's'"
+    [headerActions]="canAdd ? headerActions : []"
     [columns]="columns"
     [pagedSource]="paged"
     tableClass="campaigns-table"
@@ -44,5 +45,10 @@
 }
 
 @if (mode === 'detail' && selectedCampaign) {
-  <app-campaign-detail [campaign]="selectedCampaign" (closed)="onDetailClosed()"></app-campaign-detail>
+  <app-campaign-detail [campaign]="selectedCampaign" (closed)="onDetailClosed()"
+    (edit)="editCampaign($event)"></app-campaign-detail>
+}
+
+@if (mode === 'wizard') {
+  <app-campaign-wizard [campaign]="wizardCampaign" (closed)="onWizardClosed($event)"></app-campaign-wizard>
 }

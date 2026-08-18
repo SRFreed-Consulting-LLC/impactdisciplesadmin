@@ -428,8 +428,26 @@ Podcast 23, summits by year, per-product/event pushes, singletons) via
 first — the undo path). Surfaces: Campaigns list (all campaigns, kind/channel chips, funnel
 columns) → in-page **campaign-detail** (funnel tiles + touches timeline, `?campaignId=` deep link),
 Status Board (board+calendar lenses, cards deep-link to detail), **Sent Emails** = the global email
-log over `campaign_emails`. Delivered/purchase stats read "not tracked yet" until Phases 2-4 build
-the send engine + own tracking (open pixel, click redirects, attribution).
+log over `campaign_emails`.
+
+**Phase 2 (send engine, 2026-08-18)**: every campaign email sends through ONE server-side path,
+`functions/src/campaign-send.functions.ts` — callables `enqueueCampaignEmail` /
+`previewCampaignAudience` (same audience resolver as send-time, so previews can't lie) /
+`sendCampaignTestEmail`, plus hourly `campaignSendScheduler` (drains queued sends 200/hour,
+activates scheduled touches, runs tag-triggered automations — the old auto-campaign behavior is
+now a touch's `sendConfig.mode: 'tagTriggered'`; `campaign-auto-send.functions.ts` is deleted).
+Per-recipient ledger `campaign_sends/{emailDocId}__{email}` (atomic create = at-most-once per
+touch; carries a crypto `token` for Phase 3 tracking + `unsubType`); `queueMail()` takes optional
+`campaignMeta` and `onCampaignMailDelivered` (onDocumentUpdated mail/{id}) writes the Trigger
+Email extension's SUCCESS state back as delivered counts. Every campaign send gets an unsubscribe
+link (template's `*|UNSUB|*` or an appended fallback footer — never doubled). SMTP relay is the
+org's OWN server (`mail.impactdisciples.com:26`, verified) — hourly cap unconfirmed with the
+host; 200/hour pacing is deliberate. UI: campaign-wizard (goal/audience/window; web channel
+visible but disabled until Phase 5) + email-touch-editor (template-snapshot content — editing a
+template later never rewrites campaign history; send now / schedule / tag-trigger; send-test).
+Composite indexes `campaign_sends(status, createdAt)` + `campaign_sends(emailId, status)`.
+Remaining: Phase 3 open/click tracking, Phase 4 attribution, Phase 5 web popups (purchase/open
+stats read "not tracked yet" until then).
 
 ### Firestore collection naming note
 

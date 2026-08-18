@@ -13,10 +13,8 @@ import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-time
 // Mailchimp history, which is just campaigns that already ran. A row opens
 // the campaign DETAIL view (the v2 centerpiece - funnel + touches
 // timeline), in-page like Products' editor, deep-linkable via
-// ?campaignId=. Campaign CREATION is deliberately absent in Phase 1 - the
-// v1 composer sent nothing and was removed with the type model; the
-// channel-aware wizard arrives with the send engine (Phase 2 of the
-// Campaign Manager v2 plan).
+// ?campaignId=. New Campaign / Edit Campaign open the wizard (Phase 2);
+// emails are authored on the detail view's touch editor.
 @Component({
     selector: 'app-campaigns',
     templateUrl: './campaigns.component.html',
@@ -24,7 +22,12 @@ import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-time
     standalone: false
 })
 export class CampaignsComponent implements OnInit, OnDestroy {
-  mode: 'list' | 'detail' = 'list';
+  mode: 'list' | 'detail' | 'wizard' = 'list';
+
+  /** The campaign the wizard edits; null = creating a new one. */
+  wizardCampaign: CampaignModel | null = null;
+  /** Where the wizard returns to on cancel. */
+  private wizardReturnMode: 'list' | 'detail' = 'list';
 
   columns: DataGridColumn<CampaignModel>[] = [
     { key: 'name', label: 'Name' },
@@ -120,6 +123,14 @@ export class CampaignsComponent implements OnInit, OnDestroy {
     ];
   }
 
+  get canAdd(): boolean {
+    return this.permissionService.canAdd(this.screenKey);
+  }
+
+  headerActions = [
+    { label: 'New Campaign', icon: 'add', onClick: () => this.newCampaign() }
+  ];
+
   openDetail(item: CampaignModel): void {
     if (!this.permissionService.canView(this.screenKey)) {
       return;
@@ -133,5 +144,30 @@ export class CampaignsComponent implements OnInit, OnDestroy {
     this.mode = 'list';
     this.selectedCampaign = null;
     this.router.navigate([], { queryParams: { campaignId: null }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  newCampaign(): void {
+    if (!this.canAdd) {
+      return;
+    }
+    this.wizardCampaign = null;
+    this.wizardReturnMode = 'list';
+    this.mode = 'wizard';
+  }
+
+  editCampaign(campaign: CampaignModel): void {
+    this.wizardCampaign = campaign;
+    this.wizardReturnMode = 'detail';
+    this.mode = 'wizard';
+  }
+
+  onWizardClosed(saved: CampaignModel | null): void {
+    if (saved) {
+      this.paged.loadFirstPage();
+      this.openDetail(saved);
+    } else {
+      this.mode = this.wizardReturnMode === 'detail' && this.selectedCampaign ? 'detail' : 'list';
+    }
+    this.wizardCampaign = null;
   }
 }

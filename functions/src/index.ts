@@ -71,10 +71,18 @@ exports.onEventRegistrationCustomerUpsert =
 const tagRules = require("./tag-rules.functions");
 exports.applyTagRuleRetroactively = tagRules.applyTagRuleRetroactively;
 
-// The auto-campaign hourly sender - this repo's first scheduled function
-// (initial deploy enables the Cloud Scheduler API and creates the job).
-const campaignAutoSend = require("./campaign-auto-send.functions");
-exports.autoCampaignScheduler = campaignAutoSend.autoCampaignScheduler;
+// Campaign Manager v2's unified send engine (Phase 2): every campaign
+// email - send-now, scheduled, or tag-triggered - flows through one
+// server-side path with a per-recipient ledger. campaignSendScheduler is
+// this repo's first scheduled function (initial deploy enables the Cloud
+// Scheduler API and creates the job); it replaces the never-deployed
+// autoCampaignScheduler.
+const campaignSend = require("./campaign-send.functions");
+exports.enqueueCampaignEmail = campaignSend.enqueueCampaignEmail;
+exports.previewCampaignAudience = campaignSend.previewCampaignAudience;
+exports.sendCampaignTestEmail = campaignSend.sendCampaignTestEmail;
+exports.campaignSendScheduler = campaignSend.campaignSendScheduler;
+exports.onCampaignMailDelivered = campaignSend.onCampaignMailDelivered;
 
 // Sweep 2026-08-17: language registry backs the reader's language picker
 // so translation docs no longer need an open collection-group read.

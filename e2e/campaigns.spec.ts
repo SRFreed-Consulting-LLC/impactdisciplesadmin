@@ -54,6 +54,17 @@ test.describe('Campaign Manager', () => {
     await expect(page.locator('.detail-header__name')).toHaveText('Prayer Letter');
   });
 
+  test('wizard opens for a new campaign and cancels cleanly', async ({ page }) => {
+    // No send here - the live send path is verified manually (a real email
+    // goes out); e2e only proves the authoring surfaces mount.
+    await page.getByRole('button', { name: 'New Campaign' }).click();
+    await expect(page.locator('app-campaign-wizard')).toBeVisible();
+    await expect(page.locator('input[formcontrolname="name"]')).toBeVisible();
+    await expect(page.locator('mat-select[formcontrolname="audienceMode"]')).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.locator('.campaigns-table')).toBeVisible();
+  });
+
   test('status board renders board and calendar lenses', async ({ page }) => {
     await page.goto('/campaigns-manager?tab=status-board');
     // All history is ended - the Ended column caps at 2 cards + a view-all link.

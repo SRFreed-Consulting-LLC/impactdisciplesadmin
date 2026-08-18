@@ -1,0 +1,103 @@
+<div class="editor-header">
+  <button mat-icon-button matTooltip="Back to campaign" (click)="cancel()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <h2 class="editor-header__title">{{ touch?.id ? 'Edit Email' : 'New Email' }}</h2>
+  <span class="editor-header__campaign">{{ campaign.name }}</span>
+</div>
+
+<div class="editor-body">
+  <form [formGroup]="form" class="editor-form">
+    <div class="editor-section">
+      <p class="editor-label">CONTENT</p>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Subject</mat-label>
+        <input matInput formControlName="subject">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Label (shown on the timeline, optional)</mat-label>
+        <input matInput formControlName="label" placeholder="e.g. March issue">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ hasContent ? 'Replace content with template' : 'Start from template' }}</mat-label>
+        <mat-select formControlName="templateId" (selectionChange)="onTemplatePicked($event.value)">
+          @for (template of templates; track template.id) {
+            <mat-option [value]="template.id">{{ template.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <p class="editor-hint">
+        The template's content is copied into this email - editing the template later
+        never changes what this campaign sent.
+      </p>
+    </div>
+
+    <div class="editor-section">
+      <p class="editor-label">WHEN DOES IT SEND?</p>
+      <mat-radio-group formControlName="sendMode" class="editor-modes">
+        <mat-radio-button value="now">Send now</mat-radio-button>
+        <mat-radio-button value="scheduled">Schedule for later</mat-radio-button>
+        <mat-radio-button value="tagTriggered">Automated (tag-triggered)</mat-radio-button>
+      </mat-radio-group>
+
+      @if (sendMode === 'scheduled') {
+        <mat-form-field appearance="outline">
+          <mat-label>Send at</mat-label>
+          <input matInput type="datetime-local" formControlName="scheduledAt">
+        </mat-form-field>
+      }
+      @if (sendMode === 'tagTriggered') {
+        <div class="editor-trigger">
+          <mat-form-field appearance="outline" class="editor-grow">
+            <mat-label>Trigger tags (any of)</mat-label>
+            <mat-select formControlName="triggerTags" multiple>
+              @for (tag of knownTags; track tag) {
+                <mat-option [value]="tag">{{ tag }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="editor-days">
+            <mat-label>Days after tagging</mat-label>
+            <input matInput type="number" min="0" formControlName="afterDays">
+          </mat-form-field>
+        </div>
+        <p class="editor-hint">
+          Each customer gets this once, that many days after the purchase/registration
+          that tagged them - the audience is the tag itself.
+        </p>
+      }
+    </div>
+
+    <div class="editor-section">
+      <p class="editor-label">TEST</p>
+      <div class="editor-test">
+        <mat-form-field appearance="outline" class="editor-grow">
+          <mat-label>Send test to</mat-label>
+          <input matInput [(ngModel)]="testEmail" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+        <button mat-stroked-button type="button" [disabled]="saving" (click)="sendTest()">
+          SEND TEST
+        </button>
+      </div>
+    </div>
+
+    <div class="editor-actions">
+      <button mat-button type="button" (click)="cancel()">Cancel</button>
+      <app-indicator-button title="SAVE" [isInProgress]="saving" (clicked)="saveDraft()"></app-indicator-button>
+      <app-indicator-button
+        [title]="sendMode === 'tagTriggered' ? 'ACTIVATE' : (sendMode === 'scheduled' ? 'SAVE SCHEDULE' : 'SEND NOW')"
+        [isInProgress]="sending"
+        (clicked)="sendMode === 'scheduled' ? saveDraft() : sendNow()"></app-indicator-button>
+    </div>
+  </form>
+
+  <div class="editor-preview">
+    <p class="editor-label">PREVIEW</p>
+    @if (previewSrcdoc) {
+      <iframe class="editor-preview__frame" sandbox="allow-same-origin"
+              title="Email content preview" [srcdoc]="previewSrcdoc"></iframe>
+    } @else {
+      <p class="editor-hint">Pick a template to see the email here.</p>
+    }
+  </div>
+</div>

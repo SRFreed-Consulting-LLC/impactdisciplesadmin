@@ -18,6 +18,8 @@ import { CampaignsManagerRoutingModule } from './campaigns-manager-routing.modul
 import { CampaignsManagerComponent } from './campaigns-manager.component';
 import { CampaignsComponent } from './campaigns/campaigns.component';
 import { CampaignDetailComponent } from './campaign-detail/campaign-detail.component';
+import { CampaignWizardComponent } from './campaign-wizard/campaign-wizard.component';
+import { EmailTouchEditorComponent } from './email-touch-editor/email-touch-editor.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
 import { SentEmailsComponent } from './sent-emails/sent-emails.component';
@@ -25,12 +27,16 @@ import { SentEmailPreviewDialogComponent } from './sent-emails/sent-email-previe
 import { MailchimpSettingsComponent } from './mailchimp-settings/mailchimp-settings.component';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatRadioModule } from '@angular/material/radio';
 
 @NgModule({
   declarations: [
     CampaignsManagerComponent,
     CampaignsComponent,
     CampaignDetailComponent,
+    CampaignWizardComponent,
+    EmailTouchEditorComponent,
     StatusBoardComponent,
     TagRulesComponent,
     SentEmailsComponent,
@@ -56,7 +62,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatTooltipModule,
     MatDialogModule,
     MatSlideToggleModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatCheckboxModule,
+    MatRadioModule
   ]
 })
 export class CampaignsManagerModule { }

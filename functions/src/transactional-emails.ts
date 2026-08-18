@@ -78,18 +78,25 @@ function htmlToPlainText(html: string): string {
  * @param {string} to Recipient address.
  * @param {string} subject Subject line.
  * @param {string} html HTML body.
+ * @param {object} [campaignMeta] Campaign-send provenance
+ * ({campaignId, emailId, sendId}) - the extension ignores unknown fields,
+ * and onCampaignMailDelivered (campaign-send.functions.ts) uses it to
+ * write the delivered signal back onto the send ledger. Omit for
+ * transactional mail.
  * @return {Promise<string>} The queued mail doc id.
  */
 export async function queueMail(
   db: FirebaseFirestore.Firestore,
   to: string,
   subject: string,
-  html: string
+  html: string,
+  campaignMeta?: {campaignId: string; emailId: string; sendId: string}
 ): Promise<string> {
   const ref = await db.collection("mail").add({
     to,
     date: admin.firestore.Timestamp.now(),
     message: {subject, html, text: htmlToPlainText(html)},
+    ...(campaignMeta ? {campaignMeta} : {}),
   });
   return ref.id;
 }

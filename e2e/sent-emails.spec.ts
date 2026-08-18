@@ -46,7 +46,8 @@ test.describe('Sent Emails', () => {
     await firstRow.waitFor();
     await firstRow.locator('button:has(mat-icon:text("brush"))').click();
 
-    await expect(page).toHaveURL(/email-designer\/new\?fromEmail=mc_/);
+    // Doc ids are mc_<id> for imports and auto-ids for our own sends.
+    await expect(page).toHaveURL(/email-designer\/new\?fromEmail=./);
     await expect(page.locator('.html-view').first()).toBeVisible({ timeout: 15000 });
   });
 });
