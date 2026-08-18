@@ -13,10 +13,13 @@ export class CampaignService extends BaseService<CampaignModel>{
     this.fromFirestore = CampaignService.fromFirestore
   }
 
-  // Older/hand-created docs may predate the stats block - normalize so no
-  // screen ever has to null-check 6 counters.
+  // Normalizes any doc to the v2 shape so no screen ever null-checks the
+  // counters or the goal/channels fields (see campaign.model.ts's header
+  // for the v2 model; scripts/apply-campaign-regroup.js writes v2 docs).
   static readonly fromFirestore = (data): CampaignModel => {
     data.stats = { ...emptyCampaignStats(), ...(data.stats ?? {}) };
+    data.goal = data.goal ?? 'other';
+    data.channels = data.channels ?? ['email'];
 
     return data;
   };

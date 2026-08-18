@@ -407,19 +407,29 @@ submissions today only feed the bell-badge counters (`new-record-alerts.function
 Submissions screen; the only surviving form-related email is the admin-initiated Route Request
 forward. Use this vocabulary in UI copy and code comments rather than inventing new terms.
 
-**Templates vs. history** (2026-08-18): `mail_templates` holds only true, reusable TEMPLATES.
-Historical *sent* emails are campaigns — `CampaignType 'email'` docs in `campaigns` (subject,
-send date, opens/clicks stats) paired with the rendered body in `campaign_emails` (same doc id;
-kept separate so ~25KB of html per email never rides on list pages). The entire Mailchimp campaign
-archive (477 sent campaigns, 2020–2026) was imported this way via
-`scripts/import-mailchimp-campaigns.js` (idempotent — doc ids are `mc_<mailchimpCampaignId>`;
-Mailchimp campaigns are email sends only, so the one type covers everything), which also removed
-the 15 `mail_templates` docs that were really sent-campaign history. Surfaces: Campaigns Manager >
-**Sent Emails** (paged read-only list, preview dialog, "open in designer" via the designer's
-`?fromEmail=<id>` seed) and the designer picker's collapsed **Past Emails** section (paged cards,
-Use-only). The working Campaigns list and Status Board query `ACTIVE_CAMPAIGN_TYPES` only —
-composite indexes `campaigns(type, name)` / `campaigns(type, startDate)` back the split. A future
-in-app one-time send should write the same campaign + campaign_emails pair to appear in history.
+**Templates vs. history** (2026-08-18): `mail_templates` holds only true, reusable TEMPLATES; what
+actually went out is campaign history (below). The designer picker's collapsed **Past Emails**
+section and the designer's `?fromEmail=<campaignEmailId>` seed let any past send start a new design.
+
+**Campaign Manager v2** (2026-08-18, Phase 1 built on `feature/campaign-manager-v2` — full design
+in the "Campaign Manager v2" plan): a campaign is a promotional EFFORT, not an email.
+`CampaignModel` = `goal` ('product'|'event'|'other' + `otherKind`) + `channels` (['email','web']) +
+`audience` + rollup `stats` (v2 funnel shape: sent/delivered/opens/uniqueOpens/clicks/uniqueClicks/
+purchases/revenue/registrations/subscribes + webShown/webClicks) — the v1 `type` field and the
+composer/template-gallery components are GONE (campaign creation returns with the Phase 2 wizard +
+send engine; v1's Launch never sent anything anyway). `campaign_emails` docs are email "touches", N
+per campaign via `campaignId` (no longer 1:1 same-doc-id), each with label/subject/html snapshot/
+sentAt/per-email stats/sendConfig; composite index `campaign_emails(campaignId, sentAt DESC)` backs
+the detail timeline. The 477 imported Mailchimp sends were REGROUPED into 78 campaigns (Blog Posts
+149 emails, DMP Program 50, Disciple-Making Minute 43, Monthly Newsletter 40, Prayer Letter 30,
+Podcast 23, summits by year, per-product/event pushes, singletons) via
+`scripts/propose-campaign-regroup.js` (auto-proposal, user-reviewed) +
+`scripts/apply-campaign-regroup.js` (idempotent, exports a full JSON backup to scripts/output/
+first — the undo path). Surfaces: Campaigns list (all campaigns, kind/channel chips, funnel
+columns) → in-page **campaign-detail** (funnel tiles + touches timeline, `?campaignId=` deep link),
+Status Board (board+calendar lenses, cards deep-link to detail), **Sent Emails** = the global email
+log over `campaign_emails`. Delivered/purchase stats read "not tracked yet" until Phases 2-4 build
+the send engine + own tracking (open pixel, click redirects, attribution).
 
 ### Firestore collection naming note
 

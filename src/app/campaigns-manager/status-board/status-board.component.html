@@ -1,139 +1,117 @@
-@if (mode === 'board') {
-  <div class="board-header">
-    <h2 class="board-header__title">STATUS BOARD</h2>
-    <mat-button-toggle-group [(ngModel)]="view" class="view-toggle">
-      <mat-button-toggle value="board">Board</mat-button-toggle>
-      <mat-button-toggle value="calendar">Calendar</mat-button-toggle>
-    </mat-button-toggle-group>
-    <span class="board-header__spacer"></span>
-    <mat-button-toggle-group [(ngModel)]="typeFilter" class="type-toggle">
-      <mat-button-toggle value="all">All Types</mat-button-toggle>
-      <mat-button-toggle value="product">Product</mat-button-toggle>
-      <mat-button-toggle value="event">Event</mat-button-toggle>
-      <mat-button-toggle value="lead-capture">Lead</mat-button-toggle>
-    </mat-button-toggle-group>
-    @if (canAdd) {
-      <button mat-flat-button color="primary" type="button" (click)="showGallery()">
-        <mat-icon>add</mat-icon> New Campaign
-      </button>
-    }
-  </div>
+<div class="board-header">
+  <h2 class="board-header__title">STATUS BOARD</h2>
+  <mat-button-toggle-group [(ngModel)]="view" class="view-toggle">
+    <mat-button-toggle value="board">Board</mat-button-toggle>
+    <mat-button-toggle value="calendar">Calendar</mat-button-toggle>
+  </mat-button-toggle-group>
+  <span class="board-header__spacer"></span>
+</div>
 
-  @if (view === 'board') {
-    <div class="kanban">
-      @for (col of columnsConfig; track col.status) {
-        <div class="kanban__col">
-          <div class="kanban__head">
-            <span>{{ col.label }}</span>
-            <span class="kanban__count">{{ column(col.status).length }}</span>
-          </div>
-          @for (campaign of visibleColumn(col.status); track campaign.id) {
-            <button type="button" class="kcard" [class.kcard--live]="col.status === 'live'" (click)="openEdit(campaign)">
-              <div class="kcard__name">{{ campaign.name }}</div>
-              <span class="chip" [class]="'type-' + campaign.type">{{ typeLabels[campaign.type] }}</span>
-              @if (metricLine(campaign)) {
-                <div class="kcard__metric">{{ metricLine(campaign) }}</div>
-              }
-              <div class="kcard__dates">
-                @if (col.status === 'draft') {
-                  @if (toDate(campaign.startDate)) {
-                    starts {{ toDate(campaign.startDate) | date:'MMM d' }}
-                  } @else {
-                    no dates yet
-                  }
-                }
-                @if (col.status === 'scheduled' && toDate(campaign.startDate)) {
+@if (view === 'board') {
+  <div class="kanban">
+    @for (col of columnsConfig; track col.status) {
+      <div class="kanban__col">
+        <div class="kanban__head">
+          <span>{{ col.label }}</span>
+          <span class="kanban__count">{{ column(col.status).length }}</span>
+        </div>
+        @for (campaign of visibleColumn(col.status); track campaign.id) {
+          <button type="button" class="kcard" [class.kcard--live]="col.status === 'live'" (click)="openDetail(campaign)">
+            <div class="kcard__name">{{ campaign.name }}</div>
+            <span class="chip" [class]="'kind-' + campaign.goal">{{ kindLabel(campaign) }}</span>
+            @if (metricLine(campaign)) {
+              <div class="kcard__metric">{{ metricLine(campaign) }}</div>
+            }
+            <div class="kcard__dates">
+              @if (col.status === 'draft') {
+                @if (toDate(campaign.startDate)) {
                   starts {{ toDate(campaign.startDate) | date:'MMM d' }}
+                } @else {
+                  no dates yet
                 }
-                @if (col.status === 'live' && toDate(campaign.endDate)) {
-                  ends {{ toDate(campaign.endDate) | date:'MMM d' }}
-                }
-                @if (col.status === 'ended' && toDate(campaign.endDate)) {
-                  ended {{ toDate(campaign.endDate) | date:'MMM d' }}
-                }
-              </div>
-            </button>
-          } @empty {
-            <div class="kanban__empty">No {{ col.label | lowercase }} campaigns</div>
-          }
-          @if (col.status === 'ended' && hiddenEndedCount() > 0) {
-            <button type="button" class="kanban__more" (click)="goToList()">
-              View all {{ column('ended').length }} in the list →
-            </button>
-          }
-        </div>
-      }
-    </div>
-  }
-
-  @if (view === 'calendar') {
-    <div class="cal-nav">
-      <button mat-icon-button type="button" matTooltip="Previous month" (click)="prevMonth()">
-        <mat-icon>chevron_left</mat-icon>
-      </button>
-      <span class="cal-nav__label">{{ monthCursor | date:'MMMM yyyy' }}</span>
-      <button mat-icon-button type="button" matTooltip="Next month" (click)="nextMonth()">
-        <mat-icon>chevron_right</mat-icon>
-      </button>
-    </div>
-
-    <div class="calendar">
-      @for (header of dayHeaders; track header) {
-        <div class="calendar__header">{{ header }}</div>
-      }
-      @for (cell of monthCells; track $index) {
-        <div class="calendar__day" [class.calendar__day--off]="!cell">
-          @if (cell) {
-            <span class="calendar__num">{{ cell.getDate() }}</span>
-            @for (campaign of campaignsOn(cell); track campaign.id) {
-              <button type="button" class="cal-bar" [class]="'cal-bar--' + campaign.type"
-                [matTooltip]="campaign.name" (click)="openEdit(campaign)">
-              </button>
-            }
-          }
-        </div>
-      }
-    </div>
-
-    @if (campaignsInMonth.length) {
-      <div class="cal-legend">
-        @for (campaign of campaignsInMonth; track campaign.id) {
-          <span class="cal-legend__item">
-            <span class="cal-legend__dot" [class]="'cal-bar--' + campaign.type"></span>
-            {{ campaign.name }}
-            @if (toDate(campaign.startDate)) {
-              · {{ toDate(campaign.startDate) | date:'MMM d' }}@if (toDate(campaign.endDate)) {–{{ toDate(campaign.endDate) | date:'MMM d' }}}
-            }
-          </span>
+              }
+              @if (col.status === 'scheduled' && toDate(campaign.startDate)) {
+                starts {{ toDate(campaign.startDate) | date:'MMM d' }}
+              }
+              @if (col.status === 'live' && toDate(campaign.endDate)) {
+                ends {{ toDate(campaign.endDate) | date:'MMM d' }}
+              }
+              @if (col.status === 'ended' && toDate(campaign.endDate)) {
+                ended {{ toDate(campaign.endDate) | date:'MMM d, y' }}
+              }
+            </div>
+          </button>
+        } @empty {
+          <div class="kanban__empty">No {{ col.label | lowercase }} campaigns</div>
         }
-      </div>
-    } @else {
-      <p class="cal-empty">No campaigns scheduled this month.</p>
-    }
-
-    @if (unscheduledDrafts.length) {
-      <div class="parking">
-        <span class="parking__label">Unscheduled Drafts · {{ unscheduledDrafts.length }}</span>
-        @for (campaign of unscheduledDrafts; track campaign.id) {
-          <button type="button" class="parking__item" (click)="openEdit(campaign)">
-            <b>{{ campaign.name }}</b>
-            <span class="chip" [class]="'type-' + campaign.type">{{ typeLabels[campaign.type] }}</span>
-            <span class="parking__go">Schedule →</span>
+        @if (col.status === 'ended' && hiddenEndedCount() > 0) {
+          <button type="button" class="kanban__more" (click)="goToList()">
+            View all {{ column('ended').length }} in the list →
           </button>
         }
       </div>
     }
+  </div>
+}
+
+@if (view === 'calendar') {
+  <div class="cal-nav">
+    <button mat-icon-button type="button" matTooltip="Previous month" (click)="prevMonth()">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span class="cal-nav__label">{{ monthCursor | date:'MMMM yyyy' }}</span>
+    <button mat-icon-button type="button" matTooltip="Next month" (click)="nextMonth()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  <div class="calendar">
+    @for (header of dayHeaders; track header) {
+      <div class="calendar__header">{{ header }}</div>
+    }
+    @for (cell of monthCells; track $index) {
+      <div class="calendar__day" [class.calendar__day--off]="!cell">
+        @if (cell) {
+          <span class="calendar__num">{{ cell.getDate() }}</span>
+          @for (campaign of campaignsOn(cell); track campaign.id) {
+            <button type="button" class="cal-bar" [class]="'cal-bar--' + campaign.goal"
+              [matTooltip]="campaign.name" (click)="openDetail(campaign)">
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  @if (campaignsInMonth.length) {
+    <div class="cal-legend">
+      @for (campaign of campaignsInMonth; track campaign.id) {
+        <span class="cal-legend__item">
+          <span class="cal-legend__dot" [class]="'cal-bar--' + campaign.goal"></span>
+          {{ campaign.name }}
+          @if (toDate(campaign.startDate)) {
+            · {{ toDate(campaign.startDate) | date:'MMM d' }}@if (toDate(campaign.endDate)) {–{{ toDate(campaign.endDate) | date:'MMM d' }}}
+          }
+        </span>
+      }
+    </div>
+  } @else {
+    <p class="cal-empty">No campaigns scheduled this month.</p>
   }
 
-  @if (!loading && !campaigns.length) {
-    <p class="board-empty">No Campaigns found. Use New Campaign to start one from a template.</p>
+  @if (unscheduledDrafts.length) {
+    <div class="parking">
+      <span class="parking__label">Unscheduled Drafts · {{ unscheduledDrafts.length }}</span>
+      @for (campaign of unscheduledDrafts; track campaign.id) {
+        <button type="button" class="parking__item" (click)="openDetail(campaign)">
+          <b>{{ campaign.name }}</b>
+          <span class="chip" [class]="'kind-' + campaign.goal">{{ kindLabel(campaign) }}</span>
+        </button>
+      }
+    </div>
   }
 }
 
-@if (mode === 'gallery') {
-  <app-template-gallery (picked)="onTemplatePicked($event)" (cancelled)="mode = 'board'"></app-template-gallery>
-}
-
-@if (mode === 'edit') {
-  <app-campaign-composer [campaign]="editingCampaign" [template]="pendingTemplate" (closed)="onComposerClosed($event)"></app-campaign-composer>
+@if (!loading && !campaigns.length) {
+  <p class="board-empty">No Campaigns found.</p>
 }

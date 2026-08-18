@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// Campaigns Manager > Sent Emails - the email-campaign history (the
-// imported Mailchimp archive; see CLAUDE.md's "Email taxonomy" section).
-// Read-only surface: paged rows with engagement stats, a preview dialog,
-// and an open-in-designer jump that seeds a COPY.
+// Campaigns Manager > Sent Emails - the global email LOG (Campaign
+// Manager v2): every campaign_emails touch across every campaign, newest
+// first. Read-only surface: paged rows with engagement stats, a preview
+// dialog, and an open-in-designer jump that seeds a COPY.
 test.describe('Sent Emails', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);

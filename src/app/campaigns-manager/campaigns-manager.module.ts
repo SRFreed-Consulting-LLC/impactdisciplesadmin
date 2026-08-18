@@ -17,9 +17,8 @@ import { SharedModule } from '../shared/shared.module';
 import { CampaignsManagerRoutingModule } from './campaigns-manager-routing.module';
 import { CampaignsManagerComponent } from './campaigns-manager.component';
 import { CampaignsComponent } from './campaigns/campaigns.component';
+import { CampaignDetailComponent } from './campaign-detail/campaign-detail.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
-import { TemplateGalleryComponent } from './composer/template-gallery.component';
-import { CampaignComposerComponent } from './composer/campaign-composer.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
 import { SentEmailsComponent } from './sent-emails/sent-emails.component';
 import { SentEmailPreviewDialogComponent } from './sent-emails/sent-email-preview-dialog.component';
@@ -31,9 +30,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   declarations: [
     CampaignsManagerComponent,
     CampaignsComponent,
+    CampaignDetailComponent,
     StatusBoardComponent,
-    TemplateGalleryComponent,
-    CampaignComposerComponent,
     TagRulesComponent,
     SentEmailsComponent,
     SentEmailPreviewDialogComponent,

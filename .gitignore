@@ -52,3 +52,6 @@ Thumbs.db
 # Firestore export/import snapshots - contain real customer PII (both dev
 # and prod), never commit these
 /scripts/backups
+
+# Regroup proposals hold live campaign data - never commit
+scripts/output/

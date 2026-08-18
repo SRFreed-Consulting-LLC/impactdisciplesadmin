@@ -4,14 +4,11 @@
       <div class="hub__label">Live Now · {{ liveCampaigns.length }}</div>
       <div class="hub__cards">
         @for (campaign of liveCampaigns; track campaign.id) {
-          <button type="button" class="hub-card" (click)="showEdit(campaign)">
+          <button type="button" class="hub-card" (click)="openDetail(campaign)">
             <div class="hub-card__name">
               <span class="hub-card__title">{{ campaign.name }}</span>
-              <span class="chip" [class]="'type-' + campaign.type">{{ typeLabels[campaign.type] }}</span>
+              <span class="chip" [class]="'kind-' + campaign.goal">{{ kindLabel(campaign) }}</span>
             </div>
-            @if (targetName(campaign)) {
-              <div class="hub-card__target">{{ targetName(campaign) }}</div>
-            }
             <div class="hub-card__stats">
               @for (stat of hubStats(campaign); track stat.label) {
                 <div class="stat">
@@ -27,15 +24,18 @@
   }
   <app-data-grid
     [title]="itemType + 's'"
-    [headerActions]="headerActions"
     [columns]="columns"
-    [rowActions]="rowActions"
     [pagedSource]="paged"
     tableClass="campaigns-table"
     exportFileName="campaigns.xlsx"
-    (rowDoubleClick)="showEdit($event)">
-    <ng-template appDataGridCell="type" let-row>
-      <span class="chip" [class]="'type-' + row.type">{{ typeLabels[row.type] }}</span>
+    (rowDoubleClick)="openDetail($event)">
+    <ng-template appDataGridCell="kind" let-row>
+      <span class="chip" [class]="'kind-' + row.goal">{{ kindLabel(row) }}</span>
+    </ng-template>
+    <ng-template appDataGridCell="channels" let-row>
+      @for (channel of row.channels; track channel) {
+        <span class="chip channel">{{ channel | uppercase }}</span>
+      }
     </ng-template>
     <ng-template appDataGridCell="status" let-row>
       <span class="chip" [class]="'status-' + effectiveStatus(row)">{{ effectiveStatus(row) | uppercase }}</span>
@@ -43,10 +43,6 @@
   </app-data-grid>
 }
 
-@if (mode === 'gallery') {
-  <app-template-gallery (picked)="onTemplatePicked($event)" (cancelled)="mode = 'list'"></app-template-gallery>
-}
-
-@if (mode === 'edit') {
-  <app-campaign-composer [campaign]="editingCampaign" [template]="pendingTemplate" (closed)="onComposerClosed($event)"></app-campaign-composer>
+@if (mode === 'detail' && selectedCampaign) {
+  <app-campaign-detail [campaign]="selectedCampaign" (closed)="onDetailClosed()"></app-campaign-detail>
 }
