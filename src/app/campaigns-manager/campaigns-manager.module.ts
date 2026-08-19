@@ -30,6 +30,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
+import { QuillModule } from 'ngx-quill';
 
 @NgModule({
   declarations: [
@@ -66,7 +67,8 @@ import { MatRadioModule } from '@angular/material/radio';
     MatSlideToggleModule,
     MatProgressSpinnerModule,
     MatCheckboxModule,
-    MatRadioModule
+    MatRadioModule,
+    QuillModule
   ]
 })
 export class CampaignsManagerModule { }

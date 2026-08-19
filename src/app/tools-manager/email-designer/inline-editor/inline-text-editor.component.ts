@@ -5,30 +5,11 @@ import { MERGE_TAGS, MergeTagDef, mergeTagToken } from 'src/app/common/utils/ema
 import { DesignerStateService } from '../designer-state.service';
 import { normalizeInlineHtml } from './inline-html.util';
 
-// Registered ONCE, module-scope: swap Quill's class-based attributors for
-// their inline-STYLE twins so size/color/highlight/alignment emit
-// `style="..."` (what email clients need) instead of ql-* classes (which
-// need Quill's stylesheet to mean anything). NOTE this is a GLOBAL Quill
-// config, deliberately accepted (P1 gap-closure decision): the app's other
-// quill-editor sites (products, bios, web config...) already offer
-// color/background/align in RICH_TEXT_TOOLBAR, and their output being
-// inline-styled instead of class-based is strictly MORE portable for the
-// public site that renders it (no Quill CSS needed) - existing stored
-// content with ql-* classes still renders fine inside Quill itself.
-const SIZE_WHITELIST = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
-let styleAttributorsRegistered = false;
-function registerStyleAttributors(): void {
-  if (styleAttributorsRegistered) {
-    return;
-  }
-  styleAttributorsRegistered = true;
-  const size = Quill.import('attributors/style/size') as { whitelist: string[] };
-  size.whitelist = SIZE_WHITELIST;
-  Quill.register(size as never, true);
-  Quill.register(Quill.import('attributors/style/color') as never, true);
-  Quill.register(Quill.import('attributors/style/background') as never, true);
-  Quill.register(Quill.import('attributors/style/align') as never, true);
-}
+// The inline-STYLE attributor registration moved to the shared
+// quill-style-attributors util (2026-08-19) so the campaign popup editor
+// gets the same portable inline-styled output - see that file's comment
+// for the original P1 decision rationale.
+import { QUILL_SIZE_WHITELIST, registerQuillStyleAttributors } from 'src/app/shared/rich-text-editor/quill-style-attributors';
 
 // The single live inline editor (Mailchimp's click-to-edit): a minimal
 // Quill instance with the BUBBLE theme, whose floating selection toolbar is
@@ -54,7 +35,7 @@ export class InlineTextEditorComponent implements AfterViewInit, OnDestroy {
   quillModules = {
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
-      [{ size: SIZE_WHITELIST }],
+      [{ size: QUILL_SIZE_WHITELIST }],
       [{ color: [] }, { background: [] }],
       [{ align: '' }, { align: 'center' }, { align: 'right' }],
       ['link'],
@@ -68,7 +49,7 @@ export class InlineTextEditorComponent implements AfterViewInit, OnDestroy {
   private finished = false;
 
   constructor(private host: ElementRef<HTMLElement>, private state: DesignerStateService) {
-    registerStyleAttributors();
+    registerQuillStyleAttributors();
   }
 
   ngAfterViewInit(): void {

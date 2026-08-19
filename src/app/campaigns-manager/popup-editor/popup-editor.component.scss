@@ -74,10 +74,60 @@
   padding: 4px 2px 18px;
 }
 
-.popup-preview__frame {
+.popup-preview__box {
   border: 1px solid color-mix(in srgb, var(--app-card-ink) 14%, transparent);
-  border-radius: 10px;
-  background: #ffffff;
+  border-radius: 12px;
   max-width: 100%;
   box-shadow: 0 8px 30px rgba(15, 23, 32, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  // Popup content is authored for the light storefront - keep the preview
+  // honest regardless of the admin's navy theme.
+  color: #22282f;
+  color-scheme: light;
+}
+
+.popup-preview__content {
+  flex: 1;
+  padding: 10px 14px;
+  overflow-y: auto;
+
+  img {
+    max-width: 100%;
+  }
+}
+
+.popup-preview__dismiss {
+  text-align: center;
+  font-size: 12px;
+  color: #6a7280;
+  padding: 6px 0 10px;
+}
+
+.editor-quill {
+  margin-bottom: 10px;
+  // The navy theme's global quill styling targets the designer's layout -
+  // keep this instance a plain light editor.
+  color-scheme: light;
+
+  ::ng-deep .ql-container {
+    min-height: 180px;
+    background: #ffffff;
+    color: #22282f;
+    font-size: 14px;
+  }
+
+  ::ng-deep .ql-toolbar {
+    background: #f6f7f9;
+  }
+}
+
+.editor-save-template {
+  display: block;
+  margin-top: 6px;
+}
+
+.editor-apply {
+  align-self: center;
 }

@@ -1,4 +1,4 @@
-export const environment = {
+﻿export const environment = {
   production: true,
   firebaseConfig: {
     apiKey: "AIzaSyDuxbnrsCjpHqlNauBWsaSrQHChUN-w008",
@@ -15,6 +15,7 @@ export const environment = {
   shippingUrl: "https://us-central1-impactdisciplesdev.cloudfunctions.net/get_shipping_rates",
   shippingLabelUrl: "https://us-central1-impactdisciplesdev.cloudfunctions.net/get_shipping_label",
   unsubscribeUrl: "https://us-central1-impactdisciplesdev.cloudfunctions.net/unsubscribe_from_email_list",
+  publicSiteUrl: "https://impactdisciplesdev-public.web.app",
   youtubeVideosUrl: "https://us-central1-impactdisciplesdev.cloudfunctions.net/get_youtube_videos",
   application: "admin",
   shippingCarriers: ["se-1047082"],

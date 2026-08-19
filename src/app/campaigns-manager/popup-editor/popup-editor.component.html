@@ -15,20 +15,50 @@
         <input matInput formControlName="title">
       </mat-form-field>
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Start from recipe</mat-label>
+        <mat-label>Start from a template</mat-label>
         <mat-select formControlName="templateId" (selectionChange)="onTemplatePicked($event.value)">
           @for (template of templates; track template.id) {
             <mat-option [value]="template.id">{{ template.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Popup HTML</mat-label>
-        <textarea matInput formControlName="html" rows="10" spellcheck="false"></textarea>
-      </mat-form-field>
-      <mat-checkbox [(ngModel)]="saveAsTemplate" [ngModelOptions]="{standalone: true}">
+
+      <div class="editor-quill">
+        <quill-editor formControlName="html" [modules]="richTextModules"
+          placeholder="Write the popup content here - or start from a template or a spotlight below."></quill-editor>
+      </div>
+
+      <mat-checkbox class="editor-save-template" [(ngModel)]="saveAsTemplate" [ngModelOptions]="{standalone: true}">
         Save this popup as a reusable template
       </mat-checkbox>
+    </div>
+
+    <div class="editor-section">
+      <p class="editor-label">SPOTLIGHT A PRODUCT OR EVENT</p>
+      <p class="editor-hint">
+        Drops the item's image, name, and details into the content above (fully editable
+        afterward) and points the click-through at its page on the site.
+      </p>
+      <div class="editor-row">
+        <mat-form-field appearance="outline" class="editor-num">
+          <mat-label>Spotlight</mat-label>
+          <mat-select [(ngModel)]="spotlightType" [ngModelOptions]="{standalone: true}">
+            <mat-option value="product">Product</mat-option>
+            <mat-option value="event">Event</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="editor-grow">
+          <mat-label>{{ spotlightType === 'product' ? 'Product' : 'Event' }}</mat-label>
+          <mat-select [(ngModel)]="spotlightId" [ngModelOptions]="{standalone: true}">
+            @for (item of spotlightItems; track item.id) {
+              <mat-option [value]="item.id">{{ item.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button type="button" class="editor-apply" (click)="applySpotlight()">
+          APPLY TO POPUP
+        </button>
+      </div>
     </div>
 
     <div class="editor-section">
@@ -58,7 +88,7 @@
         </mat-form-field>
       </div>
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Click-through URL (optional)</mat-label>
+        <mat-label>Click-through URL</mat-label>
         <input matInput formControlName="ctaUrl" placeholder="https://impactdisciples.com/store">
       </mat-form-field>
       <p class="editor-hint">
@@ -77,14 +107,16 @@
 
   <div class="editor-preview">
     <p class="editor-label">PREVIEW</p>
-    @if (previewSrcdoc) {
-      <iframe class="popup-preview__frame" sandbox="allow-same-origin"
-              title="Popup preview"
-              [style.width.px]="form.value.width || 480"
-              [style.height.px]="form.value.height || 360"
-              [srcdoc]="previewSrcdoc"></iframe>
+    @if (previewHtml) {
+      <div class="popup-preview__box"
+        [style.width.px]="form.value.width || 480"
+        [style.minHeight.px]="form.value.height || 420"
+        [style.background]="form.value.bgColor || '#ffffff'">
+        <div class="popup-preview__content" [innerHTML]="previewHtml"></div>
+        <span class="popup-preview__dismiss">☐ Don't show this again</span>
+      </div>
     } @else {
-      <p class="editor-hint">Pick a recipe or write HTML to see the popup here.</p>
+      <p class="editor-hint">Pick a template, apply a spotlight, or just start typing to see the popup here.</p>
     }
   </div>
 </div>
