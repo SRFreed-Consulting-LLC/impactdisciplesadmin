@@ -5,13 +5,12 @@ import { EMailModel, MessageModel, TemplateModel } from 'src/app/common/models/a
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { htmlToPlainText } from 'src/app/common/utils/html-to-text';
 import { BaseService } from './base.service';
-import { EMailTemplatesService } from './email-templates.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EMailService extends BaseService<EMailModel>{
-  constructor(public override dao: FirebaseDAO<EMailModel>, public templateService: EMailTemplatesService) {
+  constructor(public override dao: FirebaseDAO<EMailModel>) {
     super(dao)
     this.table="mail"
     this.fromFirestore = EMailService.fromFirestore
@@ -67,51 +66,9 @@ export class EMailService extends BaseService<EMailModel>{
     return this.add(mail);
   }
 
-  sendHTMLEMailFromTemplate(to:string, templateId: string, model: Record<string, unknown>){
-    return this.templateService.getAllByValue('name', templateId).then(template => {
-      const mail = {... new EMailModel()}
-      mail.to = to;
-      mail.date = Timestamp.now();
-
-      let html = template[0].html;
-
-      Object.entries(model).forEach(([key]) => {
-        html = html.replace("{{"+key+"}}", String(model[key]))
-      });
-
-      const mailMessage: MessageModel = {... new MessageModel()};
-
-      mailMessage.subject = template[0].subject.replace("{{eventName}}", String(model['eventName']));
-      mailMessage.html = html;
-      mailMessage.text = htmlToPlainText(html);
-
-      mail.message = mailMessage;
-
-      return this.add(mail);
-    })
-  }
-
-  sendHTMLEMailByIdFromTemplate(to:string, templateId: string, model: Record<string, unknown>){
-    return this.templateService.getById(templateId).then(template => {
-      const mail = {... new EMailModel()}
-      mail.to = to;
-      mail.date = Timestamp.now();
-
-      let html = template.html;
-
-      Object.entries(model).forEach(([key]) => {
-        html = html.replace("{{"+key+"}}", String(model[key]))
-      });
-
-      const mailMessage: MessageModel = {... new MessageModel()};
-
-      mailMessage.subject = template.subject;
-      mailMessage.html = html;
-      mailMessage.text = htmlToPlainText(html);
-
-      mail.message = mailMessage;
-
-      return this.add(mail);
-    })
-  }
+  // NOTE: the old sendHTMLEMailFromTemplate/sendHTMLEMailByIdFromTemplate
+  // methods (client-side template substitution) were removed 2026-08-17 -
+  // they had no callers and their String.replace() substitution only hit
+  // the first occurrence of each token. Template substitution now goes
+  // through renderMergeTags() (src/app/common/utils/email/merge-tags.ts).
 }

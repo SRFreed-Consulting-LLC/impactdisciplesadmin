@@ -1,0 +1,166 @@
+:host {
+  display: block;
+}
+
+.canvas-scroll {
+  min-height: 100%;
+  padding: 28px 16px 56px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.page {
+  position: relative;
+  box-shadow: 0 4px 22px rgba(15, 23, 32, 0.12);
+  transition: width 0.18s ease;
+}
+
+// ------------------------------------------------------------ sections
+
+.section {
+  position: relative;
+
+  &.selected {
+    outline: 2px solid #0e6e6e;
+    outline-offset: -2px;
+  }
+
+  &:hover > .section-tag,
+  &.selected > .section-tag {
+    opacity: 1;
+  }
+}
+
+.section-tag {
+  position: absolute;
+  left: -76px;
+  top: 8px;
+  z-index: 5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #6a7280;
+  background: #f4f6f8;
+  border: 1px solid #dfe3e8;
+  border-radius: 999px;
+  padding: 2px 9px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-rows {
+  min-height: 34px;
+}
+
+// ------------------------------------------------------------ rows
+
+.row {
+  position: relative;
+
+  &:hover {
+    outline: 1px dashed #9ec4c1;
+    outline-offset: -1px;
+  }
+
+  &.selected {
+    outline: 2px solid #0e6e6e;
+    outline-offset: -2px;
+  }
+
+  &:hover > .row-toolbar,
+  &.selected > .row-toolbar {
+    display: flex;
+  }
+}
+
+.row-toolbar {
+  display: none;
+  position: absolute;
+  top: -14px;
+  left: 10px;
+  z-index: 15;
+  background: #0e6e6e;
+  border-radius: 7px;
+  padding: 2px 3px;
+  gap: 2px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+}
+
+.row-tool {
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  color: #eafffb;
+  cursor: pointer;
+
+  &[cdkDragHandle] {
+    cursor: grab;
+  }
+}
+
+.columns {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+
+  &.stacked {
+    flex-direction: column;
+
+    .column {
+      flex-basis: auto !important;
+      width: 100%;
+    }
+  }
+}
+
+.column {
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.column-drop {
+  min-height: 34px;
+  height: 100%;
+}
+
+// ------------------------------------------------------------ empties & drag
+
+.empty-hint {
+  margin: 10px;
+  border: 2px dashed #b9c2cc;
+  border-radius: 8px;
+  color: #8a93a0;
+  background: #fbfcfd;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 18px 8px;
+
+  &.small {
+    padding: 12px 6px;
+    margin: 8px;
+  }
+}
+
+.cdk-drop-list-dragging .empty-hint,
+.cdk-drop-list-receiving .empty-hint {
+  border-color: #0e6e6e;
+  color: #0e6e6e;
+  background: #f0f7f6;
+}
+
+.cdk-drag-preview {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  opacity: 0.92;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}

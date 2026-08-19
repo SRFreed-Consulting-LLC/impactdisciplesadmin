@@ -1,0 +1,327 @@
+﻿@if (selectedBlock || selectedSection || state.selection$.value?.kind === 'row') {
+  <!-- ============================================= contextual settings -->
+  <div class="panel-header">
+    <span class="panel-title">{{ selectionTitle }}</span>
+    <button mat-icon-button matTooltip="Close" (click)="closeSettings()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="panel-body">
+    @if (selectedBlock; as block) {
+      @switch (block.type) {
+        @case ('heading') {
+          <div class="field-row">
+            <span class="field-label">Heading level</span>
+            <mat-button-toggle-group hideSingleSelectionIndicator [value]="asHeading(block).props.level"
+                (change)="commitBlockChange(setHeadingLevel(block, $event.value))">
+              <mat-button-toggle [value]="1">H1</mat-button-toggle>
+              <mat-button-toggle [value]="2">H2</mat-button-toggle>
+              <mat-button-toggle [value]="3">H3</mat-button-toggle>
+              <mat-button-toggle [value]="4">H4</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+          <p class="hint">Click the heading on the canvas to edit its text in place.</p>
+        }
+        @case ('text') {
+          <p class="hint">Click the text on the canvas to edit it in place. Use the Merge tag
+            button that appears while editing to personalize.</p>
+        }
+        @case ('image') {
+          <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
+        }
+        @case ('logo') {
+          <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
+        }
+        @case ('button') {
+          <div class="field-row">
+            <span class="field-label">Label</span>
+            <input class="text-input" [value]="asButton(block).props.label"
+                   (change)="commitBlockChange(setButtonLabel(block, $any($event.target).value))">
+          </div>
+          <div class="field-row">
+            <span class="field-label">Link to</span>
+            <input class="text-input" placeholder="https://" [value]="asButton(block).props.href"
+                   (change)="commitBlockChange(setButtonHref(block, $any($event.target).value))">
+          </div>
+          <div class="field-row">
+            <mat-slide-toggle [checked]="asButton(block).props.fullWidth"
+                (change)="commitBlockChange(setButtonFullWidth(block, $event.checked))">
+              Full width
+            </mat-slide-toggle>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Colors (blank = email default)</span>
+            <div class="inline-controls">
+              <input class="color-input" type="color"
+                     [value]="asButton(block).props.backgroundColor ?? '#1f3a5f'"
+                     (change)="commitBlockChange(setButtonOverrideColor(block, 'backgroundColor', $any($event.target).value))"
+                     aria-label="Button background override">
+              <input class="color-input" type="color"
+                     [value]="asButton(block).props.color ?? '#ffffff'"
+                     (change)="commitBlockChange(setButtonOverrideColor(block, 'color', $any($event.target).value))"
+                     aria-label="Button text color override">
+              <button mat-button class="clear-button"
+                      (click)="commitBlockChange(setButtonOverrideColor(block, 'backgroundColor', null)); commitBlockChange(setButtonOverrideColor(block, 'color', null))">
+                Use defaults
+              </button>
+            </div>
+          </div>
+        }
+        @case ('spacer') {
+          <div class="field-row">
+            <span class="field-label">Height (px)</span>
+            <input class="text-input narrow" type="number" min="4" max="200"
+                   [value]="asSpacer(block).props.height"
+                   (change)="commitBlockChange(setSpacerHeight(block, $any($event.target).value))">
+          </div>
+        }
+        @case ('divider') {
+          <div class="field-row">
+            <span class="field-label">Line (blank = email default)</span>
+            <div class="inline-controls">
+              <select class="grow" [value]="asDivider(block).props.style ?? ''"
+                      (change)="commitBlockChange(setDividerOverride(block, 'style', $any($event.target).value || null))"
+                      aria-label="Divider line style">
+                <option value="">Default</option>
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="double">Double</option>
+                <option value="inset">Inset</option>
+                <option value="outset">Outset</option>
+                <option value="groove">Groove</option>
+                <option value="ridge">Ridge</option>
+              </select>
+              <input class="text-input narrow" type="number" min="1" max="12" placeholder="px"
+                     [value]="asDivider(block).props.thickness ?? ''"
+                     (change)="commitBlockChange(setDividerOverride(block, 'thickness', $any($event.target).value || null))"
+                     aria-label="Divider thickness">
+              <input class="color-input" type="color" [value]="asDivider(block).props.color ?? '#dfe3e8'"
+                     (change)="commitBlockChange(setDividerOverride(block, 'color', $any($event.target).value))"
+                     aria-label="Divider color">
+            </div>
+          </div>
+        }
+        @case ('video') {
+          <div class="field-row">
+            <span class="field-label">Video URL (YouTube or Vimeo)</span>
+            <input class="text-input" placeholder="https://youtube.com/watch?v=..."
+                   [value]="asVideo(block).props.url"
+                   (change)="onVideoUrlChange(block, $any($event.target).value)">
+          </div>
+          @if (asVideo(block).props.provider !== 'other' || asVideo(block).props.url) {
+            <p class="hint subtle">
+              @switch (asVideo(block).props.provider) {
+                @case ('youtube') { YouTube video detected - thumbnail fetched automatically. }
+                @case ('vimeo') { Vimeo video detected - thumbnail fetched automatically. }
+                @default { Unrecognized source - add a thumbnail image below. }
+              }
+            </p>
+          }
+          <div class="field-row">
+            <span class="field-label">Thumbnail</span>
+            <div class="image-picker-row">
+              @if (asVideo(block).props.thumbnailUrl) {
+                <img class="image-thumb" [src]="asVideo(block).props.thumbnailUrl" alt="">
+              }
+              <button mat-stroked-button (click)="openVideoThumbnailPicker(block)">
+                {{ asVideo(block).props.thumbnailUrl ? 'Replace' : 'Choose image' }}
+              </button>
+            </div>
+            @if (asVideo(block).props.customThumbnail) {
+              <button mat-button class="clear-button" (click)="useSourceThumbnail(block)">
+                Use source thumbnail
+              </button>
+            }
+          </div>
+          <div class="field-row">
+            <span class="field-label">Caption / accessible label</span>
+            <input class="text-input" [value]="asVideo(block).props.caption"
+                   (change)="commitBlockChange(setVideoCaption(block, $any($event.target).value))">
+          </div>
+          <p class="hint">Recipients see the thumbnail with a play button; clicking opens the video
+            in their browser (email clients can't embed players).</p>
+        }
+        @case ('social') {
+          @for (network of asSocial(block).props.networks; track $index) {
+            <div class="social-row">
+              <div class="social-row-head">
+                <span class="social-name">{{ network.label }}</span>
+                <span class="social-tools">
+                  <button mat-icon-button (click)="moveSocialNetwork(block, $index, -1)" matTooltip="Move up" [disabled]="$index === 0">
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="moveSocialNetwork(block, $index, 1)" matTooltip="Move down"
+                          [disabled]="$index === asSocial(block).props.networks.length - 1">
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="removeSocialNetwork(block, $index)" matTooltip="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <input class="text-input" placeholder="https://" [value]="network.url"
+                     (change)="commitBlockChange(setSocialUrl(block, $index, $any($event.target).value))"
+                     [attr.aria-label]="network.label + ' URL'">
+            </div>
+          }
+          <button mat-stroked-button class="add-network" [matMenuTriggerFor]="networkMenu">
+            <mat-icon>add</mat-icon> Add network
+          </button>
+          <mat-menu #networkMenu="matMenu">
+            @for (preset of networkPresets; track preset.network) {
+              <button mat-menu-item (click)="addSocialNetwork(block, preset)">{{ preset.label }}</button>
+            }
+          </mat-menu>
+          <div class="field-row" style="margin-top: 14px;">
+            <span class="field-label">Icon size / spacing (px)</span>
+            <div class="inline-controls">
+              <input class="text-input narrow" type="number" min="16" max="64"
+                     [value]="asSocial(block).props.iconSize"
+                     (change)="commitBlockChange(setSocialIconSize(block, $any($event.target).value))"
+                     aria-label="Icon size">
+              <input class="text-input narrow" type="number" min="0" max="40"
+                     [value]="asSocial(block).props.spacing"
+                     (change)="commitBlockChange(setSocialSpacing(block, $any($event.target).value))"
+                     aria-label="Icon spacing">
+            </div>
+          </div>
+        }
+        @case ('footer') {
+          <div class="field-row">
+            <span class="field-label">Organization address</span>
+            <textarea class="text-input" rows="3" placeholder="Impact Disciples&#10;1234 Street Rd, City, ST 00000"
+                      [value]="footerAddressText(block)"
+                      (change)="commitBlockChange(setFooterAddress(block, $any($event.target).value))"></textarea>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Permission reminder</span>
+            <textarea class="text-input" rows="2" [value]="asFooter(block).props.permissionReminder"
+                      (change)="commitBlockChange(setFooterReminder(block, $any($event.target).value))"></textarea>
+          </div>
+          <div class="field-row">
+            <mat-slide-toggle [checked]="asFooter(block).props.includeUnsubscribe"
+                (change)="commitBlockChange(setFooterUnsubscribe(block, $event.checked))">
+              Include unsubscribe link
+            </mat-slide-toggle>
+          </div>
+          @if (asFooter(block).props.includeUnsubscribe) {
+            <div class="field-row">
+              <span class="field-label">Unsubscribe link text</span>
+              <input class="text-input" [value]="asFooter(block).props.unsubscribeLabel"
+                     (change)="commitBlockChange(setFooterUnsubscribeLabel(block, $any($event.target).value))">
+            </div>
+          }
+          <p class="hint">The unsubscribe link sends as the *&#124;UNSUB&#124;* merge tag and resolves to the
+            right unsubscribe URL per recipient at send time.</p>
+        }
+      }
+      <app-block-style-editor [target]="block"></app-block-style-editor>
+    } @else if (selectedSection; as section) {
+      <div class="field-row">
+        <span class="field-label">Background color</span>
+        <input class="color-input" type="color" [value]="section.backgroundColor ?? '#ffffff'"
+               (change)="commitBlockChange(setSectionBackground(section, $any($event.target).value))">
+        <button mat-button class="clear-button" (click)="commitBlockChange(setSectionBackground(section, null))">
+          Clear
+        </button>
+      </div>
+    } @else if (selectedRow; as row) {
+      <p class="hint">Drag the row by its handle to reorder it, or delete it from its hover
+        toolbar. Styles below apply to the whole row.</p>
+      <app-block-style-editor [target]="row"></app-block-style-editor>
+    }
+  </div>
+} @else {
+  <!-- ============================================= add / styles tabs -->
+  <div class="panel-tabs">
+    <button class="panel-tab" [class.on]="activeTab === 'add'" (click)="activeTab = 'add'">Add</button>
+    <button class="panel-tab" [class.on]="activeTab === 'styles'" (click)="activeTab = 'styles'">Styles</button>
+  </div>
+
+  @if (activeTab === 'add') {
+    <div class="panel-body">
+      <p class="palette-label">CONTENT BLOCKS</p>
+      <div class="chip-grid" cdkDropList [id]="blockPaletteId" [cdkDropListData]="paletteTypes"
+           [cdkDropListConnectedTo]="state.columnDropIds()" [cdkDropListSortingDisabled]="true">
+        @for (entry of palette; track entry.type) {
+          <div class="chip" cdkDrag [cdkDragData]="entry.type">
+            <mat-icon>{{ entry.icon }}</mat-icon>
+            <span>{{ entry.label }}</span>
+          </div>
+        }
+      </div>
+
+      <p class="palette-label">LAYOUTS</p>
+      <div class="layout-grid" cdkDropList [id]="layoutPaletteId" [cdkDropListData]="layoutPresets"
+           [cdkDropListConnectedTo]="state.rowDropIds()" [cdkDropListSortingDisabled]="true">
+        @for (preset of layoutPresets; track preset.label) {
+          <div class="layout-tile" cdkDrag [cdkDragData]="preset" [matTooltip]="preset.label">
+            @for (width of preset.widths; track $index) {
+              <i [style.flex-grow]="width"></i>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="panel-body">
+      <app-global-styles-panel></app-global-styles-panel>
+    </div>
+  }
+}
+
+<ng-template #imageSettings let-block>
+  <div class="field-row">
+    <span class="field-label">Image</span>
+    <div class="image-picker-row">
+      @if (asImage(block).props.src) {
+        <img class="image-thumb" [src]="asImage(block).props.src" alt="">
+      }
+      <button mat-stroked-button (click)="openImagePicker(asImage(block).props)">
+        {{ asImage(block).props.src ? 'Replace' : 'Choose image' }}
+      </button>
+    </div>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Sizing</span>
+    <mat-button-toggle-group hideSingleSelectionIndicator [value]="asImage(block).props.sizing"
+        (change)="commitBlockChange(setImageSizing(block, $event.value))">
+      <mat-button-toggle value="original">Original</mat-button-toggle>
+      <mat-button-toggle value="fill">Fill</mat-button-toggle>
+      <mat-button-toggle value="scale">Scale</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+  @if (asImage(block).props.sizing === 'scale') {
+    <div class="field-row">
+      <span class="field-label">Scale ({{ asImage(block).props.scalePercent }}%)</span>
+      <input class="range-input" type="range" min="10" max="100"
+             [value]="asImage(block).props.scalePercent"
+             (change)="commitBlockChange(setImageScale(block, $any($event.target).value))">
+    </div>
+  }
+  <div class="field-row">
+    <span class="field-label">Link to</span>
+    <input class="text-input" placeholder="https://" [value]="asImage(block).props.href ?? ''"
+           (change)="commitBlockChange(setImageHref(block, $any($event.target).value))">
+  </div>
+  <div class="field-row">
+    <mat-slide-toggle [checked]="asImage(block).props.openInNewTab"
+        (change)="commitBlockChange(setImageNewTab(block, $event.checked))">
+      Open link in new tab
+    </mat-slide-toggle>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Alt text</span>
+    <input class="text-input" [value]="asImage(block).props.alt"
+           (change)="commitBlockChange(setImageAlt(block, $any($event.target).value))">
+  </div>
+</ng-template>
+
+@if (imageUploaderVisible$ | async) {
+  <app-image-uploader [card]="imageCard" [isList]="false" [field]="'image'"
+      [selectionMode]="'single'" [imageSelectVisible]="imageUploaderVisible$ | async"
+      (imageSelectClosed)="onImagePickerClosed()">
+  </app-image-uploader>
+}

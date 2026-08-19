@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.designer-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #e9ecef;
+}
+
+.designer-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e5ea;
+  gap: 6px;
+  flex-wrap: nowrap;
+
+  // Compact, borderless inline fields - the Mailchimp "click the name to
+  // edit it" affordance without a full mat-form-field's chrome.
+  .name-input,
+  .subject-input {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    background: transparent;
+    min-width: 0;
+    // Explicit: the app-wide theme paints toolbar text white, which would
+    // be invisible against this editor's white top bar (live-diagnosed -
+    // the name input inherited rgb(255,255,255)).
+    color: #22282f;
+
+    &::placeholder {
+      color: #8a93a0;
+    }
+
+    &:hover {
+      border-color: #dbe0e6;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #9ec4c1;
+      background: #ffffff;
+    }
+  }
+
+  .name-input {
+    font-weight: 600;
+    width: 220px;
+  }
+
+  .subject-input {
+    width: 260px;
+    color: #555e69;
+  }
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 26px;
+  background: #e2e5ea;
+  margin: 0 6px;
+  flex: none;
+}
+
+.topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.device-toggle {
+  mat-icon {
+    font-size: 19px;
+    height: 19px;
+    width: 19px;
+  }
+}
+
+.topbar-action {
+  color: #0e6e6e;
+}
+
+.save-button {
+  min-width: 96px;
+  margin-left: 4px;
+}
+
+.designer-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.designer-work {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.designer-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.designer-panel {
+  flex: none;
+  width: 340px;
+  border-left: 1px solid #e2e5ea;
+  background: #ffffff;
+  overflow-y: auto;
+}

@@ -1,0 +1,101 @@
+<div class="global-styles">
+  <div class="device-row">
+    <button class="device-pill" [class.on]="activeDevice === 'desktop'" (click)="activeDevice = 'desktop'">Desktop</button>
+    <button class="device-pill" [class.on]="activeDevice === 'mobile'" (click)="activeDevice = 'mobile'">Mobile</button>
+    @if (activeDevice === 'mobile' && hasMobileOverrides) {
+      <button mat-button class="reset-mobile" (click)="resetMobileOverrides()">Reset</button>
+    }
+  </div>
+
+  @if (activeDevice === 'mobile') {
+    <p class="hint subtle">Values set here apply on phones only and compile into the email's
+      &#64;media rules. Desktop values apply everywhere else.</p>
+  }
+
+  <p class="palette-label">BACKGROUNDS</p>
+  <div class="swatch-row">
+    <span>Email background</span>
+    <input type="color" class="color-input" [value]="edited.emailBackgroundColor"
+           (change)="setEmailBackground($any($event.target).value)" aria-label="Email background color">
+  </div>
+  <div class="swatch-row">
+    <span>Body background</span>
+    <input type="color" class="color-input" [value]="edited.bodyBackgroundColor"
+           (change)="setBodyBackground($any($event.target).value)" aria-label="Body background color">
+  </div>
+
+  <p class="palette-label">PARAGRAPH TEXT</p>
+  <div class="control-row">
+    <select class="select grow" [value]="edited.paragraph.fontFamily"
+            (change)="setParagraphFont($any($event.target).value)" aria-label="Paragraph font">
+      @for (family of fontFamilies; track family) {
+        <option [value]="family">{{ fontLabel(family) }}</option>
+      }
+    </select>
+    <input type="number" class="num" min="10" max="32" [value]="edited.paragraph.fontSize"
+           (change)="setParagraphSize($any($event.target).value)" aria-label="Paragraph size">
+    <input type="color" class="color-input" [value]="edited.paragraph.color"
+           (change)="setParagraphColor($any($event.target).value)" aria-label="Paragraph color">
+  </div>
+
+  <p class="palette-label">HEADINGS</p>
+  <div class="control-row">
+    <select class="select grow" [value]="edited.heading.fontFamily"
+            (change)="setHeadingFont($any($event.target).value)" aria-label="Heading font">
+      @for (family of fontFamilies; track family) {
+        <option [value]="family">{{ fontLabel(family) }}</option>
+      }
+    </select>
+    <input type="color" class="color-input" [value]="edited.heading.color"
+           (change)="setHeadingColor($any($event.target).value)" aria-label="Heading color">
+  </div>
+  <div class="heading-sizes">
+    <span class="size-cell"><em>H1</em>
+      <input type="number" min="12" max="60" [value]="edited.heading.sizes.h1"
+             (change)="setHeadingSize('h1', $any($event.target).value)" aria-label="H1 size"></span>
+    <span class="size-cell"><em>H2</em>
+      <input type="number" min="12" max="60" [value]="edited.heading.sizes.h2"
+             (change)="setHeadingSize('h2', $any($event.target).value)" aria-label="H2 size"></span>
+    <span class="size-cell"><em>H3</em>
+      <input type="number" min="12" max="60" [value]="edited.heading.sizes.h3"
+             (change)="setHeadingSize('h3', $any($event.target).value)" aria-label="H3 size"></span>
+    <span class="size-cell"><em>H4</em>
+      <input type="number" min="12" max="60" [value]="edited.heading.sizes.h4"
+             (change)="setHeadingSize('h4', $any($event.target).value)" aria-label="H4 size"></span>
+  </div>
+
+  <p class="palette-label">LINKS</p>
+  <div class="control-row">
+    <input type="color" class="color-input" [value]="edited.link.color"
+           (change)="setLinkColor($any($event.target).value)" aria-label="Link color">
+    <mat-slide-toggle [checked]="edited.link.underline"
+        (change)="setLinkUnderline($event.checked)">Underline</mat-slide-toggle>
+  </div>
+
+  <p class="palette-label">BUTTONS</p>
+  <div class="control-row">
+    <input type="color" class="color-input" [value]="edited.button.backgroundColor"
+           (change)="setButtonBackground($any($event.target).value)" aria-label="Button background">
+    <input type="color" class="color-input" [value]="edited.button.color"
+           (change)="setButtonColor($any($event.target).value)" aria-label="Button text color">
+    <input type="number" class="num" min="0" max="30" [value]="edited.button.borderRadius"
+           (change)="setButtonRadius($any($event.target).value)" aria-label="Button radius">
+    <input type="number" class="num" min="10" max="24" [value]="edited.button.fontSize"
+           (change)="setButtonFontSize($any($event.target).value)" aria-label="Button font size">
+  </div>
+  <p class="hint">Background, text, corner radius, text size. Individual buttons can override these.</p>
+
+  <p class="palette-label">DIVIDERS</p>
+  <div class="control-row">
+    <select class="select grow" [value]="edited.divider.style"
+            (change)="setDividerStyle($any($event.target).value)" aria-label="Divider style">
+      @for (style of borderStyles; track style) {
+        <option [value]="style">{{ style }}</option>
+      }
+    </select>
+    <input type="number" class="num" min="1" max="12" [value]="edited.divider.thickness"
+           (change)="setDividerThickness($any($event.target).value)" aria-label="Divider thickness">
+    <input type="color" class="color-input" [value]="edited.divider.color"
+           (change)="setDividerColor($any($event.target).value)" aria-label="Divider color">
+  </div>
+</div>

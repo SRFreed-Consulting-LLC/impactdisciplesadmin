@@ -1,0 +1,274 @@
+// Explicit text/control colors throughout: the app-wide (dark) theme styles
+// bare inputs/selects/headings for dark surfaces, which reads as invisible
+// or off-theme on this panel's white background (live-diagnosed - the panel
+// title and select text inherited near-white).
+:host {
+  display: block;
+  font-size: 13px;
+  color: #39414c;
+
+  input,
+  select {
+    background: #ffffff;
+    color: #22282f;
+    color-scheme: light;
+  }
+}
+
+// ------------------------------------------------------------ tabs
+
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e5ea;
+}
+
+.panel-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 13px 0 11px;
+  font: inherit;
+  font-weight: 600;
+  color: #6a7280;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+
+  &.on {
+    color: #0e6e6e;
+    border-bottom-color: #0e6e6e;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0e6e6e;
+    outline-offset: -2px;
+  }
+}
+
+// ------------------------------------------------------------ settings
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid #e2e5ea;
+}
+
+.panel-title {
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: capitalize;
+  color: #22282f;
+}
+
+.panel-body {
+  padding: 16px;
+}
+
+.field-row {
+  margin-bottom: 16px;
+
+  // Static display captions, deliberately not <label> elements - a <label>
+  // with no associated control is an a11y-lint error (same convention as
+  // agenda-wizard's .flabel).
+  .field-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #6a7280;
+    margin-bottom: 6px;
+  }
+}
+
+.text-input {
+  width: 100%;
+  border: 1px solid #ccd3da;
+  border-radius: 7px;
+  padding: 7px 9px;
+  font: inherit;
+  box-sizing: border-box;
+
+  &.narrow {
+    width: 110px;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #0e6e6e;
+  }
+}
+
+.range-input {
+  width: 100%;
+}
+
+.color-input {
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #ccd3da;
+  border-radius: 6px;
+  background: none;
+  vertical-align: middle;
+}
+
+.clear-button {
+  margin-left: 8px;
+}
+
+.hint {
+  color: #8a93a0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+
+  &.subtle {
+    color: #0e6e6e;
+    font-weight: 600;
+    font-size: 11.5px;
+  }
+}
+
+.inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .grow {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #ccd3da;
+    border-radius: 7px;
+    padding: 7px 6px;
+    font: inherit;
+    font-size: 12.5px;
+  }
+}
+
+textarea.text-input {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.social-row {
+  border: 1px solid #eef1f4;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+
+  .social-row-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .social-name {
+    font-weight: 600;
+    font-size: 12.5px;
+  }
+
+  .social-tools {
+    display: flex;
+
+    button {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    mat-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+    }
+  }
+}
+
+.add-network {
+  margin-top: 2px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// ------------------------------------------------------------ palettes
+
+.palette-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #8a93a0;
+  margin: 4px 0 10px;
+}
+
+.chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.chip {
+  border: 1px solid #dbe0e6;
+  border-radius: 9px;
+  background: #ffffff;
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #39414c;
+  cursor: grab;
+
+  mat-icon {
+    color: #0e6e6e;
+  }
+
+  &:hover {
+    border-color: #9ec4c1;
+  }
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.layout-tile {
+  border: 1px solid #dbe0e6;
+  border-radius: 9px;
+  background: #ffffff;
+  padding: 10px;
+  display: flex;
+  gap: 4px;
+  height: 44px;
+  box-sizing: border-box;
+  cursor: grab;
+
+  i {
+    flex-basis: 0;
+    background: #dfe6ee;
+    border-radius: 3px;
+  }
+
+  &:hover {
+    border-color: #9ec4c1;
+  }
+}
+
+// While a palette chip is dragged, CDK clones it as the preview - keep the
+// clone looking like the chip, not an unstyled div.
+.cdk-drag-preview.chip,
+.cdk-drag-preview.layout-tile {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}

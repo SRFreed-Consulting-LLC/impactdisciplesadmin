@@ -1,0 +1,57 @@
+<div class="designer-shell">
+  <mat-toolbar class="designer-topbar">
+    <button mat-icon-button matTooltip="Back to Email Templates" (click)="onBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+
+    <input class="name-input" [(ngModel)]="templateName" (ngModelChange)="state.dirty = true"
+           placeholder="Email name" aria-label="Email name">
+    <input class="subject-input" [(ngModel)]="templateSubject" (ngModelChange)="state.dirty = true"
+           placeholder="Subject line" aria-label="Subject line">
+
+    <span class="topbar-divider"></span>
+
+    <button mat-icon-button matTooltip="Undo (Ctrl+Z)" [disabled]="!state.canUndo" (click)="state.undo()">
+      <mat-icon>undo</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Redo (Ctrl+Y)" [disabled]="!state.canRedo" (click)="state.redo()">
+      <mat-icon>redo</mat-icon>
+    </button>
+
+    <span class="topbar-divider"></span>
+
+    <mat-button-toggle-group class="device-toggle" hideSingleSelectionIndicator
+                             [value]="state.viewMode" (change)="setViewMode($event.value)">
+      <mat-button-toggle value="desktop" matTooltip="Desktop view">
+        <mat-icon>desktop_windows</mat-icon>
+      </mat-button-toggle>
+      <mat-button-toggle value="mobile" matTooltip="Mobile view">
+        <mat-icon>smartphone</mat-icon>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <span class="topbar-spacer"></span>
+
+    <button mat-button class="topbar-action" [disabled]="loading$ | async" (click)="onPreview()">
+      Preview
+    </button>
+    <button mat-stroked-button class="topbar-action" [disabled]="loading$ | async" (click)="onSendTest()">
+      Send Test
+    </button>
+    <button mat-flat-button color="primary" class="save-button"
+            [disabled]="(saving$ | async) || (loading$ | async)" (click)="onSave()">
+      @if (saving$ | async) { Saving… } @else { Save }
+    </button>
+  </mat-toolbar>
+
+  @if (loading$ | async) {
+    <div class="designer-loading">
+      <mat-spinner diameter="42"></mat-spinner>
+    </div>
+  } @else {
+    <div class="designer-work">
+      <app-design-canvas class="designer-canvas" (backgroundClick)="onCanvasBackgroundClick()"></app-design-canvas>
+      <app-designer-side-panel class="designer-panel"></app-designer-side-panel>
+    </div>
+  }
+</div>

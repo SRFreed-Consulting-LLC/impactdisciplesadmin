@@ -1,0 +1,118 @@
+<div class="block" tabindex="0" [class.selected]="selected" [class.editing]="editing"
+     [ngStyle]="wrapperStyle" (click)="onClick($event)" (keyup.enter)="onClick($event)">
+
+  @if (selected && !editing) {
+    <div class="block-toolbar">
+      <mat-icon class="block-tool grab" matTooltip="Drag to move">drag_indicator</mat-icon>
+      <mat-icon class="block-tool" matTooltip="Duplicate" (click)="onDuplicate($event)">content_copy</mat-icon>
+      <mat-icon class="block-tool" matTooltip="Delete" (click)="onDelete($event)">delete_outline</mat-icon>
+    </div>
+  }
+
+  @switch (block.type) {
+    @case ('heading') {
+      @if (editing) {
+        <app-inline-text-editor [block]="block"></app-inline-text-editor>
+      } @else {
+        <div class="heading-view"
+             [style.font-family]="global.heading.fontFamily"
+             [style.color]="global.heading.color"
+             [style.font-size.px]="headingSize()"
+             [innerHTML]="trustHtml($any(block).props.html)"></div>
+      }
+    }
+    @case ('text') {
+      @if (editing) {
+        <app-inline-text-editor [block]="block"></app-inline-text-editor>
+      } @else {
+        <div class="text-view"
+             [style.font-family]="global.paragraph.fontFamily"
+             [style.font-size.px]="global.paragraph.fontSize"
+             [style.line-height]="global.paragraph.lineHeight"
+             [style.color]="global.paragraph.color"
+             [innerHTML]="trustHtml($any(block).props.html)"></div>
+      }
+    }
+    @case ('image') {
+      <ng-container *ngTemplateOutlet="imageView"></ng-container>
+    }
+    @case ('logo') {
+      <ng-container *ngTemplateOutlet="imageView"></ng-container>
+    }
+    @case ('button') {
+      <span class="button-view"
+            [style.background-color]="$any(block).props.backgroundColor ?? global.button.backgroundColor"
+            [style.color]="$any(block).props.color ?? global.button.color"
+            [style.border-radius.px]="$any(block).props.borderRadius ?? global.button.borderRadius"
+            [style.font-size.px]="$any(block).props.fontSize ?? global.button.fontSize"
+            [style.display]="$any(block).props.fullWidth ? 'block' : 'inline-block'"
+            [style.padding]="global.button.padding.top + 'px ' + global.button.padding.right + 'px ' +
+                             global.button.padding.bottom + 'px ' + global.button.padding.left + 'px'">
+        {{ $any(block).props.label }}
+      </span>
+    }
+    @case ('divider') {
+      <div class="divider-view"
+           [style.border-top]="($any(block).props.thickness ?? global.divider.thickness) + 'px ' +
+                               ($any(block).props.style ?? global.divider.style) + ' ' +
+                               ($any(block).props.color ?? global.divider.color)"></div>
+    }
+    @case ('spacer') {
+      <div class="spacer-view" [style.height.px]="$any(block).props.height"></div>
+    }
+    @case ('video') {
+      <div class="video-view">
+        @if ($any(block).props.thumbnailUrl) {
+          <img class="video-thumb" [src]="$any(block).props.thumbnailUrl" [alt]="$any(block).props.caption">
+        } @else {
+          <div class="video-placeholder"></div>
+        }
+        <span class="video-play"></span>
+      </div>
+    }
+    @case ('social') {
+      <div class="social-view">
+        @for (network of $any(block).props.networks; track network.network) {
+          <span class="social-item" [style.width.px]="$any(block).props.iconSize"
+                [style.height.px]="$any(block).props.iconSize"
+                [style.margin]="'0 ' + ($any(block).props.spacing / 2) + 'px'">
+            @if (network.iconUrl) {
+              <img [src]="network.iconUrl" [alt]="network.label" [style.width.px]="$any(block).props.iconSize">
+            } @else {
+              {{ network.label.charAt(0) }}
+            }
+          </span>
+        }
+      </div>
+    }
+    @case ('footer') {
+      <div class="footer-view"
+           [style.font-family]="global.paragraph.fontFamily">
+        @if ($any(block).props.addressHtml) {
+          <div [innerHTML]="trustHtml($any(block).props.addressHtml)"></div>
+        } @else {
+          <div class="footer-hint">Add your organization's address in Settings</div>
+        }
+        @if ($any(block).props.permissionReminder) {
+          <div>{{ $any(block).props.permissionReminder }}</div>
+        }
+        @if ($any(block).props.includeUnsubscribe) {
+          <a class="footer-unsub" [style.color]="global.link.color">{{ $any(block).props.unsubscribeLabel }}</a>
+        }
+      </div>
+    }
+  }
+
+  <ng-template #imageView>
+    @if ($any(block).props.src) {
+      <img class="image-view" [src]="$any(block).props.src" [alt]="$any(block).props.alt"
+           [style.width]="$any(block).props.sizing === 'fill' ? '100%' :
+                          ($any(block).props.sizing === 'scale' ? $any(block).props.scalePercent + '%' : 'auto')">
+    } @else {
+      <div class="image-placeholder">
+        <mat-icon>image</mat-icon>
+        <span>{{ block.type === 'logo' ? 'Choose a logo' : 'Choose an image' }}</span>
+      </div>
+    }
+  </ng-template>
+</div>

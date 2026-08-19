@@ -1,0 +1,29 @@
+<h2 mat-dialog-title>Start Your Email</h2>
+
+<mat-dialog-content>
+  <p class="picker-label">STARTERS</p>
+  <div class="tile-grid">
+    @for (starter of starters; track starter.id) {
+      <button class="tile" (click)="pickStarter(starter)">
+        <span class="tile-name">{{ starter.name }}</span>
+        <span class="tile-desc">{{ starter.description }}</span>
+      </button>
+    }
+  </div>
+
+  @if (savedTemplates.length > 0) {
+    <p class="picker-label">YOUR EMAIL DESIGNS</p>
+    <div class="tile-grid">
+      @for (template of savedTemplates; track template.id) {
+        <button class="tile" (click)="pickSaved(template)">
+          <span class="tile-name">{{ template.name }}</span>
+          <span class="tile-desc">{{ template.subject || 'Start from a copy of this design' }}</span>
+        </button>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Start Blank</button>
+</mat-dialog-actions>

@@ -1,0 +1,20 @@
+<!-- No click handler needed: block-host's own onClick no-ops while editing. -->
+<div class="inline-editor">
+  <div class="merge-tag-affordance">
+    <button mat-stroked-button class="merge-tag-button" [matMenuTriggerFor]="mergeTagMenu">
+      <mat-icon>data_object</mat-icon>
+      Merge tag
+    </button>
+    <mat-menu #mergeTagMenu="matMenu">
+      @for (tag of mergeTags; track tag.tag) {
+        <button mat-menu-item (click)="insertMergeTag(tag)">
+          <span class="merge-tag-label">{{ tag.label }}</span>
+          <code class="merge-tag-token">*|{{ tag.tag }}|*</code>
+        </button>
+      }
+    </mat-menu>
+  </div>
+
+  <quill-editor theme="bubble" [modules]="quillModules" [sanitize]="false"
+                placeholder="" (onEditorCreated)="onEditorCreated($event)"></quill-editor>
+</div>

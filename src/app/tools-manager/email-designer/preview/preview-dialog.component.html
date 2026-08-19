@@ -1,0 +1,28 @@
+<div class="preview-header">
+  <span class="preview-title">Preview</span>
+  <span class="preview-subject">{{ data.subject || 'No subject line yet' }}</span>
+
+  <mat-slide-toggle class="sample-toggle" [(ngModel)]="withSampleData">Sample data</mat-slide-toggle>
+
+  <mat-button-toggle-group hideSingleSelectionIndicator [(value)]="device">
+    <mat-button-toggle value="desktop" matTooltip="Desktop width">
+      <mat-icon>desktop_windows</mat-icon>
+    </mat-button-toggle>
+    <mat-button-toggle value="mobile" matTooltip="Phone width">
+      <mat-icon>smartphone</mat-icon>
+    </mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <button mat-icon-button matTooltip="Close" (click)="onClose()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<div class="preview-body">
+  <!-- allow-same-origin WITHOUT allow-scripts: no JS can run in the frame
+       (the content is our own compiler's static output anyway), while the
+       frame stays same-origin-inspectable (a fully opaque sandbox="" frame
+       rendered blank in some Chrome versions and is unreachable to e2e). -->
+  <iframe class="preview-frame" sandbox="allow-same-origin" title="Email preview"
+          [style.width.px]="frameWidth" [srcdoc]="srcdoc"></iframe>
+</div>
