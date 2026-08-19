@@ -1,0 +1,120 @@
+<div class="hub">
+  <mat-toolbar class="hub__header">
+    <button mat-icon-button type="button" matTooltip="Back to Summit list" (click)="closed.emit()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="hub__title-block">
+      <h2 class="hub__title">{{ event.eventName }}</h2>
+      <span class="hub__chip" [class.hub__chip--live]="event.isActive" [class.hub__chip--dark]="!event.isActive">{{ event.isActive ? 'LIVE' : 'NOT LIVE' }}</span>
+    </div>
+    <span class="hub__spacer"></span>
+    @if (!isPast()) {
+      <div class="hub__countdown">
+        <b>{{ daysUntil() }} days</b>
+        <span>until {{ $any(event.startDate) | date: 'MMM d, h:mm a' }}</span>
+      </div>
+    } @else {
+      <div class="hub__countdown"><b>Completed</b><span>{{ $any(event.startDate) | date: 'MMM d, y' }}</span></div>
+    }
+  </mat-toolbar>
+
+  @if (loading) {
+    <div class="hub__loading"><mat-spinner diameter="32"></mat-spinner></div>
+  } @else {
+    <div class="hub__body">
+      <div class="tiles">
+        <div class="tile">
+          <b>{{ registrationCount }}</b><span>Registrations</span>
+          @if (weekDelta > 0) { <span class="tile__trend">▲ {{ weekDelta }} this week</span> }
+        </div>
+        <div class="tile"><b>{{ dayCount }}</b><span>Days</span></div>
+        <div class="tile"><b>{{ breakoutCount }}</b><span>Breakout options</span></div>
+        <div class="tile"><b>{{ roomCount }}</b><span>Rooms</span></div>
+        <div class="tile" [class.tile--warn]="nearCapacityCount > 0">
+          <b>{{ nearCapacityCount }}</b><span>Sessions near capacity</span>
+          @if (nearCapacityCount > 0) { <span class="tile__warn">⚠ review in Command Center</span> }
+        </div>
+      </div>
+
+      <div class="cols">
+        <section class="card">
+          <h3>Manage</h3>
+          <div class="areas">
+            <div class="area" role="button" tabindex="0" (click)="edit.emit('info')" (keydown.enter)="edit.emit('info')">
+              <mat-icon class="area__icon">info</mat-icon>
+              <div>
+                <b>Info &amp; Pricing</b>
+                <p>Name, dates, cost, promo video, image, description.</p>
+              </div>
+            </div>
+            <div class="area" role="button" tabindex="0" (click)="edit.emit('agenda')" (keydown.enter)="edit.emit('agenda')">
+              <mat-icon class="area__icon">calendar_month</mat-icon>
+              <div>
+                <b>Agenda Builder</b>
+                <p>Day schedule, breakout blocks, coaches.</p>
+                <span class="area__status" [class.area__status--ok]="breakoutCount > 0">{{ breakoutCount > 0 ? '✓ ' + breakoutCount + ' breakouts scheduled' : 'Nothing scheduled yet' }}</span>
+              </div>
+            </div>
+            <div class="area" role="button" tabindex="0" (click)="edit.emit('application')" (keydown.enter)="edit.emit('application')">
+              <mat-icon class="area__icon">smartphone</mat-icon>
+              <div>
+                <b>Attendee App Content</b>
+                <p>Dining, check-in instructions, FAQs, what's next.</p>
+                <span class="area__status" [class.area__status--ok]="emptyContentSections.length === 0" [class.area__status--warn]="emptyContentSections.length > 0">
+                  {{ emptyContentSections.length === 0 ? '✓ Complete' : emptyContentSections.join(', ') + ' empty' }}
+                </span>
+              </div>
+            </div>
+            <div class="area" role="button" tabindex="0" (click)="openCommandCenter.emit()" (keydown.enter)="openCommandCenter.emit()">
+              <mat-icon class="area__icon">hub</mat-icon>
+              <div>
+                <b>Attendee Command Center</b>
+                <p>Who's registered, breakout sign-ups &amp; waiting queues, capacity.</p>
+                <span class="area__status area__status--ok">{{ registrationCount }} registered · {{ pickedPct }}% picked breakouts</span>
+              </div>
+            </div>
+          </div>
+          @if (venue) {
+            <div class="venuebar">
+              <mat-icon>location_on</mat-icon>
+              <span>{{ venue.name }} — {{ venueAddress() }}</span>
+              <span class="venuebar__pill">SUMMIT VENUE · {{ roomCount }} ROOMS</span>
+              <button mat-stroked-button type="button" (click)="openVenueRooms()"><mat-icon>meeting_room</mat-icon> Venue Rooms</button>
+            </div>
+          }
+        </section>
+
+        <section class="card">
+          <h3>Road to Summit</h3>
+          <ul class="steps">
+            <li>
+              <span class="dot" [class.dot--ok]="event.isActive" [class.dot--todo]="!event.isActive">{{ event.isActive ? '✓' : '·' }}</span>
+              Registration {{ event.isActive ? 'live' : 'not live yet' }}
+              <span class="steps__meta">{{ registrationCount }} so far</span>
+            </li>
+            <li>
+              <span class="dot" [class.dot--ok]="breakoutCount > 0" [class.dot--todo]="breakoutCount === 0">{{ breakoutCount > 0 ? '✓' : '·' }}</span>
+              Agenda published
+              <span class="steps__meta">{{ breakoutCount }} breakout options</span>
+            </li>
+            <li>
+              <span class="dot" [class.dot--now]="pickedPct > 0 && pickedPct < 100" [class.dot--ok]="pickedPct === 100" [class.dot--todo]="pickedPct === 0">{{ pickedPct === 100 ? '✓' : '→' }}</span>
+              Breakout sign-ups
+              <span class="steps__meta">{{ pickedPct }}% picked · {{ noBreakoutCount() }} still to choose</span>
+            </li>
+            <li>
+              <span class="dot" [class.dot--ok]="emptyContentSections.length === 0" [class.dot--todo]="emptyContentSections.length > 0">{{ emptyContentSections.length === 0 ? '✓' : '·' }}</span>
+              Attendee app content
+              <span class="steps__meta">{{ emptyContentSections.length === 0 ? 'complete' : emptyContentSections.length + ' section(s) empty' }}</span>
+            </li>
+            <li>
+              <span class="dot dot--todo">📅</span>
+              Event day
+              <span class="steps__meta">{{ $any(event.startDate) | date: 'EEEE, MMM d, y' }}</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  }
+</div>

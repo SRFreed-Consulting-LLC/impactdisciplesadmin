@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
+import { arrayRemove, arrayUnion } from '@angular/fire/firestore';
 import { FirebaseDAO, QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
@@ -34,58 +35,26 @@ export class EventRegistrationService extends BaseService<EventRegistrationModel
     return await this.queryAllByMultiValue(params);
   }
 
-  async registerForTrainingSession(email: string, agendaItemId: string, eventId: string): Promise<EventRegistrationModel> {
-    const params: QueryParam[] = [];
-    params.push(new QueryParam('email', WhereFilterOperandKeys.equal, email.toLowerCase()));
-    params.push(new QueryParam('eventId', WhereFilterOperandKeys.equal, eventId));
-
-    const retval = await this.queryAllByMultiValue(params)
-
-    if(retval && retval.length == 1){
-      if(!retval[0].trainingSessions){
-        retval[0].trainingSessions = [];
-      }
-
-      retval[0].trainingSessions.push(agendaItemId);
-
-      this.update(retval[0].id, retval[0]);
-
-      return retval[0];
-    }
-
-    return null;
+  // ---- Admin-side breakout assignment (Summit Command Center) ----
+  // Awaited, PARTIAL, idempotent: arrayUnion/arrayRemove touch ONLY
+  // `trainingSessions` (lastNameLower - the paged Attendees sort key -
+  // registrationDate, receipt etc. survive byte-for-byte), a double-click
+  // is a no-op, and concurrent writers can't clobber each other. The
+  // onEventRegistrationSessionCounts Cloud Function trigger fires on ANY
+  // registration write, so the public site's eventSessionCounts stays
+  // consistent with zero extra work here. arrayUnion also creates the
+  // field when a registration has no trainingSessions array at all.
+  //
+  // (The old registerForTrainingSession/unregisterForTrainingSession -
+  // email+eventId lookups with an UNAWAITED whole-doc update - were
+  // deleted 2026-08-19; don't re-import that pattern from the web repo,
+  // whose own copies go through Cloud Functions now anyway.)
+  assignTrainingSession(registrationId: string, agendaItemId: string): Promise<void> {
+    return this.updateFields(registrationId, { trainingSessions: arrayUnion(agendaItemId) });
   }
 
-  async unregisterForTrainingSession(email: string, agendaItemId: string, eventId: string): Promise<EventRegistrationModel> {
-    const params: QueryParam[] = [];
-    params.push(new QueryParam('email', WhereFilterOperandKeys.equal, email.toLowerCase()));
-    params.push(new QueryParam('eventId', WhereFilterOperandKeys.equal, eventId));
-
-    const retval = await this.queryAllByMultiValue(params);
-
-    if(retval && retval.length == 1){
-      retval[0].trainingSessions = retval[0].trainingSessions.filter(session => session != agendaItemId);
-
-      this.update(retval[0].id, retval[0]);
-
-      return retval[0];
-    }
-
-    return null;
-  }
-
-  async getUserTrainingSession(email: string, eventId: string): Promise<string []> {
-    const params: QueryParam[] = [];
-    params.push(new QueryParam('email', WhereFilterOperandKeys.equal, email.toLowerCase()));
-    params.push(new QueryParam('eventId', WhereFilterOperandKeys.equal, eventId));
-
-    const retval = await this.queryAllByMultiValue(params);
-
-    if(retval && retval.length == 1){
-      return retval[0].trainingSessions;
-    }
-
-    return [];
+  removeTrainingSession(registrationId: string, agendaItemId: string): Promise<void> {
+    return this.updateFields(registrationId, { trainingSessions: arrayRemove(agendaItemId) });
   }
 
   streamTrainingSessionList(eventId: string): Observable<EventRegistrationModel[]> {

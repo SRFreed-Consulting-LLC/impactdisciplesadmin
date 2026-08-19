@@ -6,6 +6,7 @@ import { CoachesComponent } from './coaches/coaches.component';
 import { CoachDialogComponent } from './coaches/coach-dialog.component';
 import { EventsComponent } from './events/events.component';
 import { VenueRoomsDialogComponent } from './events/venue-rooms-dialog.component';
+import { SummitHubComponent } from './events/summit-hub/summit-hub.component';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
 import { EventAttendeeDialogComponent } from './events/event-attendees/event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './events/event-attendees/event-email-dialog.component';
@@ -54,6 +55,7 @@ import { QuillModule } from 'ngx-quill';
       EventsManagerComponent,
       EventsComponent,
       VenueRoomsDialogComponent,
+      SummitHubComponent,
       CoachesComponent,
       CoachDialogComponent,
       EventAgendaComponent,

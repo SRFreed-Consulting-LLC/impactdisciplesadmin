@@ -12,7 +12,7 @@
     initialSortKey="startDate"
     initialSortDirection="desc"
     exportFileName="events.xlsx"
-    (rowDoubleClick)="showEditModal($event)">
+    (rowDoubleClick)="onRowOpen($event)">
     <ng-template appDataGridCell="isActive" let-row>
       <span class="active-template" [style.background-color]="row.isActive ? '#1d8a46' : '#c62828'">
         {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
@@ -409,9 +409,21 @@
   }
 }
 
-<!-- Summit attendee REPORT - full-page, opened from the Summit list's VIEW
-     ATTENDEES row action (not an edit tab; see events.component.ts's mode
-     comment). -->
+<!-- Summit Mission Control - what double-clicking a summit row lands on.
+     Cards emit back here to open the editor at a tab / the Command
+     Center (see events.component.ts's mode comment). -->
+@if (mode === 'hub' && hubItem; as hubEvent) {
+  <app-summit-hub
+    [event]="hubEvent"
+    (closed)="closeHub()"
+    (edit)="editFromHub($event)"
+    (openCommandCenter)="commandCenterFromHub()">
+  </app-summit-hub>
+}
+
+<!-- Summit attendee Command Center - full-page, opened from Mission
+     Control or the Summit list's row action (not an edit tab; see
+     events.component.ts's mode comment). -->
 @if (mode === 'attendees' && attendeesItem; as reportItem) {
   <div class="editor">
     <mat-toolbar class="editor__header">

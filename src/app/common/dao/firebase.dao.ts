@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter, where } from '@angular/fire/firestore';
+import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter, updateDoc, where } from '@angular/fire/firestore';
 import { Firestore, collection } from '@angular/fire/firestore';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -117,6 +117,28 @@ export class FirebaseDAO<T extends BaseModel> {
     const retval = await this.getById(id, table, fromFirestore);
     retval.id = id;
     return retval;
+  }
+
+  // PARTIAL update via updateDoc - the counterpart to update()'s whole-doc
+  // setDoc. Contract:
+  // - Only the fields named in `partial` change; everything else on the doc
+  //   survives untouched. That's what makes it safe around server-critical
+  //   fields the client must never round-trip (e.g. event-registrations'
+  //   lastNameLower, the paged Attendees table's sort key).
+  // - Values may be FieldValue sentinels (arrayUnion/arrayRemove/increment);
+  //   keys may be dot-paths into nested MAPS - but NOT into array elements
+  //   (Firestore has no array-index addressing; for embedded-array cases see
+  //   EventService.mutateAgendaItem()).
+  // - REJECTS if the doc doesn't exist (updateDoc semantics - unlike setDoc,
+  //   which would create it); callers must hold a real id.
+  // - Returns void ON PURPOSE: no fromFirestore re-read, and never pass a
+  //   whole model object here - that writes a stray `id` field and
+  //   Date-converted copies of every field, the exact legacy failure mode
+  //   the old registerForTrainingSession() had.
+  // - Firestore rejects `undefined` values - build keys conditionally, same
+  //   house rule as everywhere else (see CLAUDE.md's write gotcha).
+  public updateFields(id: string, table: string, partial: Record<string, unknown>): Promise<void> {
+    return updateDoc(doc(this.fs, '/' + table + '/' + id), partial);
   }
 
   public delete(id: string, table: string){

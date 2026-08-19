@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO, QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EventModel } from 'src/app/common/models/domain/event.model';
+import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 
@@ -37,5 +38,48 @@ export class EventService extends BaseService<EventModel>{
         return await  this.queryAllByMultiValue(qp).then(events => {
           return events.length > 0;
         })
+  }
+
+  // ---- Embedded agenda-item mutation (Summit Command Center's queue) ----
+  // The ONE admin write path for a single agenda item's fields (today:
+  // waitList). Firestore can't partially update an element of an embedded
+  // array (no array-index addressing, and arrayUnion needs a byte-identical
+  // map), so this does the safest possible whole-doc write: re-fetch the
+  // doc IMMEDIATELY before writing (never trust a stale in-memory
+  // EventModel - the public site appends to waitList concurrently), apply
+  // one targeted mutation, write straight back with no user interaction in
+  // between. The residual race window (a public waitList append landing in
+  // the read->write gap) is milliseconds wide, loses at most one queue
+  // entry, and is no NEW risk class - every Info-tab Save already performs
+  // an unguarded whole-doc setDoc over this same doc. Returns the
+  // post-mutation model so callers can refresh UI state without re-reading.
+  async mutateAgendaItem(eventId: string, agendaItemId: string, mutate: (item: AgendaItem) => void): Promise<EventModel> {
+    const fresh = await this.getById(eventId);
+    const item = fresh?.agendaItems?.find((i) => i.id === agendaItemId);
+    if (!item) {
+      throw new Error(`Agenda item ${agendaItemId} not found on event ${eventId}`);
+    }
+    mutate(item);
+    return this.update(eventId, fresh);
+  }
+
+  // Ordered waiting queue on a FULL breakout item (see AgendaItem.waitList).
+  // Append-at-tail = queue fairness; idempotent; emails normalized the same
+  // way registrations store them.
+  addToWaitList(eventId: string, agendaItemId: string, email: string): Promise<EventModel> {
+    const normalized = email.trim().toLowerCase();
+    return this.mutateAgendaItem(eventId, agendaItemId, (item) => {
+      item.waitList = item.waitList ?? [];
+      if (!item.waitList.includes(normalized)) {
+        item.waitList.push(normalized);
+      }
+    });
+  }
+
+  removeFromWaitList(eventId: string, agendaItemId: string, email: string): Promise<EventModel> {
+    const normalized = email.trim().toLowerCase();
+    return this.mutateAgendaItem(eventId, agendaItemId, (item) => {
+      item.waitList = (item.waitList ?? []).filter((x) => x !== normalized);
+    });
   }
 }

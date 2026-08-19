@@ -74,6 +74,12 @@ export class BaseService<T extends BaseModel> {
     return this.dao.update(id, value, this.table, this.fromFirestore);
   }
 
+  // See FirebaseDAO.updateFields()'s contract - PARTIAL update (only the
+  // named fields change), FieldValue sentinels allowed, void return.
+  updateFields(id: string, partial: Record<string, unknown>): Promise<void>{
+    return this.dao.updateFields(id, this.table, partial);
+  }
+
   delete(id: string){
     return this.dao.delete(id, this.table);
   }

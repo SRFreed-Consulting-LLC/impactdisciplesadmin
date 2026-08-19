@@ -17,6 +17,12 @@ import { insertQuillVariable } from '../../../shared/rich-text-editor/variable-i
 export interface EventEmailDialogData {
   eventId: string | undefined;
   eventName?: string;
+  // Pre-filtered recipient list (e.g. the Summit Command Center's
+  // "registrants with no breakouts picked" reminder). When present,
+  // onSend() uses it INSTEAD of fetching all of the event's registrants -
+  // everything downstream (campaign + explicit-list audience) is unchanged.
+  recipients?: string[];
+  subjectPrefill?: string;
 }
 
 // Email this event's registrants - since Campaign Manager v2's Phase 6
@@ -57,7 +63,7 @@ export class EventEmailDialogComponent {
     private snackbar: SnackbarService
   ) {
     this.form = this.fb.group({
-      subject: ['', Validators.required],
+      subject: [data.subjectPrefill ?? '', Validators.required],
       html: ['']
     });
   }
@@ -101,9 +107,11 @@ export class EventEmailDialogComponent {
     const subject = this.form.value.subject as string;
 
     try {
-      const registrations = await this.service.getAllByValue('eventId', this.data.eventId);
-      const emails = [...new Set(registrations
-        .map((r) => (r.email ?? '').trim().toLowerCase())
+      const source = this.data.recipients?.length
+        ? this.data.recipients
+        : (await this.service.getAllByValue('eventId', this.data.eventId)).map((r) => r.email ?? '');
+      const emails = [...new Set(source
+        .map((e) => (e ?? '').trim().toLowerCase())
         .filter((e) => e.includes('@')))];
       if (emails.length === 0) {
         this.snackbar.error('This event has no registrants to email.');

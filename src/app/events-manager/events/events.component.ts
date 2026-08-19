@@ -37,12 +37,17 @@ export class EventsComponent implements OnInit, OnDestroy {
   // NAV_CONFIG's own two slugs ('summit' / 'events'), not duplicated here.
   @Input() summitMode = false;
 
-  // 'attendees' (summit only): the full-page attendee REPORT opened from
-  // the Summit list's row action - deliberately not an edit-screen tab any
-  // more, viewing who registered isn't an editing concern (user decision
-  // 2026-08-19). Regular events keep their Attendees tab.
-  mode: 'list' | 'edit' | 'attendees' = 'list';
+  // Summit-only modes beyond list/edit (regular events keep list/edit):
+  // - 'hub': Mission Control - what double-clicking a summit row lands on
+  //   (user decision 2026-08-19: an operations overview, editing one click
+  //   deeper). Its cards emit back here to open the editor at a tab or the
+  //   Command Center.
+  // - 'attendees': the full-page attendee Command Center (viewing who
+  //   registered + breakout sign-ups is a report/operations concern, not
+  //   an editing one).
+  mode: 'list' | 'edit' | 'hub' | 'attendees' = 'list';
   attendeesItem: EventModel | null = null;
+  hubItem: EventModel | null = null;
 
   // ---- List state ----
   events$: Observable<EventModel[]>;
@@ -230,7 +235,43 @@ export class EventsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- Summit attendee report (see `mode`) ----
+  // ---- Summit Mission Control hub (see `mode`) ----
+
+  showHub(item: EventModel): void {
+    this.hubItem = item;
+    this.mode = 'hub';
+  }
+
+  closeHub(): void {
+    this.hubItem = null;
+    this.mode = 'list';
+  }
+
+  // A hub card asked for the editor at a specific tab.
+  editFromHub(tabKey: string): void {
+    const item = this.hubItem!;
+    this.closeHub();
+    this.showEditModal(item);
+    this.selectedTabIndex = this.tabIndexFor(tabKey);
+  }
+
+  commandCenterFromHub(): void {
+    const item = this.hubItem!;
+    this.closeHub();
+    this.showAttendees(item);
+  }
+
+  // Row double-click: summits land on Mission Control, regular events go
+  // straight to the editor (user decision 2026-08-19).
+  onRowOpen(item: EventModel): void {
+    if (this.summitMode) {
+      this.showHub(item);
+    } else {
+      this.showEditModal(item);
+    }
+  }
+
+  // ---- Summit attendee Command Center (see `mode`) ----
 
   showAttendees(item: EventModel): void {
     if (!this.permissionService.canView(`${this.screenKey}.attendees`)) {

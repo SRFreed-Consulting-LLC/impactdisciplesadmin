@@ -34,4 +34,11 @@ export class AgendaItem extends BaseModel{
   signedUp?: number;
   description?: string;
   room?: string;
+  // Ordered waiting queue for a FULL breakout item - emails, lowercase,
+  // append-at-tail (position IS the fairness guarantee). Appended by the
+  // PUBLIC site when a session hits maxParticipants; drained by the Summit
+  // Command Center's Promote action (EventService.addToWaitList/
+  // removeFromWaitList). Mirrors the web repo's copy of this model, which
+  // has carried the field all along.
+  waitList?: string[];
 }
