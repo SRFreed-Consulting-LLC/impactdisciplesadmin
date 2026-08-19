@@ -132,7 +132,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // whatever the dialog just changed without this.
   openOrderDialog(item: CheckoutForm): void {
     this.dialog.open(OrderWorkflowDialogComponent, {
-      width: '480px',
+      // Wide enough for the 'received' step's three actions (print label /
+      // Amazon / picked up) to align instead of wrapping raggedly.
+      width: '640px',
       maxWidth: '95vw',
       data: { item }
     });

@@ -10,6 +10,15 @@ $pending: var(--app-field-border);
   padding-top: 4px !important;
 }
 
+// The action buttons stack full-width so every step's options share the
+// same edges - at the 'received' step there are three of them now (print
+// label / shipped via Amazon / picked up) and a wrapping row read as
+// misaligned clutter.
+.order-workflow-dialog__actions button {
+  width: 100%;
+  justify-content: center;
+}
+
 .order-workflow-dialog__customer {
   font-size: 13.5px;
   color: var(--app-card-muted);
@@ -73,8 +82,9 @@ $pending: var(--app-field-border);
 
 .order-workflow-dialog__actions {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
-  flex-wrap: wrap;
   padding-bottom: 4px;
 }
 
