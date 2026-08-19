@@ -264,6 +264,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private locationName(item: EventModel, locations: { id?: string; name: string }[]): string {
     if (item.isOnline) return 'Online';
+    // Prefer the denormalized venue snapshot (2026-08 restructure - an
+    // event at a single-site org has no location record at all); fall back
+    // to the location lookup for events saved before it existed.
+    if (item.venue?.name) return item.venue.name;
     const id = typeof item.location === 'string' ? item.location : item.location?.id;
     return locations.find((l) => l.id === id)?.name ?? '—';
   }

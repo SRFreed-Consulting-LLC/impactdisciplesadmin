@@ -1,4 +1,4 @@
-<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' ORGANIZATION'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+<app-popup-header [title]="(isEdit ? 'EDIT' : 'ADD') + ' LOCATION'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
   <mat-form-field appearance="outline" class="full-width">
@@ -10,11 +10,8 @@
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Contact Name</mat-label>
-    <input matInput formControlName="contactName" required>
-    @if (form.get('contactName')?.hasError('required')) {
-      <mat-error>Contact name is required</mat-error>
-    }
+    <mat-label>On-site Contact</mat-label>
+    <input matInput formControlName="contactName">
   </mat-form-field>
 
   <h3 class="section-title">Address</h3>

@@ -2,38 +2,43 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
-import { OrganizationService } from 'src/app/common/services/data/organization.service';
+import { LocationModel } from 'src/app/common/models/domain/location.model';
+import { LocationService } from 'src/app/common/services/data/location.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 
-export interface OrganizationDialogData {
-  item: OrganizationModel | null;
+export interface OrganizationLocationDialogData {
+  item: LocationModel | null;
+  // The parent org - fixed, not pickable: this dialog only opens from
+  // inside that organization's details view.
+  organizationId: string;
 }
 
+// Add/edit one of an organization's child locations (adapted from the old
+// standalone Locations screen's dialog, retired in the 2026-08
+// restructure). Deliberately NO trainingrooms editing - rooms belong to
+// the pinned Summit venue and are edited on the Summit screen only.
 @Component({
-    selector: 'app-organization-dialog',
-    templateUrl: './organization-dialog.component.html',
-    styleUrls: ['./organization-dialog.component.scss'],
+    selector: 'app-organization-location-dialog',
+    templateUrl: './organization-location-dialog.component.html',
+    styleUrls: ['./organization-location-dialog.component.scss'],
     standalone: false
 })
-export class OrganizationDialogComponent {
+export class OrganizationLocationDialogComponent {
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
 
-  private itemType = 'Organization';
-
   constructor(
-    private dialogRef: MatDialogRef<OrganizationDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: OrganizationDialogData,
+    private dialogRef: MatDialogRef<OrganizationLocationDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: OrganizationLocationDialogData,
     private fb: FormBuilder,
-    private service: OrganizationService,
+    private service: LocationService,
     private snackbar: SnackbarService
   ) {
     this.isEdit = !!data.item?.id;
     this.form = this.fb.group({
       name: [data.item?.name ?? '', Validators.required],
-      contactName: [data.item?.contactName ?? '', Validators.required],
+      contactName: [data.item?.contactName ?? ''],
       address: this.fb.group({
         address1: [data.item?.address?.address1 ?? ''],
         address2: [data.item?.address?.address2 ?? ''],
@@ -60,7 +65,12 @@ export class OrganizationDialogComponent {
     }
 
     this.inProgress$.next(true);
-    const value: OrganizationModel = { ...this.data.item, ...this.form.value };
+    const value: LocationModel = {
+      ...this.data.item,
+      ...this.form.value,
+      organization: this.data.organizationId,
+      trainingrooms: this.data.item?.trainingrooms ?? []
+    };
 
     const request = this.isEdit
       ? this.service.update(value.id!, value)
@@ -68,7 +78,7 @@ export class OrganizationDialogComponent {
 
     request.then((result) => {
       if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
+        this.snackbar.success('Location ' + (this.isEdit ? 'Updated' : 'Added'));
         this.dialogRef.close(true);
       } else {
         this.inProgress$.next(false);

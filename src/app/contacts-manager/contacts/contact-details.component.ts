@@ -1,5 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
+import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, combineLatest, tap } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -115,6 +117,10 @@ export class ContactDetailsComponent implements OnInit {
 
   activeFilter: TimelineFilter = 'all';
 
+  // For the Organization select (contact.model.ts's organizationId) -
+  // 18 docs, a one-time load is fine.
+  organizations: OrganizationModel[] = [];
+
   user: AdminUser;
 
   private itemType = 'Contact';
@@ -122,6 +128,7 @@ export class ContactDetailsComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private service: ContactService,
+    private organizationService: OrganizationService,
     private purchasesService: PurchasesService,
     private eventRegistrationService: EventRegistrationService,
     private tagRuleService: TagRuleService,
@@ -146,6 +153,9 @@ export class ContactDetailsComponent implements OnInit {
     this.initialTags = [...this.tags];
     this.tagRuleService.getAll().then((rules) => {
       this.ruleTags = Array.from(new Set(rules.map((rule) => rule.tag?.trim()).filter(Boolean))) as string[];
+    });
+    this.organizationService.getAll().then((organizations) => {
+      this.organizations = organizations.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
     });
 
     this.form = this.fb.group({
@@ -174,6 +184,9 @@ export class ContactDetailsComponent implements OnInit {
         country: [this.selectedItem.billingAddress?.country ?? '']
       }),
       isBillingSameAsShipping: [this.defaultIsBillingSameAsShipping()],
+      // organizations/{id} link - null (never undefined) when unaffiliated,
+      // see contact.model.ts's organizationId comment.
+      organizationId: [this.selectedItem.organizationId ?? null],
       // See contact.model.ts's own comment - a subscriber IS a customer
       // now, these 2 flags are the same data the Subscribers screen reads/
       // writes, just editable here too.

@@ -1,0 +1,157 @@
+<div class="editor">
+  <mat-toolbar class="editor__header">
+    <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="editor__title-block">
+      <h2 class="editor__title">{{ isEdit ? (item?.name || 'Organization') : 'New Organization' }}</h2>
+      @if (item?.address?.city) {
+        <span class="editor__subtitle">{{ item?.address?.city }}{{ item?.address?.state ? ', ' + item?.address?.state : '' }}</span>
+      }
+    </div>
+    <span class="editor__spacer"></span>
+    <app-indicator-button
+      title="SAVE"
+      [isInProgress]="inProgress$ | async"
+      [disabled]="inProgress$ | async"
+      (clicked)="onSave()">
+    </app-indicator-button>
+  </mat-toolbar>
+
+  <div class="editor__body" [formGroup]="form">
+    <div class="editor__columns">
+      <section class="panel">
+        <h3 class="panel__title">Organization</h3>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" required>
+          @if (form.get('name')?.hasError('required')) {
+            <mat-error>Name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email" type="email">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Website</mat-label>
+            <input matInput formControlName="website">
+          </mat-form-field>
+        </div>
+
+        <h4 class="section-title">Mailing Address</h4>
+        <p class="hint">Events at this organization use this address as their venue unless a specific location below is chosen.</p>
+        <app-address-field [group]="$any(form.get('address'))"></app-address-field>
+
+        <h4 class="section-title">Phone</h4>
+        <app-phone-field [group]="$any(form.get('phone'))"></app-phone-field>
+      </section>
+
+      <section class="panel" formGroupName="pointOfContact">
+        <h3 class="panel__title">Point of Contact</h3>
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName">
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email">
+        </mat-form-field>
+        <app-phone-field [group]="$any(form.get('pointOfContact.phone'))"></app-phone-field>
+
+        @if (pocContactId()) {
+          <p class="poc-linked"><mat-icon inline>link</mat-icon> Linked to a contact record.</p>
+        } @else {
+          <button mat-stroked-button type="button" [disabled]="promoting || !isEdit" matTooltip="Creates a contact record for this person (or links the existing one with this email) and adds them to this organization's members" (click)="promoteToContact()">
+            <mat-icon>person_add</mat-icon> Promote to Contact
+          </button>
+          @if (!isEdit) {
+            <p class="hint">Save the organization first.</p>
+          }
+        }
+      </section>
+    </div>
+
+    @if (isEdit) {
+      <section class="panel">
+        <div class="panel__header">
+          <h3 class="panel__title">Locations</h3>
+          <button mat-stroked-button type="button" (click)="addLocation()"><mat-icon>add</mat-icon> Add Location</button>
+        </div>
+        <p class="hint">Sites belonging to this organization. A single-site organization needs none - its mailing address is the venue.</p>
+        @if (locations.length === 0 && !loadingChildren) {
+          <p class="empty-note">No locations - events here use the mailing address above.</p>
+        } @else {
+          <table class="child-table">
+            <thead>
+              <tr><th>Name</th><th>City</th><th>State</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (location of locations; track location.id) {
+                <tr>
+                  <td>
+                    {{ location.name }}
+                    @if (location.isSummitVenue) {
+                      <span class="pill" matTooltip="The fixed Summit venue - rooms are managed on the Summit screen">Summit Venue</span>
+                    }
+                  </td>
+                  <td>{{ location.address?.city }}</td>
+                  <td>{{ location.address?.state }}</td>
+                  <td class="child-table__actions">
+                    <button mat-icon-button type="button" matTooltip="Edit" (click)="editLocation(location)"><mat-icon>edit</mat-icon></button>
+                    @if (!location.isSummitVenue) {
+                      <button mat-icon-button type="button" matTooltip="Delete" (click)="deleteLocation(location)"><mat-icon>delete</mat-icon></button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h3 class="panel__title">Members</h3>
+          <div class="link-row">
+            <mat-form-field appearance="outline" class="link-row__field">
+              <mat-label>Contact's email</mat-label>
+              <input matInput [(ngModel)]="linkEmail" [ngModelOptions]="{standalone: true}" (keyup.enter)="linkContactByEmail()">
+            </mat-form-field>
+            <button mat-stroked-button type="button" [disabled]="linking" (click)="linkContactByEmail()"><mat-icon>link</mat-icon> Link Contact</button>
+          </div>
+        </div>
+        <p class="hint">Contacts who belong to this organization. Link an existing contact by email - new people come in through the Point of Contact promotion or a request submission.</p>
+        @if (members.length === 0 && !loadingChildren) {
+          <p class="empty-note">No contacts linked to this organization yet.</p>
+        } @else {
+          <table class="child-table">
+            <thead>
+              <tr><th>Name</th><th>Email</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (member of members; track member.id) {
+                <tr>
+                  <td>{{ memberName(member) }}</td>
+                  <td>{{ member.email }}</td>
+                  <td class="child-table__actions">
+                    <button mat-icon-button type="button" matTooltip="View contact" (click)="viewMember(member)"><mat-icon>visibility</mat-icon></button>
+                    <button mat-icon-button type="button" matTooltip="Remove from organization" (click)="unlinkMember(member)"><mat-icon>link_off</mat-icon></button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+    }
+  </div>
+</div>

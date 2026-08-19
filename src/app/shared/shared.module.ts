@@ -1,4 +1,4 @@
-﻿import { NgModule } from "@angular/core";
+import { NgModule } from "@angular/core";
 import { IndicatorButtonComponent } from "./indicator-button/indicator-button.component";
 import { CommonModule, CurrencyPipe, DatePipe } from "@angular/common";
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';

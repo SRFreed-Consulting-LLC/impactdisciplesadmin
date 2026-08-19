@@ -107,31 +107,36 @@
                       </mat-form-field>
                     </div>
                   }
-                  <div class="field-row">
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Location</mat-label>
-                      <mat-select formControlName="location">
-                        <mat-option [value]="null">(None)</mat-option>
-                        @for (location of locations; track location) {
-                          <mat-option [value]="location.id">{{ location.name }}</mat-option>
-                        }
-                      </mat-select>
-                      @if (form.get('location')?.hasError('required')) {
-                        <mat-error>Required for in-person events</mat-error>
-                      }
-                    </mat-form-field>
-                    <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Organization</mat-label>
-                      <mat-select formControlName="organization">
-                        <mat-option [value]="null">(None)</mat-option>
-                        @for (org of organizations; track org) {
-                          <mat-option [value]="org.id">{{ org.name }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                    <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
-                  </div>
+                  <!-- Summits always happen at the one pinned venue (see
+                       location.model.ts's isSummitVenue) - no picking. The
+                       save stamps event.location/venue from it. -->
+                  @if (summitVenue(); as venue) {
+                    <div class="pinned-venue">
+                      <mat-icon>location_on</mat-icon>
+                      <div>
+                        <div class="pinned-venue__name">{{ venue.name }}</div>
+                        <div class="pinned-venue__address">{{ venue.address?.address1 }}{{ venue.address?.city ? ', ' + venue.address?.city : '' }}{{ venue.address?.state ? ', ' + venue.address?.state : '' }}</div>
+                      </div>
+                      <span class="pinned-venue__pill">Summit Venue</span>
+                    </div>
+                  } @else {
+                    <p class="pinned-venue pinned-venue--missing">No Summit venue is pinned yet - run scripts/pin-summit-venue.js.</p>
+                  }
+                  @if (venueDoc) {
+                    <div class="venue-rooms">
+                      <div class="venue-rooms__header">
+                        <h3 class="venue-rooms__title">Venue Rooms</h3>
+                        <app-indicator-button
+                          title="SAVE ROOMS"
+                          [isInProgress]="savingRooms$ | async"
+                          [disabled]="savingRooms$ | async"
+                          (clicked)="saveVenueRooms()">
+                        </app-indicator-button>
+                      </div>
+                      <p class="venue-hint">Rooms and capacities at {{ venueDoc.name }} - the Agenda's breakout grid columns. Saved to the venue itself (shared by every summit), separately from this event.</p>
+                      <app-room [trainingRooms]="venueRooms"></app-room>
+                    </div>
+                  }
                   <div class="field-row">
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Image</mat-label>
@@ -289,20 +294,12 @@
                   </mat-form-field>
 
                   @if (regularAttendanceType() !== 'online') {
+                    <!-- Venue = organization, optionally narrowed to one of
+                         its locations (2026-08 restructure). A single-site
+                         org has no locations - its mailing address IS the
+                         venue. Orgs are managed on Contacts Manager >
+                         Organizations. -->
                     <div class="field-row">
-                      <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Location</mat-label>
-                        <mat-select formControlName="location">
-                          <mat-option [value]="null">(None)</mat-option>
-                          @for (location of locations; track location) {
-                            <mat-option [value]="location.id">{{ location.name }}</mat-option>
-                          }
-                        </mat-select>
-                        @if (form.get('location')?.hasError('required')) {
-                          <mat-error>Required for in-person events</mat-error>
-                        }
-                      </mat-form-field>
-                      <button mat-stroked-button type="button" (click)="manageLocations()">Manage Locations</button>
                       <mat-form-field appearance="outline" class="full-width">
                         <mat-label>Organization</mat-label>
                         <mat-select formControlName="organization">
@@ -311,9 +308,26 @@
                             <mat-option [value]="org.id">{{ org.name }}</mat-option>
                           }
                         </mat-select>
+                        @if (form.get('organization')?.hasError('required')) {
+                          <mat-error>Required for in-person events</mat-error>
+                        }
                       </mat-form-field>
-                      <button mat-stroked-button type="button" (click)="manageOrganizations()">Manage Organizations</button>
+                      @if (orgLocations().length > 0) {
+                        <mat-form-field appearance="outline" class="full-width">
+                          <mat-label>Location</mat-label>
+                          <mat-select formControlName="location">
+                            <mat-option [value]="null">(Main address)</mat-option>
+                            @for (location of orgLocations(); track location.id) {
+                              <mat-option [value]="location.id">{{ location.name }}</mat-option>
+                            }
+                          </mat-select>
+                          <mat-hint>Which of this organization's sites</mat-hint>
+                        </mat-form-field>
+                      }
                     </div>
+                    @if (form.get('organization')?.value && orgLocations().length === 0) {
+                      <p class="venue-hint">Venue: the organization's mailing address.</p>
+                    }
                   }
                   @if (regularAttendanceType() !== 'inperson') {
                     <div class="field-row">

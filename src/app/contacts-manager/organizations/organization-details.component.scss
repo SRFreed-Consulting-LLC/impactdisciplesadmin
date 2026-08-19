@@ -1,0 +1,158 @@
+// Same editor shell conventions as contact-details.component.scss.
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editor__header {
+  gap: 8px;
+  background: transparent;
+  padding-left: 4px;
+}
+
+.editor__title-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.editor__title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.editor__subtitle {
+  font-size: 12.5px;
+  color: var(--app-card-muted);
+}
+
+.editor__spacer {
+  flex: 1;
+}
+
+.editor__body {
+  padding: 8px 16px 24px;
+  overflow: auto;
+}
+
+.editor__columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-field-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel__title {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.section-title {
+  margin: 12px 0 4px;
+  font-size: 13.5px;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+
+  > * {
+    flex: 1;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--app-card-muted);
+  margin: 0 0 10px;
+}
+
+.empty-note {
+  font-size: 13px;
+  color: var(--app-card-muted);
+  padding: 8px 0;
+}
+
+.poc-linked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--app-success);
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__field {
+    width: 260px;
+    // Compact inline field - suppress the reserved error space.
+    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
+  }
+}
+
+.child-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+
+  th {
+    text-align: left;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--app-card-muted);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--app-field-border);
+  }
+
+  td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--app-field-border);
+  }
+
+  &__actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+  color: var(--app-accent);
+}

@@ -271,6 +271,12 @@ export class EventReportComponent implements OnInit {
   }
 
   private async resolveLocationName(event: EventModel): Promise<void> {
+    // Venue snapshot first (2026-08 restructure) - an event at a
+    // single-site org has no location record at all.
+    if (event.venue?.name) {
+      this.locationName = event.venue.name;
+      return;
+    }
     if (!event.location) {
       return;
     }

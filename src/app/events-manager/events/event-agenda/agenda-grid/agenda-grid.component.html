@@ -19,7 +19,7 @@
   </div>
 
   @if (gridRooms().length === 0) {
-    <div class="empty-state">No rooms set up yet for this event's location — add rooms from Events Manager &gt; Locations to see them here as grid columns.</div>
+    <div class="empty-state">No rooms set up yet for the Summit venue — add rooms in the Venue Rooms panel on this event's Info tab to see them here as grid columns.</div>
   } @else if (schedule().length === 0) {
     <div class="empty-state">Nothing on Day {{ selectedDayIndex + 1 }} yet — add a single item or a breakout block above.</div>
   } @else {

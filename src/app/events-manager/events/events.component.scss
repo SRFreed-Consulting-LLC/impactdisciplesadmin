@@ -321,3 +321,64 @@ $info-accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
     color: #92600a;
   }
 }
+
+// Pinned Summit venue display (2026-08 restructure) - replaces the old
+// Location/Organization selects in summit mode.
+.pinned-venue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--app-field-border);
+  border-radius: 8px;
+  font-size: 13.5px;
+
+  &__name {
+    font-weight: 600;
+  }
+
+  &__address {
+    font-size: 12px;
+    color: var(--app-card-muted);
+  }
+
+  &__pill {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+    color: var(--app-accent);
+  }
+
+  &--missing {
+    color: var(--app-critical, #c62828);
+  }
+}
+
+.venue-hint {
+  font-size: 12px;
+  color: var(--app-card-muted);
+  margin: -6px 0 12px;
+}
+
+.venue-rooms {
+  border: 1px solid var(--app-field-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 14px;
+  }
+}

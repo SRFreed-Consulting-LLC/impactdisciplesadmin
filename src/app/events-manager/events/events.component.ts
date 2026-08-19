@@ -2,8 +2,7 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, Observable, Subject, map, takeUntil, tap } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel, EventVenue } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
@@ -18,8 +17,6 @@ import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
-import { LocationsComponent } from '../locations/locations.component';
-import { OrganizationsComponent } from '../organizations/organizations.component';
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts (store-manager) for the established precedent) -
@@ -82,9 +79,9 @@ export class EventsComponent implements OnInit, OnDestroy {
   loading$ = new BehaviorSubject<boolean>(true);
 
   // Kept live for the whole component lifetime - serves the list's
-  // Organization/Location name lookups AND the edit form's own selects, so
-  // adding one via "Manage Locations"/"Manage Organizations" while editing
-  // shows up in the select immediately. Same pattern as Products'
+  // Organization name lookup AND the edit form's cascading Organization ->
+  // Location selects (an org added on Contacts Manager > Organizations
+  // shows up here immediately). Same pattern as Products'
   // categories/series arrays.
   organizations: OrganizationModel[] = [];
   locations: LocationModel[] = [];
@@ -148,7 +145,6 @@ export class EventsComponent implements OnInit, OnDestroy {
     private authService: AdminAuthService,
     public permissionService: PermissionService,
     private fb: FormBuilder,
-    private dialog: MatDialog,
     private snackbar: SnackbarService,
     private route: ActivatedRoute
   ) {}
@@ -233,8 +229,8 @@ export class EventsComponent implements OnInit, OnDestroy {
   // template, same as the existing `card.imageUrl?.name` reads already do
   // - no manual valueChanges subscription needed.
   previewLocationName(): string {
-    const id = this.form?.get('location')?.value;
-    return this.locations.find((l) => l.id === id)?.name ?? '';
+    if (!this.form) return '';
+    return this.resolveVenue(this.form.getRawValue())?.name ?? '';
   }
 
   // ---- Events (regular) screen: attendance-first pill row ----
@@ -265,12 +261,70 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.form.get('isKajabiCourse')?.setValue(type === 'online' || type === 'both');
   }
 
-  manageLocations(): void {
-    this.dialog.open(LocationsComponent, { width: '1000px', maxWidth: '95vw' });
+  // ---- Venue (2026-08 restructure): organization -> optional location ----
+  // A regular event happens AT an organization; the org's child locations
+  // (if any) narrow it to a specific site, otherwise the org's own mailing
+  // address is the venue. Summits skip both - they always happen at the one
+  // pinned isSummitVenue location (see location.model.ts).
+
+  // The chosen org's child locations - drives whether the Location select
+  // renders at all.
+  orgLocations(): LocationModel[] {
+    const orgId = this.form?.get('organization')?.value;
+    if (!orgId) return [];
+    return this.locations.filter((l) => l.organization === orgId);
   }
 
-  manageOrganizations(): void {
-    this.dialog.open(OrganizationsComponent, { width: '900px', maxWidth: '95vw' });
+  summitVenue(): LocationModel | undefined {
+    return this.locations.find((l) => l.isSummitVenue);
+  }
+
+  // ---- Summit Venue Rooms panel ----
+  // The pinned venue's rooms (embedded on its `locations` doc) are edited
+  // HERE and nowhere else since the standalone Locations screen retired.
+  // Loaded one-time when a summit opens for editing; persisted by an
+  // explicit Save Rooms (deliberately decoupled from the event save - the
+  // rooms live on the location doc, not the event).
+  venueDoc: LocationModel | null = null;
+  venueRooms: LocationModel['trainingrooms'] = [];
+  savingRooms$ = new BehaviorSubject<boolean>(false);
+
+  private loadVenueRooms(): void {
+    this.venueDoc = null;
+    this.venueRooms = [];
+    if (!this.summitMode) {
+      return;
+    }
+    this.locationService.getAllByValue('isSummitVenue', true).then((venues) => {
+      this.venueDoc = venues[0] ?? null;
+      this.venueRooms = this.venueDoc?.trainingrooms ?? [];
+    });
+  }
+
+  saveVenueRooms(): void {
+    if (!this.venueDoc) {
+      return;
+    }
+    this.savingRooms$.next(true);
+    this.locationService.update(this.venueDoc.id!, { ...this.venueDoc, trainingrooms: this.venueRooms })
+      .then(() => this.snackbar.success('Venue Rooms Saved'))
+      .catch(() => this.snackbar.error('Some Error Occured'))
+      .finally(() => this.savingRooms$.next(false));
+  }
+
+  // What the event's venue snapshot would be from the live form value -
+  // also feeds the Info-tab preview card.
+  private resolveVenue(raw: { isOnline?: boolean; location?: string | null; organization?: string | null }): EventVenue | null {
+    if (this.summitMode) {
+      const pinned = this.summitVenue();
+      return pinned ? { name: pinned.name, address: pinned.address ?? {} } : null;
+    }
+    if (raw.isOnline) return null;
+    const location = this.locations.find((l) => l.id === raw.location);
+    if (location) return { name: location.name, address: location.address ?? {} };
+    const org = this.organizations.find((o) => o.id === raw.organization);
+    if (org) return { name: org.name, address: org.address ?? {} };
+    return null;
   }
 
   // ---- Edit view ----
@@ -284,6 +338,7 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.card = {};
     this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
+    this.loadVenueRooms();
     this.mode = 'edit';
   }
 
@@ -296,6 +351,7 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.card = { imageUrl: item.imageUrl };
     this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
+    this.loadVenueRooms();
     this.mode = 'edit';
   }
 
@@ -324,6 +380,15 @@ export class EventsComponent implements OnInit, OnDestroy {
 
     this.updateConditionalValidators();
     this.form.get('isOnline')?.valueChanges.subscribe(() => this.updateConditionalValidators());
+
+    // Cascading Organization -> Location: switching org invalidates a
+    // location that belongs to the previous org.
+    this.form.get('organization')?.valueChanges.subscribe((orgId) => {
+      const locationId = this.form.get('location')?.value;
+      if (locationId && !this.locations.some((l) => l.id === locationId && l.organization === orgId)) {
+        this.form.get('location')?.setValue(null);
+      }
+    });
   }
 
   // Mirrors the original's conditional [isRequired] bindings exactly,
@@ -342,7 +407,11 @@ export class EventsComponent implements OnInit, OnDestroy {
     toggle('emailTemplate', !isOnline);
     toggle('endDate', !isOnline);
     toggle('checkIn', !isOnline);
-    toggle('location', !isOnline);
+    // 2026-08 restructure: the ORGANIZATION is what an in-person event
+    // requires now (its address alone is a complete venue); a location only
+    // narrows a multi-site org to one site, so it's never required. Summit
+    // needs neither - its venue is pinned (see resolveVenue()).
+    toggle('organization', !isOnline && !this.summitMode);
     toggle('kajabiPurchaseURL', isOnline);
     toggle('kajabiSubscribeURL', isOnline);
   }
@@ -404,11 +473,21 @@ export class EventsComponent implements OnInit, OnDestroy {
     // fixed in PurchasesService.withStatusHistory() (see that file's own
     // comment) - build the key conditionally instead of assigning
     // unconditionally, so it's omitted rather than present-with-undefined.
+    // Venue snapshot (see EventModel.venue) - recomputed on every save so
+    // re-saving an event picks up an org/location address change. null (not
+    // undefined - Firestore rejects undefined) when online/unresolvable.
+    const venue = this.resolveVenue(raw);
+    // Summits always happen at the pinned venue - the form has no location
+    // pick in summit mode, the save stamps it.
+    const pinnedId = this.summitMode ? this.summitVenue()?.id : undefined;
+
     const value: EventModel = {
       ...this.editingItem,
       ...raw,
       startDate: raw.startDate ? new Date(raw.startDate) : this.editingItem?.startDate,
       endDate: raw.endDate ? new Date(raw.endDate) : this.editingItem?.endDate,
+      venue,
+      ...(pinnedId ? { location: pinnedId } : {}),
       ...(this.card.imageUrl ? { imageUrl: this.card.imageUrl } : {})
     };
 

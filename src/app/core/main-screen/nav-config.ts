@@ -110,6 +110,13 @@ export const NAV_CONFIG: NavGroup[] = [
       // - only labels and code identifiers changed; slug/screenKey renames
       // were migrated for stored grants (scripts/migrate-screenkey-renames.js).
       { label: 'Contacts', slug: 'contacts' },
+      // Moved from Events Manager 2026-08-19 (Contacts & Events
+      // restructure): an organization is a contact-world record - orgs we
+      // keep in contact with, plus the people inside them. Its child
+      // locations are managed inside the org details view (the standalone
+      // Locations screen is retired). Stored grants migrated by
+      // scripts/migrate-screenkey-renames-2.js.
+      { label: 'Organizations', slug: 'organizations' },
       // Slug load-bearing - see NavLeaf.slug.
       { label: 'Purchases', slug: 'purchases' },
       // Operational (packing/shipping), same order lifecycle as Purchases -
@@ -167,9 +174,12 @@ export const NAV_CONFIG: NavGroup[] = [
         ]
       },
       { label: 'Courses', slug: 'courses', roles: [Role.ADMIN] },
-      { label: 'Coaches', slug: 'coaches', roles: [Role.ADMIN] },
-      { label: 'Locations', slug: 'locations', roles: [Role.ADMIN] },
-      { label: 'Organizations', slug: 'organizations', roles: [Role.ADMIN] }
+      { label: 'Coaches', slug: 'coaches', roles: [Role.ADMIN] }
+      // Locations and Organizations left this group 2026-08-19 (Contacts &
+      // Events restructure): Organizations moved to Contacts Manager, and
+      // the standalone Locations screen is retired outright - locations are
+      // child records edited inside an organization's details view, and the
+      // Summit venue's rooms are edited on the Summit screen.
     ]
   },
   {

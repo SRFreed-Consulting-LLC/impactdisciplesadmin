@@ -2,8 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CoursesComponent } from './courses/courses.component';
-import { LocationsComponent } from './locations/locations.component';
-import { OrganizationsComponent } from './organizations/organizations.component';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { CoachesComponent } from './coaches/coaches.component';
 import { CoachDialogComponent } from './coaches/coach-dialog.component';
@@ -19,7 +17,10 @@ import { AgendaCanvasComponent } from './events/event-agenda/agenda-canvas/agend
 import { AgendaGridComponent } from './events/event-agenda/agenda-grid/agenda-grid.component';
 import { EventsManagerComponent } from './events-manager.component';
 import { SharedModule } from '../shared/shared.module';
-import { RoomComponent } from './locations/room/room.component';
+// Rooms moved under events/ when the standalone Locations screen retired
+// (2026-08-19) - they're the Summit venue's rooms now, edited from the
+// Summit screen's Venue Rooms panel.
+import { RoomComponent } from './events/room/room.component';
 import { FAQComponent } from './events/event-application/questions-and-answers/faq.component';
 import { FaqDialogComponent } from './events/event-application/questions-and-answers/faq-dialog.component';
 import { AnnouncementsComponent } from './events/event-application/announcements/announcements.component';
@@ -31,10 +32,8 @@ import { EventApplicationComponent } from './events/event-application/event-appl
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { EventsManagerRoutingModule } from './events-manager-routing.module';
 import { CourseDialogComponent } from './courses/course-dialog.component';
-import { RoomDialogComponent } from './locations/room/room-dialog.component';
+import { RoomDialogComponent } from './events/room/room-dialog.component';
 import { AnnouncementDialogComponent } from './events/event-application/announcements/announcement-dialog.component';
-import { OrganizationDialogComponent } from './organizations/organization-dialog.component';
-import { LocationDialogComponent } from './locations/location-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -59,10 +58,6 @@ import { QuillModule } from 'ngx-quill';
       CourseDialogComponent,
       CoachesComponent,
       CoachDialogComponent,
-      LocationsComponent,
-      LocationDialogComponent,
-      OrganizationsComponent,
-      OrganizationDialogComponent,
       EventAgendaComponent,
       AgendaItemDialogComponent,
       BreakoutBlockDialogComponent,

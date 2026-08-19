@@ -15,12 +15,8 @@
     <app-courses></app-courses>
   }
 
-  @if (selectedTab === 'Locations') {
-    <app-locations></app-locations>
-  }
-
-  @if (selectedTab === 'Organizations') {
-    <app-organizations></app-organizations>
-  }
+  <!-- Locations and Organizations left this group 2026-08-19 - see
+       nav-config.ts's events-manager comment. Organizations now render
+       under Contacts Manager. -->
 </div>
 
