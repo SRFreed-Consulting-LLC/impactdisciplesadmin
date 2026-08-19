@@ -401,6 +401,19 @@ service cloud.firestore {
       allow read: if isBusinessStaff();
       allow write: if false;
     }
+    // Web-campaign popup config, doc id = campaignId. PUBLIC-readable
+    // (the storefront renders these for anonymous visitors - same tier as
+    // home_page_popups) - which is exactly why popups live in their own
+    // collection: campaign docs (audience emails, revenue) stay staff-only,
+    // and a popup doc must NEVER carry audience or stats.
+    match /campaign_popups/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    // Reusable popup recipes - the popup equivalent of mail_templates.
+    match /popup_templates/{id} {
+      allow read, write: if isBusinessStaff();
+    }
     match /prayers/{id} {
       allow read, write: if isBusinessStaff();
     }

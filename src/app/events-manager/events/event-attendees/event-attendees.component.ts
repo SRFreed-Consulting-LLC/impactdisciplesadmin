@@ -126,7 +126,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    this.dialog.open(EventEmailDialogComponent, { width: '900px', maxWidth: '95vw', data: { eventId: this.event?.id } });
+    this.dialog.open(EventEmailDialogComponent, { width: '900px', maxWidth: '95vw', data: { eventId: this.event?.id, eventName: this.event?.eventName } });
   }
 
   delete(item: EventRegistrationModel): void {

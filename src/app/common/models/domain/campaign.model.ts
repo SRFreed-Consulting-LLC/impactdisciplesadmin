@@ -43,6 +43,11 @@ export interface CampaignAudience {
   tags?: string[];
   // 'list': explicit recipient emails.
   emails?: string[];
+  // Explicit unsubscribe-list override. 'none' marks an OPERATIONAL send
+  // (event-attendee info emails): no unsubscribe footer and no
+  // newsletter-opt-out skip - someone who unsubscribed from marketing
+  // still gets info about the event they registered for.
+  unsubType?: 'newsletter' | 'prayer' | 'none';
 }
 
 // Per-email-touch funnel counters, and the building block of the campaign

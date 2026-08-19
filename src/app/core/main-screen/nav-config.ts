@@ -188,7 +188,11 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Pod Casts', slug: 'pod-casts' },
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Home Page Images', slug: 'home-page-images' },
-      { label: 'Home Page Popups', slug: 'home-page-popups' },
+      // 'Home Page Popups' retired 2026-08-19 (Campaign Manager v2 Phase
+      // 6): the public site never had a renderer for home_page_popups (the
+      // screen wrote docs nothing read); web-campaign popups (Campaigns
+      // Manager -> a campaign's Add Popup) are THE popup mechanism now.
+      // The home_page_popups collection's docs are left inert.
       { label: 'Monthly Newsletter', slug: 'monthly-newsletter' },
       // Split off Coaches (2026-08, Events Manager) - the public-facing
       // "My Team" page's own records, administered here since Web Manager

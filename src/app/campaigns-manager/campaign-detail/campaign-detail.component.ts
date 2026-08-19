@@ -5,6 +5,8 @@ import { CampaignModel, campaignKindLabel, effectiveStatus } from 'src/app/commo
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
+import { CampaignPopupModel } from 'src/app/common/models/domain/campaign-popup.model';
+import { CampaignPopupService } from 'src/app/common/services/data/campaign-popup.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -37,11 +39,14 @@ export class CampaignDetailComponent implements OnInit {
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<CampaignModel>();
 
-  mode: 'view' | 'editTouch' = 'view';
+  mode: 'view' | 'editTouch' | 'editPopup' = 'view';
   editingTouch: CampaignEmailModel | null = null;
 
   touches: CampaignEmailModel[] = [];
   loadingTouches = true;
+
+  // The campaign's web popup (one per campaign, doc id == campaignId).
+  popup: CampaignPopupModel | null = null;
 
   // Resolved name of the promoted product/event, when the goal has one.
   promotesName = '';
@@ -53,6 +58,7 @@ export class CampaignDetailComponent implements OnInit {
   constructor(
     private emailService: CampaignEmailService,
     private campaignService: CampaignService,
+    private popupService: CampaignPopupService,
     private productService: ProductService,
     private eventService: EventService,
     private permissionService: PermissionService,
@@ -62,6 +68,7 @@ export class CampaignDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTouches();
+    this.loadPopup();
 
     if (this.campaign.goal === 'product' && this.campaign.productId) {
       this.productService.getById(this.campaign.productId).then((p) => this.promotesName = p?.title ?? '');
@@ -166,6 +173,33 @@ export class CampaignDetailComponent implements OnInit {
       return `SENDING ${touch.stats.sent}/${touch.recipientCount ?? '?'}`;
     }
     return (touch.status ?? 'sent').toUpperCase();
+  }
+
+  // ---- Web popup (Phase 5) ----
+
+  private loadPopup(): void {
+    this.popupService.getById(this.campaign.id!).then((popup) => {
+      this.popup = popup ?? null;
+    });
+  }
+
+  editPopup(): void {
+    if (!this.canEditCampaign()) {
+      return;
+    }
+    this.mode = 'editPopup';
+  }
+
+  onPopupClosed(saved: boolean): void {
+    this.mode = 'view';
+    if (saved) {
+      this.loadPopup();
+      this.campaignService.getById(this.campaign.id!).then((fresh) => {
+        if (fresh) {
+          this.campaign = fresh;
+        }
+      });
+    }
   }
 
   preview(touch: CampaignEmailModel): void {

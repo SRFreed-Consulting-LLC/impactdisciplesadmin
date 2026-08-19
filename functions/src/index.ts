@@ -89,6 +89,7 @@ exports.onCampaignMailDelivered = campaignSend.onCampaignMailDelivered;
 const campaignTracking = require("./campaign-tracking.functions");
 exports.campaign_open = campaignTracking.campaign_open;
 exports.campaign_click = campaignTracking.campaign_click;
+exports.campaign_web_event = campaignTracking.campaign_web_event;
 
 // Sweep 2026-08-17: language registry backs the reader's language picker
 // so translation docs no longer need an open collection-group read.

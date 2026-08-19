@@ -40,7 +40,9 @@ test.describe('Campaign Manager', () => {
       page
         .locator('app-sent-email-preview-dialog iframe')
         .evaluate((el: HTMLIFrameElement) => el.contentDocument?.body?.innerHTML?.length ?? 0);
-    await expect.poll(frameLen, { timeout: 10000 }).toBeGreaterThan(500);
+    // Threshold is deliberately low - the newest touch may be a small
+    // hand-authored test email, not a full Mailchimp-rendered document.
+    await expect.poll(frameLen, { timeout: 10000 }).toBeGreaterThan(50);
     await page.locator('app-sent-email-preview-dialog button:has(mat-icon:text("close"))').click();
 
     // Back returns to the list and clears the deep-link param.

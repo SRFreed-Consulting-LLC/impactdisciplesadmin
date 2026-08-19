@@ -49,6 +49,12 @@ type AudienceSpec = {
   flags?: string[];
   tags?: string[];
   emails?: string[];
+  // Explicit override of the derived unsubscribe list. 'none' marks an
+  // OPERATIONAL send (event-attendee info emails): no unsubscribe footer,
+  // and the newsletter opt-out is NOT applied - someone who unsubscribed
+  // from marketing must still get info about the event they registered
+  // for (see event-email-dialog.component.ts's 2026-08-12 note).
+  unsubType?: "newsletter" | "prayer" | "none";
 };
 
 interface CampaignDoc {
@@ -252,6 +258,9 @@ export async function resolveAudience(
  * @return {string} 'prayer' | 'newsletter'.
  */
 function unsubTypeFor(audience: AudienceSpec): string {
+  if (audience.unsubType) {
+    return audience.unsubType;
+  }
   const flags = audience.flags ?? [];
   return audience.mode === "flags" &&
     flags.includes("subscribedToPrayerTeam") &&
@@ -366,19 +375,24 @@ async function sendLedgerDoc(
       .where("email", "==", email).limit(1).get();
     const customer = customerSnap.empty ? {} : customerSnap.docs[0].data();
 
-    // Honor an unsubscribe that landed between enqueue and send.
-    const unsubFlag = ledger.unsubType === "prayer" ?
-      "subscribedToPrayerTeam" : "subscribedToNewsletter";
-    if (customer[unsubFlag] === false) {
-      await ledgerDoc.ref.update({
-        status: "skipped",
-        error: `customer unsubscribed (${ledger.unsubType})`,
-        sentAt: admin.firestore.Timestamp.now(),
-      });
-      return;
+    // Honor an unsubscribe that landed between enqueue and send -
+    // except for operational sends (unsubType 'none'), which aren't
+    // marketing and ignore the flags entirely.
+    if (ledger.unsubType !== "none") {
+      const unsubFlag = ledger.unsubType === "prayer" ?
+        "subscribedToPrayerTeam" : "subscribedToNewsletter";
+      if (customer[unsubFlag] === false) {
+        await ledgerDoc.ref.update({
+          status: "skipped",
+          error: `customer unsubscribed (${ledger.unsubType})`,
+          sentAt: admin.firestore.Timestamp.now(),
+        });
+        return;
+      }
     }
 
-    const unsubscribeUrl =
+    const operational = ledger.unsubType === "none";
+    const unsubscribeUrl = operational ? "" :
       `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(email)}` +
       `&type=${ledger.unsubType ?? "newsletter"}`;
     const context = {
@@ -397,11 +411,12 @@ async function sendLedgerDoc(
     if (ledger.token) {
       html = applyTracking(html, touch.html ?? "", ledger.token);
     }
-    // Campaign email is marketing - it ALWAYS carries an unsubscribe link.
-    // Templates using *|UNSUB|* place their own; anything else gets the
+    // MARKETING campaign email always carries an unsubscribe link -
+    // templates using *|UNSUB|* place their own; anything else gets the
     // fallback footer (appended only when missing, so no double links -
     // the v1 blast dialog appended unconditionally and doubled them).
-    if (!html.includes(unsubscribeUrl)) {
+    // Operational sends (unsubType 'none') carry none by design.
+    if (!operational && !html.includes(unsubscribeUrl)) {
       html += "<div style=\"font-family:Helvetica,Arial,sans-serif;" +
         "font-size:11px;color:#8a93a0;text-align:center;padding:18px 0;\">" +
         `<a href="${unsubscribeUrl}" style="color:#8a93a0;">Unsubscribe</a>` +

@@ -248,6 +248,51 @@ export const campaign_open = onRequest(async (request, response) => {
   response.status(200).send(PIXEL);
 });
 
+// GET /campaign_web_event?cid=<campaignId>&type=web_shown|web_click -
+// the popup beacon (Campaign Manager v2, Phase 5). CORS-open by design:
+// it's an anonymous public-site beacon carrying nothing sensitive, and
+// the campaign must exist AND be effectively live before anything counts.
+// The web renderer localStorage-guards web_shown to once per visitor per
+// popup, which also caps write volume.
+export const campaign_web_event = onRequest(async (request, response) => {
+  response.set("Access-Control-Allow-Origin", "*");
+  try {
+    const cid = String(request.query.cid ?? "").trim();
+    const type = String(request.query.type ?? "");
+    if (!cid || cid.length > 64 ||
+        (type !== "web_shown" && type !== "web_click")) {
+      response.status(204).send("");
+      return;
+    }
+    const db = admin.firestore();
+    const campaignSnap = await db.collection("campaigns").doc(cid).get();
+    const data = campaignSnap.data();
+    if (campaignSnap.exists && data) {
+      const now = Date.now();
+      const start = data.startDate?.toMillis?.() ?? 0;
+      const end = data.endDate?.toMillis?.() ?? 0;
+      const live = (data.status === "live" ||
+        (data.status === "scheduled" && start > 0 && start <= now)) &&
+        !(end > 0 && end < now);
+      if (live) {
+        const field = type === "web_shown" ? "stats.webShown" : "stats.webClicks";
+        await campaignSnap.ref.update({
+          [field]: admin.firestore.FieldValue.increment(1),
+        });
+        await recordEvent(db, {
+          type,
+          campaignId: cid,
+          via: "popup",
+          ua: request.headers["user-agent"] ?? null,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("campaign_web_event failed", err);
+  }
+  response.status(204).send("");
+});
+
 // GET /campaign_click?t=<token>&l=<linkId> - tracked redirect. The target
 // comes from the touch's stored link map, never the query string.
 export const campaign_click = onRequest(async (request, response) => {

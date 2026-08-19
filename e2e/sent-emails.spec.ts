@@ -38,7 +38,9 @@ test.describe('Sent Emails', () => {
       page
         .locator('app-sent-email-preview-dialog iframe')
         .evaluate((el: HTMLIFrameElement) => el.contentDocument?.body?.innerHTML?.length ?? 0);
-    await expect.poll(frameText, { timeout: 10000 }).toBeGreaterThan(500);
+    // Low threshold on purpose - the newest email may be a small
+    // hand-authored send rather than a full rendered document.
+    await expect.poll(frameText, { timeout: 10000 }).toBeGreaterThan(50);
   });
 
   test('open in designer seeds a copy on /new with the html block', async ({ page }) => {

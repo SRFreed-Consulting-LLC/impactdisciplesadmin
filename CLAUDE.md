@@ -471,7 +471,29 @@ checkout form (free path credits immediately; paid path stages it on pending_ord
 matching a LIVE campaign's `couponId` credits `via:'coupon'`. All best-effort — attribution can
 never fail an order — and the campaign must exist before anything is credited (client field is
 advisory). Purchases carry an `attribution` field now.
-Remaining: Phase 5 web popups, Phase 6 consolidation, Phase 7 Mailchimp sunset.
+**Phase 5 (web popups, 2026-08-19)**: the second channel. `campaign_popups/{campaignId}` (one per
+campaign, PUBLIC-readable rules — which is why popups are their own collection; never put audience
+or stats on them) + staff-only `popup_templates` recipes (seeded by `scripts/seed-popup-templates.js`
+from the retired v1 gallery copy). Admin: popup-editor (recipes, live preview, "save as template?",
+date window, click-through URL auto-decorated with `?cid&csrc=popup`) reached from campaign detail's
+Add/Edit Popup; saving an active popup adds 'web' to the campaign's channels. Web repo:
+`campaign-popup.component` in the app shell shows the first active in-window popup to EVERY visitor
+(no targeting, user decision) until they check don't-show-again (per-popup localStorage); fires the
+CORS-open `campaign_web_event` beacon (web_shown once per visitor per popup — localStorage-guarded —
+and web_click), which validates the campaign is effectively live before counting. A popup click
+lands with `?cid&csrc=popup` → AttributionService → purchases credit `via:'popup'`.
+
+**Phase 6 (consolidation, 2026-08-19)**: one send system. The Subscriber Report's newsletter/prayer
+dialog and the event Attendees email dialog are now THIN FLOWS over the send engine — each send
+creates a campaign (+one touch) and calls `enqueueCampaignEmail`, with a real audience-count
+confirm first; the un-awaited client-side per-recipient loops and the write-only
+`newsletters`/`prayers`/`customer-emails` archive collections are dead (frozen — the campaign IS
+the archive; the public Monthly Newsletter page reads the UNRELATED `monthly-newsletter`
+collection, verified). Event-attendee sends use audience `unsubType: 'none'` — OPERATIONAL emails:
+no unsubscribe footer and the newsletter opt-out is deliberately not applied (a marketing
+unsubscribe must not withhold info about an event someone registered for). The Home Page Popups
+screen (web-manager) is retired — the public site never had a renderer for it; its
+`home_page_popups` docs are left inert. Remaining: Phase 7 Mailchimp sunset.
 
 ### Firestore collection naming note
 

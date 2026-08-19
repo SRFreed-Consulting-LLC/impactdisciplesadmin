@@ -20,6 +20,7 @@ import { CampaignsComponent } from './campaigns/campaigns.component';
 import { CampaignDetailComponent } from './campaign-detail/campaign-detail.component';
 import { CampaignWizardComponent } from './campaign-wizard/campaign-wizard.component';
 import { EmailTouchEditorComponent } from './email-touch-editor/email-touch-editor.component';
+import { PopupEditorComponent } from './popup-editor/popup-editor.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
 import { SentEmailsComponent } from './sent-emails/sent-emails.component';
@@ -37,6 +38,7 @@ import { MatRadioModule } from '@angular/material/radio';
     CampaignDetailComponent,
     CampaignWizardComponent,
     EmailTouchEditorComponent,
+    PopupEditorComponent,
     StatusBoardComponent,
     TagRulesComponent,
     SentEmailsComponent,

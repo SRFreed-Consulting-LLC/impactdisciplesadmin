@@ -41,6 +41,34 @@
   font-size: 13px;
 }
 
+.popup-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--app-card);
+  border: 1px solid color-mix(in srgb, var(--app-card-ink) 10%, transparent);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 18px;
+}
+
+.popup-card__icon {
+  color: var(--app-card-muted);
+}
+
+.popup-card__main {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  color: var(--app-card-ink);
+  font-size: 13.5px;
+}
+
+.popup-card__meta {
+  color: var(--app-card-muted);
+  font-size: 12.5px;
+}
+
 .funnel {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

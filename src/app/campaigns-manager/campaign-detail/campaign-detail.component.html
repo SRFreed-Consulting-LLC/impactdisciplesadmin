@@ -1,6 +1,9 @@
 @if (mode === 'editTouch') {
   <app-email-touch-editor [campaign]="campaign" [touch]="editingTouch"
     (closed)="onEditorClosed($event)"></app-email-touch-editor>
+} @else if (mode === 'editPopup') {
+  <app-popup-editor [campaign]="campaign" [popup]="popup"
+    (closed)="onPopupClosed($event)"></app-popup-editor>
 } @else {
 <div class="detail-header">
   <button mat-icon-button matTooltip="Back to Campaigns" (click)="back()">
@@ -39,6 +42,9 @@
     <button mat-stroked-button (click)="edit.emit(campaign)">
       <mat-icon>edit</mat-icon> EDIT CAMPAIGN
     </button>
+    <button mat-stroked-button (click)="editPopup()">
+      <mat-icon>web_asset</mat-icon> {{ popup ? 'EDIT POPUP' : 'ADD POPUP' }}
+    </button>
   }
   @if (canAddEmail()) {
     <button mat-flat-button color="primary" (click)="newEmail()">
@@ -46,6 +52,22 @@
     </button>
   }
 </div>
+
+@if (popup) {
+  <div class="popup-card">
+    <mat-icon class="popup-card__icon">web_asset</mat-icon>
+    <div class="popup-card__main">
+      <b>{{ popup.title }}</b>
+      <span class="popup-card__meta">
+        {{ toDate(popup.fromDate) | date:'MMM d' }} – {{ toDate(popup.toDate) | date:'MMM d, y' }}
+        · shown {{ campaign.stats.webShown | number }} · clicked {{ campaign.stats.webClicks | number }}
+      </span>
+    </div>
+    <span class="chip" [class]="popup.isActive ? 'status-live' : 'status-draft'">
+      {{ popup.isActive ? 'LIVE' : 'OFF' }}
+    </span>
+  </div>
+}
 
 <div class="funnel">
   @for (tile of funnel; track tile.label) {
