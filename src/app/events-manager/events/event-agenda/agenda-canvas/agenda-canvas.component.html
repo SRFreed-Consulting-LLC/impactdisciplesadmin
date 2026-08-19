@@ -45,7 +45,7 @@
           <div class="koptions">
             @for (option of entry.block.options; track option.id) {
               <div class="kopt">
-                <div class="kopt__course">{{ courseTitle(option.course) }}</div>
+                <div class="kopt__course">{{ titleFor(option) }}</div>
                 <div class="kopt__coach">{{ coachLabel(option) }} · {{ roomName(option.room) }}</div>
                 <div class="kopt__meta">Cap {{ option.maxParticipants ?? '—' }}</div>
               </div>

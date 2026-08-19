@@ -47,69 +47,41 @@ mat-dialog-content {
   margin-bottom: 10px;
 }
 
-// Real CSS Grid, not flex-basis approximations - the header row and every
-// option row share the exact same column template, so Course/Coach/Room/
-// Max/actions line up as true columns regardless of how long a course
-// title or coach name gets. Columns: Course | +New Course | Coach | Room |
-// Max | Remove.
-$options-columns: minmax(0, 2fr) 40px minmax(0, 1.4fr) minmax(0, 1fr) 90px 40px;
-
-.options-table {
-  display: flex;
-  flex-direction: column;
-}
-
-.options-table__row {
-  display: grid;
-  grid-template-columns: $options-columns;
-  align-items: center;
-  column-gap: 12px;
-  padding: 6px 8px;
+// One bordered card per option (2026-08 Courses retirement) - each option
+// carries its own typed Title/Description + coach picker now, which
+// doesn't fit the old one-line-per-option grid.
+.option-card {
+  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
   border-radius: 8px;
-
-  &:not(.options-table__row--header):hover {
-    background: var(--mat-sys-surface-variant, rgba(0, 0, 0, 0.03));
-  }
+  padding: 14px 14px 10px;
 
   &:not(:last-child) {
-    margin-bottom: 2px;
+    margin-bottom: 12px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
   }
 }
 
-.options-table__row--header {
-  padding: 0 8px 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.55));
-  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+.title-field {
+  flex: 1 1 auto;
 }
 
-// mat-form-field's own floating label is no longer needed here - the
-// header row carries the "Course"/"Room"/"Max" labels instead, one line
-// for the whole table instead of one per cell. subscriptSizing="dynamic"
-// (set in the template) collapses the space normally reserved for hint/
-// error text down to 0 when there's nothing to show, so empty rows stay
-// compact - but still expands to actually show "Required" on the Course
-// field when it's genuinely invalid, unlike hiding the subscript wrapper
-// outright would.
-.course-field,
-.room-field,
+.coach-field {
+  flex: 1.4 1 0;
+}
+
+.room-field {
+  flex: 1 1 0;
+}
+
 .cap-field {
-  width: 100%;
-}
-
-.add-course-btn {
-  align-self: center;
-}
-
-.coach-display {
-  font-size: 13px;
-  color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  width: 90px;
+  flex: 0 0 auto;
 }
 
 .add-option-btn {

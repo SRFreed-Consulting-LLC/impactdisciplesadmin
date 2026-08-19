@@ -173,13 +173,18 @@ export const NAV_CONFIG: NavGroup[] = [
           { key: 'attendees', label: 'Attendees' }
         ]
       },
-      { label: 'Courses', slug: 'courses', roles: [Role.ADMIN] },
+      // Edit-only roster (photo/bio/organization upkeep) - NEW coaches are
+      // created exclusively from the Summit screen's agenda dialogs since
+      // the 2026-08-19 restructure (user decision), see
+      // coach-quick-create-dialog.component.ts.
       { label: 'Coaches', slug: 'coaches', roles: [Role.ADMIN] }
-      // Locations and Organizations left this group 2026-08-19 (Contacts &
-      // Events restructure): Organizations moved to Contacts Manager, and
-      // the standalone Locations screen is retired outright - locations are
-      // child records edited inside an organization's details view, and the
-      // Summit venue's rooms are edited on the Summit screen.
+      // Courses, Locations, and Organizations all left this group
+      // 2026-08-19 (Contacts & Events restructure): Organizations moved to
+      // Contacts Manager; the Locations screen is retired outright
+      // (locations are child records edited inside an organization's
+      // details view, the Summit venue's rooms on the Summit screen); and
+      // the Courses CONCEPT is retired - a breakout agenda item carries its
+      // own title/description/coaches now (see agenda-item.model.ts).
     ]
   },
   {

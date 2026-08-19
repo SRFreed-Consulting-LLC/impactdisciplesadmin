@@ -1,0 +1,35 @@
+<app-popup-header title="ADD COACH TO THIS EVENT" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <p class="hint">Just the essentials - photo, bio, and organization can be filled in later on Events Manager &rsaquo; Coaches.</p>
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>First Name</mat-label>
+      <input matInput formControlName="firstName" required>
+      @if (form.get('firstName')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Last Name</mat-label>
+      <input matInput formControlName="lastName" required>
+      @if (form.get('lastName')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
+    </mat-form-field>
+  </div>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Title (optional)</mat-label>
+    <input matInput formControlName="title" placeholder="e.g. Discipleship Pastor">
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="ADD COACH"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (clicked)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

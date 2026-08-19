@@ -84,7 +84,7 @@
             </div>
             @for (option of block.options; track option.id) {
               <div class="optrow3">
-                <b>{{ courseTitle(option.course) }}</b>
+                <b>{{ titleFor(option) }}</b>
                 <span class="m">{{ roomName(option.room) }}</span>
                 <span class="m">Cap {{ option.maxParticipants ?? '—' }}</span>
               </div>

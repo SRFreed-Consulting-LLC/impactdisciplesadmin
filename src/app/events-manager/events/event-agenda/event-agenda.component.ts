@@ -1,10 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { EventModel } from 'src/app/common/models/domain/event.model';
-import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
-import { CourseService } from 'src/app/common/services/data/course.service';
 import { LocationService } from 'src/app/common/services/data/location.service';
 import { Instructor } from './session-block.util';
 
@@ -42,12 +40,10 @@ export class EventAgendaComponent implements OnInit {
 
   mode: AgendaMode = 'wizard';
 
-  courses: CourseModel[] = [];
   coaches: Instructor[] = [];
   rooms: TrainingRoomModel[] = [];
 
   constructor(
-    private courseService: CourseService,
     private coachService: CoachService,
     private impactTeamService: ImpactTeamService,
     private locationService: LocationService
@@ -58,9 +54,13 @@ export class EventAgendaComponent implements OnInit {
       this.event.agendaItems = [];
     }
 
-    this.courses = await this.courseService.getAll();
+    // Tagged with `source` so the dialogs' pickers can group "Impact Team"
+    // vs "Coaches" - see Instructor's own comment in session-block.util.ts.
     const [coaches, impactTeam] = await Promise.all([this.coachService.getAll(), this.impactTeamService.getAll()]);
-    this.coaches = [...coaches, ...impactTeam];
+    this.coaches = [
+      ...coaches.map((c) => ({ id: c.id, fullname: c.fullname, source: 'coaches' as const })),
+      ...impactTeam.map((c) => ({ id: c.id, fullname: c.fullname, source: 'impact_team' as const }))
+    ];
 
     const locationId = typeof this.event.location === 'string' ? this.event.location : this.event.location?.id;
     this.rooms = locationId ? ((await this.locationService.getById(locationId))?.trainingrooms ?? []) : [];

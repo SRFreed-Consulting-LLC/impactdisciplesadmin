@@ -17,17 +17,16 @@
     @case ('wizard') {
       <app-agenda-wizard
         [event]="event"
-        [courses]="courses"
         [coaches]="coaches"
         [rooms]="rooms"
         (published)="onPublished()">
       </app-agenda-wizard>
     }
     @case ('canvas') {
-      <app-agenda-canvas [event]="event" [courses]="courses" [coaches]="coaches" [rooms]="rooms"></app-agenda-canvas>
+      <app-agenda-canvas [event]="event" [coaches]="coaches" [rooms]="rooms"></app-agenda-canvas>
     }
     @case ('grid') {
-      <app-agenda-grid [event]="event" [courses]="courses" [coaches]="coaches" [rooms]="rooms"></app-agenda-grid>
+      <app-agenda-grid [event]="event" [coaches]="coaches" [rooms]="rooms"></app-agenda-grid>
     }
   }
 </div>

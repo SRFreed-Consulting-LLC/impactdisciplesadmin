@@ -9,51 +9,72 @@
 
     <div class="options-label">Parallel options — attendees pick one</div>
 
-    <div formArrayName="options" class="options-table">
-      <div class="options-table__row options-table__row--header">
-        <span>Course</span>
-        <span></span>
-        <span>Coach</span>
-        <span>Room</span>
-        <span>Max</span>
-        <span></span>
-      </div>
-
+    <div formArrayName="options">
       @for (group of options.controls; track group; let i = $index) {
-        <div [formGroupName]="i" class="options-table__row">
-          <mat-form-field appearance="outline" class="course-field" subscriptSizing="dynamic">
-            <mat-select formControlName="course" required>
-              @for (course of data.courses; track course) {
-                <mat-option [value]="course.id">{{ course.title }}</mat-option>
+        <div [formGroupName]="i" class="option-card">
+          <div class="option-card__row">
+            <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
+              <mat-label>Breakout Title</mat-label>
+              <input matInput formControlName="text" required>
+              @if (group.get('text')?.hasError('required')) {
+                <mat-error>Required</mat-error>
               }
-            </mat-select>
-            @if (group.get('course')?.hasError('required')) {
-              <mat-error>Required</mat-error>
+            </mat-form-field>
+
+            @if (copySources().length > 0) {
+              <button mat-icon-button type="button" matTooltip="Copy from an existing breakout (keeps the title identical so it counts as the same session offered at another time)" [matMenuTriggerFor]="copyMenu">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+              <mat-menu #copyMenu="matMenu">
+                @for (source of copySources(); track source.id) {
+                  <button mat-menu-item type="button" (click)="copyInto(i, source)">{{ breakoutTitle(source) }}</button>
+                }
+              </mat-menu>
             }
+
+            <button mat-icon-button type="button" matTooltip="Remove this option" [disabled]="options.length === 1" (click)="removeOption(i)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="option-card__row">
+            <mat-form-field appearance="outline" class="coach-field" subscriptSizing="dynamic">
+              <mat-label>Coaches</mat-label>
+              <mat-select formControlName="coaches" multiple>
+                @for (coachGroup of coachGroups(); track coachGroup.label) {
+                  <mat-optgroup [label]="coachGroup.label">
+                    @for (coach of coachGroup.coaches; track coach.id) {
+                      <mat-option [value]="coach.id">{{ coach.fullname }}</mat-option>
+                    }
+                  </mat-optgroup>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <button mat-icon-button type="button" matTooltip="Add a new coach to this event" (click)="addCoach(i)">
+              <mat-icon>person_add</mat-icon>
+            </button>
+
+            <mat-form-field appearance="outline" class="room-field" subscriptSizing="dynamic">
+              <mat-label>Room</mat-label>
+              <mat-select formControlName="room">
+                <mat-option [value]="null">(None)</mat-option>
+                @for (room of data.rooms; track room) {
+                  <mat-option [value]="room.id">{{ room.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="cap-field" subscriptSizing="dynamic">
+              <mat-label>Max</mat-label>
+              <input matInput type="number" formControlName="maxParticipants">
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+            <mat-label>Description (optional)</mat-label>
+            <textarea matInput formControlName="description" rows="2"></textarea>
           </mat-form-field>
-
-          <button mat-icon-button type="button" class="add-course-btn" matTooltip="New Course" (click)="addCourse(i)">
-            <mat-icon>add_circle_outline</mat-icon>
-          </button>
-
-          <div class="coach-display">{{ coachLabel(i, group.get('course')?.value) }}</div>
-
-          <mat-form-field appearance="outline" class="room-field" subscriptSizing="dynamic">
-            <mat-select formControlName="room">
-              <mat-option [value]="null">(None)</mat-option>
-              @for (room of data.rooms; track room) {
-                <mat-option [value]="room.id">{{ room.name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="cap-field" subscriptSizing="dynamic">
-            <input matInput type="number" formControlName="maxParticipants">
-          </mat-form-field>
-
-          <button mat-icon-button type="button" matTooltip="Remove this option" [disabled]="options.length === 1" (click)="removeOption(i)">
-            <mat-icon>close</mat-icon>
-          </button>
         </div>
       }
     </div>

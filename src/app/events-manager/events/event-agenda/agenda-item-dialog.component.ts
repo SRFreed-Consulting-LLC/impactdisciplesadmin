@@ -2,25 +2,15 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
-import { CoachService } from 'src/app/common/services/data/coach.service';
-import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
-import { CourseDialogComponent } from '../../courses/course-dialog.component';
-import { CoachDialogComponent } from '../../coaches/coach-dialog.component';
+import { CoachQuickCreateDialogComponent } from './coach-quick-create-dialog.component';
 import { Instructor } from './session-block.util';
 
 export interface AgendaItemDialogData {
   item: AgendaItem | null;
   defaultStart: Date;
-  courses: CourseModel[];
-  // Combined Coaches + Impact Team, same as BreakoutBlockDialogData - see
-  // event-agenda.component.ts's own comment. Shown as one flat (ungrouped)
-  // list in this dialog's own Coaches field, unlike course-dialog.component's
-  // - this is the secondary/legacy per-item coach path (course assignment
-  // normally happens via Course.coachIds instead, see CourseModel's own
-  // comment), not worth the extra plumbing for optgroups here too.
+  // Combined Coaches + Impact Team, tagged with `source` for the grouped
+  // picker - see event-agenda.component.ts's own comment.
   coaches: Instructor[];
   rooms: TrainingRoomModel[];
 }
@@ -37,6 +27,11 @@ type AgendaItemType = 'course' | 'foodBreak' | 'agenda';
 // isCourse/isFoodBreak switches, followed by form.repaint()) with a single
 // reactive form + a Type select that conditionally reveals the matching
 // fields - the same practical 3-way editing behavior, but declarative.
+//
+// 2026-08 Courses retirement: a Breakout Session no longer links a Course
+// record - the admin types the breakout's Title/Description directly and
+// picks the coach(es) here (see agenda-item.model.ts). The legacy `course`
+// id on a pre-retirement item is preserved untouched as provenance.
 @Component({
     selector: 'app-agenda-item-dialog',
     templateUrl: './agenda-item-dialog.component.html',
@@ -51,9 +46,7 @@ export class AgendaItemDialogComponent {
     private dialogRef: MatDialogRef<AgendaItemDialogComponent, AgendaItemDialogResult>,
     @Inject(MAT_DIALOG_DATA) public data: AgendaItemDialogData,
     private fb: FormBuilder,
-    private dialog: MatDialog,
-    private coachService: CoachService,
-    private impactTeamService: ImpactTeamService
+    private dialog: MatDialog
   ) {
     this.isEdit = !!data.item;
 
@@ -73,7 +66,6 @@ export class AgendaItemDialogComponent {
       endDate: [this.toInputValue(end), Validators.required],
       text: [item?.text ?? ''],
       description: [item?.description ?? ''],
-      course: [item?.course ?? null],
       maxParticipants: [item?.maxParticipants ?? null],
       coaches: [item?.coaches ?? []],
       room: [item?.room ?? null]
@@ -92,41 +84,29 @@ export class AgendaItemDialogComponent {
       control?.updateValueAndValidity({ emitEvent: false });
     };
 
-    toggle('text', type !== 'course');
-    toggle('description', type !== 'course');
-    toggle('course', type === 'course');
+    // Every type carries its own title now (a breakout's title used to
+    // live on the linked course doc). Description stays required for the
+    // non-course types only, matching the pre-retirement behavior.
+    toggle('text', true);
+    toggle('description', type === 'agenda' || type === 'foodBreak');
   }
 
-  // "+ New Course"/"+ New Coach" next to their respective fields - same
-  // quick-create pattern as breakout-block-dialog.component.ts's own
-  // addCourse() (see that file's identical comment on why a plain
-  // this.data.coaches.push() isn't enough by itself: the nested course
-  // dialog's own "+ New Coach" only updates its own local coach list, not
-  // this dialog's data.coaches, so a coach created *while* creating the
-  // course needs an explicit re-fetch to become pickable here too).
-  addCourse(): void {
-    const ref = this.dialog.open<CourseDialogComponent, unknown, CourseModel>(CourseDialogComponent, { width: '600px', data: { item: null } });
-    ref.afterClosed().subscribe((course) => {
-      if (!course) {
-        return;
-      }
-      this.data.courses.push(course);
-      this.form.get('course')?.setValue(course.id);
-
-      Promise.all([this.coachService.getAll(), this.impactTeamService.getAll()]).then(([coaches, impactTeam]) => {
-        this.data.coaches.length = 0;
-        this.data.coaches.push(...coaches, ...impactTeam);
-      });
-    });
+  coachGroups(): { label: string; coaches: Instructor[] }[] {
+    return [
+      { label: 'Impact Team', coaches: this.data.coaches.filter((c) => c.source === 'impact_team') },
+      { label: 'Coaches', coaches: this.data.coaches.filter((c) => c.source !== 'impact_team') }
+    ].filter((g) => g.coaches.length > 0);
   }
 
+  // "+ Add new coach to this event" - the slim quick-create is now the only
+  // coach-creation path in the app (the Coaches screen is edit-only).
   addCoach(): void {
-    const ref = this.dialog.open<CoachDialogComponent, unknown, CoachModel>(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
+    const ref = this.dialog.open(CoachQuickCreateDialogComponent, { width: '480px' });
     ref.afterClosed().subscribe((coach) => {
       if (!coach) {
         return;
       }
-      this.data.coaches.push(coach);
+      this.data.coaches.push({ id: coach.id, fullname: coach.fullname, source: 'coaches' });
       const coaches = this.form.get('coaches');
       coaches?.setValue([...(coaches.value ?? []), coach.id]);
     });
@@ -161,12 +141,7 @@ export class AgendaItemDialogComponent {
     // not a merge - see FirebaseDAO.update()) rejects the entire write if
     // any field is explicitly `undefined`, however deeply nested. This
     // item only reaches Firestore later, batched into the whole Event
-    // document by events.component.ts's own onSave() - the failure mode
-    // (a rejected write) doesn't surface until then, which is why this
-    // went unnoticed: nothing here calls Firestore directly to catch it
-    // sooner. Live-diagnosed 2026-08-14 alongside the identical bug in
-    // events.component.ts's own onSave() (imageUrl) - see that file's
-    // own comment.
+    // document by events.component.ts's own onSave().
     const item: AgendaItem = {
       ...this.data.item,
       id: this.data.item?.id ?? this.generateId(),
@@ -175,13 +150,11 @@ export class AgendaItemDialogComponent {
       isCourse: type === 'course',
       isFoodBreak: type === 'foodBreak',
       room: raw.room,
-      // Course-type items don't carry their own text/description - the
-      // calendar's own event title is derived from the linked course's
-      // title instead (see event-agenda.component.ts's titleFor()),
-      // matching the original's custom appointment-template behavior.
-      text: type === 'course' ? null : raw.text,
-      description: type === 'course' ? null : raw.description,
-      course: type === 'course' ? raw.course : null,
+      text: raw.text,
+      description: raw.description || null,
+      // LEGACY provenance only - preserved on a still-course item, cleared
+      // if the type changes away from breakout. Never set to a new value.
+      course: type === 'course' ? (this.data.item?.course ?? null) : null,
       maxParticipants: type === 'course' ? (raw.maxParticipants ?? null) : null,
       coaches: type !== 'foodBreak' ? raw.coaches : null
     };

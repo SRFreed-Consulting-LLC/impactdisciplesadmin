@@ -1,5 +1,4 @@
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 
 // Either CoachModel or ImpactTeamMemberModel satisfies this structurally -
@@ -9,10 +8,13 @@ import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 // below, plus the Agenda dialogs/canvas/grid that call it) just needs
 // id/fullname, not either model's full shape - this avoids committing
 // those call sites to importing both concrete models just to type a
-// combined array.
+// combined array. `source` tags which collection an entry came from so the
+// coach pickers can group their options ("Impact Team" / "Coaches") -
+// resolution by id still ignores it.
 export interface Instructor {
   id?: string;
   fullname: string;
+  source?: 'coaches' | 'impact_team';
 }
 
 // A "breakout block" - several Course Session AgendaItems (isCourse: true)
@@ -136,14 +138,21 @@ export function blockLabel(index: number): string {
   return `Breakout Block ${String.fromCharCode(65 + index)}`;
 }
 
-// Course-first, AgendaItem-fallback coach display - see CourseModel's own
-// comment on coachIds for why. `coaches` is expected to be the combined
-// Coaches + Impact Team array (see event-agenda.component.ts's own
-// comment) - coachIds doesn't distinguish source, so lookup doesn't either.
-// Returns a joined display string ("Dana Whitfield, Marcus Ellery") or '—'
-// if nobody's assigned either place.
-export function coachLabelFor(item: AgendaItem, course: CourseModel | undefined, coaches: Instructor[]): string {
-  const ids = (course?.coachIds?.length ? course.coachIds : item.coaches) ?? [];
+// The item's display title - since the 2026-08 Courses retirement a
+// breakout carries its own `text` (backfilled from the old course docs by
+// scripts/flatten-courses-onto-agenda-items.js). '(unknown breakout)'
+// rather than blank so a missed backfill is visible instead of silent.
+export function itemTitle(item: AgendaItem): string {
+  return item.text || '(unknown breakout)';
+}
+
+// Coach display straight off the item - `coaches` (the arg) is the
+// combined Coaches + Impact Team array (see event-agenda.component.ts's
+// own comment). The old CourseModel.coachIds preference is gone with the
+// Courses retirement - no real data ever used it. Returns a joined display
+// string ("Dana Whitfield, Marcus Ellery") or '—' if nobody's assigned.
+export function coachLabelFor(item: AgendaItem, coaches: Instructor[]): string {
+  const ids = item.coaches ?? [];
   const names = ids.map((id) => coaches.find((c) => c.id === id)?.fullname).filter((name): name is string => !!name);
   return names.length ? names.join(', ') : '—';
 }

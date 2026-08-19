@@ -2,21 +2,23 @@ import { Component, Inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
-import { CoachService } from 'src/app/common/services/data/coach.service';
-import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
-import { CourseDialogComponent } from '../../courses/course-dialog.component';
-import { Instructor, SessionBlock, coachLabelFor } from './session-block.util';
+import { CoachQuickCreateDialogComponent } from './coach-quick-create-dialog.component';
+import { Instructor, SessionBlock, itemTitle } from './session-block.util';
 
 export interface BreakoutBlockDialogData {
   block: SessionBlock | null;
   defaultStart: Date;
-  courses: CourseModel[];
-  // Combined Coaches + Impact Team - see event-agenda.component.ts's own
-  // comment on why this is one merged array, not 2.
+  // Combined Coaches + Impact Team, tagged with `source` for the grouped
+  // picker - see event-agenda.component.ts's own comment.
   coaches: Instructor[];
   rooms: TrainingRoomModel[];
+  // Every breakout item already on the event (all blocks) - feeds the
+  // per-option "Copy from…" menu, so a breakout offered in two time slots
+  // keeps an IDENTICAL title (the web schedule's "same session at another
+  // time" check keys on normalized title equality post-Courses-retirement,
+  // see the web repo's breakout.util.ts).
+  existingBreakouts: AgendaItem[];
 }
 
 export interface BreakoutBlockDialogResult {
@@ -30,15 +32,12 @@ export interface BreakoutBlockDialogResult {
   items: AgendaItem[];
 }
 
-// Authors one breakout block's several parallel options at once - Course
-// and Room dropdowns match the exact same data-source convention as the
-// existing single-item AgendaItemDialogComponent (data.courses/data.rooms,
-// already loaded by the parent, same plain-array-via-@for pattern). Coach
-// is read-only here, resolved from the selected course - see CourseModel's
-// own comment on coachIds for why a breakout option no longer picks its
-// own coach independently. A course can be scheduled into more than one
-// block (e.g. offered both morning and afternoon) - nothing here dedupes
-// or restricts the Course dropdown based on where else it's used.
+// Authors one breakout block's several parallel options at once. 2026-08
+// Courses retirement: each option is self-contained now - the admin types
+// the breakout's Title (and optional Description) and picks its coach(es)
+// directly, instead of linking a Course record. A breakout can still be
+// offered in more than one block (morning and afternoon) - use "Copy
+// from…" so both carry the identical title.
 @Component({
     selector: 'app-breakout-block-dialog',
     templateUrl: './breakout-block-dialog.component.html',
@@ -51,19 +50,15 @@ export class BreakoutBlockDialogComponent {
 
   private originalIds: string[];
   // Index-aligned with the `options` FormArray at all times (addOption
-  // appends undefined, removeOption splices the same index) - lets
-  // coachLabel() fall back to a legacy option's own `coaches` when its
-  // course has no coachIds set yet, via the shared coachLabelFor() rather
-  // than re-deriving that fallback rule here.
+  // appends undefined, removeOption splices the same index) - preserves
+  // each original item's legacy `course` provenance through a save.
   private originalItems: (AgendaItem | undefined)[];
 
   constructor(
     private dialogRef: MatDialogRef<BreakoutBlockDialogComponent, BreakoutBlockDialogResult>,
     @Inject(MAT_DIALOG_DATA) public data: BreakoutBlockDialogData,
     private fb: FormBuilder,
-    private dialog: MatDialog,
-    private coachService: CoachService,
-    private impactTeamService: ImpactTeamService
+    private dialog: MatDialog
   ) {
     this.isEdit = !!data.block;
     this.originalIds = data.block?.options.map((o) => o.id!) ?? [];
@@ -86,7 +81,9 @@ export class BreakoutBlockDialogComponent {
   private optionGroup(item: AgendaItem | null): FormGroup {
     return this.fb.group({
       id: [item?.id ?? null],
-      course: [item?.course ?? null, Validators.required],
+      text: [item?.text ?? '', Validators.required],
+      description: [item?.description ?? ''],
+      coaches: [item?.coaches ?? []],
       room: [item?.room ?? null],
       maxParticipants: [item?.maxParticipants ?? null]
     });
@@ -102,53 +99,52 @@ export class BreakoutBlockDialogComponent {
     this.originalItems.splice(index, 1);
   }
 
-  courseFor(courseId: string | null): CourseModel | undefined {
-    return this.data.courses.find((c) => c.id === courseId);
+  coachGroups(): { label: string; coaches: Instructor[] }[] {
+    return [
+      { label: 'Impact Team', coaches: this.data.coaches.filter((c) => c.source === 'impact_team') },
+      { label: 'Coaches', coaches: this.data.coaches.filter((c) => c.source !== 'impact_team') }
+    ].filter((g) => g.coaches.length > 0);
   }
 
-  // "+ New Course" next to each option's Course dropdown - lets an admin
-  // building out a Summit's breakout schedule add a course on the spot
-  // instead of leaving the Agenda tab for the standalone Courses screen.
-  // `data.courses` is the same array instance event-agenda.component.ts
-  // loaded once via getAll() and threaded down through the wizard/canvas/
-  // grid @Input()s (see that file's own comment) - pushing onto it here
-  // mutates that one shared array in place, so every other open option's
-  // dropdown (and the parent view once this dialog closes) sees the new
-  // course too, with no extra plumbing/refetch needed. Auto-selects the
-  // new course into the option that triggered the create.
-  addCourse(index: number): void {
-    const ref = this.dialog.open<CourseDialogComponent, unknown, CourseModel>(CourseDialogComponent, { width: '600px', data: { item: null } });
-    ref.afterClosed().subscribe((course) => {
-      if (!course) {
-        return;
-      }
-      this.data.courses.push(course);
-      this.options.at(index).get('course')?.setValue(course.id);
-
-      // The course dialog's own "+ New Coach" (course-dialog.component.ts)
-      // only knows about its own local coach list, not this dialog's
-      // data.coaches - if the admin created a brand-new coach while
-      // creating this course, that coach's id can already be in the new
-      // course's coachIds without being in data.coaches yet, which would
-      // otherwise leave the read-only Coach label (coachLabel() below)
-      // showing "—" until this dialog is closed and reopened. Re-fetching
-      // both collections here (small reference lists, same one-time
-      // getAll() convention as event-agenda.component.ts's own initial
-      // load) covers that case unconditionally rather than trying to
-      // detect whether one actually happened. Replaces contents in place
-      // (not a reassignment) so this stays the same array instance
-      // threaded down from event-agenda.component.ts.
-      Promise.all([this.coachService.getAll(), this.impactTeamService.getAll()]).then(([coaches, impactTeam]) => {
-        this.data.coaches.length = 0;
-        this.data.coaches.push(...coaches, ...impactTeam);
-      });
+  // Distinct existing breakouts (by title) from anywhere on the event,
+  // excluding the ones already in this block's own form.
+  copySources(): AgendaItem[] {
+    const inForm = new Set(
+      (this.options.getRawValue() as { text: string }[]).map((o) => (o.text ?? '').trim().toLowerCase()).filter(Boolean)
+    );
+    const seen = new Set<string>();
+    return (this.data.existingBreakouts ?? []).filter((item) => {
+      const key = (item.text ?? '').trim().toLowerCase();
+      if (!key || inForm.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
   }
 
-  coachLabel(index: number, courseId: string | null): string {
-    const course = this.courseFor(courseId);
-    const fallbackItem = this.originalItems[index] ?? ({ coaches: [] } as unknown as AgendaItem);
-    return coachLabelFor(fallbackItem, course, this.data.coaches);
+  breakoutTitle(item: AgendaItem): string {
+    return itemTitle(item);
+  }
+
+  copyInto(index: number, source: AgendaItem): void {
+    this.options.at(index).patchValue({
+      text: source.text ?? '',
+      description: source.description ?? '',
+      coaches: [...(source.coaches ?? [])]
+    });
+  }
+
+  // "+ Add new coach to this event" - the slim quick-create is now the only
+  // coach-creation path in the app (the Coaches screen is edit-only).
+  addCoach(index: number): void {
+    const ref = this.dialog.open(CoachQuickCreateDialogComponent, { width: '480px' });
+    ref.afterClosed().subscribe((coach) => {
+      if (!coach) {
+        return;
+      }
+      this.data.coaches.push({ id: coach.id, fullname: coach.fullname, source: 'coaches' });
+      const coaches = this.options.at(index).get('coaches');
+      coaches?.setValue([...(coaches.value ?? []), coach.id]);
+    });
   }
 
   onCancel(): void {
@@ -170,21 +166,24 @@ export class BreakoutBlockDialogComponent {
     const endDate = new Date(raw.endDate);
 
     // `null`, never `undefined` - see the identical fix + comment on
-    // AgendaItemDialogComponent.onSave() (agenda-item-dialog.component.ts)
-    // for why: Firestore's setDoc() rejects an explicit `undefined`
-    // anywhere in the document, and this item only reaches Firestore
-    // later, batched into the whole Event document.
-    const items: AgendaItem[] = raw.options.map((opt: { id: string | null; course: string; room: string | null; maxParticipants: number | null }) => ({
+    // AgendaItemDialogComponent.onSave() for why: Firestore's setDoc()
+    // rejects an explicit `undefined` anywhere in the document, and this
+    // item only reaches Firestore later, batched into the whole Event
+    // document.
+    const items: AgendaItem[] = raw.options.map((opt: { id: string | null; text: string; description: string | null; coaches: string[]; room: string | null; maxParticipants: number | null }, index: number) => ({
       id: opt.id ?? this.generateId(),
       startDate,
       endDate,
       isCourse: true,
       isFoodBreak: false,
-      course: opt.course,
+      text: opt.text,
+      description: opt.description || null,
+      coaches: opt.coaches ?? [],
       room: opt.room,
       maxParticipants: opt.maxParticipants ?? null,
-      text: null,
-      description: null
+      // LEGACY provenance carried through untouched (never newly set) -
+      // see agenda-item.model.ts.
+      course: this.originalItems[index]?.course ?? null
     }));
 
     this.dialogRef.close({ action: 'save', originalIds: this.originalIds, items });

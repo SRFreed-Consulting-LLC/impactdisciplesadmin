@@ -2,12 +2,11 @@ import { Component, Input, OnChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { CourseModel } from 'src/app/common/models/domain/course.model';
 import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { AgendaItemDialogComponent, AgendaItemDialogResult } from '../agenda-item-dialog.component';
 import { BreakoutBlockDialogComponent, BreakoutBlockDialogResult } from '../breakout-block-dialog.component';
-import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, Instructor, SessionBlock } from '../session-block.util';
+import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, Instructor, itemTitle, SessionBlock } from '../session-block.util';
 
 // Fine-tune view (option 2 of 2, see agenda-canvas.component.ts for the
 // other) - a conference-program-style grid, time down the side, rooms
@@ -25,7 +24,6 @@ import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDate
 })
 export class AgendaGridComponent implements OnChanges {
   @Input() event: EventModel;
-  @Input() courses: CourseModel[] = [];
   @Input() coaches: Instructor[] = [];
   @Input() rooms: TrainingRoomModel[] = [];
 
@@ -68,12 +66,12 @@ export class AgendaGridComponent implements OnChanges {
     return block.options.find((o) => o.room === roomId);
   }
 
-  courseTitle(courseId: string | undefined): string {
-    return this.courses.find((c) => c.id === courseId)?.title ?? '(Course)';
+  titleFor(item: AgendaItem): string {
+    return itemTitle(item);
   }
 
   coachLabel(option: AgendaItem): string {
-    return coachLabelFor(option, this.courses.find((c) => c.id === option.course), this.coaches);
+    return coachLabelFor(option, this.coaches);
   }
 
   openItemDialog(item: AgendaItem | null): void {
@@ -82,7 +80,7 @@ export class AgendaGridComponent implements OnChanges {
     const ref = this.dialog.open<AgendaItemDialogComponent, unknown, AgendaItemDialogResult>(AgendaItemDialogComponent, {
       width: '600px',
       maxWidth: '95vw',
-      data: { item, defaultStart, courses: this.courses, coaches: this.coaches, rooms: this.rooms }
+      data: { item, defaultStart, coaches: this.coaches, rooms: this.rooms }
     });
     ref.afterClosed().subscribe((result) => this.applyItemResult(result));
   }
@@ -97,7 +95,7 @@ export class AgendaGridComponent implements OnChanges {
       height: '100vh',
       maxHeight: '100vh',
       panelClass: 'breakout-block-dialog-panel',
-      data: { block, defaultStart, courses: this.courses, coaches: this.coaches, rooms: this.rooms }
+      data: { block, defaultStart, coaches: this.coaches, rooms: this.rooms, existingBreakouts: (this.event.agendaItems ?? []).filter((i) => i.isCourse) }
     });
     ref.afterClosed().subscribe((result) => this.applyBlockResult(result));
   }

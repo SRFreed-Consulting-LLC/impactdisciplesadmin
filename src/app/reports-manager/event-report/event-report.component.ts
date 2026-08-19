@@ -3,8 +3,6 @@ import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { CourseModel } from 'src/app/common/models/domain/course.model';
-import { CourseService } from 'src/app/common/services/data/course.service';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { LocationModel } from 'src/app/common/models/domain/location.model';
@@ -64,7 +62,7 @@ interface BreakoutGroup {
 // Report") vs. a breakout-session-grouped one. Breakout sign-up data isn't
 // its own collection - EventRegistrationModel.trainingSessions is an array
 // of agenda-item ids, cross-referenced against event.agendaItems (for
-// session time) and the courses collection (for the display name). This
+// session time) and the breakout item's own text (display name). This
 // mirrors event-breakouts.component.ts's own flatten()/buildRows() logic
 // rather than reusing that component directly - it's tightly coupled to
 // being an @Input-driven tab inside the event-edit screen, with its own
@@ -115,8 +113,6 @@ export class EventReportComponent implements OnInit {
   private collapsedSessions = new Set<string>();
 
   private registrations: EventRegistrationModel[] = [];
-  private courses: CourseModel[] = [];
-  private coursesLoaded = false;
 
   loading = false;
   errorMessage: string | null = null;
@@ -124,7 +120,6 @@ export class EventReportComponent implements OnInit {
   constructor(
     private eventService: EventService,
     private registrationService: EventRegistrationService,
-    private courseService: CourseService,
     private organizationService: OrganizationService,
     private locationService: LocationService
   ) {}
@@ -193,8 +188,8 @@ export class EventReportComponent implements OnInit {
   }
 
   // Breakout sign-ups are derived from the same registrations already
-  // fetched for the Full Report - no second Firestore round trip, just the
-  // courses collection loaded once and cached across event/mode switches.
+  // fetched for the Full Report - no second Firestore round trip; breakout
+  // names come off the agenda items themselves (Courses retirement).
   async onBreakoutModeChange(): Promise<void> {
     if (!this.breakoutMode || !this.selectedEvent || this.breakoutStudents.length > 0) {
       return;
@@ -202,10 +197,6 @@ export class EventReportComponent implements OnInit {
 
     this.loading = true;
     try {
-      if (!this.coursesLoaded) {
-        this.courses = await this.courseService.getAll();
-        this.coursesLoaded = true;
-      }
       this.breakoutStudents = this.flattenBreakouts(this.registrations);
       this.setBreakoutGroups(this.buildBreakoutGroups(this.breakoutStudents));
     } catch (err) {
@@ -317,12 +308,13 @@ export class EventReportComponent implements OnInit {
     return ms > 0 ? new Date(ms) : null;
   }
 
-  // Same join as event-breakouts.component.ts's own flatten(): trainingSessions
-  // holds agenda-item ids, matched against this event's agendaItems for
-  // session time, then that agenda item's `course` field matched against
-  // the courses collection for the display name. A session pointing at an
-  // agenda item or course that's since been deleted/renamed is skipped
-  // rather than thrown on.
+  // trainingSessions holds agenda-item ids, matched against this event's
+  // agendaItems for session time and - since the 2026-08 Courses
+  // retirement - the breakout's own `text` for the display name (backfilled
+  // from the old course docs by scripts/flatten-courses-onto-agenda-items.js).
+  // A session pointing at a deleted agenda item is skipped; an item with no
+  // title shows '(unknown breakout)' rather than silently dropping the
+  // student from the report.
   private flattenBreakouts(registrations: EventRegistrationModel[]): BreakoutStudent[] {
     const agendaItems = this.selectedEvent?.agendaItems ?? [];
     const students: BreakoutStudent[] = [];
@@ -330,12 +322,11 @@ export class EventReportComponent implements OnInit {
     registrations.forEach((reg) => {
       (reg.trainingSessions ?? []).forEach((session) => {
         const agendaItem = agendaItems.find((item) => item.id == session);
-        const course = agendaItem ? this.courses.find((c) => c.id == agendaItem.course) : undefined;
-        if (!agendaItem || !course) {
+        if (!agendaItem) {
           return;
         }
         students.push({
-          breakoutName: course.title,
+          breakoutName: agendaItem.text || '(unknown breakout)',
           sessionDate: this.toSafeDate(agendaItem.startDate),
           lastName: reg.lastName ?? '',
           firstName: reg.firstName ?? '',

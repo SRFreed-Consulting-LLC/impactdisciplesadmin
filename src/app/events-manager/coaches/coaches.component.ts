@@ -72,7 +72,12 @@ export class CoachesComponent implements OnInit, OnDestroy {
 
     this.coaches$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
 
-    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+    // EDIT-ONLY since the 2026-08 restructure (user decision): new coaches
+    // are created exclusively from the Summit screen's agenda dialogs
+    // ("+ Add new coach to this event" - coach-quick-create-dialog); this
+    // roster exists to maintain the fuller profile (photo/bio/organization)
+    // afterward, so it deliberately has no New action.
+    this.headerActions = [];
   }
 
   ngOnDestroy(): void {
@@ -83,13 +88,6 @@ export class CoachesComponent implements OnInit, OnDestroy {
   organizationName(item: CoachModel): string {
     const orgId = typeof item.organization === 'string' ? item.organization : item.organization?.id;
     return this.organizations.find((o) => o.id === orgId)?.name ?? '';
-  }
-
-  showAddModal(): void {
-    if (!this.permissionService.canAdd(this.screenKey)) {
-      return;
-    }
-    this.dialog.open(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
   }
 
   showEditModal(item: CoachModel): void {

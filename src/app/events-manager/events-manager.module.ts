@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CoursesComponent } from './courses/courses.component';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { CoachesComponent } from './coaches/coaches.component';
 import { CoachDialogComponent } from './coaches/coach-dialog.component';
@@ -12,6 +11,7 @@ import { EventEmailDialogComponent } from './events/event-attendees/event-email-
 import { EventAgendaComponent } from './events/event-agenda/event-agenda.component';
 import { AgendaItemDialogComponent } from './events/event-agenda/agenda-item-dialog.component';
 import { BreakoutBlockDialogComponent } from './events/event-agenda/breakout-block-dialog.component';
+import { CoachQuickCreateDialogComponent } from './events/event-agenda/coach-quick-create-dialog.component';
 import { AgendaWizardComponent } from './events/event-agenda/agenda-wizard/agenda-wizard.component';
 import { AgendaCanvasComponent } from './events/event-agenda/agenda-canvas/agenda-canvas.component';
 import { AgendaGridComponent } from './events/event-agenda/agenda-grid/agenda-grid.component';
@@ -31,7 +31,6 @@ import { EventApplicationComponent } from './events/event-application/event-appl
 // the Web Manager migration, reused throughout Store Manager).
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { EventsManagerRoutingModule } from './events-manager-routing.module';
-import { CourseDialogComponent } from './courses/course-dialog.component';
 import { RoomDialogComponent } from './events/room/room-dialog.component';
 import { AnnouncementDialogComponent } from './events/event-application/announcements/announcement-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -54,13 +53,12 @@ import { QuillModule } from 'ngx-quill';
     declarations: [
       EventsManagerComponent,
       EventsComponent,
-      CoursesComponent,
-      CourseDialogComponent,
       CoachesComponent,
       CoachDialogComponent,
       EventAgendaComponent,
       AgendaItemDialogComponent,
       BreakoutBlockDialogComponent,
+      CoachQuickCreateDialogComponent,
       AgendaWizardComponent,
       AgendaCanvasComponent,
       AgendaGridComponent,
