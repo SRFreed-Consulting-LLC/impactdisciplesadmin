@@ -21,11 +21,23 @@
               <mat-button-toggle [value]="4">H4</mat-button-toggle>
             </mat-button-toggle-group>
           </div>
+          <ng-container *ngTemplateOutlet="fontSelect; context: { $implicit: block }"></ng-container>
           <p class="hint">Click the heading on the canvas to edit its text in place.</p>
         }
         @case ('text') {
-          <p class="hint">Click the text on the canvas to edit it in place. Use the Merge tag
-            button that appears while editing to personalize.</p>
+          <ng-container *ngTemplateOutlet="fontSelect; context: { $implicit: block }"></ng-container>
+          <p class="hint">Click the text on the canvas to edit it in place - the floating toolbar
+            has size, color, highlight, alignment, and the Merge tag menu.</p>
+        }
+        @case ('html') {
+          <div class="field-row">
+            <span class="field-label">HTML</span>
+            <textarea class="text-input code-input" rows="10" spellcheck="false"
+                      [value]="$any(block).props.html"
+                      (change)="commitBlockChange(setHtmlContent(block, $any($event.target).value))"></textarea>
+          </div>
+          <p class="hint">Raw markup, inserted into the email as-is (scripts are stripped). You are
+            responsible for making it email-client-safe - prefer tables and inline styles.</p>
         }
         @case ('image') {
           <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
@@ -217,6 +229,22 @@
             right unsubscribe URL per recipient at send time.</p>
         }
       }
+      <div class="field-row visibility-row">
+        <span class="field-label">Visibility</span>
+        <mat-slide-toggle [checked]="!!block.hideOnMobile"
+            (change)="commitBlockChange(setHideOn(block, 'hideOnMobile', $event.checked))">
+          Hide on mobile
+        </mat-slide-toggle>
+        <mat-slide-toggle [checked]="!!block.hideOnDesktop"
+            (change)="commitBlockChange(setHideOn(block, 'hideOnDesktop', $event.checked))">
+          Hide on desktop
+        </mat-slide-toggle>
+        @if (block.hidden) {
+          <p class="hint subtle">This block is fully hidden (excluded from sends) - use the eye on
+            its hover toolbar to show it again.</p>
+        }
+      </div>
+
       <app-block-style-editor [target]="block"></app-block-style-editor>
     } @else if (selectedSection; as section) {
       <div class="field-row">
@@ -228,8 +256,34 @@
         </button>
       </div>
     } @else if (selectedRow; as row) {
-      <p class="hint">Drag the row by its handle to reorder it, or delete it from its hover
-        toolbar. Styles below apply to the whole row.</p>
+      <div class="field-row">
+        <span class="field-label">Columns</span>
+        <mat-button-toggle-group hideSingleSelectionIndicator [value]="row.columns.length"
+            (change)="changeColumnCount(row, $event.value)">
+          <mat-button-toggle [value]="1">1</mat-button-toggle>
+          <mat-button-toggle [value]="2">2</mat-button-toggle>
+          <mat-button-toggle [value]="3">3</mat-button-toggle>
+          <mat-button-toggle [value]="4">4</mat-button-toggle>
+        </mat-button-toggle-group>
+        <p class="hint">Reducing the count keeps the removed columns' blocks - they move into the
+          last remaining column.</p>
+      </div>
+      @if (ratioPresetsFor(row.columns.length).length > 1) {
+        <div class="field-row">
+          <span class="field-label">Column ratio</span>
+          <select class="text-input" [value]="currentRatioLabel(row)"
+                  (change)="changeRatio(row, $any($event.target).value)" aria-label="Column ratio">
+            @if (currentRatioLabel(row) === 'Custom') {
+              <option value="Custom">Custom</option>
+            }
+            @for (preset of ratioPresetsFor(row.columns.length); track preset.label) {
+              <option [value]="preset.label">{{ preset.label }}</option>
+            }
+          </select>
+        </div>
+      }
+      <p class="hint">Drag the row by its handle to reorder it; duplicate or delete it from its
+        hover toolbar. Styles below apply to the whole row.</p>
       <app-block-style-editor [target]="row"></app-block-style-editor>
     }
   </div>
@@ -271,6 +325,20 @@
     </div>
   }
 }
+
+<ng-template #fontSelect let-block>
+  <div class="field-row">
+    <span class="field-label">Font</span>
+    <select class="text-input" [value]="blockFont(block)"
+            (change)="commitBlockChange(setBlockFont(block, $any($event.target).value))"
+            aria-label="Block font family">
+      <option value="">Email default</option>
+      @for (family of fontFamilies; track family) {
+        <option [value]="family">{{ fontLabel(family) }}</option>
+      }
+    </select>
+  </div>
+</ng-template>
 
 <ng-template #imageSettings let-block>
   <div class="field-row">

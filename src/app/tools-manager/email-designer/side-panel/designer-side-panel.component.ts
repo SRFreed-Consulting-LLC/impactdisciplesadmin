@@ -5,19 +5,24 @@ import {
   BlockType,
   ButtonBlock,
   DividerBlock,
+  EMAIL_FONT_FAMILIES,
   EmailBlock,
   EmailRow,
   EmailSection,
   FooterBlock,
   HeadingBlock,
+  HtmlBlock,
   ImageBlock,
   ImageProps,
   LogoBlock,
   SocialBlock,
   SocialNetwork,
   SpacerBlock,
-  VideoBlock
+  TextBlock,
+  VideoBlock,
+  newDesignId
 } from 'src/app/common/models/admin/email-design.model';
+import DOMPurify from 'dompurify';
 import { parseVideoUrl, vimeoOembedUrl } from '../video-url.util';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { BLOCK_PALETTE_ID, LAYOUT_PALETTE_ID, LAYOUT_PRESETS, LayoutPreset } from '../block-drop.util';
@@ -55,7 +60,8 @@ export class DesignerSidePanelComponent {
     { type: 'spacer', label: 'Spacer', icon: 'height' },
     { type: 'video', label: 'Video', icon: 'play_circle' },
     { type: 'social', label: 'Social', icon: 'share' },
-    { type: 'footer', label: 'Footer', icon: 'call_to_action' }
+    { type: 'footer', label: 'Footer', icon: 'call_to_action' },
+    { type: 'html', label: 'HTML', icon: 'code' }
   ];
 
   // Palette drag data: handleBlockDrop reads the dragged TYPE out of this
@@ -192,6 +198,12 @@ export class DesignerSidePanelComponent {
   setSectionBackground(section: EmailSection, color: string | null): () => void {
     return () => {
       section.backgroundColor = color;
+    };
+  }
+
+  setHideOn(block: EmailBlock, key: 'hideOnMobile' | 'hideOnDesktop', value: boolean): () => void {
+    return () => {
+      block[key] = value;
     };
   }
 
@@ -376,6 +388,99 @@ export class DesignerSidePanelComponent {
 
   private escapeText(value: string): string {
     return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ------------------------------------------------------------ fonts
+
+  readonly fontFamilies = EMAIL_FONT_FAMILIES;
+
+  fontLabel(family: string): string {
+    return family.split(',')[0];
+  }
+
+  setBlockFont(block: EmailBlock, family: string): () => void {
+    return () => {
+      (block as TextBlock | HeadingBlock).props.fontFamily = family || null;
+    };
+  }
+
+  blockFont(block: EmailBlock): string {
+    return (block as TextBlock | HeadingBlock).props.fontFamily ?? '';
+  }
+
+  // ------------------------------------------------------------ html block
+
+  // Sanitized here, at edit time (scripts/event handlers stripped, layout
+  // markup kept) - the compiler then passes the stored markup through
+  // untouched.
+  setHtmlContent(block: EmailBlock, html: string): () => void {
+    return () => {
+      (block as HtmlBlock).props.html = DOMPurify.sanitize(html ?? '');
+    };
+  }
+
+  // ------------------------------------------------------------ row columns
+
+  // Change a placed row's column count/ratio (P1 gap-closure). Reducing the
+  // count moves the orphaned columns' blocks into the last surviving
+  // column; increasing appends empty columns.
+  setRowColumns(row: EmailRow, widths: number[]): void {
+    this.state.commit(() => {
+      const keep = row.columns.slice(0, widths.length);
+      const dropped = row.columns.slice(widths.length);
+      const lastKept = keep[keep.length - 1];
+      for (const column of dropped) {
+        lastKept.blocks.push(...column.blocks);
+      }
+      while (keep.length < widths.length) {
+        keep.push({ id: newDesignId(), widthPercent: 0, blocks: [] });
+      }
+      keep.forEach((column, index) => (column.widthPercent = widths[index]));
+      row.columns = keep;
+    });
+  }
+
+  readonly columnRatioPresets: Record<number, { label: string; widths: number[] }[]> = {
+    1: [{ label: 'Full', widths: [100] }],
+    2: [
+      { label: '50 / 50', widths: [50, 50] },
+      { label: '33 / 67', widths: [33.34, 66.66] },
+      { label: '67 / 33', widths: [66.66, 33.34] },
+      { label: '25 / 75', widths: [25, 75] },
+      { label: '75 / 25', widths: [75, 25] }
+    ],
+    3: [
+      { label: 'Equal', widths: [33.33, 33.34, 33.33] },
+      { label: '25 / 50 / 25', widths: [25, 50, 25] }
+    ],
+    4: [{ label: 'Equal', widths: [25, 25, 25, 25] }]
+  };
+
+  ratioPresetsFor(count: number): { label: string; widths: number[] }[] {
+    return this.columnRatioPresets[count] ?? [];
+  }
+
+  currentRatioLabel(row: EmailRow): string {
+    const presets = this.ratioPresetsFor(row.columns.length);
+    const current = row.columns.map((column) => Math.round(column.widthPercent));
+    const match = presets.find((preset) =>
+      preset.widths.every((width, index) => Math.abs(Math.round(width) - (current[index] ?? -1)) <= 1)
+    );
+    return match?.label ?? 'Custom';
+  }
+
+  changeColumnCount(row: EmailRow, count: number): void {
+    const preset = this.ratioPresetsFor(count)[0];
+    if (preset && row.columns.length !== count) {
+      this.setRowColumns(row, preset.widths);
+    }
+  }
+
+  changeRatio(row: EmailRow, label: string): void {
+    const preset = this.ratioPresetsFor(row.columns.length).find((candidate) => candidate.label === label);
+    if (preset) {
+      this.setRowColumns(row, preset.widths);
+    }
   }
 
   asHeading(block: EmailBlock): HeadingBlock {

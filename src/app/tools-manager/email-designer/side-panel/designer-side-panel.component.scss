@@ -150,6 +150,20 @@ textarea.text-input {
   font-family: inherit;
 }
 
+textarea.code-input {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.visibility-row {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #eef1f4;
+  padding-top: 12px;
+}
+
 .social-row {
   border: 1px solid #eef1f4;
   border-radius: 8px;

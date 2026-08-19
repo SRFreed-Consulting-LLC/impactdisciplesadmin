@@ -21,7 +21,11 @@ import { StatusBoardComponent } from './status-board/status-board.component';
 import { TemplateGalleryComponent } from './composer/template-gallery.component';
 import { CampaignComposerComponent } from './composer/campaign-composer.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
+import { SentEmailsComponent } from './sent-emails/sent-emails.component';
+import { SentEmailPreviewDialogComponent } from './sent-emails/sent-email-preview-dialog.component';
+import { MailchimpSettingsComponent } from './mailchimp-settings/mailchimp-settings.component';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @NgModule({
   declarations: [
@@ -30,7 +34,10 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
     StatusBoardComponent,
     TemplateGalleryComponent,
     CampaignComposerComponent,
-    TagRulesComponent
+    TagRulesComponent,
+    SentEmailsComponent,
+    SentEmailPreviewDialogComponent,
+    MailchimpSettingsComponent
   ],
   imports: [
     CommonModule,
@@ -50,7 +57,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
     MatToolbarModule,
     MatTooltipModule,
     MatDialogModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    MatProgressSpinnerModule
   ]
 })
 export class CampaignsManagerModule { }

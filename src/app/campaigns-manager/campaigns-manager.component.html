@@ -5,7 +5,13 @@
   @if (selectedTab === 'Status Board') {
     <app-status-board></app-status-board>
   }
+  @if (selectedTab === 'Sent Emails') {
+    <app-sent-emails></app-sent-emails>
+  }
   @if (selectedTab === 'Tag Rules') {
     <app-tag-rules></app-tag-rules>
+  }
+  @if (selectedTab === 'Mailchimp') {
+    <app-mailchimp-settings></app-mailchimp-settings>
   }
 </div>

@@ -1,26 +1,103 @@
 <h2 mat-dialog-title>Start Your Email</h2>
 
-<mat-dialog-content>
+<mat-dialog-content class="gallery-content">
   <p class="picker-label">STARTERS</p>
-  <div class="tile-grid">
-    @for (starter of starters; track starter.id) {
-      <button class="tile" (click)="pickStarter(starter)">
-        <span class="tile-name">{{ starter.name }}</span>
-        <span class="tile-desc">{{ starter.description }}</span>
-      </button>
+  <div class="card-grid">
+    @for (card of starterCards; track card.key) {
+      <div class="tcard">
+        <div class="tcard__preview">
+          <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
+                  [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
+          <div class="tcard__hover">
+            <button mat-flat-button color="primary" (click)="useCard(card)">Use</button>
+          </div>
+        </div>
+        <div class="tcard__meta">
+          <span class="tcard__name">{{ card.name }}</span>
+          @if (card.description) {
+            <span class="tcard__sub">{{ card.description }}</span>
+          }
+        </div>
+      </div>
     }
   </div>
 
-  @if (savedTemplates.length > 0) {
-    <p class="picker-label">YOUR EMAIL DESIGNS</p>
-    <div class="tile-grid">
-      @for (template of savedTemplates; track template.id) {
-        <button class="tile" (click)="pickSaved(template)">
-          <span class="tile-name">{{ template.name }}</span>
-          <span class="tile-desc">{{ template.subject || 'Start from a copy of this design' }}</span>
-        </button>
+  <p class="picker-label">YOUR TEMPLATES</p>
+  @if (loadingSaved) {
+    <div class="gallery-loading"><mat-spinner diameter="30"></mat-spinner></div>
+  } @else if (savedCards.length === 0) {
+    <p class="gallery-empty">No saved templates yet - any email design you save appears here.</p>
+  } @else {
+    <div class="card-grid">
+      @for (card of savedCards; track card.key) {
+        <div class="tcard">
+          <div class="tcard__preview">
+            <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
+                    [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
+            <div class="tcard__hover">
+              <button mat-flat-button color="primary" (click)="useCard(card)">Use</button>
+              <button mat-stroked-button class="tcard__edit" (click)="editCard(card)">Edit</button>
+            </div>
+          </div>
+          <div class="tcard__meta">
+            <span class="tcard__name">{{ card.name }}</span>
+            @if (card.subject) {
+              <span class="tcard__sub">{{ card.subject }}</span>
+            }
+          </div>
+        </div>
       }
     </div>
+  }
+
+  <button type="button" class="past-toggle" (click)="togglePast()">
+    <mat-icon>{{ pastExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+    <span class="picker-label past-toggle__label">PAST EMAILS</span>
+    <span class="past-toggle__hint">Every email already sent (imported history included) - start a copy from any of them</span>
+  </button>
+
+  @if (pastExpanded) {
+    <div class="past-filter">
+      <mat-form-field appearance="outline" class="past-filter__field" subscriptSizing="dynamic">
+        <mat-label>Filter loaded emails</mat-label>
+        <input matInput [(ngModel)]="pastFilter" placeholder="Name or subject">
+      </mat-form-field>
+      <span class="past-filter__hint">Searches what's loaded - use Load More to pull older emails in.</span>
+    </div>
+
+    @if (filteredPastCards.length === 0 && !loadingPast) {
+      <p class="gallery-empty">No sent emails found.</p>
+    } @else {
+      <div class="card-grid">
+        @for (card of filteredPastCards; track card.key) {
+          <div class="tcard">
+            <div class="tcard__preview">
+              @if (card.srcdoc) {
+                <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
+                        [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
+              } @else {
+                <div class="tcard__loading"><mat-spinner diameter="26"></mat-spinner></div>
+              }
+              <div class="tcard__hover">
+                <button mat-flat-button color="primary" [disabled]="!card.html" (click)="usePastCard(card)">Use</button>
+              </div>
+            </div>
+            <div class="tcard__meta">
+              <span class="tcard__name">{{ card.name }}</span>
+              <span class="tcard__sub">{{ [card.subject, card.sentLabel].join(' · ') }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (loadingPast) {
+      <div class="gallery-loading"><mat-spinner diameter="30"></mat-spinner></div>
+    } @else if (pastHasMore) {
+      <div class="past-more">
+        <button mat-stroked-button (click)="loadMorePast()">Load More</button>
+      </div>
+    }
   }
 </mat-dialog-content>
 

@@ -26,29 +26,120 @@
     outline-offset: -2px;
   }
 
-  &:hover > .section-tag,
-  &.selected > .section-tag {
+  &:hover > .section-chrome,
+  &.selected > .section-chrome {
     opacity: 1;
+    pointer-events: auto;
   }
 }
 
-.section-tag {
+// Name tag + management tools, floating at the section's top-left edge.
+.section-chrome {
   position: absolute;
-  left: -76px;
-  top: 8px;
-  z-index: 5;
+  left: 6px;
+  top: -13px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.section-tag {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #6a7280;
-  background: #f4f6f8;
-  border: 1px solid #dfe3e8;
+  color: #ffffff;
+  background: #6a7280;
   border-radius: 999px;
-  padding: 2px 9px;
-  opacity: 0;
-  transition: opacity 0.12s ease;
+  padding: 3px 10px;
   cursor: pointer;
   user-select: none;
+}
+
+.section-rename {
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid #0e6e6e;
+  border-radius: 999px;
+  padding: 2px 10px;
+  width: 130px;
+  background: #ffffff;
+  color: #22282f;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.section-tools {
+  display: flex;
+  gap: 1px;
+  background: #6a7280;
+  border-radius: 7px;
+  padding: 1px 2px;
+}
+
+.section-tool {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 5px;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.add-section-row {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 4px;
+}
+
+.add-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px dashed #9ec4c1;
+  background: transparent;
+  color: #0e6e6e;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(14, 110, 110, 0.08);
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .section-rows {

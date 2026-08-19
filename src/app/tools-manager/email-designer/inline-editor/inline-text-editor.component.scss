@@ -73,4 +73,18 @@
     line-height: inherit;
     overflow-y: visible;
   }
+
+  // Quill only ships picker labels for its default small/large/huge size
+  // set - our px whitelist would render as blank menu entries without
+  // explicit labels.
+  .ql-size .ql-picker-label::before,
+  .ql-size .ql-picker-item::before {
+    content: 'Size';
+  }
+  @each $px in 12, 14, 16, 18, 20, 24, 28, 32 {
+    .ql-size .ql-picker-label[data-value='#{$px}px']::before,
+    .ql-size .ql-picker-item[data-value='#{$px}px']::before {
+      content: '#{$px}';
+    }
+  }
 }

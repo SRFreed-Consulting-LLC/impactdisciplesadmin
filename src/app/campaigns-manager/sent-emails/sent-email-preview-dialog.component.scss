@@ -1,0 +1,54 @@
+// Mirrors the designer's preview-dialog.component.scss (same visual
+// treatment for "look at an email in a frame").
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e5ea;
+  background: #ffffff;
+  color: #22282f;
+}
+
+.preview-title {
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.preview-subject {
+  color: #6a7280;
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #e9ecef;
+  display: flex;
+  justify-content: center;
+  padding: 20px 12px;
+}
+
+.preview-frame {
+  border: none;
+  background: #ffffff;
+  height: 100%;
+  min-height: 600px;
+  max-width: 100%;
+  box-shadow: 0 4px 22px rgba(15, 23, 32, 0.12);
+  transition: width 0.18s ease;
+}

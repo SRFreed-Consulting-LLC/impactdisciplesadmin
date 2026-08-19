@@ -23,7 +23,7 @@ export class MailchimpSettingsComponent implements OnInit {
 
   itemType = 'Mailchimp Settings';
 
-  private readonly screenKey = 'tools-manager.mailchimp';
+  private readonly screenKey = 'campaigns-manager.mailchimp';
 
   private selectedItem: MailchimpConfigModel;
 

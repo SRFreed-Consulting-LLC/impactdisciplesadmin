@@ -14,7 +14,17 @@ import { toMillis } from '../../utils/date-from-timestamp';
 // is effectively live. Distinct from the newsletter/prayer blasts and
 // their no-audience-narrowing rule - this is a new send type, not a
 // narrowing of those.
-export type CampaignType = 'product' | 'event' | 'lead-capture' | 'auto';
+// 'email' (2026-08-18): a one-shot sent email - the ONLY kind of campaign
+// Mailchimp has, so the whole imported archive (see
+// scripts/import-mailchimp-campaigns.js) lands as this type, and future
+// in-app one-time sends can share it. The email body html lives in the
+// separate `campaign_emails` collection (same doc id), NOT here - 477
+// imported docs x ~25KB of html would bloat every list page.
+export type CampaignType = 'product' | 'event' | 'lead-capture' | 'auto' | 'email';
+
+// The types the working screens (Campaigns list, Status Board) show -
+// everything except 'email' history, which has its own Sent Emails screen.
+export const ACTIVE_CAMPAIGN_TYPES: CampaignType[] = ['product', 'event', 'lead-capture', 'auto'];
 
 // `status` is what's STORED; display always goes through effectiveStatus()
 // below, which auto-promotes scheduled->live and live->ended as the dates
@@ -33,6 +43,12 @@ export interface CampaignStats {
   redemptions: number;
   registrations: number;
   revenue: number;
+  // Email-campaign engagement (imported from Mailchimp's report_summary;
+  // recipient_count lands in emailsSent, clicks in linkClicks). Optional -
+  // absent on the goal-campaign types. Rates are derived at display time
+  // (uniqueOpens / emailsSent), never stored.
+  opens?: number;
+  uniqueOpens?: number;
 }
 
 export const emptyCampaignStats = (): CampaignStats => ({
@@ -84,8 +100,17 @@ export class CampaignModel extends BaseModel {
   couponId?: string | null;
 
   // Which gallery recipe this started from - informational only (shown as
-  // "Started from X" in the Composer), never a live link back.
+  // "Started from X" in the Composer), never a live link back. Imported
+  // 'email' campaigns reuse it for the Mailchimp template name they were
+  // built from.
   templateName?: string | null;
+
+  // -- 'email' campaigns imported from Mailchimp --
+  // Where this record came from; null/absent = created in this app.
+  source?: 'mailchimp' | null;
+  // Mailchimp's own campaign id (doc id is `mc_<this>` - deterministic so
+  // the import script is idempotent).
+  mailchimpCampaignId?: string | null;
 
   stats: CampaignStats = emptyCampaignStats();
 }
@@ -113,5 +138,6 @@ export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
   'product': 'PRODUCT',
   'event': 'EVENT',
   'lead-capture': 'LEAD',
-  'auto': 'AUTO'
+  'auto': 'AUTO',
+  'email': 'EMAIL'
 };

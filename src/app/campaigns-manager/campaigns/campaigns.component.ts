@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { CAMPAIGN_TYPE_LABELS, CampaignModel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { ACTIVE_CAMPAIGN_TYPES, CAMPAIGN_TYPE_LABELS, CampaignModel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { CampaignTemplate } from 'src/app/common/models/domain/campaign-template.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
@@ -76,8 +77,12 @@ export class CampaignsComponent implements OnInit {
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
   ) {
+    // Working campaigns only - the imported 'email' history (477 docs) has
+    // its own Sent Emails screen and must not drown this list. Composite
+    // index (type, name) backs the filter+orderBy pair.
     this.paged = new PagedCollectionSource<CampaignModel>(
-      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'name', 'asc'),
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'name', 'asc',
+        [new QueryParam('type', WhereFilterOperandKeys.in, ACTIVE_CAMPAIGN_TYPES)]),
       50
     );
   }

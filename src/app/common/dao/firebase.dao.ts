@@ -61,15 +61,22 @@ export class FirebaseDAO<T extends BaseModel> {
   // collections (e.g. Products, Customers, Log Messages) instead of streamAll()'s
   // "subscribe to the entire collection forever" - see PagedCollectionSource for
   // the client-side accumulator this is meant to be driven by.
+  // `filters` (optional) prepends where() constraints to the page query -
+  // e.g. a screen paging only one type's rows out of a shared collection
+  // (Sent Emails over campaigns type=='email'). Any filter field other than
+  // orderByField needs a composite index on (filterField, orderByField) -
+  // add it to firestore.indexes.json, don't discover it in prod.
   public async getPage(
     table: string,
     pageSize: number,
     cursor: QueryDocumentSnapshot<DocumentData> | null,
     orderByField: string,
     orderDirection: OrderByDirection = 'asc',
+    filters?: QueryParam[],
     fromFirestore?
   ): Promise<PagedResult<T>> {
-    const constraints: QueryConstraint[] = [orderBy(orderByField, orderDirection)];
+    const constraints: QueryConstraint[] = (filters ?? []).map((f) => where(f.field, f.operation, f.value));
+    constraints.push(orderBy(orderByField, orderDirection));
     if (cursor) constraints.push(startAfter(cursor));
     constraints.push(limit(pageSize));
 

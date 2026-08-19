@@ -202,7 +202,9 @@ screens (Consultation Requests/Surveys, Lunch and Learn, Seminar) were removed o
 by the generic Form Builder (`tools-manager`) + Custom Form Submissions pair. `customers-manager`
 also owns Purchases/Fulfillment, not `store-manager` — `store-manager` today is Products, Coupons,
 Sales, affiliate-sales/affiliate-payments, product-categories, product-series. `tools-manager` holds
-Web Config, Email Templates, Shipping Labels, Form Builder, and Mailchimp Settings. `reports-manager`
+Web Config, Email Templates, Shipping Labels, and Form Builder; Mailchimp Settings moved to
+`campaigns-manager` 2026-08-18 (it's campaign-audience infrastructure — see the Email taxonomy
+note below). `reports-manager`
 is new — see below. `events-manager` exposes two separate nav screens, **Summit** and **Events** —
 both render the same `EventsComponent`, just with `[summitMode]` true/false: Summit is `isSummit`
 events only with the full tab set (Info/Application/Agenda/Attendees), Events is regular events with
@@ -380,8 +382,44 @@ Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
 - **Mailchimp sync**: `mailchimp-sync.functions.ts` (`@mailchimp/mailchimp_marketing`) plus
   `src/app/common/models/utils/mailchimp-config.model.ts`,
   `src/app/common/services/data/mailchimp-config.service.ts`, and the
-  `tools-manager/mailchimp-settings/` screen — pushes customer changes to a connected Mailchimp
-  audience.
+  `campaigns-manager/mailchimp-settings/` screen (moved from `tools-manager` 2026-08-18) — pushes
+  customer changes to a connected Mailchimp audience.
+
+### Email taxonomy (agreed vocabulary, 2026-08-18)
+
+Every email in the system is one of two kinds, sorted by who presses send:
+
+- **Transactional** — sent automatically by the platform because a customer did something: sales
+  receipts, per-product follow-up emails, event-registration confirmations, reader receipts,
+  password resets. All functions-side (`transactional-emails.ts`, `event-registration.functions.ts`).
+  Admins edit their *content* (several render from `mail_templates` docs — the sales receipt is
+  looked up **by the literal name "Sales Receipt"**, product follow-ups by doc id via
+  `Product.followUpEmailId` — so renaming/deleting those templates silently breaks the emails; a
+  known, accepted risk for now, deliberately left unguarded per the user 2026-08-18), but never
+  choose their audience or timing.
+- **Campaigns** — admin-initiated outreach to contacts: the Campaigns Manager group (one-time and
+  automated campaigns, tag rules, Mailchimp audience sync) plus the contextual sends that stay
+  where their context is (newsletter/prayer blasts on the Subscribers report, attendee emails on an
+  event's Attendees tab). All share the `mail_templates` catalogue + merge-tag engine.
+
+The old web-form→admin notification emails (Lunch and Learn etc.) are a dead category — form
+submissions today only feed the bell-badge counters (`new-record-alerts.functions.ts`) and the Form
+Submissions screen; the only surviving form-related email is the admin-initiated Route Request
+forward. Use this vocabulary in UI copy and code comments rather than inventing new terms.
+
+**Templates vs. history** (2026-08-18): `mail_templates` holds only true, reusable TEMPLATES.
+Historical *sent* emails are campaigns — `CampaignType 'email'` docs in `campaigns` (subject,
+send date, opens/clicks stats) paired with the rendered body in `campaign_emails` (same doc id;
+kept separate so ~25KB of html per email never rides on list pages). The entire Mailchimp campaign
+archive (477 sent campaigns, 2020–2026) was imported this way via
+`scripts/import-mailchimp-campaigns.js` (idempotent — doc ids are `mc_<mailchimpCampaignId>`;
+Mailchimp campaigns are email sends only, so the one type covers everything), which also removed
+the 15 `mail_templates` docs that were really sent-campaign history. Surfaces: Campaigns Manager >
+**Sent Emails** (paged read-only list, preview dialog, "open in designer" via the designer's
+`?fromEmail=<id>` seed) and the designer picker's collapsed **Past Emails** section (paged cards,
+Use-only). The working Campaigns list and Status Board query `ACTIVE_CAMPAIGN_TYPES` only —
+composite indexes `campaigns(type, name)` / `campaigns(type, startDate)` back the split. A future
+in-app one-time send should write the same campaign + campaign_emails pair to appear in history.
 
 ### Firestore collection naming note
 

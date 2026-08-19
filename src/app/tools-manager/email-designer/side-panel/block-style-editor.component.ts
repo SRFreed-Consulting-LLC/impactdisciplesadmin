@@ -3,6 +3,8 @@ import {
   BlockAlign,
   BlockStyles,
   BorderStyle,
+  BoxSides,
+  ZERO_SIDES,
   createDefaultBlockStyles
 } from 'src/app/common/models/admin/email-design.model';
 import { DesignerStateService } from '../designer-state.service';
@@ -106,6 +108,17 @@ export class BlockStyleEditorComponent {
     const px = Math.max(0, Number(value) || 0);
     this.write((styles) => {
       styles.padding = { ...styles.padding, [side]: px };
+    });
+  }
+
+  get editedMargin(): BoxSides {
+    return this.edited.margin ?? ZERO_SIDES;
+  }
+
+  setMargin(side: 'top' | 'right' | 'bottom' | 'left', value: string | number): void {
+    const px = Math.max(0, Number(value) || 0);
+    this.write((styles) => {
+      styles.margin = { ...(styles.margin ?? ZERO_SIDES), [side]: px };
     });
   }
 

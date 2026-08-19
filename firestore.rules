@@ -367,6 +367,14 @@ service cloud.firestore {
     match /campaigns/{id} {
       allow read, write: if isBusinessStaff();
     }
+    // The email body behind a type-'email' campaign (Sent Emails history) -
+    // same doc id as the campaign doc. Imported by the Admin SDK
+    // (scripts/import-mailchimp-campaigns.js); staff read for preview/
+    // start-from, staff write so future in-app one-time sends can record
+    // their own history the same way.
+    match /campaign_emails/{id} {
+      allow read, write: if isBusinessStaff();
+    }
     // Customer tag rules (Campaigns Manager > Tag Rules) - staff-authored.
     match /tag_rules/{id} {
       allow read, write: if isBusinessStaff();

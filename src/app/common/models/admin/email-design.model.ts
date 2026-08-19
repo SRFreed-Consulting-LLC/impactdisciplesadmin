@@ -22,7 +22,8 @@ export type BlockType =
   | 'spacer'
   | 'video'
   | 'social'
-  | 'footer';
+  | 'footer'
+  | 'html';
 
 export type BorderStyle =
   | 'solid'
@@ -59,11 +60,31 @@ export interface BlockBorder {
 // The per-block/per-row style kit - mirrors Mailchimp's block Style panel.
 export interface BlockStyles {
   padding: BoxSides;
+  // Spacing OUTSIDE the background/border (P1 gap-closure, 2026-08-18) -
+  // compiled as transparent padding on an outer wrapper cell, since email
+  // clients don't do real margins reliably. Optional for back-compat with
+  // designs saved before it existed; normalizeDesign() backfills zeros.
+  margin?: BoxSides;
   border: BlockBorder | null; // null = no border
   borderRadius: BoxCorners;
   backgroundColor: string | null; // null = transparent / inherit section
   align: BlockAlign;
 }
+
+export const ZERO_SIDES: BoxSides = { top: 0, right: 0, bottom: 0, left: 0 };
+
+// Shared font menu - the email-wide Styles panel and the per-block font
+// override both offer exactly these email-safe stacks.
+export const EMAIL_FONT_FAMILIES: readonly string[] = [
+  'Helvetica, Arial, sans-serif',
+  'Arial, Helvetica, sans-serif',
+  'Georgia, Times New Roman, serif',
+  'Times New Roman, Georgia, serif',
+  'Verdana, Geneva, sans-serif',
+  'Tahoma, Geneva, sans-serif',
+  'Trebuchet MS, Helvetica, sans-serif',
+  'Courier New, Courier, monospace'
+];
 
 // Email-wide defaults, one set per device. Mailchimp's Styles tab.
 export interface GlobalStyleSet {
@@ -96,15 +117,32 @@ export interface EmailBlockBase {
   // (Mailchimp's "unlink desktop and mobile styles"). {} while linked.
   mobileStyles: Partial<BlockStyles>;
   stylesLinked: boolean;
+  // Visibility (P1 gap-closure): `hidden` grays the block on the canvas
+  // and excludes it from the compiled email entirely (Mailchimp's
+  // slashed-eye); hideOnMobile/hideOnDesktop exclude it per device via
+  // the compiled @media rules. Optional for back-compat; normalizeDesign()
+  // backfills false.
+  hidden?: boolean;
+  hideOnMobile?: boolean;
+  hideOnDesktop?: boolean;
 }
 
 export interface HeadingBlock extends EmailBlockBase {
   type: 'heading';
-  props: { html: string; level: 1 | 2 | 3 | 4 };
+  // fontFamily null = the email-wide heading default (P1: per-block font).
+  props: { html: string; level: 1 | 2 | 3 | 4; fontFamily?: string | null };
 }
 
 export interface TextBlock extends EmailBlockBase {
   type: 'text';
+  // fontFamily null = the email-wide paragraph default.
+  props: { html: string; fontFamily?: string | null };
+}
+
+// Raw-markup escape hatch (P1) - sanitized (scripts stripped) at edit time,
+// passed through by the compiler otherwise untouched.
+export interface HtmlBlock extends EmailBlockBase {
+  type: 'html';
   props: { html: string };
 }
 
@@ -214,7 +252,8 @@ export type EmailBlock =
   | SpacerBlock
   | VideoBlock
   | SocialBlock
-  | FooterBlock;
+  | FooterBlock
+  | HtmlBlock;
 
 // ---------------------------------------------------------------- layout
 
@@ -235,6 +274,10 @@ export interface EmailRow {
 export interface EmailSection {
   id: string;
   kind: SectionKind;
+  // Display name (P1 section management: sections are addable/renamable/
+  // duplicatable now, so "Body" alone stops being descriptive). null =
+  // fall back to the kind label.
+  name?: string | null;
   backgroundColor: string | null; // null = body background
   rows: EmailRow[];
 }
@@ -242,8 +285,13 @@ export interface EmailSection {
 export interface EmailDesign {
   version: number;
   contentWidth: number; // 600
+  // The inbox snippet shown next to the subject (P1) - compiled as a
+  // hidden preheader div at the top of the email body. Null/empty = none.
+  preheader?: string | null;
   globalStyles: { desktop: GlobalStyleSet; mobile: Partial<GlobalStyleSet> };
-  sections: EmailSection[]; // always [header, body, footer]
+  // Starts as [header, body, footer]; sections are addable/removable/
+  // reorderable since P1 (new ones get kind 'body').
+  sections: EmailSection[];
 }
 
 // ---------------------------------------------------------------- factories
@@ -258,11 +306,34 @@ export function newDesignId(): string {
 export function createDefaultBlockStyles(): BlockStyles {
   return {
     padding: { top: 8, right: 24, bottom: 8, left: 24 },
+    margin: { ...ZERO_SIDES },
     border: null,
     borderRadius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 },
     backgroundColor: null,
     align: 'center'
   };
+}
+
+// Backfills fields added after a design was saved (margin, visibility
+// flags, section names, preheader) so the editor and compiler never meet
+// undefined structure. Run on every load; mutates and returns the design.
+export function normalizeDesign(design: EmailDesign): EmailDesign {
+  design.preheader = design.preheader ?? null;
+  for (const section of design.sections ?? []) {
+    section.name = section.name ?? null;
+    for (const row of section.rows ?? []) {
+      row.styles.margin = row.styles.margin ?? { ...ZERO_SIDES };
+      for (const column of row.columns ?? []) {
+        for (const block of column.blocks ?? []) {
+          block.styles.margin = block.styles.margin ?? { ...ZERO_SIDES };
+          block.hidden = block.hidden ?? false;
+          block.hideOnMobile = block.hideOnMobile ?? false;
+          block.hideOnDesktop = block.hideOnDesktop ?? false;
+        }
+      }
+    }
+  }
+  return design;
 }
 
 export function createDefaultGlobalStyles(): GlobalStyleSet {
@@ -308,13 +379,18 @@ export function createBlock(type: BlockType): EmailBlock {
     type,
     styles: createDefaultBlockStyles(),
     mobileStyles: {},
-    stylesLinked: true
+    stylesLinked: true,
+    hidden: false,
+    hideOnMobile: false,
+    hideOnDesktop: false
   };
   switch (type) {
     case 'heading':
-      return { ...base, type, props: { html: 'Add a heading', level: 2 } };
+      return { ...base, type, props: { html: 'Add a heading', level: 2, fontFamily: null } };
     case 'text':
-      return { ...base, type, props: { html: '<p>Add your text here.</p>' } };
+      return { ...base, type, props: { html: '<p>Add your text here.</p>', fontFamily: null } };
+    case 'html':
+      return { ...base, type, props: { html: '<!-- Paste your HTML here -->' } };
     case 'image':
       return { ...base, type, props: { ...DEFAULT_IMAGE_PROPS } };
     case 'logo':
@@ -394,9 +470,24 @@ export function createRow(columnCount: number, widths?: number[]): EmailRow {
   };
 }
 
-export function createSection(kind: SectionKind): EmailSection {
-  return { id: newDesignId(), kind, backgroundColor: null, rows: [] };
+export function createSection(kind: SectionKind, name?: string | null): EmailSection {
+  return { id: newDesignId(), kind, name: name ?? null, backgroundColor: null, rows: [] };
 }
+
+// Default hosted icon images for the social block's compiled output, used
+// whenever a network entry has no explicit iconUrl. Uploaded once to the
+// shared Storage bucket (email-assets/social/) - see
+// scripts/upload-social-icons.js. Empty string = no asset yet, compiler
+// falls back to a text link.
+export const DEFAULT_SOCIAL_ICON_URLS: Record<SocialNetwork, string> = {
+  facebook: 'https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/email-assets%2Fsocial%2Ffacebook.png?alt=media&token=61481638-1a95-4a75-b302-8a881fd18b6b',
+  instagram: 'https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/email-assets%2Fsocial%2Finstagram.png?alt=media&token=5766e636-6dd4-407d-bfc9-2be655386c58',
+  x: 'https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/email-assets%2Fsocial%2Fx.png?alt=media&token=b7f2e915-8055-44c8-a10e-95fe07c7306f',
+  youtube: 'https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/email-assets%2Fsocial%2Fyoutube.png?alt=media&token=76af84c1-205f-4f3a-aa55-fe05c6184709',
+  linkedin: 'https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/email-assets%2Fsocial%2Flinkedin.png?alt=media&token=2809e135-94a0-488d-b8cb-6b44419643d2',
+  tiktok: 'https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/email-assets%2Fsocial%2Ftiktok.png?alt=media&token=6e956bb6-0979-40b0-b380-9337de13c310',
+  custom: ''
+};
 
 export function createDefaultDesign(): EmailDesign {
   return {
@@ -420,6 +511,31 @@ export function createDesignFromLegacyHtml(html: string): EmailDesign {
     block.props.html = html ?? '';
   }
   block.styles.align = 'left';
+  row.columns[0].blocks = [block];
+  design.sections[1].rows = [row];
+  return design;
+}
+
+// Imports a FULL email document (a past sent email from `campaign_emails`,
+// e.g. a Mailchimp-rendered campaign) as one full-width HTML block: head
+// <style> blocks + body content are extracted (nesting a second <html>
+// document inside the builder's own skeleton would be invalid) and scripts
+// stripped. Client twin of scripts/import-mailchimp-campaigns.js's
+// designWithHtmlBlock()/extractEmbeddable() - keep them in sync.
+export function createDesignFromFullHtml(fullHtml: string): EmailDesign {
+  const source = fullHtml ?? '';
+  const styles = (source.match(/<style[\s\S]*?<\/style>/gi) ?? []).join('\n');
+  const bodyMatch = source.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const embeddable = (styles + '\n' + (bodyMatch ? bodyMatch[1] : source))
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .trim();
+
+  const design = createDefaultDesign();
+  const row = createRow(1);
+  const block = createBlock('html');
+  if (block.type === 'html') {
+    block.props.html = embeddable;
+  }
   row.columns[0].blocks = [block];
   design.sections[1].rows = [row];
   return design;

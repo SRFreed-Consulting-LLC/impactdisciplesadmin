@@ -7,7 +7,12 @@ import { loginAsAdmin } from './support/auth';
 // than Playwright's dragAndDrop() (which dispatches too few move events for
 // CDK to track reliably).
 async function dragTo(page: Page, source: Locator, target: Locator): Promise<void> {
+  // The palette scrolls - a source below the fold (e.g. the layout tiles,
+  // pushed down when the HTML chip landed) yields viewport-relative coords
+  // outside the window and the drag never starts.
+  await source.scrollIntoViewIfNeeded();
   const from = await source.boundingBox();
+  await target.scrollIntoViewIfNeeded();
   const to = await target.boundingBox();
   if (!from || !to) {
     throw new Error('dragTo: element not visible');
@@ -40,6 +45,14 @@ async function gotoNewDesigner(page: Page): Promise<void> {
   throw new Error('email designer never mounted at /tools-manager/email-designer/new');
 }
 
+// The template catalogue shows cards whose Use/Edit actions live in a
+// hover overlay - hover the card first, then click.
+async function useGalleryCard(page: Page, name: string): Promise<void> {
+  const card = page.locator('.tcard').filter({ hasText: name }).first();
+  await card.hover();
+  await card.getByRole('button', { name: 'Use' }).click();
+}
+
 test.describe('Email designer', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
@@ -49,7 +62,7 @@ test.describe('Email designer', () => {
   });
 
   test('start-from gallery loads a starter onto the canvas', async ({ page }) => {
-    await page.click('.tile:has-text("Simple newsletter")');
+    await useGalleryCard(page, 'Simple newsletter');
     await expect(page.locator('app-block-host').first()).toBeVisible();
     expect(await page.locator('app-block-host').count()).toBeGreaterThanOrEqual(5);
   });
@@ -80,7 +93,7 @@ test.describe('Email designer', () => {
   });
 
   test('preview compiles the design and substitutes sample merge data', async ({ page }) => {
-    await page.click('.tile:has-text("Simple newsletter")');
+    await useGalleryCard(page, 'Simple newsletter');
     // The picker's afterClosed() fires after its close animation - wait for
     // the starter to actually land on the canvas before opening Preview,
     // or the preview compiles the still-blank default design.
@@ -129,6 +142,26 @@ test.describe('Email designer', () => {
     const dialog = page.locator('mat-dialog-container:has-text("Unsaved Changes")');
     await expect(dialog).toBeVisible();
     await dialog.locator('button:has-text("Cancel")').click();
+    await expect(page).toHaveURL(/email-designer\/new/);
+  });
+
+  test('past emails section pages sent history and starts a copy', async ({ page }) => {
+    const templateCards = await page.locator('.tcard').count();
+
+    // Collapsed by default; expanding loads the first page of history cards
+    // (their bodies fetch lazily from campaign_emails).
+    await page.locator('.past-toggle').click();
+    await expect
+      .poll(() => page.locator('.tcard').count(), { timeout: 15000 })
+      .toBeGreaterThan(templateCards);
+
+    // Use on a history card starts a new email from a copy - the full sent
+    // document lands as one HTML block.
+    const pastCard = page.locator('.tcard').nth(templateCards);
+    await pastCard.scrollIntoViewIfNeeded();
+    await pastCard.hover();
+    await pastCard.getByRole('button', { name: 'Use' }).click();
+    await expect(page.locator('.html-view').first()).toBeVisible({ timeout: 15000 });
     await expect(page).toHaveURL(/email-designer\/new/);
   });
 

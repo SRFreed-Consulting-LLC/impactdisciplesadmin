@@ -4,7 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, filter, take } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
-import { createDefaultDesign, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
+import { createDefaultDesign, createDesignFromFullHtml, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
+import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
 import { stripUndefinedDeep } from 'src/app/common/utils/strip-undefined';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
@@ -14,7 +15,7 @@ import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { DesignerStateService } from './designer-state.service';
 import { PreviewDialogComponent } from './preview/preview-dialog.component';
 import { SendTestDialogComponent } from './preview/send-test-dialog.component';
-import { TemplatePickerDialogComponent } from './template-picker/template-picker-dialog.component';
+import { TemplatePickerDialogComponent, TemplatePickerResult } from './template-picker/template-picker-dialog.component';
 
 // Full-screen Mailchimp-style email builder. Reached from Tools Manager >
 // Email Templates ("New Email Design" / editing a builder template) at
@@ -42,6 +43,7 @@ export class EmailDesignerComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private service: EMailTemplatesService,
+    private campaignEmailService: CampaignEmailService,
     private permissionService: PermissionService,
     private authService: AdminAuthService,
     private confirmService: ConfirmService,
@@ -50,24 +52,35 @@ export class EmailDesignerComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    this.templateId = id && id !== 'new' ? id : null;
+    // paramMap SUBSCRIPTION, not a one-shot snapshot: the template gallery's
+    // Edit action navigates /new -> /:id while this component instance stays
+    // mounted (Angular reuses it for same-route param changes), so the load
+    // must re-run on every id change.
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+      const templateId = id && id !== 'new' ? id : null;
+      if (templateId === this.templateId && this.currentUserEmail) {
+        return;
+      }
+      this.templateId = templateId;
+      this.loading$.next(true);
 
-    // On a cold page load (direct URL / refresh) PermissionService's cached
-    // user hasn't arrived yet when ngOnInit runs, and a synchronous
-    // canAdd/canEdit would read as "no permission" and bounce a legitimate
-    // admin. authGuard already vouches for authentication on this route, so
-    // wait for the first real user emission before judging grants (the same
-    // live-source pattern the tab shells use).
-    this.authService.dao.loggedInUser$
-      .pipe(
-        filter((user) => !!user),
-        take(1)
-      )
-      .subscribe((user) => {
-        this.currentUserEmail = user?.email ?? '';
-        this.checkAccessAndLoad();
-      });
+      // On a cold page load (direct URL / refresh) PermissionService's
+      // cached user hasn't arrived yet when this runs, and a synchronous
+      // canAdd/canEdit would read as "no permission" and bounce a
+      // legitimate admin. authGuard already vouches for authentication on
+      // this route, so wait for the first real user emission before judging
+      // grants (the same live-source pattern the tab shells use).
+      this.authService.dao.loggedInUser$
+        .pipe(
+          filter((user) => !!user),
+          take(1)
+        )
+        .subscribe((user) => {
+          this.currentUserEmail = user?.email ?? '';
+          this.checkAccessAndLoad();
+        });
+    });
   }
 
   private checkAccessAndLoad(): void {
@@ -80,16 +93,44 @@ export class EmailDesignerComponent implements OnInit {
     }
 
     if (!this.templateId) {
+      // ?fromEmail=<id>: seed a NEW design from a past sent email's body
+      // (Sent Emails screen's "Open in designer" action; the campaign_emails
+      // doc is never touched). Skips the picker - the user already chose.
+      const fromEmailId = this.route.snapshot.queryParamMap.get('fromEmail');
+      if (fromEmailId) {
+        this.campaignEmailService.getById(fromEmailId).then((email) => {
+          if (!email?.html) {
+            this.snackbar.error('No stored email body for that record.');
+            this.backToList();
+            return;
+          }
+          this.state.load(createDesignFromFullHtml(email.html));
+          this.templateSubject = email.subject ?? '';
+          this.loading$.next(false);
+        });
+        return;
+      }
+
       this.state.load(createDefaultDesign());
       this.loading$.next(false);
-      // "Start from" gallery: starters + copies of existing builder
-      // templates. Cancel keeps the blank default.
+      // The template catalogue: card previews of starters + saved
+      // templates. "Use" starts from a copy, "Edit" jumps to the template
+      // itself, Cancel keeps the blank default.
       this.dialog
-        .open(TemplatePickerDialogComponent, { width: '640px' })
+        .open<TemplatePickerDialogComponent, void, TemplatePickerResult>(
+          TemplatePickerDialogComponent, { width: '980px', maxWidth: '95vw' }
+        )
         .afterClosed()
-        .subscribe((design) => {
-          if (design) {
-            this.state.load(design);
+        .subscribe((result) => {
+          if (result?.kind === 'use') {
+            this.state.load(result.design);
+            if (result.subject && !this.templateSubject) {
+              this.templateSubject = result.subject;
+            }
+          } else if (result?.kind === 'edit') {
+            // Same component instance - the paramMap subscription in
+            // ngOnInit picks this up and loads the template.
+            this.router.navigate(['/tools-manager/email-designer', result.id]);
           }
         });
       return;

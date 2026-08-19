@@ -8,6 +8,12 @@
            placeholder="Email name" aria-label="Email name">
     <input class="subject-input" [(ngModel)]="templateSubject" (ngModelChange)="state.dirty = true"
            placeholder="Subject line" aria-label="Subject line">
+    <!-- The inbox snippet next to the subject - compiled as a hidden
+         preheader div (P1 gap-closure). Lives on the design doc itself. -->
+    <input class="subject-input preheader-input" [(ngModel)]="state.design.preheader"
+           (ngModelChange)="state.dirty = true"
+           placeholder="Preview text" aria-label="Preview text (preheader)"
+           matTooltip="The snippet shown next to the subject in the inbox">
 
     <span class="topbar-divider"></span>
 

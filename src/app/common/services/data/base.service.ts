@@ -35,8 +35,8 @@ export class BaseService<T extends BaseModel> {
   // See FirebaseDAO.getPage()'s comment - one-time paged fetch, not a live
   // subscription, for list screens backed by PagedCollectionSource instead
   // of streamAll().
-  getPage(pageSize: number, cursor: QueryDocumentSnapshot<DocumentData> | null, orderByField: string, orderDirection: OrderByDirection = 'asc'): Promise<PagedResult<T>>{
-    return this.dao.getPage(this.table, pageSize, cursor, orderByField, orderDirection, this.fromFirestore);
+  getPage(pageSize: number, cursor: QueryDocumentSnapshot<DocumentData> | null, orderByField: string, orderDirection: OrderByDirection = 'asc', filters?: QueryParam[]): Promise<PagedResult<T>>{
+    return this.dao.getPage(this.table, pageSize, cursor, orderByField, orderDirection, filters, this.fromFirestore);
   }
 
   // onError - see FirebaseDAO.streamAll()'s own comment.
