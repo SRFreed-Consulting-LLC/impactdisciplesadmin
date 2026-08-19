@@ -12,7 +12,7 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
-import { FULFILLMENT_STEPS, segmentState } from '../../customers-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, segmentState, stepsFor } from '../../customers-manager/fulfillment/fulfillment-steps';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 
 interface DashboardEventRow {
@@ -64,8 +64,6 @@ interface DashboardRequestRow {
     standalone: false
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  steps = FULFILLMENT_STEPS;
-
   recentOrders: CheckoutForm[] = [];
   ordersLoading = true;
   ordersFailed = false;
@@ -140,16 +138,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Path-aware per order (standard vs Amazon branch) - see stepsFor()'s
+  // own comment in fulfillment-steps.ts.
+  stepsFor(item: CheckoutForm): FulfillmentStep[] {
+    return stepsFor(item.fulfillmentStatus, item.statusHistory);
+  }
+
   segmentState(item: CheckoutForm, index: number): 'done' | 'current' | 'pending' {
-    return segmentState(item.fulfillmentStatus, index);
+    return segmentState(this.stepsFor(item), item.fulfillmentStatus, index);
   }
 
   // Tooltip text for the condensed progress bar - the table row no longer
   // has room for the full label strip the old card layout showed under the
-  // bar (see FULFILLMENT_STEPS), so surface the order's current step name
-  // this way instead.
+  // bar, so surface the order's current step name this way instead.
   segmentLabel(item: CheckoutForm): string {
-    return this.steps.find((s) => s.status === item.fulfillmentStatus)?.statusLabel ?? 'Unknown';
+    return this.stepsFor(item).find((s) => s.status === item.fulfillmentStatus)?.statusLabel ?? 'Unknown';
   }
 
   isNew(item: CheckoutForm): boolean {

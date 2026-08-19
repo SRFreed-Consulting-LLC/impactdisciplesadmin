@@ -232,10 +232,20 @@
               <mat-icon>local_shipping</mat-icon>
               Print Shipping Label
             </button>
+            <button mat-stroked-button type="button" matTooltip="Amazon fulfills this order - the remaining step is the customer confirmation email" (click)="markShippedViaAmazon()">
+              <mat-icon>local_mall</mat-icon>
+              Shipped via Amazon
+            </button>
             <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
               Mark as Picked Up / Delivered
             </button>
           </div>
+        }
+        @case ('shipped_via_amazon') {
+          <button mat-raised-button color="primary" type="button" (click)="sendAmazonConfirmation()">
+            <mat-icon>mark_email_read</mat-icon>
+            Send Confirmation Email to Customer
+          </button>
         }
         @case ('shipping_label_printed') {
           <button mat-raised-button color="primary" type="button" (click)="markPackaged()">
@@ -250,11 +260,37 @@
           </button>
         }
       }
+      <!-- Corrective back-step: THIS screen only (not Dashboard/Fulfillment,
+           per the user 2026-08-19). Every move is recorded on the timeline. -->
+      @if (backSteps.length) {
+        <span class="footbar__spacer"></span>
+        <button mat-stroked-button type="button" [matMenuTriggerFor]="backMenu">
+          <mat-icon>undo</mat-icon>
+          Move Back a Step
+        </button>
+        <mat-menu #backMenu="matMenu">
+          @for (step of backSteps; track step.status) {
+            <button mat-menu-item (click)="revertTo(step)">{{ step.statusLabel }}</button>
+          }
+        </mat-menu>
+      }
     </div>
   } @else if (selectedItem.fulfillmentStatus === 'closed') {
     <div class="footbar footbar--done">
       <span class="pill pill--success">Closed</span>
       <span class="footbar__done-note">This order is closed.</span>
+      @if (isVisible(['Admin']) && backSteps.length) {
+        <span class="footbar__spacer"></span>
+        <button mat-stroked-button type="button" [matMenuTriggerFor]="reopenMenu">
+          <mat-icon>undo</mat-icon>
+          Reopen / Move Back
+        </button>
+        <mat-menu #reopenMenu="matMenu">
+          @for (step of backSteps; track step.status) {
+            <button mat-menu-item (click)="revertTo(step)">{{ step.statusLabel }}</button>
+          }
+        </mat-menu>
+      }
     </div>
   }
 

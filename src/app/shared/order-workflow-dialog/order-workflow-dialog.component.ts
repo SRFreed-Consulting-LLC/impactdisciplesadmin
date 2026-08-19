@@ -1,10 +1,11 @@
 import { Component, Inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { FULFILLMENT_STEPS, segmentState } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, segmentState, stepsFor } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
+import { AmazonConfirmationDialogComponent } from '../amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { SnackbarService } from '../snackbar.service';
 
 export interface OrderWorkflowDialogData {
@@ -35,7 +36,6 @@ export interface OrderWorkflowDialogData {
     standalone: false
 })
 export class OrderWorkflowDialogComponent {
-  steps = FULFILLMENT_STEPS;
   item: CheckoutForm;
   printing = false;
 
@@ -45,9 +45,17 @@ export class OrderWorkflowDialogComponent {
     private service: PurchasesService,
     private permissionService: PermissionService,
     private router: Router,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private dialog: MatDialog
   ) {
     this.item = data.item;
+  }
+
+  // Path-aware (standard vs Amazon branch) - recomputed as the status
+  // changes so choosing "Shipped via Amazon" re-renders the bar on its
+  // 4-step path.
+  get steps(): FulfillmentStep[] {
+    return stepsFor(this.item.fulfillmentStatus, this.item.statusHistory);
   }
 
   // Same gate PurchasesComponent.showEditModal() applies - never render a
@@ -64,7 +72,7 @@ export class OrderWorkflowDialogComponent {
   }
 
   segmentState(index: number): 'done' | 'current' | 'pending' {
-    return segmentState(this.item.fulfillmentStatus, index);
+    return segmentState(this.steps, this.item.fulfillmentStatus, index);
   }
 
   refundStateLabel(): 'REFUNDED' | 'PARTIALLY REFUNDED' | null {
@@ -113,6 +121,29 @@ export class OrderWorkflowDialogComponent {
         this.dialogRef.close(true);
       })
       .catch((err) => this.reportTransitionError(err));
+  }
+
+  // The Amazon branch: Amazon does the shipping, so the only remaining
+  // step is the customer confirmation email (which closes the order).
+  markShippedViaAmazon(): void {
+    this.service.markShippedViaAmazon(this.item)
+      .then((saved) => {
+        this.item.fulfillmentStatus = saved.fulfillmentStatus;
+        this.item.statusHistory = saved.statusHistory;
+        this.snackbar.success('Marked as shipped via Amazon');
+      })
+      .catch((err) => this.reportTransitionError(err));
+  }
+
+  sendAmazonConfirmation(): void {
+    this.dialog.open<AmazonConfirmationDialogComponent, { item: CheckoutForm }, CheckoutForm | null>(
+      AmazonConfirmationDialogComponent, { width: '520px', data: { item: this.item } }
+    ).afterClosed().subscribe((saved) => {
+      if (saved) {
+        // Terminal - same close-the-dialog behavior as markShipped().
+        this.dialogRef.close(true);
+      }
+    });
   }
 
   markPackaged(): void {

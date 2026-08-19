@@ -52,6 +52,12 @@ export const MERGE_TAGS: MergeTagDef[] = [
     legacyTokens: ["{{Sender Last Name}}"],
   },
   {
+    tag: "TRACKING",
+    resolverKey: "tracking",
+    defaultValue: "",
+    legacyTokens: ["{{tracking}}"],
+  },
+  {
     tag: "UNSUB",
     resolverKey: "unsubscribeUrl",
     defaultValue: "#",

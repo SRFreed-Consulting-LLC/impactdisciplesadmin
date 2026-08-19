@@ -7,8 +7,17 @@ import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
-import { FULFILLMENT_STEPS } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
+import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
+import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
 import { BaseService } from './base.service';
+import { EMailService } from './email.service';
+import { EMailTemplatesService } from './email-templates.service';
+
+// The mail_templates doc sendAmazonConfirmation() renders - looked up BY
+// NAME, same load-bearing-name convention as the "Sales Receipt" template
+// (see CLAUDE.md's email taxonomy note). Seeded by
+// scripts/seed-amazon-confirmation-template.js; editable in the designer.
+export const AMAZON_CONFIRMATION_TEMPLATE_NAME = 'Amazon Shipping Confirmation';
 
 // refundStorePurchase's response shape (functions/src/store-refund.functions.ts).
 export interface RefundResult {
@@ -28,7 +37,9 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   constructor(
     public override dao: FirebaseDAO<CheckoutForm>,
     private authService: AdminAuthService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private emailService: EMailService,
+    private emailTemplatesService: EMailTemplatesService
   ) {
     super(dao)
     this.table="purchases"
@@ -211,7 +222,8 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   }
 
   getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
-    return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
+    return [...FULFILLMENT_STEPS, ...AMAZON_FULFILLMENT_STEPS]
+      .find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
   calculateOrderRefundedAmount(selectedItem){
@@ -300,5 +312,56 @@ export class PurchasesService extends BaseService<CheckoutForm>{
 
   markShipped(item: CheckoutForm): Promise<CheckoutForm> {
     return this.update(item.id!, { ...item, fulfillmentStatus: 'closed', statusHistory: this.withStatusHistory(item, 'closed') });
+  }
+
+  // The Amazon branch taken from 'received' (2026-08-19): Amazon ships the
+  // order, so there's no label/packaging - the remaining work is telling
+  // the customer.
+  markShippedViaAmazon(item: CheckoutForm): Promise<CheckoutForm> {
+    return this.update(item.id!, { ...item, fulfillmentStatus: 'shipped_via_amazon', statusHistory: this.withStatusHistory(item, 'shipped_via_amazon') });
+  }
+
+  // The Amazon path's final step: render the "Amazon Shipping Confirmation"
+  // template (admin-editable in the designer; found BY NAME - renaming it
+  // breaks this, same convention as "Sales Receipt"), queue the email, and
+  // close the order in the same action. The optional tracking value renders
+  // through the *|TRACKING|...inline fallback...|* merge tag. Throws before
+  // any state change when the template is missing or the purchase has no
+  // email - the order only closes after the email actually queued.
+  async sendAmazonConfirmation(item: CheckoutForm, tracking?: string): Promise<CheckoutForm> {
+    const email = (item.email ?? '').trim();
+    if (!email.includes('@')) {
+      throw new Error('This purchase has no customer email address.');
+    }
+    const templates = await this.emailTemplatesService.getAllByValue('name', AMAZON_CONFIRMATION_TEMPLATE_NAME);
+    if (!templates.length) {
+      throw new Error(`Email template "${AMAZON_CONFIRMATION_TEMPLATE_NAME}" not found - create it under Tools Manager > Email Templates.`);
+    }
+    const trimmedTracking = tracking?.trim() || '';
+    const context = {
+      firstName: item.firstName ?? '',
+      lastName: item.lastName ?? '',
+      email,
+      date: new Date().toLocaleDateString('en-US'),
+      tracking: trimmedTracking ? 'Tracking: ' + trimmedTracking : undefined
+    };
+    const html = renderMergeTags(templates[0].html ?? '', context);
+    const subject = renderMergeTags(templates[0].subject || 'Your order is on its way!', context);
+    await this.emailService.sendHtmlEmail(email, subject, html);
+
+    return this.update(item.id!, {
+      ...item,
+      fulfillmentStatus: 'closed',
+      amazonTracking: trimmedTracking || null,
+      statusHistory: this.withStatusHistory(item, 'closed')
+    });
+  }
+
+  // Corrective back-step (purchase screen only): returns the order to an
+  // earlier workflow step - including reopening a closed order - with the
+  // move recorded in statusHistory like any forward transition, so the
+  // timeline shows exactly who moved it and when.
+  revertStatus(item: CheckoutForm, status: FulfillmentStatus): Promise<CheckoutForm> {
+    return this.update(item.id!, { ...item, fulfillmentStatus: status, statusHistory: this.withStatusHistory(item, status) });
   }
 }

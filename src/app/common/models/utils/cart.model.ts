@@ -48,7 +48,11 @@ export interface CartItem {
 // purchase unconditionally. Still distinct from newRecordStatus below (the
 // new-record alert badge) - a different, unrelated concern that happens to
 // live on the same document.
-export type FulfillmentStatus = 'new' | 'received' | 'shipping_label_printed' | 'awaiting_shipping' | 'closed';
+// 'shipped_via_amazon' (2026-08-19): the Amazon-fulfillment branch taken
+// from 'received' instead of the in-house label/packaging path - the next
+// (and final) step is sending the customer their confirmation email,
+// which closes the order (see PurchasesService.sendAmazonConfirmation).
+export type FulfillmentStatus = 'new' | 'received' | 'shipping_label_printed' | 'awaiting_shipping' | 'shipped_via_amazon' | 'closed';
 
 // One entry per fulfillmentStatus transition, oldest first - backs the Sale
 // Details tab's timeline (purchase-details.component.ts). The very first
@@ -129,6 +133,10 @@ export class CheckoutForm extends BaseModel {
 
   //url to shipping label
   shippingLabel?: ShippingLabelResponse;
+
+  // Amazon tracking number/link the admin entered when sending the
+  // shipped-via-Amazon confirmation email (null when they sent without one).
+  amazonTracking?: string | null;
 
   // Cumulative dollars refunded so far - written by refundStorePurchase on
   // every (full or partial) refund. Read by the Purchases grid's "Refunded"

@@ -9,9 +9,10 @@ import { EventService } from 'src/app/common/services/data/event.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from 'src/app/common/lists/roles.enum';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
-import { FULFILLMENT_STEPS, FulfillmentStep } from '../fulfillment/fulfillment-steps';
+import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS, FulfillmentStep, stepsFor } from '../fulfillment/fulfillment-steps';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { CustomerDetailsDialogComponent } from '../customers/customer-details-dialog.component';
 import { RefundDialogComponent, RefundDialogData, RefundDialogResult } from './refund-dialog.component';
 
@@ -339,16 +340,25 @@ export class PurchaseDetailsComponent {
       doneNodes[doneNodes.length - 1].state = 'current';
     }
 
-    const currentIndex = FULFILLMENT_STEPS.findIndex((s) => s.status === this.selectedItem.fulfillmentStatus);
+    // Path-aware (standard vs Amazon branch) so an Amazon order's timeline
+    // shows "Send Confirmation Email" ahead, not label/packaging steps.
+    const path = stepsFor(this.selectedItem.fulfillmentStatus, this.selectedItem.statusHistory);
+    const currentIndex = path.findIndex((s) => s.status === this.selectedItem.fulfillmentStatus);
     const upcoming: TimelineNode[] = currentIndex >= 0
-      ? FULFILLMENT_STEPS.slice(currentIndex + 1).map((step) => ({ step, state: 'pending' as const }))
+      ? path.slice(currentIndex + 1).map((step) => ({ step, state: 'pending' as const }))
       : [];
 
     return [...doneNodes, ...upcoming];
   }
 
   private stepFor(status: FulfillmentStatus): FulfillmentStep {
-    return FULFILLMENT_STEPS.find((s) => s.status === status) ?? { status, label: status, statusLabel: status };
+    // The order's OWN path first, so an Amazon order's 'closed' node reads
+    // "Confirmation Email Sent" rather than the standard path's "Product
+    // Shipped" (both paths share the 'closed' status).
+    const path = stepsFor(this.selectedItem.fulfillmentStatus, this.selectedItem.statusHistory);
+    return path.find((s) => s.status === status) ??
+      [...FULFILLMENT_STEPS, ...AMAZON_FULFILLMENT_STEPS].find((s) => s.status === status) ??
+      { status, label: status, statusLabel: status };
   }
 
   // ---- Workflow actions ----
@@ -397,6 +407,62 @@ export class PurchaseDetailsComponent {
       this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
       this.selectedItem.statusHistory = saved.statusHistory;
       this.snackbar.success('Marked as shipped - order closed');
+    });
+  }
+
+  // The Amazon branch (2026-08-19 workflow change): Amazon does the
+  // shipping; the final step is the customer confirmation email, which
+  // closes the order.
+  markShippedViaAmazon(): void {
+    this.service.markShippedViaAmazon(this.selectedItem).then((saved) => {
+      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
+      this.selectedItem.statusHistory = saved.statusHistory;
+      this.snackbar.success('Marked as shipped via Amazon');
+    });
+  }
+
+  sendAmazonConfirmation(): void {
+    this.dialog.open<AmazonConfirmationDialogComponent, { item: CheckoutForm }, CheckoutForm | null>(
+      AmazonConfirmationDialogComponent, { width: '520px', data: { item: this.selectedItem } }
+    ).afterClosed().subscribe((saved) => {
+      if (saved) {
+        this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
+        this.selectedItem.statusHistory = saved.statusHistory;
+        this.selectedItem.amazonTracking = saved.amazonTracking;
+      }
+    });
+  }
+
+  // ---- Back-step (this screen only, per the user 2026-08-19) ----
+  // The earlier steps of THIS order's path (Amazon vs standard), most
+  // recent first - including reopening a closed order. Every move is
+  // recorded in statusHistory like a forward transition, so the timeline
+  // shows exactly who moved it back and when.
+  get backSteps(): FulfillmentStep[] {
+    const path = stepsFor(this.selectedItem.fulfillmentStatus, this.selectedItem.statusHistory);
+    const currentIndex = path.findIndex((s) => s.status === this.selectedItem.fulfillmentStatus);
+    if (currentIndex <= 0) {
+      return [];
+    }
+    return path.slice(0, currentIndex).reverse();
+  }
+
+  async revertTo(step: FulfillmentStep): Promise<void> {
+    const reopening = this.selectedItem.fulfillmentStatus === 'closed';
+    const confirmed = await this.confirmService.confirm(
+      (reopening ? 'Reopen this order and return it' : 'Return this order') +
+      ` to <b>${step.statusLabel}</b>? The move is recorded on the order's timeline.`,
+      'Move Back a Step');
+    if (!confirmed) {
+      return;
+    }
+    this.service.revertStatus(this.selectedItem, step.status).then((saved) => {
+      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
+      this.selectedItem.statusHistory = saved.statusHistory;
+      this.snackbar.success(`Order moved back to ${step.statusLabel}`);
+    }).catch((err) => {
+      console.error('Back-step failed', err);
+      this.snackbar.error("Couldn't move this order back - please try again.");
     });
   }
 }

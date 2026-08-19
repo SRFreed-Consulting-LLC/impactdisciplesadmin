@@ -282,6 +282,10 @@ td.amt { font-weight: 700; color: var(--sd-ink); white-space: nowrap; }
 .pill--critical { background: var(--sd-critical-wash); color: var(--sd-critical); }
 
 // ---- Action bar ----
+.footbar__spacer {
+  flex: 1;
+}
+
 .footbar {
   display: flex;
   align-items: center;

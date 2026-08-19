@@ -51,7 +51,7 @@
             <th mat-header-cell *matHeaderCellDef>Progress</th>
             <td mat-cell *matCellDef="let item">
               <div class="segbar" [matTooltip]="segmentLabel(item)">
-                @for (step of steps; track step; let i = $index) {
+                @for (step of stepsFor(item); track step; let i = $index) {
                   <div class="segbar__seg" [class]="'segbar__seg--' + segmentState(item, i)"></div>
                 }
               </div>

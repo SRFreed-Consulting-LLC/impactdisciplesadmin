@@ -43,12 +43,12 @@
           </div>
         </div>
         <div class="segbar">
-          @for (step of steps; track step; let i = $index) {
+          @for (step of stepsFor(item); track step; let i = $index) {
             <div class="segbar__seg" [class]="'segbar__seg--' + segmentState(item, i)"></div>
           }
         </div>
         <div class="segbar__labels">
-          @for (step of steps; track step) {
+          @for (step of stepsFor(item); track step) {
             <span class="segbar__label">{{ step.statusLabel }}</span>
           }
         </div>
@@ -70,8 +70,18 @@
                 <mat-icon>local_shipping</mat-icon>
                 Print Shipping Label
               </button>
+              <button mat-stroked-button type="button" [disabled]="!canEdit()" matTooltip="Amazon fulfills this order - the remaining step is the customer confirmation email" (click)="markShippedViaAmazon(item)">
+                <mat-icon>local_mall</mat-icon>
+                Shipped via Amazon
+              </button>
               <button mat-stroked-button type="button" [disabled]="!canEdit()" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp(item)">
                 Mark as Picked Up / Delivered
+              </button>
+            }
+            @case ('shipped_via_amazon') {
+              <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="sendAmazonConfirmation(item)">
+                <mat-icon>mark_email_read</mat-icon>
+                Send Confirmation Email to Customer
               </button>
             }
             @case ('shipping_label_printed') {

@@ -41,8 +41,18 @@
           <mat-icon>local_shipping</mat-icon>
           Print Shipping Label
         </button>
+        <button mat-stroked-button type="button" matTooltip="Amazon fulfills this order - the remaining step is the customer confirmation email" (click)="markShippedViaAmazon()">
+          <mat-icon>local_mall</mat-icon>
+          Shipped via Amazon
+        </button>
         <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
           Mark as Picked Up / Delivered
+        </button>
+      }
+      @case ('shipped_via_amazon') {
+        <button mat-raised-button color="primary" type="button" (click)="sendAmazonConfirmation()">
+          <mat-icon>mark_email_read</mat-icon>
+          Send Confirmation Email to Customer
         </button>
       }
       @case ('shipping_label_printed') {

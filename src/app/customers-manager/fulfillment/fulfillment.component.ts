@@ -6,8 +6,10 @@ import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { MatDialog } from '@angular/material/dialog';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { FULFILLMENT_STEPS, completedStepCount, segmentState } from './fulfillment-steps';
+import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
+import { FulfillmentStep, completedStepCount, segmentState, stepsFor } from './fulfillment-steps';
 
 // Store Manager > Fulfillment - the 5-step physical-order workflow (see
 // fulfillment-steps.ts). Only ever shows purchases with a fulfillmentStatus
@@ -23,8 +25,6 @@ import { FULFILLMENT_STEPS, completedStepCount, segmentState } from './fulfillme
     standalone: false
 })
 export class FulfillmentComponent implements OnInit {
-  steps = FULFILLMENT_STEPS;
-
   orders$: Observable<CheckoutForm[]>;
 
   // House rule: loading spinner shown until first emission - see
@@ -48,7 +48,12 @@ export class FulfillmentComponent implements OnInit {
 
   private readonly screenKey = 'customers-manager.fulfillment';
 
-  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router) {}
+  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog) {}
+
+  // Path-aware per order (standard vs Amazon branch).
+  stepsFor(item: CheckoutForm): FulfillmentStep[] {
+    return stepsFor(item.fulfillmentStatus, item.statusHistory);
+  }
 
   // Every action on this screen (acknowledge/print label/mark packaged,
   // shipped, or picked up) mutates an existing purchase's fulfillment
@@ -121,14 +126,14 @@ export class FulfillmentComponent implements OnInit {
   }
 
   completedCount(item: CheckoutForm): number {
-    return completedStepCount(item.fulfillmentStatus);
+    return completedStepCount(this.stepsFor(item), item.fulfillmentStatus);
   }
 
   // Delegates to the shared free function (fulfillment-steps.ts) so this
   // and DashboardComponent's read-only Recent Orders preview render
   // identical bars off one definition - see that function's own comment.
   segmentState(item: CheckoutForm, index: number): 'done' | 'current' | 'pending' {
-    return segmentState(item.fulfillmentStatus, index);
+    return segmentState(this.stepsFor(item), item.fulfillmentStatus, index);
   }
 
   itemSummary(item: CheckoutForm): string {
@@ -178,6 +183,26 @@ export class FulfillmentComponent implements OnInit {
     this.service.markShipped(item)
       .then(() => this.snackbar.success('Marked as shipped - order closed'))
       .catch((err) => this.reportTransitionError(err));
+  }
+
+  // The Amazon branch (2026-08-19): Amazon does the shipping; the final
+  // step is the customer confirmation email, which closes the order.
+  markShippedViaAmazon(item: CheckoutForm): void {
+    if (!this.canEdit()) {
+      return;
+    }
+    this.service.markShippedViaAmazon(item)
+      .then(() => this.snackbar.success('Marked as shipped via Amazon'))
+      .catch((err) => this.reportTransitionError(err));
+  }
+
+  sendAmazonConfirmation(item: CheckoutForm): void {
+    if (!this.canEdit()) {
+      return;
+    }
+    // The dialog sends + closes the order; the live streamAll() drops the
+    // card automatically once fulfillmentStatus flips to 'closed'.
+    this.dialog.open(AmazonConfirmationDialogComponent, { width: '520px', data: { item } });
   }
 
   private newRank(item: CheckoutForm): number {

@@ -1,4 +1,4 @@
-import { NgModule } from "@angular/core";
+﻿import { NgModule } from "@angular/core";
 import { IndicatorButtonComponent } from "./indicator-button/indicator-button.component";
 import { CommonModule, CurrencyPipe, DatePipe } from "@angular/common";
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
@@ -21,7 +21,8 @@ import { DataGridCellDirective } from './data-grid/data-grid-cell.directive';
 import { FormRendererComponent } from './form-renderer/form-renderer.component';
 import { FormRendererFieldComponent } from './form-renderer/form-renderer-field.component';
 import { DateTimeFieldComponent } from './date-time-field/date-time-field.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { AmazonConfirmationDialogComponent } from './amazon-confirmation-dialog/amazon-confirmation-dialog.component';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -65,10 +66,12 @@ import { MatNativeDateModule } from '@angular/material/core';
     DataGridCellDirective,
     FormRendererComponent,
     FormRendererFieldComponent,
-    DateTimeFieldComponent
+    DateTimeFieldComponent,
+    AmazonConfirmationDialogComponent
   ],
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
@@ -112,7 +115,8 @@ import { MatNativeDateModule } from '@angular/material/core';
     DataGridCellDirective,
     FormRendererComponent,
     FormRendererFieldComponent,
-    DateTimeFieldComponent
+    DateTimeFieldComponent,
+    AmazonConfirmationDialogComponent
   ],
   // DatePipe/CurrencyPipe aren't auto-registered for DI just by importing
   // CommonModule (that only makes the `| date`/`| currency` template pipes
