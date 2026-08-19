@@ -393,10 +393,11 @@ Every email in the system is one of two kinds, sorted by who presses send:
   receipts, per-product follow-up emails, event-registration confirmations, reader receipts,
   password resets. All functions-side (`transactional-emails.ts`, `event-registration.functions.ts`).
   Admins edit their *content* (several render from `mail_templates` docs — the sales receipt is
-  looked up **by the literal name "Sales Receipt"**, product follow-ups by doc id via
-  `Product.followUpEmailId` — so renaming/deleting those templates silently breaks the emails; a
-  known, accepted risk for now, deliberately left unguarded per the user 2026-08-18), but never
-  choose their audience or timing.
+  looked up **by the literal name "Sales Receipt"**, the Amazon fulfillment confirmation **by the
+  literal name "Amazon Shipping Confirmation"** (PurchasesService.sendAmazonConfirmation), and
+  product follow-ups by doc id via `Product.followUpEmailId` — so renaming/deleting those templates
+  silently breaks the emails; a known, accepted risk for now, deliberately left unguarded per the
+  user 2026-08-18), but never choose their audience or timing.
 - **Campaigns** — admin-initiated outreach to contacts: the Campaigns Manager group (one-time and
   automated campaigns, tag rules, Mailchimp audience sync) plus the contextual sends that stay
   where their context is (newsletter/prayer blasts on the Subscribers report, attendee emails on an
