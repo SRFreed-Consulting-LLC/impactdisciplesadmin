@@ -457,8 +457,21 @@ injects the pixel; public-site links get `?cid=<campaignId>&ceid=<emailId>` appe
 Phase 4's attribution capture reads those on landing. Unsubscribe links are NEVER routed through
 tracking. Every hit also lands in `campaign_events` (staff-read/write-false). Opens are approximate
 (proxy prefetch) — clicks/purchases are the trustworthy stages.
-Remaining: Phase 4 attribution (web repo), Phase 5 web popups (purchase stats read "not tracked
-yet" until Phase 4).
+**Phase 4 (attribution, 2026-08-19)**: the funnel's conversion stages are wired end to end.
+Web repo (`feature/campaign-attribution`, stacked on feature/paypal-speed): `AttributionService`
+(src/app/shared/utils/services/) reads `?cid/&ceid/&csrc` from `window.location.search` in its
+constructor — injected by AppComponent at bootstrap, deliberately BEFORE the router's first
+navigation (pages rewrite query params on landing) — localStorage, 30-day TTL, last touch wins;
+checkout/subscribe/event-registration requests attach it. Admin functions:
+`sanitizeAttribution()` / `recordCampaignConversion()` / `campaignForCoupon()` in
+campaign-tracking.functions.ts — `create_paypal_order` stamps validated attribution onto the
+checkout form (free path credits immediately; paid path stages it on pending_orders and
+`capture_paypal_order` credits on capture), `subscribe_to_email_list` credits fresh subscribes,
+`register_for_event` credits registrations. Coupon fallback: no explicit attribution but a coupon
+matching a LIVE campaign's `couponId` credits `via:'coupon'`. All best-effort — attribution can
+never fail an order — and the campaign must exist before anything is credited (client field is
+advisory). Purchases carry an `attribution` field now.
+Remaining: Phase 5 web popups, Phase 6 consolidation, Phase 7 Mailchimp sunset.
 
 ### Firestore collection naming note
 

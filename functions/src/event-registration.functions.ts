@@ -5,6 +5,10 @@ import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
 import {escapeHtml} from "./transactional-emails";
+import {
+  recordCampaignConversion,
+  sanitizeAttribution,
+} from "./campaign-tracking.functions";
 
 /**
  * Pre-prod checklist #2: the public event-registration flows, moved
@@ -222,6 +226,21 @@ export const registerForEventHttp = onRequest((request, response) => {
     );
     if (receiptEmailId) {
       await registrationRef.update({receiptEmailId});
+    }
+
+    // Campaign attribution (Campaign Manager v2, Phase 4): a registration
+    // that followed a campaign link/popup credits that campaign's funnel.
+    // Best-effort; validated + existence-checked inside.
+    const attribution = sanitizeAttribution(body.attribution);
+    if (attribution) {
+      await recordCampaignConversion(db, {
+        campaignId: attribution.campaignId,
+        emailId: attribution.emailId,
+        type: "registration",
+        via: attribution.source === "popup" ? "popup" : "link",
+        orderId: registrationRef.id,
+        email,
+      });
     }
 
     logger.info("Event registration created", {

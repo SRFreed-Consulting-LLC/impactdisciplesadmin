@@ -4,6 +4,11 @@ import * as admin from "firebase-admin";
 import {restrictedCors} from "./utils/security.functions";
 import {queueWebOrderEmails} from "./transactional-emails";
 import {
+  campaignForCoupon,
+  recordCampaignConversion,
+  sanitizeAttribution,
+} from "./campaign-tracking.functions";
+import {
   computeOrderPricing,
   PricingCartItemInput,
   PricingResult,
@@ -262,7 +267,56 @@ function buildCheckoutForm(
     estimatedTaxes: pricing.estimatedTaxes,
     taxRate: pricing.taxRate,
     taxSource: pricing.taxSource,
+    // Campaign attribution (Campaign Manager v2, Phase 4) - captured on
+    // the public site from campaign-link ?cid/&ceid params, validated/
+    // length-capped here, credited only after the purchase actually saves
+    // (see recordPurchaseAttribution).
+    attribution: sanitizeAttribution(body.attribution),
   };
+}
+
+/**
+ * Credits a saved purchase to its campaign (Campaign Manager v2 funnel):
+ * explicit link/popup attribution wins; otherwise a coupon code matching
+ * a live campaign's couponId attributes via 'coupon'. Best-effort - never
+ * fails the order.
+ * @param {Record<string, unknown>} checkoutForm The SAVED checkout form.
+ * @param {string} orderId Receipt/PayPal order id.
+ * @param {number} amount The charged amount in dollars (0 for free).
+ * @return {Promise<void>} Resolves when recorded (or skipped).
+ */
+async function recordPurchaseAttribution(
+  checkoutForm: Record<string, unknown>,
+  orderId: string,
+  amount: number
+): Promise<void> {
+  const db = admin.firestore();
+  const attribution = checkoutForm.attribution as
+    {campaignId: string; emailId?: string; source?: string} | null;
+  if (attribution?.campaignId) {
+    await recordCampaignConversion(db, {
+      campaignId: attribution.campaignId,
+      emailId: attribution.emailId,
+      type: "purchase",
+      via: attribution.source === "popup" ? "popup" : "link",
+      amount,
+      orderId,
+      email: checkoutForm.email as string,
+    });
+    return;
+  }
+  const couponCampaignId = await campaignForCoupon(
+    db, checkoutForm.couponCode as string);
+  if (couponCampaignId) {
+    await recordCampaignConversion(db, {
+      campaignId: couponCampaignId,
+      type: "purchase",
+      via: "coupon",
+      amount,
+      orderId,
+      email: checkoutForm.email as string,
+    });
+  }
 }
 
 /**
@@ -505,6 +559,8 @@ exports.create_paypal_order = functions
           } catch (err) {
             console.error("Failed to record affiliate sale (free)", err);
           }
+          await recordPurchaseAttribution(
+            checkoutForm, checkoutForm.receipt as string, 0);
 
           response.send({
             free: true,
@@ -732,6 +788,8 @@ exports.capture_paypal_order = functions
               .catch((err) => console.error(
                 "Failed to record affiliate sale (captured)", err
               )),
+            recordPurchaseAttribution(
+              checkoutForm, orderId, Number(pending.amount) || 0),
           ]);
 
           response.send({checkoutForm: {...checkoutForm, id: docRef.id}});

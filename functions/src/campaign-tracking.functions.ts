@@ -70,6 +70,144 @@ async function recordEvent(
   }).catch((err) => console.error("campaign_events write failed", err));
 }
 
+// ---- Phase 4: conversion attribution ----
+
+// What the public site's requests may carry (AttributionService in the
+// web repo). Client-supplied and therefore advisory: everything is
+// length-capped and the campaign must actually exist before anything is
+// credited.
+export interface CampaignAttributionInput {
+  campaignId?: unknown;
+  emailId?: unknown;
+  source?: unknown;
+}
+
+/**
+ * Validates/normalizes a client-supplied attribution object.
+ * @param {unknown} raw The request's attribution field.
+ * @return {object | null} {campaignId, emailId?, source?} or null.
+ */
+export function sanitizeAttribution(
+  raw: unknown
+): {campaignId: string; emailId?: string; source?: string} | null {
+  const input = (raw ?? {}) as CampaignAttributionInput;
+  const campaignId = typeof input.campaignId === "string" ?
+    input.campaignId.trim() : "";
+  if (!campaignId || campaignId.length > 64) {
+    return null;
+  }
+  const emailId = typeof input.emailId === "string" ?
+    input.emailId.trim() : "";
+  const source = typeof input.source === "string" ?
+    input.source.trim() : "";
+  return {
+    campaignId,
+    ...(emailId && emailId.length <= 64 ? {emailId} : {}),
+    ...(source && source.length <= 32 ? {source} : {}),
+  };
+}
+
+/**
+ * Credits a conversion (purchase / subscribe / registration) to a
+ * campaign: bumps the denormalized funnel counters on the campaign (and
+ * the email touch when known) and appends a campaign_events row.
+ * Best-effort by contract - attribution must NEVER fail the order/
+ * subscribe/registration that carried it.
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @param {object} input Conversion details.
+ * @return {Promise<void>} Resolves when recorded (or swallowed).
+ */
+export async function recordCampaignConversion(
+  db: FirebaseFirestore.Firestore,
+  input: {
+    campaignId: string;
+    emailId?: string;
+    type: "purchase" | "subscribe" | "registration";
+    via: "link" | "coupon" | "popup";
+    amount?: number;
+    orderId?: string;
+    email?: string;
+  }
+): Promise<void> {
+  try {
+    const campaignRef = db.collection("campaigns").doc(input.campaignId);
+    if (!(await campaignRef.get()).exists) {
+      return; // junk/expired id - credit nothing
+    }
+    const bump: Record<string, unknown> = {};
+    if (input.type === "purchase") {
+      bump["stats.purchases"] = admin.firestore.FieldValue.increment(1);
+      if (input.amount && input.amount > 0) {
+        bump["stats.revenue"] =
+          admin.firestore.FieldValue.increment(input.amount);
+      }
+    } else if (input.type === "subscribe") {
+      bump["stats.subscribes"] = admin.firestore.FieldValue.increment(1);
+    } else {
+      bump["stats.registrations"] = admin.firestore.FieldValue.increment(1);
+    }
+    await campaignRef.update(bump);
+    if (input.emailId) {
+      await db.collection("campaign_emails").doc(input.emailId)
+        .update(bump).catch(() => undefined);
+    }
+    await recordEvent(db, {
+      type: input.type,
+      campaignId: input.campaignId,
+      emailId: input.emailId ?? null,
+      via: input.via,
+      amount: input.amount ?? null,
+      orderId: input.orderId ?? null,
+      email: input.email ?? null,
+    });
+  } catch (err) {
+    console.error("recordCampaignConversion failed", input.campaignId, err);
+  }
+}
+
+/**
+ * Coupon fallback: a purchase with no explicit attribution but a coupon
+ * code matching an effectively-live campaign's couponId still credits
+ * that campaign (via 'coupon').
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @param {string} couponCode The purchase's (server-verified) coupon code.
+ * @return {Promise<string | null>} The campaign id, or null.
+ */
+export async function campaignForCoupon(
+  db: FirebaseFirestore.Firestore,
+  couponCode: string
+): Promise<string | null> {
+  try {
+    if (!couponCode?.trim()) {
+      return null;
+    }
+    const couponSnap = await db.collection("coupons")
+      .where("code", "==", couponCode.trim()).limit(1).get();
+    if (couponSnap.empty) {
+      return null;
+    }
+    const campaignSnap = await db.collection("campaigns")
+      .where("couponId", "==", couponSnap.docs[0].id).limit(5).get();
+    for (const doc of campaignSnap.docs) {
+      const data = doc.data();
+      // Inline effective-status check (campaign-send.functions.ts's
+      // mirror) - only live campaigns claim coupon conversions.
+      const now = Date.now();
+      const end = data.endDate?.toMillis?.() ?? 0;
+      const start = data.startDate?.toMillis?.() ?? 0;
+      const effectivelyLive = data.status === "live" ||
+        (data.status === "scheduled" && start > 0 && start <= now);
+      if (effectivelyLive && !(end > 0 && end < now)) {
+        return doc.id;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("campaignForCoupon failed", err);
+    return null;
+  }
+}
+
 // GET /campaign_open?t=<token> - the tracking pixel. Always answers with
 // the GIF (an unknown token learns nothing); no-store so each real open
 // re-fires through caching proxies.
