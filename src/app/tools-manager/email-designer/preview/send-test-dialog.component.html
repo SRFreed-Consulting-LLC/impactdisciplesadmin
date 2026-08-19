@@ -10,8 +10,8 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-button (click)="onCancel()">CANCEL</button>
   <button mat-flat-button color="primary" [disabled]="sending$ | async" (click)="onSend()">
-    @if (sending$ | async) { Sending… } @else { Send Test }
+    @if (sending$ | async) { Sending… } @else { SEND TEST }
   </button>
 </mat-dialog-actions>

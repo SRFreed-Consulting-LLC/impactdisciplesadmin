@@ -138,6 +138,12 @@ $variants: (
     // No header-ink override: the app's top bar sits on the navy chrome
     // (above .portal-content's light canvas), so it keeps the light page ink.
     content-bg: #f2f4f8,
+    // Text that sits DIRECTLY on the light canvas (screen titles, editor
+    // toolbars - anything not on a card) must be dark here; every other
+    // variant's canvas is the dark ground, so they inherit `ink`. Fixes the
+    // 2026-08-19 audit's worst finding: list-header titles at contrast 1.07
+    // (white-on-white) on every screen under this variant.
+    content-ink: #24304a,
     card: #ffffff,
     card-ink: #1e2637,
     card-muted: #7a8494,
@@ -346,6 +352,7 @@ $default-variant: slate-elevate;
   // NOT re-declared by the next theme class would otherwise keep the old
   // theme's value, since <html> classes all target the same element.
   --app-content-bg: #{if(map.has-key($v, content-bg), map.get($v, content-bg), transparent)};
+  --app-content-ink: #{if(map.has-key($v, content-ink), map.get($v, content-ink), map.get($v, ink))};
   --app-header-ink: #{if(map.has-key($v, header-ink), map.get($v, header-ink), map.get($v, ink))};
   --app-btn-glow: #{if(map.has-key($v, btn-glow), map.get($v, btn-glow), none)};
   --app-bar-glow: #{if(map.has-key($v, bar-glow), map.get($v, bar-glow), none)};

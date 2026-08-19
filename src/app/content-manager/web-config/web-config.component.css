@@ -7,7 +7,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.6);
+  /* Theme ground, not hardcoded white - a white sheet flashed over every
+     dark theme (2026-08-19 theme audit). */
+  background: color-mix(in srgb, var(--app-ground-base) 60%, transparent);
   z-index: 1000;
 }
 
@@ -77,6 +79,11 @@
 .column {
   flex: 1 1 0;
   min-width: 0;
+  /* Stacked fields sat flush (2026-08-19 crowding audit - the only screen
+     where fields actually touched). */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Pricing tab has its own .tab-content, not shared with Info's two-column
@@ -105,7 +112,9 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(0, 0, 0, 0.6);
+  /* Canvas ink, not hardcoded near-black - it was invisible on every dark
+     theme (2026-08-19 theme audit). */
+  color: color-mix(in srgb, var(--app-content-ink) 75%, transparent);
   margin: 8px 0 4px;
 }
 
@@ -116,5 +125,8 @@
   display: flex;
   justify-content: flex-end;
   padding: 12px 4px 4px;
-  background: #fff;
+  /* Transparent, not hardcoded white - it rendered as a white bar on every
+     dark theme (2026-08-19 theme audit); it's a layout sibling, nothing
+     scrolls under it, so it needs no opaque paint. */
+  background: transparent;
 }

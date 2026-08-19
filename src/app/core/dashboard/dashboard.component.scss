@@ -104,7 +104,7 @@ $live-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
 
 .new-badge {
   background: $new;
-  color: #fff;
+  color: var(--mat-sys-on-error); // NOT #fff - dark-M3 error is a light salmon
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.6px;
@@ -198,7 +198,9 @@ $live-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
 
 .live-badge {
   background: $live;
-  color: #fff;
+  // Dark ink, not white - --app-attention is a mid amber (#d79b2e) on every
+  // theme, and white text on it sat below 2:1 (2026-08-19 contrast audit).
+  color: #3a2803;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.5px;

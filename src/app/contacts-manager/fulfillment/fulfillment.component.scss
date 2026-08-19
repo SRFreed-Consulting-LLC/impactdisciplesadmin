@@ -90,7 +90,7 @@ $new-tint: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
 
 .new-badge {
   background: $new;
-  color: #fff; // white on the solid error red - theme-agnostic contrast pair
+  color: var(--mat-sys-on-error); // NOT #fff - dark-M3 error is a light salmon // white on the solid error red - theme-agnostic contrast pair
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.6px;

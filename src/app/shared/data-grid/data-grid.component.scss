@@ -24,6 +24,12 @@
 
 .actions-column {
   text-align: right;
+
+  // Multi-action rows (Sent Emails has 3, Attendees 2): the icon buttons
+  // sat flush against each other (2026-08-19 crowding audit).
+  button + button {
+    margin-left: 4px;
+  }
 }
 
 .columns-button {

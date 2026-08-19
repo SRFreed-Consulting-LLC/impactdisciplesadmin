@@ -61,9 +61,9 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="route-request-dialog__actions">
-  <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+  <button mat-stroked-button type="button" (click)="onCancel()">CANCEL</button>
   <button mat-raised-button color="primary" type="button" [disabled]="(inProgress$ | async) || form.invalid" (click)="onSend()">
     <mat-icon>forward_to_inbox</mat-icon>
-    Forward &amp; Close Request
+    FORWARD &amp; CLOSE REQUEST
   </button>
 </mat-dialog-actions>

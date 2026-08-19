@@ -19,9 +19,13 @@
   z-index: 2;
   // Navy redesign: the header strip sits directly on the ground (or Harbor
   // Split's light canvas), not on a surface band of its own - screens' own
-  // cards/tables provide the surfaces.
+  // cards/tables provide the surfaces. content-ink, NOT header-ink: this
+  // strip is on the CANVAS (below the chrome bar), and on Harbor Split the
+  // canvas is light while the chrome stays navy - header-ink left every
+  // screen title white-on-white there (2026-08-19 contrast audit's worst
+  // finding, ratio 1.07).
   background: transparent;
-  color: var(--app-header-ink);
+  color: var(--app-content-ink);
   // Right padding specifically so the last action button (often "Export to
   // Excel" or a kebab menu - not every screen has a trailing "New" button
   // after it, e.g. Purchases) always has its own breathing room before the

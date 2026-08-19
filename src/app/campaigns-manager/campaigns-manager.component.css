@@ -1,3 +1,18 @@
+/* Same "fixed chrome, one bounded scroll region" pattern as every other
+   manager module - see admin-manager.component.css's own comment for the
+   full history/rationale. This shell was the one holdout (a bare
+   padding-only rule), which structurally prevented any Campaigns tab from
+   being full-height - 2026-08-19 list-screen audit. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .manager-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
   padding: 0 12px;
+  box-sizing: border-box;
 }

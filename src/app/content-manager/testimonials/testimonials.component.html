@@ -13,7 +13,7 @@
   exportFileName="testimonials.xlsx"
   (rowDoubleClick)="showEditModal($event)">
   <ng-template appDataGridCell="isActive" let-row>
-    <span class="active-template" [style.background-color]="row.isActive ? '#29d029' : 'red'">
+    <span class="active-template" [style.background-color]="row.isActive ? '#1d8a46' : '#c62828'">
       {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
     </span>
   </ng-template>

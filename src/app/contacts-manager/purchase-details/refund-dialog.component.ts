@@ -77,15 +77,15 @@ export interface RefundDialogResult {
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button type="button" (click)="cancel()">Cancel</button>
+      <button mat-button type="button" (click)="cancel()">CANCEL</button>
       <button mat-raised-button color="warn" type="button"
               [disabled]="!amountValid()" (click)="confirm()">
-        {{ isFull() ? 'Refund' : 'Refund ' + (roundedAmount() | currency) }}
+        {{ isFull() ? 'REFUND' : 'REFUND ' + (roundedAmount() | currency) }}
       </button>
     </mat-dialog-actions>
   `,
   styles: [`
-    .refund-context { color: rgba(0, 0, 0, 0.6); font-size: 13px; }
+    .refund-context { color: var(--app-card-muted); font-size: 13px; }
     .refund-amount-field { width: 100%; margin-top: 4px; }
     .refund-invalid { color: #c62828; font-size: 12.5px; }
     .refund-kind { font-size: 13px; }

@@ -473,6 +473,9 @@ $collapsed-width: 64px;
   background: transparent;
   color: var(--app-header-ink);
   border-bottom: 1px solid var(--app-divider);
+  // Breathing room between the bell and the user-menu button - they were
+  // flush against each other (2026-08-19 crowding audit, every screen).
+  gap: 10px;
   flex: 0 0 auto;
 }
 
@@ -487,6 +490,11 @@ $collapsed-width: 64px;
 .portal-content {
   padding: 0 20px;
   background: var(--app-content-bg);
+  // Canvas-level ink: only Harbor Split overrides this (dark text on its
+  // light canvas); everywhere else it equals --app-ink. Inherited by screen
+  // titles/toolbars that sit directly on the canvas; card content sets its
+  // own colors and is unaffected. See _theme-variants.scss's content-ink.
+  color: var(--app-content-ink);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
