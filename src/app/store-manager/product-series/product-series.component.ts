@@ -10,7 +10,7 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 
 // Opened via MatDialog.open(ProductSeriesComponent, ...) from
 // ProductsComponent's "Series" menu item - same pattern as
-// ProductCategoriesComponent (itself modeled on web-manager's
+// ProductCategoriesComponent (itself modeled on content-manager's
 // pod-cast-categories.component). Replaces the old NGXS
 // ShowProductSeriesModal/ShowSeriesModal action-driven, always-mounted
 // pattern.
@@ -34,7 +34,7 @@ export class ProductSeriesComponent implements OnInit {
   itemType = 'Series';
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   constructor(

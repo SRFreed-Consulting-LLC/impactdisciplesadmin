@@ -5,7 +5,6 @@ import { SharedModule } from '../shared/shared.module';
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { ToolsManagerComponent } from './tools-manager.component';
 import { ToolsManagerRoutingModule } from './tools-manager-routing.module';
-import { WebConfigComponent } from './web-config/web-config.component';
 import { EmailTemplatesComponent } from './email-templates/email-templates.component';
 import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
@@ -34,7 +33,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { QuillModule } from 'ngx-quill';
 
 // Utility/configuration screens, not customer or content records - moved
-// here (from admin-manager, web-manager) so they read as one coherent
+// here (from admin-manager, content-manager) so they read as one coherent
 // group. See nav-config.ts's 'tools-manager' group for the full reasoning.
 @NgModule({
   imports: [
@@ -65,7 +64,6 @@ import { QuillModule } from 'ngx-quill';
   ],
   declarations: [
     ToolsManagerComponent,
-    WebConfigComponent,
     EmailTemplatesComponent,
     EmailTemplateDialogComponent,
     ShippingLabelsComponent,

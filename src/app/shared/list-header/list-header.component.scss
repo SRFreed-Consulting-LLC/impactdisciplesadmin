@@ -2,7 +2,7 @@
   // No longer position: sticky - every list screen using this component is
   // now a flex column (list-header as a fixed-size flex item, .table-scroll
   // as the flex:1 scrolling region below it - see e.g.
-  // customers.component.css), which keeps this fixed in place without
+  // contacts.component.css), which keeps this fixed in place without
   // needing sticky positioning at all. That flex approach replaced an
   // earlier sticky-stacking attempt after live-testing turned up a second,
   // deeper problem it couldn't solve: CDK Table's own sticky column/header

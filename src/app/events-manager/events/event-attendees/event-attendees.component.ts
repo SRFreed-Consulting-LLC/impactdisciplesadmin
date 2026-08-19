@@ -43,7 +43,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   selection = new SelectionModel<EventRegistrationModel>(true, []);
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   private readonly screenKey = 'events-manager.events.attendees';

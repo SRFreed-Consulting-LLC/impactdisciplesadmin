@@ -166,7 +166,7 @@ export class TagRulesComponent implements OnInit {
   }
 
   delete(rule: TagRuleModel): void {
-    this.confirmService.confirm('<i>Delete this rule? Already-applied tags stay on customers.</i>', 'Confirm').then((confirmed) => {
+    this.confirmService.confirm('<i>Delete this rule? Already-applied tags stay on contacts.</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(rule.id!).then(() => {
           this.snackbar.success(this.itemType + ' Deleted');
@@ -188,7 +188,7 @@ export class TagRulesComponent implements OnInit {
     }
     const scope = this.editingItem.trigger === 'purchase' ? 'past purchases' : 'past event registrations';
     const confirmed = await this.confirmService.confirm(
-      `Scan all ${scope} and tag every matching customer with "${this.editingItem.tag}"?`, 'Apply to Existing'
+      `Scan all ${scope} and tag every matching contact with "${this.editingItem.tag}"?`, 'Apply to Existing'
     );
     if (!confirmed) {
       return;
@@ -198,8 +198,8 @@ export class TagRulesComponent implements OnInit {
       const result = await this.service.applyRetroactively(this.editingItem.id);
       this.snackbar.success(
         `Scanned ${result.scanned} records: ${result.matched} matched, ` +
-        `${result.customersTagged} customer(s) tagged` +
-        (result.skippedNoCustomer > 0 ? `, ${result.skippedNoCustomer} skipped (no customer record)` : '')
+        `${result.customersTagged} contact(s) tagged` +
+        (result.skippedNoCustomer > 0 ? `, ${result.skippedNoCustomer} skipped (no contact record)` : '')
       );
     } catch (err) {
       this.snackbar.error('Apply failed: ' + ((err as Error)?.message ?? 'unknown error'));

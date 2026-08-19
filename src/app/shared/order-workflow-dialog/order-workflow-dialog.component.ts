@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { FulfillmentStep, segmentState, stepsFor } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, segmentState, stepsFor } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
 import { AmazonConfirmationDialogComponent } from '../amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { SnackbarService } from '../snackbar.service';
 
@@ -15,9 +15,9 @@ export interface OrderWorkflowDialogData {
 // Opened from Dashboard's Recent Orders cards (see dashboard.component.ts)
 // so an order's fulfillment workflow can be worked start-to-finish without
 // leaving Home - the exact same actions/transitions as the real Fulfillment
-// screen (src/app/customers-manager/fulfillment/), just scoped to one order
+// screen (src/app/contacts-manager/fulfillment/), just scoped to one order
 // and popped up. Declared in SharedModule (imported eagerly by AppModule),
-// not CustomersManagerModule (lazy) - a lazy module's components aren't
+// not ContactsManagerModule (lazy) - a lazy module's components aren't
 // resolvable by MatDialog.open() until that module has actually been
 // loaded, which isn't guaranteed the first time someone lands on Home.
 //
@@ -61,12 +61,12 @@ export class OrderWorkflowDialogComponent {
   // Same gate PurchasesComponent.showEditModal() applies - never render a
   // link that would land somewhere the click gets silently swallowed.
   canViewPurchase(): boolean {
-    return !!this.item.id && this.permissionService.canEdit('customers-manager.purchases');
+    return !!this.item.id && this.permissionService.canEdit('contacts-manager.purchases');
   }
 
   viewPurchase(): void {
     this.dialogRef.close();
-    this.router.navigate(['/customers-manager'], {
+    this.router.navigate(['/contacts-manager'], {
       queryParams: { tab: 'purchases', purchaseId: this.item.id }
     });
   }

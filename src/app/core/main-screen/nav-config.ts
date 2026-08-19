@@ -18,16 +18,17 @@ import { Role } from 'src/app/common/lists/roles.enum';
 //
 // Reorganized (2026-08) around what a screen actually IS rather than which
 // internal app area happened to own it originally:
-//   - Customers Manager: customer records, plus anything a customer/site
-//     visitor submitted - Customers, Purchases (+ Fulfillment, same order
+//   - Contacts Manager (nee Customers Manager): contact records, plus
+//     anything a contact/site visitor submitted - Contacts, Purchases
+//     (+ Fulfillment, same order
 //     lifecycle, just a different view of it), Custom Form Submissions.
 //     Originally absorbed the old Subscriptions Manager (Newsletters/
 //     Prayer Team) here too, but that screen was removed outright
 //     2026-08-15 once subscriber state became just 2 flags on a customer
 //     record - see Reports Manager's own Subscribers report below, which
 //     absorbed its functionality instead.
-//   - Tools Manager: utility/configuration screens, not records - Web
-//     Config, Email Templates, Shipping Labels, Form Builder (the thing
+//   - Tools Manager: utility/configuration screens, not records - Email
+//     Templates, Shipping Labels, Form Builder (the thing
 //     that BUILDS a form, as opposed to Custom Form Submissions, which is
 //     the data that comes back from one).
 //   - Admin Manager still exists as a real module/route (Logs + Admin
@@ -38,7 +39,7 @@ import { Role } from 'src/app/common/lists/roles.enum';
 //     drops any group whose visible items filter down to empty, so this
 //     doesn't show as a dead expandable header with nothing inside it.
 // Moving a screen to a new group.id changes its permission-registry key
-// (e.g. store-manager.purchases -> customers-manager.purchases) - fine
+// (e.g. store-manager.purchases -> contacts-manager.purchases) - fine
 // here since no Employee had any grants at the time of this reorg
 // (confirmed against dev's real admin_users data), but worth remembering
 // if this pattern is ever repeated once real per-screen grants exist.
@@ -99,12 +100,16 @@ export interface NavGroup {
 export const NAV_CONFIG: NavGroup[] = [
   { id: 'home', label: 'HOME', icon: 'home', roles: [Role.ADMIN] },
   {
-    id: 'customers-manager',
-    label: 'CUSTOMERS MANAGER',
+    id: 'contacts-manager',
+    label: 'CONTACTS MANAGER',
     icon: 'people',
     roles: [Role.ADMIN],
     items: [
-      { label: 'Customers', slug: 'customers' },
+      // Renamed Customers -> Contacts 2026-08-19 (app-wide vocabulary
+      // change, user-requested). The Firestore collection stays `customers`
+      // - only labels and code identifiers changed; slug/screenKey renames
+      // were migrated for stored grants (scripts/migrate-screenkey-renames.js).
+      { label: 'Contacts', slug: 'contacts' },
       // Slug load-bearing - see NavLeaf.slug.
       { label: 'Purchases', slug: 'purchases' },
       // Operational (packing/shipping), same order lifecycle as Purchases -
@@ -179,12 +184,16 @@ export const NAV_CONFIG: NavGroup[] = [
     ]
   },
   {
-    id: 'web-manager',
-    label: 'WEB MANAGER',
+    id: 'content-manager',
+    label: 'CONTENT MANAGER',
     icon: 'handyman',
     roles: [Role.ADMIN],
     items: [
       { label: 'Disciple Making Minute', slug: 'disciple-making-minute' },
+      // Moved from Tools Manager 2026-08-19 alongside the Web Manager ->
+      // Content Manager rename: the public site's configuration belongs
+      // with the rest of the public-site content.
+      { label: 'Web Config', slug: 'web-config' },
       { label: 'Pod Casts', slug: 'pod-casts' },
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Home Page Images', slug: 'home-page-images' },
@@ -209,7 +218,6 @@ export const NAV_CONFIG: NavGroup[] = [
     icon: 'build',
     roles: [Role.ADMIN],
     items: [
-      { label: 'Web Config', slug: 'web-config' },
       // The full-screen email builder route (/tools-manager/email-designer/
       // new | :id) deliberately has NO NavLeaf/screenKey of its own - it is
       // Email Templates' editing surface and rides this entry's grants
@@ -263,7 +271,7 @@ export const NAV_CONFIG: NavGroup[] = [
     items: [
       { label: 'Purchases', slug: 'purchases' },
       { label: 'Subscribers', slug: 'subscribers' },
-      { label: 'Customers', slug: 'customers' },
+      { label: 'Contacts', slug: 'contacts' },
       { label: 'Events', slug: 'events' }
     ]
   },

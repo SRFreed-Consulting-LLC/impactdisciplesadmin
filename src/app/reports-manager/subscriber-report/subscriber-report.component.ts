@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
-import { CustomerService } from 'src/app/common/services/data/customer.service';
+import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/contact.model';
+import { ContactService } from 'src/app/common/services/data/contact.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -23,7 +23,7 @@ interface ColumnDef {
 type DateMode = 'after' | 'between' | 'lastMonths';
 
 // Reports Manager > Subscribers - a configurable report over the
-// `customers` collection's 2 subscription flags (see customer.model.ts's
+// `customers` collection's 2 subscription flags (see contact.model.ts's
 // own comment: newsletter + prayer team subscriber state used to be its
 // own `subscriptions` collection, now it's just subscribedToNewsletter/
 // subscribedToPrayerTeam booleans + dates on a customer). Date Subscribed
@@ -33,7 +33,7 @@ type DateMode = 'after' | 'between' | 'lastMonths';
 // twice, once per flag, and merging - same OR-across-two-fields pattern
 // Purchase Report already uses for State, see this app's CLAUDE.md).
 //
-// Absorbed the old standalone Subscribers screen (customers-manager/
+// Absorbed the old standalone Subscribers screen (contacts-manager/
 // subscriptions/, removed 2026-08-15) rather than leaving it as a separate
 // list screen once subscriber management became "just a filtered view of
 // customers" - Edit a subscriber (row double-click) and unsubscribing (a
@@ -79,7 +79,7 @@ export class SubscriberReportComponent {
   ];
 
   constructor(
-    private service: CustomerService,
+    private service: ContactService,
     private permissionService: PermissionService,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
@@ -246,7 +246,7 @@ export class SubscriberReportComponent {
 
   // Clears just this row's flag on the underlying customer (leaving the
   // *SubscribedDate field alone - "last subscribed", not "currently
-  // subscribed since", see customer.model.ts) rather than deleting the
+  // subscribed since", see contact.model.ts) rather than deleting the
   // customer record itself, which may carry real purchase/order history
   // completely unrelated to this subscription. Same behavior as the public
   // unsubscribe link (functions/src/subscriptions.functions.ts's

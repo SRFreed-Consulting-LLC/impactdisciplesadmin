@@ -58,7 +58,7 @@ export class AdminUsersComponent implements OnInit {
   rowActions: DataGridRowAction<AdminUser>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: (item) => !this.isSelf(item) }];
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   // Used to hide the delete action on the signed-in admin's own row - the

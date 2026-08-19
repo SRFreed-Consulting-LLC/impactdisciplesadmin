@@ -78,7 +78,7 @@ export class EventsComponent implements OnInit, OnDestroy {
   rowActions: DataGridRowAction<EventModel>[] = [];
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   // Kept live for the whole component lifetime - serves the list's
@@ -109,7 +109,7 @@ export class EventsComponent implements OnInit, OnDestroy {
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
   // Backs app-image-uploader's [card]/[field] inputs directly - see
-  // home-page-image-dialog.component.ts (web-manager) for the established
+  // home-page-image-dialog.component.ts (content-manager) for the established
   // explanation of this pattern.
   card: { imageUrl?: ImageModel } = {};
 

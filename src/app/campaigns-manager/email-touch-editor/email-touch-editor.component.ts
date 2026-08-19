@@ -236,7 +236,7 @@ export class EmailTouchEditorComponent implements OnInit {
 
       if (this.sendMode === 'tagTriggered') {
         const confirmed = await this.confirmService.confirm(
-          'Activate this automated email? Each tagged customer receives it once, ' +
+          'Activate this automated email? Each tagged contact receives it once, ' +
           this.form.value.afterDays + ' day(s) after the activity that tagged them, ' +
           'while the campaign is live.', 'Activate Automation');
         if (!confirmed) {

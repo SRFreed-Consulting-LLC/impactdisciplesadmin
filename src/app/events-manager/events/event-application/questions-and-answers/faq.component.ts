@@ -15,7 +15,7 @@ import { FaqDialogComponent } from './faq-dialog.component';
 // library (its own Firestore collection, plain add/edit/delete) and (b)
 // per-event membership (event.faqList) via checkbox selection on the same
 // table - mirrors SubscriptionsComponent's SelectionModel pattern exactly
-// (src/app/customers-manager/subscriptions).
+// (src/app/contacts-manager/subscriptions).
 @Component({
     selector: 'app-faq',
     templateUrl: './faq.component.html',
@@ -41,7 +41,7 @@ export class FAQComponent implements OnInit, OnChanges {
   selection = new SelectionModel<FAQModel>(true, []);
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   private allFaqs: FAQModel[] = [];

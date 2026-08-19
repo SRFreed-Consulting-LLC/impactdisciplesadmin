@@ -12,7 +12,7 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
-import { FulfillmentStep, segmentState, stepsFor } from '../../customers-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, segmentState, stepsFor } from '../../contacts-manager/fulfillment/fulfillment-steps';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 
 interface DashboardEventRow {

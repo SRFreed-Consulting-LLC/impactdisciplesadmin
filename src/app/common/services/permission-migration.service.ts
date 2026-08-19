@@ -11,13 +11,13 @@ import { ScreenPermission } from '../models/admin/screen-permission.model';
 // further Add/Edit/Delete restriction once visible, so full CRUD is the
 // accurate "what they could already do" baseline to seed. Purchases/
 // Fulfillment's screenKey prefix changed from store-manager to
-// customers-manager in the 2026-08 nav reorg (see nav-config.ts's own
+// contacts-manager in the 2026-08 nav reorg (see nav-config.ts's own
 // comment) - updated here too, or this seed would silently write dead keys
 // that match nothing in the current registry the next time it fires.
 const LEGACY_EMPLOYEE_GRANTS: ScreenPermission[] = [
   { screenKey: 'events-manager.events.attendees', view: true, add: true, edit: true, delete: true },
-  { screenKey: 'customers-manager.purchases', view: true, add: true, edit: true, delete: true },
-  { screenKey: 'customers-manager.fulfillment', view: true, add: true, edit: true, delete: true }
+  { screenKey: 'contacts-manager.purchases', view: true, add: true, edit: true, delete: true },
+  { screenKey: 'contacts-manager.fulfillment', view: true, add: true, edit: true, delete: true }
 ];
 
 // One-time, idempotent seed for Employee accounts that existed before this

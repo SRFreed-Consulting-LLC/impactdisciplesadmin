@@ -1,10 +1,10 @@
-import { CustomerModel, SubscriptionType } from 'src/app/common/models/domain/utils/customer.model';
+import { ContactModel, SubscriptionType } from 'src/app/common/models/domain/utils/contact.model';
 
 // Intermediate shape runQuery() produces - a customer + which flag matched
 // it - kept separate from ReportRow below so both can carry `type`
 // independently.
 export interface SubscriberQueryRow {
-  customer: CustomerModel;
+  customer: ContactModel;
   type: SubscriptionType;
 }
 
@@ -26,5 +26,5 @@ export interface ReportRow {
   // FirebaseDAO.update() is a plain setDoc(), not a merge - flipping one
   // flag on this customer means writing the WHOLE record back, so every
   // action that mutates a row needs it on hand rather than re-fetching.
-  customer: CustomerModel;
+  customer: ContactModel;
 }

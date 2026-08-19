@@ -22,7 +22,7 @@ import { FolderPickerDialogComponent } from './folder-picker-dialog.component';
 // image-uploader.component.ts for the full rationale. A small standalone
 // module (not merged into the app-wide SharedModule) matching the
 // original's own shape, imported only where the picker is actually used
-// (currently just web-manager.module.ts).
+// (currently just content-manager.module.ts).
 @NgModule({
   declarations: [
     ImageUploaderComponent,

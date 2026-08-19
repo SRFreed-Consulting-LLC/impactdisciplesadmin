@@ -46,7 +46,7 @@ html, body {
 // of the time, but it's exactly what silently broke position: sticky for
 // Admin Manager's list-header: browsers compute a sticky element's
 // containing block through its ancestor chain, and an inline ancestor
-// (app-customers, app-admin-manager, etc, all sitting between the sticky
+// (app-contacts, app-admin-manager, etc, all sitting between the sticky
 // .list-header and its intended scrolling ancestor .portal-content) can't
 // establish that properly - live-diagnosed via Playwright: .list-header had
 // position: sticky applied and a correctly-scrolling ancestor, and still
@@ -70,7 +70,7 @@ app-coupons,
 app-course-dialog,
 app-courses,
 app-customer-dialog,
-app-customers,
+app-contacts,
 app-dashboard,
 app-dmms,
 app-email-list-dialog,
@@ -120,7 +120,7 @@ app-user-dialog,
 app-users,
 app-variable-inserter,
 app-web-config,
-app-web-manager {
+app-content-manager {
   display: block;
 }
 
@@ -173,7 +173,7 @@ app-list-header {
 // two rows silently abutting with nothing to visually separate them.
 //
 // This only works because .table-scroll is now a genuinely bounded scroll
-// container (see e.g. customers.component.scss) - sticky's "stuck" range
+// container (see e.g. contacts.component.scss) - sticky's "stuck" range
 // is bounded by its containing block, and when .table-scroll's own overflow
 // -x: auto forced overflow-y to also compute to auto (the two axes are
 // coupled whenever either isn't visible), it used to be an accidental
@@ -254,8 +254,8 @@ table.mat-mdc-table tr.mat-mdc-row.row--new {
   box-shadow: inset 4px 0 0 var(--app-accent);
 }
 
-// Pending-customer-change highlight (see customer.model.ts's
-// PendingCustomerChange) - applied via [class.row--pending] on the
+// Pending-customer-change highlight (see contact.model.ts's
+// PendingContactChange) - applied via [class.row--pending] on the
 // Customers screen's rows. Amber rather than row--new's blue: this isn't
 // "arrived recently", it's "needs a decision" (accept/reject a mismatch a
 // purchase flagged), a different semantic that deserves a different color,

@@ -6,7 +6,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-config';
 
 // Library Manager - same tab-shell shape as every other manager component
-// (see customers-manager.component.ts's own comment for the full
+// (see contacts-manager.component.ts's own comment for the full
 // combineLatest/queryParamMap explanation). Reached by Admin/Root (full
 // access, as everywhere) and Role.EDITOR (hard-scoped to only this group -
 // see PermissionService.canView()'s own comment) - never by Employee.

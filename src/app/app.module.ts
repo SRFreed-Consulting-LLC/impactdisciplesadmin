@@ -23,7 +23,7 @@ import { AuthModule } from './core/auth/auth.module';
   imports: [
     BrowserModule,
     AppRoutingModule,
-    // admin-manager, customers-manager, events-manager, web-manager,
+    // admin-manager, contacts-manager, events-manager, content-manager,
     // store-manager, tools-manager and reports-manager are lazy-loaded via
     // app-routing.module.ts's loadChildren - they must NOT be imported here
     // eagerly, or the bundler would pull them back into the main chunk.

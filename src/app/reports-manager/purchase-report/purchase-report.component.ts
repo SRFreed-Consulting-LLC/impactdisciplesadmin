@@ -7,7 +7,7 @@ import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
-import { FULFILLMENT_STEPS } from '../../customers-manager/fulfillment/fulfillment-steps';
+import { FULFILLMENT_STEPS } from '../../contacts-manager/fulfillment/fulfillment-steps';
 
 interface ColumnDef {
   key: string;

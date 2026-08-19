@@ -47,7 +47,7 @@ export class CoachesComponent implements OnInit, OnDestroy {
   rowActions: DataGridRowAction<CoachModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   // Kept live for organization name lookups in the list - same pattern as

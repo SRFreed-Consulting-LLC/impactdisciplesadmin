@@ -3,8 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { CustomerModel, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
-import { CustomerService } from 'src/app/common/services/data/customer.service';
+import { ContactModel, SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/contact.model';
+import { ContactService } from 'src/app/common/services/data/contact.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ReportRow } from './subscriber-report-row.model';
 
@@ -14,7 +14,7 @@ export interface SubscriberDialogData {
 
 // Edit-only - see subscriber-report.component.ts's own header comment on
 // why there's no "add a subscriber manually" path any more (there's no
-// manual "New Customer" flow in this app either, see customer.model.ts's
+// manual "New Customer" flow in this app either, see contact.model.ts's
 // own comment - a subscriber is a customer, same story). Same firstName/
 // lastName/email/Type form the old NewsletterSubscriberDialogComponent/
 // PrayerSubscriberDialogComponent had.
@@ -34,7 +34,7 @@ export class SubscriberDialogComponent {
     private dialogRef: MatDialogRef<SubscriberDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: SubscriberDialogData,
     private fb: FormBuilder,
-    private service: CustomerService,
+    private service: ContactService,
     private snackbar: SnackbarService
   ) {
     this.form = this.fb.group({
@@ -73,9 +73,9 @@ export class SubscriberDialogComponent {
   // both flags on the SAME customer doc and re-stamps the date (a fresh
   // "subscribed" moment for the new type); leaving type unchanged only
   // touches name/email, the existing *SubscribedDate is left alone.
-  private updateExisting(type: SubscriptionType, firstName: string, lastName: string, email: string): Promise<CustomerModel> {
+  private updateExisting(type: SubscriptionType, firstName: string, lastName: string, email: string): Promise<ContactModel> {
     const original = this.data.item;
-    const updated: CustomerModel = { ...original.customer, firstName, lastName, email };
+    const updated: ContactModel = { ...original.customer, firstName, lastName, email };
 
     if (type !== original.type) {
       const oldFields = subscriptionFieldsForType(original.type);

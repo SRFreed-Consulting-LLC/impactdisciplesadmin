@@ -7,33 +7,33 @@ test.describe('Left nav - collapsible manager groups', () => {
   });
 
   // Group buttons' accessible names are the SHORT navy-redesign labels
-  // ("CUSTOMERS", "STORE" - what the drawer actually renders), not
-  // nav-config's internal "CUSTOMERS MANAGER" strings the pre-redesign
+  // ("CONTACTS", "STORE" - what the drawer actually renders), not
+  // nav-config's internal "CONTACTS MANAGER" strings the pre-redesign
   // version of this spec targeted (fixed 2026-08-18, same staleness batch
   // as the Settings-Themes rewrite below).
   test('expanding a group reveals its sub-items, and multiple groups can stay open', async ({ page }) => {
     await page.goto('/home');
 
     // Collapsed by default on a route with no active manager - Purchases
-    // shouldn't be visible until Customers is expanded (Purchases moved
-    // from Store Manager to Customers Manager in nav-config.ts's 2026-08
+    // shouldn't be visible until Contacts is expanded (Purchases moved
+    // from Store Manager to Contacts Manager (nee Customers Manager) in nav-config.ts's 2026-08
     // reorg - see that file's header comment).
     await expect(page.getByText('Purchases', { exact: true })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'CUSTOMERS', exact: true }).click();
+    await page.getByRole('button', { name: 'CONTACTS', exact: true }).click();
     await expect(page.getByText('Purchases', { exact: true })).toBeVisible();
 
     // Opening a second group shouldn't close the first (no accordion-
     // exclusive behavior - see MainScreenComponent.expanded). Store has no
-    // label overlap with Customers' items, unlike Reports (which also has
+    // label overlap with Contacts' items, unlike Reports (which also has
     // its own separate "Purchases" entry) - picked deliberately to avoid a
     // two-match ambiguity here.
     await page.getByRole('button', { name: 'STORE', exact: true }).click();
     await expect(page.getByText('Products', { exact: true })).toBeVisible();
     await expect(page.getByText('Purchases', { exact: true })).toBeVisible();
 
-    // Collapsing Customers again hides just its own sub-items.
-    await page.getByRole('button', { name: 'CUSTOMERS', exact: true }).click();
+    // Collapsing Contacts again hides just its own sub-items.
+    await page.getByRole('button', { name: 'CONTACTS', exact: true }).click();
     await expect(page.getByText('Purchases', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Products', { exact: true })).toBeVisible();
   });
@@ -133,7 +133,7 @@ test.describe('Settings - Themes', () => {
     await page.getByText('HOME', { exact: true }).click();
     await expect(html).toHaveClass(/theme-midnight-paper/);
 
-    await page.getByText('CUSTOMERS', { exact: true }).click();
+    await page.getByText('CONTACTS', { exact: true }).click();
     await page.getByText('Purchases', { exact: true }).click();
     await expect(html).toHaveClass(/theme-midnight-paper/);
 

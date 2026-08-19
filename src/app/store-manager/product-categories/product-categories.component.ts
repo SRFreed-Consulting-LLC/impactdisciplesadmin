@@ -10,7 +10,7 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 
 // Opened via MatDialog.open(ProductCategoriesComponent, ...) from
 // ProductsComponent's "Categories" menu item - there is no standalone
-// route for this screen, same pattern as web-manager's
+// route for this screen, same pattern as content-manager's
 // pod-cast-categories.component (the direct precedent this was built
 // from). Replaces the old NGXS ShowProductCategoriesModal/ShowCategoryModal
 // action-driven, always-mounted-in-template pattern - no other migrated
@@ -32,7 +32,7 @@ export class ProductCategoriesComponent implements OnInit {
   itemType = 'Category';
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   constructor(

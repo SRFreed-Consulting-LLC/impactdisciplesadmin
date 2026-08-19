@@ -3,7 +3,7 @@ import Quill from 'quill';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/customer.model';
+import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/contact.model';
 import { CampaignAudience, CampaignModel, emptyCampaignStats } from 'src/app/common/models/domain/campaign.model';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
 import { emptyEmailStats } from 'src/app/common/models/domain/campaign.model';

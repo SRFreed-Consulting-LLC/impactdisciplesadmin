@@ -19,7 +19,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 // Down to just Logs + Admin Users - Customers/Web Config/Email Templates/
-// Shipping Labels moved to CustomersManagerModule/ToolsManagerModule (see
+// Shipping Labels moved to ContactsManagerModule/ToolsManagerModule (see
 // nav-config.ts's own comment on the reorg). This module/route still
 // exists - Logs and Admin Users are both hideFromNav + employeeGrantable:
 // false, reached only from the user-menu dropdown now (see main-screen.

@@ -1,0 +1,17 @@
+<div class="manager-content">
+  @if (selectedTab === 'Contacts') {
+    <app-contacts></app-contacts>
+  }
+
+  @if (selectedTab === 'Purchases') {
+    <app-purchases></app-purchases>
+  }
+
+  @if (selectedTab === 'Fulfillment') {
+    <app-fulfillment></app-fulfillment>
+  }
+
+  @if (selectedTab === 'Form Submissions') {
+    <app-custom-form-submissions></app-custom-form-submissions>
+  }
+</div>

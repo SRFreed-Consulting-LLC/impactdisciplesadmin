@@ -48,7 +48,7 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
   ];
 
   // House rule: loading spinner shown until first emission - see
-  // customers.component.ts for the full explanation.
+  // contacts.component.ts for the full explanation.
   loading$ = new BehaviorSubject<boolean>(true);
 
   itemType = 'Shipping Label Batch';

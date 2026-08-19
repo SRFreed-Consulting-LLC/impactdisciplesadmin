@@ -1,7 +1,7 @@
 <app-popup-header [title]="'PREVIEW & TEST SUBMIT: ' + data.formName" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content>
-  <p class="test-submit-hint">This writes a real submission, tagged <strong>Test</strong>, to Customers Manager &rsaquo; Form Submissions.</p>
+  <p class="test-submit-hint">This writes a real submission, tagged <strong>Test</strong>, to Contacts Manager &rsaquo; Form Submissions.</p>
   <app-form-renderer [fields]="data.fields" [backgroundColor]="data.backgroundColor" [controlStyle]="data.controlStyle" mode="fill" (submitted)="onSubmit($event)"></app-form-renderer>
 </mat-dialog-content>
 

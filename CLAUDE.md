@@ -122,13 +122,13 @@ not a decision to defend or extend.
   (`...(value ? { key: value } : {})`) rather than assigning it unconditionally, so the key is
   omitted rather than present-with-`undefined`.
 - **`BaseService<T>`** (`src/app/common/services/data/base.service.ts`) — thin per-collection
-  wrapper around the DAO; every entity service (`ProductService`, `CustomerService`, etc.) extends
+  wrapper around the DAO; every entity service (`ProductService`, `ContactService`, etc.) extends
   this and just sets `table` (the Firestore collection name) and optionally `fromFirestore`
   (a deserialization hook).
 - Feature components inject their entity service directly and call `streamAll()` for small/live
   reference data (categories, series, tags) or the paginated path (see below) for large collections.
 
-### Pagination (Products, Customers, Log Messages today)
+### Pagination (Products, Contacts, Log Messages today)
 
 Large tables have been moved off `streamAll()` (an always-on `onSnapshot` over the whole collection)
 onto one-time paged fetches, to cut down on standing Firestore listeners:
@@ -189,20 +189,30 @@ Columns, Export, feature-specific actions) uniformly.
 
 Feature areas are lazy-loaded NgModules off `AppRoutingModule` (`src/app/app-routing.module.ts`),
 each gated by `authGuard`: `admin-manager` (Admin Users, Log Messages — both `hideFromNav`, reached
-from the user-menu dropdown, not the left nav), `events-manager`, `customers-manager`,
-`web-manager`, `store-manager`, `tools-manager`, `reports-manager`. There is no
-`subscriptions-manager` module any more — it was absorbed into `customers-manager` as a screen
-(`customers-manager/subscriptions/`), then that screen itself was removed outright 2026-08-15 once
+from the user-menu dropdown, not the left nav), `events-manager`, `contacts-manager`,
+`content-manager`, `store-manager`, `tools-manager`, `reports-manager`. **App-wide vocabulary
+rename 2026-08-19 (user-requested): "Customers" → "Contacts" and "Web Manager" → "Content
+Manager"** — `customers-manager` became `contacts-manager` (folder, module, routes, screenKeys,
+labels; the Customers screen is now Contacts, `CustomerService`/`CustomerModel` are
+`ContactService`/`ContactModel`), `web-manager` became `content-manager`, and Web Config moved
+from Tools Manager into Content Manager. The **Firestore collection is still `customers`**
+(`ContactService.table`), the customer-upsert Cloud Functions keep their names, and the old
+routes redirect (`app-routing.module.ts`). Stored permission grants were key-migrated by
+`scripts/migrate-screenkey-renames.js` — already run on dev; **must be run on prod when this
+ships to prod**. There is no
+`subscriptions-manager` module any more — it was absorbed into what's now `contacts-manager` as a
+screen, then that screen itself was removed outright 2026-08-15 once
 subscriber management folded into Reports Manager's own Subscribers report instead (see that
 section below) — there is no dedicated subscriber-management screen left anywhere, just that report.
 There is no `requests-manager` module either — its one surviving screen, Custom Form Submissions, has moved twice (originally its
-own module, briefly under `web-manager`) and now lives under `customers-manager`
+own module, briefly under `content-manager`) and now lives under `contacts-manager`
 (`custom-form-submissions/`) as of the August 2026 nav reorg; the other four Requests Manager
 screens (Consultation Requests/Surveys, Lunch and Learn, Seminar) were removed outright, superseded
-by the generic Form Builder (`tools-manager`) + Custom Form Submissions pair. `customers-manager`
+by the generic Form Builder (`tools-manager`) + Custom Form Submissions pair. `contacts-manager`
 also owns Purchases/Fulfillment, not `store-manager` — `store-manager` today is Products, Coupons,
 Sales, affiliate-sales/affiliate-payments, product-categories, product-series. `tools-manager` holds
-Web Config, Email Templates, Shipping Labels, and Form Builder; Mailchimp Settings moved to
+Email Templates, Shipping Labels, and Form Builder (Web Config moved to `content-manager`
+2026-08-19, see the rename note above); Mailchimp Settings moved to
 `campaigns-manager` 2026-08-18 (it's campaign-audience infrastructure — see the Email taxonomy
 note below). `reports-manager`
 is new — see below. `events-manager` exposes two separate nav screens, **Summit** and **Events** —
@@ -254,16 +264,16 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
   date-field pair to query; with Type off, "either type" means querying both flags and merging
   client-side (same OR-across-two-fields pattern as Purchase Report's State criterion, see above)
   since a customer has no single `type` field any more. Absorbed the old standalone Subscribers
-  screen (`customers-manager/subscriptions/`, removed 2026-08-15) rather than leaving it separate
+  screen (removed 2026-08-15) rather than leaving it separate
   once a subscriber became just a filtered view of `customers` - Edit a subscriber (row double-click)
   and unsubscribing (a row action) both live here now. No manual "add a subscriber" flow (same reason
-  Customers has none, see customer.model.ts's own comment), no List criterion, no selection/
+  Contacts has none, see contact.model.ts's own comment), no List criterion, no selection/
   checkboxes, no saved-list building - the old screen supported carving subscribers into saved
   sub-lists, but this app doesn't do that (per the user, explicitly): Send Newsletter/Send Prayer
   Request always target every subscriber currently flagged for that type, full stop, no per-send
   audience narrowing.
-- **Customer Report** (`customer-report/`, Reports Manager → Customers) — over the `customers`
-  collection, State only, no date/list criteria and no group-by mode: `CustomerModel` has no
+- **Contact Report** (`contact-report/`, Reports Manager → Contacts; nee Customer Report) — over the `customers`
+  collection, State only, no date/list criteria and no group-by mode: `ContactModel` has no
   signup/created-date field at all (customer docs are upserted from purchases/event registrations —
   see `functions/src/customer-upsert.functions.ts` — with no timestamp stamped anywhere), and there
   is no live list-membership mechanism wired to Customers (see the Pagination section above).
@@ -306,7 +316,7 @@ Common conventions established by Purchase Report and followed by the others:
   to `MIGRATION.md`.
 - Before adding a criterion that filters/groups by some field, confirm that field is actually
   queryable data on the entity, not something that only exists in a downstream, one-way-synced
-  system (see Customer Report's own header comment on why it has no List filter — Mailchimp
+  system (see Contact Report's own header comment on why it has no List filter — Mailchimp
   membership is push-only, never mirrored back to Firestore, see Cloud Functions section below).
 
 ### `MIGRATION.md`
@@ -507,7 +517,7 @@ Newsletter/Prayer Team subscriber state used to be its own `subscriptions` colle
 a merge of 2 even older `newsletter_subscriptions`/`prayer_team_subscriptions` collections) — it's now
 2 booleans + dates (`subscribedToNewsletter`/`newsletterSubscribedDate`,
 `subscribedToPrayerTeam`/`prayerTeamSubscribedDate`) directly on the matching `customers` doc instead
-(see `CustomerModel`'s own comment, and `functions/src/subscriptions.functions.ts` for the 2 endpoints
+(see `ContactModel`'s own comment (contact.model.ts), and `functions/src/subscriptions.functions.ts` for the 2 endpoints
 that flip those flags from outside the admin app). Reports Manager's Subscriber Report (the sole
 remaining subscriber-management screen - see its own section above) queries `customers` by these
 flags now, not a `subscriptions` collection. Unlike `users` above, the old `subscriptions`

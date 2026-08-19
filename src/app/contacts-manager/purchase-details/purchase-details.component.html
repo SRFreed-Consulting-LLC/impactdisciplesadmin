@@ -1,0 +1,297 @@
+<div class="sale-details">
+
+  <!-- Customer & Addresses - all three side by side. Phone is read-only
+       (like everything else here now) - corrections belong on the real
+       customer record (View Contact Record below), not this order. -->
+  <p class="section-label">Contact &amp; Addresses</p>
+  <div class="addr-panel">
+    <div class="addr-card">
+      <p class="addr-card__label">Contact</p>
+      <div class="addr-card__name">{{ customerName() }}</div>
+      <div class="addr-card__lines">{{ selectedItem.email }}<br>{{ phoneDisplay() }}</div>
+      <button mat-button type="button" class="addr-card__view-customer" [disabled]="viewingCustomer" (click)="viewCustomer()">
+        <mat-icon>account_circle</mat-icon>
+        View Contact Record
+      </button>
+      @if (service.getRefundStateLabel(selectedItem); as refundLabel) {
+        <!-- pill--critical (not the never-defined pill--warn the old
+             template referenced) for the full-refund state. -->
+        <span class="pill" [class.pill--critical]="refundLabel === 'REFUNDED'"
+              [class.pill--accent]="refundLabel === 'PARTIALLY REFUNDED'"
+              [matTooltip]="refundLabel === 'REFUNDED'
+                ? ('This purchase was fully refunded' + (selectedItem.refundedBy ? ' by ' + selectedItem.refundedBy : ''))
+                : ((selectedItem.refundAmount | currency) + ' of ' + (service.getChargedDisplayAmount(selectedItem) | currency) + ' refunded')">
+          {{ refundLabel }}
+        </span>
+      }
+      @if (canRefund()) {
+        <app-indicator-button
+          [title]="(selectedItem.refundAmount ?? 0) > 0 ? 'REFUND MORE' : 'REFUND'"
+          [isInProgress]="refunding"
+          [disabled]="refunding"
+          stylingMode="outlined"
+          cssClass="refund-button"
+          (clicked)="openRefundDialog()">
+        </app-indicator-button>
+      }
+    </div>
+    <div class="addr-card">
+      <p class="addr-card__label">Billing</p>
+      @if (selectedItem.billingAddress?.address1) {
+        <div class="addr-card__lines">
+          {{ selectedItem.billingAddress?.address1 }}
+          @if (selectedItem.billingAddress?.address2) { <br>{{ selectedItem.billingAddress?.address2 }} }
+          <br>{{ selectedItem.billingAddress?.city }}, {{ selectedItem.billingAddress?.state }} {{ selectedItem.billingAddress?.zip }}
+          <br>{{ selectedItem.billingAddress?.country }}
+        </div>
+      } @else {
+        <div class="addr-card__lines addr-card__lines--empty">No billing address on file</div>
+      }
+      @if (selectedItem.isShippingSameAsBilling) {
+        <span class="pill pill--neutral addr-card__same">Shipping is the same as billing</span>
+      }
+    </div>
+    <!-- This is the address that specific order actually shipped to at
+         checkout, kept exactly as recorded (still what a shipping label
+         prints against) - not necessarily the customer's current address. -->
+    <div class="addr-card">
+      <p class="addr-card__label">Shipping</p>
+      @if (selectedItem.shippingAddress?.address1) {
+        <div class="addr-card__lines">
+          {{ selectedItem.shippingAddress?.address1 }}
+          @if (selectedItem.shippingAddress?.address2) { <br>{{ selectedItem.shippingAddress?.address2 }} }
+          <br>{{ selectedItem.shippingAddress?.city }}, {{ selectedItem.shippingAddress?.state }} {{ selectedItem.shippingAddress?.zip }}
+          <br>{{ selectedItem.shippingAddress?.country }}
+        </div>
+      } @else {
+        <div class="addr-card__lines addr-card__lines--empty">No shipping address on file</div>
+      }
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- Order Totals -->
+  <p class="section-label">Order Totals</p>
+  <div class="tiles">
+    <div class="tile"><span class="tile__k">Subtotal</span><span class="tile__v">{{ service.getProductTotalDisplayAmount(selectedItem) | currency }}</span></div>
+    <div class="tile"><span class="tile__k">Tax</span><span class="tile__v">{{ service.getTaxesDisplayAmount(selectedItem) | currency }}</span></div>
+    <div class="tile"><span class="tile__k">Shipping</span><span class="tile__v">{{ service.getShippingDisplayAmount(selectedItem) | currency }}</span></div>
+    <div class="tile tile--down"><span class="tile__k">Discount</span><span class="tile__v">-{{ totalDiscountAmount | currency }}</span></div>
+    <div class="tile"><span class="tile__k">Items</span><span class="tile__v">{{ getOrderItemCount() }}</span></div>
+    <div class="tile tile--hot"><span class="tile__k">Charged</span><span class="tile__v">{{ service.getChargedDisplayAmount(selectedItem) | currency }}</span></div>
+  </div>
+
+  <!-- Discount breakdown -->
+  <div class="breakdown-wrap">
+    <p class="section-label">Discount Breakdown</p>
+    @if (hasDiscounts) {
+      <table class="breakdown">
+        <thead><tr><th>Source</th><th>Applied To</th><th>Detail</th><th class="amt-col">Amount</th></tr></thead>
+        <tbody>
+          @if (couponAmount > 0) {
+            <tr>
+              <td><span class="src-tag">Coupon</span><div class="src-note">{{ selectedItem.couponCode || '—' }}</div></td>
+              <td>Products</td>
+              <td>{{ selectedItem.couponPercent ? selectedItem.couponPercent + '% off qualifying items' : 'Applied at checkout' }}</td>
+              <td class="amt-col amt">-{{ couponAmount | currency }}</td>
+            </tr>
+          }
+          @if (shippingDiscountAmount > 0) {
+            <tr>
+              <td><span class="src-tag">Shipping</span></td>
+              <td>Shipping</td>
+              <td>{{ selectedItem.shippingDiscountReason || 'Applied at checkout' }}</td>
+              <td class="amt-col amt">-{{ shippingDiscountAmount | currency }}</td>
+            </tr>
+          }
+          <tr class="breakdown__total-row">
+            <td colspan="3">Total</td>
+            <td class="amt-col amt">-{{ totalDiscountAmount | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+    } @else {
+      <div class="breakdown-empty">No coupon or shipping discount applied to this order.</div>
+    }
+    @if (onSaleItems.length) {
+      <div class="breakdown-info">
+        <span>ℹ️</span>
+        <div>
+          @for (item of onSaleItems; track item; let last = $last) {
+            <b>{{ item.itemName }}</b>{{ last ? '' : ', ' }}
+          }
+          {{ onSaleItems.length === 1 ? 'was' : 'were' }} independently on sale at checkout - already reflected in the subtotal above, not part of the coupon discount.
+        </div>
+      </div>
+    }
+  </div>
+
+  <hr class="rule">
+
+  <!-- Timeline + Items -->
+  <div class="tl">
+    <div>
+      <p class="section-label">Order Timeline</p>
+      <div class="tl__events">
+        @for (node of timeline; track node.step.status) {
+          <div class="tl__event" [class]="'tl__event--' + node.state">
+            <b>{{ node.step.label }}</b>
+            @if (node.date) {
+              <div class="tl__when">{{ $any(node.date) | date: 'medium' }}@if (node.by) { &middot; {{ node.by }} }</div>
+            } @else if (node.state === 'pending') {
+              <div class="tl__when tl__when--pending">Pending</div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (refundHistory().length > 0) {
+        <p class="section-label">Refunds</p>
+        <div class="tl__events">
+          @for (refund of refundHistory(); track $index) {
+            <div class="tl__event tl__event--refund">
+              <b>{{ refund.amount | currency }} refunded</b>
+              <div class="tl__when">
+                {{ $any(refund.date) | date: 'medium' }}@if (refund.by) { &middot; {{ refund.by }} }
+                @if (refund.refundId) { &middot; PayPal {{ refund.refundId }} }
+              </div>
+              @if (refund.licensesRevoked?.length) {
+                <div class="tl__when">{{ refund.licensesRevoked!.length }} library license(s) revoked</div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+    <div>
+      <p class="section-label">Items</p>
+      <div class="tl__items">
+        @for (item of selectedItem.cartItems; track item) {
+          <div class="tl__item">
+            <div class="tl__img">
+              @if (item.img) {
+                <img [src]="item.img.url" [alt]="item.img.name">
+              }
+            </div>
+            <div class="tl__item-body">
+              <div class="tl__item-name">{{ item.itemName }}</div>
+              <div class="tl__item-sub">
+                {{ item.orderQuantity }} x {{ service.calculateProductCostAmount(costRow(item)) | currency }}
+                @if (item.size) { &middot; {{ item.size }} }
+                @if (item.color) { &middot; {{ item.color }} }
+              </div>
+              @if (item.attendees?.length) {
+                <ol class="tl__attendees">
+                  @for (attendee of item.attendees; track attendee) {
+                    <li>{{ attendee.firstName }} {{ attendee.lastName }} ({{ attendee.email }})</li>
+                  }
+                </ol>
+              }
+              <div class="tl__item-tags">
+                <span class="pill pill--neutral">{{ isPhysical(item) ? 'Physical' : 'Digital' }}</span>
+                @if (item.salePrice) {
+                  <span class="pill pill--accent">On Sale</span>
+                }
+                @if (item.processedStatus === 'SHIPPED') {
+                  <span class="pill pill--success">Shipped</span>
+                }
+                @if (item.processedStatus === 'REFUNDED') {
+                  <span class="pill pill--critical">Refunded</span>
+                }
+              </div>
+            </div>
+            <div class="tl__item-amt">
+              {{ itemTotal(item) | currency }}
+              @if (isVisible(['Admin']) && isShippedButtonVisible(item)) {
+                <button mat-icon-button matTooltip="Mark As Shipped" (click)="markAsShipped(item)">
+                  <mat-icon>local_shipping</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  @if (isVisible(['Admin']) && selectedItem.fulfillmentStatus && selectedItem.fulfillmentStatus !== 'closed') {
+    <div class="footbar">
+      <span class="pill pill--accent">{{ service.getFulfillmentStatusLabel(selectedItem.fulfillmentStatus) }}</span>
+      @switch (selectedItem.fulfillmentStatus) {
+        @case ('new') {
+          <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder()">
+            <mat-icon>check_circle</mat-icon>
+            Acknowledge Order
+          </button>
+        }
+        @case ('received') {
+          <div class="footbar__actions">
+            <button mat-raised-button color="primary" type="button" [disabled]="printing" (click)="printShippingLabel()">
+              <mat-icon>local_shipping</mat-icon>
+              Print Shipping Label
+            </button>
+            <button mat-stroked-button type="button" matTooltip="Amazon fulfills this order - the remaining step is the contact confirmation email" (click)="markShippedViaAmazon()">
+              <mat-icon>local_mall</mat-icon>
+              Shipped via Amazon
+            </button>
+            <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
+              Mark as Picked Up / Delivered
+            </button>
+          </div>
+        }
+        @case ('shipped_via_amazon') {
+          <button mat-raised-button color="primary" type="button" (click)="sendAmazonConfirmation()">
+            <mat-icon>mark_email_read</mat-icon>
+            Send Confirmation Email to Contact
+          </button>
+        }
+        @case ('shipping_label_printed') {
+          <button mat-raised-button color="primary" type="button" (click)="markPackaged()">
+            <mat-icon>inventory_2</mat-icon>
+            Mark as Packaged
+          </button>
+        }
+        @case ('awaiting_shipping') {
+          <button mat-raised-button color="primary" type="button" (click)="markShipped()">
+            <mat-icon>local_shipping</mat-icon>
+            Mark as Shipped
+          </button>
+        }
+      }
+      <!-- Corrective back-step: THIS screen only (not Dashboard/Fulfillment,
+           per the user 2026-08-19). Every move is recorded on the timeline. -->
+      @if (backSteps.length) {
+        <span class="footbar__spacer"></span>
+        <button mat-stroked-button type="button" [matMenuTriggerFor]="backMenu">
+          <mat-icon>undo</mat-icon>
+          Move Back a Step
+        </button>
+        <mat-menu #backMenu="matMenu">
+          @for (step of backSteps; track step.status) {
+            <button mat-menu-item (click)="revertTo(step)">{{ step.statusLabel }}</button>
+          }
+        </mat-menu>
+      }
+    </div>
+  } @else if (selectedItem.fulfillmentStatus === 'closed') {
+    <div class="footbar footbar--done">
+      <span class="pill pill--success">Closed</span>
+      <span class="footbar__done-note">This order is closed.</span>
+      @if (isVisible(['Admin']) && backSteps.length) {
+        <span class="footbar__spacer"></span>
+        <button mat-stroked-button type="button" [matMenuTriggerFor]="reopenMenu">
+          <mat-icon>undo</mat-icon>
+          Reopen / Move Back
+        </button>
+        <mat-menu #reopenMenu="matMenu">
+          @for (step of backSteps; track step.status) {
+            <button mat-menu-item (click)="revertTo(step)">{{ step.statusLabel }}</button>
+          }
+        </mat-menu>
+      }
+    </div>
+  }
+
+</div>

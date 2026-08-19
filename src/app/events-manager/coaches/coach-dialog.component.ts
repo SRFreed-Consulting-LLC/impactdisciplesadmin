@@ -30,7 +30,7 @@ export class CoachDialogComponent {
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
   // Backs app-image-uploader's [card]/[field] inputs directly - see
-  // home-page-image-dialog.component.ts (web-manager) for the established
+  // home-page-image-dialog.component.ts (content-manager) for the established
   // explanation of this pattern.
   card: { photoUrl?: ImageModel } = {};
 

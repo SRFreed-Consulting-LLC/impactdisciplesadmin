@@ -39,15 +39,21 @@ const routes: Routes = [
         canActivate: [ authGuard ]
       },
       {
-        path: 'customers-manager',
-        loadChildren: () => import('./customers-manager/customers-manager.module').then(m => m.CustomersManagerModule),
+        path: 'contacts-manager',
+        loadChildren: () => import('./contacts-manager/contacts-manager.module').then(m => m.ContactsManagerModule),
         canActivate: [ authGuard ]
       },
       {
-        path: 'web-manager',
-        loadChildren: () => import('./web-manager/web-manager.module').then(m => m.WebManagerModule),
+        path: 'content-manager',
+        loadChildren: () => import('./content-manager/content-manager.module').then(m => m.ContentManagerModule),
         canActivate: [ authGuard ]
       },
+      // 2026-08-19 renames (Customers Manager -> Contacts Manager, Web
+      // Manager -> Content Manager): old paths redirect so pre-rename
+      // bookmarks and stale deep links keep working. redirectTo preserves
+      // query params (?tab=, ?purchaseId=) by default.
+      { path: 'customers-manager', redirectTo: 'contacts-manager' },
+      { path: 'web-manager', redirectTo: 'content-manager' },
       {
         path: 'store-manager',
         loadChildren: () => import('./store-manager/store-manager.module').then(m => m.StoreManagerModule),

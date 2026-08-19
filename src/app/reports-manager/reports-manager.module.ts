@@ -22,7 +22,7 @@ import { PurchaseReportComponent } from './purchase-report/purchase-report.compo
 import { SubscriberReportComponent } from './subscriber-report/subscriber-report.component';
 import { SubscriberDialogComponent } from './subscriber-report/subscriber-dialog.component';
 import { SendSubscriptionDialogComponent } from './subscriber-report/send-subscription-dialog.component';
-import { CustomerReportComponent } from './customer-report/customer-report.component';
+import { ContactReportComponent } from './contact-report/contact-report.component';
 import { EventReportComponent } from './event-report/event-report.component';
 
 @NgModule({
@@ -32,7 +32,7 @@ import { EventReportComponent } from './event-report/event-report.component';
     SubscriberReportComponent,
     SubscriberDialogComponent,
     SendSubscriptionDialogComponent,
-    CustomerReportComponent,
+    ContactReportComponent,
     EventReportComponent
   ],
   imports: [

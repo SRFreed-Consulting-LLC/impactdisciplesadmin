@@ -7,7 +7,7 @@ import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
-import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS } from 'src/app/customers-manager/fulfillment/fulfillment-steps';
+import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
 import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
 import { BaseService } from './base.service';
 import { EMailService } from './email.service';
@@ -331,7 +331,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   async sendAmazonConfirmation(item: CheckoutForm, tracking?: string): Promise<CheckoutForm> {
     const email = (item.email ?? '').trim();
     if (!email.includes('@')) {
-      throw new Error('This purchase has no customer email address.');
+      throw new Error('This purchase has no contact email address.');
     }
     const templates = await this.emailTemplatesService.getAllByValue('name', AMAZON_CONFIRMATION_TEMPLATE_NAME);
     if (!templates.length) {

@@ -32,7 +32,7 @@ import { PagedCollectionSource } from '../../shared/paged-collection-source';
 })
 export class ProductsComponent implements OnInit {
   // No route/URL involved on purpose - same "full in-page editor, no
-  // popup" treatment as Home Page Popups (web-manager), chosen here
+  // popup" treatment as Home Page Popups (content-manager), chosen here
   // because this is the densest form in the app (~23 fields across 3
   // tabs) and benefits the most from the full viewport width/height a
   // dialog can't give it.
