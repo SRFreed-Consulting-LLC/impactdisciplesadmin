@@ -1,0 +1,88 @@
+<app-popup-header [title]="mode === 'org' ? 'CREATE ORGANIZATION + CONTACT' : 'CREATE CONTACT'" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <p class="hint">Pre-filled from the <strong>{{ data.submission.formName }}</strong> submission - review and correct anything before saving.</p>
+
+  @if (mode === 'org') {
+    <section formGroupName="org" class="panel">
+      <h3 class="panel__title">Organization</h3>
+
+      @if (matchedOrg) {
+        <div class="match-banner">
+          <mat-icon>info</mat-icon>
+          <span>Looks like the existing organization <strong>{{ matchedOrg.name }}</strong>.</span>
+          @if (!linkToExisting) {
+            <button mat-stroked-button type="button" (click)="setLinkToExisting(true)">Link instead of creating</button>
+          } @else {
+            <button mat-stroked-button type="button" (click)="setLinkToExisting(false)">No, create a new one</button>
+          }
+        </div>
+      }
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" required>
+        @if (form.get('org.name')?.hasError('required')) {
+          <mat-error>Name is required</mat-error>
+        }
+      </mat-form-field>
+      <div class="field-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Website</mat-label>
+          <input matInput formControlName="website">
+        </mat-form-field>
+      </div>
+      <h4 class="section-title">Mailing Address</h4>
+      <app-address-field [group]="$any(form.get('org.address'))"></app-address-field>
+      <h4 class="section-title">Phone</h4>
+      <app-phone-field [group]="$any(form.get('org.phone'))"></app-phone-field>
+    </section>
+  }
+
+  <section formGroupName="contact" class="panel">
+    <h3 class="panel__title">{{ mode === 'org' ? 'Point of Contact' : 'Contact' }}</h3>
+
+    @if (existingContactEmail) {
+      <div class="match-banner">
+        <mat-icon>info</mat-icon>
+        <span>A contact with this email already exists - it will be linked, and its profile is never overwritten.</span>
+      </div>
+    }
+
+    <div class="field-row">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>First Name</mat-label>
+        <input matInput formControlName="firstName">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Last Name</mat-label>
+        <input matInput formControlName="lastName">
+      </mat-form-field>
+    </div>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Email</mat-label>
+      <input matInput formControlName="email" type="email" required>
+      @if (form.get('contact.email')?.hasError('required')) {
+        <mat-error>Email is required - it's how contacts are matched</mat-error>
+      }
+      @if (form.get('contact.email')?.hasError('email')) {
+        <mat-error>Not a valid email address</mat-error>
+      }
+    </mat-form-field>
+    <app-phone-field [group]="$any(form.get('contact.phone'))"></app-phone-field>
+  </section>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    [title]="mode === 'org' ? 'CREATE / LINK' : 'CREATE CONTACT'"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (clicked)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

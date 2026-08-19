@@ -191,8 +191,20 @@
             <th mat-header-cell *matHeaderCellDef>Received</th>
             <td mat-cell *matCellDef="let row">{{ row.dateMs | date: 'short' }}</td>
           </ng-container>
-          <tr mat-header-row *matHeaderRowDef="['status', 'type', 'name', 'detail', 'date']"></tr>
-          <tr mat-row *matRowDef="let row; columns: ['status', 'type', 'name', 'detail', 'date'];" matTooltip="Click to forward this request" (click)="routeRequest(row)"></tr>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row">
+              @if (createModeFor(row); as mode) {
+                <button mat-icon-button type="button"
+                  [matTooltip]="mode === 'org' ? 'Create organization + contact from this request' : 'Create contact from this request'"
+                  (click)="createFromRequest(row, $event)">
+                  <mat-icon>{{ mode === 'org' ? 'domain_add' : 'person_add' }}</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['status', 'type', 'name', 'detail', 'date', 'actions']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['status', 'type', 'name', 'detail', 'date', 'actions'];" matTooltip="Click to forward this request" (click)="routeRequest(row)"></tr>
         </table>
       }
     }

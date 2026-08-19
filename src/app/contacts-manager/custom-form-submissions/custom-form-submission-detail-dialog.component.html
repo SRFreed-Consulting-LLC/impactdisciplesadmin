@@ -20,5 +20,17 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
+  @if (alreadyCreated()) {
+    <span class="created-note"><mat-icon inline>check_circle</mat-icon> {{ data.item.createdRecords?.organizationId ? 'Organization + contact' : 'Contact' }} created from this request</span>
+  } @else if (canCreateOrg) {
+    <button mat-stroked-button type="button" matTooltip="Create an organization (with this person as its point of contact) from this request - reviewed before anything is saved" (click)="createRecords('org')">
+      <mat-icon>domain_add</mat-icon> CREATE ORGANIZATION + CONTACT
+    </button>
+  } @else if (canCreateContact) {
+    <button mat-stroked-button type="button" matTooltip="Create a contact record from this request - reviewed before anything is saved" (click)="createRecords('contact')">
+      <mat-icon>person_add</mat-icon> CREATE CONTACT
+    </button>
+  }
+  <span class="actions-spacer"></span>
   <button mat-button type="button" (click)="onClose()">CLOSE</button>
 </mat-dialog-actions>

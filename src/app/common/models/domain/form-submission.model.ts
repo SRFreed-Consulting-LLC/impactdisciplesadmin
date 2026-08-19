@@ -6,6 +6,18 @@ import { FormFieldType } from './form-field.model';
 // denormalized copies taken at submit time (not a live join back to the
 // FormDefinitionModel doc) so the submissions list and detail view stay
 // correct even if that form is later edited or deleted.
+// Stamped by the admin-reviewed "Create Organization/Contact from this
+// request" flow (create-org-contact-dialog) - which records got created or
+// linked from this submission. A staff UPDATE, so it isn't blocked by the
+// anonymous-create shape lock in firestore.rules (that applies to `create`
+// only, same as the routing fields below).
+export interface FormSubmissionCreatedRecords {
+  organizationId?: string;
+  contactId?: string;
+  at: Date;
+  by?: string;
+}
+
 export class FormSubmissionModel extends BaseModel {
   formId: string;
   formName: string;
@@ -36,4 +48,7 @@ export class FormSubmissionModel extends BaseModel {
   routedNote?: string;
   routedAt?: Date;
   routedBy?: string;
+
+  // See FormSubmissionCreatedRecords above.
+  createdRecords?: FormSubmissionCreatedRecords;
 }

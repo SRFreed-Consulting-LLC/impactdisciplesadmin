@@ -4,6 +4,8 @@ import { Subject, takeUntil } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { OrderWorkflowDialogComponent } from '../../shared/order-workflow-dialog/order-workflow-dialog.component';
 import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
+import { CreateOrgContactDialogComponent } from '../../shared/create-org-contact-dialog/create-org-contact-dialog.component';
+import { extractSubmission, submitterIdentity } from '../../shared/form-submission-mapping.util';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -316,22 +318,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
   }
 
-  // Best-effort submitter identification for a fully dynamic form: prefer
-  // an Email-type field's value (every request form so far has had one),
-  // falling back to a text field whose label reads like a name field, then
-  // giving up rather than guessing wrong. There's no fixed firstName/
-  // lastName shape to rely on any more - fields are whatever the admin who
-  // built the form dragged onto the canvas.
+  // Shared label heuristics (form-submission-mapping.util.ts) - this used
+  // to be a locally duplicated copy of route-request-dialog's own
+  // submitterIdentity().
   private submissionIdentity(item: FormSubmissionModel): string {
-    const emailField = item.fieldSnapshot?.find((f) => f.type === 'email');
-    if (emailField && item.values?.[emailField.id]) {
-      return String(item.values[emailField.id]);
+    return submitterIdentity(item);
+  }
+
+  // Which create action a request qualifies for (content-driven, same
+  // heuristics the submission detail dialog uses): an org-name-ish field
+  // offers Create Organization + Contact, bare person identity offers
+  // Create Contact, an already-actioned submission offers nothing.
+  createModeFor(row: DashboardRequestRow): 'org' | 'contact' | null {
+    if (row.raw.createdRecords) {
+      return null;
     }
-    const nameField = item.fieldSnapshot?.find((f) => f.type === 'text' && /name/i.test(f.label));
-    if (nameField && item.values?.[nameField.id]) {
-      return String(item.values[nameField.id]);
+    const extracted = extractSubmission(row.raw);
+    if (extracted.orgName && extracted.hasIdentity) {
+      return 'org';
     }
-    return 'Unknown';
+    return extracted.hasIdentity ? 'contact' : null;
+  }
+
+  createFromRequest(row: DashboardRequestRow, event: Event): void {
+    event.stopPropagation();
+    const mode = this.createModeFor(row);
+    if (!mode) {
+      return;
+    }
+    this.dialog.open(CreateOrgContactDialogComponent, {
+      width: '640px',
+      maxWidth: '95vw',
+      data: { submission: row.raw, mode }
+    });
   }
 
   // Opens the forward/route workflow directly (not a plain detail view -

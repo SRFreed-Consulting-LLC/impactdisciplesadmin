@@ -10,6 +10,7 @@ import { FormSubmissionService } from 'src/app/common/services/data/form-submiss
 import { formatFieldValue } from 'src/app/common/models/domain/form-field.model';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { SnackbarService } from '../snackbar.service';
+import { submitterIdentity as submissionIdentityOf } from '../form-submission-mapping.util';
 
 export interface RouteRequestDialogData {
   item: FormSubmissionModel;
@@ -92,20 +93,10 @@ export class RouteRequestDialogComponent implements OnInit {
     otherEmail.updateValueAndValidity({ emitEvent: false });
   }
 
-  // Best-effort submitter identity, same fallback order dashboard.component.ts
-  // uses for the New Requests table (prefer an email-type field, then a
-  // name-like text field) - duplicated rather than shared since both call
-  // sites are small and independent, and this one also feeds the email body.
+  // Shared label heuristics (form-submission-mapping.util.ts) - previously
+  // a locally duplicated copy of dashboard.component.ts's version.
   submitterIdentity(): string {
-    const emailField = this.item.fieldSnapshot?.find((f) => f.type === 'email');
-    if (emailField && this.item.values?.[emailField.id]) {
-      return String(this.item.values[emailField.id]);
-    }
-    const nameField = this.item.fieldSnapshot?.find((f) => f.type === 'text' && /name/i.test(f.label));
-    if (nameField && this.item.values?.[nameField.id]) {
-      return String(this.item.values[nameField.id]);
-    }
-    return 'Unknown';
+    return submissionIdentityOf(this.item);
   }
 
   private recipient(): { name: string; email: string } | null {
