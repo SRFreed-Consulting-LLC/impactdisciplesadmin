@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Unsubscribe } from 'firebase/firestore';
@@ -33,6 +33,12 @@ import { EventEmailDialogComponent } from './event-email-dialog.component';
 })
 export class EventAttendeesComponent implements OnInit, OnDestroy {
   @Input() event: EventModel;
+
+  // Opt-in for the Summit Command Center: adds a BREAKOUTS row action that
+  // emits the registration so the host can open its session-assignment
+  // dialog. Regular-event hosts pass nothing and are untouched.
+  @Input() sessionManagement = false;
+  @Output() manageSessions = new EventEmitter<EventRegistrationModel>();
 
   paged: PagedCollectionSource<EventRegistrationModel>;
 
@@ -102,6 +108,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   headerActions: ListHeaderAction[] = [];
 
   rowActions: DataGridRowAction<EventRegistrationModel>[] = [
+    { icon: 'event_seat', tooltip: 'BREAKOUTS', onClick: (item) => this.manageSessions.emit(item), visible: () => this.sessionManagement },
     { icon: 'forward_to_inbox', tooltip: 'RESEND EMAIL', onClick: (item) => this.resendConfirmationEmail(item), visible: (item) => !!item.receiptEmailId },
     { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }
   ];

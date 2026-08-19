@@ -7,6 +7,8 @@ import { CoachDialogComponent } from './coaches/coach-dialog.component';
 import { EventsComponent } from './events/events.component';
 import { VenueRoomsDialogComponent } from './events/venue-rooms-dialog.component';
 import { SummitHubComponent } from './events/summit-hub/summit-hub.component';
+import { SummitCommandCenterComponent } from './events/summit-command-center/summit-command-center.component';
+import { SessionAssignmentDialogComponent } from './events/summit-command-center/session-assignment-dialog.component';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
 import { EventAttendeeDialogComponent } from './events/event-attendees/event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './events/event-attendees/event-email-dialog.component';
@@ -56,6 +58,8 @@ import { QuillModule } from 'ngx-quill';
       EventsComponent,
       VenueRoomsDialogComponent,
       SummitHubComponent,
+      SummitCommandCenterComponent,
+      SessionAssignmentDialogComponent,
       CoachesComponent,
       CoachDialogComponent,
       EventAgendaComponent,

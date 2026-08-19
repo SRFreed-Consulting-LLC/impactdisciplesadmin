@@ -1,0 +1,38 @@
+<app-popup-header [title]="'BREAKOUTS — ' + reg.firstName + ' ' + reg.lastName" [showCloseButton]="true" (closed)="onClose()"></app-popup-header>
+
+<mat-dialog-content>
+  <p class="hint">One session per block, the same rule registrants have on the public schedule. Changes save immediately and the public counters reconcile automatically.</p>
+
+  @for (block of blocks; track block.key; let blockIndex = $index) {
+    <div class="block">
+      <div class="block__head">{{ blockLabel(blockIndex) }} <span>{{ block.startDate | date: 'EEE h:mm a' }} – {{ block.endDate | date: 'h:mm a' }}</span></div>
+      @for (option of block.options; track option.id) {
+        <div class="opt" [class.opt--assigned]="isAssigned(option)">
+          <div class="opt__main">
+            <b>{{ option.text }}</b>
+            <span class="opt__nums">{{ countFor(option) }}{{ option.maxParticipants ? ' / ' + option.maxParticipants : '' }}</span>
+            @if (isFull(option) && !isAssigned(option)) { <span class="opt__chip">FULL</span> }
+            @if (isQueued(option)) { <span class="opt__chip opt__chip--queued">IN QUEUE</span> }
+          </div>
+          <div class="opt__actions">
+            @if (isAssigned(option)) {
+              <button mat-stroked-button type="button" [disabled]="busy$ | async" (click)="remove(option)">REMOVE</button>
+            } @else if (!isFull(option)) {
+              <button mat-raised-button color="primary" type="button" [disabled]="busy$ | async" (click)="assign(block, option)">ASSIGN</button>
+            } @else if (!isQueued(option)) {
+              <button mat-stroked-button type="button" [disabled]="busy$ | async" matTooltip="The session is full - queue them and promote from the Command Center when a seat opens" (click)="enqueue(option)">
+                <mat-icon>hourglass_top</mat-icon> ADD TO QUEUE
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @empty {
+    <p class="hint">No breakout blocks on the agenda yet.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onClose()">CLOSE</button>
+</mat-dialog-actions>

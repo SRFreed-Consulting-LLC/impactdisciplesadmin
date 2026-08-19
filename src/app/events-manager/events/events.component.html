@@ -430,11 +430,11 @@
       <button mat-icon-button type="button" matTooltip="Back" (click)="closeAttendees()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <h2 class="editor__title">{{ reportItem.eventName }} — ATTENDEES</h2>
+      <h2 class="editor__title">{{ reportItem.eventName }} — ATTENDEE COMMAND CENTER</h2>
       <span class="editor__spacer"></span>
     </mat-toolbar>
     <div class="editor__body attendees-report">
-      <app-event-attendees [event]="reportItem"></app-event-attendees>
+      <app-summit-command-center [event]="reportItem"></app-summit-command-center>
     </div>
   </div>
 }

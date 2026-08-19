@@ -1,0 +1,84 @@
+@if (loading) {
+  <div class="ccc__loading"><mat-spinner diameter="32"></mat-spinner></div>
+} @else {
+  <div class="ccc">
+    <div class="ccc__toprow">
+      <section class="card card--pace">
+        <h3>Registrations <span class="card__big">{{ registrations.length }}</span>
+          <span class="card__spacer"></span>
+          <button mat-icon-button type="button" matTooltip="Reload registrations and queues" (click)="reload()"><mat-icon>refresh</mat-icon></button>
+        </h3>
+        <div class="pace">
+          @for (bucket of buckets; track bucket.weekStartMs) {
+            <div class="pace__col" [matTooltip]="bucketLabel(bucket) + ': ' + bucket.count">
+              <div class="pace__bar" [style.height.%]="(bucket.count / maxBucket) * 100"></div>
+            </div>
+          }
+        </div>
+        <div class="pace__axis">
+          @if (buckets.length > 1) {
+            <span>{{ bucketLabel(buckets[0]) }}</span><span>{{ bucketLabel(buckets[buckets.length - 1]) }}</span>
+          }
+        </div>
+      </section>
+
+      <section class="card card--attention">
+        <h3>Needs Attention</h3>
+        @if (noBreakoutCount > 0) {
+          <div class="alert alert--warn">
+            <mat-icon>warning_amber</mat-icon>
+            <div><b>{{ noBreakoutCount }} registrant(s) haven't picked breakouts</b></div>
+            <button mat-stroked-button type="button" (click)="sendNoBreakoutReminder()">SEND REMINDER</button>
+          </div>
+        }
+        @if (queueTotal > 0) {
+          <div class="alert alert--warn">
+            <mat-icon>hourglass_top</mat-icon>
+            <div><b>{{ queueTotal }} waiting in queues</b><span> — promote them below when seats open</span></div>
+          </div>
+        }
+        @if (noBreakoutCount === 0 && queueTotal === 0) {
+          <p class="alert-empty">Nothing needs attention — every registrant has breakouts and no one is queued.</p>
+        }
+      </section>
+    </div>
+
+    <section class="card">
+      <h3>Breakout Capacity <span class="card__hint">assign from a row's <mat-icon inline>event_seat</mat-icon> action below</span></h3>
+      @for (block of blocks; track block.key; let blockIndex = $index) {
+        <div class="block">
+          <div class="block__head">{{ blockLabel(blockIndex) }} <span>{{ block.startDate | date: 'EEE h:mm a' }} – {{ block.endDate | date: 'h:mm a' }}</span></div>
+          @for (option of block.options; track option.id) {
+            <div class="cap">
+              <div class="cap__row">
+                <b class="cap__name">{{ option.text }}</b>
+                @if (isFull(option)) { <span class="cap__chip cap__chip--full">FULL</span> }
+                @else if (fillTier(option) === 'warn') { <span class="cap__chip cap__chip--warn">NEARLY FULL</span> }
+                <span class="cap__nums">{{ countFor(option) }}{{ option.maxParticipants ? ' / ' + option.maxParticipants : '' }}</span>
+              </div>
+              <div class="cap__bar"><i [class]="'cap__fill cap__fill--' + fillTier(option)" [style.width.%]="fillPercent(option)"></i></div>
+              @if (option.waitList?.length) {
+                <div class="queue">
+                  <span class="queue__label">Waiting queue ({{ option.waitList!.length }}):</span>
+                  @for (email of option.waitList; track email; let qIndex = $index) {
+                    <span class="queue__entry">
+                      <b>{{ qIndex + 1 }}.</b> {{ queueName(email) }}
+                      <button mat-icon-button type="button" class="queue__btn" [disabled]="isFull(option)" [matTooltip]="isFull(option) ? 'Still full - free a seat first' : 'Promote into the session'" (click)="promote(option, email)"><mat-icon>upgrade</mat-icon></button>
+                      <button mat-icon-button type="button" class="queue__btn" matTooltip="Remove from queue" (click)="dequeue(option, email)"><mat-icon>close</mat-icon></button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @empty {
+        <p class="alert-empty">No breakout blocks on the agenda yet.</p>
+      }
+    </section>
+
+    <section class="ccc__table">
+      <app-event-attendees [event]="event" [sessionManagement]="true" (manageSessions)="openAssignments($event)"></app-event-attendees>
+    </section>
+  </div>
+}

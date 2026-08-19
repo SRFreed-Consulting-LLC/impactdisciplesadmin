@@ -173,7 +173,7 @@ export class EventsComponent implements OnInit, OnDestroy {
       const label = this.summitMode ? 'New Summit' : 'New Event';
       this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label, icon: 'add', onClick: () => this.showAddModal() }] : [];
       this.rowActions = this.summitMode
-        ? [{ icon: 'groups', tooltip: 'VIEW ATTENDEES', onClick: (item) => this.showAttendees(item), visible: () => this.permissionService.canView(`${this.screenKey}.attendees`) }]
+        ? [{ icon: 'hub', tooltip: 'COMMAND CENTER', onClick: (item) => this.showAttendees(item), visible: () => this.permissionService.canView(`${this.screenKey}.attendees`) }]
         : [];
     });
 

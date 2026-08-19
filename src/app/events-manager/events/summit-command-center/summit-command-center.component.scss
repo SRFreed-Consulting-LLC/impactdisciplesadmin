@@ -1,0 +1,274 @@
+// Command Center - pace chart + capacity/queues + the paged attendee table.
+// CSS bars only (the dashboard .segbar precedent), all --app-* tokens.
+:host {
+  display: block;
+  height: 100%;
+  overflow: auto;
+}
+
+.ccc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.ccc__loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.ccc__toprow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  padding: 14px 16px;
+  color: var(--app-card-ink);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--app-card-muted);
+  }
+
+  &__big {
+    font-size: 20px;
+    color: var(--app-card-ink);
+    letter-spacing: 0;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__hint {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+}
+
+// ---- Pace chart ----
+.pace {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 90px;
+}
+
+.pace__col {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.pace__bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--app-accent);
+  opacity: 0.85;
+}
+
+.pace__axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--app-card-muted);
+  margin-top: 4px;
+}
+
+// ---- Needs attention ----
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  font-size: 13px;
+  margin-bottom: 8px;
+
+  div {
+    flex: 1;
+  }
+
+  span {
+    color: var(--app-card-muted);
+  }
+
+  &--warn {
+    border-color: color-mix(in srgb, var(--app-attention) 45%, transparent);
+
+    mat-icon {
+      color: var(--app-attention);
+    }
+  }
+}
+
+.alert-empty {
+  font-size: 13px;
+  color: var(--app-card-muted);
+  margin: 4px 0;
+}
+
+// ---- Capacity ----
+.block {
+  margin-bottom: 14px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.block__head {
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+
+  span {
+    font-weight: 500;
+    color: var(--app-card-muted);
+    margin-left: 8px;
+  }
+}
+
+.cap {
+  margin-bottom: 9px;
+}
+
+.cap__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  margin-bottom: 3px;
+}
+
+.cap__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cap__nums {
+  margin-left: auto;
+  color: var(--app-card-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cap__chip {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+
+  &--full {
+    background: color-mix(in srgb, var(--mat-sys-error) 20%, transparent);
+    color: var(--mat-sys-error);
+  }
+
+  &--warn {
+    background: color-mix(in srgb, var(--app-attention) 18%, transparent);
+    color: var(--app-attention);
+  }
+}
+
+.cap__bar {
+  height: 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--app-card-muted) 20%, transparent);
+}
+
+.cap__fill {
+  display: block;
+  height: 6px;
+  border-radius: 6px;
+
+  &--ok {
+    background: var(--app-accent);
+  }
+
+  &--warn {
+    background: var(--app-attention);
+  }
+
+  &--full {
+    background: var(--mat-sys-error);
+  }
+}
+
+// ---- Queue ----
+.queue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.queue__label {
+  color: var(--app-card-muted);
+  font-weight: 600;
+}
+
+.queue__entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--app-field-border);
+  border-radius: 999px;
+  padding: 1px 4px 1px 10px;
+
+  b {
+    margin-right: 4px;
+    color: var(--app-card-muted);
+  }
+}
+
+.queue__btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// ---- Attendee table ----
+.ccc__table {
+  // The paged table manages its own height (event-attendees.component.scss)
+  // - give it room below the panels.
+  min-height: 420px;
+
+  ::ng-deep app-event-attendees {
+    height: 60vh;
+  }
+}
