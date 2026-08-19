@@ -275,7 +275,8 @@ export const campaign_web_event = onRequest(async (request, response) => {
         (data.status === "scheduled" && start > 0 && start <= now)) &&
         !(end > 0 && end < now);
       if (live) {
-        const field = type === "web_shown" ? "stats.webShown" : "stats.webClicks";
+        const field = type === "web_shown" ?
+          "stats.webShown" : "stats.webClicks";
         await campaignSnap.ref.update({
           [field]: admin.firestore.FieldValue.increment(1),
         });
