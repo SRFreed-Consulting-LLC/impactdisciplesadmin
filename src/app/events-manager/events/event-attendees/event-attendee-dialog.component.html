@@ -27,10 +27,7 @@
     }
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Registration Date</mat-label>
-    <input matInput type="datetime-local" formControlName="registrationDate">
-  </mat-form-field>
+  <app-date-time-field formControlName="registrationDate" label="Registration Date"></app-date-time-field>
 
   @if (isEdit) {
     <mat-form-field appearance="outline" class="full-width">

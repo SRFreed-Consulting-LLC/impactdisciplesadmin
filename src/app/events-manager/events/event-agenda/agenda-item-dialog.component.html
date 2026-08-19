@@ -11,21 +11,8 @@
   </mat-form-field>
 
   <div class="field-row">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Start Date</mat-label>
-      <input matInput type="datetime-local" formControlName="startDate" required>
-      @if (form.get('startDate')?.hasError('required')) {
-        <mat-error>Required</mat-error>
-      }
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>End Date</mat-label>
-      <input matInput type="datetime-local" formControlName="endDate" required>
-      @if (form.get('endDate')?.hasError('required')) {
-        <mat-error>Required</mat-error>
-      }
-    </mat-form-field>
+    <app-date-time-field formControlName="startDate" label="Start Date" [required]="true"></app-date-time-field>
+    <app-date-time-field formControlName="endDate" label="End Date" [required]="true"></app-date-time-field>
   </div>
 
   @if (form.get('type')?.value === 'course') {

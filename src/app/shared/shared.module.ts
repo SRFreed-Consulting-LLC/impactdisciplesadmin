@@ -20,6 +20,7 @@ import { DataGridComponent } from './data-grid/data-grid.component';
 import { DataGridCellDirective } from './data-grid/data-grid-cell.directive';
 import { FormRendererComponent } from './form-renderer/form-renderer.component';
 import { FormRendererFieldComponent } from './form-renderer/form-renderer-field.component';
+import { DateTimeFieldComponent } from './date-time-field/date-time-field.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,6 +40,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
 @NgModule({
@@ -62,7 +64,8 @@ import { MatNativeDateModule } from '@angular/material/core';
     DataGridComponent,
     DataGridCellDirective,
     FormRendererComponent,
-    FormRendererFieldComponent
+    FormRendererFieldComponent,
+    DateTimeFieldComponent
   ],
   imports: [
     CommonModule,
@@ -85,6 +88,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatCheckboxModule,
     MatRadioModule,
     MatDatepickerModule,
+    MatTimepickerModule,
     MatNativeDateModule
   ],
   exports: [
@@ -107,7 +111,8 @@ import { MatNativeDateModule } from '@angular/material/core';
     DataGridComponent,
     DataGridCellDirective,
     FormRendererComponent,
-    FormRendererFieldComponent
+    FormRendererFieldComponent,
+    DateTimeFieldComponent
   ],
   // DatePipe/CurrencyPipe aren't auto-registered for DI just by importing
   // CommonModule (that only makes the `| date`/`| currency` template pipes

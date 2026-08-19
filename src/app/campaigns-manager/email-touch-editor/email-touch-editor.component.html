@@ -41,10 +41,7 @@
       </mat-radio-group>
 
       @if (sendMode === 'scheduled') {
-        <mat-form-field appearance="outline">
-          <mat-label>Send at</mat-label>
-          <input matInput type="datetime-local" formControlName="scheduledAt">
-        </mat-form-field>
+        <app-date-time-field formControlName="scheduledAt" label="Send at" [required]="true"></app-date-time-field>
       }
       @if (sendMode === 'tagTriggered') {
         <div class="editor-trigger">

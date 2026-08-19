@@ -1,0 +1,16 @@
+<div class="dtf">
+  <mat-form-field appearance="outline" class="dtf__date">
+    <mat-label>{{ label }}</mat-label>
+    <input matInput [matDatepicker]="datePicker" [formControl]="dateControl"
+      [required]="required" (blur)="onBlur()" readonly (click)="datePicker.open()">
+    <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
+    <mat-datepicker #datePicker></mat-datepicker>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="dtf__time">
+    <mat-label>Time</mat-label>
+    <input matInput [matTimepicker]="timePicker" [formControl]="timeControl" (blur)="onBlur()">
+    <mat-timepicker-toggle matIconSuffix [for]="timePicker"></mat-timepicker-toggle>
+    <mat-timepicker #timePicker interval="15min"></mat-timepicker>
+  </mat-form-field>
+</div>

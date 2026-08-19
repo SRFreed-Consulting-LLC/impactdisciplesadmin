@@ -1,4 +1,4 @@
-@if (mode === 'list') {
+﻿@if (mode === 'list') {
   <app-data-grid
     [showColumnsButton]="false"
     [showExportButton]="false"
@@ -68,20 +68,8 @@
                     </mat-form-field>
                   </div>
                   <div class="field-row">
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Start Date</mat-label>
-                      <input matInput type="datetime-local" formControlName="startDate" required>
-                      @if (form.get('startDate')?.hasError('required')) {
-                        <mat-error>Required</mat-error>
-                      }
-                    </mat-form-field>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>End Date</mat-label>
-                      <input matInput type="datetime-local" formControlName="endDate">
-                      @if (form.get('endDate')?.hasError('required')) {
-                        <mat-error>Required for in-person events</mat-error>
-                      }
-                    </mat-form-field>
+                    <app-date-time-field formControlName="startDate" label="Start Date" [required]="true"></app-date-time-field>
+                    <app-date-time-field formControlName="endDate" label="End Date"></app-date-time-field>
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Check-In Time</mat-label>
                       <input matInput type="time" formControlName="checkIn">
@@ -174,7 +162,7 @@
                         @if (form.get('startDate')?.value) {
                           {{ form.get('startDate')?.value | date: 'MMM d, y' }}
                           @if (form.get('endDate')?.value) {
-                            – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                            â€“ {{ form.get('endDate')?.value | date: 'MMM d, y' }}
                           }
                         } @else {
                           No start date set
@@ -246,17 +234,17 @@
                 <div class="info-form">
                   <div class="type-row">
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'inperson'" role="button" tabindex="0" (click)="setRegularAttendanceType('inperson')" (keydown.enter)="setRegularAttendanceType('inperson')">
-                      <span class="type-card__icon">🏢</span>
+                      <span class="type-card__icon">ðŸ¢</span>
                       <div class="type-card__title">In-Person</div>
                       <div class="type-card__sub">Has a venue, no online option</div>
                     </div>
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'online'" role="button" tabindex="0" (click)="setRegularAttendanceType('online')" (keydown.enter)="setRegularAttendanceType('online')">
-                      <span class="type-card__icon">💻</span>
+                      <span class="type-card__icon">ðŸ’»</span>
                       <div class="type-card__title">Online</div>
                       <div class="type-card__sub">Kajabi-hosted, no venue</div>
                     </div>
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'both'" role="button" tabindex="0" (click)="setRegularAttendanceType('both')" (keydown.enter)="setRegularAttendanceType('both')">
-                      <span class="type-card__icon">🔀</span>
+                      <span class="type-card__icon">ðŸ”€</span>
                       <div class="type-card__title">Both</div>
                       <div class="type-card__sub">In-person with a Kajabi option too</div>
                     </div>
@@ -284,20 +272,8 @@
                     </mat-form-field>
                   </div>
                   <div class="field-row">
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Start Date</mat-label>
-                      <input matInput type="datetime-local" formControlName="startDate" required>
-                      @if (form.get('startDate')?.hasError('required')) {
-                        <mat-error>Required</mat-error>
-                      }
-                    </mat-form-field>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>End Date</mat-label>
-                      <input matInput type="datetime-local" formControlName="endDate">
-                      @if (form.get('endDate')?.hasError('required')) {
-                        <mat-error>Required for in-person events</mat-error>
-                      }
-                    </mat-form-field>
+                    <app-date-time-field formControlName="startDate" label="Start Date" [required]="true"></app-date-time-field>
+                    <app-date-time-field formControlName="endDate" label="End Date"></app-date-time-field>
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Check-In Time</mat-label>
                       <input matInput type="time" formControlName="checkIn">
@@ -387,7 +363,7 @@
                         @if (form.get('startDate')?.value) {
                           {{ form.get('startDate')?.value | date: 'MMM d, y' }}
                           @if (form.get('endDate')?.value) {
-                            – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                            â€“ {{ form.get('endDate')?.value | date: 'MMM d, y' }}
                           }
                         } @else {
                           No start date set

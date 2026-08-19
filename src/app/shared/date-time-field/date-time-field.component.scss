@@ -1,0 +1,16 @@
+.dtf {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.dtf__date {
+  width: 170px;
+
+  input {
+    cursor: pointer;
+  }
+}
+
+.dtf__time {
+  width: 130px;
+}

@@ -133,14 +133,8 @@
   <div class="wizard-section">
     <p class="wizard-label">WINDOW (OPTIONAL)</p>
     <div class="wizard-row">
-      <mat-form-field appearance="outline">
-        <mat-label>Start</mat-label>
-        <input matInput type="datetime-local" formControlName="startDate">
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>End</mat-label>
-        <input matInput type="datetime-local" formControlName="endDate">
-      </mat-form-field>
+      <app-date-time-field formControlName="startDate" label="Start"></app-date-time-field>
+      <app-date-time-field formControlName="endDate" label="End"></app-date-time-field>
     </div>
   </div>
 

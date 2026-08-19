@@ -64,14 +64,8 @@
     <div class="editor-section">
       <p class="editor-label">BEHAVIOR</p>
       <div class="editor-row">
-        <mat-form-field appearance="outline">
-          <mat-label>Shows from</mat-label>
-          <input matInput type="datetime-local" formControlName="fromDate">
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Until</mat-label>
-          <input matInput type="datetime-local" formControlName="toDate">
-        </mat-form-field>
+        <app-date-time-field formControlName="fromDate" label="Shows from" [required]="true"></app-date-time-field>
+        <app-date-time-field formControlName="toDate" label="Until" [required]="true"></app-date-time-field>
       </div>
       <div class="editor-row">
         <mat-form-field appearance="outline" class="editor-num">
@@ -82,10 +76,12 @@
           <mat-label>Height (px)</mat-label>
           <input matInput type="number" formControlName="height">
         </mat-form-field>
-        <mat-form-field appearance="outline" class="editor-num">
-          <mat-label>Background</mat-label>
-          <input matInput formControlName="bgColor" placeholder="#ffffff">
-        </mat-form-field>
+        <div class="editor-color">
+          <span class="editor-color__label">Background</span>
+          <input type="color" formControlName="bgColor" class="editor-color__swatch"
+            matTooltip="Pick the popup background color">
+          <span class="editor-color__value">{{ form.value.bgColor }}</span>
+        </div>
       </div>
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Click-through URL</mat-label>

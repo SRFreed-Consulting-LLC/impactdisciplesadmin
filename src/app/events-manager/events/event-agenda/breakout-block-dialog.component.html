@@ -3,21 +3,8 @@
 <mat-dialog-content [formGroup]="form">
   <div class="content-inner">
     <div class="time-row">
-      <mat-form-field appearance="outline" class="time-field">
-        <mat-label>Start Time</mat-label>
-        <input matInput type="datetime-local" formControlName="startDate" required>
-        @if (form.get('startDate')?.hasError('required')) {
-          <mat-error>Required</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="time-field">
-        <mat-label>End Time</mat-label>
-        <input matInput type="datetime-local" formControlName="endDate" required>
-        @if (form.get('endDate')?.hasError('required')) {
-          <mat-error>Required</mat-error>
-        }
-      </mat-form-field>
+      <app-date-time-field formControlName="startDate" label="Start" [required]="true"></app-date-time-field>
+      <app-date-time-field formControlName="endDate" label="End" [required]="true"></app-date-time-field>
     </div>
 
     <div class="options-label">Parallel options — attendees pick one</div>
