@@ -60,10 +60,16 @@
   <div class="wizard-section">
     <p class="wizard-label">CHANNELS</p>
     <div class="wizard-channels">
-      <mat-checkbox [checked]="true" [disabled]="true">Email</mat-checkbox>
-      <mat-checkbox [checked]="false" [disabled]="true"
-        matTooltip="Web popups arrive in a later phase">Web popup (coming soon)</mat-checkbox>
+      <mat-checkbox [checked]="true" [disabled]="true"
+        matTooltip="Every campaign can send email">Email</mat-checkbox>
+      <mat-checkbox formControlName="webChannel">Web popup</mat-checkbox>
     </div>
+    @if (form.value.webChannel) {
+      <p class="wizard-hint">
+        You'll build the popup itself (content, dates, click-through) from the
+        campaign page right after saving.
+      </p>
+    }
   </div>
 
   <div class="wizard-section">

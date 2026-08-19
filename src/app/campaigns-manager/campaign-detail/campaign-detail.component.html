@@ -53,6 +53,20 @@
   }
 </div>
 
+@if (!popup && (campaign.channels ?? []).includes('web') && canEditCampaign()) {
+  <!-- The web channel was chosen in the wizard but the popup itself
+       hasn't been built yet - prompt for it instead of silently showing
+       zero web stats. -->
+  <button type="button" class="popup-card popup-card--cta" (click)="editPopup()">
+    <mat-icon class="popup-card__icon">web_asset</mat-icon>
+    <div class="popup-card__main">
+      <b>Web popup not built yet</b>
+      <span class="popup-card__meta">This campaign has the web channel - create its popup to start showing it to site visitors.</span>
+    </div>
+    <span class="chip status-draft">ADD POPUP</span>
+  </button>
+}
+
 @if (popup) {
   <div class="popup-card">
     <mat-icon class="popup-card__icon">web_asset</mat-icon>

@@ -56,6 +56,17 @@
   color: var(--app-card-muted);
 }
 
+.popup-card--cta {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover {
+    border-color: var(--app-accent);
+  }
+}
+
 .popup-card__main {
   flex: 1;
   display: grid;
