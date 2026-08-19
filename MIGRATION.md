@@ -441,7 +441,13 @@ fallbacks cover the gap, but don't stretch it):
    take a fresh `node scripts/export.js --project=prod` backup of `events` first)
 4. `node scripts/migrate-screenkey-renames-2.js --project=prod` (org key moved, locations/courses
    keys dropped; 0 grants affected on dev)
-5. `node scripts/repair-location-organizations.js --project=prod` — orphan locations (no parent
+5. `node scripts/backfill-registration-lastname-lower.js --project=prod` — stamps the
+   case-insensitive `lastNameLower` sort key on every registration (958/958 on dev); the paged
+   Attendees report orders by it. Also create the composite index
+   `event-registrations(eventId ASC, lastNameLower DESC)` on prod (gcloud, additive — see
+   firestore.indexes.json) and deploy `register_for_event` BY NAME (it stamps the field on new
+   registrations).
+6. `node scripts/repair-location-organizations.js --project=prod` — orphan locations (no parent
    org) resolve by the user's rule "the location IS the organization": link to an existing org
    matching the location's normalized name, else CREATE an org from the location itself (name/
    address/phone, contactName split into a pointOfContact). Ran on dev 2026-08-19: 6 orgs created

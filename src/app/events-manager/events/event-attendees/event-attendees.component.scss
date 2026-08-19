@@ -1,7 +1,12 @@
+/* Full available height (was a 50vh cap) - the attendee list is the whole
+   point of this tab and a summit has 1,500+ rows, so it fills the viewport
+   below the editor chrome and scrolls inside itself (infinite-scroll
+   load-more), like the app's other big tables. */
 :host {
   display: flex;
   flex-direction: column;
-  height: 50vh;
+  height: calc(100vh - 240px);
+  min-height: 320px;
 }
 
 app-data-grid {

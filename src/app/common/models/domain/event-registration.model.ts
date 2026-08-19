@@ -4,6 +4,11 @@ import { BaseModel } from "../base.model";
 export class EventRegistrationModel extends BaseModel{
   firstName: string;
   lastName: string;
+  // Case-insensitive sort key for the admin Attendees table's server-side
+  // orderBy (Firestore sorts by code point, so "williams" would outrank
+  // "Zonn"). Stamped by registerForEventHttp and the admin attendee dialog;
+  // backfilled by scripts/backfill-registration-lastname-lower.js.
+  lastNameLower?: string;
   eventId: string;
   email: string;
   receipt: string;

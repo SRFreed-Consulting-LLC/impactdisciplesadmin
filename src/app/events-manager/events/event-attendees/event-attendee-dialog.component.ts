@@ -81,6 +81,9 @@ export class EventAttendeeDialogComponent {
     const value: EventRegistrationModel = {
       ...this.data.item,
       ...raw,
+      // Case-insensitive sort key - keep in step with the lastName edit
+      // (see registerForEventHttp, which stamps the same field).
+      lastNameLower: (raw.lastName ?? '').toLowerCase(),
       eventId: this.data.eventId,
       // Registration Date isn't a required field - if left blank while
       // adding a brand-new attendee (no existing item to fall back to),

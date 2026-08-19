@@ -382,3 +382,9 @@ $info-accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
     font-size: 14px;
   }
 }
+
+// The summit attendee report page (mode === 'attendees') - the table fills
+// everything below the toolbar; app-event-attendees manages its own height.
+.attendees-report {
+  padding: 0 16px 16px;
+}

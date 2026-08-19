@@ -5,6 +5,7 @@ import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.comm
 import { CoachesComponent } from './coaches/coaches.component';
 import { CoachDialogComponent } from './coaches/coach-dialog.component';
 import { EventsComponent } from './events/events.component';
+import { VenueRoomsDialogComponent } from './events/venue-rooms-dialog.component';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
 import { EventAttendeeDialogComponent } from './events/event-attendees/event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './events/event-attendees/event-email-dialog.component';
@@ -23,7 +24,6 @@ import { SharedModule } from '../shared/shared.module';
 import { RoomComponent } from './events/room/room.component';
 import { FAQComponent } from './events/event-application/questions-and-answers/faq.component';
 import { FaqDialogComponent } from './events/event-application/questions-and-answers/faq-dialog.component';
-import { AnnouncementsComponent } from './events/event-application/announcements/announcements.component';
 import { EventApplicationComponent } from './events/event-application/event-application.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
@@ -32,7 +32,6 @@ import { EventApplicationComponent } from './events/event-application/event-appl
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { EventsManagerRoutingModule } from './events-manager-routing.module';
 import { RoomDialogComponent } from './events/room/room-dialog.component';
-import { AnnouncementDialogComponent } from './events/event-application/announcements/announcement-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -47,12 +46,14 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { QuillModule } from 'ngx-quill';
 
 @NgModule({
     declarations: [
       EventsManagerComponent,
       EventsComponent,
+      VenueRoomsDialogComponent,
       CoachesComponent,
       CoachDialogComponent,
       EventAgendaComponent,
@@ -69,8 +70,6 @@ import { QuillModule } from 'ngx-quill';
       RoomDialogComponent,
       FAQComponent,
       FaqDialogComponent,
-      AnnouncementsComponent,
-      AnnouncementDialogComponent,
       EventApplicationComponent
     ],
     imports: [
@@ -94,6 +93,7 @@ import { QuillModule } from 'ngx-quill';
       MatCheckboxModule,
       MatMenuModule,
       MatToolbarModule,
+      MatProgressSpinnerModule,
       QuillModule
     ]
 })

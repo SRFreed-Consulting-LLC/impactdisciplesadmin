@@ -2,7 +2,9 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, Observable, Subject, map, takeUntil, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { EventModel, EventVenue } from 'src/app/common/models/domain/event.model';
+import { VenueRoomsDialogComponent } from './venue-rooms-dialog.component';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
@@ -35,7 +37,12 @@ export class EventsComponent implements OnInit, OnDestroy {
   // NAV_CONFIG's own two slugs ('summit' / 'events'), not duplicated here.
   @Input() summitMode = false;
 
-  mode: 'list' | 'edit' = 'list';
+  // 'attendees' (summit only): the full-page attendee REPORT opened from
+  // the Summit list's row action - deliberately not an edit-screen tab any
+  // more, viewing who registered isn't an editing concern (user decision
+  // 2026-08-19). Regular events keep their Attendees tab.
+  mode: 'list' | 'edit' | 'attendees' = 'list';
+  attendeesItem: EventModel | null = null;
 
   // ---- List state ----
   events$: Observable<EventModel[]>;
@@ -64,14 +71,16 @@ export class EventsComponent implements OnInit, OnDestroy {
   }
 
   headerActions: ListHeaderAction[] = [];
-  // Deleting an event has no cascading cleanup of its event-registrations -
-  // orphaning them (missing eventId, stuck "new" forever since nothing can
-  // resolve their startDate to suppress the bell) is exactly what happened
-  // to the Disciple-Making Summit's registrations, live-diagnosed
-  // 2026-08-12. Removed rather than fixed with a cascade, since there's no
-  // real product need for staff to delete an event outright (see isActive
-  // for retiring one instead) - don't re-add without also handling orphaned
-  // registrations/agenda references.
+  // No DELETE action: deleting an event has no cascading cleanup of its
+  // event-registrations - orphaning them (missing eventId, stuck "new"
+  // forever since nothing can resolve their startDate to suppress the
+  // bell) is exactly what happened to the Disciple-Making Summit's
+  // registrations, live-diagnosed 2026-08-12. Removed rather than fixed
+  // with a cascade, since there's no real product need for staff to delete
+  // an event outright (see isActive for retiring one instead) - don't
+  // re-add without also handling orphaned registrations/agenda references.
+  // Summit rows get a VIEW ATTENDEES report action instead (see `mode`) -
+  // populated in ngOnInit, after summitMode (an @Input) is actually set.
   rowActions: DataGridRowAction<EventModel>[] = [];
 
   // House rule: loading spinner shown until first emission - see
@@ -130,7 +139,9 @@ export class EventsComponent implements OnInit, OnDestroy {
   // from the same canView() checks the template itself uses, rather than
   // hardcoding a position.
   selectedTabIndex = 0;
-  private readonly tabOrderSummit = ['info', 'application', 'agenda', 'attendees', 'breakouts'];
+  // No 'attendees' - on a summit that's the full-page report off the list
+  // row (see mode above), not an edit tab.
+  private readonly tabOrderSummit = ['info', 'application', 'agenda'];
   // Regular events only ever show Details (still keyed 'info' for
   // permission/deep-link continuity - see nav-config.ts) and Attendees -
   // Application/Agenda/Break Outs don't exist on this screen at all.
@@ -145,6 +156,7 @@ export class EventsComponent implements OnInit, OnDestroy {
     private authService: AdminAuthService,
     public permissionService: PermissionService,
     private fb: FormBuilder,
+    private dialog: MatDialog,
     private snackbar: SnackbarService,
     private route: ActivatedRoute
   ) {}
@@ -155,6 +167,9 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
       const label = this.summitMode ? 'New Summit' : 'New Event';
       this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label, icon: 'add', onClick: () => this.showAddModal() }] : [];
+      this.rowActions = this.summitMode
+        ? [{ icon: 'groups', tooltip: 'VIEW ATTENDEES', onClick: (item) => this.showAttendees(item), visible: () => this.permissionService.canView(`${this.screenKey}.attendees`) }]
+        : [];
     });
 
     this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
@@ -204,9 +219,30 @@ export class EventsComponent implements OnInit, OnDestroy {
       if (!item) {
         return;
       }
+      // On a summit, "attendees" is the full-page report, not an edit tab -
+      // the new-record-alerts bell's registration deep-link lands there.
+      if (this.summitMode && tabKey === 'attendees') {
+        this.showAttendees(item);
+        return;
+      }
       this.showEditModal(item);
       this.selectedTabIndex = this.tabIndexFor(tabKey);
     });
+  }
+
+  // ---- Summit attendee report (see `mode`) ----
+
+  showAttendees(item: EventModel): void {
+    if (!this.permissionService.canView(`${this.screenKey}.attendees`)) {
+      return;
+    }
+    this.attendeesItem = item;
+    this.mode = 'attendees';
+  }
+
+  closeAttendees(): void {
+    this.attendeesItem = null;
+    this.mode = 'list';
   }
 
   private tabIndexFor(tabKey: string): number {
@@ -279,37 +315,14 @@ export class EventsComponent implements OnInit, OnDestroy {
     return this.locations.find((l) => l.isSummitVenue);
   }
 
-  // ---- Summit Venue Rooms panel ----
+  // ---- Summit Venue Rooms ----
   // The pinned venue's rooms (embedded on its `locations` doc) are edited
-  // HERE and nowhere else since the standalone Locations screen retired.
-  // Loaded one-time when a summit opens for editing; persisted by an
-  // explicit Save Rooms (deliberately decoupled from the event save - the
-  // rooms live on the location doc, not the event).
-  venueDoc: LocationModel | null = null;
-  venueRooms: LocationModel['trainingrooms'] = [];
-  savingRooms$ = new BehaviorSubject<boolean>(false);
-
-  private loadVenueRooms(): void {
-    this.venueDoc = null;
-    this.venueRooms = [];
-    if (!this.summitMode) {
-      return;
-    }
-    this.locationService.getAllByValue('isSummitVenue', true).then((venues) => {
-      this.venueDoc = venues[0] ?? null;
-      this.venueRooms = this.venueDoc?.trainingrooms ?? [];
-    });
-  }
-
-  saveVenueRooms(): void {
-    if (!this.venueDoc) {
-      return;
-    }
-    this.savingRooms$.next(true);
-    this.locationService.update(this.venueDoc.id!, { ...this.venueDoc, trainingrooms: this.venueRooms })
-      .then(() => this.snackbar.success('Venue Rooms Saved'))
-      .catch(() => this.snackbar.error('Some Error Occured'))
-      .finally(() => this.savingRooms$.next(false));
+  // HERE and nowhere else since the standalone Locations screen retired -
+  // via a popup rather than an inline panel (once set, rooms rarely
+  // change; user decision 2026-08-19). The dialog loads/saves the venue
+  // doc itself, deliberately decoupled from the event save.
+  openVenueRooms(): void {
+    this.dialog.open(VenueRoomsDialogComponent, { width: '760px', maxWidth: '95vw' });
   }
 
   // What the event's venue snapshot would be from the live form value -
@@ -338,7 +351,6 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.card = {};
     this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
-    this.loadVenueRooms();
     this.mode = 'edit';
   }
 
@@ -351,7 +363,6 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.card = { imageUrl: item.imageUrl };
     this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
-    this.loadVenueRooms();
     this.mode = 'edit';
   }
 
@@ -488,6 +499,11 @@ export class EventsComponent implements OnInit, OnDestroy {
       endDate: raw.endDate ? new Date(raw.endDate) : this.editingItem?.endDate,
       venue,
       ...(pinnedId ? { location: pinnedId } : {}),
+      // A Summit is always in-person at the pinned venue and NEVER Kajabi
+      // (user decision 2026-08-19 - Kajabi exists for other events that
+      // are online-only or have an online component). Stamped here since
+      // summit mode renders no controls for either flag.
+      ...(this.summitMode ? { isOnline: false, isKajabiCourse: false } : {}),
       ...(this.card.imageUrl ? { imageUrl: this.card.imageUrl } : {})
     };
 

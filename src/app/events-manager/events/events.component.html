@@ -88,25 +88,11 @@
                     <mat-label>Promo Video Id</mat-label>
                     <input matInput formControlName="videoId">
                   </mat-form-field>
-                  <mat-checkbox formControlName="isKajabiCourse">Is Kajabi Needed?</mat-checkbox>
-                  @if (form.get('isKajabiCourse')?.value) {
-                    <div class="field-row">
-                      <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Purchase URL</mat-label>
-                        <input matInput formControlName="kajabiPurchaseURL">
-                        @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
-                          <mat-error>Required</mat-error>
-                        }
-                      </mat-form-field>
-                      <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Subscribe URL</mat-label>
-                        <input matInput formControlName="kajabiSubscribeURL">
-                        @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
-                          <mat-error>Required</mat-error>
-                        }
-                      </mat-form-field>
-                    </div>
-                  }
+                  <!-- No Kajabi controls here - Kajabi is never needed for a
+                       Summit (user decision 2026-08-19); it exists for other
+                       events that are online-only or have an online
+                       component. The save stamps isOnline/isKajabiCourse
+                       false in summit mode. -->
                   <!-- Summits always happen at the one pinned venue (see
                        location.model.ts's isSummitVenue) - no picking. The
                        save stamps event.location/venue from it. -->
@@ -118,24 +104,14 @@
                         <div class="pinned-venue__address">{{ venue.address?.address1 }}{{ venue.address?.city ? ', ' + venue.address?.city : '' }}{{ venue.address?.state ? ', ' + venue.address?.state : '' }}</div>
                       </div>
                       <span class="pinned-venue__pill">Summit Venue</span>
+                      <!-- A popup, not an inline panel - once the venue's
+                           rooms are set they rarely change (user decision). -->
+                      <button mat-stroked-button type="button" matTooltip="Rooms and capacities at the Summit venue - the Agenda's breakout grid columns. Saved on the venue itself, shared by every summit." (click)="openVenueRooms()">
+                        <mat-icon>meeting_room</mat-icon> Venue Rooms
+                      </button>
                     </div>
                   } @else {
                     <p class="pinned-venue pinned-venue--missing">No Summit venue is pinned yet - run scripts/pin-summit-venue.js.</p>
-                  }
-                  @if (venueDoc) {
-                    <div class="venue-rooms">
-                      <div class="venue-rooms__header">
-                        <h3 class="venue-rooms__title">Venue Rooms</h3>
-                        <app-indicator-button
-                          title="SAVE ROOMS"
-                          [isInProgress]="savingRooms$ | async"
-                          [disabled]="savingRooms$ | async"
-                          (clicked)="saveVenueRooms()">
-                        </app-indicator-button>
-                      </div>
-                      <p class="venue-hint">Rooms and capacities at {{ venueDoc.name }} - the Agenda's breakout grid columns. Saved to the venue itself (shared by every summit), separately from this event.</p>
-                      <app-room [trainingRooms]="venueRooms"></app-room>
-                    </div>
                   }
                   <div class="field-row">
                     <mat-form-field appearance="outline" class="full-width">
@@ -216,21 +192,10 @@
               </ng-template>
             </mat-tab>
           }
-          @if (permissionService.canView(screenKey + '.attendees')) {
-            <mat-tab>
-              <ng-template mat-tab-label>
-                Attendees
-                @if (newAttendeeEventIds.has(item.id)) {
-                  <span class="new-badge tab-badge">NEW</span>
-                }
-              </ng-template>
-              <ng-template matTabContent>
-                <div class="tab-content tab-content--flush">
-                  <app-event-attendees [event]="item"></app-event-attendees>
-                </div>
-              </ng-template>
-            </mat-tab>
-          }
+          <!-- No Attendees tab on a summit - viewing who registered is a
+               REPORT, not an editing concern (user decision 2026-08-19):
+               it's the VIEW ATTENDEES row action on the Summit list, which
+               opens the full-page mode === 'attendees' view below. -->
         } @else {
           <!-- ============================= EVENTS (regular): quick-create, Details + Attendees ============================= -->
           @if (permissionService.canView(screenKey + '.info')) {
@@ -442,4 +407,22 @@
       (imageSelectClosed)="closeImageUploader()">
     </app-image-uploader>
   }
+}
+
+<!-- Summit attendee REPORT - full-page, opened from the Summit list's VIEW
+     ATTENDEES row action (not an edit tab; see events.component.ts's mode
+     comment). -->
+@if (mode === 'attendees' && attendeesItem; as reportItem) {
+  <div class="editor">
+    <mat-toolbar class="editor__header">
+      <button mat-icon-button type="button" matTooltip="Back" (click)="closeAttendees()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2 class="editor__title">{{ reportItem.eventName }} — ATTENDEES</h2>
+      <span class="editor__spacer"></span>
+    </mat-toolbar>
+    <div class="editor__body attendees-report">
+      <app-event-attendees [event]="reportItem"></app-event-attendees>
+    </div>
+  </div>
 }

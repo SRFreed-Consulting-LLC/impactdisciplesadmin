@@ -210,6 +210,11 @@ export const registerForEventHttp = onRequest((request, response) => {
     const registrationRef = await db.collection("event-registrations").add({
       firstName,
       lastName,
+      // Case-insensitive sort key for the admin Attendees table's paged
+      // orderBy (Firestore sorts by code point, so "williams" would
+      // otherwise outrank "Zonn"). Backfilled onto existing docs by
+      // scripts/backfill-registration-lastname-lower.js.
+      lastNameLower: lastName.toLowerCase(),
       eventId,
       email,
       receipt,

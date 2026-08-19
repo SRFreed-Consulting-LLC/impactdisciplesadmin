@@ -1,0 +1,22 @@
+<app-popup-header title="VENUE ROOMS" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content>
+  @if (loading) {
+    <div class="loading-row"><mat-spinner diameter="28"></mat-spinner></div>
+  } @else if (!venue) {
+    <p class="missing">No Summit venue is pinned yet - run scripts/pin-summit-venue.js.</p>
+  } @else {
+    <p class="hint">Rooms and capacities at <strong>{{ venue.name }}</strong> - the Agenda's breakout grid columns. Saved on the venue itself, shared by every summit.</p>
+    <app-room [trainingRooms]="rooms"></app-room>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="saving$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE ROOMS"
+    [isInProgress]="saving$ | async"
+    [disabled]="(saving$ | async) || !venue"
+    (clicked)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>

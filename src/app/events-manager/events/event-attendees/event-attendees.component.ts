@@ -1,5 +1,4 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Unsubscribe } from 'firebase/firestore';
@@ -10,14 +9,22 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { EMailModel } from 'src/app/common/models/admin/mail.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { ListHeaderAction } from '../../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../../shared/new-record-tracking.util';
+import { PagedCollectionSource } from '../../../shared/paged-collection-source';
 import { EventAttendeeDialogComponent } from './event-attendee-dialog.component';
 import { EventEmailDialogComponent } from './event-email-dialog.component';
 
+// Paged (2026-08-19, user request) - a summit has 1,500+ registrations, so
+// this works like the app's other big tables (Products/Contacts/Log
+// Messages): one-time getPage() fetches ordered lastName DESC server-side
+// (eventId-filtered - composite index event-registrations(eventId ASC,
+// lastName DESC)), infinite-scroll load-more, no standing whole-event
+// listener.
 @Component({
     selector: 'app-event-attendees',
     templateUrl: './event-attendees.component.html',
@@ -27,7 +34,7 @@ import { EventEmailDialogComponent } from './event-email-dialog.component';
 export class EventAttendeesComponent implements OnInit, OnDestroy {
   @Input() event: EventModel;
 
-  attendees$: Observable<EventRegistrationModel[]>;
+  paged: PagedCollectionSource<EventRegistrationModel>;
 
   itemType = 'Registered User';
 
@@ -41,10 +48,6 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   ];
 
   selection = new SelectionModel<EventRegistrationModel>(true, []);
-
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
 
   private readonly screenKey = 'events-manager.events.attendees';
 
@@ -67,12 +70,19 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const source$ = this.event?.id ? this.service.streamAllByValue('eventId', this.event.id) : of([]);
-
-    this.attendees$ = source$.pipe(
-      tap((items) => this.tracker.capture(items)),
-      tap(() => this.loading$.next(false))
+    // lastNameLower, not lastName - Firestore orders by code point, so a
+    // lowercase-typed "williams" would outrank "Zonn" otherwise. Backfilled
+    // + stamped on every write path (see event-registration.model.ts).
+    this.paged = new PagedCollectionSource<EventRegistrationModel>(
+      (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'lastNameLower', 'desc', [
+        new QueryParam('eventId', WhereFilterOperandKeys.equal, this.event?.id ?? '')
+      ]),
+      50
     );
+    // The tracker still marks this event's newly-arrived registrations seen
+    // (bell-badge suppression) as pages load in.
+    this.paged.rows$.subscribe((items) => this.tracker.capture(items));
+    this.paged.loadFirstPage();
 
     this.headerActions = [
       ...(this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : []),

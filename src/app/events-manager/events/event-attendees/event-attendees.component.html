@@ -3,13 +3,11 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(attendees$ | async) ?? []"
-  [loading]="(loading$ | async) ?? false"
+  [pagedSource]="paged"
   [selection]="selection"
   [rowClass]="rowClass"
   tableClass="attendees-table"
-  initialSortKey="lastName"
-  initialSortDirection="asc"
+  emptyMessage="No registrations for this event yet."
   exportFileName="attendee_list.xlsx"
   (rowDoubleClick)="showEditModal($event)">
 </app-data-grid>

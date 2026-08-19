@@ -15,9 +15,6 @@
 
   <div class="application-content">
     @switch (selectedTab) {
-      @case ('announcements') {
-        <app-announcements [event]="event"></app-announcements>
-      }
       @case ('diningOptions') {
         <div class="editor-wrap">
           <quill-editor [(ngModel)]="event.diningOptions" [modules]="richTextModules"></quill-editor>
@@ -41,11 +38,8 @@
 
   <!-- Live preview - mirrors whichever section is selected on the left
   using the same live data the editors above write to (event.diningOptions
-  etc. two-way-bound already; announcements$ and event.faqList read the
-  same collections/arrays those editors themselves show), not a separate
-  copy. See event-application.component.ts's own comment on why
-  announcements$ is fetched again here rather than reused from
-  AnnouncementsComponent. -->
+  etc. two-way-bound already; event.faqList reads the same array the FAQ
+  editor itself shows), not a separate copy. -->
   <div class="application-preview">
     <div class="preview-label">Attendee app preview</div>
     <div class="phone">
@@ -54,17 +48,6 @@
         <div class="phone__head"><b>{{ event.eventName || 'Untitled Event' }}</b></div>
         <div class="phone__body">
           @switch (selectedTab) {
-            @case ('announcements') {
-              @for (a of (announcements$ | async) ?? []; track a.id) {
-                <div class="pitem">
-                  <b>📣 {{ a.title }}</b>
-                  <span class="pitem__meta">{{ $any(a.date) | date: 'MMM d, y' }}</span>
-                  <p>{{ a.announcement }}</p>
-                </div>
-              } @empty {
-                <div class="pempty">No announcements posted yet.</div>
-              }
-            }
             @case ('diningOptions') {
               @if (event.diningOptions) {
                 <div class="prich" [innerHTML]="event.diningOptions"></div>
