@@ -441,9 +441,16 @@ fallbacks cover the gap, but don't stretch it):
    take a fresh `node scripts/export.js --project=prod` backup of `events` first)
 4. `node scripts/migrate-screenkey-renames-2.js --project=prod` (org key moved, locations/courses
    keys dropped; 0 grants affected on dev)
-5. `node scripts/repair-location-organizations.js` — dry-run reported 8 orphan locations +
-   anomalies needing per-doc user decisions (fill ORPHAN_ASSIGNMENTS before a write run); NOT yet
-   applied anywhere.
+5. `node scripts/repair-location-organizations.js --project=prod` — orphan locations (no parent
+   org) resolve by the user's rule "the location IS the organization": link to an existing org
+   matching the location's normalized name, else CREATE an org from the location itself (name/
+   address/phone, contactName split into a pointOfContact). Ran on dev 2026-08-19: 6 orgs created
+   (Crossroads-Whitewater, Riverbend, Tabernacle Baptist Institutional, Church of God (Newnan),
+   Western Baptist Association, First Baptist Monroe), 2 linked (both Sun City locations under the
+   existing First Baptist Church of Sun City org — the misspelled "Chuech" one via the
+   ORPHAN_ASSIGNMENTS override baked into the script; doc ids match across dev/prod, so the
+   override carries). One unnamed location (`DCTJDoTioXV68ZBmgqMx`) is left untouched for a manual
+   call. **User wants to examine the dry-run output together before the prod run.**
 
 Deferred cleanup (do AFTER prod ships and the flatten has run there): delete admin
 `CourseService`/`CourseModel`, web `course.service.ts` + the CourseNamePipe shim + the

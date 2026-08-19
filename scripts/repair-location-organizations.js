@@ -2,19 +2,31 @@
 // 2026-08 restructure (locations become child records of organizations):
 //   1. Normalizes object-shaped `organization` values (old form saves stored
 //      the whole OrganizationModel) down to the org's id string.
-//   2. Reports orphans (no/unknown organization) and data anomalies
-//      (unnamed docs, duplicate-looking names) so the user can decide
-//      per-doc; apply decisions via the ORPHAN_ASSIGNMENTS map below.
+//   2. ORPHANS (no/unknown organization): the location IS the organization
+//      (user decision 2026-08-19) - an org matching the location's
+//      normalized name is linked if one exists, otherwise a new
+//      organization is CREATED from the location itself (name, address,
+//      phone, contactName split into a pointOfContact) and the location is
+//      parented under it. ORPHAN_ASSIGNMENTS below overrides either
+//      behavior per-doc (e.g. to point a misspelled location at the right
+//      existing org instead of minting a misspelled org).
+//   3. Reports anomalies (unnamed docs, duplicate-looking names) - never
+//      auto-fixed.
 //
 //   node scripts/repair-location-organizations.js --project=dev [--dry-run]
 //
-// ORPHAN_ASSIGNMENTS: locationId -> organizations/{id} to assign. Filled in
-// after user review; unlisted orphans are left alone (reported every run).
+// Run on dev 2026-08-19; REVIEW THE DRY-RUN WITH THE USER before the prod
+// run (per the MIGRATION.md runbook).
 
 const { resolveProjectId, getFirestoreFor } = require('./lib/firestore-admin');
 
+// locationId -> existing organizations/{id} to link instead of the default
+// match-or-create behavior.
 const ORPHAN_ASSIGNMENTS = {
-  // 'locationDocId': 'organizationDocId',
+  // "First Baptist Chuech of Sun City" (misspelled location) is the same
+  // church as the existing "First Baptist Church of Sun City" org - link it
+  // there rather than minting a misspelled organization.
+  'uCoouHW7yeCJLunqzXhH': 'Gh0MyXZ6qkZStUvEkO8r',
 };
 
 const arg = (name) => {
@@ -23,6 +35,18 @@ const arg = (name) => {
   const [, value] = hit.split('=');
   return value === undefined ? true : value;
 };
+
+const norm = (s) => (s ?? '').trim().toLowerCase();
+
+function pointOfContactFrom(contactName) {
+  const name = (contactName ?? '').trim();
+  if (!name) return undefined;
+  const parts = name.split(/\s+/);
+  return {
+    firstName: parts[0],
+    ...(parts.length > 1 ? { lastName: parts.slice(1).join(' ') } : {}),
+  };
+}
 
 (async () => {
   const project = arg('project');
@@ -38,11 +62,15 @@ const arg = (name) => {
     db.collection('organizations').get(),
   ]);
   const orgIds = new Set(orgSnap.docs.map((d) => d.id));
-  const orgNames = orgSnap.docs.map((d) => `${d.id}  ${d.data().name ?? '(unnamed)'}`);
+  const orgsByNorm = new Map();
+  for (const d of orgSnap.docs) {
+    const key = norm(d.data().name);
+    if (key && !orgsByNorm.has(key)) orgsByNorm.set(key, d);
+  }
 
   let normalized = 0;
-  let assigned = 0;
-  const orphans = [];
+  let linked = 0;
+  let created = 0;
   const anomalies = [];
 
   for (const doc of locSnap.docs) {
@@ -62,21 +90,50 @@ const arg = (name) => {
 
     const effectiveOrg = update.organization ?? (typeof data.organization === 'string' ? data.organization : undefined);
     if (!effectiveOrg || !orgIds.has(effectiveOrg)) {
-      if (ORPHAN_ASSIGNMENTS[doc.id]) {
-        const target = ORPHAN_ASSIGNMENTS[doc.id];
-        if (!orgIds.has(target)) {
-          console.error(`ORPHAN_ASSIGNMENTS[${doc.id}] -> '${target}' is not an existing organization; skipping`);
+      // Orphan. Explicit override first, then name match, then "the
+      // location IS the organization" - create one from it.
+      const label = `${doc.id} "${data.name ?? '(unnamed)'}" (${data.address?.city ?? '?'}, ${data.address?.state ?? '?'})`;
+      const override = ORPHAN_ASSIGNMENTS[doc.id];
+      const nameMatch = orgsByNorm.get(norm(data.name));
+
+      if (override) {
+        if (!orgIds.has(override)) {
+          console.error(`ORPHAN_ASSIGNMENTS[${doc.id}] -> '${override}' is not an existing organization; skipping`);
         } else {
-          update.organization = target;
-          assigned++;
-          console.log(`assign ${doc.id} "${data.name ?? '(unnamed)'}" -> org '${target}'`);
+          update.organization = override;
+          linked++;
+          console.log(`link (override) ${label} -> org '${override}'`);
         }
+      } else if (!data.name) {
+        anomalies.push(`${label}: has NO name - cannot create an org from it, decide manually`);
+      } else if (nameMatch) {
+        update.organization = nameMatch.id;
+        linked++;
+        console.log(`link (name match) ${label} -> org '${nameMatch.id}' "${nameMatch.data().name}"`);
       } else {
-        orphans.push(`${doc.id} "${data.name ?? '(unnamed)'}" (${data.address?.city ?? '?'}, ${data.address?.state ?? '?'}) organization=${JSON.stringify(data.organization ?? null)}`);
+        const poc = pointOfContactFrom(data.contactName);
+        const org = {
+          name: data.name,
+          contactName: data.contactName ?? '',
+          address: data.address ?? {},
+          phone: data.phone ?? {},
+          ...(poc ? { pointOfContact: poc } : {}),
+        };
+        created++;
+        console.log(`${dryRun ? '[dry-run] would create' : 'create'} org from ${label}: ${JSON.stringify({ name: org.name, contactName: org.contactName })}`);
+        if (!dryRun) {
+          const ref = await db.collection('organizations').add(org);
+          update.organization = ref.id;
+          orgIds.add(ref.id);
+          orgsByNorm.set(norm(org.name), { id: ref.id, data: () => org });
+          console.log(`  -> organizations/${ref.id}, location parented under it`);
+        }
       }
     }
 
-    if (!data.name) anomalies.push(`${doc.id}: has NO name`);
+    if (!data.name && !anomalies.some((a) => a.startsWith(doc.id))) {
+      anomalies.push(`${doc.id}: has NO name`);
+    }
 
     if (Object.keys(update).length && !dryRun) {
       await doc.ref.update(update);
@@ -86,21 +143,15 @@ const arg = (name) => {
   // Duplicate-looking names (normalized compare) - report only, never auto-fix.
   const byNorm = new Map();
   for (const doc of locSnap.docs) {
-    const norm = (doc.data().name ?? '').trim().toLowerCase();
-    if (!norm) continue;
-    byNorm.set(norm, [...(byNorm.get(norm) ?? []), doc.id]);
+    const key = norm(doc.data().name);
+    if (!key) continue;
+    byNorm.set(key, [...(byNorm.get(key) ?? []), doc.id]);
   }
-  for (const [norm, ids] of byNorm) {
-    if (ids.length > 1) anomalies.push(`duplicate name "${norm}": ${ids.join(', ')}`);
+  for (const [key, ids] of byNorm) {
+    if (ids.length > 1) anomalies.push(`duplicate location name "${key}": ${ids.join(', ')}`);
   }
 
-  console.log(`\n${dryRun ? '[dry-run] ' : ''}normalized: ${normalized}, orphans assigned: ${assigned} of ${Object.keys(ORPHAN_ASSIGNMENTS).length} mapped`);
-  if (orphans.length) {
-    console.log(`\nORPHANS needing a user decision (add to ORPHAN_ASSIGNMENTS):`);
-    orphans.forEach((o) => console.log('  - ' + o));
-    console.log(`\nOrganizations available:`);
-    orgNames.forEach((o) => console.log('  ' + o));
-  }
+  console.log(`\n${dryRun ? '[dry-run] ' : ''}normalized: ${normalized}, linked to existing orgs: ${linked}, orgs created from locations: ${created}`);
   if (anomalies.length) {
     console.log(`\nANOMALIES (manual cleanup candidates, not touched):`);
     anomalies.forEach((a) => console.log('  - ' + a));
