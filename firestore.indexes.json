@@ -96,6 +96,14 @@
         { "fieldPath": "actorUid", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "tag_applications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tag", "order": "ASCENDING" },
+        { "fieldPath": "anchorDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

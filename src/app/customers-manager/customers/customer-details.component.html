@@ -79,6 +79,45 @@
           </div>
         </div>
 
+        <!-- Customer tags - applied automatically by tag rules (Campaigns
+             Manager > Tag Rules) from purchases/registrations, plus manual
+             add/remove here. Changes persist on Save. -->
+        <div class="tags-row">
+          <span class="tags-row__label">Tags</span>
+          <div class="tags-row__chips">
+            @for (tag of tags; track tag) {
+              <span class="tag-chip">
+                {{ tag }}
+                <button type="button" class="tag-chip__remove" [attr.aria-label]="'Remove tag ' + tag"
+                        matTooltip="Remove tag" (click)="removeTag(tag)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </span>
+            }
+            @if (tags.length === 0) {
+              <span class="tags-row__empty">No tags yet</span>
+            }
+          </div>
+          <div class="tags-row__add">
+            <input class="tags-row__input" placeholder="Add a tag" [(ngModel)]="newTag"
+                   [ngModelOptions]="{ standalone: true }" (keyup.enter)="addTag()"
+                   aria-label="Add a tag">
+            <button mat-icon-button type="button" matTooltip="Add tag" (click)="addTag()">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+          @if (tagSuggestions().length > 0) {
+            <div class="tags-row__suggestions">
+              @for (option of tagSuggestions(); track option) {
+                <button type="button" class="tag-chip tag-chip--suggestion"
+                        matTooltip="Add this rule tag" (click)="addTag(option)">
+                  + {{ option }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+
         <h3 class="section-title">Contact</h3>
         <div class="field-row">
           <mat-form-field appearance="outline" class="full-width">

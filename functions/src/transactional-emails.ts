@@ -13,7 +13,9 @@ import * as admin from "firebase-admin";
 // flipped the flag in the WRONG database: the recipient saw a success page
 // and kept receiving mail. That is a CAN-SPAM exposure, not just a broken
 // link - an unsubscribe request has to actually take effect.
-const UNSUBSCRIBE_URL =
+// Exported since 2026-08-18: campaign-auto-send.functions.ts builds each
+// recipient's *|UNSUB|* link from the same per-environment endpoint.
+export const UNSUBSCRIBE_URL =
   process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
     "https://us-central1-impactdisciples-a82a8.cloudfunctions.net/" +
       "unsubscribe_from_email_list" :
@@ -323,13 +325,17 @@ export async function queueWebOrderEmails(
     await queueMail(db, email, template.subject ?? "Sales Receipt", html);
   }
 
+  // Per-item follow-ups run CONCURRENTLY (they used to be a serial
+  // read-then-queue loop, which sat on capture_paypal_order's critical
+  // path - the customer stared at "Finishing your order..." while each
+  // template was fetched one at a time).
   const followUps = (form.cartItems ?? [])
     .filter((item) => !!item.followUpEmailId);
-  for (const item of followUps) {
+  await Promise.all(followUps.map(async (item) => {
     const followUpSnap = await db.collection("mail_templates")
       .doc(item.followUpEmailId as string).get();
     if (!followUpSnap.exists) {
-      continue;
+      return;
     }
     const followUp = followUpSnap.data() as {subject?: string;
       html?: string};
@@ -343,7 +349,7 @@ export async function queueWebOrderEmails(
       html = html.split("{{" + key + "}}").join(value);
     }
     await queueMail(db, email, followUp.subject ?? "", html);
-  }
+  }));
 }
 
 export interface ReaderReceiptLine {

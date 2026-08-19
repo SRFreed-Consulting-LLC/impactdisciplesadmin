@@ -90,13 +90,24 @@ async function getPayPalAccessToken(clientId: string): Promise<string> {
   return cachedToken.value;
 }
 
+// Per-warm-instance cache for the client id (same lifetime model as the
+// OAuth token cache above). The config collection changes ~never, but the
+// uncached read sat on create_paypal_order's critical path - one Firestore
+// round trip per checkout, duplicating the read computeOrderPricing had
+// already done. Short TTL so a rotated client id still picks up quickly.
+let cachedClientId: {value: string; expiresAt: number} | undefined;
+const CLIENT_ID_TTL_MS = 5 * 60 * 1000;
+
 /**
  * Reads the PayPal public client id out of Firestore's config collection --
  * the same value impactdisciples-web already reads to mount the client-side
- * PayPal button.
+ * PayPal button. Cached per warm instance for a few minutes.
  * @return {Promise<string>} The PayPal client id.
  */
 async function getPaypalClientId(): Promise<string> {
+  if (cachedClientId && cachedClientId.expiresAt > Date.now()) {
+    return cachedClientId.value;
+  }
   // Deliberately NOT .limit(1): `config` is treated as a singleton
   // everywhere, but nothing enforces that, and limit(1) returns an arbitrary
   // document when there is more than one. Silently picking the wrong config
@@ -117,6 +128,7 @@ async function getPaypalClientId(): Promise<string> {
       `${process.env.GCLOUD_PROJECT ?? "(unknown)"} - checkout cannot start.`
     );
   }
+  cachedClientId = {value: clientId, expiresAt: Date.now() + CLIENT_ID_TTL_MS};
   return clientId;
 }
 
@@ -431,6 +443,18 @@ exports.create_paypal_order = functions
           return;
         }
 
+        // The PayPal OAuth token (client-id read + token round trip) is
+        // fetched CONCURRENTLY with pricing - it used to run after it,
+        // serially, adding its full latency to every checkout. Free/$0
+        // orders resolve a token they don't use; that's a no-op on warm
+        // instances (both caches hold) and a negligible cost on cold ones.
+        const tokenPromise = getPaypalClientId()
+          .then((clientId) => getPayPalAccessToken(clientId));
+        // Don't let the free-order early return leave this dangling as an
+        // unhandled rejection - the paid path re-awaits it below and gets
+        // the real error there.
+        tokenPromise.catch(() => undefined);
+
         const pricing = await computeOrderPricing({
           cartItems: capCartItems(
             body.cartItems
@@ -489,8 +513,7 @@ exports.create_paypal_order = functions
           return;
         }
 
-        const clientId = await getPaypalClientId();
-        const accessToken = await getPayPalAccessToken(clientId);
+        const accessToken = await tokenPromise;
         const amountValue = pricing.total.toFixed(2);
         const shippingRateValue = pricing.shippingRate.toFixed(2);
 
@@ -691,20 +714,25 @@ exports.capture_paypal_order = functions
 
           // Pre-prod #1: receipt + follow-up emails are queued here now
           // (the client no longer writes `mail`). Best-effort - payment
-          // is captured and the order is saved.
-          try {
-            await queueWebOrderEmails(admin.firestore(), checkoutForm);
-          } catch (err) {
-            console.error(
-              "Failed to queue order emails (captured path)", err
-            );
-          }
-          // Sweep #: affiliate sale recorded server-side now.
-          try {
-            await recordAffiliateSale(checkoutForm, orderId);
-          } catch (err) {
-            console.error("Failed to record affiliate sale (captured)", err);
-          }
+          // is captured and the order is saved. Runs CONCURRENTLY with the
+          // affiliate write (they're independent; they used to run
+          // serially, and queueWebOrderEmails' own internal per-item
+          // template loop made that the slowest part of the customer's
+          // "Finishing your order..." wait). Both stay awaited before the
+          // response on purpose: on Cloud Functions, work left running
+          // after response.send() can be frozen mid-flight and silently
+          // lost - a receipt email that never queues is worse than ~a
+          // second more spinner.
+          await Promise.all([
+            queueWebOrderEmails(admin.firestore(), checkoutForm)
+              .catch((err) => console.error(
+                "Failed to queue order emails (captured path)", err
+              )),
+            recordAffiliateSale(checkoutForm, orderId)
+              .catch((err) => console.error(
+                "Failed to record affiliate sale (captured)", err
+              )),
+          ]);
 
           response.send({checkoutForm: {...checkoutForm, id: docRef.id}});
         } catch (err) {

@@ -34,7 +34,10 @@ export class CustomersComponent implements OnInit {
     { key: 'firstName', label: 'First Name' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Number', value: (item) => item.phone?.number ?? '' },
-    { key: 'pendingChanges', label: 'Pending Review', filterable: false, value: (item) => this.pendingChangesLabel(item) }
+    { key: 'pendingChanges', label: 'Pending Review', filterable: false, value: (item) => this.pendingChangesLabel(item) },
+    // Tag-rule/manual tags (see TagRuleModel) - joined for display and the
+    // grid's text filter. Hidden by default to keep the grid calm.
+    { key: 'tags', label: 'Tags', visible: false, value: (item) => (item.tags ?? []).join(', ') }
   ];
 
   itemType = 'Customer';

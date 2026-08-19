@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
 import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
@@ -47,7 +48,7 @@ export class FulfillmentComponent implements OnInit {
 
   private readonly screenKey = 'customers-manager.fulfillment';
 
-  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService) {}
+  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router) {}
 
   // Every action on this screen (acknowledge/print label/mark packaged,
   // shipped, or picked up) mutates an existing purchase's fulfillment
@@ -55,6 +56,19 @@ export class FulfillmentComponent implements OnInit {
   // workflow" edit permission the whole screen's action buttons share.
   canEdit(): boolean {
     return this.permissionService.canEdit(this.screenKey);
+  }
+
+  // "View purchase record" per card - deep-links into the Purchases tab's
+  // edit view (same gate PurchasesComponent.showEditModal() applies, which
+  // is a DIFFERENT screenKey than this screen's own).
+  canViewPurchase(): boolean {
+    return this.permissionService.canEdit('customers-manager.purchases');
+  }
+
+  viewPurchase(item: CheckoutForm): void {
+    this.router.navigate(['/customers-manager'], {
+      queryParams: { tab: 'purchases', purchaseId: item.id }
+    });
   }
 
   ngOnInit(): void {

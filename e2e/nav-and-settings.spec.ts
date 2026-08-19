@@ -6,31 +6,36 @@ test.describe('Left nav - collapsible manager groups', () => {
     await loginAsAdmin(page);
   });
 
+  // Group buttons' accessible names are the SHORT navy-redesign labels
+  // ("CUSTOMERS", "STORE" - what the drawer actually renders), not
+  // nav-config's internal "CUSTOMERS MANAGER" strings the pre-redesign
+  // version of this spec targeted (fixed 2026-08-18, same staleness batch
+  // as the Settings-Themes rewrite below).
   test('expanding a group reveals its sub-items, and multiple groups can stay open', async ({ page }) => {
     await page.goto('/home');
 
     // Collapsed by default on a route with no active manager - Purchases
-    // shouldn't be visible until Customers Manager is expanded (Purchases
-    // moved from Store Manager to Customers Manager in nav-config.ts's
-    // 2026-08 reorg - see that file's header comment).
-    await expect(page.getByRole('link', { name: 'Purchases' })).toHaveCount(0);
+    // shouldn't be visible until Customers is expanded (Purchases moved
+    // from Store Manager to Customers Manager in nav-config.ts's 2026-08
+    // reorg - see that file's header comment).
+    await expect(page.getByText('Purchases', { exact: true })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
-    await expect(page.getByRole('link', { name: 'Purchases' })).toBeVisible();
+    await page.getByRole('button', { name: 'CUSTOMERS', exact: true }).click();
+    await expect(page.getByText('Purchases', { exact: true })).toBeVisible();
 
     // Opening a second group shouldn't close the first (no accordion-
-    // exclusive behavior - see MainScreenComponent.expanded). Store Manager
-    // has no label overlap with Customers Manager's items, unlike Reports
-    // Manager (which also has its own separate "Purchases" entry) - picked
-    // deliberately to avoid a two-match getByRole ambiguity here.
-    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
-    await expect(page.getByRole('link', { name: 'Products' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Purchases' })).toBeVisible();
+    // exclusive behavior - see MainScreenComponent.expanded). Store has no
+    // label overlap with Customers' items, unlike Reports (which also has
+    // its own separate "Purchases" entry) - picked deliberately to avoid a
+    // two-match ambiguity here.
+    await page.getByRole('button', { name: 'STORE', exact: true }).click();
+    await expect(page.getByText('Products', { exact: true })).toBeVisible();
+    await expect(page.getByText('Purchases', { exact: true })).toBeVisible();
 
-    // Collapsing Customers Manager again hides just its own sub-items.
-    await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
-    await expect(page.getByRole('link', { name: 'Purchases' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Products' })).toBeVisible();
+    // Collapsing Customers again hides just its own sub-items.
+    await page.getByRole('button', { name: 'CUSTOMERS', exact: true }).click();
+    await expect(page.getByText('Purchases', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Products', { exact: true })).toBeVisible();
   });
 
   test('clicking between sibling tabs switches content live', async ({ page }) => {
@@ -42,15 +47,15 @@ test.describe('Left nav - collapsible manager groups', () => {
     // race retry doesn't fully absorb - a real, separately-tracked
     // reliability gap, not something this test needs to also stress).
     await page.goto('/home');
-    await page.getByRole('button', { name: 'STORE MANAGER' }).click();
-    await page.getByRole('link', { name: 'Coupons' }).click();
+    await page.getByRole('button', { name: 'STORE', exact: true }).click();
+    await page.getByText('Coupons', { exact: true }).click();
     await expect(page.locator('app-coupons')).toBeVisible();
 
     // This is the real regression risk this session's query-param handling
     // fixed: clicking a sibling tab while already on this route is a
     // same-route, query-param-only navigation - a one-time snapshot read
     // (what this code used to do) would go stale here and never switch.
-    await page.getByRole('link', { name: 'Sales' }).click();
+    await page.getByText('Sales', { exact: true }).click();
     await expect(page.locator('app-sales')).toBeVisible();
   });
 });
@@ -77,34 +82,37 @@ test.describe('User menu', () => {
   });
 });
 
+// Rewritten 2026-08-18 for the navy redesign's theme system: the old
+// independent dark-mode toggle is GONE on purpose (each of the 10 navy
+// variants fixes its own light/dark character - see ThemeService's own
+// comment), and the pre-navy ids ('default'/'forest'/...) were replaced by
+// the COLOR_THEMES set ('slate-elevate' default, 'midnight-paper', ...).
+// The old spec kept clicking a switch that no longer exists.
 test.describe('Settings - Themes', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/settings');
   });
 
-  test('dark mode toggle repaints the whole app', async ({ page }) => {
-    const html = page.locator('html');
-    await expect(html).not.toHaveClass(/dark-theme/);
-
-    await page.getByRole('switch', { name: 'Toggle dark mode' }).click();
-    await expect(html).toHaveClass(/dark-theme/);
-
-    // Reset so this test doesn't leave dark mode on for whichever test
-    // (or human) runs against this Firestore project next.
-    await page.getByRole('switch', { name: 'Toggle dark mode' }).click();
-    await expect(html).not.toHaveClass(/dark-theme/);
+  test('theme picker renders every variant and marks the current one', async ({ page }) => {
+    const options = page.locator('.accent-option');
+    // All 10 navy variants (COLOR_THEMES in theme.service.ts).
+    await expect(options).toHaveCount(10);
+    await expect(page.getByRole('button', { name: 'Slate Elevate' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Midnight Paper' })).toBeVisible();
+    await expect(page.locator('.accent-option--selected')).toHaveCount(1);
   });
 
-  test('picking an accent applies its theme class', async ({ page }) => {
+  test('picking a theme applies its theme class', async ({ page }) => {
     const html = page.locator('html');
 
-    await page.getByRole('button', { name: 'Forest' }).click();
-    await expect(html).toHaveClass(/theme-forest/);
+    await page.getByRole('button', { name: 'Midnight Paper' }).click();
+    await expect(html).toHaveClass(/theme-midnight-paper/);
 
-    // Reset back to Default so no test data/preference lingers.
-    await page.getByRole('button', { name: 'Default' }).click();
-    await expect(html).not.toHaveClass(/theme-forest/);
+    // Reset back to the default so no preference lingers on this admin's
+    // profile for whichever test (or human) runs next.
+    await page.getByRole('button', { name: 'Slate Elevate' }).click();
+    await expect(html).not.toHaveClass(/theme-midnight-paper/);
   });
 
   test('a chosen theme survives real navigation, not just the settings page', async ({ page }) => {
@@ -119,19 +127,19 @@ test.describe('Settings - Themes', () => {
     // which does a hard reload) to match how an admin actually navigates.
     const html = page.locator('html');
 
-    await page.getByRole('button', { name: 'Forest' }).click();
-    await expect(html).toHaveClass(/theme-forest/);
+    await page.getByRole('button', { name: 'Midnight Paper' }).click();
+    await expect(html).toHaveClass(/theme-midnight-paper/);
 
-    await page.getByRole('link', { name: 'HOME' }).click();
-    await expect(html).toHaveClass(/theme-forest/);
+    await page.getByText('HOME', { exact: true }).click();
+    await expect(html).toHaveClass(/theme-midnight-paper/);
 
-    await page.getByRole('button', { name: 'CUSTOMERS MANAGER' }).click();
-    await page.getByRole('link', { name: 'Purchases' }).click();
-    await expect(html).toHaveClass(/theme-forest/);
+    await page.getByText('CUSTOMERS', { exact: true }).click();
+    await page.getByText('Purchases', { exact: true }).click();
+    await expect(html).toHaveClass(/theme-midnight-paper/);
 
-    // Reset back to Default so no test data/preference lingers.
+    // Reset back to the default so no preference lingers.
     await page.goto('/settings');
-    await page.getByRole('button', { name: 'Default' }).click();
-    await expect(html).not.toHaveClass(/theme-forest/);
+    await page.getByRole('button', { name: 'Slate Elevate' }).click();
+    await expect(html).not.toHaveClass(/theme-midnight-paper/);
   });
 });

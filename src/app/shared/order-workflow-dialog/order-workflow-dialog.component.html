@@ -2,7 +2,15 @@
 
 <mat-dialog-content class="order-workflow-dialog">
   <div class="order-workflow-dialog__customer">{{ customerName() }} &mdash; {{ itemSummary() }}</div>
-  <div class="order-workflow-dialog__date">{{ $any(item.dateProcessed) | date: 'medium' }}</div>
+  <div class="order-workflow-dialog__date">
+    {{ $any(item.dateProcessed) | date: 'medium' }}
+    @if (refundStateLabel(); as refundLabel) {
+      <!-- A refunded order still showing here can only be a PARTIAL refund
+           (a full refund closes the order and drops it off this list) -
+           exactly the state staff working fulfillment need to see. -->
+      <span class="order-workflow-dialog__refund-pill">{{ refundLabel }}</span>
+    }
+  </div>
 
   <div class="segbar">
     @for (step of steps; track step; let i = $index) {
@@ -54,4 +62,13 @@
       }
     }
   </div>
+
+  @if (canViewPurchase()) {
+    <div class="order-workflow-dialog__footer">
+      <button mat-button color="primary" type="button" (click)="viewPurchase()">
+        <mat-icon>receipt_long</mat-icon>
+        View Purchase
+      </button>
+    </div>
+  }
 </mat-dialog-content>

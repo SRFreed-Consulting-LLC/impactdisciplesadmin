@@ -1,0 +1,41 @@
+.editor-toolbar {
+  gap: 8px;
+  background: transparent;
+  padding-left: 0;
+}
+
+.editor-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.editor-spacer {
+  flex: 1 1 auto;
+}
+
+.rule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+  padding: 8px 4px 32px;
+}
+
+.field {
+  width: 100%;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-card-muted, #6a7280);
+  margin-bottom: 8px;
+}
+
+.hint {
+  font-size: 12.5px;
+  color: var(--app-card-muted, #8a93a0);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}

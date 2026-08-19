@@ -11,6 +11,7 @@ import { EMailTemplatesService } from 'src/app/common/services/data/email-templa
 import { ProductModel } from 'src/app/common/models/utils/product.model';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { CouponModel } from 'src/app/common/models/utils/coupon.model';
+import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -47,6 +48,10 @@ export class CampaignComposerComponent implements OnInit {
   events: EventModel[] = [];
   coupons: CouponModel[] = [];
   emailTemplates: { id: string; name: string }[] = [];
+  // Distinct tag names across all tag rules - the 'auto' type's audience
+  // picker options (a campaign can also target manually-applied tags,
+  // which share these names).
+  knownTags: string[] = [];
 
   constructor(
     private service: CampaignService,
@@ -54,6 +59,7 @@ export class CampaignComposerComponent implements OnInit {
     private eventService: EventService,
     private couponService: CouponService,
     private emailTemplatesService: EMailTemplatesService,
+    private tagRuleService: TagRuleService,
     private fb: FormBuilder,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
@@ -71,6 +77,13 @@ export class CampaignComposerComponent implements OnInit {
     });
     this.emailTemplatesService.getAll().then((templates) => {
       this.emailTemplates = templates.map((t) => ({ id: t.id!, name: t.name }));
+    });
+    this.tagRuleService.getAll().then((rules) => {
+      const fromRules = rules.map((rule) => rule.tag?.trim()).filter(Boolean) as string[];
+      // An edited campaign may target tags whose rule was since deleted -
+      // keep them selectable rather than silently dropping them.
+      const fromCampaign = this.campaign?.targetTags ?? [];
+      this.knownTags = Array.from(new Set([...fromRules, ...fromCampaign]));
     });
 
     this.buildForm();
@@ -119,6 +132,8 @@ export class CampaignComposerComponent implements OnInit {
       supportingText: [c?.supportingText ?? d?.supportingText ?? ''],
       thankYouMessage: [c?.thankYouMessage ?? d?.thankYouMessage ?? ''],
       placement: [c?.placement ?? d?.placement ?? ''],
+      targetTags: [c?.targetTags ?? []],
+      sendAfterDays: [c?.sendAfterDays ?? null, [Validators.min(0)]],
       startDate: [dateFromTimestamp(c?.startDate) ?? null],
       endDate: [dateFromTimestamp(c?.endDate) ?? null]
     });
@@ -134,13 +149,18 @@ export class CampaignComposerComponent implements OnInit {
     const required: Record<CampaignType, string[]> = {
       'product': ['productId', 'subject'],
       'event': ['eventId', 'subject'],
-      'lead-capture': ['headline', 'couponId', 'placement']
+      'lead-capture': ['headline', 'couponId', 'placement'],
+      'auto': ['subject', 'targetTags', 'sendAfterDays']
     };
-    const all = ['productId', 'eventId', 'couponId', 'subject', 'headline', 'placement'];
+    const all = ['productId', 'eventId', 'couponId', 'subject', 'headline', 'placement', 'targetTags', 'sendAfterDays'];
 
     all.forEach((field) => {
+      const validators = required[type].includes(field) ? [Validators.required] : [];
+      if (field === 'sendAfterDays') {
+        validators.push(Validators.min(0));
+      }
       const control = this.form.get(field)!;
-      control.setValidators(required[type].includes(field) ? [Validators.required] : []);
+      control.setValidators(validators);
       control.updateValueAndValidity({ emitEvent: false });
     });
   }
@@ -188,13 +208,20 @@ export class CampaignComposerComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    this.confirmService.confirm('<i>Launch this campaign? It will show as live immediately.</i>', 'Confirm').then((confirmed) => {
+    // For 'auto', going live IS the wiring - the hourly
+    // autoCampaignScheduler Cloud Function sends to eligible tagged
+    // customers while the campaign is effectively live.
+    const message = this.type === 'auto' ?
+      '<i>Launch this automation? Eligible tagged customers begin receiving it on the next hourly run.</i>' :
+      '<i>Launch this campaign? It will show as live immediately.</i>';
+    this.confirmService.confirm(message, 'Confirm').then((confirmed) => {
       if (confirmed) {
         // TODO(campaigns): launching a product/event push should also fire
         // the email send (existing Email Templates + Mailchimp, full
         // flagged subscriber list - no audience narrowing, standing rule).
         // That wiring is the next build-order step on this branch; until
-        // then Launch only makes the campaign live for tracking.
+        // then Launch only makes those types live for tracking. ('auto'
+        // needs no send wiring here - the scheduler owns it.)
         this.persist('live', 'Campaign Launched');
       }
     });
@@ -249,6 +276,7 @@ export class CampaignComposerComponent implements OnInit {
     // isn't part of this campaign's type, so switching type while drafting
     // leaves no stale values behind.
     const isLead = type === 'lead-capture';
+    const isAuto = type === 'auto';
 
     return {
       ...this.campaign,
@@ -267,6 +295,8 @@ export class CampaignComposerComponent implements OnInit {
       supportingText: isLead ? raw.supportingText || null : null,
       thankYouMessage: isLead ? raw.thankYouMessage || null : null,
       placement: isLead ? raw.placement : null,
+      targetTags: isAuto ? (raw.targetTags?.length ? raw.targetTags : null) : null,
+      sendAfterDays: isAuto ? (raw.sendAfterDays ?? null) : null,
       templateName: this.campaign?.templateName ?? this.template?.name ?? null,
       stats: this.campaign?.stats ?? emptyCampaignStats()
     };

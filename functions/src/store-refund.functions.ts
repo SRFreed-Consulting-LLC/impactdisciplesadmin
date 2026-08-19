@@ -62,16 +62,125 @@ async function getTokenWithCreds(
   return body.access_token;
 }
 
+interface RefundEntryDoc {
+  amount: number;
+  date: admin.firestore.Timestamp;
+  by?: string;
+  refundId?: string;
+  refundStatus?: string;
+  licensesRevoked?: string[];
+}
+
+interface StatusHistoryEntryDoc {
+  status: string;
+  date: admin.firestore.Timestamp;
+  by?: string;
+}
+
 interface PurchaseDoc {
   email?: string;
   total?: number;
+  discount?: number;
   receipt?: string;
   refunded?: boolean;
+  refundAmount?: number;
+  refunds?: RefundEntryDoc[];
+  fulfillmentStatus?: string;
+  statusHistory?: StatusHistoryEntryDoc[];
   paypalEnvironment?: string;
+  payPalReceipt?: {
+    purchase_units?: Array<{amount?: {value?: string}}>;
+  };
   cartItems?: Array<{
     isDigitalBook?: boolean;
     digitalBookId?: string;
   }>;
+}
+
+/**
+ * What the buyer was actually charged, in CENTS (all refund math is done
+ * in integer cents for float safety). Server-side twin of the client's
+ * PurchasesService.getChargedDisplayAmount(): prefer the PayPal receipt's
+ * captured value, fall back to total - discount.
+ * @param {PurchaseDoc} purchase The purchase doc.
+ * @return {number} Charged amount in cents (never negative).
+ */
+export function chargedCents(purchase: PurchaseDoc): number {
+  const receiptValue =
+    purchase.payPalReceipt?.purchase_units?.[0]?.amount?.value;
+  if (typeof receiptValue === "string" && !isNaN(parseFloat(receiptValue))) {
+    return Math.max(0, Math.round(parseFloat(receiptValue) * 100));
+  }
+  const charged = (purchase.total ?? 0) - (purchase.discount ?? 0);
+  return Math.max(0, Math.round(charged * 100));
+}
+
+export interface RefundPlan {
+  requestedCents: number;
+  remainingCents: number;
+  isFullRefund: boolean;
+}
+
+/**
+ * Pure guard/arithmetic core of the refund flow, extracted for unit
+ * testing. Throws HttpsError on any invalid request.
+ * @param {PurchaseDoc} purchase The purchase doc.
+ * @param {number | null | undefined} amountDollars The admin-entered
+ *   partial amount in dollars; null/undefined means "the full remainder".
+ * @param {boolean} needsPaypalRefund Whether a real PayPal refund happens
+ *   ($0/coupon orders can only be marked fully refunded).
+ * @return {RefundPlan} The validated plan.
+ */
+export function computeRefundPlan(
+  purchase: PurchaseDoc,
+  amountDollars: number | null | undefined,
+  needsPaypalRefund: boolean
+): RefundPlan {
+  const charged = chargedCents(purchase);
+  const alreadyRefunded =
+    Math.max(0, Math.round((purchase.refundAmount ?? 0) * 100));
+  const remainingCents = charged - alreadyRefunded;
+
+  if (purchase.refunded === true || (charged > 0 && remainingCents <= 0)) {
+    throw new HttpsError(
+      "failed-precondition", "This purchase was already fully refunded."
+    );
+  }
+
+  const requestedCents = amountDollars == null ?
+    remainingCents :
+    Math.round(amountDollars * 100);
+
+  if (!needsPaypalRefund) {
+    // Nothing was charged through PayPal - the only sensible operation is
+    // "mark the whole order refunded"; a partial dollar amount against a
+    // $0/coupon charge is a mistake.
+    if (amountDollars != null && requestedCents !== remainingCents) {
+      throw new HttpsError(
+        "invalid-argument",
+        "This order has no PayPal charge - only a full refund is possible."
+      );
+    }
+    return {
+      requestedCents: remainingCents,
+      remainingCents,
+      isFullRefund: true,
+    };
+  }
+
+  if (requestedCents <= 0 || requestedCents > remainingCents) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Refund amount must be between $0.01 and " +
+        `$${(remainingCents / 100).toFixed(2)}.`
+    );
+  }
+
+  return {
+    requestedCents,
+    remainingCents,
+    isFullRefund: requestedCents === remainingCents,
+  };
 }
 
 /**
@@ -136,12 +245,19 @@ async function stripStorePurchaseLicenses(
 }
 
 /**
- * Refunds a store purchase (full amount) via PayPal and marks the
- * purchase doc refunded. `revokeLicenses` (the refund dialog's checkbox,
- * default true) additionally strips the digital-book licenses this exact
- * purchase granted. $0 coupon orders skip PayPal entirely and just mark +
- * revoke. Idempotent: an already-refunded purchase is rejected, and the
- * PayPal call carries a purchase-derived idempotency key.
+ * Refunds a store purchase via PayPal - the full remaining amount, or an
+ * admin-chosen partial `amount` - and records it on the purchase doc:
+ * `refunds[]` entry appended, cumulative `refundAmount` updated, and on a
+ * FULL refund `refunded: true` plus `fulfillmentStatus: 'closed'` (with a
+ * statusHistory entry) so the order leaves the dashboard/fulfillment
+ * queues. A PARTIAL refund deliberately changes neither (user decision -
+ * goods may still ship). `revokeLicenses` (the refund dialog's checkbox,
+ * default true, full refunds only) additionally strips the digital-book
+ * licenses this exact purchase granted. $0 coupon orders skip PayPal and
+ * can only be marked fully refunded. Idempotency: a fully-refunded
+ * purchase is rejected, and each PayPal call carries a per-attempt-slot
+ * key (`refund-<id>-<n>`) so a network retry replays rather than
+ * double-refunds, while a genuine second partial gets a fresh key.
  */
 export const refundStorePurchase = onCall(
   {
@@ -151,12 +267,16 @@ export const refundStorePurchase = onCall(
   async (request) => {
     await requireAdminRole(request.auth?.uid);
 
-    const {purchaseId, revokeLicenses} = (request.data ?? {}) as {
+    const {purchaseId, revokeLicenses, amount} = (request.data ?? {}) as {
       purchaseId?: string;
       revokeLicenses?: boolean;
+      amount?: number | null;
     };
     if (!purchaseId) {
       throw new HttpsError("invalid-argument", "purchaseId is required.");
+    }
+    if (amount != null && (typeof amount !== "number" || !isFinite(amount))) {
+      throw new HttpsError("invalid-argument", "amount must be a number.");
     }
 
     const purchaseRef = db.collection("purchases").doc(purchaseId);
@@ -165,17 +285,14 @@ export const refundStorePurchase = onCall(
       throw new HttpsError("not-found", "Purchase not found.");
     }
     const purchase = purchaseSnap.data() as PurchaseDoc;
-    if (purchase.refunded === true) {
-      throw new HttpsError(
-        "failed-precondition", "This purchase was already refunded."
-      );
-    }
 
     const receipt = (purchase.receipt ?? "").trim();
     const total = typeof purchase.total === "number" ? purchase.total : 0;
     const needsPaypalRefund =
       total > 0 && receipt !== "" &&
       receipt !== "COUPON" && receipt !== "FREE ONLY";
+
+    const plan = computeRefundPlan(purchase, amount, needsPaypalRefund);
 
     let refundId: string | undefined;
     let refundStatus: string | undefined;
@@ -211,8 +328,19 @@ export const refundStorePurchase = onCall(
 
       try {
         const captureId = await getCaptureId(env, accessToken, receipt);
+        // Partial refunds pass an explicit dollar amount; a full refund of
+        // the ENTIRE charge omits it (PayPal refunds the capture in full).
+        // A full refund of a REMAINDER (after earlier partials) must still
+        // pass the amount - the capture's full value is no longer
+        // refundable.
+        const priorRefunds = (purchase.refunds ?? []).length;
+        const refundAmountParam =
+          plan.isFullRefund && priorRefunds === 0 ?
+            undefined :
+            plan.requestedCents / 100;
         const refund = await refundCapture(
-          env, accessToken, captureId, undefined, `refund-${purchaseId}`
+          env, accessToken, captureId, refundAmountParam,
+          `refund-${purchaseId}-${priorRefunds}`
         );
         refundId = refund.id;
         refundStatus = refund.status;
@@ -224,23 +352,62 @@ export const refundStorePurchase = onCall(
       }
     }
 
-    const shouldRevoke = revokeLicenses !== false;
+    // Licenses are only stripped on a FULL refund - a partial refund that
+    // keeps the product shouldn't take access away (the dialog only offers
+    // the checkbox for full refunds).
+    const shouldRevoke = plan.isFullRefund && revokeLicenses !== false;
     let revokedBookIds: string[] = [];
     const email = (purchase.email ?? "").trim().toLowerCase();
     if (shouldRevoke && email) {
       revokedBookIds = await stripStorePurchaseLicenses(email, purchaseId);
     }
 
-    await purchaseRef.update({
-      refunded: true,
-      refundedAt: admin.firestore.Timestamp.now(),
-      refundedBy: request.auth?.token.email ?? request.auth?.uid ?? "",
+    const by = request.auth?.token.email ?? request.auth?.uid ?? "";
+    const now = admin.firestore.Timestamp.now();
+    const entry: RefundEntryDoc = {
+      amount: plan.requestedCents / 100,
+      date: now,
+      ...(by ? {by} : {}),
       ...(refundId ? {refundId, refundStatus} : {}),
-      licensesRevoked: revokedBookIds,
-    });
+      ...(revokedBookIds.length ? {licensesRevoked: revokedBookIds} : {}),
+    };
+    const priorCents = Math.round((purchase.refundAmount ?? 0) * 100);
+    const newRefundAmount = (priorCents + plan.requestedCents) / 100;
+
+    const update: Record<string, unknown> = {
+      // The cumulative figure the Purchases grid's "Refunded" column and the
+      // customer record's lifetime-spend math read (they always read this
+      // field; before refunds[] existed nothing ever wrote it).
+      refundAmount: newRefundAmount,
+      refunds: [...(purchase.refunds ?? []), entry],
+      ...(refundId ? {refundId, refundStatus} : {}),
+    };
+
+    let fulfillmentClosed = false;
+    if (plan.isFullRefund) {
+      update.refunded = true;
+      update.refundedAt = now;
+      update.refundedBy = by;
+      update.licensesRevoked = revokedBookIds;
+      if (purchase.fulfillmentStatus !== "closed") {
+        // Server-side twin of PurchasesService.withStatusHistory() - same
+        // entry shape, `by` conditionally spread (never undefined).
+        fulfillmentClosed = true;
+        update.fulfillmentStatus = "closed";
+        update.statusHistory = [
+          ...(purchase.statusHistory ?? []),
+          {status: "closed", date: now, ...(by ? {by} : {})},
+        ];
+      }
+    }
+
+    await purchaseRef.update(update);
 
     return {
       refunded: true,
+      fullyRefunded: plan.isFullRefund,
+      refundAmount: newRefundAmount,
+      fulfillmentClosed,
       paypalRefunded: needsPaypalRefund,
       refundId: refundId ?? null,
       revokedBookIds,

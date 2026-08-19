@@ -22,6 +22,7 @@
       <mat-button-toggle value="product">Product Push</mat-button-toggle>
       <mat-button-toggle value="event">Event Push</mat-button-toggle>
       <mat-button-toggle value="lead-capture">Lead Capture</mat-button-toggle>
+      <mat-button-toggle value="auto">Automated</mat-button-toggle>
     </mat-button-toggle-group>
     @if (startedFrom) {
       <span class="started-from">Started from <b>{{ startedFrom }}</b> — every field below is yours to change</span>
@@ -64,6 +65,36 @@
             <mat-error>Required</mat-error>
           }
         </mat-form-field>
+      }
+
+      @if (type === 'auto') {
+        <div class="field-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Target Tags</mat-label>
+            <mat-select formControlName="targetTags" multiple required>
+              @for (tag of knownTags; track tag) {
+                <mat-option [value]="tag">{{ tag }}</mat-option>
+              }
+            </mat-select>
+            @if (form.get('targetTags')?.hasError('required')) {
+              <mat-error>Pick at least one tag</mat-error>
+            }
+            @if (knownTags.length === 0) {
+              <mat-hint>No tags yet - create a Tag Rule first</mat-hint>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Send After (days)</mat-label>
+            <input matInput type="number" min="0" formControlName="sendAfterDays" required>
+            @if (form.get('sendAfterDays')?.hasError('required')) {
+              <mat-error>Required (0 = next hourly run)</mat-error>
+            }
+            <mat-hint>Days after the purchase/registration that tagged them</mat-hint>
+          </mat-form-field>
+        </div>
+        <p class="auto-hint">Sends automatically to customers holding any of these tags, once their
+          wait has elapsed, while this campaign is live. Runs hourly; customers who explicitly
+          unsubscribed from the newsletter are skipped; each customer receives it at most once.</p>
       }
 
       @if (type !== 'lead-capture') {
@@ -197,10 +228,26 @@
           <div class="preview-input">Email</div>
           <span class="preview-cta preview-cta--lead">Send My Code</span>
         }
+        @if (type === 'auto') {
+          <h3 class="preview-headline">{{ form.value.subject || 'Your subject line' }}</h3>
+          <p class="preview-body">{{ form.value.message || 'Your message to tagged customers.' }}</p>
+          @if (form.value.targetTags?.length) {
+            <p class="preview-event">To anyone tagged:
+              @for (tag of form.value.targetTags; track tag) {
+                <span class="preview-tag">{{ tag }}</span>
+              }
+            </p>
+          }
+          @if (selectedCoupon) {
+            <p class="preview-price"><b>Use code {{ selectedCoupon.code }} for {{ selectedCoupon.percentOff }}% off</b></p>
+          }
+        }
       </div>
       <div class="preview-note">
         @if (type === 'lead-capture') {
           Submissions will create/update a customer (tagged with this campaign), set the newsletter flag, and email the code.
+        } @else if (type === 'auto') {
+          Sends per-customer, {{ form.value.sendAfterDays || 0 }} day(s) after the activity that tagged them, while this campaign is live. At most once per customer; explicit newsletter unsubscribes are skipped.
         } @else {
           Will send to all flagged newsletter subscribers when launched — no audience narrowing.
         }

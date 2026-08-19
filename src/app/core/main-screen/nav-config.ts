@@ -233,7 +233,12 @@ export const NAV_CONFIG: NavGroup[] = [
     roles: [Role.ADMIN],
     items: [
       { label: 'Campaigns', slug: 'campaigns' },
-      { label: 'Status Board', slug: 'status-board' }
+      { label: 'Status Board', slug: 'status-board' },
+      // Customer tag rules ("purchased X => tag 'Impact 1'") live here
+      // rather than Tools because they exist to feed campaign audiences -
+      // they're campaign infrastructure, and keeping them in this group
+      // keeps the "can work campaigns" permission story one grant.
+      { label: 'Tag Rules', slug: 'tag-rules' }
     ]
   },
   {

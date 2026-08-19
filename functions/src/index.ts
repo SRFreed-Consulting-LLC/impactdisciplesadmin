@@ -65,6 +65,17 @@ const eventRegCustomerUpsert =
 exports.onEventRegistrationCustomerUpsert =
   eventRegCustomerUpsert.onEventRegistrationCustomerUpsert;
 
+// Customer tag rules (Campaigns Manager > Tag Rules): the live tagging
+// rides the two upsert triggers above; this callable is the admin-triggered
+// retroactive sweep for one rule across historic purchases/registrations.
+const tagRules = require("./tag-rules.functions");
+exports.applyTagRuleRetroactively = tagRules.applyTagRuleRetroactively;
+
+// The auto-campaign hourly sender - this repo's first scheduled function
+// (initial deploy enables the Cloud Scheduler API and creates the job).
+const campaignAutoSend = require("./campaign-auto-send.functions");
+exports.autoCampaignScheduler = campaignAutoSend.autoCampaignScheduler;
+
 // Sweep 2026-08-17: language registry backs the reader's language picker
 // so translation docs no longer need an open collection-group read.
 const languageRegistry = require("./library-language-registry.functions");
