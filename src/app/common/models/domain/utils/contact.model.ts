@@ -9,7 +9,12 @@ import { ContactNoteModel } from "./contact-note.model";
 // (functions/src/event-registration-customer-upsert.functions.ts's
 // onEventRegistrationCustomerUpsert) - rather than by an admin typing one
 // in. There's no manual "New Customer" flow left in the app any more (see
-// contacts.component.ts's own comment). A purchase's email/name/phone/
+// contacts.component.ts's own comment). ONE sanctioned admin-side
+// exception (2026-08, user-approved): promoting an organization's Point of
+// Contact / a form-submission requester into a contact via the
+// create-org-contact flow - always admin-reviewed, deduped by email
+// (links instead of duplicating), and it never overwrites existing
+// profile fields. A purchase's email/name/phone/
 // address (when the order has a physical item) or an event registration's
 // email/name gets matched against this collection by email and either
 // creates a brand-new record or, for an existing one, either updates it
@@ -66,6 +71,14 @@ export class ContactModel extends Person {
     // scheduler's anchor date) lives in the tag_applications collection,
     // one doc per (email, tag).
     tags?: string[];
+
+    // The organization this person belongs to (organizations/{id}) - "the
+    // people inside these organizations". One org per contact, no role/
+    // title (user decision, 2026-08). Written via conditional spread only
+    // (never a literal undefined - see the Firestore write gotcha in
+    // CLAUDE.md); set from Contact Details' Organization select, the org
+    // screen's member linking, or a PoC promotion.
+    organizationId?: string;
 
     // Mirrors CheckoutForm's own isShippingSameAsBilling (cart.model.ts),
     // direction flipped to match how Customer Details presents the 2
