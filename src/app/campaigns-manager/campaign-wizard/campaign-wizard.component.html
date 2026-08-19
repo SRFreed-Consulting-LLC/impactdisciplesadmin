@@ -58,10 +58,9 @@
   </div>
 
   <div class="wizard-section">
-    <p class="wizard-label">CHANNELS</p>
+    <p class="wizard-label">CHANNELS (either, or both)</p>
     <div class="wizard-channels">
-      <mat-checkbox [checked]="true" [disabled]="true"
-        matTooltip="Every campaign can send email">Email</mat-checkbox>
+      <mat-checkbox formControlName="emailChannel">Email</mat-checkbox>
       <mat-checkbox formControlName="webChannel">Web popup</mat-checkbox>
     </div>
     @if (form.value.webChannel) {
@@ -70,8 +69,12 @@
         campaign page right after saving.
       </p>
     }
+    @if (!emailChannel && !form.value.webChannel) {
+      <p class="wizard-hint">Pick at least one channel.</p>
+    }
   </div>
 
+  @if (emailChannel) {
   <div class="wizard-section">
     <p class="wizard-label">WHO RECEIVES THE EMAILS?</p>
     <div class="wizard-row">
@@ -125,6 +128,7 @@
       }
     </div>
   </div>
+  }
 
   <div class="wizard-section">
     <p class="wizard-label">WINDOW (OPTIONAL)</p>

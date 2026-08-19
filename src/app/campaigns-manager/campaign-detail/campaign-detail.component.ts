@@ -103,20 +103,30 @@ export class CampaignDetailComponent implements OnInit {
 
   get funnel(): FunnelTile[] {
     const s = this.campaign.stats;
+    const channels = this.campaign.channels ?? [];
     const pct = (part: number) => s.sent > 0 ? Math.round((part / s.sent) * 100) + '%' : '';
-    const tiles: FunnelTile[] = [
-      { label: 'Sent', value: s.sent.toLocaleString() },
-      { label: 'Delivered', value: s.delivered > 0 ? s.delivered.toLocaleString() : '—', sub: s.delivered > 0 ? pct(s.delivered) : 'not tracked yet' },
-      { label: 'Opened', value: s.uniqueOpens.toLocaleString(), sub: pct(s.uniqueOpens) + (s.uniqueOpens > 0 ? ' · approx.' : '') },
-      { label: 'Clicked', value: s.clicks.toLocaleString(), sub: pct(s.clicks) },
-      { label: 'Purchased', value: s.purchases > 0 ? s.purchases.toLocaleString() : '—', sub: s.purchases > 0 ? '$' + Math.round(s.revenue).toLocaleString() : 'not tracked yet' }
-    ];
-    if ((this.campaign.channels ?? []).includes('web')) {
+    const tiles: FunnelTile[] = [];
+    // Email stages only when the campaign HAS the email channel - a
+    // web-only campaign's funnel is popup -> click -> purchase.
+    if (channels.includes('email')) {
+      tiles.push(
+        { label: 'Sent', value: s.sent.toLocaleString() },
+        { label: 'Delivered', value: s.delivered > 0 ? s.delivered.toLocaleString() : '—', sub: s.delivered > 0 ? pct(s.delivered) : 'not tracked yet' },
+        { label: 'Opened', value: s.uniqueOpens.toLocaleString(), sub: pct(s.uniqueOpens) + (s.uniqueOpens > 0 ? ' · approx.' : '') },
+        { label: 'Clicked', value: s.clicks.toLocaleString(), sub: pct(s.clicks) }
+      );
+    }
+    if (channels.includes('web')) {
       tiles.push(
         { label: 'Popup Shown', value: s.webShown.toLocaleString() },
         { label: 'Popup Clicked', value: s.webClicks.toLocaleString() }
       );
     }
+    tiles.push({
+      label: 'Purchased',
+      value: s.purchases > 0 ? s.purchases.toLocaleString() : '—',
+      sub: s.purchases > 0 ? '$' + Math.round(s.revenue).toLocaleString() : 'not tracked yet'
+    });
     return tiles;
   }
 
@@ -134,7 +144,10 @@ export class CampaignDetailComponent implements OnInit {
   }
 
   canAddEmail(): boolean {
-    return this.permissionService.canAdd('campaigns-manager.campaigns');
+    // Web-only campaigns don't author emails - re-open the wizard and add
+    // the email channel first.
+    return (this.campaign.channels ?? []).includes('email') &&
+      this.permissionService.canAdd('campaigns-manager.campaigns');
   }
 
   isEditableTouch(touch: CampaignEmailModel): boolean {

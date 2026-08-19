@@ -57,6 +57,10 @@ export class CampaignWizardComponent implements OnInit {
       otherKind: ['general'],
       productId: [null],
       eventId: [null],
+      // Either channel alone or both - a web-ONLY campaign (e.g. a
+      // subscriber-growth popup with no email at all) is a first-class
+      // shape (user's original brief: "email or web... or both!").
+      emailChannel: [true],
       webChannel: [false],
       audienceMode: ['flags', Validators.required],
       audienceFlags: [['subscribedToNewsletter']],
@@ -68,6 +72,14 @@ export class CampaignWizardComponent implements OnInit {
 
     // Any audience change invalidates a shown preview - the count would lie.
     this.form.valueChanges.subscribe(() => this.audiencePreview = null);
+
+    // Audience is an EMAIL concept - a web-only campaign has none (popups
+    // show to every visitor), so the requirement follows the checkbox.
+    this.form.get('emailChannel')?.valueChanges.subscribe((email: boolean) => {
+      const mode = this.form.get('audienceMode');
+      mode?.setValidators(email ? [Validators.required] : []);
+      mode?.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   ngOnInit(): void {
@@ -85,6 +97,7 @@ export class CampaignWizardComponent implements OnInit {
         otherKind: this.campaign.otherKind ?? 'general',
         productId: this.campaign.productId ?? null,
         eventId: this.campaign.eventId ?? null,
+        emailChannel: (this.campaign.channels ?? []).includes('email'),
         webChannel: (this.campaign.channels ?? []).includes('web'),
         audienceMode: audience?.mode ?? 'flags',
         audienceFlags: audience?.flags ?? ['subscribedToNewsletter'],
@@ -102,6 +115,10 @@ export class CampaignWizardComponent implements OnInit {
 
   get audienceMode(): string {
     return this.form.get('audienceMode')?.value;
+  }
+
+  get emailChannel(): boolean {
+    return this.form.get('emailChannel')?.value === true;
   }
 
   canSave(): boolean {
@@ -148,6 +165,10 @@ export class CampaignWizardComponent implements OnInit {
       this.snackbar.error('Pick the event this campaign promotes.');
       return;
     }
+    if (!value.emailChannel && !value.webChannel) {
+      this.snackbar.error('Pick at least one channel - email, web popup, or both.');
+      return;
+    }
 
     this.saving = true;
     // Explicit nulls, never undefined (Firestore setDoc gotcha - CLAUDE.md).
@@ -158,8 +179,11 @@ export class CampaignWizardComponent implements OnInit {
       otherKind: value.goal === 'other' ? value.otherKind : null,
       productId: value.goal === 'product' ? value.productId : null,
       eventId: value.goal === 'event' ? value.eventId : null,
-      channels: value.webChannel ? ['email', 'web'] : ['email'],
-      audience: this.buildAudience(),
+      channels: [
+        ...(value.emailChannel ? ['email'] : []),
+        ...(value.webChannel ? ['web'] : [])
+      ] as CampaignModel['channels'],
+      audience: value.emailChannel ? this.buildAudience() : null,
       startDate: value.startDate ? new Date(value.startDate) : null,
       endDate: value.endDate ? new Date(value.endDate) : null,
       status: this.campaign?.status ?? 'draft',
