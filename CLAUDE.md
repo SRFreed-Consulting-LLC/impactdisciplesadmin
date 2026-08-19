@@ -199,7 +199,25 @@ from Tools Manager into Content Manager. The **Firestore collection is still `cu
 (`ContactService.table`), the customer-upsert Cloud Functions keep their names, and the old
 routes redirect (`app-routing.module.ts`). Stored permission grants were key-migrated by
 `scripts/migrate-screenkey-renames.js` — already run on dev; **must be run on prod when this
-ships to prod**. There is no
+ships to prod**. **Contacts & Events restructure 2026-08-19** (branch
+`feature/contacts-events-restructure`, both repos — see MIGRATION.md's own entry for the prod
+runbook): Organizations moved from `events-manager` into `contacts-manager`
+(`contacts-manager/organizations/` — master list + in-page details with a Point of Contact card,
+child Locations table, and Members list over `ContactModel.organizationId`); the standalone
+Locations screen is retired (locations are child records of an org, `location.organization` = org
+id, edited inside the org details view; the collection stays top-level `locations` because the
+public site reads it); events pick Organization → optional Location and every save writes a
+denormalized `EventModel.venue` `{name, address}` snapshot that the PUBLIC SITE renders (its
+`VenuePipe`; `organizations` stays staff-only readable, staleness accepted, re-save refreshes);
+Summits are pinned to the one `isSummitVenue` location (Crossroads HWY 16 — set by
+`scripts/pin-summit-venue.js`, no UI writes it) whose rooms are edited via the Summit Info tab's
+Venue Rooms panel; the **Courses concept is retired** (breakout agenda items carry their own
+`text`/`description`/`coaches` — `scripts/flatten-courses-onto-agenda-items.js` backfilled from the
+old course docs; `AgendaItem.course` is frozen legacy provenance; registrations were ALREADY
+agenda-item-keyed so nothing moved); and qualifying form submissions offer an admin-reviewed
+"Create Organization + Contact" / "Create Contact" action (`create-org-contact-dialog` in shared,
+driven by the label heuristics in `shared/form-submission-mapping.util.ts` — the ONE sanctioned
+admin-side contact creation, email-deduped, never overwrites existing profiles). There is no
 `subscriptions-manager` module any more — it was absorbed into what's now `contacts-manager` as a
 screen, then that screen itself was removed outright 2026-08-15 once
 subscriber management folded into Reports Manager's own Subscribers report instead (see that
@@ -284,8 +302,10 @@ reads its tab list from `NAV_CONFIG`'s `'reports-manager'` group and renders one
   to `isActive` events. A summit event (`isSummit`) adds a toggle between a plain attendee list and a
   breakout-session-grouped report — breakout sign-up isn't its own collection:
   `EventRegistrationModel.trainingSessions` is an array of agenda-item ids, cross-referenced against
-  the event's own `agendaItems` (for session time) and the `courses` collection (for the display
-  name). This join originated in the Summit event-edit screen's old "Break Outs" tab
+  the event's own `agendaItems` for session time AND display name (the item's own `text` since the
+  2026-08-19 Courses retirement — the old second hop to the `courses` collection is gone; an item
+  with no title renders '(unknown breakout)' instead of silently dropping the student). The join
+  originated in the Summit event-edit screen's old "Break Outs" tab
   (`event-breakouts.component.ts`), whose `flatten()`/`buildRows()` were copied here rather than
   reusing the component; that tab and component were then removed outright (2026-08) as redundant
   with this report, which is now the app's only breakout view. The breakout view is a hand-rolled
@@ -534,13 +554,15 @@ into `coaches` (Events Manager > Coaches - breakout-only now, no `teamPageSortOr
 under the same document id — see `scripts/move-team-page-coaches-to-impact-team.js` and `MIGRATION.md`
 — specifically so any existing `CourseModel.coachIds` referencing that id keeps resolving correctly
 post-split with zero data changes needed on the course side. A breakout instructor can still come from
-either collection: `course-dialog.component.ts`'s Coaches field is a combined, grouped picker
-(`<mat-optgroup>` per source) over both, and every place that resolves a coach id to a display name
+either collection: the Agenda dialogs' Coaches pickers are combined, grouped (`<mat-optgroup>` per
+source, tagged via `Instructor.source`), and every place that resolves a coach id to a display name
 (`coachLabelFor()` in `session-block.util.ts`, the Agenda wizard/canvas/grid) works off one merged
-array assembled once in `event-agenda.component.ts`. The "+ New Coach" quick-create buttons scattered
-through the Agenda/Course dialogs deliberately only create plain Coaches, never Impact Team members —
-those are meant to be administered more deliberately via Web Manager > Team Page, not spur-of-the-
-moment mid-breakout. `impactdisciples-web`'s own "My Team" page (`team.component.ts`/
+array assembled once in `event-agenda.component.ts`. Since the 2026-08-19 restructure, NEW coaches
+are created ONLY via the Summit agenda dialogs' "+ Add new coach to this event"
+(`coach-quick-create-dialog` — name + optional title, deliberately slim) and never Impact Team
+members; the Events Manager > Coaches roster is EDIT-ONLY (photo/bio/organization upkeep, no New
+action), and Impact Team members are administered via Content Manager > Team Page.
+`impactdisciples-web`'s own "My Team" page (`team.component.ts`/
 `team-details.component.ts`) was updated separately, same day, to read `impact_team` instead of
 `coaches` - see that repo's own commit and this file's Firestore collection naming note above for the
 full picture; both repos' `common/` are independent copies (no longer a shared submodule), so this

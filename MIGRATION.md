@@ -418,3 +418,36 @@ What got done, in order:
    correctly, 1 inactive correctly filtered, detail page resolves real bio/photo). Deployed to
    `impactdisciples-web`'s dev AND prod hosting (that repo's CLAUDE.md normally holds prod deploys for
    explicit go-ahead each time, same spirit as this repo's own master-merge rule - given here).
+
+## Contacts & Events restructure: Organizations/Locations/Courses/Coaches — dev done 2026-08-19, PROD PENDING
+
+Branch `feature/contacts-events-restructure` (both repos). Organizations moved into Contacts
+Manager (child locations edited inside the org details view; standalone Locations screen retired),
+events reference organization + optional location with a denormalized `venue` snapshot the public
+site renders, Summit is pinned to the one `isSummitVenue` location (Crossroads HWY 16,
+`3RuXPpbwBrD8c1toHw0c` in both projects' data) whose rooms are edited on the Summit screen, the
+Courses concept is retired (breakout agenda items carry their own text/description/coaches;
+registrations were ALREADY agenda-item-keyed — no registration migration), coaches are created only
+via the Summit quick-create (Coaches screen is edit-only), and qualifying form submissions offer an
+admin-reviewed "Create Organization + Contact" action.
+
+Data scripts (all idempotent, dry-run first) — **run on dev 2026-08-19; each must run on prod AT
+prod-deploy time, BEFORE the app deploys** (order matters for the flatten - the web app's course
+fallbacks cover the gap, but don't stretch it):
+
+1. `node scripts/pin-summit-venue.js --project=prod`
+2. `node scripts/backfill-org-point-of-contact.js --project=prod` (17/18 orgs updated on dev)
+3. `node scripts/flatten-courses-onto-agenda-items.js --project=prod` (25 items / 1 event on dev;
+   take a fresh `node scripts/export.js --project=prod` backup of `events` first)
+4. `node scripts/migrate-screenkey-renames-2.js --project=prod` (org key moved, locations/courses
+   keys dropped; 0 grants affected on dev)
+5. `node scripts/repair-location-organizations.js` — dry-run reported 8 orphan locations +
+   anomalies needing per-doc user decisions (fill ORPHAN_ASSIGNMENTS before a write run); NOT yet
+   applied anywhere.
+
+Deferred cleanup (do AFTER prod ships and the flatten has run there): delete admin
+`CourseService`/`CourseModel`, web `course.service.ts` + the CourseNamePipe shim + the
+breakout.util legacy-course fallbacks (keep `sameBreakoutSession`'s course-id branch forever - old
+items keep their ids); optionally tighten `courses` Firestore read rules to staff; optional
+`backfill-event-venues.js`. The `courses` collection itself is left inert (the `home_page_popups`
+precedent).
