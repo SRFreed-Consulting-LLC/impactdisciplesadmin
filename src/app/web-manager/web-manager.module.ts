@@ -21,8 +21,6 @@ import { TeamPageDialogComponent } from './team-page/team-page-dialog.component'
 // see src/app/shared/image-uploader/ for the full rationale. Web Manager
 // is now fully DevExtreme-free.
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
-import { HomePagePopupsComponent } from './home-page-popups/home-page-popups.component';
-import { HomePagePopupPreviewDialogComponent } from './home-page-popups/home-page-popup-preview-dialog.component';
 import { WebManagerRoutingModule } from './web-manager-routing.module';
 import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
@@ -86,8 +84,6 @@ import { QuillModule } from 'ngx-quill';
     PodCastCategoryDialogComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
-    HomePagePopupsComponent,
-    HomePagePopupPreviewDialogComponent,
     MonthlyNewslettersComponent,
     MonthlyNewsletterDialogComponent,
     TeamPageComponent,

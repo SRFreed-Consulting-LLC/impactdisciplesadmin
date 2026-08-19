@@ -1,0 +1,134 @@
+@if (mode === 'editTouch') {
+  <app-email-touch-editor [campaign]="campaign" [touch]="editingTouch"
+    (closed)="onEditorClosed($event)"></app-email-touch-editor>
+} @else if (mode === 'editPopup') {
+  <app-popup-editor [campaign]="campaign" [popup]="popup"
+    (closed)="onPopupClosed($event)"></app-popup-editor>
+} @else {
+<div class="detail-header">
+  <button mat-icon-button matTooltip="Back to Campaigns" (click)="back()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <div class="detail-header__titles">
+    <h2 class="detail-header__name">{{ campaign.name }}</h2>
+    <div class="detail-header__chips">
+      <span class="chip" [class]="'kind-' + campaign.goal">{{ kindLabel(campaign) }}</span>
+      @for (channel of campaign.channels; track channel) {
+        <span class="chip channel">{{ channel | uppercase }}</span>
+      }
+      <span class="chip" [class]="'status-' + effectiveStatus(campaign)">{{ effectiveStatus(campaign) | uppercase }}</span>
+      @if (campaign.source === 'mailchimp') {
+        <span class="chip channel">IMPORTED</span>
+      }
+    </div>
+    <div class="detail-header__meta">
+      @if (promotesName) {
+        <span>Promotes <b>{{ promotesName }}</b></span>
+      }
+      @if (toDate(campaign.startDate)) {
+        <span>
+          {{ toDate(campaign.startDate) | date }}
+          @if (toDate(campaign.endDate)) {
+            – {{ toDate(campaign.endDate) | date }}
+          } @else {
+            – ongoing
+          }
+        </span>
+      }
+    </div>
+  </div>
+  <span class="detail-header__spacer"></span>
+  @if (canEditCampaign()) {
+    <button mat-stroked-button (click)="edit.emit(campaign)">
+      <mat-icon>edit</mat-icon> EDIT CAMPAIGN
+    </button>
+    <button mat-stroked-button (click)="editPopup()">
+      <mat-icon>web_asset</mat-icon> {{ popup ? 'EDIT POPUP' : 'ADD POPUP' }}
+    </button>
+  }
+  @if (canAddEmail()) {
+    <button mat-flat-button color="primary" (click)="newEmail()">
+      <mat-icon>add</mat-icon> NEW EMAIL
+    </button>
+  }
+</div>
+
+@if (popup) {
+  <div class="popup-card">
+    <mat-icon class="popup-card__icon">web_asset</mat-icon>
+    <div class="popup-card__main">
+      <b>{{ popup.title }}</b>
+      <span class="popup-card__meta">
+        {{ toDate(popup.fromDate) | date:'MMM d' }} – {{ toDate(popup.toDate) | date:'MMM d, y' }}
+        · shown {{ campaign.stats.webShown | number }} · clicked {{ campaign.stats.webClicks | number }}
+      </span>
+    </div>
+    <span class="chip" [class]="popup.isActive ? 'status-live' : 'status-draft'">
+      {{ popup.isActive ? 'LIVE' : 'OFF' }}
+    </span>
+  </div>
+}
+
+<div class="funnel">
+  @for (tile of funnel; track tile.label) {
+    <div class="funnel__tile">
+      <div class="funnel__value">{{ tile.value }}</div>
+      <div class="funnel__label">{{ tile.label }}</div>
+      @if (tile.sub) {
+        <div class="funnel__sub">{{ tile.sub }}</div>
+      }
+    </div>
+  }
+</div>
+
+<div class="touches">
+  <div class="touches__label">EMAILS · {{ touches.length }}</div>
+
+  @if (loadingTouches) {
+    <div class="touches__loading"><mat-spinner diameter="30"></mat-spinner></div>
+  } @else if (touches.length === 0) {
+    <p class="touches__empty">No emails on this campaign yet.</p>
+  } @else {
+    <div class="touch-list">
+      @for (touch of touches; track touch.id) {
+        <div class="touch" [class.touch--editable]="isEditableTouch(touch)"
+          [tabindex]="isEditableTouch(touch) ? 0 : -1"
+          (click)="editTouch(touch)" (keyup.enter)="editTouch(touch)">
+          <div class="touch__main">
+            <span class="touch__subject">{{ touch.label || touch.subject || '(untitled)' }}</span>
+            @if (touch.label && touch.subject) {
+              <span class="touch__sub">{{ touch.subject }}</span>
+            }
+          </div>
+          @if (touch.status !== 'sent') {
+            <span class="chip" [class]="touch.status === 'sending' ? 'status-live' : 'status-draft'">
+              {{ touchStatusLabel(touch) }}
+            </span>
+          }
+          <span class="touch__date">{{ toDate(touch.sentAt) | date:'mediumDate' }}</span>
+          <span class="touch__stat">{{ touch.stats.sent | number }} sent</span>
+          <span class="touch__stat">
+            {{ touch.stats.uniqueOpens | number }} opens
+            @if (touchOpenRate(touch)) {
+              ({{ touchOpenRate(touch) }})
+            }
+          </span>
+          <span class="touch__stat">{{ touch.stats.clicks | number }} clicks</span>
+          <span class="touch__actions">
+            <button mat-icon-button matTooltip="PREVIEW"
+              (click)="$event.stopPropagation(); preview(touch)">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            @if (canOpenInDesigner()) {
+              <button mat-icon-button matTooltip="OPEN IN DESIGNER"
+                (click)="$event.stopPropagation(); openInDesigner(touch)">
+                <mat-icon>brush</mat-icon>
+              </button>
+            }
+          </span>
+        </div>
+      }
+    </div>
+  }
+</div>
+}

@@ -3,25 +3,33 @@ import Quill from 'quill';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { Timestamp } from 'firebase/firestore';
-import { CustomerEmailModel } from 'src/app/common/models/domain/customer-email.model';
-import { CustomerEmailService } from 'src/app/common/services/data/customer-email.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { EMailService } from 'src/app/common/services/data/email.service';
+import { CampaignModel, emptyCampaignStats, emptyEmailStats } from 'src/app/common/models/domain/campaign.model';
+import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
+import { CampaignService } from 'src/app/common/services/data/campaign.service';
+import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
-import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
+import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../../shared/rich-text-editor/variable-inserter.component';
 
 export interface EventEmailDialogData {
   eventId: string | undefined;
+  eventName?: string;
 }
 
-// Copy of SendNewsletterDialogComponent's pattern (subject + quill body +
-// variable insertion), scoped to this event's own registrants instead of
-// a newsletter subscriber list.
+// Email this event's registrants - since Campaign Manager v2's Phase 6
+// consolidation, a THIN FLOW over the unified send engine: creates a
+// campaign (goal 'event', audience = the registrants' emails as an
+// explicit list) with one touch and hands it to enqueueCampaignEmail.
+// The audience carries unsubType 'none': these are OPERATIONAL info
+// emails to people who registered - no unsubscribe footer, and the
+// newsletter opt-out is deliberately NOT applied (the pre-v2 version of
+// this dialog removed the unsubscribe link for exactly this reason -
+// 2026-08-12 fullsweep note). What died: the un-awaited per-recipient
+// sendHtmlEmail loop and the write-only customer-emails archive - the
+// campaign IS the archive now.
 @Component({
     selector: 'app-event-email-dialog',
     templateUrl: './event-email-dialog.component.html',
@@ -42,9 +50,10 @@ export class EventEmailDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: EventEmailDialogData,
     private fb: FormBuilder,
     private service: EventRegistrationService,
-    private emailService: EMailService,
-    private customerEmailService: CustomerEmailService,
+    private campaignService: CampaignService,
+    private emailService: CampaignEmailService,
     private authService: AdminAuthService,
+    private confirmService: ConfirmService,
     private snackbar: SnackbarService
   ) {
     this.form = this.fb.group({
@@ -65,54 +74,96 @@ export class EventEmailDialogComponent {
     this.dialogRef.close(false);
   }
 
-  onSend(): void {
+  // Sender name is a per-SEND constant - baked in before the touch saves
+  // (the engine's per-recipient context doesn't carry it).
+  private bakeSenderTokens(html: string): string {
+    const user = this.authService.getLoggedInUser();
+    const replacements: Record<string, string> = {
+      '*|SENDER_FNAME|*': user?.firstName ?? '',
+      '{{Sender First Name}}': user?.firstName ?? '',
+      '*|SENDER_LNAME|*': user?.lastName ?? '',
+      '{{Sender Last Name}}': user?.lastName ?? ''
+    };
+    let result = html;
+    for (const [token, value] of Object.entries(replacements)) {
+      result = result.split(token).join(value);
+    }
+    return result;
+  }
+
+  async onSend(): Promise<void> {
     if (this.form.invalid || !this.data.eventId) {
       this.form.markAllAsTouched();
       return;
     }
-
     this.inProgress$.next(true);
 
-    const user = this.authService.getLoggedInUser();
-    const date = Timestamp.now();
-    const template = this.form.value.html as string;
     const subject = this.form.value.subject as string;
-    const email: CustomerEmailModel = { ...new CustomerEmailModel(), date, sender: `${user.firstName} ${user.lastName}`, subject, html: template };
 
-    this.service.getAllByValue('eventId', this.data.eventId).then((subscribers) => {
-      subscribers.forEach((subscriber) => {
-        // One engine for all token spellings ({{Recipient First Name}},
-        // {{firstName}}, *|FNAME|*), replacing EVERY occurrence - the
-        // chained String.replace() this replaces only hit the first one.
-        // No unsubscribeUrl in the context on purpose (see the comment
-        // below about the removed unsubscribe link).
-        const html = renderMergeTags(template, {
-          firstName: subscriber.firstName,
-          lastName: subscriber.lastName,
-          email: subscriber.email,
-          senderFirstName: user.firstName,
-          senderLastName: user.lastName,
-          date: (dateFromTimestamp(date) as Date).toLocaleString()
-        });
+    try {
+      const registrations = await this.service.getAllByValue('eventId', this.data.eventId);
+      const emails = [...new Set(registrations
+        .map((r) => (r.email ?? '').trim().toLowerCase())
+        .filter((e) => e.includes('@')))];
+      if (emails.length === 0) {
+        this.snackbar.error('This event has no registrants to email.');
+        return;
+      }
 
-        // 2026-08-12 fullsweep fix: this used to append an unsubscribe link
-        // hardcoding &list=newsletter_subscriptions, which the backing
-        // Cloud Function (unsubscribe_from_email_list) rejects outright -
-        // it only accepts list=subscriptions. Event registrants aren't even
-        // in that collection (they're in event_registrations), so pointing
-        // this at the newsletter's list=subscriptions&type=newsletter
-        // pattern instead would be wrong too: it'd either still 400 for a
-        // non-subscriber, or silently unsubscribe someone from the
-        // newsletter if they happen to share that email. Removed until a
-        // real per-event opt-out mechanism exists - see the fullsweep
-        // report for the fuller writeup.
-        this.emailService.sendHtmlEmail(subscriber.email, subject, html);
+      const confirmed = await this.confirmService.confirm(
+        `Send "${subject}" to <b>${emails.length}</b> registrant(s) of this event?`,
+        'Confirm Attendee Email');
+      if (!confirmed) {
+        return;
+      }
+
+      const campaign = await this.campaignService.add({
+        ...new CampaignModel(),
+        name: `${this.data.eventName || 'Event'} — ${subject}`,
+        goal: 'event',
+        otherKind: null,
+        eventId: this.data.eventId,
+        channels: ['email'],
+        status: 'live',
+        startDate: new Date(),
+        endDate: null,
+        // Explicit list + unsubType 'none' = operational info email (see
+        // the class comment).
+        audience: { mode: 'list', emails, unsubType: 'none' },
+        couponId: null,
+        source: null,
+        stats: emptyCampaignStats(),
+        schemaVersion: 2
       });
-    }).then(() => {
-      this.customerEmailService.add(email).then((result) => {
-        this.snackbar.success(`Email ("${result.subject}") Sent Successfully!`);
-        this.dialogRef.close(true);
+
+      const touch = await this.emailService.add({
+        ...new CampaignEmailModel(),
+        campaignId: campaign.id!,
+        label: null,
+        subject,
+        html: this.bakeSenderTokens(this.form.value.html as string),
+        status: 'draft',
+        sendConfig: { mode: 'now', scheduledAt: null, tagTrigger: null },
+        audienceOverride: null,
+        sentAt: null,
+        recipientCount: null,
+        stats: emptyEmailStats(),
+        source: null,
+        mailchimpCampaignId: null,
+        capturedAt: null,
+        design: null,
+        links: null
       });
-    });
+
+      const result = await this.campaignService.enqueueEmail(touch.id!);
+      this.snackbar.success(
+        `Email queued to ${result.recipients} registrant(s) - ` +
+        `${result.sentImmediately} sent immediately.`);
+      this.dialogRef.close(true);
+    } catch (err) {
+      this.snackbar.error('Send failed: ' + ((err as Error)?.message ?? err));
+    } finally {
+      this.inProgress$.next(false);
+    }
   }
 }

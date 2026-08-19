@@ -7,9 +7,7 @@ import { compileEmailDesign } from 'src/app/common/utils/email/email-design-comp
 import { STARTER_TEMPLATES } from 'src/app/common/utils/email/starter-templates';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
-import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
-import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 
 // What the shell does with the choice: start a new email from a COPY of
@@ -33,9 +31,10 @@ interface TemplateCard {
   build: () => EmailDesign;
 }
 
-// A past sent email (a type-'email' campaign; its body html sits in
-// campaign_emails and is fetched lazily, one page of cards at a time -
-// 477 up-front html fetches would be ~12MB for a dialog).
+// A past sent email (a campaign_emails "touch" - Campaign Manager v2),
+// paged straight off that collection newest-first; each page's rows carry
+// their own html, so a page of 12 cards is ~300KB - loaded only when the
+// section is opened (477 up-front would be ~12MB).
 interface PastEmailCard {
   key: string;
   name: string;
@@ -75,7 +74,6 @@ export class TemplatePickerDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<TemplatePickerDialogComponent, TemplatePickerResult>,
     private sanitizer: DomSanitizer,
-    private campaignService: CampaignService,
     private campaignEmailService: CampaignEmailService,
     templatesService: EMailTemplatesService
   ) {
@@ -141,25 +139,19 @@ export class TemplatePickerDialogComponent {
       return;
     }
     this.loadingPast = true;
-    this.campaignService.getPage(this.pastPageSize, this.pastCursor, 'startDate', 'desc',
-      [new QueryParam('type', WhereFilterOperandKeys.equal, 'email')]
-    ).then((page) => {
+    // orderBy sentAt excludes docs without it (future drafts) - exactly
+    // right for a sent-history section.
+    this.campaignEmailService.getPage(this.pastPageSize, this.pastCursor, 'sentAt', 'desc').then((page) => {
       this.pastCursor = page.cursor;
       this.pastHasMore = page.hasMore;
-      for (const campaign of page.items) {
-        const card: PastEmailCard = {
-          key: campaign.id!,
-          name: campaign.name,
-          subject: campaign.subject || null,
-          sentLabel: dateFromTimestamp(campaign.startDate)?.toLocaleDateString() ?? '',
-          srcdoc: null,
-          html: null
-        };
-        this.pastCards.push(card);
-        // Body html loads per-card, only for pages actually opened.
-        this.campaignEmailService.getById(campaign.id!).then((email) => {
-          card.html = email?.html ?? '';
-          card.srcdoc = this.sanitizer.bypassSecurityTrustHtml(card.html);
+      for (const email of page.items) {
+        this.pastCards.push({
+          key: email.id!,
+          name: email.label || email.subject,
+          subject: email.subject || null,
+          sentLabel: dateFromTimestamp(email.sentAt)?.toLocaleDateString() ?? '',
+          srcdoc: this.sanitizer.bypassSecurityTrustHtml(email.html ?? ''),
+          html: email.html ?? ''
         });
       }
       this.loadingPast = false;

@@ -2,6 +2,10 @@ import admin = require("firebase-admin");
 import * as functions from "firebase-functions";
 import {restrictedCors} from "./utils/security.functions";
 import {queueSubscriptionConfirmation} from "./transactional-emails";
+import {
+  recordCampaignConversion,
+  sanitizeAttribution,
+} from "./campaign-tracking.functions";
 
 // Newsletter/Prayer Team subscription state used to be its own collection
 // (`subscriptions`, one doc per email+type) - it's now just 2 booleans on
@@ -125,6 +129,19 @@ exports.subscribe_to_email_list = functions
             functions.logger.error(
               "Failed to queue subscription confirmation", mailErr
             );
+          }
+          // Campaign attribution (Campaign Manager v2, Phase 4): a FRESH
+          // subscribe that followed a campaign link/popup credits that
+          // campaign's funnel. Best-effort; validated inside.
+          const attribution = sanitizeAttribution(body.attribution);
+          if (attribution) {
+            await recordCampaignConversion(db, {
+              campaignId: attribution.campaignId,
+              emailId: attribution.emailId,
+              type: "subscribe",
+              via: attribution.source === "popup" ? "popup" : "link",
+              email,
+            });
           }
         }
 

@@ -31,6 +31,27 @@ $campaign-event-hue: color-mix(in srgb, var(--app-accent) 40%, var(--app-muted))
     color: var(--app-attention);
   }
 
+  // v2 goal chips ("kind") - product/event reuse the v1 type hues; 'other'
+  // (newsletters, prayer letters, general) gets the neutral treatment, and
+  // channel chips a quiet outline.
+  &.kind-product {
+    background: color-mix(in srgb, var(--app-accent) 15%, var(--app-card));
+    color: var(--app-accent);
+  }
+  &.kind-event {
+    background: color-mix(in srgb, #{$campaign-event-hue} 18%, var(--app-card));
+    color: $campaign-event-hue;
+  }
+  &.kind-other {
+    background: color-mix(in srgb, var(--app-card-ink) 8%, transparent);
+    color: var(--app-card-muted);
+  }
+  &.channel {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--app-card-ink) 20%, transparent);
+    color: var(--app-card-muted);
+  }
+
   &.status-draft {
     background: color-mix(in srgb, var(--app-card-ink) 8%, transparent);
     color: var(--app-card-muted);

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
+import { emptyEmailStats } from 'src/app/common/models/domain/campaign.model';
 import { BaseService } from './base.service';
 
 @Injectable({
@@ -10,5 +11,12 @@ export class CampaignEmailService extends BaseService<CampaignEmailModel>{
   constructor(public override dao: FirebaseDAO<CampaignEmailModel> ) {
     super(dao)
     this.table="campaign_emails"
+    this.fromFirestore = CampaignEmailService.fromFirestore
   }
+
+  static readonly fromFirestore = (data): CampaignEmailModel => {
+    data.stats = { ...emptyEmailStats(), ...(data.stats ?? {}) };
+
+    return data;
+  };
 }

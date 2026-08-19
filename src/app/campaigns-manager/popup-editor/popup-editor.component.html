@@ -1,0 +1,90 @@
+<div class="editor-header">
+  <button mat-icon-button matTooltip="Back to campaign" (click)="cancel()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <h2 class="editor-header__title">{{ popup?.id ? 'Edit Popup' : 'New Popup' }}</h2>
+  <span class="editor-header__campaign">{{ campaign.name }}</span>
+</div>
+
+<div class="editor-body">
+  <form [formGroup]="form" class="editor-form">
+    <div class="editor-section">
+      <p class="editor-label">CONTENT</p>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Title (internal)</mat-label>
+        <input matInput formControlName="title">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Start from recipe</mat-label>
+        <mat-select formControlName="templateId" (selectionChange)="onTemplatePicked($event.value)">
+          @for (template of templates; track template.id) {
+            <mat-option [value]="template.id">{{ template.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Popup HTML</mat-label>
+        <textarea matInput formControlName="html" rows="10" spellcheck="false"></textarea>
+      </mat-form-field>
+      <mat-checkbox [(ngModel)]="saveAsTemplate" [ngModelOptions]="{standalone: true}">
+        Save this popup as a reusable template
+      </mat-checkbox>
+    </div>
+
+    <div class="editor-section">
+      <p class="editor-label">BEHAVIOR</p>
+      <div class="editor-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Shows from</mat-label>
+          <input matInput type="datetime-local" formControlName="fromDate">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Until</mat-label>
+          <input matInput type="datetime-local" formControlName="toDate">
+        </mat-form-field>
+      </div>
+      <div class="editor-row">
+        <mat-form-field appearance="outline" class="editor-num">
+          <mat-label>Width (px)</mat-label>
+          <input matInput type="number" formControlName="width">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="editor-num">
+          <mat-label>Height (px)</mat-label>
+          <input matInput type="number" formControlName="height">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="editor-num">
+          <mat-label>Background</mat-label>
+          <input matInput formControlName="bgColor" placeholder="#ffffff">
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Click-through URL (optional)</mat-label>
+        <input matInput formControlName="ctaUrl" placeholder="https://impactdisciples.com/store">
+      </mat-form-field>
+      <p class="editor-hint">
+        Campaign attribution (?cid) is appended automatically, so store visits and
+        purchases that follow a popup click credit this campaign. Every site visitor
+        sees the popup during the window unless they check "don't show again".
+      </p>
+      <mat-slide-toggle formControlName="isActive">Popup is live during the window</mat-slide-toggle>
+    </div>
+
+    <div class="editor-actions">
+      <button mat-button type="button" (click)="cancel()">Cancel</button>
+      <app-indicator-button title="SAVE POPUP" [isInProgress]="saving" (clicked)="save()"></app-indicator-button>
+    </div>
+  </form>
+
+  <div class="editor-preview">
+    <p class="editor-label">PREVIEW</p>
+    @if (previewSrcdoc) {
+      <iframe class="popup-preview__frame" sandbox="allow-same-origin"
+              title="Popup preview"
+              [style.width.px]="form.value.width || 480"
+              [style.height.px]="form.value.height || 360"
+              [srcdoc]="previewSrcdoc"></iframe>
+    } @else {
+      <p class="editor-hint">Pick a recipe or write HTML to see the popup here.</p>
+    }
+  </div>
+</div>

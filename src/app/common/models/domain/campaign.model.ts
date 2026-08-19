@@ -2,117 +2,135 @@ import { Timestamp } from 'firebase/firestore';
 import { BaseModel } from '../base.model';
 import { toMillis } from '../../utils/date-from-timestamp';
 
-// A marketing campaign (Campaigns Manager, added 2026-08). One model for
-// all 3 campaign goals - `type` decides which of the optional field groups
-// below is actually in play; the Composer only ever shows/writes the group
-// matching the type. See the Campaigns Manager section the feature was
-// designed against (feature/campaign-manager branch) for the screen set.
-// 'auto' (2026-08-18): tag-triggered automated sends - "everyone tagged
-// Impact 1 gets this email N days after the purchase/registration that
-// tagged them". Targets customers.tags (see TagRuleModel); the hourly
-// autoCampaignScheduler Cloud Function does the sending while the campaign
-// is effectively live. Distinct from the newsletter/prayer blasts and
-// their no-audience-narrowing rule - this is a new send type, not a
-// narrowing of those.
-// 'email' (2026-08-18): a one-shot sent email - the ONLY kind of campaign
-// Mailchimp has, so the whole imported archive (see
-// scripts/import-mailchimp-campaigns.js) lands as this type, and future
-// in-app one-time sends can share it. The email body html lives in the
-// separate `campaign_emails` collection (same doc id), NOT here - 477
-// imported docs x ~25KB of html would bloat every list page.
-export type CampaignType = 'product' | 'event' | 'lead-capture' | 'auto' | 'email';
+// Campaign Manager v2 (2026-08-18, designed with the user - see the
+// "Campaign Manager v2" plan): a campaign is a promotional EFFORT, not an
+// email. One doc records what was promoted (a store product, an event, or
+// something looser - a prayer letter, a newsletter, a subscriber-growth
+// offer), through which channel(s), to whom, and what happened. The
+// individual emails that went out for a campaign are N `campaign_emails`
+// "touches" (CampaignEmailModel) pointing back via campaignId; a web
+// popup, when the campaign has one, is a `campaign_popups/{campaignId}`
+// doc (public-readable - popups must never carry audience or stats).
+//
+// v1's `type` field ('product'|'event'|'lead-capture'|'auto'|'email') is
+// GONE - goal + channels replace it. The 'auto' behavior (send N days
+// after a tagging purchase/registration) lives on as a touch's
+// sendConfig.mode 'tagTriggered'; the 477 imported Mailchimp sends were
+// regrouped from 1:1 type-'email' campaigns into proper multi-email
+// campaigns by scripts/apply-campaign-regroup.js.
+export type CampaignGoal = 'product' | 'event' | 'other';
 
-// The types the working screens (Campaigns list, Status Board) show -
-// everything except 'email' history, which has its own Sent Emails screen.
-export const ACTIVE_CAMPAIGN_TYPES: CampaignType[] = ['product', 'event', 'lead-capture', 'auto'];
+// Finer flavor when goal is 'other' - drives display grouping only, no
+// behavior hangs off it.
+export type CampaignOtherKind = 'prayer-letter' | 'newsletter' | 'subscriber-growth' | 'general';
+
+export type CampaignChannel = 'email' | 'web';
 
 // `status` is what's STORED; display always goes through effectiveStatus()
 // below, which auto-promotes scheduled->live and live->ended as the dates
 // pass without needing a writer to flip the field at the right moment.
 export type CampaignStatus = 'draft' | 'scheduled' | 'live' | 'ended';
 
-// Denormalized outcome counters, stamped onto the campaign doc so list/
-// board/hub screens never fan out per-campaign queries. v1 initializes
-// these to 0 and displays them; the Cloud Function wiring that increments
-// them (coupon redemptions, event registrations, lead captures) is the
-// build-order step after the admin screens - see the branch's plan.
-export interface CampaignStats {
-  emailsSent: number;
-  linkClicks: number;
-  leads: number;
-  redemptions: number;
-  registrations: number;
-  revenue: number;
-  // Email-campaign engagement (imported from Mailchimp's report_summary;
-  // recipient_count lands in emailsSent, clicks in linkClicks). Optional -
-  // absent on the goal-campaign types. Rates are derived at display time
-  // (uniqueOpens / emailsSent), never stored.
-  opens?: number;
-  uniqueOpens?: number;
+// Who an EMAIL touch goes to (web popups have no audience - they show to
+// every site visitor, a user-confirmed decision). Resolved server-side at
+// send time by the send engine; previewCampaignAudience uses the same
+// resolver so the preview can't lie.
+export interface CampaignAudience {
+  mode: 'everyone' | 'flags' | 'tags' | 'list';
+  // 'flags': customers where any of these booleans is true.
+  flags?: ('subscribedToNewsletter' | 'subscribedToPrayerTeam')[];
+  // 'tags': customers.tags array-contains-any of these.
+  tags?: string[];
+  // 'list': explicit recipient emails.
+  emails?: string[];
+  // Explicit unsubscribe-list override. 'none' marks an OPERATIONAL send
+  // (event-attendee info emails): no unsubscribe footer and no
+  // newsletter-opt-out skip - someone who unsubscribed from marketing
+  // still gets info about the event they registered for.
+  unsubType?: 'newsletter' | 'prayer' | 'none';
 }
 
-export const emptyCampaignStats = (): CampaignStats => ({
-  emailsSent: 0,
-  linkClicks: 0,
-  leads: 0,
-  redemptions: 0,
+// Per-email-touch funnel counters, and the building block of the campaign
+// rollup. Everything denormalized so list/detail screens never fan out
+// per-campaign queries; rates (open %, click %) are ALWAYS derived at
+// display time, never stored. Imported Mailchimp numbers map:
+// emailsSent -> sent, opens/uniqueOpens as-is, linkClicks -> clicks;
+// delivered/purchases/etc start at 0 (our own tracking fills them for new
+// sends - Phases 2-4).
+export interface EmailStats {
+  sent: number;
+  delivered: number;
+  opens: number;
+  uniqueOpens: number;
+  clicks: number;
+  uniqueClicks: number;
+  purchases: number;
+  revenue: number;
+  registrations: number;
+  subscribes: number;
+}
+
+// Campaign-level rollup = EmailStats totals across touches + the web
+// channel's counters.
+export interface CampaignStats extends EmailStats {
+  webShown: number;
+  webClicks: number;
+}
+
+export const emptyEmailStats = (): EmailStats => ({
+  sent: 0,
+  delivered: 0,
+  opens: 0,
+  uniqueOpens: 0,
+  clicks: 0,
+  uniqueClicks: 0,
+  purchases: 0,
+  revenue: 0,
   registrations: 0,
-  revenue: 0
+  subscribes: 0
+});
+
+export const emptyCampaignStats = (): CampaignStats => ({
+  ...emptyEmailStats(),
+  webShown: 0,
+  webClicks: 0
 });
 
 export class CampaignModel extends BaseModel {
   name = '';
-  type: CampaignType = 'product';
+  goal: CampaignGoal = 'other';
+  otherKind?: CampaignOtherKind | null;
+  // -- goal targets --
+  productId?: string | null;
+  eventId?: string | null;
+
+  channels: CampaignChannel[] = ['email'];
   status: CampaignStatus = 'draft';
   // Same shape union as EventModel's dates - existing docs in this app have
   // all 3 shapes, so reads always normalize via toMillis()/dateFromTimestamp()
-  // (see MIGRATION.md). New writes from the Composer store real Dates.
+  // (see MIGRATION.md). A null endDate means a LONG-RUNNING series (e.g. the
+  // Prayer Letter campaign) that future touches keep attaching to.
   startDate?: Timestamp | Date | string | null;
   endDate?: Timestamp | Date | string | null;
 
-  // -- product push --
-  productId?: string | null;
-  // -- event push --
-  eventId?: string | null;
-  // -- product/event push share these --
-  subject?: string | null;
-  message?: string | null;
-  emailTemplateId?: string | null;
-  // -- auto (tag-triggered automated send; also uses subject/message/
-  //    emailTemplateId above for the email content) --
-  // Customers holding ANY of these tags qualify.
-  targetTags?: string[] | null;
-  // Days after the tag's anchorDate (the triggering purchase/registration)
-  // before the send fires; 0 = on the next scheduler run after tagging.
-  sendAfterDays?: number | null;
-
-  // -- lead capture --
-  headline?: string | null;
-  supportingText?: string | null;
-  thankYouMessage?: string | null;
-  // Public-site path the capture block renders at (e.g. '/welcome') -
-  // consumed by impactdisciples-web once the landing block exists there.
-  placement?: string | null;
+  // Email-channel audience (see CampaignAudience). Absent on web-only
+  // campaigns and on regrouped history (whose audience is unknowable).
+  audience?: CampaignAudience | null;
 
   // Existing Coupons record (store-manager) - the discount system is NOT
-  // duplicated here. Optional for product/event pushes, required by the
-  // Composer for lead-capture (it's the incentive).
+  // duplicated here. Doubles as the secondary purchase-attribution signal:
+  // a purchase carrying this coupon code with no explicit ?cid= attribution
+  // still credits this campaign (via:'coupon').
   couponId?: string | null;
 
-  // Which gallery recipe this started from - informational only (shown as
-  // "Started from X" in the Composer), never a live link back. Imported
-  // 'email' campaigns reuse it for the Mailchimp template name they were
-  // built from.
-  templateName?: string | null;
-
-  // -- 'email' campaigns imported from Mailchimp --
   // Where this record came from; null/absent = created in this app.
   source?: 'mailchimp' | null;
-  // Mailchimp's own campaign id (doc id is `mc_<this>` - deterministic so
-  // the import script is idempotent).
-  mailchimpCampaignId?: string | null;
 
   stats: CampaignStats = emptyCampaignStats();
+
+  // Distinguishes migrated v2 docs from any stray v1 shape; fromFirestore
+  // normalizers key off it.
+  schemaVersion?: number;
 }
 
 // Stored status + dates -> the status a human would say. Rules:
@@ -134,10 +152,24 @@ export const effectiveStatus = (c: CampaignModel): CampaignStatus => {
   return c.status;
 };
 
-export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
+export const CAMPAIGN_GOAL_LABELS: Record<CampaignGoal, string> = {
   'product': 'PRODUCT',
   'event': 'EVENT',
-  'lead-capture': 'LEAD',
-  'auto': 'AUTO',
-  'email': 'EMAIL'
+  'other': 'OTHER'
+};
+
+export const CAMPAIGN_OTHER_KIND_LABELS: Record<CampaignOtherKind, string> = {
+  'prayer-letter': 'PRAYER LETTER',
+  'newsletter': 'NEWSLETTER',
+  'subscriber-growth': 'SUBSCRIBER GROWTH',
+  'general': 'GENERAL'
+};
+
+// The label a list row / chip shows - the otherKind flavor when present,
+// else the goal.
+export const campaignKindLabel = (c: CampaignModel): string => {
+  if (c.goal === 'other' && c.otherKind) {
+    return CAMPAIGN_OTHER_KIND_LABELS[c.otherKind];
+  }
+  return CAMPAIGN_GOAL_LABELS[c.goal] ?? 'OTHER';
 };

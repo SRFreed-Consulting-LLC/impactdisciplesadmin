@@ -106,19 +106,27 @@
       ]
     },
     {
-      "collectionGroup": "campaigns",
+      "collectionGroup": "campaign_emails",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "type", "order": "ASCENDING" },
-        { "fieldPath": "name", "order": "ASCENDING" }
+        { "fieldPath": "campaignId", "order": "ASCENDING" },
+        { "fieldPath": "sentAt", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "campaigns",
+      "collectionGroup": "campaign_sends",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "type", "order": "ASCENDING" },
-        { "fieldPath": "startDate", "order": "DESCENDING" }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "campaign_sends",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "emailId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     }
   ],

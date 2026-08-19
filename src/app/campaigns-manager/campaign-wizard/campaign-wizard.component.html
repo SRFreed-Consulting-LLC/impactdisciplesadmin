@@ -1,0 +1,142 @@
+<div class="wizard-header">
+  <button mat-icon-button matTooltip="Back" (click)="cancel()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <h2 class="wizard-header__title">{{ campaign?.id ? 'Edit Campaign' : 'New Campaign' }}</h2>
+</div>
+
+<form [formGroup]="form" class="wizard-form">
+  <div class="wizard-section">
+    <p class="wizard-label">WHAT IS THIS CAMPAIGN?</p>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Campaign Name</mat-label>
+      <input matInput formControlName="name" placeholder="e.g. Fall Book Push">
+    </mat-form-field>
+
+    <div class="wizard-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Promotes</mat-label>
+        <mat-select formControlName="goal">
+          <mat-option value="product">A store product</mat-option>
+          <mat-option value="event">An event</mat-option>
+          <mat-option value="other">Something else</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (goal === 'product') {
+        <mat-form-field appearance="outline" class="wizard-grow">
+          <mat-label>Product</mat-label>
+          <mat-select formControlName="productId">
+            @for (product of products; track product.id) {
+              <mat-option [value]="product.id">{{ product.title }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+      @if (goal === 'event') {
+        <mat-form-field appearance="outline" class="wizard-grow">
+          <mat-label>Event</mat-label>
+          <mat-select formControlName="eventId">
+            @for (event of events; track event.id) {
+              <mat-option [value]="event.id">{{ event.eventName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+      @if (goal === 'other') {
+        <mat-form-field appearance="outline" class="wizard-grow">
+          <mat-label>Kind</mat-label>
+          <mat-select formControlName="otherKind">
+            <mat-option value="newsletter">Newsletter</mat-option>
+            <mat-option value="prayer-letter">Prayer letter</mat-option>
+            <mat-option value="subscriber-growth">Subscriber growth</mat-option>
+            <mat-option value="general">General</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+  </div>
+
+  <div class="wizard-section">
+    <p class="wizard-label">CHANNELS</p>
+    <div class="wizard-channels">
+      <mat-checkbox [checked]="true" [disabled]="true">Email</mat-checkbox>
+      <mat-checkbox [checked]="false" [disabled]="true"
+        matTooltip="Web popups arrive in a later phase">Web popup (coming soon)</mat-checkbox>
+    </div>
+  </div>
+
+  <div class="wizard-section">
+    <p class="wizard-label">WHO RECEIVES THE EMAILS?</p>
+    <div class="wizard-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Audience</mat-label>
+        <mat-select formControlName="audienceMode">
+          <mat-option value="everyone">Everyone (all customers)</mat-option>
+          <mat-option value="flags">Subscriber groups</mat-option>
+          <mat-option value="tags">Tagged customers</mat-option>
+          <mat-option value="list">Specific emails</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (audienceMode === 'flags') {
+        <mat-form-field appearance="outline" class="wizard-grow">
+          <mat-label>Groups</mat-label>
+          <mat-select formControlName="audienceFlags" multiple>
+            <mat-option value="subscribedToNewsletter">Newsletter subscribers</mat-option>
+            <mat-option value="subscribedToPrayerTeam">Prayer Team</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+      @if (audienceMode === 'tags') {
+        <mat-form-field appearance="outline" class="wizard-grow">
+          <mat-label>Tags (any of)</mat-label>
+          <mat-select formControlName="audienceTags" multiple>
+            @for (tag of knownTags; track tag) {
+              <mat-option [value]="tag">{{ tag }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+    @if (audienceMode === 'list') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email addresses (one per line, or comma-separated)</mat-label>
+        <textarea matInput formControlName="audienceEmails" rows="4"></textarea>
+      </mat-form-field>
+    }
+
+    <div class="wizard-preview">
+      <app-indicator-button title="PREVIEW AUDIENCE" [isInProgress]="previewing"
+        (clicked)="previewAudience()"></app-indicator-button>
+      @if (audiencePreview) {
+        <span class="wizard-preview__result">
+          <b>{{ audiencePreview.count | number }}</b> recipient(s)
+          @if (audiencePreview.sample.length) {
+            — e.g. {{ audiencePreview.sample.slice(0, 3).join(', ') }}
+          }
+        </span>
+      }
+    </div>
+  </div>
+
+  <div class="wizard-section">
+    <p class="wizard-label">WINDOW (OPTIONAL)</p>
+    <div class="wizard-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Start</mat-label>
+        <input matInput type="datetime-local" formControlName="startDate">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>End</mat-label>
+        <input matInput type="datetime-local" formControlName="endDate">
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="wizard-actions">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <app-indicator-button title="SAVE CAMPAIGN" [isInProgress]="saving"
+      [disabled]="!canSave()" (clicked)="save()"></app-indicator-button>
+  </div>
+</form>

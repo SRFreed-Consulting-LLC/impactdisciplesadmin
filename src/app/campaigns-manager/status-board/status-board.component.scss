@@ -186,7 +186,7 @@
 
   &--product { background: var(--app-accent); }
   &--event { background: $campaign-event-hue; }
-  &--lead-capture { background: var(--app-attention); }
+  &--other { background: var(--app-attention); }
 
   &:hover,
   &:focus-visible {

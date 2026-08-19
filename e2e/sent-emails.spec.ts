@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// Campaigns Manager > Sent Emails - the email-campaign history (the
-// imported Mailchimp archive; see CLAUDE.md's "Email taxonomy" section).
-// Read-only surface: paged rows with engagement stats, a preview dialog,
-// and an open-in-designer jump that seeds a COPY.
+// Campaigns Manager > Sent Emails - the global email LOG (Campaign
+// Manager v2): every campaign_emails touch across every campaign, newest
+// first. Read-only surface: paged rows with engagement stats, a preview
+// dialog, and an open-in-designer jump that seeds a COPY.
 test.describe('Sent Emails', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
@@ -38,7 +38,9 @@ test.describe('Sent Emails', () => {
       page
         .locator('app-sent-email-preview-dialog iframe')
         .evaluate((el: HTMLIFrameElement) => el.contentDocument?.body?.innerHTML?.length ?? 0);
-    await expect.poll(frameText, { timeout: 10000 }).toBeGreaterThan(500);
+    // Low threshold on purpose - the newest email may be a small
+    // hand-authored send rather than a full rendered document.
+    await expect.poll(frameText, { timeout: 10000 }).toBeGreaterThan(50);
   });
 
   test('open in designer seeds a copy on /new with the html block', async ({ page }) => {
@@ -46,7 +48,8 @@ test.describe('Sent Emails', () => {
     await firstRow.waitFor();
     await firstRow.locator('button:has(mat-icon:text("brush"))').click();
 
-    await expect(page).toHaveURL(/email-designer\/new\?fromEmail=mc_/);
+    // Doc ids are mc_<id> for imports and auto-ids for our own sends.
+    await expect(page).toHaveURL(/email-designer\/new\?fromEmail=./);
     await expect(page.locator('.html-view').first()).toBeVisible({ timeout: 15000 });
   });
 });
