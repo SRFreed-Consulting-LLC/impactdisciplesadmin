@@ -58,3 +58,6 @@ scripts/output/
 firebase-debug.log
 firestore-debug.log
 firebase-export-*/
+
+# temp no-predeploy config written by the by-name function deploy workaround
+firebase.deploy-tmp.json
