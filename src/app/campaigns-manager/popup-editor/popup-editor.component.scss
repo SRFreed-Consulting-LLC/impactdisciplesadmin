@@ -161,3 +161,61 @@
   color: var(--app-card-muted);
   font-variant-numeric: tabular-nums;
 }
+
+// ---- Call To Action section + preview buttons (2026-08-20) ----
+.cta-types {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+}
+
+.cta-fields {
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.popup-preview__form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 18px;
+  margin-top: 4px;
+}
+
+.popup-preview__field {
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  background: #fff;
+  color: #1d2733;
+}
+
+.popup-preview__ctas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 18px 4px;
+}
+
+.popup-preview__primary {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 22px;
+  background: #0e7d8a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: default;
+}
+
+.popup-preview__secondary {
+  border: 0;
+  background: none;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 12.5px;
+  cursor: default;
+}

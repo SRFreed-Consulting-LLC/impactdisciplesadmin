@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Timestamp } from 'firebase/firestore';
 import { CampaignModel } from 'src/app/common/models/domain/campaign.model';
-import { CampaignPopupModel, PopupTemplateModel } from 'src/app/common/models/domain/campaign-popup.model';
+import { CampaignPopupModel, PopupCta, PopupCtaField, PopupTemplateModel } from 'src/app/common/models/domain/campaign-popup.model';
 import { CampaignPopupService, PopupTemplateService } from 'src/app/common/services/data/campaign-popup.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
@@ -78,7 +78,15 @@ export class PopupEditorComponent implements OnInit {
       width: [480],
       height: [420],
       bgColor: ['#ffffff'],
-      ctaUrl: ['']
+      ctaUrl: [''],
+      // ---- Call To Action (see PopupCta) ----
+      ctaType: ['close'],
+      ctaPrimaryLabel: ['Close'],
+      ctaDismissLabel: ['No Thanks'],
+      collectFirstName: [false],
+      collectLastName: [false],
+      collectPhone: [false],
+      formDestination: ['newsletter']
     });
     this.form.get('html')?.valueChanges.subscribe(() => this.refreshPreview());
     this.form.get('bgColor')?.valueChanges.subscribe(() => this.refreshPreview());
@@ -98,6 +106,23 @@ export class PopupEditorComponent implements OnInit {
       this.spotlightId = this.campaign.productId;
     }
 
+    // CTA defaults follow the goal too: event/product campaigns start as an
+    // action link with a goal-appropriate label; everything else is a pure
+    // announcement. (Overridable - and re-defaulted when the type changes.)
+    if (!this.popup?.cta) {
+      if (this.campaign.goal === 'event' && this.campaign.eventId) {
+        this.form.patchValue({ ctaType: 'link', ctaPrimaryLabel: 'Register Now' });
+      } else if (this.campaign.goal === 'product' && this.campaign.productId) {
+        this.form.patchValue({ ctaType: 'link', ctaPrimaryLabel: 'Shop Now' });
+      }
+    }
+    this.form.get('ctaType')?.valueChanges.subscribe((type) => {
+      this.form.patchValue({ ctaPrimaryLabel: this.defaultPrimaryLabel(type) }, { emitEvent: false });
+      this.refreshPreview();
+    });
+    this.form.get('ctaPrimaryLabel')?.valueChanges.subscribe(() => this.refreshPreview());
+    this.form.get('ctaDismissLabel')?.valueChanges.subscribe(() => this.refreshPreview());
+
     if (this.popup) {
       this.form.patchValue({
         isActive: this.popup.isActive,
@@ -112,8 +137,43 @@ export class PopupEditorComponent implements OnInit {
         // re-appended on save.
         ctaUrl: this.stripAttribution(this.popup.ctaUrl ?? '')
       });
+      const cta = this.popup.cta;
+      if (cta) {
+        this.form.patchValue({
+          ctaType: cta.type,
+          ctaPrimaryLabel: cta.primaryLabel || this.defaultPrimaryLabel(cta.type),
+          ctaDismissLabel: cta.dismissLabel ?? 'No Thanks',
+          collectFirstName: (cta.formFields ?? []).includes('firstName'),
+          collectLastName: (cta.formFields ?? []).includes('lastName'),
+          collectPhone: (cta.formFields ?? []).includes('phone'),
+          formDestination: cta.formDestination ?? 'newsletter'
+        }, { emitEvent: false });
+      } else if (this.popup.ctaUrl) {
+        // Legacy popup: whole-popup click-through maps to a link CTA.
+        this.form.patchValue({ ctaType: 'link', ctaPrimaryLabel: this.defaultPrimaryLabel('link') }, { emitEvent: false });
+      }
       this.refreshPreview();
     }
+  }
+
+  private defaultPrimaryLabel(type: string): string {
+    if (type === 'link') {
+      return this.campaign.goal === 'event' ? 'Register Now' : 'Shop Now';
+    }
+    return type === 'form' ? 'Submit' : 'Close';
+  }
+
+  // The action link's target comes from the campaign's own goal - never
+  // hand-typed (user decision 2026-08-20); goal 'other' falls back to the
+  // legacy manual URL field, the one case with no goal to derive from.
+  goalLinkTarget(): string | null {
+    if (this.campaign.goal === 'event' && this.campaign.eventId) {
+      return `${environment.publicSiteUrl}/event-details/${this.campaign.eventId}`;
+    }
+    if (this.campaign.goal === 'product' && this.campaign.productId) {
+      return `${environment.publicSiteUrl}/product-details/${this.campaign.productId}`;
+    }
+    return null;
   }
 
   get spotlightItems(): { id: string; label: string }[] {
@@ -221,6 +281,29 @@ export class PopupEditorComponent implements OnInit {
       return;
     }
     const value = this.form.value;
+    // Link CTA target: the campaign goal's page, else (goal 'other') the
+    // manual URL field.
+    const linkTarget = value.ctaType === 'link'
+      ? this.decorateCta(this.goalLinkTarget() ?? value.ctaUrl)
+      : null;
+    if (value.ctaType === 'link' && !linkTarget) {
+      this.snackbar.error('This campaign has no goal target - enter a Click-through URL for the button.');
+      return;
+    }
+    const formFields: PopupCtaField[] = [
+      'email',
+      ...(value.collectFirstName ? ['firstName' as const] : []),
+      ...(value.collectLastName ? ['lastName' as const] : []),
+      ...(value.collectPhone ? ['phone' as const] : [])
+    ];
+    const cta: PopupCta = {
+      type: value.ctaType,
+      primaryLabel: (value.ctaPrimaryLabel ?? '').trim() || this.defaultPrimaryLabel(value.ctaType),
+      dismissLabel: value.ctaType === 'close' ? null : ((value.ctaDismissLabel ?? '').trim() || 'No Thanks'),
+      linkUrl: linkTarget,
+      formFields: value.ctaType === 'form' ? formFields : null,
+      formDestination: value.ctaType === 'form' ? value.formDestination : null
+    };
     this.saving = true;
     try {
       const payload: CampaignPopupModel = {
@@ -234,7 +317,10 @@ export class PopupEditorComponent implements OnInit {
         width: value.width ?? null,
         height: value.height ?? null,
         bgColor: value.bgColor ?? null,
-        ctaUrl: this.decorateCta(value.ctaUrl),
+        // Legacy field kept in sync for link CTAs (old web bundles read it);
+        // null otherwise so a form/close popup can't whole-click navigate.
+        ctaUrl: cta.type === 'link' ? linkTarget : null,
+        cta,
         recipeName: this.popup?.recipeName ?? null
       };
       // Doc id == campaignId - update() with a fixed id is an upsert

@@ -10,6 +10,28 @@ import { BaseModel } from '../base.model';
 // incremented by the campaign_web_event beacon. Replaces the dead
 // home_page_popups feature (its admin screen wrote docs the public site
 // never rendered - retired in Phase 6).
+// Structured Call To Action (2026-08-20, user feature). Three shapes:
+//  - 'close': pure announcement - one button that dismisses.
+//  - 'link':  primary button navigates (target derived from the campaign's
+//             own goal on save - event registration page / product page -
+//             already ?cid-decorated like the legacy ctaUrl), plus a
+//             secondary dismiss.
+//  - 'form':  the popup COLLECTS data - admin-chosen fields (email always)
+//             submitted to either the newsletter list (subscribe endpoint,
+//             credits the campaign's subscribes) or Form Submissions
+//             (anonymous form_submissions create, rules-shape-compliant).
+// Mirror any change into the web repo's CampaignPopup interface
+// (campaign-popup.service.ts) - independent copies, hand-synced.
+export type PopupCtaField = 'email' | 'firstName' | 'lastName' | 'phone';
+export interface PopupCta {
+  type: 'close' | 'link' | 'form';
+  primaryLabel: string;
+  dismissLabel?: string | null;
+  linkUrl?: string | null;
+  formFields?: PopupCtaField[] | null;
+  formDestination?: 'newsletter' | 'formSubmissions' | null;
+}
+
 export class CampaignPopupModel extends BaseModel {
   campaignId = '';
   isActive = false;
@@ -21,10 +43,11 @@ export class CampaignPopupModel extends BaseModel {
   width?: number | null;
   height?: number | null;
   bgColor?: string | null;
-  // Where clicking the popup goes - stored ALREADY decorated with
-  // ?cid=<campaignId>&csrc=popup (the editor appends it on save) so the
-  // landing page's AttributionService picks it up.
+  // LEGACY whole-popup click-through - superseded by `cta` (kept written in
+  // link mode for old web bundles; the renderer prefers `cta` when
+  // present). Stored ALREADY decorated with ?cid=<campaignId>&csrc=popup.
   ctaUrl?: string | null;
+  cta?: PopupCta | null;
   recipeName?: string | null;
 }
 

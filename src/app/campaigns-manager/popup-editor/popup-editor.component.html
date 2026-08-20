@@ -83,16 +83,63 @@
           <span class="editor-color__value">{{ form.value.bgColor }}</span>
         </div>
       </div>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Click-through URL</mat-label>
-        <input matInput formControlName="ctaUrl" placeholder="https://impactdisciples.com/store">
-      </mat-form-field>
-      <p class="editor-hint">
-        Campaign attribution (?cid) is appended automatically, so store visits and
-        purchases that follow a popup click credit this campaign. Every site visitor
-        sees the popup during the window unless they check "don't show again".
-      </p>
       <mat-slide-toggle formControlName="isActive">Popup is live during the window</mat-slide-toggle>
+    </div>
+
+    <div class="editor-section">
+      <p class="editor-label">CALL TO ACTION</p>
+      <mat-radio-group formControlName="ctaType" class="cta-types">
+        <mat-radio-button value="close">Announcement only — one button that closes the popup</mat-radio-button>
+        <mat-radio-button value="link">
+          Action button —
+          @if (goalLinkTarget()) {
+            takes them to <b>{{ campaign.goal === 'event' ? "this campaign's event registration page" : "this campaign's product in the store" }}</b> (from the campaign goal, nothing to type)
+          } @else {
+            takes them to a page you choose below
+          }
+        </mat-radio-button>
+        <mat-radio-button value="form">Collect info — fields + a Submit button, right in the popup</mat-radio-button>
+      </mat-radio-group>
+
+      <div class="editor-row">
+        <mat-form-field appearance="outline" class="editor-grow">
+          <mat-label>Button text</mat-label>
+          <input matInput formControlName="ctaPrimaryLabel">
+        </mat-form-field>
+        @if (form.value.ctaType !== 'close') {
+          <mat-form-field appearance="outline" class="editor-grow">
+            <mat-label>Dismiss text</mat-label>
+            <input matInput formControlName="ctaDismissLabel" placeholder="No Thanks">
+          </mat-form-field>
+        }
+      </div>
+
+      @if (form.value.ctaType === 'link' && !goalLinkTarget()) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Click-through URL</mat-label>
+          <input matInput formControlName="ctaUrl" placeholder="https://impactdisciples.com/store">
+        </mat-form-field>
+      }
+
+      @if (form.value.ctaType === 'form') {
+        <p class="editor-hint">Email is always collected. Add more fields and pick where submissions land:</p>
+        <div class="editor-row cta-fields">
+          <mat-checkbox checked disabled>Email</mat-checkbox>
+          <mat-checkbox formControlName="collectFirstName">First name</mat-checkbox>
+          <mat-checkbox formControlName="collectLastName">Last name</mat-checkbox>
+          <mat-checkbox formControlName="collectPhone">Phone</mat-checkbox>
+        </div>
+        <mat-radio-group formControlName="formDestination" class="cta-types">
+          <mat-radio-button value="newsletter">Newsletter list — they're subscribed (shows in the Subscribers report, credits this campaign)</mat-radio-button>
+          <mat-radio-button value="formSubmissions">Form Submissions — lands in Contacts&nbsp;›&nbsp;Form Submissions with the Create Contact action</mat-radio-button>
+        </mat-radio-group>
+      }
+
+      <p class="editor-hint">
+        Campaign attribution (?cid) is appended to action links automatically, so store
+        visits and purchases that follow a popup click credit this campaign. Every site
+        visitor sees the popup during the window unless they check "don't show again".
+      </p>
     </div>
 
     <div class="editor-actions">
@@ -109,6 +156,21 @@
         [style.minHeight.px]="form.value.height || 420"
         [style.background]="form.value.bgColor || '#ffffff'">
         <div class="popup-preview__content" [innerHTML]="previewHtml"></div>
+        <!-- CTA preview mirrors the storefront renderer's button layout. -->
+        @if (form.value.ctaType === 'form') {
+          <div class="popup-preview__form">
+            <input class="popup-preview__field" placeholder="Email" disabled>
+            @if (form.value.collectFirstName) { <input class="popup-preview__field" placeholder="First name" disabled> }
+            @if (form.value.collectLastName) { <input class="popup-preview__field" placeholder="Last name" disabled> }
+            @if (form.value.collectPhone) { <input class="popup-preview__field" placeholder="Phone" disabled> }
+          </div>
+        }
+        <div class="popup-preview__ctas">
+          <button type="button" class="popup-preview__primary">{{ form.value.ctaPrimaryLabel || 'Close' }}</button>
+          @if (form.value.ctaType !== 'close') {
+            <button type="button" class="popup-preview__secondary">{{ form.value.ctaDismissLabel || 'No Thanks' }}</button>
+          }
+        </div>
         <span class="popup-preview__dismiss">☐ Don't show this again</span>
       </div>
     } @else {
