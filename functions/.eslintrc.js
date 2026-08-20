@@ -30,4 +30,14 @@ module.exports = {
     "import/no-unresolved": 0,
     "indent": ["error", 2],
   },
+  overrides: [
+    {
+      // node:test unit tests are plain CommonJS run straight by node -
+      // require() IS the import statement there.
+      files: ["test/**/*.js"],
+      rules: {
+        "@typescript-eslint/no-var-requires": "off",
+      },
+    },
+  ],
 };

@@ -3,6 +3,7 @@
   "scripts": {
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint --ext .js,.ts .",
     "build": "tsc",
+    "test": "npm run build && node --test \"test/*.test.js\"",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
