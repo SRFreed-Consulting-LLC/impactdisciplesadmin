@@ -16,7 +16,10 @@
   <div class="wizline"></div>
   <div class="wizstep" [class.is-active]="step === 4" role="button" tabindex="0" (click)="goToStep(4)" (keydown.enter)="goToStep(4)">
     <span class="wizstep__dot">4</span>
-    <span class="wizstep__label">Review &amp; Publish</span>
+    <!-- "Review Schedule", not "Review & Publish" - inside the summit setup
+         wizard that label collided with the outer wizard's own final step
+         (renamed 2026-08-20, same reasoning as the Done Building button). -->
+    <span class="wizstep__label">Review Schedule</span>
   </div>
 </div>
 
@@ -116,6 +119,10 @@
 
   <div class="wizfoot">
     <button mat-button type="button" [disabled]="step === 1" (click)="back()">← Back</button>
-    <button mat-raised-button color="primary" type="button" (click)="next()">{{ step === 4 ? 'Publish Agenda' : 'Continue →' }}</button>
+    <!-- "Done Building", not "Publish" - this only finishes the guided
+         build and hands off to the grid view; nothing goes live here
+         (renamed 2026-08-20: it read as a rival to the summit wizard's own
+         PUBLISH & GO LIVE two steps later). -->
+    <button mat-raised-button color="primary" type="button" (click)="next()">{{ step === 4 ? 'Done Building ✓' : 'Continue →' }}</button>
   </div>
 }

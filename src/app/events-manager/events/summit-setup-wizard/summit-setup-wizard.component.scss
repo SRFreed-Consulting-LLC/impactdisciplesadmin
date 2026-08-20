@@ -5,10 +5,18 @@ $current: var(--app-accent);
 $done: var(--app-success);
 $pending: var(--app-field-border);
 
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .wiz {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
 }
 
 .wiz__header {
@@ -102,6 +110,7 @@ $pending: var(--app-field-border);
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 14px; // breathing room between a step's panel and the sticky footer
 }
 
 .wiz__preview {
@@ -248,8 +257,30 @@ $pending: var(--app-field-border);
   margin-top: 10px;
 }
 
+// Sticky inside the scrolling .wiz__main so Back/Continue never leave the
+// viewport (the Agenda step's builder/grid is tall). margin-top: auto keeps
+// it pinned to the bottom on SHORT steps too (flex column), and the opaque
+// card treatment separates it from any step-internal buttons (the agenda
+// builder has its own footer) scrolling beneath it.
 .wizfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: auto;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 14px 2px 0;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  box-shadow: 0 -4px 14px rgb(0 0 0 / 12%);
+
+  &__where {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--app-card-muted);
+  }
 }

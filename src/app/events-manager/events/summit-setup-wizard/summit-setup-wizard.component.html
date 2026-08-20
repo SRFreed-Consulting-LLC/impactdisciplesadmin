@@ -179,10 +179,15 @@
         </div>
       }
 
+      <!-- Sticky (always visible even when a step's content scrolls - the
+           Agenda step especially). Continue NAMES its destination step so
+           it can't be confused with the agenda builder's own internal
+           Continue just above it (user feedback 2026-08-20). -->
       <div class="wizfoot">
         <button mat-button type="button" [disabled]="step === 0" (click)="back()">← Back</button>
+        <span class="wizfoot__where">Step {{ step + 1 }} of {{ steps.length }}</span>
         @if (step < steps.length - 1) {
-          <button mat-raised-button color="primary" type="button" (click)="next()">Continue →</button>
+          <button mat-raised-button color="primary" type="button" (click)="next()">Continue to {{ steps[step + 1].label }} →</button>
         }
       </div>
     </div>

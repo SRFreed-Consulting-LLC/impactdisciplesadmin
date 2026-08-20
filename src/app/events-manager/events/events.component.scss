@@ -39,6 +39,17 @@ app-data-grid {
   flex-direction: column;
 }
 
+// The setup wizard fills the same flex column the grid/editor occupy -
+// without this it grows naturally, the PAGE becomes the scroller, and the
+// wizard's own sticky footer (which binds to .wiz__main's scrollport) never
+// engages.
+app-summit-setup-wizard {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Full-page in-place edit view (no popup - see store-manager/products
    for the established precedent this mirrors) filling the same flex
    column the grid normally occupies. */
