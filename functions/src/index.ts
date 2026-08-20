@@ -91,6 +91,13 @@ exports.campaign_open = campaignTracking.campaign_open;
 exports.campaign_click = campaignTracking.campaign_click;
 exports.campaign_web_event = campaignTracking.campaign_web_event;
 
+// Public newsletter archive (2026-08-20): the web app's Monthly Newsletter
+// page lists/renders campaign_emails touches an admin flagged publishToWeb
+// - the only public read path onto campaign_emails (replaces the old
+// hand-maintained `monthly-newsletter` collection of Mailchimp links).
+const newsletterArchive = require("./newsletter-archive.functions");
+exports.newsletter_archive = newsletterArchive.newsletter_archive;
+
 // Sweep 2026-08-17: language registry backs the reader's language picker
 // so translation docs no longer need an open collection-group read.
 const languageRegistry = require("./library-language-registry.functions");

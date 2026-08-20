@@ -52,6 +52,11 @@
   <button mat-stroked-button (click)="openSocial()">
     <mat-icon>share</mat-icon> SOCIAL POSTS
   </button>
+  @if (canDeleteCampaign()) {
+    <button mat-stroked-button color="warn" matTooltip="Delete this campaign, its emails and its popup" (click)="deleteCampaign()">
+      <mat-icon>delete</mat-icon> DELETE
+    </button>
+  }
   @if (canAddEmail()) {
     <button mat-flat-button color="primary" (click)="newEmail()">
       <mat-icon>add</mat-icon> NEW EMAIL
@@ -120,6 +125,9 @@
               <span class="touch__sub">{{ touch.subject }}</span>
             }
           </div>
+          @if (touch.publishToWeb) {
+            <span class="chip status-live" matTooltip="Listed on the public Monthly Newsletter page">ON WEBSITE</span>
+          }
           @if (touch.status !== 'sent') {
             <span class="chip" [class]="touch.status === 'sending' ? 'status-live' : 'status-draft'">
               {{ touchStatusLabel(touch) }}
@@ -143,6 +151,12 @@
               <button mat-icon-button matTooltip="OPEN IN DESIGNER"
                 (click)="$event.stopPropagation(); openInDesigner(touch)">
                 <mat-icon>brush</mat-icon>
+              </button>
+            }
+            @if (canPublishToWeb(touch)) {
+              <button mat-icon-button [matTooltip]="touch.publishToWeb ? 'SHOWN ON WEBSITE' : 'SHOW ON WEBSITE'"
+                (click)="$event.stopPropagation(); publishToWeb(touch)">
+                <mat-icon>{{ touch.publishToWeb ? 'public' : 'public_off' }}</mat-icon>
               </button>
             }
           </span>

@@ -55,4 +55,16 @@ export class CampaignEmailModel extends BaseModel {
   source?: 'mailchimp' | null;
   mailchimpCampaignId?: string | null;
   capturedAt?: Timestamp | Date | string | null;
+
+  // Public newsletter archive (2026-08-20): when true, the web app's
+  // Monthly Newsletter page lists this touch and renders its html via the
+  // `newsletter_archive` function - the ONLY public read path onto this
+  // collection. Curated per touch on purpose (campaign detail's "Show on
+  // website" / the Subscriber Report send dialog's checkbox): the public
+  // list was never "every newsletter-kind send". Replaced the admin's
+  // hand-maintained `monthly-newsletter` collection of Mailchimp links.
+  // Only meaningful on sent/sending touches; the endpoint re-checks.
+  publishToWeb?: boolean;
+  // Optional public display title (falls back to label, then subject).
+  webTitle?: string | null;
 }

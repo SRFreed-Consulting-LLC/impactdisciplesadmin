@@ -58,7 +58,11 @@ export class SendSubscriptionDialogComponent {
   ) {
     this.form = this.fb.group({
       subject: ['', Validators.required],
-      html: ['']
+      html: [''],
+      // Public newsletter archive (see CampaignEmailModel.publishToWeb):
+      // also list this send on the web app's Monthly Newsletter page.
+      // Off by default - publishing is a per-issue editorial choice.
+      publishToWeb: [false]
     });
   }
 
@@ -153,7 +157,9 @@ export class SendSubscriptionDialogComponent {
         mailchimpCampaignId: null,
         capturedAt: null,
         design: null,
-        links: null
+        links: null,
+        publishToWeb: this.form.value.publishToWeb === true,
+        webTitle: null
       });
 
       const result = await this.campaignService.enqueueEmail(touch.id!);

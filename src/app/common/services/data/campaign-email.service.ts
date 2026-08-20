@@ -19,4 +19,11 @@ export class CampaignEmailService extends BaseService<CampaignEmailModel>{
 
     return data;
   };
+
+  // Public newsletter archive flag (see CampaignEmailModel.publishToWeb).
+  // PARTIAL update - a touch carries the html snapshot, link map and stats;
+  // never round-trip the whole doc just to flip a flag.
+  setPublishToWeb(id: string, publishToWeb: boolean, webTitle: string | null): Promise<void> {
+    return this.updateFields(id, { publishToWeb, webTitle });
+  }
 }

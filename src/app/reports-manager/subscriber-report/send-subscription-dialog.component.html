@@ -14,6 +14,10 @@
   <div class="editor-wrap">
     <quill-editor formControlName="html" [modules]="richTextModules" (onEditorCreated)="onEditorCreated($event)"></quill-editor>
   </div>
+
+  <mat-checkbox formControlName="publishToWeb" class="publish-web">
+    Also show this on the website's Monthly Newsletter page
+  </mat-checkbox>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

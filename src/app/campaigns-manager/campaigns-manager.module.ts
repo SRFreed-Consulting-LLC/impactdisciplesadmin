@@ -18,6 +18,8 @@ import { CampaignsManagerRoutingModule } from './campaigns-manager-routing.modul
 import { CampaignsManagerComponent } from './campaigns-manager.component';
 import { CampaignsComponent } from './campaigns/campaigns.component';
 import { CampaignDetailComponent } from './campaign-detail/campaign-detail.component';
+import { PublishWebDialogComponent } from './campaign-detail/publish-web-dialog.component';
+import { WebNewslettersComponent } from './web-newsletters/web-newsletters.component';
 import { CampaignWizardComponent } from './campaign-wizard/campaign-wizard.component';
 import { EmailTouchEditorComponent } from './email-touch-editor/email-touch-editor.component';
 import { PopupEditorComponent } from './popup-editor/popup-editor.component';
@@ -38,6 +40,8 @@ import { QuillModule } from 'ngx-quill';
     CampaignsManagerComponent,
     CampaignsComponent,
     CampaignDetailComponent,
+    PublishWebDialogComponent,
+    WebNewslettersComponent,
     CampaignWizardComponent,
     EmailTouchEditorComponent,
     PopupEditorComponent,

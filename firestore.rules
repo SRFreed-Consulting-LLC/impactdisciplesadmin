@@ -174,10 +174,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
-    match /monthly-newsletter/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
+    // `monthly-newsletter` (public list of Mailchimp links) retired
+    // 2026-08-20 - the public Monthly Newsletter page reads flagged
+    // campaign_emails touches through the newsletter_archive function.
+    // No rule = no access; the collection is deleted once prod is
+    // backfilled (MIGRATION.md).
     match /faq/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();

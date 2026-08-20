@@ -13,6 +13,10 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-preview-dialog.component';
+import { PublishWebDialogComponent } from './publish-web-dialog.component';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { describeCampaignDelete } from '../campaigns/campaign-delete-text';
 
 // A single funnel-stage tile on the detail header.
 interface FunnelTile {
@@ -38,6 +42,8 @@ export class CampaignDetailComponent implements OnInit {
   @Input() campaign!: CampaignModel;
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<CampaignModel>();
+  // Fired after a successful cascade delete - the host returns to the list.
+  @Output() deleted = new EventEmitter<void>();
 
   mode: 'view' | 'editTouch' | 'editPopup' | 'social' = 'view';
   editingTouch: CampaignEmailModel | null = null;
@@ -63,6 +69,8 @@ export class CampaignDetailComponent implements OnInit {
     private productService: ProductService,
     private eventService: EventService,
     private permissionService: PermissionService,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService,
     private dialog: MatDialog,
     private router: Router
   ) {}
@@ -251,7 +259,56 @@ export class CampaignDetailComponent implements OnInit {
     this.router.navigate(['/tools-manager/email-designer/new'], { queryParams: { fromEmail: touch.id } });
   }
 
+  // Public newsletter archive: a sent (or sending) touch can be shown on
+  // the web app's Monthly Newsletter page - see CampaignEmailModel's
+  // publishToWeb comment. Drafts/scheduled have nothing final to show.
+  canPublishToWeb(touch: CampaignEmailModel): boolean {
+    return (touch.status === 'sent' || touch.status === 'sending') && this.canEditCampaign();
+  }
+
+  publishToWeb(touch: CampaignEmailModel): void {
+    if (!this.canPublishToWeb(touch)) {
+      return;
+    }
+    this.dialog.open(PublishWebDialogComponent, {
+      width: '520px',
+      data: { touch }
+    }).afterClosed().subscribe((saved) => {
+      if (saved) {
+        this.loadTouches();
+      }
+    });
+  }
+
   back(): void {
     this.closed.emit();
+  }
+
+  canDeleteCampaign(): boolean {
+    return this.permissionService.canDelete('campaigns-manager.campaigns');
+  }
+
+  // Same cascade + confirm as the list row action (CampaignsComponent.
+  // deleteCampaign) - kept in sync through describeCampaignDelete().
+  async deleteCampaign(): Promise<void> {
+    if (!this.canDeleteCampaign()) {
+      return;
+    }
+    try {
+      const plan = await this.campaignService.planDelete(this.campaign.id!);
+      if (plan.inFlight.length > 0) {
+        this.snackbar.error(`Cannot delete while emails are sending or scheduled: ${plan.inFlight.join(', ')}`);
+        return;
+      }
+      const confirmed = await this.confirmService.confirm(describeCampaignDelete(this.campaign, plan), 'Delete Campaign');
+      if (!confirmed) {
+        return;
+      }
+      await this.campaignService.deleteCascade(this.campaign.id!);
+      this.snackbar.success('Campaign Deleted');
+      this.deleted.emit();
+    } catch (err) {
+      this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));
+    }
   }
 }
