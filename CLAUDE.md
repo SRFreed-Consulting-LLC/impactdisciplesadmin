@@ -138,7 +138,7 @@ permission to touch `master`.
 
 Config selection is via Angular build configurations (`local`/`development`/`production`), each
 swapping in `src/environments/environment-{local,development,production}.ts` — these hold the
-Firestore config, Stripe keys, and Cloud Function URLs for that environment; `environment.local.ts`
+Firestore config and Cloud Function URLs for that environment; `environment.local.ts`
 points at the `impactdisciplesdev` Firebase project (there's no separate local emulator setup).
 
 `firestore.rules` is a real, unified ruleset now (the old wide-open `if true` gap was closed) —
@@ -454,7 +454,7 @@ flag**. Key pieces:
 ### Cloud Functions (`functions/src/`)
 
 Plain Node/Express-style `onRequest` HTTP functions (not callable functions), one file per concern
-(`stripe.functions.ts`, `paypal.functions.ts`, `shipping.functions.ts`, `purchase-fulfillment.functions.ts`,
+(`paypal.functions.ts`, `shipping.functions.ts`, `purchase-fulfillment.functions.ts`,
 `new-record-alerts.functions.ts` — this replaced `notifications.functions.ts` —
 `admin-users.functions.ts`, `subscriptions.functions.ts`, `youtube.functions.ts`,
 `customer-upsert.functions.ts`, `event-registration-customer-upsert.functions.ts`,

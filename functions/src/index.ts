@@ -20,11 +20,6 @@ admin.initializeApp({
 // once, here, before any function's first admin.firestore() call.
 admin.firestore().settings({ignoreUndefinedProperties: true});
 
-const stripe = require("./stripe.functions");
-exports.create_payment_intent = stripe.create_payment_intent;
-exports.cancel_payment_intent = stripe.cancel_payment_intent;
-exports.refund_payment = stripe.refund_payment;
-
 const shipping = require("./shipping.functions");
 exports.get_shipping_rates = shipping.get_shipping_rates;
 exports.get_shipping_label = shipping.get_shipping_label;

@@ -46,12 +46,14 @@ export class EventService extends BaseService<EventModel>{
   // array (no array-index addressing, and arrayUnion needs a byte-identical
   // map), so this does the safest possible whole-doc write: re-fetch the
   // doc IMMEDIATELY before writing (never trust a stale in-memory
-  // EventModel - the public site appends to waitList concurrently), apply
+  // EventModel - other staff tabs may have written the same doc), apply
   // one targeted mutation, write straight back with no user interaction in
-  // between. The residual race window (a public waitList append landing in
-  // the read->write gap) is milliseconds wide, loses at most one queue
-  // entry, and is no NEW risk class - every Info-tab Save already performs
-  // an unguarded whole-doc setDoc over this same doc. Returns the
+  // between. (The public site does NOT write waitList - its old self-service
+  // prompt never persisted and was removed 2026-08-20; staff are the only
+  // writers.) The residual read->write race window is milliseconds wide,
+  // loses at most one queue entry, and is no NEW risk class - every
+  // Info-tab Save already performs an unguarded whole-doc setDoc over this
+  // same doc. Returns the
   // post-mutation model so callers can refresh UI state without re-reading.
   async mutateAgendaItem(eventId: string, agendaItemId: string, mutate: (item: AgendaItem) => void): Promise<EventModel> {
     const fresh = await this.getById(eventId);
