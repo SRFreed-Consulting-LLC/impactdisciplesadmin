@@ -115,7 +115,103 @@
 .phone__screen--app {
   background: #0f1523;
   color: #e6ecf6;
-  min-height: 380px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // the body scrolls; head + tab bar stay put
+}
+
+.app__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 6px;
+}
+
+// Bottom tab bar - fixed inside the device frame.
+.app__tabs {
+  flex: 0 0 auto;
+  display: flex;
+  border-top: 1px solid #24304a;
+  background: #0c1220;
+
+  button {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 7px 0 6px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: #93a3bb;
+    font: inherit;
+
+    mat-icon {
+      font-size: 17px;
+      width: 17px;
+      height: 17px;
+    }
+
+    span {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    &.on {
+      color: #3ec6d2;
+    }
+  }
+}
+
+// Breakouts-flow concept pieces (inert in the preview).
+.app__copy {
+  font-size: 11.5px;
+  color: #c3cddd;
+  margin: 0 0 8px;
+}
+
+.app__field {
+  border: 1px solid #24304a;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  color: #5c6a82;
+  margin-bottom: 8px;
+}
+
+.app__btn {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 0;
+  background: #3ec6d2;
+  color: #06222a;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+
+  &--outline {
+    background: none;
+    border: 1px solid #3ec6d2;
+    color: #3ec6d2;
+  }
+
+  &:disabled {
+    opacity: 0.85; // concept controls - full-strength look, just inert
+  }
+}
+
+.app__fineprint {
+  font-size: 10px;
+  color: #93a3bb;
+  margin: 8px 0 0;
+}
+
+.app__card--ghost {
+  border-style: dashed;
 }
 
 .app__head {

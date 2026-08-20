@@ -5,6 +5,13 @@ import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 
 type RailView = 'web' | 'phone' | 'app';
+// The attendee app's bottom tab bar (user design 2026-08-20): the app is
+// TABBED, never one long scroll. Breakouts is the email-lookup flow -
+// enter your email, we find your registration and let you pick sessions
+// (or register right there if you haven't). Identity stays email-only for
+// now; an emailed/texted security code is a DEFERRED decision, revisit
+// before the PWA ships.
+type AppTab = 'today' | 'agenda' | 'breakouts' | 'info';
 
 // Which preview the admin last used + whether the rail is open - remembered
 // across screens/sessions (mirrors ThemeService's localStorage convention;
@@ -33,6 +40,8 @@ export class SummitPreviewRailComponent {
 
   view: RailView = 'web';
   collapsed = false;
+  // Not persisted - each visit starts on Today, like the app itself will.
+  appTab: AppTab = 'today';
 
   constructor() {
     try {
@@ -84,5 +93,30 @@ export class SummitPreviewRailComponent {
   hasAppContent(): boolean {
     return !!(this.data.checkinInstructions || this.data.diningOptions ||
       this.data.whatsNext || (this.data.faqList ?? []).length || (this.data.agendaItems ?? []).length);
+  }
+
+  setAppTab(tab: AppTab): void {
+    this.appTab = tab;
+  }
+
+  // The Breakouts tab lists the breakout OPTIONS (isCourse items) the way
+  // the app will offer them for sign-up.
+  breakoutRows(): { title: string; time: string }[] {
+    const items = [...(this.data.agendaItems ?? [])]
+      .filter((item) => item.isCourse && toMillis(item.startDate) > 0)
+      .sort((a, b) => toMillis(a.startDate) - toMillis(b.startDate));
+    return items.map((item) => ({
+      title: itemTitle(item),
+      time: new Date(toMillis(item.startDate)).toLocaleString(undefined, {
+        weekday: 'short', hour: 'numeric', minute: '2-digit'
+      })
+    }));
+  }
+
+  venueLine(): string {
+    const venue = this.data.venue;
+    if (!venue) return '';
+    const a = venue.address ?? {};
+    return [venue.name, [a.city, a.state].filter(Boolean).join(', ')].filter(Boolean).join(' — ');
   }
 }

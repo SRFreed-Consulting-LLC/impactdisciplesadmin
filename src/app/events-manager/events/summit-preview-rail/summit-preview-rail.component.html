@@ -39,47 +39,113 @@
               <h4>{{ data.eventName || 'Summit name not set' }}</h4>
               <span>Attendee app · what registrants see</span>
             </div>
-            @if (!hasAppContent()) {
-              <p class="app__empty">Nothing to show yet - App Content (check-in, dining, what's next, FAQs) and the Agenda feed this view.</p>
-            }
-            @if (data.checkinInstructions) {
-              <div class="app__card">
-                <h5>Check-In Instructions</h5>
-                <div class="app__rich" [innerHTML]="data.checkinInstructions"></div>
-              </div>
-            }
-            @if (data.diningOptions) {
-              <div class="app__card">
-                <h5>Dining Options</h5>
-                <div class="app__rich" [innerHTML]="data.diningOptions"></div>
-              </div>
-            }
-            @if (agendaRows().length) {
-              <div class="app__card">
-                <h5>Agenda</h5>
-                @for (row of agendaRows(); track row.title + row.time) {
-                  <div class="app__agendarow">
-                    <span class="app__agendatitle">{{ row.title }}</span>
-                    <span class="app__agendatime">{{ row.time }}</span>
+
+            <div class="app__body">
+              <!-- ---- TODAY ---- -->
+              @if (appTab === 'today') {
+                @if (!data.checkinInstructions && !data.whatsNext) {
+                  <p class="app__empty">Nothing here yet - Check-In Instructions and What's Next (App Content) feed this screen.</p>
+                }
+                @if (data.checkinInstructions) {
+                  <div class="app__card">
+                    <h5>Check-In Instructions</h5>
+                    <div class="app__rich" [innerHTML]="data.checkinInstructions"></div>
                   </div>
                 }
-              </div>
-            }
-            @if (data.whatsNext) {
-              <div class="app__card">
-                <h5>What's Next</h5>
-                <div class="app__rich" [innerHTML]="data.whatsNext"></div>
-              </div>
-            }
-            @if ((data.faqList ?? []).length) {
-              <div class="app__card">
-                <h5>FAQs</h5>
-                @for (faq of data.faqList; track faq.question) {
-                  <div class="app__faq-q">{{ faq.question }}</div>
-                  <div class="app__faq-a" [innerHTML]="faq.answer"></div>
+                @if (data.whatsNext) {
+                  <div class="app__card">
+                    <h5>What's Next</h5>
+                    <div class="app__rich" [innerHTML]="data.whatsNext"></div>
+                  </div>
                 }
-              </div>
-            }
+              }
+
+              <!-- ---- AGENDA ---- -->
+              @if (appTab === 'agenda') {
+                @if (agendaRows().length) {
+                  <div class="app__card">
+                    <h5>Schedule</h5>
+                    @for (row of agendaRows(); track row.title + row.time) {
+                      <div class="app__agendarow">
+                        <span class="app__agendatitle">{{ row.title }}</span>
+                        <span class="app__agendatime">{{ row.time }}</span>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="app__empty">No agenda yet - the Agenda Builder feeds this screen.</p>
+                }
+              }
+
+              <!-- ---- BREAKOUTS: the email-lookup sign-up flow ---- -->
+              @if (appTab === 'breakouts') {
+                <div class="app__card">
+                  <h5>Find My Registration</h5>
+                  <p class="app__copy">Enter the email you registered with and pick your breakout sessions.</p>
+                  <!-- Inert concept controls: the real lookup/sign-up ships
+                       with the app itself. Identity is EMAIL-ONLY for now;
+                       a mailed/texted security code is a deferred decision
+                       (user, 2026-08-20) - revisit before launch. -->
+                  <div class="app__field">you&#64;email.com</div>
+                  <button type="button" class="app__btn" disabled>CONTINUE</button>
+                  <p class="app__fineprint">Registered? Your sessions open right up. Not registered yet? You can register right here.</p>
+                </div>
+                @if (breakoutRows().length) {
+                  <div class="app__card">
+                    <h5>Breakouts you could pick</h5>
+                    @for (row of breakoutRows(); track row.title + row.time) {
+                      <div class="app__agendarow">
+                        <span class="app__agendatitle">{{ row.title }}</span>
+                        <span class="app__agendatime">{{ row.time }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+                <div class="app__card app__card--ghost">
+                  <h5>Not registered?</h5>
+                  <button type="button" class="app__btn app__btn--outline" disabled>REGISTER NOW</button>
+                </div>
+              }
+
+              <!-- ---- INFO ---- -->
+              @if (appTab === 'info') {
+                @if (venueLine()) {
+                  <div class="app__card">
+                    <h5>Venue</h5>
+                    <p class="app__copy">{{ venueLine() }}</p>
+                  </div>
+                }
+                @if (data.diningOptions) {
+                  <div class="app__card">
+                    <h5>Dining Options</h5>
+                    <div class="app__rich" [innerHTML]="data.diningOptions"></div>
+                  </div>
+                }
+                @if ((data.faqList ?? []).length) {
+                  <div class="app__card">
+                    <h5>FAQs</h5>
+                    @for (faq of data.faqList; track faq.question) {
+                      <div class="app__faq-q">{{ faq.question }}</div>
+                      <div class="app__faq-a" [innerHTML]="faq.answer"></div>
+                    }
+                  </div>
+                }
+                @if (!data.diningOptions && !(data.faqList ?? []).length && !venueLine()) {
+                  <p class="app__empty">Dining Options and FAQs (App Content) feed this screen.</p>
+                }
+              }
+            </div>
+
+            <!-- Bottom tab bar - the app's actual navigation (user design
+                 2026-08-20: control buttons at the bottom, never one long
+                 scroll). Clickable in the preview so every screen can be
+                 reviewed. -->
+            <nav class="app__tabs">
+              <button type="button" [class.on]="appTab === 'today'" (click)="setAppTab('today')"><mat-icon>today</mat-icon><span>Today</span></button>
+              <button type="button" [class.on]="appTab === 'agenda'" (click)="setAppTab('agenda')"><mat-icon>calendar_month</mat-icon><span>Agenda</span></button>
+              <button type="button" [class.on]="appTab === 'breakouts'" (click)="setAppTab('breakouts')"><mat-icon>how_to_reg</mat-icon><span>Breakouts</span></button>
+              <button type="button" [class.on]="appTab === 'info'" (click)="setAppTab('info')"><mat-icon>info</mat-icon><span>Info</span></button>
+            </nav>
           </div>
         </div>
       }
