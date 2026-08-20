@@ -37,6 +37,11 @@ export class EventModel extends BaseModel {
   description?: string;
   costInDollars?: number;
   isSummit?: boolean = false;
+  // Summit-only (2026-08-20): accept registrations while the event is NOT
+  // yet live on the public site - the summit page keeps its coming-soon
+  // placeholder; an early-bird campaign links straight to
+  // /event-details/{id}. register_for_event honors isActive OR this flag.
+  earlyRegistration?: boolean = false;
   isOnline?: boolean = false;
   isKajabiCourse?: boolean = false;
   kajabiPurchaseURL?: string;

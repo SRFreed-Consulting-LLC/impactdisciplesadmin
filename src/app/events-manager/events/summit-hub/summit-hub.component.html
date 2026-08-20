@@ -5,7 +5,7 @@
     </button>
     <div class="hub__title-block">
       <h2 class="hub__title">{{ event.eventName }}</h2>
-      <span class="hub__chip" [class.hub__chip--live]="event.isActive" [class.hub__chip--dark]="!event.isActive">{{ event.isActive ? 'LIVE' : 'NOT LIVE' }}</span>
+      <span class="hub__chip" [class.hub__chip--live]="event.isActive" [class.hub__chip--dark]="!event.isActive">{{ event.isActive ? 'LIVE' : (event.earlyRegistration ? 'EARLY REG OPEN' : 'NOT LIVE') }}</span>
     </div>
     <span class="hub__spacer"></span>
     @if (!isPast()) {
@@ -89,8 +89,10 @@
           <h3>Road to Summit</h3>
           <ul class="steps">
             <li>
-              <span class="dot" [class.dot--ok]="event.isActive" [class.dot--todo]="!event.isActive">{{ event.isActive ? '✓' : '·' }}</span>
-              Registration {{ event.isActive ? 'live' : 'not live yet' }}
+              <!-- earlyRegistration: sign-ups open while the page stays a
+                   coming-soon placeholder (see EventModel.earlyRegistration). -->
+              <span class="dot" [class.dot--ok]="event.isActive || event.earlyRegistration" [class.dot--todo]="!event.isActive && !event.earlyRegistration">{{ (event.isActive || event.earlyRegistration) ? '✓' : '·' }}</span>
+              Registration {{ event.isActive ? 'live' : (event.earlyRegistration ? 'open (early - page not live)' : 'not live yet') }}
               <span class="steps__meta">{{ registrationCount }} so far</span>
             </li>
             <li>

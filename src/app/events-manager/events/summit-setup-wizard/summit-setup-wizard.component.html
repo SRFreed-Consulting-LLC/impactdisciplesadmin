@@ -172,6 +172,13 @@
             }
           </ul>
           <p class="hint">{{ readyCount() }} of {{ checklist().length }} ready · {{ breakoutCount() }} breakout options. You can publish with gaps and finish from the edit screen - going LIVE puts it on the public site immediately.</p>
+          <!-- Early registration (user feature 2026-08-20): sign-ups can
+               open while the public page stays a coming-soon placeholder -
+               pair with CREATE (NOT LIVE) and share the direct
+               registration link via a campaign. -->
+          <mat-checkbox class="early-reg-check" [(ngModel)]="earlyRegistration" [ngModelOptions]="{standalone: true}">
+            Open early registration (sign-ups work before going live - the public page stays "coming soon")
+          </mat-checkbox>
           <div class="publish-row">
             <app-indicator-button title="CREATE (NOT LIVE)" [isInProgress]="saving$ | async" [disabled]="saving$ | async" (clicked)="publish(false)"></app-indicator-button>
             <app-indicator-button title="PUBLISH & GO LIVE" [isInProgress]="saving$ | async" [disabled]="saving$ | async" (clicked)="publish(true)"></app-indicator-button>

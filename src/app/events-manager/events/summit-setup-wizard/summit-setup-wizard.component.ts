@@ -267,11 +267,17 @@ export class SummitSetupWizardComponent implements OnInit {
 
   // ---- Persistence: ONE add(), at Publish or Save-draft-&-exit ----
 
+  // Review-step choice: open sign-ups while NOT live (see
+  // EventModel.earlyRegistration) - only meaningful for CREATE (NOT LIVE);
+  // going live supersedes it.
+  earlyRegistration = false;
+
   private assembleDoc(goLive: boolean): EventModel {
     const raw = this.form.getRawValue();
     const venue = this.venueSnapshot();
     return {
       ...this.draft,
+      earlyRegistration: this.earlyRegistration,
       eventName: raw.eventName,
       startDate: raw.startDate ? new Date(raw.startDate) : undefined,
       endDate: raw.endDate ? new Date(raw.endDate) : undefined,

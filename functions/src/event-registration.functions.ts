@@ -202,7 +202,14 @@ export const registerForEventHttp = onRequest((request, response) => {
 
     const eventSnap = await db.collection("events").doc(eventId).get();
     const eventData = eventSnap.data();
-    if (!eventSnap.exists || !eventData || eventData.isActive === false) {
+    // earlyRegistration (2026-08-20, user feature): a summit can accept
+    // sign-ups BEFORE it goes live on the public site - the summit page
+    // keeps its coming-soon placeholder and the events list still hides
+    // it; the only way in is the direct /event-details/{id} link an
+    // early-bird campaign carries. Live OR early-registration accepts.
+    const registrationOpen =
+      eventData?.isActive !== false || eventData?.earlyRegistration === true;
+    if (!eventSnap.exists || !eventData || !registrationOpen) {
       response.status(400).send({error: "Event not found or inactive."});
       return;
     }

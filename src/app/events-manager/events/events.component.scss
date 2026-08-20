@@ -76,6 +76,10 @@ app-summit-hub {
   flex: 1 1 auto;
 }
 
+.early-reg-toggle {
+  margin-right: 18px;
+}
+
 // Single scrolling region for the whole tab body - mat-tab-group's
 // internal body wrapper is Material's own structural element and can't
 // reliably be targeted for flex/height sizing through view encapsulation

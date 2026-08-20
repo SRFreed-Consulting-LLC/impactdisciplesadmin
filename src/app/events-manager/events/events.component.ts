@@ -523,6 +523,7 @@ export class EventsComponent implements OnInit, OnDestroy {
       checkIn: [this.toTimeValue(item.checkIn)],
       costInDollars: [item.costInDollars ?? 0],
       isSummit: [item.isSummit ?? false],
+      earlyRegistration: [item.earlyRegistration ?? false],
       videoId: [item.videoId ?? ''],
       isOnline: [item.isOnline ?? false],
       isKajabiCourse: [item.isKajabiCourse ?? false],

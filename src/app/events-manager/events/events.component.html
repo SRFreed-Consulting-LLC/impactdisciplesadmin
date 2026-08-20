@@ -38,6 +38,16 @@
       <h2 class="editor__title">{{ summitMode ? editingItem?.eventName + ' — ' + summitSectionLabel() : (isEdit ? 'EDIT EVENT' : 'ADD EVENT') }}</h2>
       <span class="editor__spacer"></span>
       @if (permissionService.canEdit(screenKey + '.info')) {
+        @if (summitMode) {
+          <!-- Early registration: sign-ups open while the public page stays
+               a coming-soon placeholder (register_for_event honors Live OR
+               this; the campaign carries the direct registration link).
+               Irrelevant once Live is on. -->
+          <mat-slide-toggle class="early-reg-toggle" [formControl]="$any(form.get('earlyRegistration'))"
+            matTooltip="Accept registrations before going Live - the public summit page keeps its coming-soon placeholder; share the direct registration link via a campaign.">
+            Early Registration
+          </mat-slide-toggle>
+        }
         <mat-slide-toggle [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
       }
     </mat-toolbar>
