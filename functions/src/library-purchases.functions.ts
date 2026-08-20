@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 import {
   getAccessToken,
   getOrderCapture,
@@ -295,7 +296,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       // list orders by dateProcessed and Firestore sorts mixed types by
       // TYPE (numbers before timestamps), so a number here buries the
       // purchase behind every web-checkout doc, past pagination.
-      dateProcessed: admin.firestore.Timestamp.fromMillis(now),
+      dateProcessed: Timestamp.fromMillis(now),
       ...(payPalOrderId ? {paypalEnvironment: env} : {}),
     });
 

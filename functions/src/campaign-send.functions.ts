@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
+import {Timestamp, FieldValue} from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import {requireAdminRole} from "./admin-users.functions";
 import {queueMail, UNSUBSCRIBE_URL} from "./transactional-emails";
@@ -317,7 +318,7 @@ async function enqueueTouch(
         status: "queued",
         token: newToken(),
         unsubType,
-        createdAt: admin.firestore.Timestamp.now(),
+        createdAt: Timestamp.now(),
       }
     ).then(() => queued++).catch(() => undefined);
   }
@@ -332,7 +333,7 @@ async function enqueueTouch(
   if (campaign.status === "draft") {
     await db.collection("campaigns").doc(campaign.id).update({
       status: "live",
-      startDate: admin.firestore.Timestamp.now(),
+      startDate: Timestamp.now(),
     });
   }
   return {recipients: recipients.length, queued};
@@ -385,7 +386,7 @@ async function sendLedgerDoc(
         await ledgerDoc.ref.update({
           status: "skipped",
           error: `customer unsubscribed (${ledger.unsubType})`,
-          sentAt: admin.firestore.Timestamp.now(),
+          sentAt: Timestamp.now(),
         });
         return;
       }
@@ -431,14 +432,14 @@ async function sendLedgerDoc(
     });
     await ledgerDoc.ref.update({
       status: "sent",
-      sentAt: admin.firestore.Timestamp.now(),
+      sentAt: Timestamp.now(),
       mailDocId,
     });
     await db.collection("campaign_emails").doc(ledger.emailId).update({
-      "stats.sent": admin.firestore.FieldValue.increment(1),
+      "stats.sent": FieldValue.increment(1),
     });
     await db.collection("campaigns").doc(ledger.campaignId).update({
-      "stats.sent": admin.firestore.FieldValue.increment(1),
+      "stats.sent": FieldValue.increment(1),
     });
   } catch (err) {
     console.error("Campaign send failed", ledgerDoc.id, err);
@@ -569,7 +570,7 @@ export const campaignSendScheduler = onSchedule(
     const pendingSnap = await db.collection("campaign_sends")
       .where("status", "==", "pending").get();
     for (const doc of pendingSnap.docs) {
-      const createdAt = doc.data().createdAt as admin.firestore.Timestamp;
+      const createdAt = doc.data().createdAt as Timestamp;
       if (createdAt && createdAt.toMillis() <= staleCutoff) {
         await doc.ref.update({status: "queued"});
       }
@@ -623,7 +624,7 @@ export const campaignSendScheduler = onSchedule(
           effectiveCampaignStatus(campaign) !== "live") {
         continue;
       }
-      const cutoff = admin.firestore.Timestamp.fromMillis(
+      const cutoff = Timestamp.fromMillis(
         Date.now() - trigger.afterDays * DAY_MS);
       for (const tag of trigger.tags) {
         // Composite index tag_applications(tag, anchorDate).
@@ -649,7 +650,7 @@ export const campaignSendScheduler = onSchedule(
                 unsubType: "newsletter",
                 tag,
                 anchorDate: app.data().anchorDate,
-                createdAt: admin.firestore.Timestamp.now(),
+                createdAt: Timestamp.now(),
               });
           } catch {
             // already-exists = already reached by this touch.
@@ -689,7 +690,7 @@ async function finalizeSendingTouches(
     if (open.empty) {
       await doc.ref.update({
         status: "sent",
-        sentAt: admin.firestore.Timestamp.now(),
+        sentAt: Timestamp.now(),
       });
     }
   }
@@ -717,12 +718,12 @@ export const onCampaignMailDelivered = onDocumentUpdated(
     if (!ledger.exists || ledger.data()?.deliveredAt) {
       return;
     }
-    await ledgerRef.update({deliveredAt: admin.firestore.Timestamp.now()});
+    await ledgerRef.update({deliveredAt: Timestamp.now()});
     await db.collection("campaign_emails").doc(meta.emailId).update({
-      "stats.delivered": admin.firestore.FieldValue.increment(1),
+      "stats.delivered": FieldValue.increment(1),
     }).catch(() => undefined);
     await db.collection("campaigns").doc(meta.campaignId).update({
-      "stats.delivered": admin.firestore.FieldValue.increment(1),
+      "stats.delivered": FieldValue.increment(1),
     }).catch(() => undefined);
   }
 );

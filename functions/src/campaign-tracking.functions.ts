@@ -3,6 +3,7 @@
    create_paypal_order, ...). */
 import {onRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {Timestamp, FieldValue} from "firebase-admin/firestore";
 
 // Campaign Manager v2, Phase 3: OUR OWN engagement tracking - the reason
 // the send engine can eventually replace Mailchimp's reports.
@@ -66,7 +67,7 @@ async function recordEvent(
 ): Promise<void> {
   await db.collection("campaign_events").add({
     ...event,
-    at: admin.firestore.Timestamp.now(),
+    at: Timestamp.now(),
   }).catch((err) => console.error("campaign_events write failed", err));
 }
 
@@ -136,15 +137,15 @@ export async function recordCampaignConversion(
     }
     const bump: Record<string, unknown> = {};
     if (input.type === "purchase") {
-      bump["stats.purchases"] = admin.firestore.FieldValue.increment(1);
+      bump["stats.purchases"] = FieldValue.increment(1);
       if (input.amount && input.amount > 0) {
         bump["stats.revenue"] =
-          admin.firestore.FieldValue.increment(input.amount);
+          FieldValue.increment(input.amount);
       }
     } else if (input.type === "subscribe") {
-      bump["stats.subscribes"] = admin.firestore.FieldValue.increment(1);
+      bump["stats.subscribes"] = FieldValue.increment(1);
     } else {
-      bump["stats.registrations"] = admin.firestore.FieldValue.increment(1);
+      bump["stats.registrations"] = FieldValue.increment(1);
     }
     await campaignRef.update(bump);
     if (input.emailId) {
@@ -220,13 +221,13 @@ export const campaign_open = onRequest(async (request, response) => {
       const firstOpen = !ledger.openedAt;
       if (firstOpen) {
         await ledgerDoc.ref.update(
-          {openedAt: admin.firestore.Timestamp.now()});
+          {openedAt: Timestamp.now()});
       }
       const bump: Record<string, unknown> = {
-        "stats.opens": admin.firestore.FieldValue.increment(1),
+        "stats.opens": FieldValue.increment(1),
       };
       if (firstOpen) {
-        bump["stats.uniqueOpens"] = admin.firestore.FieldValue.increment(1);
+        bump["stats.uniqueOpens"] = FieldValue.increment(1);
       }
       await db.collection("campaign_emails").doc(ledger.emailId)
         .update(bump).catch(() => undefined);
@@ -278,7 +279,7 @@ export const campaign_web_event = onRequest(async (request, response) => {
         const field = type === "web_shown" ?
           "stats.webShown" : "stats.webClicks";
         await campaignSnap.ref.update({
-          [field]: admin.firestore.FieldValue.increment(1),
+          [field]: FieldValue.increment(1),
         });
         await recordEvent(db, {
           type,
@@ -314,25 +315,25 @@ export const campaign_click = onRequest(async (request, response) => {
       const firstClick = !ledger.clickedAt;
       const ledgerPatch: Record<string, unknown> = {};
       if (firstClick) {
-        ledgerPatch.clickedAt = admin.firestore.Timestamp.now();
+        ledgerPatch.clickedAt = Timestamp.now();
       }
       // A click proves an open even when images were blocked - backfill
       // the unique open, but never the raw opens counter (no pixel fired).
       const backfillOpen = !ledger.openedAt;
       if (backfillOpen) {
-        ledgerPatch.openedAt = admin.firestore.Timestamp.now();
+        ledgerPatch.openedAt = Timestamp.now();
       }
       if (Object.keys(ledgerPatch).length > 0) {
         await ledgerDoc.ref.update(ledgerPatch);
       }
       const bump: Record<string, unknown> = {
-        "stats.clicks": admin.firestore.FieldValue.increment(1),
+        "stats.clicks": FieldValue.increment(1),
       };
       if (firstClick) {
-        bump["stats.uniqueClicks"] = admin.firestore.FieldValue.increment(1);
+        bump["stats.uniqueClicks"] = FieldValue.increment(1);
       }
       if (backfillOpen) {
-        bump["stats.uniqueOpens"] = admin.firestore.FieldValue.increment(1);
+        bump["stats.uniqueOpens"] = FieldValue.increment(1);
       }
       await db.collection("campaign_emails").doc(ledger.emailId)
         .update(bump).catch(() => undefined);

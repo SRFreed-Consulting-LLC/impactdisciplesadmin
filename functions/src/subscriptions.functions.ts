@@ -1,4 +1,5 @@
 import admin = require("firebase-admin");
+import {Timestamp} from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import {restrictedCors} from "./utils/security.functions";
 import {queueSubscriptionConfirmation} from "./transactional-emails";
@@ -83,7 +84,7 @@ exports.subscribe_to_email_list = functions
         }
 
         const {flagField, dateField} = fieldsForType(type);
-        const now = admin.firestore.Timestamp.now();
+        const now = Timestamp.now();
         const db = admin.firestore();
         const existingSnap = await db.collection("customers")
           .where("email", "==", email)

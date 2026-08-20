@@ -1,5 +1,5 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
-import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 import {hasPhysicalItem} from "./utils/cart-items.functions";
 
 // Backs the Store Manager > Fulfillment screen's 5-step physical-order
@@ -49,7 +49,7 @@ export const onPurchaseFulfillmentEligible = onDocumentCreated(
       // First entry of the Sale Details tab's timeline - see
       // StatusHistoryEntry's own comment (cart.model.ts) for why this has to
       // land in the same write as fulfillmentStatus itself.
-      statusHistory: [{status, date: admin.firestore.Timestamp.now()}],
+      statusHistory: [{status, date: Timestamp.now()}],
     });
   }
 );

@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 
 // Pre-prod hardening #1: every email the two public apps used to compose
 // and write into `mail` from the browser is queued server-side here
@@ -94,7 +94,7 @@ export async function queueMail(
 ): Promise<string> {
   const ref = await db.collection("mail").add({
     to,
-    date: admin.firestore.Timestamp.now(),
+    date: Timestamp.now(),
     message: {subject, html, text: htmlToPlainText(html)},
     ...(campaignMeta ? {campaignMeta} : {}),
   });

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
 import {queueWebOrderEmails} from "./transactional-emails";
 import {
@@ -344,7 +345,7 @@ async function recordAffiliateSale(
     checkoutForm.discount : 0;
   await admin.firestore().collection("affilliate_sales").add({
     code,
-    date: admin.firestore.Timestamp.now(),
+    date: Timestamp.now(),
     email: checkoutForm.email ?? "",
     totalBeforeDiscount: total,
     totalAfterDiscount: total - discount,
@@ -422,7 +423,7 @@ function buildPayPalReceipt(
  * @return {void}
  */
 function stampCartItems(items: Array<Record<string, unknown>>): void {
-  const now = admin.firestore.Timestamp.now();
+  const now = Timestamp.now();
   items.forEach((item) => {
     item.dateProcessed = now;
     item.processedStatus = "NEW";
@@ -463,7 +464,7 @@ async function logCheckoutFailure(
   try {
     await admin.firestore().collection("log-messages").add({
       id: errorCode,
-      date: admin.firestore.Timestamp.now(),
+      date: Timestamp.now(),
       type: "CHECKOUT",
       created_by: email ?? "unknown",
       message,
@@ -522,7 +523,7 @@ exports.create_paypal_order = functions
 
         if (pricing.total <= 0) {
           checkoutForm.receipt = pricing.couponCode ? "COUPON" : "FREE ONLY";
-          checkoutForm.dateProcessed = admin.firestore.Timestamp.now();
+          checkoutForm.dateProcessed = Timestamp.now();
           stampCartItems(
             pricing.cartItems as unknown as Array<Record<string, unknown>>
           );
@@ -629,7 +630,7 @@ exports.create_paypal_order = functions
         await admin.firestore()
           .collection("pending_orders").doc(orderData.id).set({
             status: "created",
-            createdAt: admin.firestore.Timestamp.now(),
+            createdAt: Timestamp.now(),
             capturedAt: null,
             purchaseId: null,
             amount: amountValue,
@@ -745,7 +746,7 @@ exports.capture_paypal_order = functions
           payPalReceipt: buildPayPalReceipt(
             pending.checkoutForm, orderId, payerID, pending.amount, captureData
           ),
-          dateProcessed: admin.firestore.Timestamp.now(),
+          dateProcessed: Timestamp.now(),
         };
         stampCartItems(
           checkoutForm.cartItems as Array<Record<string, unknown>>
@@ -764,7 +765,7 @@ exports.capture_paypal_order = functions
 
           await pendingRef.update({
             status: "captured",
-            capturedAt: admin.firestore.Timestamp.now(),
+            capturedAt: Timestamp.now(),
             purchaseId: docRef.id,
           });
 

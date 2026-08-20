@@ -1,6 +1,7 @@
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {onCall} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 
 // Sweep 2026-08-17: the reader's "which languages exist" discovery used to
@@ -32,7 +33,7 @@ async function mergeLocale(
       data.localeLabel :
       locale;
   await db.doc(REGISTRY_REF).set(
-    {locales: {[locale]: label}, updatedAt: admin.firestore.Timestamp.now()},
+    {locales: {[locale]: label}, updatedAt: Timestamp.now()},
     {merge: true}
   );
 }
@@ -72,7 +73,7 @@ export const rebuildLanguageRegistry = onCall(async (request) => {
     }
   });
   await db.doc(REGISTRY_REF).set(
-    {locales, updatedAt: admin.firestore.Timestamp.now()},
+    {locales, updatedAt: Timestamp.now()},
     {merge: false}
   );
   return {locales, count: Object.keys(locales).length};

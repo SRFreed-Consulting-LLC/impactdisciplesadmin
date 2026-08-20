@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 
 // Functions-side twin of the client's defensive date normalization
 // (src/app/common/utils/date-from-timestamp.ts) - keep the two in sync.
@@ -18,7 +18,7 @@ export function toMillis(item: unknown): number {
   if (!item) {
     return 0;
   }
-  if (item instanceof admin.firestore.Timestamp) {
+  if (item instanceof Timestamp) {
     return item.toMillis();
   }
   if (item instanceof Date) {
@@ -40,9 +40,9 @@ export function toMillis(item: unknown): number {
  * Same normalization, returned as a real Timestamp (or null when nothing
  * parseable is present).
  * @param {unknown} item The stored value.
- * @return {admin.firestore.Timestamp | null} Normalized timestamp.
+ * @return {Timestamp | null} Normalized timestamp.
  */
-export function toTimestamp(item: unknown): admin.firestore.Timestamp | null {
+export function toTimestamp(item: unknown): Timestamp | null {
   const millis = toMillis(item);
-  return millis > 0 ? admin.firestore.Timestamp.fromMillis(millis) : null;
+  return millis > 0 ? Timestamp.fromMillis(millis) : null;
 }

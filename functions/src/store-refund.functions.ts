@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {
   PaypalEnvironment,
@@ -64,7 +65,7 @@ async function getTokenWithCreds(
 
 interface RefundEntryDoc {
   amount: number;
-  date: admin.firestore.Timestamp;
+  date: Timestamp;
   by?: string;
   refundId?: string;
   refundStatus?: string;
@@ -73,7 +74,7 @@ interface RefundEntryDoc {
 
 interface StatusHistoryEntryDoc {
   status: string;
-  date: admin.firestore.Timestamp;
+  date: Timestamp;
   by?: string;
 }
 
@@ -363,7 +364,7 @@ export const refundStorePurchase = onCall(
     }
 
     const by = request.auth?.token.email ?? request.auth?.uid ?? "";
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
     const entry: RefundEntryDoc = {
       amount: plan.requestedCents / 100,
       date: now,

@@ -1,5 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {Timestamp, FieldValue} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {toTimestamp} from "./utils/date-normalize.functions";
 
@@ -42,7 +43,7 @@ export interface ActivityForTagging {
   /** Registration: the event id. Purchase: null. */
   eventId: string | null;
   /** Normalized purchase/registration date - the tag's anchor date. */
-  activityDate: admin.firestore.Timestamp;
+  activityDate: Timestamp;
 }
 
 /**
@@ -114,7 +115,7 @@ export function activityFromPurchase(
     productIds,
     eventId: null,
     activityDate:
-      toTimestamp(data.dateProcessed) ?? admin.firestore.Timestamp.now(),
+      toTimestamp(data.dateProcessed) ?? Timestamp.now(),
   };
 }
 
@@ -137,7 +138,7 @@ export function activityFromRegistration(
     productIds: [],
     eventId: typeof data.eventId === "string" ? data.eventId : null,
     activityDate:
-      toTimestamp(data.registrationDate) ?? admin.firestore.Timestamp.now(),
+      toTimestamp(data.registrationDate) ?? Timestamp.now(),
   };
 }
 
@@ -173,7 +174,7 @@ async function applyOneTag(
 ): Promise<boolean> {
   const tag = (rule.tag ?? "").trim();
   await customerRef.update({
-    tags: admin.firestore.FieldValue.arrayUnion(tag),
+    tags: FieldValue.arrayUnion(tag),
   });
   try {
     await db.collection("tag_applications")
@@ -181,7 +182,7 @@ async function applyOneTag(
       .create({
         email: activity.email,
         tag,
-        appliedAt: admin.firestore.Timestamp.now(),
+        appliedAt: Timestamp.now(),
         anchorDate: activity.activityDate,
         source: activity.source,
         sourceId: activity.sourceId,

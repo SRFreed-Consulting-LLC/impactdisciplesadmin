@@ -1,5 +1,6 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
+import {Timestamp} from "firebase-admin/firestore";
 import {hasPhysicalItem} from "./utils/cart-items.functions";
 import {
   isPlausibleEmail,
@@ -82,7 +83,7 @@ interface PendingCustomerChange {
   proposedValue: unknown;
   source: "purchase" | "eventRegistration";
   sourceId: string;
-  detectedDate: admin.firestore.Timestamp;
+  detectedDate: Timestamp;
 }
 
 /**
@@ -171,7 +172,7 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
     const existingPending = customer.pendingChanges;
     const pending: PendingCustomerChange[] =
       Array.isArray(existingPending) ? [...existingPending] : [];
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
     const directUpdates: Record<string, unknown> = {};
     let changed = false;
 
