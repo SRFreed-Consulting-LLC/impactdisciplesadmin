@@ -400,3 +400,23 @@ quill-editor .ql-editor {
 .breakout-block-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface {
   border-radius: 0;
 }
+
+/* ---- Global form-field breathing room (2026-08-19, user request) ----
+   Stacked mat-form-fields relied purely on Material's invisible subscript
+   strip and read as touching. Every field gets real vertical margin;
+   compact contexts that lay fields out inline (the data-grid's filter row,
+   inline link/copy bars) opt back out. */
+.mat-mdc-form-field {
+  margin-bottom: 10px;
+}
+
+/* Table filter rows and other inline/compact hosts - no stacked-field
+   spacing wanted. */
+.data-grid-table .mat-mdc-form-field,
+th .mat-mdc-form-field,
+td .mat-mdc-form-field,
+.link-row .mat-mdc-form-field,
+.copybar .mat-mdc-form-field,
+.impact-header .mat-mdc-form-field {
+  margin-bottom: 0;
+}
