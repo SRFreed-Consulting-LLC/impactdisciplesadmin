@@ -1,14 +1,15 @@
 // A reader-app library user's `libraryUsers` profile, as this app's Library
-// section needs it - a trimmed view of the reader app's own LibraryUser
-// model (impact-discipleship-library-new's core/models/user.model.ts is the
-// authoritative shape; field names must stay in sync), ported from
-// impact-discipleship-library-manager-new's core/services/library-user.service.ts.
-// This collection lives in the named 'impactdiscipleship-books' database and
-// is owned/written by the reader app - reads are direct here, but every
-// admin WRITE must go through the source app's Library Users Cloud
-// Functions (updateLibraryUser/setLibraryUserRevoked/etc. - see that app's
-// CLAUDE.md), not a direct client write (firestore.rules scopes
-// `libraryUsers` writes to the owner's own email).
+// section needs it. The AUTHORITATIVE shape is whatever this repo's Cloud
+// Functions write (library-users.functions.ts, library-store-license-grant.ts,
+// library-group-license-grant/revoke.ts) - the reader app's
+// core/models/user.model.ts is a hand-synced mirror of the same fields
+// (keep the two in sync by hand; 2026-08-20 sweep aligned them). The
+// collection lives in the shared (default) Firestore database since the
+// 2026-08 consolidation (no longer the named 'impactdiscipleship-books' DB).
+// Reads are direct here, but every admin WRITE must go through this repo's
+// Library Users Cloud Functions (updateLibraryUser/setLibraryUserRevoked/
+// grantLibraryUserLicenses/etc.), not a direct client write (firestore.rules
+// scopes `libraryUsers` writes to the owner's own email).
 
 /** One entry in a library user's `bookLicenses` provenance array. `source`
  *  is 'store-purchase' for store checkouts (web storefront + reader
