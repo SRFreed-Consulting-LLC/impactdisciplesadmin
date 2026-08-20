@@ -19,14 +19,17 @@ test("isPublishedTouch: flagged AND sent/sending only", () => {
 });
 
 test("archiveTitle: webTitle, then label, then subject, then fallback", () => {
-  assert.equal(archiveTitle({webTitle: " Oct 2025 ", label: "L", subject: "S"}), "Oct 2025");
+  assert.equal(
+    archiveTitle({webTitle: " Oct 2025 ", label: "L", subject: "S"}),
+    "Oct 2025");
   assert.equal(archiveTitle({webTitle: "", label: "L", subject: "S"}), "L");
   assert.equal(archiveTitle({label: null, subject: "S"}), "S");
   assert.equal(archiveTitle({}), "Newsletter");
 });
 
-test("prepareArchiveHtml: renders our tags anonymously and strips Mailchimp-only tags", () => {
-  const raw = "<!DOCTYPE html><html><head><title>*|MC:SUBJECT|*</title></head>" +
+test("prepareArchiveHtml: renders our tags anonymously, strips MC tags", () => {
+  const raw = "<!DOCTYPE html><html><head><title>*|MC:SUBJECT|*</title>" +
+    "</head>" +
     "<body>*|IF:MC_PREVIEW_TEXT|*<span>*|MC_PREVIEW_TEXT|*</span>*|END:IF|*" +
     "Hi *|FNAME|*, see <a href=\"*|ARCHIVE|*\">the archive</a> or " +
     "<a href=\"*|UNSUB|*\">unsubscribe</a></body></html>";
@@ -41,7 +44,8 @@ test("prepareArchiveHtml: renders our tags anonymously and strips Mailchimp-only
 });
 
 test("prepareArchiveHtml: wraps a bare fragment into a document", () => {
-  const out = prepareArchiveHtml("<p>Hello {{Recipient First Name}}</p>", "Issue");
+  const out = prepareArchiveHtml(
+    "<p>Hello {{Recipient First Name}}</p>", "Issue");
   assert.ok(out.startsWith("<!DOCTYPE html><html>"));
   assert.ok(out.includes("<title>Issue</title>"));
   assert.ok(out.includes("<div class=\"newsletter\"><p>Hello </p></div>"));
@@ -49,8 +53,10 @@ test("prepareArchiveHtml: wraps a bare fragment into a document", () => {
 
 test("prepareArchiveHtml: drops scripts and inline handlers", () => {
   const out = prepareArchiveHtml(
-    "<html><body><script>alert(1)</script><img src=\"x\" onerror=\"alert(2)\">" +
-    "<a href=\"https://x.test/?option=1\" onclick='go()'>ok</a></body></html>", "T");
+    "<html><body><script>alert(1)</script>" +
+    "<img src=\"x\" onerror=\"alert(2)\">" +
+    "<a href=\"https://x.test/?option=1\" onclick='go()'>ok</a>" +
+    "</body></html>", "T");
   assert.ok(!/<script/i.test(out));
   assert.ok(!/onerror|onclick/i.test(out));
   // Attribute VALUES containing "on...=" are untouched.
