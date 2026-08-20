@@ -229,6 +229,7 @@ const events = {
     eventName: "Disciple-Making Summit 2027",
     description: "Two days of practical disciple-making training.",
     videoId: "MUPDplOSOR4",
+    emailTemplate: "Event Registration Confirmation",
     organization: "org-crossroads",
     location: "loc-hwy16",
     venue: {
@@ -345,6 +346,14 @@ const mail_templates = {
     name: "Workbook Follow-Up",
     subject: "Getting the most from your workbook",
     html: "<p>Hi {{Customer Name}} - tips inside.</p>",
+  },
+  // Referenced by the summit fixture's emailTemplate (by NAME) - the
+  // register_for_event flow renders + queues this as the confirmation.
+  "tmpl-event-confirmation": {
+    name: "Event Registration Confirmation",
+    subject: "You are registered, {{Recipient First Name}}!",
+    html: "<p>See you at {{Event Name}}, {{Recipient First Name}}.</p>" +
+      "<p><a href=\"{{Breakout Link}}\">Pick your breakout sessions</a></p>",
   },
   "tmpl-newsletter": {
     name: "Monthly Newsletter Shell",

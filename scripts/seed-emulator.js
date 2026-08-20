@@ -128,10 +128,66 @@ async function seedCollections() {
   console.log(`Seeded ${count} documents.`);
 }
 
+// The Functions emulator fires Firestore triggers for EVERY write this
+// script makes - including the wipe's deletes of the previous world. That
+// backlog drains slowly and interleaves unpredictably, so after seeding we
+// (1) wait for trigger quiescence (no observable side-effect changes for a
+// quiet window), then (2) overwrite the session-count meta docs with truth
+// computed straight from the fixtures - making the post-seed world exactly
+// deterministic no matter what the wipe's delete-triggers did to the
+// increments in the meantime.
+async function settleTriggerBacklog() {
+  const signature = async () => {
+    const [counts, customers, mail] = await Promise.all([
+      db.collection("eventSessionCounts").get(),
+      db.collection("customers").count().get(),
+      db.collection("mail").count().get(),
+    ]);
+    return JSON.stringify({
+      counts: counts.docs.map((d) => [d.id, d.data().counts]),
+      customers: customers.data().count,
+      mail: mail.data().count,
+    });
+  };
+  let previous = await signature();
+  let quietPolls = 0;
+  const deadline = Date.now() + 180000;
+  while (quietPolls < 5) {
+    if (Date.now() > deadline) {
+      throw new Error("Trigger backlog never went quiet (180s)");
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+    const current = await signature();
+    quietPolls = current === previous ? quietPolls + 1 : 0;
+    previous = current;
+  }
+}
+
+async function writeSessionCountTruth() {
+  // Recompute per-event session counts straight from the registration
+  // fixtures (same rule as the trigger: unique string session ids per doc).
+  const byEvent = {};
+  const regs = fixtures.collections["event-registrations"];
+  for (const reg of Object.values(regs)) {
+    const counts = (byEvent[reg.eventId] = byEvent[reg.eventId] ?? {});
+    for (const s of new Set(reg.trainingSessions ?? [])) {
+      counts[s] = (counts[s] ?? 0) + 1;
+    }
+  }
+  for (const [eventId, counts] of Object.entries(byEvent)) {
+    await db.collection("eventSessionCounts").doc(eventId).set({
+      counts, seeded: true, updatedAt: Timestamp.fromDate(new Date()),
+    });
+  }
+}
+
 (async () => {
   await wipe();
   await seedAuth();
   await seedCollections();
+  console.log("Waiting for the trigger backlog to go quiet...");
+  await settleTriggerBacklog();
+  await writeSessionCountTruth();
   console.log("Emulator seed complete (project demo-impact).");
   process.exit(0);
 })().catch((e) => {
