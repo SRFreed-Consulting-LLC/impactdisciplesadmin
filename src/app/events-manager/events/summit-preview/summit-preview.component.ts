@@ -1,5 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { EventVenue } from 'src/app/common/models/domain/event.model';
+import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { FAQModel } from 'src/app/common/models/utils/faq.model';
 import { ImageModel } from 'src/app/common/models/utils/image.model';
 import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 
@@ -17,6 +19,14 @@ export interface SummitPreviewData {
   imageUrl?: ImageModel | null;
   venue?: EventVenue | null;
   costInDollars?: number | null;
+  // App/attendee-experience content + schedule - consumed by the preview
+  // RAIL's APP view (and the web views' agenda/FAQ sections); quill HTML
+  // for the three rich-text fields.
+  diningOptions?: string | null;
+  checkinInstructions?: string | null;
+  whatsNext?: string | null;
+  faqList?: FAQModel[] | null;
+  agendaItems?: AgendaItem[] | null;
 }
 
 // Live approximation of the PUBLIC summit page (impactdisciples-web's

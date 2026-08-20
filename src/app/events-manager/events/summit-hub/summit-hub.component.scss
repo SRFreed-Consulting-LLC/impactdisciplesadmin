@@ -70,7 +70,31 @@
 
 .hub__body {
   padding: 4px 16px 24px;
-  overflow: auto;
+  // Two columns: the hub content (scrolls) + the preview rail (own scroll,
+  // self-sized so its collapse works without this file knowing).
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.hub__content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .hub__body {
+    display: block;
+    overflow: auto;
+  }
+
+  app-summit-preview-rail {
+    display: none;
+  }
 }
 
 .tiles {

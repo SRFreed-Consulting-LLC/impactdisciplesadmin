@@ -227,7 +227,14 @@ export class SummitSetupWizardComponent implements OnInit {
       videoId: raw.videoId,
       imageUrl: this.card.imageUrl ?? null,
       venue: this.venueSnapshot(),
-      costInDollars: raw.costInDollars
+      costInDollars: raw.costInDollars,
+      // The rail's APP view - the draft carries these (App Content +
+      // Agenda steps mutate it in place).
+      diningOptions: this.draft.diningOptions ?? null,
+      checkinInstructions: this.draft.checkinInstructions ?? null,
+      whatsNext: this.draft.whatsNext ?? null,
+      faqList: this.draft.faqList ?? null,
+      agendaItems: this.draft.agendaItems ?? null
     };
   }
 

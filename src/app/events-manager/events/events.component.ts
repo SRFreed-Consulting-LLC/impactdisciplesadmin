@@ -361,7 +361,38 @@ export class EventsComponent implements OnInit, OnDestroy {
       videoId: raw.videoId,
       imageUrl: this.card.imageUrl ?? null,
       venue: this.resolveVenue(raw),
-      costInDollars: raw.costInDollars
+      costInDollars: raw.costInDollars,
+      // App-experience content + schedule for the rail's APP view. The
+      // Application/Agenda/FAQ child components mutate editingItem IN
+      // PLACE pre-save, so reading it here keeps the preview live across
+      // every section, not just the one being edited.
+      diningOptions: this.editingItem?.diningOptions ?? null,
+      checkinInstructions: this.editingItem?.checkinInstructions ?? null,
+      whatsNext: this.editingItem?.whatsNext ?? null,
+      faqList: this.editingItem?.faqList ?? null,
+      agendaItems: this.editingItem?.agendaItems ?? null
+    };
+  }
+
+  // Mission Control's rail previews the SAVED summit (the hub doesn't edit).
+  hubPreviewData(): SummitPreviewData {
+    const item = this.hubItem;
+    if (!item) return {};
+    return {
+      eventName: item.eventName,
+      startDate: item.startDate as Date | string,
+      endDate: item.endDate as Date | string,
+      checkIn: this.toTimeValue(item.checkIn),
+      description: item.description,
+      videoId: item.videoId,
+      imageUrl: item.imageUrl ?? null,
+      venue: item.venue ?? null,
+      costInDollars: item.costInDollars,
+      diningOptions: item.diningOptions ?? null,
+      checkinInstructions: item.checkinInstructions ?? null,
+      whatsNext: item.whatsNext ?? null,
+      faqList: item.faqList ?? null,
+      agendaItems: item.agendaItems ?? null
     };
   }
 

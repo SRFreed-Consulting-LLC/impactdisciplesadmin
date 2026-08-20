@@ -1,0 +1,88 @@
+@if (collapsed) {
+  <button type="button" class="rail-reopen" matTooltip="Show the live public-page preview" (click)="toggleCollapsed()">
+    <mat-icon>visibility</mat-icon>
+    <span>SHOW PREVIEW</span>
+  </button>
+} @else {
+  <div class="rail">
+    <div class="rail__bar">
+      <mat-button-toggle-group class="rail__switch" [value]="view" (change)="setView($event.value)" hideSingleSelectionIndicator>
+        <mat-button-toggle value="web" matTooltip="The public summit web page">WEB</mat-button-toggle>
+        <mat-button-toggle value="phone" matTooltip="The same page on a phone">PHONE</mat-button-toggle>
+        <mat-button-toggle value="app" matTooltip="What attendees see in the app: check-in, dining, agenda, FAQs">APP</mat-button-toggle>
+      </mat-button-toggle-group>
+      <span class="rail__spacer"></span>
+      <button mat-icon-button type="button" class="rail__hide" matTooltip="Hide the preview (more editing room)" (click)="toggleCollapsed()">
+        <mat-icon>last_page</mat-icon>
+      </button>
+    </div>
+
+    <div class="rail__scroller">
+      @if (view === 'web') {
+        <app-summit-preview [data]="data"></app-summit-preview>
+      }
+
+      @if (view === 'phone') {
+        <div class="phone">
+          <div class="phone__notch"></div>
+          <div class="phone__screen">
+            <app-summit-preview [data]="data"></app-summit-preview>
+          </div>
+        </div>
+      }
+
+      @if (view === 'app') {
+        <div class="phone">
+          <div class="phone__notch"></div>
+          <div class="phone__screen phone__screen--app">
+            <div class="app__head">
+              <h4>{{ data.eventName || 'Summit name not set' }}</h4>
+              <span>Attendee app · what registrants see</span>
+            </div>
+            @if (!hasAppContent()) {
+              <p class="app__empty">Nothing to show yet - App Content (check-in, dining, what's next, FAQs) and the Agenda feed this view.</p>
+            }
+            @if (data.checkinInstructions) {
+              <div class="app__card">
+                <h5>Check-In Instructions</h5>
+                <div class="app__rich" [innerHTML]="data.checkinInstructions"></div>
+              </div>
+            }
+            @if (data.diningOptions) {
+              <div class="app__card">
+                <h5>Dining Options</h5>
+                <div class="app__rich" [innerHTML]="data.diningOptions"></div>
+              </div>
+            }
+            @if (agendaRows().length) {
+              <div class="app__card">
+                <h5>Agenda</h5>
+                @for (row of agendaRows(); track row.title + row.time) {
+                  <div class="app__agendarow">
+                    <span class="app__agendatitle">{{ row.title }}</span>
+                    <span class="app__agendatime">{{ row.time }}</span>
+                  </div>
+                }
+              </div>
+            }
+            @if (data.whatsNext) {
+              <div class="app__card">
+                <h5>What's Next</h5>
+                <div class="app__rich" [innerHTML]="data.whatsNext"></div>
+              </div>
+            }
+            @if ((data.faqList ?? []).length) {
+              <div class="app__card">
+                <h5>FAQs</h5>
+                @for (faq of data.faqList; track faq.question) {
+                  <div class="app__faq-q">{{ faq.question }}</div>
+                  <div class="app__faq-a" [innerHTML]="faq.answer"></div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

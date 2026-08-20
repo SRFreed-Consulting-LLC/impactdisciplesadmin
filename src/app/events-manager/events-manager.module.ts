@@ -11,6 +11,7 @@ import { SummitCommandCenterComponent } from './events/summit-command-center/sum
 import { SessionAssignmentDialogComponent } from './events/summit-command-center/session-assignment-dialog.component';
 import { SummitSetupWizardComponent } from './events/summit-setup-wizard/summit-setup-wizard.component';
 import { SummitPreviewComponent } from './events/summit-preview/summit-preview.component';
+import { SummitPreviewRailComponent } from './events/summit-preview-rail/summit-preview-rail.component';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { EventAttendeesComponent } from './events/event-attendees/event-attendees.component';
 import { EventAttendeeDialogComponent } from './events/event-attendees/event-attendee-dialog.component';
@@ -65,6 +66,7 @@ import { QuillModule } from 'ngx-quill';
       SessionAssignmentDialogComponent,
       SummitSetupWizardComponent,
       SummitPreviewComponent,
+      SummitPreviewRailComponent,
       CoachesComponent,
       CoachDialogComponent,
       EventAgendaComponent,

@@ -41,13 +41,17 @@
         <mat-slide-toggle [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
       }
     </mat-toolbar>
-    <div class="editor__body">
+    <div class="editor__body" [class.editor__body--railed]="summitMode">
+      <div class="editor__main">
       <mat-tab-group class="event-tabs" [class.event-tabs--headless]="summitMode" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
         @if (summitMode) {
           <!-- ============================= SUMMIT: full 5-tab editor (unchanged) ============================= -->
           @if (permissionService.canView(screenKey + '.info')) {
             <mat-tab label="Info">
-              <div class="tab-content info-layout">
+              <!-- Single column - the live preview moved to the persistent
+                   RAIL beside the whole editor (every section shares it,
+                   user request 2026-08-20). -->
+              <div class="tab-content info-layout info-layout--single">
                 <div class="info-form">
                   <div class="field-row">
                     <mat-form-field appearance="outline" class="full-width">
@@ -131,12 +135,6 @@
                   </mat-form-field>
                 </div>
 
-                <!-- Full live public-page preview (the wizard shows the
-                     same one on every step) - replaced the old summary
-                     preview-card 2026-08-19. Regular events keep theirs. -->
-                <div class="info-preview">
-                  <app-summit-preview [data]="summitPreviewData()"></app-summit-preview>
-                </div>
               </div>
             </mat-tab>
           }
@@ -361,6 +359,12 @@
           }
         }
       </mat-tab-group>
+      </div>
+      @if (summitMode) {
+        <!-- The persistent live preview - identical on every summit editor
+             section (and Mission Control / the wizard host their own). -->
+        <app-summit-preview-rail [data]="summitPreviewData()"></app-summit-preview-rail>
+      }
     </div>
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
@@ -400,6 +404,7 @@
 @if (mode === 'hub' && hubItem; as hubEvent) {
   <app-summit-hub
     [event]="hubEvent"
+    [preview]="hubPreviewData()"
     (closed)="closeHub()"
     (edit)="editFromHub($event)"
     (openCommandCenter)="commandCenterFromHub()">

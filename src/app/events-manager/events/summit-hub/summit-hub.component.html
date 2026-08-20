@@ -22,6 +22,7 @@
     <div class="hub__loading"><mat-spinner diameter="32"></mat-spinner></div>
   } @else {
     <div class="hub__body">
+      <div class="hub__content">
       <div class="tiles">
         <div class="tile">
           <b>{{ registrationCount }}</b><span>Registrations</span>
@@ -115,6 +116,10 @@
           </ul>
         </section>
       </div>
+      </div>
+      <!-- The persistent live preview - same rail as the editor sections
+           and the wizard (user request 2026-08-20). -->
+      <app-summit-preview-rail [data]="preview"></app-summit-preview-rail>
     </div>
   }
 </div>

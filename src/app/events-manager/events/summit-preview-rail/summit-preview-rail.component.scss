@@ -1,0 +1,200 @@
+// The always-on preview rail (see the component comment). Hosts size the
+// COLUMN (open ~400px / collapsed ~40px via the host-level class the
+// screens toggle on :host's width); this file owns everything inside.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  width: 400px;
+}
+
+.rail__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 8px;
+}
+
+.rail__switch {
+  // Compact segmented switch - the mat default is taller than this rail
+  // wants.
+  ::ng-deep .mat-button-toggle-label-content {
+    line-height: 26px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0 12px;
+  }
+}
+
+.rail__spacer {
+  flex: 1 1 auto;
+}
+
+.rail__hide {
+  color: color-mix(in srgb, var(--app-content-ink) 60%, transparent);
+}
+
+.rail__scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 12px;
+}
+
+// Collapsed: a thin vertical reopen strip.
+.rail-reopen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 4px;
+  height: 100%;
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-card);
+  color: color-mix(in srgb, var(--app-content-ink) 65%, transparent);
+  cursor: pointer;
+  font: inherit;
+
+  span {
+    writing-mode: vertical-rl;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+
+  &:hover {
+    color: var(--app-accent);
+  }
+}
+
+// ---- Phone frame (PHONE + APP views) ----
+.phone {
+  width: 262px;
+  margin: 0 auto;
+  border: 8px solid #232c3f; // deliberate fixed device-bezel color, all themes
+  border-radius: 28px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.phone__notch {
+  height: 16px;
+  width: 92px;
+  margin: 0 auto;
+  background: #232c3f;
+  border-radius: 0 0 10px 10px;
+}
+
+.phone__screen {
+  // The summit-preview renders fluid - a narrow container IS the phone
+  // rendering. Cap the height so the frame reads as a device; content
+  // scrolls inside it.
+  max-height: 520px;
+  overflow-y: auto;
+
+  // The embedded preview's own "PUBLIC PAGE PREVIEW" caption belongs to
+  // the rail chrome, not inside a device screen.
+  ::ng-deep .sp__label {
+    display: none;
+  }
+}
+
+// ---- APP view (attendee experience) - deliberately fixed dark palette,
+// mimicking the attendee-facing look regardless of admin theme (same
+// convention as summit-preview's hard-coded light page).
+.phone__screen--app {
+  background: #0f1523;
+  color: #e6ecf6;
+  min-height: 380px;
+}
+
+.app__head {
+  padding: 16px 14px 10px;
+  background: linear-gradient(120deg, #151d2e, #28437a);
+  color: #fff;
+
+  h4 {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  span {
+    font-size: 10px;
+    opacity: 0.75;
+  }
+}
+
+.app__empty {
+  font-size: 11.5px;
+  color: #93a3bb;
+  padding: 14px;
+  margin: 0;
+}
+
+.app__card {
+  background: #131c2c;
+  border: 1px solid #24304a;
+  border-radius: 10px;
+  margin: 8px 10px;
+  padding: 10px 12px;
+
+  h5 {
+    margin: 0 0 4px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #3ec6d2;
+  }
+}
+
+.app__rich {
+  font-size: 11.5px;
+  color: #c3cddd;
+
+  ::ng-deep p {
+    margin: 0 0 4px;
+  }
+}
+
+.app__agendarow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid #1b2537;
+  padding: 4px 0;
+  font-size: 11px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.app__agendatitle {
+  color: #e6ecf6;
+}
+
+.app__agendatime {
+  color: #93a3bb;
+  white-space: nowrap;
+}
+
+.app__faq-q {
+  font-weight: 700;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+.app__faq-a {
+  font-size: 11px;
+  color: #93a3bb;
+}

@@ -94,7 +94,9 @@ $pending: var(--app-field-border);
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  // auto (not a fixed 340px): the rail sizes itself and shrinks to a thin
+  // strip when collapsed.
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 20px;
   padding: 0 20px 20px;
   overflow: hidden;
@@ -102,6 +104,10 @@ $pending: var(--app-field-border);
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
     overflow: auto;
+
+    .wiz__preview {
+      display: none;
+    }
   }
 }
 

@@ -39,11 +39,12 @@ app-data-grid {
   flex-direction: column;
 }
 
-// The setup wizard fills the same flex column the grid/editor occupy -
-// without this it grows naturally, the PAGE becomes the scroller, and the
-// wizard's own sticky footer (which binds to .wiz__main's scrollport) never
-// engages.
-app-summit-setup-wizard {
+// The setup wizard and Mission Control fill the same flex column the
+// grid/editor occupy - without this they grow naturally, the PAGE becomes
+// the scroller, and sticky footers / the preview rail's own scroll never
+// engage.
+app-summit-setup-wizard,
+app-summit-hub {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -84,6 +85,45 @@ app-summit-setup-wizard {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+// Non-railed screens keep the old single-scroller behavior - the wrapper is
+// layout-transparent there.
+.editor__main {
+  display: contents;
+}
+
+// Summit mode: two columns - the section being edited (scrolls) + the
+// persistent preview rail (own scroll, sized by its own content so the
+// collapse toggle works without host involvement).
+.editor__body--railed {
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  padding-right: 14px;
+
+  .editor__main {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  @media (max-width: 1100px) {
+    display: block;
+    overflow-y: auto;
+
+    app-summit-preview-rail {
+      display: none; // no room - the wizard hides its rail the same way
+    }
+  }
+}
+
+.info-layout--single {
+  grid-template-columns: 1fr;
+  max-width: 1100px;
 }
 
 .event-tabs {

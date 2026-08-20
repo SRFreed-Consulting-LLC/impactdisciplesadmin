@@ -10,6 +10,7 @@ import { toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { eventDayDates } from '../event-agenda/session-block.util';
 import { countsByItemId, noBreakoutRegistrations, pickedPercent, sessionsNearCapacity, thisWeekCount } from '../summit-stats.util';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
+import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 
 // Summit Mission Control - what opening a summit from the list lands on
 // (user decision 2026-08-19: "land on mission control"): an operations hub,
@@ -25,6 +26,9 @@ import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
 })
 export class SummitHubComponent implements OnInit {
   @Input() event: EventModel;
+  // Fed by the parent (events.component.hubPreviewData()) - the saved
+  // summit mapped for the preview rail; the hub itself never edits.
+  @Input() preview: SummitPreviewData = {};
   @Output() closed = new EventEmitter<void>();
   // Tab key of the editor to open ('info' | 'application' | 'agenda').
   @Output() edit = new EventEmitter<string>();
