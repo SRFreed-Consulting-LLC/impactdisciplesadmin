@@ -128,39 +128,11 @@
                   </mat-form-field>
                 </div>
 
+                <!-- Full live public-page preview (the wizard shows the
+                     same one on every step) - replaced the old summary
+                     preview-card 2026-08-19. Regular events keep theirs. -->
                 <div class="info-preview">
-                  <div class="preview-card">
-                    <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
-                      @if (card.imageUrl?.url) {
-                        <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-                      } @else {
-                        <span>No image yet</span>
-                      }
-                    </div>
-                    <div class="preview-card__body">
-                      <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
-                      <div class="preview-card__meta">
-                        @if (form.get('startDate')?.value) {
-                          {{ form.get('startDate')?.value | date: 'MMM d, y' }}
-                          @if (form.get('endDate')?.value) {
-                            â€“ {{ form.get('endDate')?.value | date: 'MMM d, y' }}
-                          }
-                        } @else {
-                          No start date set
-                        }
-                      </div>
-                      @if (!form.get('isOnline')?.value) {
-                        <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
-                      }
-                      <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
-                      <div class="preview-card__tags">
-                        <span class="ptag ptag--summit">Summit</span>
-                        @if (form.get('isKajabiCourse')?.value) {
-                          <span class="ptag ptag--kajabi">Kajabi</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-summit-preview [data]="summitPreviewData()"></app-summit-preview>
                 </div>
               </div>
             </mat-tab>
@@ -407,6 +379,16 @@
       (imageSelectClosed)="closeImageUploader()">
     </app-image-uploader>
   }
+}
+
+<!-- New Summit guided setup wizard (see events.component.ts's mode
+     comment). -->
+@if (mode === 'wizard') {
+  <app-summit-setup-wizard
+    [priorSummits]="latestEvents"
+    (closed)="onWizardClosed()"
+    (published)="onWizardPublished()">
+  </app-summit-setup-wizard>
 }
 
 <!-- Summit Mission Control - what double-clicking a summit row lands on.

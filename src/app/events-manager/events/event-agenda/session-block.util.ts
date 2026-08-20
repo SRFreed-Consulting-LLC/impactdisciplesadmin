@@ -138,6 +138,19 @@ export function blockLabel(index: number): string {
   return `Breakout Block ${String.fromCharCode(65 + index)}`;
 }
 
+// Client-side agenda-item id (13 hex chars) - extracted from the agenda
+// dialogs' private copies so the Summit Setup Wizard's copy-agenda-skeleton
+// util mints ids the same way. Item ids must stay stable once anyone has
+// registered (trainingSessions references them), which is exactly why a
+// COPIED skeleton gets fresh ones.
+export function generateAgendaItemId(): string {
+  return 'xxxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 // The item's display title - since the 2026-08 Courses retirement a
 // breakout carries its own `text` (backfilled from the old course docs by
 // scripts/flatten-courses-onto-agenda-items.js). '(unknown breakout)'

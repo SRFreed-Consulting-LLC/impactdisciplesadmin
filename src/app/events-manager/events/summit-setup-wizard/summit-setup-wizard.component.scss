@@ -1,0 +1,255 @@
+// Setup wizard shell - step chips copied from the agenda-wizard pattern
+// (deliberate SCSS duplication, this codebase's convention; see
+// agenda-wizard.component.scss).
+$current: var(--app-accent);
+$done: var(--app-success);
+$pending: var(--app-field-border);
+
+.wiz {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.wiz__header {
+  gap: 10px;
+  background: transparent;
+  padding-left: 4px;
+}
+
+.wiz__title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.wiz__spacer {
+  flex: 1;
+}
+
+.wizsteps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 20px 12px;
+  overflow-x: auto;
+}
+
+.wizstep {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &__dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    background: color-mix(in srgb, var(--app-content-ink) 12%, transparent);
+    color: color-mix(in srgb, var(--app-content-ink) 60%, transparent);
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: color-mix(in srgb, var(--app-content-ink) 65%, transparent);
+  }
+
+  &.is-active .wizstep__dot {
+    background: $current;
+    color: var(--app-on-accent);
+  }
+
+  &.is-active .wizstep__label {
+    color: var(--app-content-ink);
+  }
+
+  &.is-done .wizstep__dot {
+    background: color-mix(in srgb, var(--app-success) 20%, transparent);
+    color: $done;
+  }
+}
+
+.wizline {
+  flex: 1 1 12px;
+  min-width: 12px;
+  height: 1px;
+  background: $pending;
+}
+
+.wiz__layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  padding: 0 20px 20px;
+  overflow: hidden;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+}
+
+.wiz__main {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wiz__preview {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  padding: 18px 20px;
+  color: var(--app-card-ink);
+
+  h4 {
+    margin: 14px 0 6px;
+    font-size: 13px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
+  }
+
+  &--flush {
+    padding: 12px 14px;
+  }
+}
+
+.copybar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  &__select {
+    width: 300px;
+  }
+}
+
+.copy-btn {
+  margin-bottom: 12px;
+}
+
+.agenda-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+
+  > * {
+    flex: 1;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.hint {
+  font-size: 12.5px;
+  color: var(--app-card-muted);
+  margin: 6px 0 10px;
+}
+
+.warn {
+  color: var(--app-critical, #c62828);
+  font-size: 13.5px;
+}
+
+.quill-box {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.pinned-venue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--app-field-border);
+  border-radius: 8px;
+  font-size: 13.5px;
+
+  &__name {
+    font-weight: 600;
+  }
+
+  &__address {
+    font-size: 12px;
+    color: var(--app-card-muted);
+  }
+
+  &__pill {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+    color: var(--app-accent);
+  }
+}
+
+.review {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    font-size: 13.5px;
+    color: var(--app-card-muted);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &--done {
+    color: var(--app-card-ink);
+
+    mat-icon {
+      color: var(--app-success);
+    }
+  }
+}
+
+.publish-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.wizfoot {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 2px 0;
+}

@@ -1,0 +1,206 @@
+<div class="wiz">
+  <mat-toolbar class="wiz__header">
+    <button mat-icon-button type="button" matTooltip="Cancel" [disabled]="saving$ | async" (click)="onCancel()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 class="wiz__title">NEW SUMMIT</h2>
+    <span class="wiz__spacer"></span>
+    @if (step >= 1 && step < 6) {
+      <button mat-stroked-button type="button" [disabled]="(saving$ | async) || !basicsValid()" matTooltip="Creates the summit now (not live) so you can finish it later from the normal edit screen" (click)="saveDraftAndExit()">SAVE DRAFT &amp; EXIT</button>
+    }
+  </mat-toolbar>
+
+  <!-- Step chips (the agenda-wizard shell pattern). -->
+  <div class="wizsteps">
+    @for (s of steps; track s.key; let i = $index) {
+      <div class="wizstep" [class.is-active]="step === i" [class.is-done]="step > i" role="button" tabindex="0" (click)="goToStep(i)" (keydown.enter)="goToStep(i)">
+        <span class="wizstep__dot">{{ step > i ? '✓' : i + 1 }}</span>
+        <span class="wizstep__label">{{ s.label }}</span>
+      </div>
+      @if (i < steps.length - 1) { <div class="wizline"></div> }
+    }
+  </div>
+
+  <div class="wiz__layout" [formGroup]="form">
+    <div class="wiz__main">
+      <!-- ================= 1. Basics ================= -->
+      @if (step === 0) {
+        <div class="panel">
+          @if (priorSummits.length) {
+            <div class="copybar">
+              <mat-form-field appearance="outline" class="copybar__select" subscriptSizing="dynamic">
+                <mat-label>Copy from a previous summit</mat-label>
+                <mat-select [(ngModel)]="copySourceId" [ngModelOptions]="{standalone: true}">
+                  <mat-option [value]="null">(Start blank)</mat-option>
+                  @for (s of priorSummits; track s.id) {
+                    <mat-option [value]="s.id">{{ s.eventName }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <span class="hint">Content and the agenda skeleton can be pulled in on their steps.</span>
+            </div>
+          }
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Summit Name</mat-label>
+            <input matInput formControlName="eventName" required>
+            @if (form.get('eventName')?.hasError('required')) { <mat-error>Required</mat-error> }
+          </mat-form-field>
+          <div class="field-row">
+            <app-date-time-field formControlName="startDate" label="Start Date" [required]="true"></app-date-time-field>
+            <app-date-time-field formControlName="endDate" label="End Date"></app-date-time-field>
+          </div>
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Check-In Time</mat-label>
+              <input matInput type="time" formControlName="checkIn">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="costInDollars">
+            </mat-form-field>
+          </div>
+        </div>
+      }
+
+      <!-- ================= 2. Venue & Rooms ================= -->
+      @if (step === 1) {
+        <div class="panel">
+          @if (venue) {
+            <div class="pinned-venue">
+              <mat-icon>location_on</mat-icon>
+              <div>
+                <div class="pinned-venue__name">{{ venue.name }}</div>
+                <div class="pinned-venue__address">{{ venue.address?.address1 }}{{ venue.address?.city ? ', ' + venue.address?.city : '' }}{{ venue.address?.state ? ', ' + venue.address?.state : '' }}</div>
+              </div>
+              <span class="pinned-venue__pill">SUMMIT VENUE</span>
+            </div>
+            <p class="hint">Every summit happens here - nothing to pick. Rooms and capacities become the Agenda's breakout grid columns.</p>
+            <button mat-stroked-button type="button" (click)="openVenueRooms()"><mat-icon>meeting_room</mat-icon> Venue Rooms ({{ rooms.length }})</button>
+          } @else {
+            <p class="warn">No Summit venue is pinned yet - run scripts/pin-summit-venue.js.</p>
+          }
+        </div>
+      }
+
+      <!-- ================= 3. Public Page ================= -->
+      @if (step === 2) {
+        <div class="panel">
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Hero Image</mat-label>
+              <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+            </mat-form-field>
+            <button mat-stroked-button type="button" (click)="showImageUploader()">{{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}</button>
+          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Promo Video Id (YouTube)</mat-label>
+            <input matInput formControlName="videoId" placeholder="e.g. dQw4w9WgXcQ">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Web Description</mat-label>
+            <textarea matInput formControlName="description" rows="7"></textarea>
+          </mat-form-field>
+        </div>
+      }
+
+      <!-- ================= 4. App Content ================= -->
+      @if (step === 3) {
+        <div class="panel">
+          @if (copySource()) {
+            <button mat-stroked-button type="button" class="copy-btn" (click)="copyContent()"><mat-icon>content_copy</mat-icon> Copy content from "{{ copySource()?.eventName }}"</button>
+          }
+          <h4>Dining Options</h4>
+          <quill-editor class="quill-box" [(ngModel)]="draft.diningOptions" [ngModelOptions]="{standalone: true}" [modules]="richTextModules"></quill-editor>
+          <h4>Check-In Instructions</h4>
+          <quill-editor class="quill-box" [(ngModel)]="draft.checkinInstructions" [ngModelOptions]="{standalone: true}" [modules]="richTextModules"></quill-editor>
+          <h4>What's Next</h4>
+          <quill-editor class="quill-box" [(ngModel)]="draft.whatsNext" [ngModelOptions]="{standalone: true}" [modules]="richTextModules"></quill-editor>
+          <h4>FAQs</h4>
+          <app-faq [event]="draft"></app-faq>
+        </div>
+      }
+
+      <!-- ================= 5. Agenda (the time grid) ================= -->
+      @if (step === 4) {
+        <div class="panel panel--flush">
+          <div class="agenda-toolbar">
+            @if (copySource()) {
+              <button mat-stroked-button type="button" (click)="copyAgenda()"><mat-icon>content_copy</mat-icon> Copy agenda from "{{ copySource()?.eventName }}"</button>
+            }
+            <span class="wiz__spacer"></span>
+            <mat-button-toggle-group [value]="agendaView" (change)="agendaView = $event.value" hideSingleSelectionIndicator>
+              <mat-button-toggle value="wizard">Builder</mat-button-toggle>
+              <mat-button-toggle value="grid">Time Grid</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+          @if (!daysSet()) {
+            <p class="hint">Set the Start Date on Basics first - the schedule derives its days from it.</p>
+          } @else if (agendaView === 'wizard') {
+            <app-agenda-wizard [event]="draft" [coaches]="coaches" [rooms]="rooms" (published)="agendaView = 'grid'"></app-agenda-wizard>
+          } @else {
+            <app-agenda-grid [event]="draft" [coaches]="coaches" [rooms]="rooms"></app-agenda-grid>
+          }
+        </div>
+      }
+
+      <!-- ================= 6. Confirmation Email ================= -->
+      @if (step === 5) {
+        <div class="panel">
+          <p class="hint">Sent automatically to every registrant, with their personal link to pick breakout sessions.</p>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email Template</mat-label>
+            <mat-select formControlName="emailTemplate">
+              <mat-option [value]="null">(None)</mat-option>
+              @for (template of emailTemplates; track template) {
+                <mat-option [value]="template">{{ template }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      }
+
+      <!-- ================= 7. Review & Publish ================= -->
+      @if (step === 6) {
+        <div class="panel">
+          <ul class="review">
+            @for (check of checklist(); track check.label) {
+              <li [class.review--done]="check.done">
+                <mat-icon inline>{{ check.done ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                {{ check.label }}
+              </li>
+            }
+          </ul>
+          <p class="hint">{{ readyCount() }} of {{ checklist().length }} ready · {{ breakoutCount() }} breakout options. You can publish with gaps and finish from the edit screen - going LIVE puts it on the public site immediately.</p>
+          <div class="publish-row">
+            <app-indicator-button title="CREATE (NOT LIVE)" [isInProgress]="saving$ | async" [disabled]="saving$ | async" (clicked)="publish(false)"></app-indicator-button>
+            <app-indicator-button title="PUBLISH & GO LIVE" [isInProgress]="saving$ | async" [disabled]="saving$ | async" (clicked)="publish(true)"></app-indicator-button>
+          </div>
+        </div>
+      }
+
+      <div class="wizfoot">
+        <button mat-button type="button" [disabled]="step === 0" (click)="back()">← Back</button>
+        @if (step < steps.length - 1) {
+          <button mat-raised-button color="primary" type="button" (click)="next()">Continue →</button>
+        }
+      </div>
+    </div>
+
+    <!-- Live preview on EVERY step. -->
+    <div class="wiz__preview">
+      <app-summit-preview [data]="previewData()"></app-summit-preview>
+    </div>
+  </div>
+</div>
+
+@if (isImageUploaderVisible$ | async) {
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'imageUrl'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+}

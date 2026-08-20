@@ -1,0 +1,52 @@
+<div class="sp">
+  <div class="sp__label">PUBLIC PAGE PREVIEW <span>live — updates as you type</span></div>
+  <div class="sp__page">
+    <div class="sp__nav">Home &nbsp; Training &nbsp; Resources &nbsp; Store &nbsp; <b>Summit</b></div>
+
+    <div class="sp__hero" [class.sp__hero--img]="data.imageUrl?.url">
+      @if (data.imageUrl?.url) {
+        <img [src]="data.imageUrl!.url" [alt]="data.eventName || 'Summit'">
+      } @else {
+        <span class="sp__hero-ghost">Hero image not set</span>
+      }
+    </div>
+
+    <!-- Register button is display-only in the preview, on purpose. -->
+    <div class="sp__register">REGISTER NOW{{ data.costInDollars ? ' — $' + data.costInDollars : '' }}</div>
+
+    <div class="sp__info">
+      <div class="sp__info-cell">📅 {{ dateRange() }}</div>
+      @if (venueLine()) { <div class="sp__info-cell">📍 {{ venueLine() }}</div> }
+      @if (checkInText()) { <div class="sp__info-cell">🕐 Check-In: {{ checkInText() }}{{ startTimeText() ? ' | Start: ' + startTimeText() : '' }}</div> }
+    </div>
+
+    @if (countdown(); as c) {
+      <div class="sp__count">
+        <div class="sp__tile"><b>{{ c.days }}</b><span>DAYS</span></div>
+        <div class="sp__tile"><b>{{ c.hours }}</b><span>HOURS</span></div>
+        <div class="sp__tile"><b>{{ c.mins }}</b><span>MIN</span></div>
+      </div>
+    }
+
+    <div class="sp__split">
+      <div class="sp__desc">
+        <h4>REGISTER FOR <strong>SUMMIT</strong></h4>
+        @if (data.description) {
+          <p>{{ data.description }}</p>
+        } @else {
+          <p class="sp__ghost">Web description not written yet — this paragraph is what visitors read.</p>
+        }
+      </div>
+      <div class="sp__video">
+        @if (videoThumb()) {
+          <div class="sp__video-thumb">
+            <img [src]="videoThumb()" alt="Promo video">
+            <span class="sp__play">▶</span>
+          </div>
+        } @else {
+          <div class="sp__video-ghost">Promo video not set</div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

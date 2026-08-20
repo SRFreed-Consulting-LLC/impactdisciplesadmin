@@ -5,6 +5,7 @@ import { BehaviorSubject, Observable, Subject, map, takeUntil, tap } from 'rxjs'
 import { MatDialog } from '@angular/material/dialog';
 import { EventModel, EventVenue } from 'src/app/common/models/domain/event.model';
 import { VenueRoomsDialogComponent } from './venue-rooms-dialog.component';
+import { SummitPreviewData } from './summit-preview/summit-preview.component';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
@@ -45,9 +46,14 @@ export class EventsComponent implements OnInit, OnDestroy {
   // - 'attendees': the full-page attendee Command Center (viewing who
   //   registered + breakout sign-ups is a report/operations concern, not
   //   an editing one).
-  mode: 'list' | 'edit' | 'hub' | 'attendees' = 'list';
+  // - 'wizard': the New Summit guided setup (summit showAddModal routes
+  //   here; regular events keep the plain form).
+  mode: 'list' | 'edit' | 'hub' | 'attendees' | 'wizard' = 'list';
   attendeesItem: EventModel | null = null;
   hubItem: EventModel | null = null;
+  // Latest list emission - feeds the wizard's copy-from-previous-summit
+  // select without a second fetch.
+  latestEvents: EventModel[] = [];
 
   // ---- List state ----
   events$: Observable<EventModel[]>;
@@ -194,7 +200,10 @@ export class EventsComponent implements OnInit, OnDestroy {
     // whatever else this stream might filter on later.
     this.events$ = this.service.streamAll().pipe(
       map((items) => items.filter((item) => !!item.isSummit === this.summitMode)),
-      tap(() => this.loading$.next(false))
+      tap((items) => {
+        this.latestEvents = items;
+        this.loading$.next(false);
+      })
     );
 
     this.registrationService.streamAllByValue('newRecordStatus', 'new').pipe(takeUntil(this.ngUnsubscribe)).subscribe((registrations) => {
@@ -310,6 +319,23 @@ export class EventsComponent implements OnInit, OnDestroy {
     return this.resolveVenue(this.form.getRawValue())?.name ?? '';
   }
 
+  // Feeds the summit Info tab's full public-page preview (app-summit-
+  // preview) from the live form values - same pattern the wizard uses.
+  summitPreviewData(): SummitPreviewData {
+    const raw = this.form?.getRawValue() ?? {};
+    return {
+      eventName: raw.eventName,
+      startDate: raw.startDate,
+      endDate: raw.endDate,
+      checkIn: raw.checkIn,
+      description: raw.description,
+      videoId: raw.videoId,
+      imageUrl: this.card.imageUrl ?? null,
+      venue: this.resolveVenue(raw),
+      costInDollars: raw.costInDollars
+    };
+  }
+
   // ---- Events (regular) screen: attendance-first pill row ----
   // Three pills (In-Person / Online / Both) replace the Summit/Online
   // checkboxes on the regular-event Details tab - they map onto the exact
@@ -387,12 +413,29 @@ export class EventsComponent implements OnInit, OnDestroy {
     if (!this.permissionService.canAdd(this.screenKey)) {
       return;
     }
+    // New SUMMITS go through the guided setup wizard (user decision
+    // 2026-08-19); regular events keep the plain form. Existing summits
+    // still edit through the tab editor.
+    if (this.summitMode) {
+      this.mode = 'wizard';
+      return;
+    }
     this.editingItem = { ...new EventModel(), isSummit: this.summitMode };
     this.isEdit = false;
     this.card = {};
     this.selectedTabIndex = 0;
     this.buildForm(this.editingItem);
     this.mode = 'edit';
+  }
+
+  onWizardClosed(): void {
+    this.mode = 'list';
+  }
+
+  // The wizard created the doc - back to the list (the live stream shows
+  // it immediately).
+  onWizardPublished(): void {
+    this.mode = 'list';
   }
 
   showEditModal(item: EventModel): void {
