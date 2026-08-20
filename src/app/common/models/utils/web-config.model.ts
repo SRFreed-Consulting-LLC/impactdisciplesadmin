@@ -29,8 +29,8 @@ export class WebConfigModel extends BaseModel{
   // are not: `config` is world-readable under the current firestore.rules, so
   // anything stored here is effectively published. The apilayer tax key used
   // to live on this model and now comes from Secret Manager (TAX_API_KEY) in
-  // checkout-pricing.functions.ts instead. Same rule MailchimpConfigModel
-  // documents - keys never go in Firestore.
+  // checkout-pricing.functions.ts instead. House rule: keys never go in
+  // Firestore.
   paypalClientId?: string;
   // PUBLIC social identity for the campaign social composer's previews and
   // manual posting (page name / @handles only). Same rule as paypalClientId

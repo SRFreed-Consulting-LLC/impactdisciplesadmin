@@ -279,14 +279,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // rather than Tools because they exist to feed campaign audiences -
       // they're campaign infrastructure, and keeping them in this group
       // keeps the "can work campaigns" permission story one grant.
-      { label: 'Tag Rules', slug: 'tag-rules' },
-      // Moved from Tools Manager 2026-08-18 under the app's email taxonomy
-      // (transactional emails = system-sent receipts/confirmations, campaign
-      // emails = admin-initiated outreach): the Mailchimp sync is audience
-      // infrastructure for campaign email, not a generic utility. No stored
-      // grants existed on the old tools-manager.mailchimp key in dev or prod
-      // at move time, so no grant migration was needed.
-      { label: 'Mailchimp', slug: 'mailchimp' }
+      { label: 'Tag Rules', slug: 'tag-rules' }
+      // 'Mailchimp' (audience-sync settings) retired 2026-08-20 with the
+      // sync itself - Phase 7 of Campaign Manager v2. The app's own send
+      // engine + `customers` subscriber flags are the audience now; the
+      // Mailchimp audience was reconciled into `customers` first
+      // (MIGRATION.md).
     ]
   },
   {

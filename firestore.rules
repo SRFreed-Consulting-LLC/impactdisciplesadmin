@@ -353,9 +353,8 @@ service cloud.firestore {
       allow read: if isBusinessStaff();     // written by functions only
       allow write: if false;
     }
-    match /integration_settings/{id} {
-      allow read, write: if isAdminRole();
-    }
+    // `integration_settings` (only ever held the Mailchimp audience-sync
+    // config) retired 2026-08-20 with the sync. No rule = no access.
     match /shipping-labels/{id} {
       allow read, write: if isBusinessStaff();
     }

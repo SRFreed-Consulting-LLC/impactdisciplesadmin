@@ -6,8 +6,7 @@
 //
 // Every value here is deliberately fake. The emulator-backed test layers
 // never call a real vendor: the free-order checkout path returns before any
-// PayPal call, Mailchimp sync is gated behind an integration_settings doc
-// the seed doesn't create, and Stripe/ShipEngine/YouTube endpoints aren't
+// PayPal call, and Stripe/ShipEngine/YouTube endpoints aren't
 // exercised. Functions that DO reach their vendor with these values get a
 // 401 from the vendor - which is itself what the paid-path boundary tests
 // assert on.
@@ -29,7 +28,6 @@ const ENV_VARS = {
   GOOGLE_SECRET_KEY: "fake-google-key",
   YOUTUBE_PLAYLIST_KEY: "fake-playlist",
   TAX_API_KEY: "fake-tax-key",
-  MAILCHIMP_API_KEY: "fake-mailchimp-key-us1",
   WEB_APP_DOMAIN: "http://localhost:4200",
 };
 

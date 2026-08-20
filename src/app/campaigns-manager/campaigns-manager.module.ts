@@ -28,7 +28,6 @@ import { StatusBoardComponent } from './status-board/status-board.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
 import { SentEmailsComponent } from './sent-emails/sent-emails.component';
 import { SentEmailPreviewDialogComponent } from './sent-emails/sent-email-preview-dialog.component';
-import { MailchimpSettingsComponent } from './mailchimp-settings/mailchimp-settings.component';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -49,8 +48,7 @@ import { QuillModule } from 'ngx-quill';
     StatusBoardComponent,
     TagRulesComponent,
     SentEmailsComponent,
-    SentEmailPreviewDialogComponent,
-    MailchimpSettingsComponent
+    SentEmailPreviewDialogComponent
   ],
   imports: [
     CommonModule,

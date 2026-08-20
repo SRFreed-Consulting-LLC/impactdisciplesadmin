@@ -161,7 +161,6 @@ test("Admin claim: admin_users update yes, create/delete never (functions only)"
 test("Employee claim: business staff yes, admin-only collections no", async () => {
   await assertSucceeds(getDoc(doc(employee(), "customers/c1")));
   await assertSucceeds(getDoc(doc(employee(), "coupons/FREE")));
-  await assertFails(setDoc(doc(employee(), "integration_settings/mailchimp"), {key: "x"}));
   await assertFails(updateDoc(doc(employee(), "admin_users/a1"), {role: "Admin"}));
 });
 

@@ -5,7 +5,6 @@ import {
   isPlausibleEmail,
   normalizedName,
 } from "./utils/customer-match.functions";
-import {addMailchimpSourceTag} from "./mailchimp-sync.functions";
 import {
   activityFromRegistration,
   applyTagRulesForActivity,
@@ -58,11 +57,9 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
       return;
     }
 
-    // Registering for an event is reason enough to tag this customer
-    // "Event Registrant" in Mailchimp, whether or not any of their fields
-    // below actually change - fires unconditionally, not just on the
-    // brand-new-customer branch.
-    await addMailchimpSourceTag(email, "eventRegistration");
+    // (The "Event Registrant" Mailchimp source tag that used to be applied
+    // here went with the Mailchimp sync, 2026-08-20 - tag_rules on event
+    // registrations are the app's own equivalent.)
 
     const db = admin.firestore();
     const existingSnap = await db.collection("customers")

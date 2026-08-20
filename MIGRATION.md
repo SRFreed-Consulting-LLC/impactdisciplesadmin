@@ -521,6 +521,36 @@ DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
    Idempotent - deterministic `tag_applications/{email}__{tag}` ids; re-runs never duplicate or
    reset anchor dates.
 
+## Mailchimp sunset (Phase 7) — images re-hosted + audience reconciled + sync removed, DEV + PROD DONE 2026-08-20
+
+**Images**: `scripts/rehost-mailchimp-images.js` (dry-run default) moved every Mailchimp-CDN image
+referenced by `campaign_emails` + `mail_templates` — 623 distinct files (+2 from an unrelated
+third-party bucket, `sawa-dev-2-storage-bucket`) — to `email-assets/mailchimp/<sha1>.<ext>` in the
+shared bucket and rewrote 483 docs per env. Uploaded once (map `scripts/output/rehost-map.json`,
+gitignored); dev and prod docs point at the same files. Post-run scan: 0 Mailchimp-host refs left.
+
+**Audience reconcile** (`scripts/reconcile-mailchimp-audience.js --fetch` then `--execute`, against a
+full export of list `4343bb4ff6` = 6,886 members: 3,647 subscribed / 2,100 unsubscribed / 1,113
+cleaned / 21 pending / 5 transactional): IMPORT 476 subscribed members with no `customers` doc
+(1 also "Impact Prayer Team"-tagged → prayer flag; `source: mailchimp-audience-reconcile`);
+UNFLAG 633 customers flagged `subscribedToNewsletter` whose Mailchimp status was unsubscribed (378)
+or cleaned/bounced (255) — their opt-out is honored, subscribe date kept as history; FLAG 293
+(dev 294) customers Mailchimp was still sending to but our flag wasn't true — behavior-preserving
+(every engine send carries the unsubscribe link). Exports kept in `scripts/output/` (gitignored).
+
+**Sync removal**: `mailchimp-sync.functions.ts` + `@mailchimp/mailchimp_marketing` dependency,
+`onCustomerCreated/UpdatedMailchimpSync` (functions:delete'd in dev + prod), the
+`addMailchimpSourceTag` hooks (onPurchaseCustomerUpsert + onEventRegistrationCustomerUpsert
+redeployed by name), `MailchimpConfigModel/Service`, the Campaigns Manager "Mailchimp" tab,
+the `integration_settings` collection (doc deleted in both envs) + its rules block, and the fake
+`MAILCHIMP_API_KEY` in write-emulator-env.js. Admin hosting redeployed dev + prod.
+
+**Still to do to be fully Mailchimp-free**: close the account (images/audience/sending no longer
+depend on it); delete the `MAILCHIMP_API_KEY` secret in both projects once the one-time scripts
+(`import-mailchimp-*`, `backfill-newsletter-archive`, `reconcile-mailchimp-audience`) are archived;
+remove the dead WordPress `mailchimp-for-woocommerce` markup in the web repo's
+coaching-with-impact page.
+
 ## Public newsletter archive: `monthly-newsletter` collection retired — DEV + PROD DONE 2026-08-20 (Campaign Manager v2 data + functions also cut over to prod the same run)
 
 **Prod cutover executed 2026-08-20 (same session, user-directed "merge it all, push to dev then

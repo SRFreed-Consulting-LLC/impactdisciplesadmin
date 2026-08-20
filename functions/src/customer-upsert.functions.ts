@@ -7,7 +7,6 @@ import {
   normalizedName,
   normalizedPhoneDigits,
 } from "./utils/customer-match.functions";
-import {addMailchimpSourceTag} from "./mailchimp-sync.functions";
 import {
   activityFromPurchase,
   applyTagRulesForActivity,
@@ -120,11 +119,9 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
       return;
     }
 
-    // A purchase happening is reason enough to tag this customer "Store
-    // Customer" in Mailchimp, whether or not any of their fields below
-    // actually change - fires unconditionally, not just on the
-    // brand-new-customer branch.
-    await addMailchimpSourceTag(email, "purchase");
+    // (The "Store Customer" Mailchimp source tag that used to be applied
+    // here went with the Mailchimp sync, 2026-08-20 - tag_rules on
+    // purchases are the app's own equivalent.)
 
     const db = admin.firestore();
     const existingSnap = await db.collection("customers")

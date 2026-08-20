@@ -467,11 +467,14 @@ Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
   automatically from purchase and event-registration writes — Customer data is no longer only
   manually maintained in the admin UI, worth knowing before assuming a Customer doc's fields are
   admin-entered.
-- **Mailchimp sync**: `mailchimp-sync.functions.ts` (`@mailchimp/mailchimp_marketing`) plus
-  `src/app/common/models/utils/mailchimp-config.model.ts`,
-  `src/app/common/services/data/mailchimp-config.service.ts`, and the
-  `campaigns-manager/mailchimp-settings/` screen (moved from `tools-manager` 2026-08-18) — pushes
-  customer changes to a connected Mailchimp audience.
+- **Mailchimp sync — REMOVED 2026-08-20** (Phase 7): `mailchimp-sync.functions.ts`, the
+  `@mailchimp/mailchimp_marketing` dependency, `MailchimpConfigModel/Service`, the
+  `campaigns-manager/mailchimp-settings/` screen, the `integration_settings` collection + rules
+  block, and the `addMailchimpSourceTag` hooks in the two customer-upsert functions are all gone.
+  The audience was reconciled into `customers` first (`scripts/reconcile-mailchimp-audience.js`;
+  MIGRATION.md has the numbers). Nothing in the suite talks to Mailchimp any more — the only
+  Mailchimp words left in code are the `*|TAG|*` merge-tag syntax (ours now) and the one-time
+  import/backfill scripts.
 
 ### Email taxonomy (agreed vocabulary, 2026-08-18)
 
@@ -582,7 +585,10 @@ collection — retired 2026-08-20, see "Public newsletter archive" below). Event
 no unsubscribe footer and the newsletter opt-out is deliberately not applied (a marketing
 unsubscribe must not withhold info about an event someone registered for). The Home Page Popups
 screen (web-manager) is retired — the public site never had a renderer for it; its
-`home_page_popups` docs are left inert. Remaining: Phase 7 Mailchimp sunset.
+`home_page_popups` docs are left inert. Phase 7 (Mailchimp sunset) executed 2026-08-20: newsletter
+archive off Mailchimp links, images re-hosted, audience reconciled into `customers`, sync removed —
+see the three paragraphs below; what's left is closing the account + deleting the
+`MAILCHIMP_API_KEY` secrets once the one-time scripts are archived.
 
 **Public newsletter archive (2026-08-20, `feature/newsletter-archive` in admin + web)**: the web
 app's Monthly Newsletter page now lists/renders `campaign_emails` touches an admin flagged
