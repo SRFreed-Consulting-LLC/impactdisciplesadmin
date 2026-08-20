@@ -12,12 +12,12 @@
 //    place.
 //
 // Usage:
-//   node scripts/apply-campaign-regroup.js --project=dev [--proposal=<path>] [--execute]
+//   node scripts/archive/mailchimp-sunset/apply-campaign-regroup.js --project=dev [--proposal=<path>] [--execute]
 // Dry run by default - prints the write plan; --execute applies it.
 
 const fs = require("fs");
 const path = require("path");
-const {admin, resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {admin, resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const args = {};
 for (const raw of process.argv.slice(2)) {
@@ -78,7 +78,7 @@ function sumStats(all) {
   const projectId = resolveProjectId(args.project);
   const db = getFirestoreFor(projectId);
   const execute = !!args.execute;
-  const proposalPath = args.proposal ?? path.join(__dirname, "output", "regroup-proposal.json");
+  const proposalPath = args.proposal ?? path.join(__dirname, "..", "..", "output", "regroup-proposal.json");
   const proposal = JSON.parse(fs.readFileSync(proposalPath, "utf8"));
   if (proposal.projectId !== projectId) {
     throw new Error(`Proposal is for ${proposal.projectId}, but --project resolves to ${projectId}.`);
@@ -88,7 +88,7 @@ function sumStats(all) {
   // cheapest insurance and doubles as the doc snapshot the plan reads.
   const campaignsSnap = await db.collection("campaigns").get();
   const emailsSnap = await db.collection("campaign_emails").get();
-  const backupPath = path.join(__dirname, "output",
+  const backupPath = path.join(__dirname, "..", "..", "output",
       `regroup-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
   fs.writeFileSync(backupPath, JSON.stringify({
     projectId,

@@ -523,7 +523,7 @@ DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
 
 ## Mailchimp sunset (Phase 7) — images re-hosted + audience reconciled + sync removed, DEV + PROD DONE 2026-08-20
 
-**Images**: `scripts/rehost-mailchimp-images.js` (dry-run default) moved every Mailchimp-CDN image
+**Images**: `scripts/archive/mailchimp-sunset/rehost-mailchimp-images.js` (dry-run default) moved every Mailchimp-CDN image
 referenced by `campaign_emails` + `mail_templates` — 623 distinct files (+2 from an unrelated
 third-party bucket, `sawa-dev-2-storage-bucket`) — to `email-assets/mailchimp/<sha1>.<ext>` in the
 shared bucket and rewrote 483 docs per env. Uploaded once (map `scripts/output/rehost-map.json`,
@@ -545,11 +545,18 @@ redeployed by name), `MailchimpConfigModel/Service`, the Campaigns Manager "Mail
 the `integration_settings` collection (doc deleted in both envs) + its rules block, and the fake
 `MAILCHIMP_API_KEY` in write-emulator-env.js. Admin hosting redeployed dev + prod.
 
-**Still to do to be fully Mailchimp-free**: close the account (images/audience/sending no longer
-depend on it); delete the `MAILCHIMP_API_KEY` secret in both projects once the one-time scripts
-(`import-mailchimp-*`, `backfill-newsletter-archive`, `reconcile-mailchimp-audience`) are archived;
-remove the dead WordPress `mailchimp-for-woocommerce` markup in the web repo's
-coaching-with-impact page.
+**Final cleanup (2026-08-20, later the same evening)**: the one-time scripts moved to
+`scripts/archive/mailchimp-sunset/` (README there; relative paths fixed); the dead WordPress
+`mailchimp-for-woocommerce` script block removed from the web repo's coaching-with-impact page
+(web redeployed dev + prod); the 6 blank-name singleton campaigns renamed from their email's
+subject and the 14 dead `monthly-newsletter` docs deleted — both envs.
+
+**Still to do**: (a) close the Mailchimp account — user's call, NOT yet (nothing operational
+depends on it any more); (b) delete the `MAILCHIMP_API_KEY` secret in both projects —
+`firebase functions:secrets:destroy MAILCHIMP_API_KEY --project impactdisciplesdev --force` and
+the same with `--project impactdisciples-a82a8` (an assistant session can't run secret
+destruction; run it by hand). The archived scripts that call the Mailchimp API then need a key
+from the account itself if ever re-run.
 
 ## Public newsletter archive: `monthly-newsletter` collection retired — DEV + PROD DONE 2026-08-20 (Campaign Manager v2 data + functions also cut over to prod the same run)
 
@@ -584,7 +591,7 @@ html snapshots) since the Mailchimp import, so the page now reads touches flagge
 through the `newsletter_archive` function (see CLAUDE.md "Public newsletter archive"). The 14 rows
 mapped 1:1 to touches via the Mailchimp API's `archive_url` — 4 in `grp_monthly-newsletter`, 5 in
 `grp_prayer-letter`, 5 standalone single-email campaigns — which is why the flag is per touch
-(`scripts/backfill-newsletter-archive.js` does the mapping; dry-run by default).
+(`scripts/archive/mailchimp-sunset/backfill-newsletter-archive.js` does the mapping; dry-run by default).
 
 **Runbook (dev first, then prod — prod only once prod has the campaign_emails import, i.e. as part
 of the prod cutover):**
@@ -596,7 +603,7 @@ of the prod cutover):**
    (the index `campaign_emails(publishToWeb ASC, sentAt DESC)` must finish building before the
    list endpoint works — a few minutes; until then it 500s with a FAILED_PRECONDITION).
 2. `$env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project <project>)`
-   then `node scripts/backfill-newsletter-archive.js --project=<dev|prod>` (dry run prints each
+   then `node scripts/archive/mailchimp-sunset/backfill-newsletter-archive.js --project=<dev|prod>` (dry run prints each
    row → touch mapping; expect 14/14 on dev), then `--execute`. Idempotent.
 3. Verify: `GET https://us-central1-<project>.cloudfunctions.net/newsletter_archive` returns the
    14 issues newest-first; `?id=mc_e4f98fbfba` returns html with no `*|...|*` left.

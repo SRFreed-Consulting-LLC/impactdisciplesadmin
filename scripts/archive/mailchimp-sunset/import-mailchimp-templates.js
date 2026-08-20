@@ -12,10 +12,10 @@
 //
 // Usage:
 //   $env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project impactdisciplesdev)
-//   node scripts/import-mailchimp-templates.js --project=dev [--execute]
+//   node scripts/archive/mailchimp-sunset/import-mailchimp-templates.js --project=dev [--execute]
 // Without --execute it lists what WOULD be imported (dry run).
 
-const {resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const args = {};
 for (const raw of process.argv.slice(2)) {

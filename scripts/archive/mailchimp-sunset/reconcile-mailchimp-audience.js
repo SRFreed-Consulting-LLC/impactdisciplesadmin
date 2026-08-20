@@ -26,12 +26,12 @@
 //
 // Usage (PowerShell):
 //   $env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project <project>)
-//   node scripts/reconcile-mailchimp-audience.js --project=prod --fetch      # export + dry run
-//   node scripts/reconcile-mailchimp-audience.js --project=prod --execute    # apply from the export
+//   node scripts/archive/mailchimp-sunset/reconcile-mailchimp-audience.js --project=prod --fetch      # export + dry run
+//   node scripts/archive/mailchimp-sunset/reconcile-mailchimp-audience.js --project=prod --execute    # apply from the export
 
 const fs = require("fs");
 const path = require("path");
-const {admin, resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {admin, resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const LIST_ID = "4343bb4ff6";
 const PRAYER_TAG = "Impact Prayer Team";
@@ -75,7 +75,7 @@ async function fetchAudience() {
 async function main() {
   const projectId = resolveProjectId(args.project);
   const execute = args.execute === true;
-  const exportPath = path.join(__dirname, "output", `mailchimp-audience-export-${projectId}.json`);
+  const exportPath = path.join(__dirname, "..", "..", "output", `mailchimp-audience-export-${projectId}.json`);
   const db = getFirestoreFor(projectId);
   console.log(`Project: ${projectId}  mode: ${execute ? "EXECUTE" : "dry run"}`);
 

@@ -28,7 +28,7 @@
 // the work. Rerunnable.
 //
 // Usage:
-//   node scripts/rehost-mailchimp-images.js --project=dev [--execute]
+//   node scripts/archive/mailchimp-sunset/rehost-mailchimp-images.js --project=dev [--execute]
 //     [--collections=campaign_emails,mail_templates] [--concurrency=6]
 //   then the same with --project=prod (re-uses the map; uploads nothing new
 //   unless prod has URLs dev didn't).
@@ -36,11 +36,11 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const {admin, resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {admin, resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const BUCKET = "impactdisciples-a82a8.appspot.com";
 const OBJECT_PREFIX = "email-assets/mailchimp";
-const MAP_PATH = path.join(__dirname, "output", "rehost-map.json");
+const MAP_PATH = path.join(__dirname, "..", "..", "output", "rehost-map.json");
 
 // Mailchimp-hosted FILE URLs (images). list-manage.com / mailchi.mp are
 // links (forms, archive pages), not assets - deliberately not matched.

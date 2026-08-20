@@ -18,10 +18,10 @@
 // carries every sent email into the Sent Emails screen / Past Emails picker.
 //
 // Usage (single PowerShell call - env vars don't persist between calls):
-//   $env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project impactdisciplesdev); node scripts/import-mailchimp-campaigns.js --project=dev [--execute] [--cleanup-templates]
+//   $env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project impactdisciplesdev); node scripts/archive/mailchimp-sunset/import-mailchimp-campaigns.js --project=dev [--execute] [--cleanup-templates]
 // Without --execute it reports what WOULD happen (dry run).
 
-const {admin, resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {admin, resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const args = {};
 for (const raw of process.argv.slice(2)) {

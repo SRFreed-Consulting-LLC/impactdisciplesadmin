@@ -471,7 +471,7 @@ Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
   `@mailchimp/mailchimp_marketing` dependency, `MailchimpConfigModel/Service`, the
   `campaigns-manager/mailchimp-settings/` screen, the `integration_settings` collection + rules
   block, and the `addMailchimpSourceTag` hooks in the two customer-upsert functions are all gone.
-  The audience was reconciled into `customers` first (`scripts/reconcile-mailchimp-audience.js`;
+  The audience was reconciled into `customers` first (`scripts/archive/mailchimp-sunset/reconcile-mailchimp-audience.js`;
   MIGRATION.md has the numbers). Nothing in the suite talks to Mailchimp any more — the only
   Mailchimp words left in code are the `*|TAG|*` merge-tag syntax (ours now) and the one-time
   import/backfill scripts.
@@ -515,8 +515,8 @@ sentAt/per-email stats/sendConfig; composite index `campaign_emails(campaignId, 
 the detail timeline. The 477 imported Mailchimp sends were REGROUPED into 78 campaigns (Blog Posts
 149 emails, DMP Program 50, Disciple-Making Minute 43, Monthly Newsletter 40, Prayer Letter 30,
 Podcast 23, summits by year, per-product/event pushes, singletons) via
-`scripts/propose-campaign-regroup.js` (auto-proposal, user-reviewed) +
-`scripts/apply-campaign-regroup.js` (idempotent, exports a full JSON backup to scripts/output/
+`scripts/archive/mailchimp-sunset/propose-campaign-regroup.js` (auto-proposal, user-reviewed) +
+`scripts/archive/mailchimp-sunset/apply-campaign-regroup.js` (idempotent, exports a full JSON backup to scripts/output/
 first — the undo path). Surfaces: Campaigns list (all campaigns, kind/channel chips, funnel
 columns) → in-page **campaign-detail** (funnel tiles + touches timeline, `?campaignId=` deep link),
 Status Board (board+calendar lenses, cards deep-link to detail), **Sent Emails** = the global email
@@ -604,7 +604,7 @@ the rule. Set it from campaign detail's touch row (globe icon → "Show on websi
 sending touches only) or the Subscriber Report send dialog's checkbox. Retired: the Content
 Manager's Monthly Newsletters screen/service/model and the `monthly-newsletter` collection + its
 rules block (web repo: `NewsletterArchiveService` + `/monthly-newsletter/:id` sandboxed-srcdoc
-viewer replace the Firestore read). `scripts/backfill-newsletter-archive.js` maps legacy rows to
+viewer replace the Firestore read). `scripts/archive/mailchimp-sunset/backfill-newsletter-archive.js` maps legacy rows to
 `mc_*` touches via the Mailchimp API's archive_url (dry-run default, `--execute`) — MIGRATION.md
 has the prod runbook. Phase 7 note: the archived snapshots' images still live on Mailchimp's CDN
 (`mcusercontent.com`); the sunset must keep the account alive or re-host them. **Website
@@ -628,7 +628,7 @@ images. Surfaces: list row trash icon and the detail header DELETE button, both 
 `canDelete('campaigns-manager.campaigns')`; confirm copy + result snackbar in
 `campaigns/campaign-delete-text.ts` (shows the image-candidate count / unused-removed count).
 
-**Mailchimp image re-host (2026-08-20, Phase 7 step)**: `scripts/rehost-mailchimp-images.js` moved
+**Mailchimp image re-host (2026-08-20, Phase 7 step)**: `scripts/archive/mailchimp-sunset/rehost-mailchimp-images.js` moved
 every Mailchimp-CDN image referenced by `campaign_emails` + `mail_templates` (623 distinct files)
 to `email-assets/mailchimp/<sha1>.<ext>` in the shared bucket and rewrote the docs in dev AND prod
 (map in `scripts/output/rehost-map.json`, gitignored). Zero Mailchimp-host references remain in

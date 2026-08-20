@@ -16,10 +16,10 @@
 // Unmatched rows are reported, never guessed.
 //
 // Usage (PowerShell):
-//   $env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project impactdisciplesdev); node scripts/backfill-newsletter-archive.js --project=dev [--execute]
+//   $env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project impactdisciplesdev); node scripts/archive/mailchimp-sunset/backfill-newsletter-archive.js --project=dev [--execute]
 //   (prod: --project=prod with the prod key)
 
-const {resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const args = {};
 for (const raw of process.argv.slice(2)) {

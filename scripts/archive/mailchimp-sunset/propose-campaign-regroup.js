@@ -7,13 +7,13 @@
 // scripts/apply-campaign-regroup.js applies anything.
 //
 // Usage:
-//   node scripts/propose-campaign-regroup.js --project=dev [--out=<dir>]
+//   node scripts/archive/mailchimp-sunset/propose-campaign-regroup.js --project=dev [--out=<dir>]
 // Writes regroup-proposal.json + regroup-review.md to --out (default
 // scripts/output/, gitignored data - never commit a proposal).
 
 const fs = require("fs");
 const path = require("path");
-const {resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor} = require("../../lib/firestore-admin");
 
 const args = {};
 for (const raw of process.argv.slice(2)) {
@@ -82,7 +82,7 @@ function distinctiveTokens(value) {
 (async () => {
   const projectId = resolveProjectId(args.project);
   const db = getFirestoreFor(projectId);
-  const outDir = args.out ?? path.join(__dirname, "output");
+  const outDir = args.out ?? path.join(__dirname, "..", "..", "output");
   fs.mkdirSync(outDir, {recursive: true});
 
   const campaignsSnap = await db.collection("campaigns").get();
