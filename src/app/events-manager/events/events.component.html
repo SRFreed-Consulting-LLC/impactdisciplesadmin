@@ -32,14 +32,17 @@
       <button mat-icon-button type="button" matTooltip="Back" [disabled]="inProgress$ | async" (click)="onCancel()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <h2 class="editor__title">{{ (isEdit ? 'EDIT' : 'ADD') + ' ' + (summitMode ? 'SUMMIT' : 'EVENT') }}</h2>
+      <!-- Summit mode is single-SECTION (no tab strip - Mission Control's
+           cards are the navigation), so the header names the section the
+           same way the hub card did. -->
+      <h2 class="editor__title">{{ summitMode ? editingItem?.eventName + ' — ' + summitSectionLabel() : (isEdit ? 'EDIT EVENT' : 'ADD EVENT') }}</h2>
       <span class="editor__spacer"></span>
       @if (permissionService.canEdit(screenKey + '.info')) {
         <mat-slide-toggle [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
       }
     </mat-toolbar>
     <div class="editor__body">
-      <mat-tab-group class="event-tabs" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
+      <mat-tab-group class="event-tabs" [class.event-tabs--headless]="summitMode" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
         @if (summitMode) {
           <!-- ============================= SUMMIT: full 5-tab editor (unchanged) ============================= -->
           @if (permissionService.canView(screenKey + '.info')) {

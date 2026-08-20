@@ -256,10 +256,19 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.mode = 'list';
   }
 
-  // A hub card asked for the editor at a specific tab.
+  // Where a summit editor/Command Center opened from the hub returns to on
+  // back/save - null means "came from somewhere else, return to the list"
+  // (bell deep-links, the list's own COMMAND CENTER row action).
+  private hubReturnItem: EventModel | null = null;
+
+  // A hub card asked for the editor at a specific SECTION. In summit mode
+  // the editor is single-section (no tab strip - Mission Control's cards
+  // ARE the section navigation, user decision 2026-08-20), so this both
+  // selects the section and remembers to come back here.
   editFromHub(tabKey: string): void {
     const item = this.hubItem!;
     this.closeHub();
+    this.hubReturnItem = item;
     this.showEditModal(item);
     this.selectedTabIndex = this.tabIndexFor(tabKey);
   }
@@ -267,7 +276,21 @@ export class EventsComponent implements OnInit, OnDestroy {
   commandCenterFromHub(): void {
     const item = this.hubItem!;
     this.closeHub();
+    this.hubReturnItem = item;
     this.showAttendees(item);
+  }
+
+  // The hub-card label for the section the summit editor is sitting on -
+  // doubles as the editor's header title so the card -> editor hand-off
+  // reads as one surface.
+  summitSectionLabel(): string {
+    const labels: Record<string, string> = {
+      info: 'Info & Pricing',
+      application: 'Attendee App Content',
+      agenda: 'Agenda Builder',
+    };
+    const visible = this.tabOrderSummit.filter((key) => this.permissionService.canView(`${this.screenKey}.${key}`));
+    return labels[visible[this.selectedTabIndex] ?? 'info'] ?? 'Info & Pricing';
   }
 
   // Row double-click: summits land on Mission Control, regular events go
@@ -292,6 +315,12 @@ export class EventsComponent implements OnInit, OnDestroy {
 
   closeAttendees(): void {
     this.attendeesItem = null;
+    if (this.hubReturnItem) {
+      const item = this.hubReturnItem;
+      this.hubReturnItem = null;
+      this.showHub(item);
+      return;
+    }
     this.mode = 'list';
   }
 
@@ -548,6 +577,14 @@ export class EventsComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     this.inProgress$.next(false);
+    if (this.hubReturnItem) {
+      // Cancel returns to Mission Control showing the ORIGINAL item (the
+      // edit copy's uncommitted changes are discarded with it).
+      const item = this.hubReturnItem;
+      this.hubReturnItem = null;
+      this.showHub(item);
+      return;
+    }
     this.mode = 'list';
   }
 
@@ -596,7 +633,14 @@ export class EventsComponent implements OnInit, OnDestroy {
     request.then((result) => {
       if (result) {
         this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.mode = 'list';
+        if (this.hubReturnItem) {
+          // Came from Mission Control - return there showing the SAVED
+          // item so its tiles/statuses reflect the edit immediately.
+          this.hubReturnItem = null;
+          this.showHub(result);
+        } else {
+          this.mode = 'list';
+        }
         this.inProgress$.next(false);
       } else {
         this.inProgress$.next(false);

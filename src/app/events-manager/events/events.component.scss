@@ -80,6 +80,16 @@ app-data-grid {
   height: 100%;
 }
 
+// Summit mode: the editor is single-SECTION - Mission Control's manage
+// cards are the navigation, so the mat-tab header strip would be duplicated
+// wayfinding (user decision 2026-08-20). The tab-group stays in the DOM
+// (selectedIndex still picks the section, the form markup is untouched);
+// only its header row is hidden. ::ng-deep needed to reach Material's
+// internal header element from this component's scope.
+:host ::ng-deep .event-tabs--headless > .mat-mdc-tab-header {
+  display: none;
+}
+
 .editor__actions {
   flex: 0 0 auto;
   display: flex;
