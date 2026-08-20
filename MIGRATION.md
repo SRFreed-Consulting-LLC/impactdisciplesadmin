@@ -487,7 +487,7 @@ precedent).
 
 ---
 
-## Contact tag rules: initial rule set seeded + backfilled (dev 2026-08-20)
+## Contact tag rules: initial rule set seeded + backfilled (dev 2026-08-20, PROD DONE 2026-08-20)
 
 **Context**: the tag-rule system was extended (multi-product `productIds` / multi-event
 `eventIds` rules, plus the `summit-registration` trigger that matches ANY `isSummit` event and
@@ -511,7 +511,7 @@ Dev results (2026-08-20): 1,064 of 5,269 contacts tagged. Impact 1: 248, Impact 
 Impact 3: 176, Impact 4: 126, Digital: 100, DMC: 162, COACH: 21, Summit: 485, Paid Summit: 226,
 DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
 
-**Prod runbook (when this ships)**:
+**Prod runbook — EXECUTED 2026-08-20** (functions deployed by name to dev+prod; seed dry-run verified every id on prod then executed - note: this script family needs --execute, plain runs are dry; backfill swept all 10 rules, e.g. summit-registration 730 matched / 711 tagged, impact-3 176, impact-4 126, digital 99 - in line with dev). Original steps:
 1. `cd functions && npm run build`, then deploy BY NAME (see the predeploy $RESOURCE_DIR spawn
    bug note - use a temp config without predeploy hooks):
    `onPurchaseCustomerUpsert`, `onEventRegistrationCustomerUpsert`, `applyTagRuleRetroactively`.
