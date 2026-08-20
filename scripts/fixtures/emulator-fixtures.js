@@ -369,7 +369,9 @@ const campaigns = {
     channels: ["email"],
     status: "live",
     startDate: "2026-07-15T00:00:00.000Z", endDate: "2026-12-31T00:00:00.000Z",
-    audience: {mode: "newsletter"},
+    // The shape resolveAudience actually accepts (campaign-send.functions.ts):
+    // flags mode + customer boolean field names.
+    audience: {mode: "flags", flags: ["subscribedToNewsletter"]},
     stats: {sent: 0, delivered: 0, opens: 0, uniqueOpens: 0, clicks: 0,
       uniqueClicks: 0, purchases: 0, revenue: 0, registrations: 0,
       subscribes: 0, webShown: 0, webClicks: 0},
@@ -381,7 +383,7 @@ const campaigns = {
     channels: ["email"],
     status: "done",
     startDate: "2026-03-01T00:00:00.000Z", endDate: "2026-04-01T00:00:00.000Z",
-    audience: {mode: "newsletter"},
+    audience: {mode: "flags", flags: ["subscribedToNewsletter"]},
     stats: {sent: 6, delivered: 6, opens: 4, uniqueOpens: 3, clicks: 2,
       uniqueClicks: 2, purchases: 0, revenue: 0, registrations: 0,
       subscribes: 0, webShown: 0, webClicks: 0},
