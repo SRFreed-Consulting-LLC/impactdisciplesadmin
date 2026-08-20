@@ -55,3 +55,6 @@ Thumbs.db
 
 # Regroup proposals hold live campaign data - never commit
 scripts/output/
+firebase-debug.log
+firestore-debug.log
+firebase-export-*/
