@@ -16,7 +16,7 @@ import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-previ
 import { PublishWebDialogComponent } from './publish-web-dialog.component';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { describeCampaignDelete } from '../campaigns/campaign-delete-text';
+import { describeCampaignDelete, describeCampaignDeleteResult } from '../campaigns/campaign-delete-text';
 
 // A single funnel-stage tile on the detail header.
 interface FunnelTile {
@@ -304,8 +304,8 @@ export class CampaignDetailComponent implements OnInit {
       if (!confirmed) {
         return;
       }
-      await this.campaignService.deleteCascade(this.campaign.id!);
-      this.snackbar.success('Campaign Deleted');
+      const result = await this.campaignService.deleteCascade(this.campaign.id!);
+      this.snackbar.success(describeCampaignDeleteResult(result));
       this.deleted.emit();
     } catch (err) {
       this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));

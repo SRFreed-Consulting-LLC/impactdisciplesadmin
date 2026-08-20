@@ -9,7 +9,7 @@ import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { describeCampaignDelete } from './campaign-delete-text';
+import { describeCampaignDelete, describeCampaignDeleteResult } from './campaign-delete-text';
 
 // The Campaigns landing screen (Campaign Manager v2): "Live Now" hub cards
 // above the paged list of EVERY campaign - including the regrouped
@@ -162,8 +162,8 @@ export class CampaignsComponent implements OnInit, OnDestroy {
       if (!confirmed) {
         return;
       }
-      await this.service.deleteCascade(item.id!);
-      this.snackbar.success(this.itemType + ' Deleted');
+      const result = await this.service.deleteCascade(item.id!);
+      this.snackbar.success(describeCampaignDeleteResult(result));
       if (this.selectedCampaign?.id === item.id) {
         this.onDetailClosed();
       }

@@ -98,6 +98,12 @@ exports.campaign_web_event = campaignTracking.campaign_web_event;
 const newsletterArchive = require("./newsletter-archive.functions");
 exports.newsletter_archive = newsletterArchive.newsletter_archive;
 
+// Campaign delete (2026-08-20): cascade docs + remove the campaign's
+// Storage images that nothing else references (full content-collection
+// reference scan - server-side for cost and so it can't be half-done).
+const campaignAdmin = require("./campaign-admin.functions");
+exports.deleteCampaign = campaignAdmin.deleteCampaign;
+
 // Sweep 2026-08-17: language registry backs the reader's language picker
 // so translation docs no longer need an open collection-group read.
 const languageRegistry = require("./library-language-registry.functions");

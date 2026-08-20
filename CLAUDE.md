@@ -607,13 +607,28 @@ Newsletters** tab (campaigns-manager, `web-newsletters/`): every flagged touch a
 unpublish) — needed because the published set is spread over several campaigns, so no one campaign
 detail page answers "what's on the website?".
 
-**Campaign delete (2026-08-20)**: `CampaignService.planDelete()`/`deleteCascade()` — client-side
-cascade over the docs staff may write (every `campaign_emails` touch incl. website-published ones,
-the `campaign_popups/{id}` doc, then the campaign). NOT removed: `campaign_sends`/`campaign_events`
-(function-write-only audit; the send engine tolerates a missing touch) and `tag_applications`
-(customer facts). REFUSED while any touch is sending/scheduled. Surfaces: list row trash icon and
-the detail header DELETE button, both behind `canDelete('campaigns-manager.campaigns')` and the
-shared confirm copy in `campaigns/campaign-delete-text.ts`.
+**Campaign delete (2026-08-20)**: the `deleteCampaign` callable
+(`functions/src/campaign-admin.functions.ts`; `CampaignService.planDelete()` = its dryRun,
+`deleteCascade()` = execute). Cascades every `campaign_emails` touch (incl. website-published ones)
+and the `campaign_popups/{id}` doc, then the campaign — then (user requirement) deletes from Storage
+every image those docs referenced that NOTHING else still references: every content-bearing
+collection in the default DB is scanned once (`SCAN_DENYLIST` skips the big no-image ones; unknown
+collections are scanned by default), so shared assets (re-hosted Mailchimp images used by many
+emails, product photos reused in a promo) survive by construction. NOT removed:
+`campaign_sends`/`campaign_events` (function-owned audit; the send engine tolerates a missing touch)
+and `tag_applications` (customer facts). REFUSED while any touch is sending/scheduled. Caveat
+inherent to "delete unused images": already-delivered copies of that campaign's emails lose those
+images. Surfaces: list row trash icon and the detail header DELETE button, both behind
+`canDelete('campaigns-manager.campaigns')`; confirm copy + result snackbar in
+`campaigns/campaign-delete-text.ts` (shows the image-candidate count / unused-removed count).
+
+**Mailchimp image re-host (2026-08-20, Phase 7 step)**: `scripts/rehost-mailchimp-images.js` moved
+every Mailchimp-CDN image referenced by `campaign_emails` + `mail_templates` (623 distinct files)
+to `email-assets/mailchimp/<sha1>.<ext>` in the shared bucket and rewrote the docs in dev AND prod
+(map in `scripts/output/rehost-map.json`, gitignored). Zero Mailchimp-host references remain in
+either env — the public archive and Past Emails previews no longer depend on the Mailchimp account.
+(A handful of snapshots also embed images from an unrelated external bucket,
+`sawa-dev-2-storage-bucket.storage.googleapis.com` — not Mailchimp, left alone.)
 
 ### Firestore collection naming note
 

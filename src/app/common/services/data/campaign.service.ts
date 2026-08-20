@@ -3,17 +3,28 @@ import { Functions, httpsCallable } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { CampaignAudience, CampaignModel, emptyCampaignStats } from 'src/app/common/models/domain/campaign.model';
 import { BaseService } from './base.service';
-import { CampaignEmailService } from './campaign-email.service';
-import { CampaignPopupService } from './campaign-popup.service';
 
-// What deleteCascade() is about to remove - shown in the confirm dialog.
+// What deleteCascade() is about to remove - shown in the confirm dialog
+// (the deleteCampaign callable's dryRun result).
 export interface CampaignDeletePlan {
+  name: string;
   emailCount: number;
   publishedCount: number;
   hasPopup: boolean;
   // Touches mid-flight (sending/scheduled) block deletion: the send engine
   // is still draining their ledger, and a deleted touch would strand it.
   inFlight: string[];
+  // Storage images referenced by the campaign/its emails/its popup; the
+  // ones nothing else references are deleted with it.
+  imageCandidates: number;
+}
+
+export interface CampaignDeleteResult {
+  emailsDeleted: number;
+  popupDeleted: boolean;
+  imagesDeleted: string[];
+  imagesKept: string[];
+  imagesFailed: string[];
 }
 
 // Result shapes of the send-engine callables
@@ -34,8 +45,6 @@ export interface EnqueueResult {
 export class CampaignService extends BaseService<CampaignModel>{
   // Same field-inject pattern TagRuleService/PurchasesService use.
   private functions = inject(Functions);
-  private emailService = inject(CampaignEmailService);
-  private popupService = inject(CampaignPopupService);
 
   constructor(public override dao: FirebaseDAO<CampaignModel> ) {
     super(dao)
@@ -43,43 +52,23 @@ export class CampaignService extends BaseService<CampaignModel>{
     this.fromFirestore = CampaignService.fromFirestore
   }
 
-  // Campaign delete (2026-08-20). Client-side cascade over the docs staff
-  // may write: every campaign_emails touch (including any published to the
-  // website - they vanish from the public page with it) and the campaign's
-  // campaign_popups doc, then the campaign itself. NOT touched: the
-  // campaign_sends ledger and campaign_events stream (function-write-only
-  // audit trails; the send engine already tolerates a missing touch, and
-  // orphaned history rows are harmless) and tag_applications (customer
-  // facts, not campaign data). Refuses while any touch is sending or
-  // scheduled - cancel/finish those first.
+  // Campaign delete (2026-08-20) - server-side via the deleteCampaign
+  // callable (functions/src/campaign-admin.functions.ts): cascades the
+  // campaign's emails (incl. website-published ones) and popup, then the
+  // campaign, then removes from Storage every image those docs referenced
+  // that nothing else in the database still references (full content-
+  // collection scan - the reason it's a function, not a client loop).
+  // NOT touched: campaign_sends / campaign_events (function-owned audit)
+  // and tag_applications (customer facts). Refuses while any email is
+  // sending or scheduled.
   async planDelete(campaignId: string): Promise<CampaignDeletePlan> {
-    const [touches, popup] = await Promise.all([
-      this.emailService.getAllByValue('campaignId', campaignId),
-      this.popupService.getById(campaignId).catch(() => null)
-    ]);
-    return {
-      emailCount: touches.length,
-      publishedCount: touches.filter((t) => t.publishToWeb === true).length,
-      hasPopup: !!popup,
-      inFlight: touches
-        .filter((t) => t.status === 'sending' || t.status === 'scheduled')
-        .map((t) => t.label || t.subject || t.id!)
-    };
+    const call = httpsCallable<{ campaignId: string; dryRun: boolean }, CampaignDeletePlan>(this.functions, 'deleteCampaign');
+    return (await call({ campaignId, dryRun: true })).data;
   }
 
-  async deleteCascade(campaignId: string): Promise<void> {
-    const plan = await this.planDelete(campaignId);
-    if (plan.inFlight.length > 0) {
-      throw new Error(`Cannot delete while emails are sending or scheduled: ${plan.inFlight.join(', ')}`);
-    }
-    const touches = await this.emailService.getAllByValue('campaignId', campaignId);
-    for (const touch of touches) {
-      await this.emailService.delete(touch.id!);
-    }
-    if (plan.hasPopup) {
-      await this.popupService.delete(campaignId);
-    }
-    await this.delete(campaignId);
+  async deleteCascade(campaignId: string): Promise<CampaignDeleteResult> {
+    const call = httpsCallable<{ campaignId: string; dryRun: boolean }, CampaignDeleteResult>(this.functions, 'deleteCampaign');
+    return (await call({ campaignId, dryRun: false })).data;
   }
 
   /** Resolves an audience server-side WITHOUT sending - the same resolver

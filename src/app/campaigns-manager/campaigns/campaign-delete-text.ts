@@ -13,8 +13,26 @@ export function describeCampaignDelete(campaign: CampaignModel, plan: CampaignDe
     parts.push('its web popup');
   }
   const removes = parts.length ? ` This also removes ${parts.join(' and ')}.` : '';
-  return `<i>Delete the campaign <b>${escapeHtml(campaign.name)}</b>?</i>${removes}` +
+  const images = plan.imageCandidates > 0
+    ? ` Of the ${plan.imageCandidates} stored image${plan.imageCandidates === 1 ? '' : 's'} it uses, any not used anywhere else will be deleted from storage too.`
+    : '';
+  return `<i>Delete the campaign <b>${escapeHtml(campaign.name)}</b>?</i>${removes}${images}` +
     ' Send history and stats for it are lost. This cannot be undone.';
+}
+
+// Post-delete summary for the snackbar.
+export function describeCampaignDeleteResult(result: { emailsDeleted: number; imagesDeleted: string[]; imagesKept: string[]; imagesFailed: string[] }): string {
+  const bits = ['Campaign deleted'];
+  if (result.imagesDeleted.length) {
+    bits.push(`${result.imagesDeleted.length} unused image${result.imagesDeleted.length === 1 ? '' : 's'} removed`);
+  }
+  if (result.imagesKept.length) {
+    bits.push(`${result.imagesKept.length} still used elsewhere kept`);
+  }
+  if (result.imagesFailed.length) {
+    bits.push(`${result.imagesFailed.length} image delete(s) failed - see function logs`);
+  }
+  return bits.join(' · ');
 }
 
 function escapeHtml(text: string): string {
