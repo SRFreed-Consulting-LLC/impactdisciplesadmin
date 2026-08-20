@@ -419,7 +419,18 @@ What got done, in order:
    `impactdisciples-web`'s dev AND prod hosting (that repo's CLAUDE.md normally holds prod deploys for
    explicit go-ahead each time, same spirit as this repo's own master-merge rule - given here).
 
-## Contacts & Events restructure: Organizations/Locations/Courses/Coaches — dev done 2026-08-19, PROD PENDING
+## Contacts & Events restructure: Organizations/Locations/Courses/Coaches — dev done 2026-08-19, PROD DONE 2026-08-20
+
+**Prod migration executed 2026-08-20** (full `backup:prod` export taken first; all dry-runs matched
+dev exactly): venue pinned, 17/18 org PoCs backfilled, 25 agenda items flattened (1 event), both
+screenkey scripts 0-change (no prod grants used affected keys), 958/958 registrations stamped
+`lastNameLower`, composite index created (gcloud), `register_for_event` deployed BY NAME (temp-config
+predeploy workaround), orphan repair run after user review (6 orgs created, 2 Sun City locations
+linked; unnamed `DCTJDoTioXV68ZBmgqMx` still awaiting a manual call), then web + admin hosting
+deployed (web first). Verified read-only: live summit page renders venue + flattened breakout
+titles; the 2027 summit is not-live on purpose (placeholder page until activated). Prod summit docs
+predate the venue snapshot — the first admin re-save of each event stamps it; VenuePipe's location
+fallback covers until then. Deferred-cleanup list below is now unblocked.
 
 Branch `feature/contacts-events-restructure` (both repos). Organizations moved into Contacts
 Manager (child locations edited inside the org details view; standalone Locations screen retired),
