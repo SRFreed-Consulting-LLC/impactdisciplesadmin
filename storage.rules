@@ -32,9 +32,24 @@ service firebase.storage {
       allow read: if false;
     }
 
-    // Everything else stays locked (unchanged from Firebase's default).
+    // Staff file management (2026-08-20): app-image-uploader is the admin
+    // app's file browser for EVERY image/file pick (products, events,
+    // Team Page, Home Page Images, email designer, ebooks...) - it lists,
+    // uploads to, and organizes this bucket directly from the client. The
+    // blanket deny below broke every one of those pickers with
+    // storage/unauthorized the moment these rules deployed (live-diagnosed:
+    // 403 listing the bucket root from the Team Page dialog). Gate is the
+    // same `role` CUSTOM CLAIM as Firestore's rules - all four staff tiers,
+    // since Employees manage store/content images and Editors manage
+    // library lesson images. Anonymous/public access stays fully denied -
+    // the public site reads images via tokened download URLs, which don't
+    // evaluate these rules.
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read: if request.auth != null
+        && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor'];
+      allow write: if request.auth != null
+        && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor']
+        && (request.resource == null || request.resource.size < 100 * 1024 * 1024);
     }
   }
 }

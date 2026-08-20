@@ -204,7 +204,13 @@ table.mat-mdc-table tr.mat-mdc-header-row {
   // offset below MUST change in lockstep with this height - that pairing is
   // the entire sticky-stacking contract.
   height: 44px;
-  background: var(--app-card);
+  // TWO layers, not a bare var(--app-card): translucent-card themes
+  // (Glassline's card is 7%-alpha white) made the stuck header see-through,
+  // so scrolled rows showed right through the labels (user report
+  // 2026-08-20). The card tint paints OVER the theme's guaranteed-solid
+  // ground color, which is exactly what a glass card composites to at rest
+  // - opaque in every theme, still tinted like the card.
+  background: linear-gradient(var(--app-card), var(--app-card)), var(--app-ground-base);
   // box-shadow instead of border-bottom: border-collapse: separate means
   // borders on <tr> itself are simply not rendered at all per spec (only
   // cell borders are, in separate mode) - box-shadow isn't part of the
@@ -230,7 +236,14 @@ table.mat-mdc-table tr.mat-mdc-header-row {
 // blending into the header labels above or the data rows below.
 table.mat-mdc-table tr.mat-mdc-header-row:nth-of-type(2) {
   height: 36px;
-  background-color: color-mix(in srgb, var(--app-field) 60%, var(--app-card));
+  // Same two-layer opacity guarantee as row 1 above - the field/card mix is
+  // itself translucent on glass themes.
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--app-field) 60%, var(--app-card)),
+      color-mix(in srgb, var(--app-field) 60%, var(--app-card))
+    ),
+    var(--app-ground-base);
 }
 
 // Tables sit on card surfaces in every theme (mat-table's own background
