@@ -4,9 +4,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { CampaignModel, campaignKindLabel, channelLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
+import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { describeCampaignDelete } from './campaign-delete-text';
 
 // The Campaigns landing screen (Campaign Manager v2): "Live Now" hub cards
 // above the paged list of EVERY campaign - including the regrouped
@@ -63,6 +66,8 @@ export class CampaignsComponent implements OnInit, OnDestroy {
   constructor(
     private service: CampaignService,
     private permissionService: PermissionService,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -131,6 +136,49 @@ export class CampaignsComponent implements OnInit, OnDestroy {
   headerActions = [
     { label: 'New Campaign', icon: 'add', onClick: () => this.newCampaign() }
   ];
+
+  get canDelete(): boolean {
+    return this.permissionService.canDelete(this.screenKey);
+  }
+
+  rowActions: DataGridRowAction<CampaignModel>[] = [
+    { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteCampaign(item), visible: () => this.canDelete }
+  ];
+
+  // Cascade delete (campaign + its emails + its popup) behind a confirm
+  // that spells out what goes - see CampaignService.deleteCascade() for
+  // what is deliberately NOT removed. Refused while emails are in flight.
+  async deleteCampaign(item: CampaignModel): Promise<void> {
+    if (!this.canDelete) {
+      return;
+    }
+    try {
+      const plan = await this.service.planDelete(item.id!);
+      if (plan.inFlight.length > 0) {
+        this.snackbar.error(`Cannot delete while emails are sending or scheduled: ${plan.inFlight.join(', ')}`);
+        return;
+      }
+      const confirmed = await this.confirmService.confirm(describeCampaignDelete(item, plan), 'Delete Campaign');
+      if (!confirmed) {
+        return;
+      }
+      await this.service.deleteCascade(item.id!);
+      this.snackbar.success(this.itemType + ' Deleted');
+      if (this.selectedCampaign?.id === item.id) {
+        this.onDetailClosed();
+      }
+      this.paged.loadFirstPage();
+      this.loadHub();
+    } catch (err) {
+      this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));
+    }
+  }
+
+  onDetailDeleted(): void {
+    this.onDetailClosed();
+    this.paged.loadFirstPage();
+    this.loadHub();
+  }
 
   openDetail(item: CampaignModel): void {
     if (!this.permissionService.canView(this.screenKey)) {

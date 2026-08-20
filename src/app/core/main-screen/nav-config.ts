@@ -269,6 +269,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // archive today, this app's own future one-time sends later).
       // Read-only: preview + copy-into-designer, never edit/re-send.
       { label: 'Sent Emails', slug: 'sent-emails' },
+      // Every email flagged publishToWeb across ALL campaigns = what the
+      // public Monthly Newsletter page shows (2026-08-20). The flag is per
+      // email and the published issues span several campaigns, so this is
+      // the one place that answers "what's on the website?" - set the flag
+      // from a campaign's detail page or the Subscriber Report send dialog.
+      { label: 'Website Newsletters', slug: 'website-newsletters' },
       // Customer tag rules ("purchased X => tag 'Impact 1'") live here
       // rather than Tools because they exist to feed campaign audiences -
       // they're campaign infrastructure, and keeping them in this group

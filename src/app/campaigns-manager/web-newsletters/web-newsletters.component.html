@@ -1,0 +1,12 @@
+<app-data-grid
+  [title]="'Website Newsletters'"
+  [columns]="columns"
+  [headerActions]="headerActions"
+  [rowActions]="rowActions"
+  [rows]="(rows$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  tableClass="web-newsletters-table"
+  exportFileName="website-newsletters.xlsx"
+  emptyMessage="Nothing is published yet. Flag an email from its campaign's detail page (globe icon) or tick the website checkbox when sending a newsletter."
+  (rowDoubleClick)="preview($event)">
+</app-data-grid>

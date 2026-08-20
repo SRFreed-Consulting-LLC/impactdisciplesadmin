@@ -14,6 +14,9 @@ import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-preview-dialog.component';
 import { PublishWebDialogComponent } from './publish-web-dialog.component';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
+import { describeCampaignDelete } from '../campaigns/campaign-delete-text';
 
 // A single funnel-stage tile on the detail header.
 interface FunnelTile {
@@ -39,6 +42,8 @@ export class CampaignDetailComponent implements OnInit {
   @Input() campaign!: CampaignModel;
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<CampaignModel>();
+  // Fired after a successful cascade delete - the host returns to the list.
+  @Output() deleted = new EventEmitter<void>();
 
   mode: 'view' | 'editTouch' | 'editPopup' | 'social' = 'view';
   editingTouch: CampaignEmailModel | null = null;
@@ -64,6 +69,8 @@ export class CampaignDetailComponent implements OnInit {
     private productService: ProductService,
     private eventService: EventService,
     private permissionService: PermissionService,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService,
     private dialog: MatDialog,
     private router: Router
   ) {}
@@ -275,5 +282,33 @@ export class CampaignDetailComponent implements OnInit {
 
   back(): void {
     this.closed.emit();
+  }
+
+  canDeleteCampaign(): boolean {
+    return this.permissionService.canDelete('campaigns-manager.campaigns');
+  }
+
+  // Same cascade + confirm as the list row action (CampaignsComponent.
+  // deleteCampaign) - kept in sync through describeCampaignDelete().
+  async deleteCampaign(): Promise<void> {
+    if (!this.canDeleteCampaign()) {
+      return;
+    }
+    try {
+      const plan = await this.campaignService.planDelete(this.campaign.id!);
+      if (plan.inFlight.length > 0) {
+        this.snackbar.error(`Cannot delete while emails are sending or scheduled: ${plan.inFlight.join(', ')}`);
+        return;
+      }
+      const confirmed = await this.confirmService.confirm(describeCampaignDelete(this.campaign, plan), 'Delete Campaign');
+      if (!confirmed) {
+        return;
+      }
+      await this.campaignService.deleteCascade(this.campaign.id!);
+      this.snackbar.success('Campaign Deleted');
+      this.deleted.emit();
+    } catch (err) {
+      this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));
+    }
   }
 }

@@ -601,7 +601,19 @@ rules block (web repo: `NewsletterArchiveService` + `/monthly-newsletter/:id` sa
 viewer replace the Firestore read). `scripts/backfill-newsletter-archive.js` maps legacy rows to
 `mc_*` touches via the Mailchimp API's archive_url (dry-run default, `--execute`) — MIGRATION.md
 has the prod runbook. Phase 7 note: the archived snapshots' images still live on Mailchimp's CDN
-(`mcusercontent.com`); the sunset must keep the account alive or re-host them.
+(`mcusercontent.com`); the sunset must keep the account alive or re-host them. **Website
+Newsletters** tab (campaigns-manager, `web-newsletters/`): every flagged touch across ALL campaigns
+= what the public page shows (live stream, preview / view-on-site / view-campaign / re-title-or-
+unpublish) — needed because the published set is spread over several campaigns, so no one campaign
+detail page answers "what's on the website?".
+
+**Campaign delete (2026-08-20)**: `CampaignService.planDelete()`/`deleteCascade()` — client-side
+cascade over the docs staff may write (every `campaign_emails` touch incl. website-published ones,
+the `campaign_popups/{id}` doc, then the campaign). NOT removed: `campaign_sends`/`campaign_events`
+(function-write-only audit; the send engine tolerates a missing touch) and `tag_applications`
+(customer facts). REFUSED while any touch is sending/scheduled. Surfaces: list row trash icon and
+the detail header DELETE button, both behind `canDelete('campaigns-manager.campaigns')` and the
+shared confirm copy in `campaigns/campaign-delete-text.ts`.
 
 ### Firestore collection naming note
 

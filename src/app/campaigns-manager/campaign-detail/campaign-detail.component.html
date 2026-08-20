@@ -52,6 +52,11 @@
   <button mat-stroked-button (click)="openSocial()">
     <mat-icon>share</mat-icon> SOCIAL POSTS
   </button>
+  @if (canDeleteCampaign()) {
+    <button mat-stroked-button color="warn" matTooltip="Delete this campaign, its emails and its popup" (click)="deleteCampaign()">
+      <mat-icon>delete</mat-icon> DELETE
+    </button>
+  }
   @if (canAddEmail()) {
     <button mat-flat-button color="primary" (click)="newEmail()">
       <mat-icon>add</mat-icon> NEW EMAIL

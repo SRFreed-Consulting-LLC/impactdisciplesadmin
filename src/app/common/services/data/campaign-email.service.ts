@@ -24,6 +24,6 @@ export class CampaignEmailService extends BaseService<CampaignEmailModel>{
   // PARTIAL update - a touch carries the html snapshot, link map and stats;
   // never round-trip the whole doc just to flip a flag.
   setPublishToWeb(id: string, publishToWeb: boolean, webTitle: string | null): Promise<void> {
-    return this.dao.updateFields(id, this.table, { publishToWeb, webTitle });
+    return this.updateFields(id, { publishToWeb, webTitle });
   }
 }

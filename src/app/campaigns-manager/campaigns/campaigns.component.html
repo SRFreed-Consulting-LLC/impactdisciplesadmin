@@ -26,6 +26,7 @@
     [title]="itemType + 's'"
     [headerActions]="canAdd ? headerActions : []"
     [columns]="columns"
+    [rowActions]="rowActions"
     [pagedSource]="paged"
     tableClass="campaigns-table"
     exportFileName="campaigns.xlsx"
@@ -46,7 +47,7 @@
 
 @if (mode === 'detail' && selectedCampaign) {
   <app-campaign-detail [campaign]="selectedCampaign" (closed)="onDetailClosed()"
-    (edit)="editCampaign($event)"></app-campaign-detail>
+    (edit)="editCampaign($event)" (deleted)="onDetailDeleted()"></app-campaign-detail>
 }
 
 @if (mode === 'wizard') {
