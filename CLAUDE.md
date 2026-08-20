@@ -577,12 +577,31 @@ dialog and the event Attendees email dialog are now THIN FLOWS over the send eng
 creates a campaign (+one touch) and calls `enqueueCampaignEmail`, with a real audience-count
 confirm first; the un-awaited client-side per-recipient loops and the write-only
 `newsletters`/`prayers`/`customer-emails` archive collections are dead (frozen — the campaign IS
-the archive; the public Monthly Newsletter page reads the UNRELATED `monthly-newsletter`
-collection, verified). Event-attendee sends use audience `unsubType: 'none'` — OPERATIONAL emails:
+the archive; the public Monthly Newsletter page used to read the UNRELATED `monthly-newsletter`
+collection — retired 2026-08-20, see "Public newsletter archive" below). Event-attendee sends use audience `unsubType: 'none'` — OPERATIONAL emails:
 no unsubscribe footer and the newsletter opt-out is deliberately not applied (a marketing
 unsubscribe must not withhold info about an event someone registered for). The Home Page Popups
 screen (web-manager) is retired — the public site never had a renderer for it; its
 `home_page_popups` docs are left inert. Remaining: Phase 7 Mailchimp sunset.
+
+**Public newsletter archive (2026-08-20, `feature/newsletter-archive` in admin + web)**: the web
+app's Monthly Newsletter page now lists/renders `campaign_emails` touches an admin flagged
+`publishToWeb` (+ optional `webTitle`), through ONE public endpoint,
+`functions/src/newsletter-archive.functions.ts` → `newsletter_archive` (no `?id` = JSON list of
+`{id,title,date}`; `?id=` = the touch's html, merge tags rendered anonymously, Mailchimp-only
+`*|...|*` tags stripped, scripts/on* removed, CSP `script-src 'none'`, CORS-open; composite index
+`campaign_emails(publishToWeb, sentAt DESC)`). `campaign_emails` itself stays staff-only. The flag
+is CURATED PER TOUCH on purpose — the old public list (14 rows, all mailchi.mp links) spanned the
+regrouped Monthly Newsletter campaign, the Prayer Letter campaign AND standalone sends, and the
+Monthly Newsletter campaign holds promos nobody published; "all touches of campaign X" was never
+the rule. Set it from campaign detail's touch row (globe icon → "Show on website" dialog; sent/
+sending touches only) or the Subscriber Report send dialog's checkbox. Retired: the Content
+Manager's Monthly Newsletters screen/service/model and the `monthly-newsletter` collection + its
+rules block (web repo: `NewsletterArchiveService` + `/monthly-newsletter/:id` sandboxed-srcdoc
+viewer replace the Firestore read). `scripts/backfill-newsletter-archive.js` maps legacy rows to
+`mc_*` touches via the Mailchimp API's archive_url (dry-run default, `--execute`) — MIGRATION.md
+has the prod runbook. Phase 7 note: the archived snapshots' images still live on Mailchimp's CDN
+(`mcusercontent.com`); the sunset must keep the account alive or re-host them.
 
 ### Firestore collection naming note
 

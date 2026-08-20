@@ -1,0 +1,20 @@
+.full-width {
+  width: 100%;
+}
+
+.publish-web__hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--app-card-muted, #6b7280);
+}
+
+.publish-web__meta {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--app-card-muted, #6b7280);
+
+  span {
+    color: var(--app-card-ink, #1f2937);
+  }
+}

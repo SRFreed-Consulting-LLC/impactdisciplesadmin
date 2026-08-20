@@ -217,7 +217,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // screen wrote docs nothing read); web-campaign popups (Campaigns
       // Manager -> a campaign's Add Popup) are THE popup mechanism now.
       // The home_page_popups collection's docs are left inert.
-      { label: 'Monthly Newsletter', slug: 'monthly-newsletter' },
+      // 'Monthly Newsletter' retired 2026-08-20: the public page now lists
+      // campaign_emails touches flagged publishToWeb (Campaigns Manager ->
+      // campaign detail -> "Show on website", or the Subscriber Report
+      // send dialog's checkbox) via the newsletter_archive function; the
+      // hand-maintained `monthly-newsletter` collection of Mailchimp links
+      // is dead (see MIGRATION.md for the prod backfill/cleanup).
       // Split off Coaches (2026-08, Events Manager) - the public-facing
       // "My Team" page's own records, administered here since Web Manager
       // owns public site content; still independently pickable as a

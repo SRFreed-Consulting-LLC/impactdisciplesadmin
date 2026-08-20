@@ -114,6 +114,14 @@
       ]
     },
     {
+      "collectionGroup": "campaign_emails",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "publishToWeb", "order": "ASCENDING" },
+        { "fieldPath": "sentAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "campaign_sends",
       "queryScope": "COLLECTION",
       "fields": [

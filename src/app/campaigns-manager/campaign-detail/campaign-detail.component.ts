@@ -13,6 +13,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-preview-dialog.component';
+import { PublishWebDialogComponent } from './publish-web-dialog.component';
 
 // A single funnel-stage tile on the detail header.
 interface FunnelTile {
@@ -249,6 +250,27 @@ export class CampaignDetailComponent implements OnInit {
 
   openInDesigner(touch: CampaignEmailModel): void {
     this.router.navigate(['/tools-manager/email-designer/new'], { queryParams: { fromEmail: touch.id } });
+  }
+
+  // Public newsletter archive: a sent (or sending) touch can be shown on
+  // the web app's Monthly Newsletter page - see CampaignEmailModel's
+  // publishToWeb comment. Drafts/scheduled have nothing final to show.
+  canPublishToWeb(touch: CampaignEmailModel): boolean {
+    return (touch.status === 'sent' || touch.status === 'sending') && this.canEditCampaign();
+  }
+
+  publishToWeb(touch: CampaignEmailModel): void {
+    if (!this.canPublishToWeb(touch)) {
+      return;
+    }
+    this.dialog.open(PublishWebDialogComponent, {
+      width: '520px',
+      data: { touch }
+    }).afterClosed().subscribe((saved) => {
+      if (saved) {
+        this.loadTouches();
+      }
+    });
   }
 
   back(): void {

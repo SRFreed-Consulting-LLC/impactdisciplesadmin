@@ -13,7 +13,6 @@ import { PodCastCategoriesComponent } from './pod-cast-categories/pod-cast-categ
 import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
-import { MonthlyNewslettersComponent } from './monthly-newsletters/monthly-newsletters.component';
 import { TeamPageComponent } from './team-page/team-page.component';
 import { TeamPageDialogComponent } from './team-page/team-page-dialog.component';
 // Moved here from Tools Manager 2026-08-19 with the Web Manager -> Content
@@ -27,7 +26,6 @@ import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.mod
 import { ContentManagerRoutingModule } from './content-manager-routing.module';
 import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
-import { MonthlyNewsletterDialogComponent } from './monthly-newsletters/monthly-newsletter-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -87,8 +85,6 @@ import { QuillModule } from 'ngx-quill';
     PodCastCategoryDialogComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
-    MonthlyNewslettersComponent,
-    MonthlyNewsletterDialogComponent,
     TeamPageComponent,
     TeamPageDialogComponent,
     WebConfigComponent

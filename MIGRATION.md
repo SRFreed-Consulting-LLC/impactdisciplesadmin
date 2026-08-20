@@ -520,3 +520,39 @@ DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
 3. `node scripts/backfill-tag-rules.js --project=prod` (dry-run lists rules), then `--execute`.
    Idempotent - deterministic `tag_applications/{email}__{tag}` ids; re-runs never duplicate or
    reset anchor dates.
+
+## Public newsletter archive: `monthly-newsletter` collection retired (built 2026-08-20 on `feature/newsletter-archive`, admin + web; NOT yet deployed anywhere)
+
+**Context**: the web app's Monthly Newsletter page read a hand-maintained `monthly-newsletter`
+collection ({date, title, url, isActive}) whose urls were mailchi.mp archive links (14 rows on dev,
+Mar 2025 → Jun 2026, all active). The same sends exist as `campaign_emails` `mc_*` touches (full
+html snapshots) since the Mailchimp import, so the page now reads touches flagged `publishToWeb`
+through the `newsletter_archive` function (see CLAUDE.md "Public newsletter archive"). The 14 rows
+mapped 1:1 to touches via the Mailchimp API's `archive_url` — 4 in `grp_monthly-newsletter`, 5 in
+`grp_prayer-letter`, 5 standalone single-email campaigns — which is why the flag is per touch
+(`scripts/backfill-newsletter-archive.js` does the mapping; dry-run by default).
+
+**Runbook (dev first, then prod — prod only once prod has the campaign_emails import, i.e. as part
+of the prod cutover):**
+1. Admin repo: `cd functions && npm run build` (done by `npm test`), then deploy BY NAME with the
+   temp-config predeploy workaround:
+   `firebase deploy --only functions:newsletter_archive,firestore:indexes --project <project>`
+   (the index `campaign_emails(publishToWeb ASC, sentAt DESC)` must finish building before the
+   list endpoint works — a few minutes; until then it 500s with a FAILED_PRECONDITION).
+2. `$env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project <project>)`
+   then `node scripts/backfill-newsletter-archive.js --project=<dev|prod>` (dry run prints each
+   row → touch mapping; expect 14/14 on dev), then `--execute`. Idempotent.
+3. Verify: `GET https://us-central1-<project>.cloudfunctions.net/newsletter_archive` returns the
+   14 issues newest-first; `?id=mc_e4f98fbfba` returns html with no `*|...|*` left.
+4. Deploy admin hosting (Content Manager's Monthly Newsletters tab is gone; campaign detail's
+   touch rows gain the globe "Show on website" action; the Subscriber Report send dialog gains the
+   checkbox) and web hosting (list page + `/monthly-newsletter/:id` viewer). Web depends on the
+   function being live FIRST.
+5. Deploy firestore rules (the `monthly-newsletter` rules block is removed — after this the old
+   collection is unreadable by anyone, which is the point). ONLY after the web deploy: the
+   pre-change web build still reads that collection.
+6. Cleanup (optional, once verified): delete the `monthly-newsletter` collection docs. Nothing
+   reads them anymore; keeping them costs nothing, deleting them is the tidy ending.
+
+**Rollback**: redeploy the previous web + rules builds; the function and the flags are inert
+extras (the flag is a plain boolean on touches; `newsletter_archive` serves nothing unless flagged).

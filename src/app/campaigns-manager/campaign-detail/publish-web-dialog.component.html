@@ -1,0 +1,30 @@
+<app-popup-header [formGroup]="form" title="SHOW ON WEBSITE" [showCloseButton]="true" (closed)="onCancel()">
+  <mat-slide-toggle popup-header-actions formControlName="publishToWeb">On website</mat-slide-toggle>
+</app-popup-header>
+
+<mat-dialog-content [formGroup]="form">
+  <p class="publish-web__hint">
+    When on, this email is listed on the public site's <b>Monthly Newsletter</b> page and readable there
+    in full. Only the title, date and email body are published — never the audience or stats.
+  </p>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Public title</mat-label>
+    <input matInput formControlName="webTitle" maxlength="160">
+    <mat-hint>Shown in the newsletter list. Leave as-is to use the email's subject.</mat-hint>
+  </mat-form-field>
+
+  <p class="publish-web__meta">
+    Subject: <span>{{ data.touch.subject || '(none)' }}</span>
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
+  <app-indicator-button
+    title="SAVE"
+    [isInProgress]="inProgress$ | async"
+    [disabled]="inProgress$ | async"
+    (clicked)="onSave()">
+  </app-indicator-button>
+</mat-dialog-actions>
