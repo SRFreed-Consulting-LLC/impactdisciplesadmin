@@ -521,7 +521,31 @@ DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
    Idempotent - deterministic `tag_applications/{email}__{tag}` ids; re-runs never duplicate or
    reset anchor dates.
 
-## Public newsletter archive: `monthly-newsletter` collection retired (built 2026-08-20 on `feature/newsletter-archive`, admin + web; NOT yet deployed anywhere)
+## Public newsletter archive: `monthly-newsletter` collection retired — DEV + PROD DONE 2026-08-20 (Campaign Manager v2 data + functions also cut over to prod the same run)
+
+**Prod cutover executed 2026-08-20 (same session, user-directed "merge it all, push to dev then
+prod including the data")**, in this order: merged `feature/newsletter-archive` → `development` in
+admin + web and pushed; deployed BY NAME to prod the 9 campaign functions prod never had
+(`enqueueCampaignEmail`, `previewCampaignAudience`, `sendCampaignTestEmail`,
+`campaignSendScheduler` (Cloud Scheduler API auto-enabled), `onCampaignMailDelivered`,
+`campaign_open`, `campaign_click`, `campaign_web_event`, `newsletter_archive`) + all indexes
+(temp-config/no-predeploy workaround — the predeploy lint had failed on files git re-checked-out as
+CRLF; `functions/.gitattributes` now pins LF); `import-mailchimp-templates.js --execute` (prod
+mail_templates 12 → 22); `import-mailchimp-campaigns.js --cleanup-templates --execute` (477
+campaigns + 477 emails; prod's hand-made "Summit Early Bird Special" campaign + popup KEPT — the
+script's hand-made delete is now opt-in `--delete-handmade` because of exactly this);
+`propose-campaign-regroup.js --project=prod --out=scripts/output/prod` (78 groups, diffed
+identical to the reviewed dev proposal) → `apply-campaign-regroup.js --execute` (backup
+`scripts/output/regroup-backup-2026-08-20T21-56-14-527Z.json`; 79 campaigns = 78 + summit, 428 v1
+docs absorbed, 0 orphans); `backfill-newsletter-archive.js --execute` (14/14); web hosting prod
+(direct `build-deploy-prod` from `development`, NOT via master — same as the relaunch); rules prod;
+admin hosting prod. Verified live: impactdisciples.com/monthly-newsletter lists 14 and renders
+issues on-site; `newsletter_archive` prod returns 14. Known nit carried over from dev: a few
+regrouped singleton campaigns have an empty `name` where the Mailchimp send had no title (e.g.
+`mc_ba78a2724f`) — cosmetic, fix by falling back to subject when convenient. Optional cleanup still
+open: delete the now-unreadable `monthly-newsletter` docs in dev and prod.
+
+Original build notes follow.
 
 **Context**: the web app's Monthly Newsletter page read a hand-maintained `monthly-newsletter`
 collection ({date, title, url, isActive}) whose urls were mailchi.mp archive links (14 rows on dev,
