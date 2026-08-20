@@ -6,8 +6,10 @@
 // doc ids are deterministic (`mc_<mailchimpCampaignId>`), so a rerun
 // refreshes rather than duplicates.
 //
-// Also (user-sanctioned, 2026-08-18): deletes any pre-existing hand-created
-// campaigns (`source` != 'mailchimp') on --execute, and with
+// Also: with --delete-handmade (opt-in since 2026-08-20; the 2026-08-18 dev
+// run did this unconditionally, user-sanctioned for dev's one throwaway
+// draft) deletes any pre-existing hand-created campaigns (`source` !=
+// 'mailchimp') on --execute, and with
 // --cleanup-templates removes from `mail_templates` the docs that were
 // really historical sent emails (the sent-campaign-derived "(Mailchimp)"
 // imports - identified by a non-empty subject, which only that import path
@@ -75,13 +77,18 @@ async function pool(tasks, width) {
   const db = getFirestoreFor(projectId);
   const execute = !!args.execute;
 
-  // ---- 0. Pre-existing hand-created campaigns are removed (the campaigns
-  // system is being restructured around the imported history + future
-  // records; the single existing draft was explicitly sacrificed).
+  // ---- 0. Pre-existing hand-created campaigns. The 2026-08-18 dev run
+  // deleted dev's single throwaway draft (user-sanctioned then); since
+  // 2026-08-20 that is OPT-IN via --delete-handmade, because prod carried a
+  // real in-progress campaign ("Summit Early Bird Special" + its popup)
+  // when the import reached it. Default: keep them - the import only ever
+  // writes its own deterministic mc_* docs and never needs the others gone.
   const existing = await db.collection("campaigns").get();
   const handmade = existing.docs.filter((d) => d.data().source !== "mailchimp");
-  console.log(`Existing campaigns: ${existing.size} (${handmade.length} hand-created -> ${execute ? "DELETING" : "would delete"}).`);
-  if (execute) {
+  const deleteHandmade = !!args["delete-handmade"];
+  console.log(`Existing campaigns: ${existing.size} (${handmade.length} hand-created -> ` +
+    `${deleteHandmade ? (execute ? "DELETING" : "would delete") : "KEPT (pass --delete-handmade to remove)"}).`);
+  if (execute && deleteHandmade) {
     for (const doc of handmade) {
       await doc.ref.delete();
     }

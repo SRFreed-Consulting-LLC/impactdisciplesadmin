@@ -1,0 +1,5 @@
+# The functions lint (google config) enforces LF; keep checkouts LF on Windows
+# regardless of core.autocrlf.
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
