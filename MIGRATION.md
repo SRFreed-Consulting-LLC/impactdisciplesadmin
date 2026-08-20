@@ -432,6 +432,15 @@ titles; the 2027 summit is not-live on purpose (placeholder page until activated
 predate the venue snapshot — the first admin re-save of each event stamps it; VenuePipe's location
 fallback covers until then. Deferred-cleanup list below is now unblocked.
 
+**Post-migration addendum (2026-08-20):** the runbook above omitted `firebase deploy --only
+firestore:rules` — prod ran the 2026-08-17 rules snapshot, which silently REJECTED popup saves
+(`campaign_popups`/`popup_templates` had no match blocks → default deny) and 403'd the campaign
+detail page. Rules released to prod same day. **Lesson for every future prod push: if
+firestore.rules changed since the last release, the rules deploy is part of the runbook** (rules
+only — `--only firestore` would also sync indexes, which can PRUNE ones missing from the file).
+Same day: storage.rules staff-gated + released to both projects, and dev-tier admin configs moved
+to the DEV storage bucket (cross-project tokens never authenticate - see storage.rules header).
+
 Branch `feature/contacts-events-restructure` (both repos). Organizations moved into Contacts
 Manager (child locations edited inside the org details view; standalone Locations screen retired),
 events reference organization + optional location with a denormalized `venue` snapshot the public
