@@ -1,5 +1,6 @@
 ﻿export const environment = {
   production: true,
+  useEmulators: false,
   firebaseConfig: {
     apiKey: "AIzaSyDRfdv2XgpLQ-ll2oxpEEMyhtC75rzkP4c",
     authDomain: "impactdisciples-a82a8.firebaseapp.com",
