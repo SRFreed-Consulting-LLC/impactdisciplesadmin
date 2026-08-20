@@ -5,7 +5,7 @@
     apiKey: "AIzaSyDRfdv2XgpLQ-ll2oxpEEMyhtC75rzkP4c",
     authDomain: "impactdisciplesdev.firebaseapp.com",
     projectId: "impactdisciplesdev",
-    storageBucket: "impactdisciples-a82a8.appspot.com",
+    storageBucket: "impactdisciplesdev.appspot.com",
     messagingSenderId: "562759240809",
     appId: "1:562759240809:web:7d6fa117db35b887b6a6f8",
     measurementId: "G-KJL13HB8DV"
