@@ -117,15 +117,31 @@ export class SummitCommandCenterComponent implements OnInit {
 
   // ---- Writes (the ONE place; the assignment dialog calls back in) ----
 
+  // The reg the dialog hands back may be a DIFFERENT OBJECT than the one in
+  // this.registrations - the attendee table's row action emits its own
+  // paged-fetch instance. recompute() derives counts/no-breakout lists from
+  // this.registrations, so the mutation must land on the canonical instance
+  // too, or the tiles/bars silently miss the change until a full RELOAD
+  // (live-diagnosed by the cross-app e2e suite).
+  private mutateSessions(
+    reg: EventRegistrationModel,
+    change: (sessions: string[]) => string[]
+  ): void {
+    const canonical = this.registrations.find((r) => r.id === reg.id);
+    for (const target of new Set([reg, canonical].filter(Boolean))) {
+      target!.trainingSessions = change(target!.trainingSessions ?? []);
+    }
+  }
+
   async assign(reg: EventRegistrationModel, item: AgendaItem): Promise<void> {
     await this.registrationService.assignTrainingSession(reg.id!, item.id!);
-    reg.trainingSessions = [...new Set([...(reg.trainingSessions ?? []), item.id!])];
+    this.mutateSessions(reg, (sessions) => [...new Set([...sessions, item.id!])]);
     this.recompute();
   }
 
   async remove(reg: EventRegistrationModel, item: AgendaItem): Promise<void> {
     await this.registrationService.removeTrainingSession(reg.id!, item.id!);
-    reg.trainingSessions = (reg.trainingSessions ?? []).filter((id) => id !== item.id);
+    this.mutateSessions(reg, (sessions) => sessions.filter((id) => id !== item.id));
     this.recompute();
   }
 
