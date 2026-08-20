@@ -111,6 +111,11 @@ $pending: var(--app-field-border);
   display: flex;
   flex-direction: column;
   gap: 14px; // breathing room between a step's panel and the sticky footer
+
+  // The agenda builder's own sticky footer (agenda-wizard.component.scss)
+  // stacks ABOVE this wizard's bar instead of colliding with it at the
+  // scrollport bottom - offset = the wizard bar's height + the column gap.
+  --agenda-wizfoot-offset: 72px;
 }
 
 .wiz__preview {

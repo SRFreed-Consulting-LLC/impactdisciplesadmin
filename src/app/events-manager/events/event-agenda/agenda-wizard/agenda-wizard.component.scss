@@ -258,8 +258,24 @@ $warn-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
   }
 }
 
+// Sticky within whichever ancestor actually scrolls (the summit editor's
+// tab body, or the setup wizard's .wiz__main) so Back/Continue stay
+// visible while the step's content - the Days & Rooms list especially -
+// scrolls (user feedback 2026-08-20: only the editor's SAVE/CANCEL were
+// visible until you scrolled to the very bottom). The setup wizard host
+// raises --agenda-wizfoot-offset so this bar stacks ABOVE its own sticky
+// footer instead of colliding with it at bottom: 0.
 .wizfoot {
+  position: sticky;
+  bottom: var(--agenda-wizfoot-offset, 0);
+  z-index: 4;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   margin-top: 16px;
+  padding: 10px 14px;
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  box-shadow: 0 -4px 14px rgb(0 0 0 / 12%);
 }
