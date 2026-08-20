@@ -25,7 +25,7 @@ export class LoggerService extends BaseService<LogMessage> {
   logMessage(type: string, created_by: string, message: string, data?: unknown): Observable<string | boolean> {
     try {
       const ec = this.generateErrorCode();
-      const logMessage: LogMessage = { ...new LogMessage(type, created_by, message, ec, data) };
+      const logMessage: LogMessage = { ...new LogMessage(type, created_by, message, ec, LoggerService.sanitizeData(data)) };
       logMessage.id = this.generateErrorCode();
 
       return from(this.add(logMessage)).pipe(
@@ -46,5 +46,26 @@ export class LoggerService extends BaseService<LogMessage> {
         v = c == 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
+  }
+
+  // Firestore rejects custom class instances (Error, FirebaseError) and
+  // undefined values inside addDoc payloads -- and several call sites pass
+  // a caught error straight in as { err }. Reduce everything to plain
+  // JSON-safe values so logging an error can never itself throw.
+  // (Ported verbatim from the web repo's copy of this service, 2026-08-20.)
+  private static sanitizeData(data: unknown): unknown {
+    if (data === undefined) {
+      return undefined;
+    }
+    try {
+      return JSON.parse(JSON.stringify(data, (_key, value) => {
+        if (value instanceof Error) {
+          return { name: value.name, message: value.message, stack: value.stack ?? null };
+        }
+        return value === undefined ? null : value;
+      }));
+    } catch {
+      return { unserializable: String(data) };
+    }
   }
 }
