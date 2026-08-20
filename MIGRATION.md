@@ -536,7 +536,9 @@ mapped 1:1 to touches via the Mailchimp API's `archive_url` — 4 in `grp_monthl
 of the prod cutover):**
 1. Admin repo: `cd functions && npm run build` (done by `npm test`), then deploy BY NAME with the
    temp-config predeploy workaround:
-   `firebase deploy --only functions:newsletter_archive,firestore:indexes --project <project>`
+   `firebase deploy --only "functions:newsletter_archive,firestore:indexes" --project <project>`
+   — run from the admin repo root, and QUOTE the --only value in PowerShell (an unquoted
+   `a,b` is a PowerShell array → two arguments → "No function matches given --only filters")
    (the index `campaign_emails(publishToWeb ASC, sentAt DESC)` must finish building before the
    list endpoint works — a few minutes; until then it 500s with a FAILED_PRECONDITION).
 2. `$env:MAILCHIMP_API_KEY = (firebase functions:secrets:access MAILCHIMP_API_KEY --project <project>)`
