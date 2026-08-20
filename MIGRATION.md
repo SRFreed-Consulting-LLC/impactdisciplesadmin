@@ -484,3 +484,39 @@ breakout.util legacy-course fallbacks (keep `sameBreakoutSession`'s course-id br
 items keep their ids); optionally tighten `courses` Firestore read rules to staff; optional
 `backfill-event-venues.js`. The `courses` collection itself is left inert (the `home_page_popups`
 precedent).
+
+---
+
+## Contact tag rules: initial rule set seeded + backfilled (dev 2026-08-20)
+
+**Context**: the tag-rule system was extended (multi-product `productIds` / multi-event
+`eventIds` rules, plus the `summit-registration` trigger that matches ANY `isSummit` event and
+splits `paidTag`/`tag` by whether the registration''s `receipt` is a payment id vs a coupon code -
+the free-checkout path stores the coupon code as the receipt). Matcher of record:
+`functions/src/tag-rules.functions.ts` (`runRuleBackfill()` is shared by the
+`applyTagRuleRetroactively` callable and `scripts/backfill-tag-rules.js`, so there is no second
+matcher to drift). Legacy single `productId`/`eventId` rules still match; the Tag Rules editor
+nulls them out on save in favor of the multi shapes.
+
+10 rules seeded (user-specified 2026-08-20): Impact 1-4 books (each = print + Digital edition +
+Spanish edition where one exists + the Impact Series 4-book bundle), "Digital" (the four
+"- Digital" products), "DMC" from DMC-series book purchases, "COACH" (both Impact Athlete Series
+books), "Summit"/"Paid Summit" (either/or, any isSummit event), "DMP" (10 events), "DMC" (12
+events; the Ken Adams "Disciple-Making Church Pastor" event is deliberately in BOTH dmp-events and
+dmc-events per the user). Product/event doc ids are hardcoded in `scripts/seed-tag-rules.js` and
+verified to exist before writing (dev ids == prod ids, since dev data was imported from prod with
+ids preserved).
+
+Dev results (2026-08-20): 1,064 of 5,269 contacts tagged. Impact 1: 248, Impact 2: 185,
+Impact 3: 176, Impact 4: 126, Digital: 100, DMC: 162, COACH: 21, Summit: 485, Paid Summit: 226,
+DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
+
+**Prod runbook (when this ships)**:
+1. `cd functions && npm run build`, then deploy BY NAME (see the predeploy $RESOURCE_DIR spawn
+   bug note - use a temp config without predeploy hooks):
+   `onPurchaseCustomerUpsert`, `onEventRegistrationCustomerUpsert`, `applyTagRuleRetroactively`.
+2. `node scripts/seed-tag-rules.js --project=prod` (dry-run; verifies every product/event id
+   exists on prod and prints titles), then `--execute`.
+3. `node scripts/backfill-tag-rules.js --project=prod` (dry-run lists rules), then `--execute`.
+   Idempotent - deterministic `tag_applications/{email}__{tag}` ids; re-runs never duplicate or
+   reset anchor dates.

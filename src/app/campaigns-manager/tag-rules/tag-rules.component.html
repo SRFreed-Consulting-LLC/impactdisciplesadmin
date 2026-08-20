@@ -46,8 +46,9 @@
       <mat-button-toggle-group hideSingleSelectionIndicator formControlName="trigger">
         <mat-button-toggle value="purchase">Purchases a product</mat-button-toggle>
         <mat-button-toggle value="event-registration">Registers for an event</mat-button-toggle>
+        <mat-button-toggle value="summit-registration">Registers for a Summit</mat-button-toggle>
       </mat-button-toggle-group>
-      @if (form.value.trigger === 'event-registration') {
+      @if (form.value.trigger !== 'purchase') {
         <p class="hint">"Registers for" - this system has no attendance/check-in tracking, so
           registering IS the trigger.</p>
       }
@@ -55,32 +56,49 @@
 
     @if (form.value.trigger === 'purchase') {
       <mat-form-field appearance="outline" class="field">
-        <mat-label>Product</mat-label>
-        <mat-select formControlName="productId">
+        <mat-label>Products (any of)</mat-label>
+        <mat-select formControlName="productIds" multiple>
           @for (product of products; track product.id) {
             <mat-option [value]="product.id">{{ product.name }}</mat-option>
           }
         </mat-select>
+        <mat-hint>Matches when the cart contains ANY selected product.</mat-hint>
       </mat-form-field>
-    } @else {
+    } @else if (form.value.trigger === 'event-registration') {
       <mat-form-field appearance="outline" class="field">
-        <mat-label>Event</mat-label>
-        <mat-select formControlName="eventId">
+        <mat-label>Events (any of)</mat-label>
+        <mat-select formControlName="eventIds" multiple>
           @for (event of events; track event.id) {
             <mat-option [value]="event.id">{{ event.name }}</mat-option>
           }
         </mat-select>
+        <mat-hint>Matches a registration for ANY selected event.</mat-hint>
       </mat-form-field>
+    } @else {
+      <p class="hint">Matches a registration for ANY event marked as a Summit - current and
+        future summits alike, no event list to maintain. Every summit registrant gets exactly
+        one of the two tags below, split by whether their registration was paid for (a free
+        registration is one that checked out with a 100%-off coupon code).</p>
     }
 
     <mat-form-field appearance="outline" class="field">
-      <mat-label>Tag to apply</mat-label>
-      <input matInput formControlName="tag" placeholder="Impact 1">
+      <mat-label>{{ form.value.trigger === 'summit-registration' ? 'Tag for FREE registrations' : 'Tag to apply' }}</mat-label>
+      <input matInput formControlName="tag" placeholder="{{ form.value.trigger === 'summit-registration' ? 'Summit' : 'Impact 1' }}">
       <mat-hint>Lands on the contact record's tags; campaigns can target it. No "/" allowed.</mat-hint>
       @if (form.get('tag')?.hasError('pattern')) {
         <mat-error>Tags can't contain "/".</mat-error>
       }
     </mat-form-field>
+
+    @if (form.value.trigger === 'summit-registration') {
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>Tag for PAID registrations</mat-label>
+        <input matInput formControlName="paidTag" placeholder="Paid Summit">
+        @if (form.get('paidTag')?.hasError('pattern')) {
+          <mat-error>Tags can't contain "/".</mat-error>
+        }
+      </mat-form-field>
+    }
 
     <mat-slide-toggle class="field" formControlName="active">
       Active - applies automatically to every new

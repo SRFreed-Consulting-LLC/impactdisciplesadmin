@@ -141,8 +141,13 @@ swapping in `src/environments/environment-{local,development,production}.ts` —
 Firestore config, Stripe keys, and Cloud Function URLs for that environment; `environment.local.ts`
 points at the `impactdisciplesdev` Firebase project (there's no separate local emulator setup).
 
-`firestore.rules` is currently wide open (`allow read, write: if true`) — a known, unresolved gap,
-not a decision to defend or extend.
+`firestore.rules` is a real, unified ruleset now (the old wide-open `if true` gap was closed) —
+ONE file owned by THIS repo covering all three client populations (anonymous public web, admin
+staff via a `role` custom claim synced from `admin_users` by `onAdminUserRoleSync`, email-keyed
+reader patrons); the web/reader repos deliberately deploy no Firestore rules. Cloud Functions use
+the Admin SDK and bypass rules entirely — `write: false` on a functions-written collection is
+intentional lockdown, not breakage. Read the rules file's own header comment before editing;
+`npm run test:rules` covers it. `storage.rules` is staff-gated as of 2026-08-20.
 
 ## Architecture
 
@@ -151,10 +156,11 @@ not a decision to defend or extend.
 - **`FirebaseDAO<T>`** (`src/app/common/dao/firebase.dao.ts`) — generic wrapper around
   `@angular/fire/firestore` giving every model type `getAll`/`getById`/`add`/`update`/`delete`,
   `getAllByValue`/`queryByValue`/`queryAllByMultiValue`, live `streamAll`/`streamByValue`/`streamById`,
-  and paged one-time `getPage()` (cursor-based via `startAfter`, not offset). All live `stream*`
-  methods retry with jitter and swallow terminal errors into `of([])` — see the comment on
-  `retryDelay()` for why (a diagnosed WebChannel handshake race when several `onSnapshot` listeners
-  attach in the same tick, not a real rules rejection).
+  and paged one-time `getPage()` (cursor-based via `startAfter`, not offset). There's also
+  `streamAllOrdered()` (server-side `orderBy`, meant to pair with a `limit`). Live `stream*` methods
+  do NOT retry — a jittered-retry layer existed briefly but was a misdiagnosis and was removed
+  2026-08-15; don't re-add it. On terminal error they log, invoke the optional `onError` callback,
+  and fall back to emitting `[]`; recovering means subscribing fresh.
 - **Firestore write gotcha: never assign an optional field the literal value `undefined`.** An
   object literal with a key explicitly set to `undefined` is not the same as that key being absent —
   `setDoc()`/`update()` reject the *entire* write ("Unsupported field value: undefined") the moment
@@ -279,9 +285,17 @@ Email Templates, Shipping Labels, and Form Builder (Web Config moved to `content
 note below). `reports-manager`
 is new — see below. `events-manager` exposes two separate nav screens, **Summit** and **Events** —
 both render the same `EventsComponent`, just with `[summitMode]` true/false: Summit is `isSummit`
-events only with the full tab set (Info/Application/Agenda/Attendees), Events is regular events with
-just Details/Attendees, and each has its own permission grant (an existing Events grant deliberately
-does not carry over to Summit — see the comments in `nav-config.ts`). `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
+events only, Events is regular events, and each has its own permission grant (an existing Events
+grant deliberately does not carry over to Summit — see the comments in `nav-config.ts`). Regular
+events keep a plain `list`/`edit` mode pair; summit mode adds three more (`EventsComponent.mode`):
+`hub` — "Mission Control" (`summit-hub/`), what opening a summit row lands on (user decision
+2026-08-19: an operations overview of stat tiles/milestones/cards, with editing one click deeper in
+the existing tab editor — Info/Application/Agenda); `attendees` — the full-page attendee Command
+Center (`summit-command-center/`); and `wizard` — the New Summit guided setup
+(`summit-setup-wizard/`, with copy-from-previous-summit via `summit-copy.util.ts`). A live preview
+rail (`summit-preview-rail/` hosting `summit-preview/`) renders the attendee-facing view alongside
+editing; derived stats live in `summit-stats.util.ts`. All mode switching stays in
+`EventsComponent`; child surfaces emit navigation upward. `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
 `dashboard` home route and all feature module outlets. `src/app/shared/` holds cross-feature
 UI (list header, column filter, dialogs, image uploader, table export/loading, paged-table
 infrastructure) and is imported by every feature module. This codebase is deliberately

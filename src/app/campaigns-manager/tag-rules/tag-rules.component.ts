@@ -37,9 +37,9 @@ export class TagRulesComponent implements OnInit {
 
   columns: DataGridColumn<TagRuleModel>[] = [
     { key: 'name', label: 'Name' },
-    { key: 'trigger', label: 'Trigger', value: (rule) => (rule.trigger === 'purchase' ? 'Purchased product' : 'Registered for event') },
+    { key: 'trigger', label: 'Trigger', value: (rule) => this.triggerLabel(rule) },
     { key: 'target', label: 'Product / Event', value: (rule) => this.targetName(rule) },
-    { key: 'tag', label: 'Tag' },
+    { key: 'tag', label: 'Tag', value: (rule) => this.tagLabel(rule) },
     { key: 'active', label: 'Active', value: (rule) => (rule.active ? 'Yes' : 'No') }
   ];
 
@@ -87,11 +87,38 @@ export class TagRulesComponent implements OnInit {
     });
   }
 
-  targetName(rule: TagRuleModel): string {
+  triggerLabel(rule: TagRuleModel): string {
     if (rule.trigger === 'purchase') {
-      return this.products.find((p) => p.id === rule.productId)?.name ?? rule.productId ?? '—';
+      return 'Purchased product';
     }
-    return this.events.find((e) => e.id === rule.eventId)?.name ?? rule.eventId ?? '—';
+    return rule.trigger === 'summit-registration' ? 'Registered for a Summit' : 'Registered for event';
+  }
+
+  tagLabel(rule: TagRuleModel): string {
+    // Summit rules apply exactly one of two tags.
+    return rule.trigger === 'summit-registration' ? `${rule.paidTag ?? '—'} / ${rule.tag}` : rule.tag;
+  }
+
+  // Effective target lists - the legacy single productId/eventId shapes
+  // (rules saved before 2026-08-20) still display and edit correctly.
+  private ruleProductIds(rule: TagRuleModel): string[] {
+    return rule.productIds?.length ? rule.productIds : rule.productId ? [rule.productId] : [];
+  }
+
+  private ruleEventIds(rule: TagRuleModel): string[] {
+    return rule.eventIds?.length ? rule.eventIds : rule.eventId ? [rule.eventId] : [];
+  }
+
+  targetName(rule: TagRuleModel): string {
+    if (rule.trigger === 'summit-registration') {
+      return 'Any Summit event';
+    }
+    if (rule.trigger === 'purchase') {
+      const names = this.ruleProductIds(rule).map((id) => this.products.find((p) => p.id === id)?.name ?? id);
+      return names.join(', ') || '—';
+    }
+    const names = this.ruleEventIds(rule).map((id) => this.events.find((e) => e.id === id)?.name ?? id);
+    return names.join(', ') || '—';
   }
 
   // ---- Editor ----
@@ -105,10 +132,11 @@ export class TagRulesComponent implements OnInit {
     this.form = this.fb.group({
       name: [rule?.name ?? '', Validators.required],
       trigger: [rule?.trigger ?? 'purchase', Validators.required],
-      productId: [rule?.productId ?? null],
-      eventId: [rule?.eventId ?? null],
+      productIds: [rule ? this.ruleProductIds(rule) : []],
+      eventIds: [rule ? this.ruleEventIds(rule) : []],
       // No '/' - the tag becomes part of a tag_applications doc id.
       tag: [rule?.tag ?? '', [Validators.required, Validators.pattern(/^[^/]+$/)]],
+      paidTag: [rule?.paidTag ?? '', Validators.pattern(/^[^/]+$/)],
       active: [rule?.active ?? true]
     });
     this.mode = 'edit';
@@ -122,20 +150,34 @@ export class TagRulesComponent implements OnInit {
   private buildPayload(): TagRuleModel | null {
     const raw = this.form.value;
     const trigger = raw.trigger as TagRuleTrigger;
-    const productId = trigger === 'purchase' ? (raw.productId ?? null) : null;
-    const eventId = trigger === 'event-registration' ? (raw.eventId ?? null) : null;
-    if ((trigger === 'purchase' && !productId) || (trigger === 'event-registration' && !eventId)) {
-      this.snackbar.error(trigger === 'purchase' ? 'Pick a product for this rule' : 'Pick an event for this rule');
+    const productIds = trigger === 'purchase' ? ((raw.productIds as string[]) ?? []) : [];
+    const eventIds = trigger === 'event-registration' ? ((raw.eventIds as string[]) ?? []) : [];
+    if (trigger === 'purchase' && productIds.length === 0) {
+      this.snackbar.error('Pick at least one product for this rule');
+      return null;
+    }
+    if (trigger === 'event-registration' && eventIds.length === 0) {
+      this.snackbar.error('Pick at least one event for this rule');
+      return null;
+    }
+    const paidTag = trigger === 'summit-registration' ? ((raw.paidTag as string) ?? '').trim() : '';
+    if (trigger === 'summit-registration' && !paidTag) {
+      this.snackbar.error('Summit rules need a paid-registration tag too');
       return null;
     }
     // Explicit nulls, never undefined - the composer's own payload pattern.
+    // Legacy single-target fields are nulled out on save so the multi
+    // shapes are the single source of truth from here on.
     return {
       ...this.editingItem,
       name: (raw.name as string).trim(),
       trigger,
-      productId,
-      eventId,
+      productId: null,
+      eventId: null,
+      productIds: productIds.length ? productIds : null,
+      eventIds: eventIds.length ? eventIds : null,
       tag: (raw.tag as string).trim(),
+      paidTag: paidTag || null,
       active: !!raw.active,
       createdDate: this.editingItem?.createdDate ?? Timestamp.now()
     };
@@ -187,8 +229,11 @@ export class TagRulesComponent implements OnInit {
       return;
     }
     const scope = this.editingItem.trigger === 'purchase' ? 'past purchases' : 'past event registrations';
+    const tagText = this.editingItem.trigger === 'summit-registration'
+      ? `"${this.editingItem.paidTag}" (paid) or "${this.editingItem.tag}" (free)`
+      : `"${this.editingItem.tag}"`;
     const confirmed = await this.confirmService.confirm(
-      `Scan all ${scope} and tag every matching contact with "${this.editingItem.tag}"?`, 'Apply to Existing'
+      `Scan all ${scope} and tag every matching contact with ${tagText}?`, 'Apply to Existing'
     );
     if (!confirmed) {
       return;
