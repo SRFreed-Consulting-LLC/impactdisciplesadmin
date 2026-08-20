@@ -404,28 +404,46 @@ const campaign_emails = {
 
 // ---- library (admin <-> reader seam) ------------------------------------
 
+// NOTE on `order` (additive enrichment for the reader-app cross flows): the
+// reader's queries sort series/books/units/lessons by an `order` field
+// (library-queries.ts / LibraryService.getSeriesList), and Firestore's
+// orderBy() silently EXCLUDES docs missing the field - without `order`, the
+// seeded units/lessons never render in the reader at all. `sortOrder` is
+// kept untouched for whatever seeded it first.
 const librarySeriesTree = {
   "lib-series-0001": {
-    doc: {title: "Foundations Series", sortOrder: 1},
+    doc: {title: "Foundations Series", sortOrder: 1, order: 1},
     books: {
       "lib-book-0001": {
-        doc: {title: "Foundations of Disciple-Making", sortOrder: 1,
+        doc: {title: "Foundations of Disciple-Making", sortOrder: 1, order: 1,
           description: "The digital book the store's prod-book-digital unlocks."},
         units: {
           "lib-unit-0001": {
-            doc: {title: "Unit 1: First Steps", sortOrder: 1},
+            doc: {title: "Unit 1: First Steps", sortOrder: 1, order: 1},
             lessons: {
               "lib-lesson-0001": {
-                doc: {title: "Lesson 1: Why Multiply", sortOrder: 1},
+                doc: {title: "Lesson 1: Why Multiply", sortOrder: 1, order: 1},
               },
             },
           },
         },
       },
       "lib-book-0002": {
-        doc: {title: "Advanced Multiplication", sortOrder: 2,
+        doc: {title: "Advanced Multiplication", sortOrder: 2, order: 2,
           description: "A second book nobody is licensed for by default."},
-        units: {},
+        // A unit+lesson so a license grant is provable in the reader UI: the
+        // book-detail unit/lesson list is the rules-gated read (canReadBook),
+        // so it rendering IS the proof of content access.
+        units: {
+          "lib-unit-0002": {
+            doc: {title: "Unit 1: Multiplying Movements", sortOrder: 1, order: 1},
+            lessons: {
+              "lib-lesson-0002": {
+                doc: {title: "Lesson 1: Beyond Addition", sortOrder: 1, order: 1},
+              },
+            },
+          },
+        },
       },
     },
   },

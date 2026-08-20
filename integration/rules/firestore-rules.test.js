@@ -45,6 +45,11 @@ before(async () => {
       port: 8080,
     },
   });
+  // The demo-rules namespace PERSISTS across runs within one emulator
+  // session - without this, a second run's setDoc on a doc created by the
+  // first run is an UPDATE (different permission) and create-shape tests
+  // fail confusingly. Always start empty.
+  await env.clearFirestore();
   // Seed the docs the license/ownership rules get() against, bypassing
   // rules entirely.
   await env.withSecurityRulesDisabled(async (ctx) => {

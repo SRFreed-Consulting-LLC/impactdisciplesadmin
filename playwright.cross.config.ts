@@ -39,5 +39,12 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 300_000,
     },
+    {
+      command: 'npm run start-emu',
+      cwd: '../impact-discipleship-library-new',
+      url: 'http://localhost:4300',
+      reuseExistingServer: true,
+      timeout: 300_000,
+    },
   ],
 });
