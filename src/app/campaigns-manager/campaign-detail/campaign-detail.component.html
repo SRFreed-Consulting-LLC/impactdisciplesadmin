@@ -4,6 +4,9 @@
 } @else if (mode === 'editPopup') {
   <app-popup-editor [campaign]="campaign" [popup]="popup"
     (closed)="onPopupClosed($event)"></app-popup-editor>
+} @else if (mode === 'social') {
+  <app-social-composer [campaign]="campaign" [popup]="popup"
+    (closed)="onSocialClosed($event)"></app-social-composer>
 } @else {
 <div class="detail-header">
   <button mat-icon-button matTooltip="Back to Campaigns" (click)="back()">
@@ -14,7 +17,7 @@
     <div class="detail-header__chips">
       <span class="chip" [class]="'kind-' + campaign.goal">{{ kindLabel(campaign) }}</span>
       @for (channel of campaign.channels; track channel) {
-        <span class="chip channel">{{ channel | uppercase }}</span>
+        <span class="chip channel">{{ channelLabel(channel) }}</span>
       }
       <span class="chip" [class]="'status-' + effectiveStatus(campaign)">{{ effectiveStatus(campaign) | uppercase }}</span>
       @if (campaign.source === 'mailchimp') {
@@ -46,6 +49,9 @@
       <mat-icon>web_asset</mat-icon> {{ popup ? 'EDIT POPUP' : 'ADD POPUP' }}
     </button>
   }
+  <button mat-stroked-button (click)="openSocial()">
+    <mat-icon>share</mat-icon> SOCIAL POSTS
+  </button>
   @if (canAddEmail()) {
     <button mat-flat-button color="primary" (click)="newEmail()">
       <mat-icon>add</mat-icon> NEW EMAIL

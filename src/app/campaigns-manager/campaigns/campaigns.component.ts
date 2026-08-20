@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { CampaignModel, campaignKindLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { CampaignModel, campaignKindLabel, channelLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
@@ -32,7 +32,7 @@ export class CampaignsComponent implements OnInit, OnDestroy {
   columns: DataGridColumn<CampaignModel>[] = [
     { key: 'name', label: 'Name' },
     { key: 'kind', label: 'Kind', value: (item) => campaignKindLabel(item) },
-    { key: 'channels', label: 'Channels', value: (item) => (item.channels ?? []).join(' + ') },
+    { key: 'channels', label: 'Channels', value: (item) => (item.channels ?? []).map(channelLabel).join(' + ') },
     { key: 'status', label: 'Status', value: (item) => effectiveStatus(item).toUpperCase() },
     { key: 'startDate', label: 'Start', type: 'date', value: (item) => dateFromTimestamp(item.startDate) },
     { key: 'endDate', label: 'End', type: 'date', value: (item) => dateFromTimestamp(item.endDate) },
@@ -55,6 +55,7 @@ export class CampaignsComponent implements OnInit, OnDestroy {
   selectedCampaign: CampaignModel | null = null;
 
   kindLabel = campaignKindLabel;
+  channelLabel = channelLabel;
   effectiveStatus = effectiveStatus;
 
   private ngUnsubscribe = new Subject<void>();

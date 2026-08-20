@@ -35,7 +35,7 @@
     </ng-template>
     <ng-template appDataGridCell="channels" let-row>
       @for (channel of row.channels; track channel) {
-        <span class="chip channel">{{ channel | uppercase }}</span>
+        <span class="chip channel">{{ channelLabel(channel) }}</span>
       }
     </ng-template>
     <ng-template appDataGridCell="status" let-row>

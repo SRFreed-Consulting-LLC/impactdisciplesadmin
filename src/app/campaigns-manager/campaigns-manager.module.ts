@@ -21,6 +21,7 @@ import { CampaignDetailComponent } from './campaign-detail/campaign-detail.compo
 import { CampaignWizardComponent } from './campaign-wizard/campaign-wizard.component';
 import { EmailTouchEditorComponent } from './email-touch-editor/email-touch-editor.component';
 import { PopupEditorComponent } from './popup-editor/popup-editor.component';
+import { SocialComposerComponent } from './social-composer/social-composer.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
 import { SentEmailsComponent } from './sent-emails/sent-emails.component';
@@ -40,6 +41,7 @@ import { QuillModule } from 'ngx-quill';
     CampaignWizardComponent,
     EmailTouchEditorComponent,
     PopupEditorComponent,
+    SocialComposerComponent,
     StatusBoardComponent,
     TagRulesComponent,
     SentEmailsComponent,

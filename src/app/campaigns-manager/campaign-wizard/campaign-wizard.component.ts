@@ -181,7 +181,11 @@ export class CampaignWizardComponent implements OnInit {
       eventId: value.goal === 'event' ? value.eventId : null,
       channels: [
         ...(value.emailChannel ? ['email'] : []),
-        ...(value.webChannel ? ['web'] : [])
+        ...(value.webChannel ? ['web'] : []),
+        // Social channels are stamped by the social composer's MARK AS
+        // POSTED, not chosen here - carry them through so a wizard edit
+        // can't silently drop them.
+        ...(this.campaign?.channels ?? []).filter((c) => c !== 'email' && c !== 'web')
       ] as CampaignModel['channels'],
       audience: value.emailChannel ? this.buildAudience() : null,
       startDate: value.startDate ? new Date(value.startDate) : null,

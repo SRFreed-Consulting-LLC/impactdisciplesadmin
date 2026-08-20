@@ -44,6 +44,11 @@ export class WebConfigComponent implements OnInit {
       linkedIn: [''],
       youtube: [''],
       instagram: [''],
+      // Social publishing identity (campaign social composer) - public
+      // names/handles only, never tokens (see WebConfigModel's comment).
+      socialFacebookPageName: [''],
+      socialTwitterHandle: [''],
+      socialInstagramHandle: [''],
       inpersonSeminarCost: [null],
       onlineSeminarCost: [null],
       equippingGroupTotalCost: [null],

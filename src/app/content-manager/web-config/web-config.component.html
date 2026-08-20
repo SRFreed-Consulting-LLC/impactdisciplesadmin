@@ -41,6 +41,25 @@
               <mat-label>Instagram</mat-label>
               <input matInput formControlName="instagram">
             </mat-form-field>
+
+            <h3 class="section-title">Social Publishing Identity</h3>
+            <p class="section-hint">
+              Shown in the campaign social-post previews and used when posting manually.
+              Public names/handles only — never API keys or tokens (this configuration is
+              world-readable).
+            </p>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Facebook Page Name</mat-label>
+              <input matInput formControlName="socialFacebookPageName" placeholder="Impact Disciples">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>X (Twitter) Handle</mat-label>
+              <input matInput formControlName="socialTwitterHandle" placeholder="&#64;impactdisciples">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Instagram Handle</mat-label>
+              <input matInput formControlName="socialInstagramHandle" placeholder="&#64;impactdisciples">
+            </mat-form-field>
           </div>
 
           <div class="column">

@@ -1,0 +1,211 @@
+<div class="editor-header">
+  <button mat-icon-button matTooltip="Back to campaign" (click)="back()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <h2 class="editor-header__title">Social Posts</h2>
+  <span class="editor-header__campaign">{{ campaign.name }}</span>
+</div>
+
+@if (!hasArtworkSource) {
+  <!-- No popup, no artwork - the popup IS the creative for social posts. -->
+  <div class="composer-empty">
+    <mat-icon class="composer-empty__icon">image</mat-icon>
+    <h3>The popup is the artwork</h3>
+    <p>
+      Social posts reuse this campaign's web popup as their image. Design the
+      popup first, then come back here to turn it into Facebook, X, and
+      Instagram posts.
+    </p>
+    <button mat-flat-button color="primary" (click)="back()">
+      BACK TO CAMPAIGN
+    </button>
+  </div>
+} @else {
+  <div class="composer-body" [formGroup]="form">
+    <div class="composer-form">
+      <div class="editor-section">
+        <p class="editor-label">CAPTION</p>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Shared caption</mat-label>
+          <textarea matInput rows="4" formControlName="caption"
+            placeholder="What are we telling the world?"></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Hashtags</mat-label>
+          <input matInput formControlName="hashtags" placeholder="#summit #discipleship">
+        </mat-form-field>
+        <p class="editor-hint">
+          Every caption ends with the campaign link, tagged per channel
+          (?cid&amp;csrc) - store visits and purchases that follow a social post
+          credit this campaign automatically. Each channel below can override
+          the shared caption.
+        </p>
+        <div class="composer-form__actions">
+          <app-indicator-button title="SAVE CAPTIONS" [isInProgress]="saving" (clicked)="saveCaptions()"></app-indicator-button>
+        </div>
+      </div>
+
+      <div class="editor-section">
+        <p class="editor-label">ARTWORK</p>
+        <p class="editor-hint">
+          The popup, rendered as a PNG at 2x. Download it and attach it when
+          posting; refresh after editing the popup.
+        </p>
+        <div class="composer-form__actions composer-form__actions--start">
+          <button mat-stroked-button type="button" [disabled]="rendering" (click)="renderArtwork()">
+            <mat-icon>refresh</mat-icon> REFRESH ARTWORK
+          </button>
+          <button mat-stroked-button type="button" [disabled]="!artworkUrl" (click)="downloadImage()">
+            <mat-icon>download</mat-icon> DOWNLOAD IMAGE
+          </button>
+          @if (rendering) {
+            <mat-spinner diameter="24"></mat-spinner>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Literal platform styling on purpose - these show what the post will
+         look like on each platform, so they stay light-themed regardless of
+         the admin theme. -->
+    <div class="composer-previews">
+
+      <!-- ============ Facebook ============ -->
+      <div class="channel">
+        <div class="channel__bar">
+          <span class="channel__name">Facebook</span>
+          @if (postedAt('facebook')) {
+            <span class="channel__posted">Posted {{ postedAt('facebook') | date:'MMM d, y, h:mm a' }}</span>
+          }
+        </div>
+        <div class="sp-card sp-card--facebook">
+          <div class="sp-head">
+            <span class="sp-avatar">{{ facebookName.charAt(0) }}</span>
+            <div class="sp-head__names">
+              <span class="sp-name">{{ facebookName }}</span>
+              <span class="sp-sub">Just now · 🌐</span>
+            </div>
+          </div>
+          <div class="sp-caption">{{ effectiveCaption('facebook') }}</div>
+          @if (artworkUrl) {
+            <img class="sp-image" [src]="artworkUrl" alt="Post artwork">
+          } @else {
+            <div class="sp-image-placeholder">Artwork renders here</div>
+          }
+          <div class="sp-row sp-row--fb">
+            <span><mat-icon>thumb_up_off_alt</mat-icon> Like</span>
+            <span><mat-icon>chat_bubble_outline</mat-icon> Comment</span>
+            <span><mat-icon>reply</mat-icon> Share</span>
+          </div>
+        </div>
+        <mat-form-field appearance="outline" class="full-width channel__override">
+          <mat-label>Facebook caption override (optional)</mat-label>
+          <textarea matInput rows="2" formControlName="facebookOverride"></textarea>
+        </mat-form-field>
+        <div class="channel__actions">
+          <button mat-stroked-button type="button" (click)="copyCaption('facebook')">
+            <mat-icon>content_copy</mat-icon> COPY CAPTION
+          </button>
+          @if (!postedAt('facebook')) {
+            <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="markPosted('facebook')">
+              <mat-icon>check</mat-icon> MARK AS POSTED
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- ============ X (Twitter) ============ -->
+      <div class="channel">
+        <div class="channel__bar">
+          <span class="channel__name">X (Twitter)</span>
+          @if (postedAt('twitter')) {
+            <span class="channel__posted">Posted {{ postedAt('twitter') | date:'MMM d, y, h:mm a' }}</span>
+          }
+        </div>
+        <div class="sp-card sp-card--x">
+          <div class="sp-head">
+            <span class="sp-avatar">{{ facebookName.charAt(0) }}</span>
+            <div class="sp-head__names sp-head__names--inline">
+              <span class="sp-name">{{ facebookName }}</span>
+              <span class="sp-sub">{{ twitterHandle }} · now</span>
+            </div>
+          </div>
+          <div class="sp-caption">{{ effectiveCaption('twitter') }}</div>
+          @if (artworkUrl) {
+            <img class="sp-image sp-image--rounded" [src]="artworkUrl" alt="Post artwork">
+          } @else {
+            <div class="sp-image-placeholder sp-image--rounded">Artwork renders here</div>
+          }
+          <div class="sp-row sp-row--x">
+            <mat-icon>chat_bubble_outline</mat-icon>
+            <mat-icon>repeat</mat-icon>
+            <mat-icon>favorite_border</mat-icon>
+            <mat-icon>ios_share</mat-icon>
+          </div>
+        </div>
+        <div class="channel__count" [class.channel__count--over]="xCharCount > xLimit">
+          {{ xCharCount }} / {{ xLimit }} characters (link counts as 23)
+        </div>
+        <mat-form-field appearance="outline" class="full-width channel__override">
+          <mat-label>X caption override (optional)</mat-label>
+          <textarea matInput rows="2" formControlName="twitterOverride"></textarea>
+        </mat-form-field>
+        <div class="channel__actions">
+          <button mat-stroked-button type="button" (click)="copyCaption('twitter')">
+            <mat-icon>content_copy</mat-icon> COPY CAPTION
+          </button>
+          @if (!postedAt('twitter')) {
+            <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="markPosted('twitter')">
+              <mat-icon>check</mat-icon> MARK AS POSTED
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- ============ Instagram ============ -->
+      <div class="channel">
+        <div class="channel__bar">
+          <span class="channel__name">Instagram</span>
+          @if (postedAt('instagram')) {
+            <span class="channel__posted">Posted {{ postedAt('instagram') | date:'MMM d, y, h:mm a' }}</span>
+          }
+        </div>
+        <div class="sp-card sp-card--instagram">
+          <div class="sp-head sp-head--ig">
+            <span class="sp-avatar sp-avatar--ig">{{ facebookName.charAt(0) }}</span>
+            <span class="sp-name">{{ instagramHandle }}</span>
+          </div>
+          @if (artworkUrl) {
+            <!-- Center-cropped square, like the feed. -->
+            <img class="sp-image sp-image--square" [src]="artworkUrl" alt="Post artwork">
+          } @else {
+            <div class="sp-image-placeholder sp-image--square">Artwork renders here</div>
+          }
+          <div class="sp-row sp-row--ig">
+            <mat-icon>favorite_border</mat-icon>
+            <mat-icon>chat_bubble_outline</mat-icon>
+            <mat-icon>send</mat-icon>
+          </div>
+          <div class="sp-caption sp-caption--ig">
+            <b>{{ instagramHandle }}</b> {{ effectiveCaption('instagram') }}
+          </div>
+        </div>
+        <mat-form-field appearance="outline" class="full-width channel__override">
+          <mat-label>Instagram caption override (optional)</mat-label>
+          <textarea matInput rows="2" formControlName="instagramOverride"></textarea>
+        </mat-form-field>
+        <div class="channel__actions">
+          <button mat-stroked-button type="button" (click)="copyCaption('instagram')">
+            <mat-icon>content_copy</mat-icon> COPY CAPTION
+          </button>
+          @if (!postedAt('instagram')) {
+            <button mat-flat-button color="primary" type="button" [disabled]="saving" (click)="markPosted('instagram')">
+              <mat-icon>check</mat-icon> MARK AS POSTED
+            </button>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+}

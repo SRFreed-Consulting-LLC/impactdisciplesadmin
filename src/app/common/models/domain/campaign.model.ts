@@ -24,7 +24,37 @@ export type CampaignGoal = 'product' | 'event' | 'other';
 // behavior hangs off it.
 export type CampaignOtherKind = 'prayer-letter' | 'newsletter' | 'subscriber-growth' | 'general';
 
-export type CampaignChannel = 'email' | 'web';
+// 'email'/'web' are the app-run channels (send engine / popup renderer).
+// The three social channels are ASSISTED-MANUAL (2026-08-20): the social
+// composer produces the artwork + captions and an admin posts by hand,
+// then marks the channel posted. The data shape is deliberately API-ready
+// for a future auto-publish phase - but API tokens will NEVER live
+// client-side (Web Config is world-readable by rule; see
+// WebConfigModel's own comment).
+export type CampaignChannel = 'email' | 'web' | 'facebook' | 'twitter' | 'instagram';
+
+export type SocialChannel = 'facebook' | 'twitter' | 'instagram';
+
+// The campaign's assisted-manual social block (see CampaignChannel's
+// comment). One shared caption + hashtags, optional per-channel caption
+// overrides (null = "use the shared caption"), and per-channel posted
+// stamps - Firestore Timestamps once an admin marks the channel posted
+// (typed unknown because stored date fields in this app arrive in three
+// shapes - see MIGRATION.md - and reads normalize via dateFromTimestamp).
+export interface CampaignSocial {
+  caption?: string;
+  hashtags?: string;
+  overrides?: {
+    facebook?: string | null;
+    twitter?: string | null;
+    instagram?: string | null;
+  };
+  posted?: {
+    facebook?: unknown;
+    twitter?: unknown;
+    instagram?: unknown;
+  };
+}
 
 // `status` is what's STORED; display always goes through effectiveStatus()
 // below, which auto-promotes scheduled->live and live->ended as the dates
@@ -128,6 +158,10 @@ export class CampaignModel extends BaseModel {
 
   stats: CampaignStats = emptyCampaignStats();
 
+  // Assisted-manual social publishing (see CampaignSocial). Null/absent =
+  // the composer has never saved for this campaign.
+  social?: CampaignSocial | null;
+
   // Distinguishes migrated v2 docs from any stray v1 shape; fromFirestore
   // normalizers key off it.
   schemaVersion?: number;
@@ -164,6 +198,20 @@ export const CAMPAIGN_OTHER_KIND_LABELS: Record<CampaignOtherKind, string> = {
   'subscriber-growth': 'SUBSCRIBER GROWTH',
   'general': 'GENERAL'
 };
+
+// Channel chip/column labels - 'twitter' displays as X (the platform
+// renamed; the stored value stays 'twitter' so existing docs and the
+// ?csrc attribution vocabulary never fork).
+export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
+  'email': 'EMAIL',
+  'web': 'WEB',
+  'facebook': 'FACEBOOK',
+  'twitter': 'X',
+  'instagram': 'INSTAGRAM'
+};
+
+export const channelLabel = (channel: CampaignChannel): string =>
+  CAMPAIGN_CHANNEL_LABELS[channel] ?? String(channel).toUpperCase();
 
 // The label a list row / chip shows - the otherKind flavor when present,
 // else the goal.

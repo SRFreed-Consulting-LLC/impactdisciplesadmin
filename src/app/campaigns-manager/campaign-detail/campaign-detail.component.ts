@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { CampaignModel, campaignKindLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { CampaignModel, campaignKindLabel, channelLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
@@ -39,7 +39,7 @@ export class CampaignDetailComponent implements OnInit {
   @Output() closed = new EventEmitter<void>();
   @Output() edit = new EventEmitter<CampaignModel>();
 
-  mode: 'view' | 'editTouch' | 'editPopup' = 'view';
+  mode: 'view' | 'editTouch' | 'editPopup' | 'social' = 'view';
   editingTouch: CampaignEmailModel | null = null;
 
   touches: CampaignEmailModel[] = [];
@@ -52,6 +52,7 @@ export class CampaignDetailComponent implements OnInit {
   promotesName = '';
 
   kindLabel = campaignKindLabel;
+  channelLabel = channelLabel;
   effectiveStatus = effectiveStatus;
   toDate = dateFromTimestamp;
 
@@ -207,6 +208,28 @@ export class CampaignDetailComponent implements OnInit {
     this.mode = 'view';
     if (saved) {
       this.loadPopup();
+      this.campaignService.getById(this.campaign.id!).then((fresh) => {
+        if (fresh) {
+          this.campaign = fresh;
+        }
+      });
+    }
+  }
+
+  // ---- Social posts (assisted-manual publishing, 2026-08-20) ----
+
+  // Deliberately not permission-gated for viewing - the composer itself
+  // only writes on Save/Mark-Posted, and those go through CampaignService
+  // like every other campaign write.
+  openSocial(): void {
+    this.mode = 'social';
+  }
+
+  onSocialClosed(changed: boolean): void {
+    this.mode = 'view';
+    if (changed) {
+      // Same reload pattern as onPopupClosed - marking a channel posted
+      // adds it to campaign.channels, so the header chips need the fresh doc.
       this.campaignService.getById(this.campaign.id!).then((fresh) => {
         if (fresh) {
           this.campaign = fresh;

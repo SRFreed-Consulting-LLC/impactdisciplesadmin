@@ -32,4 +32,12 @@ export class WebConfigModel extends BaseModel{
   // checkout-pricing.functions.ts instead. Same rule MailchimpConfigModel
   // documents - keys never go in Firestore.
   paypalClientId?: string;
+  // PUBLIC social identity for the campaign social composer's previews and
+  // manual posting (page name / @handles only). Same rule as paypalClientId
+  // above: this config is world-readable, so social API tokens/secrets must
+  // never go here - a future auto-publish phase keeps them in Secret
+  // Manager on the functions side.
+  socialFacebookPageName?: string | null;
+  socialTwitterHandle?: string | null;
+  socialInstagramHandle?: string | null;
 }

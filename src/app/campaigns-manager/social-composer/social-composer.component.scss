@@ -1,0 +1,343 @@
+// Shares the popup/touch editors' header + section chrome; the preview
+// cards below deliberately do NOT use --app-* tokens - they imitate the
+// platforms' own light UIs so the admin sees what the post will look like
+// there (same reasoning as popup-editor's light preview box).
+@import '../campaign-shared';
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.editor-header__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--app-ink);
+}
+
+.editor-header__campaign {
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.editor-section {
+  background: var(--app-card);
+  border: 1px solid color-mix(in srgb, var(--app-card-ink) 10%, transparent);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+
+.editor-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--app-card-muted);
+  margin: 0 0 12px;
+}
+
+.editor-hint {
+  font-size: 12px;
+  color: var(--app-card-muted);
+  margin: 2px 0 12px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+// ---- Empty state (no popup yet) ----
+.composer-empty {
+  max-width: 460px;
+  margin: 40px auto;
+  text-align: center;
+  background: var(--app-card);
+  border: 1px solid color-mix(in srgb, var(--app-card-ink) 10%, transparent);
+  border-radius: 12px;
+  padding: 34px 30px;
+  color: var(--app-card-ink);
+
+  h3 {
+    margin: 10px 0 8px;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  p {
+    color: var(--app-card-muted);
+    font-size: 13.5px;
+    margin: 0 0 18px;
+  }
+}
+
+.composer-empty__icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--app-card-muted);
+}
+
+// ---- Layout ----
+.composer-body {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 18px;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.composer-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.composer-form__actions--start {
+  justify-content: flex-start;
+}
+
+.composer-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.channel__bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.channel__name {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.channel__posted {
+  font-size: 12px;
+  color: var(--app-success);
+  font-weight: 600;
+}
+
+.channel__count {
+  font-size: 12px;
+  color: var(--app-muted);
+  margin: 6px 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.channel__count--over {
+  color: var(--app-attention);
+  font-weight: 700;
+}
+
+.channel__override {
+  margin-top: 10px;
+}
+
+.channel__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+// ---- Platform preview cards (literal platform styling, always light) ----
+.sp-card {
+  background: #ffffff;
+  border: 1px solid #e4e6eb;
+  border-radius: 10px;
+  overflow: hidden;
+  color: #050505;
+  color-scheme: light;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 8px;
+}
+
+.sp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4267b2, #7a95d1);
+  color: #fff;
+  font-weight: 800;
+  font-size: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.sp-head__names {
+  display: grid;
+  line-height: 1.25;
+}
+
+.sp-head__names--inline {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+}
+
+.sp-name {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: #050505;
+}
+
+.sp-sub {
+  font-size: 12.5px;
+  color: #65676b;
+}
+
+.sp-caption {
+  padding: 2px 14px 10px;
+  font-size: 14.5px;
+  color: #050505;
+  // Captions are multi-line (caption \n hashtags \n link).
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sp-image {
+  display: block;
+  width: 100%;
+}
+
+.sp-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 180px;
+  background: #f0f2f5;
+  color: #65676b;
+  font-size: 13px;
+}
+
+.sp-row {
+  display: flex;
+  align-items: center;
+  color: #65676b;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Facebook: grey action row under a full-bleed image.
+.sp-row--fb {
+  justify-content: space-around;
+  border-top: 1px solid #ced0d4;
+  margin: 0 12px;
+  padding: 8px 0;
+  font-size: 13.5px;
+  font-weight: 600;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+// X: rounded image inside the card body, icon row spread beneath.
+.sp-card--x {
+  border-color: #cfd9de;
+
+  .sp-name {
+    color: #0f1419;
+  }
+
+  .sp-sub {
+    color: #536471;
+  }
+
+  .sp-caption {
+    color: #0f1419;
+    font-size: 15px;
+  }
+
+  .sp-avatar {
+    background: linear-gradient(135deg, #1d2733, #536471);
+  }
+}
+
+.sp-image--rounded {
+  width: calc(100% - 28px);
+  margin: 0 14px;
+  border: 1px solid #cfd9de;
+  border-radius: 16px;
+}
+
+.sp-row--x {
+  justify-content: space-between;
+  padding: 10px 40px 12px;
+  color: #536471;
+}
+
+// Instagram: full-bleed center-cropped square, actions left, caption below.
+.sp-card--instagram {
+  border-color: #dbdbdb;
+}
+
+.sp-head--ig {
+  padding: 10px 12px;
+
+  .sp-name {
+    font-size: 13.5px;
+  }
+}
+
+.sp-avatar--ig {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7);
+}
+
+.sp-image--square {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  height: auto;
+}
+
+.sp-image-placeholder.sp-image--square {
+  height: auto;
+}
+
+.sp-row--ig {
+  gap: 14px;
+  padding: 10px 12px 4px;
+  color: #262626;
+}
+
+.sp-caption--ig {
+  font-size: 13.5px;
+  color: #262626;
+  padding: 4px 12px 12px;
+
+  b {
+    margin-right: 4px;
+  }
+}
