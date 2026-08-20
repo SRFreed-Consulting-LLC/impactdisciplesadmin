@@ -44,7 +44,11 @@ const MAP_PATH = path.join(__dirname, "output", "rehost-map.json");
 
 // Mailchimp-hosted FILE URLs (images). list-manage.com / mailchi.mp are
 // links (forms, archive pages), not assets - deliberately not matched.
-const URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)*(?:mcusercontent\.com|cdn-images\.mailchimp\.com|gallery\.mailchimp\.com)\/[^\s"'<>()\\]+/gi;
+// sawa-dev-2-storage-bucket is an unrelated third-party bucket a couple of
+// snapshots embedded images from (a design tool someone used) - pulled in
+// too (2026-08-20, user request) so NO snapshot depends on a host we don't
+// control.
+const URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)*(?:mcusercontent\.com|cdn-images\.mailchimp\.com|gallery\.mailchimp\.com|sawa-dev-2-storage-bucket\.storage\.googleapis\.com)\/[^\s"'<>()\\]+/gi;
 
 const args = {};
 for (const raw of process.argv.slice(2)) {
