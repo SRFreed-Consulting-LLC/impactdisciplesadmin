@@ -2,26 +2,19 @@ import { Component, Input } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { CartItem, CheckoutForm, FulfillmentStatus, PurchaseRefundEntry } from '@impact-common/shared/models/utils/cart.model';
+import { CartItem, CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from '@impact-common/shared/lists/roles.enum';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
-import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS, FulfillmentStep, stepsFor } from '../fulfillment/fulfillment-steps';
+import { FulfillmentStep, stepsFor } from '../fulfillment/fulfillment-steps';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { ContactDetailsDialogComponent } from '../contacts/contact-details-dialog.component';
 import { RefundDialogComponent, RefundDialogData, RefundDialogResult } from './refund-dialog.component';
-
-export interface TimelineNode {
-  step: FulfillmentStep;
-  state: 'done' | 'current' | 'pending';
-  date?: Date | Timestamp;
-  by?: string;
-}
 
 // Embedded inside PurchasesComponent's edit view - as of 2026-08-13 this IS
 // the entire edit screen (there is no longer a separate Contact tab/dialog;
@@ -99,22 +92,6 @@ export class PurchaseDetailsComponent {
     const receipt = (this.selectedItem.receipt ?? '').trim();
     return (this.selectedItem.total ?? 0) > 0 &&
       receipt !== '' && receipt !== 'COUPON' && receipt !== 'FREE ONLY';
-  }
-
-  // The refunds history the timeline card renders - legacy fully-refunded
-  // purchases (pre-refunds[]) get one synthesized row from refundedAt/
-  // refundedBy so their history isn't blank.
-  refundHistory(): PurchaseRefundEntry[] {
-    const refunds = this.selectedItem.refunds ?? [];
-    if (refunds.length === 0 && this.selectedItem.refunded) {
-      return [{
-        amount: this.selectedItem.refundAmount || this.service.getChargedDisplayAmount(this.selectedItem),
-        date: this.selectedItem.refundedAt as Timestamp,
-        ...(this.selectedItem.refundedBy ? { by: this.selectedItem.refundedBy } : {}),
-        ...(this.selectedItem.refundId ? { refundId: this.selectedItem.refundId } : {})
-      }];
-    }
-    return refunds;
   }
 
   async openRefundDialog(): Promise<void> {
@@ -311,54 +288,6 @@ export class PurchaseDetailsComponent {
         this.snackbar.success(`${item.itemName} x (${item.orderQuantity}) marked as ${item.processedStatus}`);
       });
     });
-  }
-
-  // ---- Timeline ----
-  // Real recorded events (selectedItem.statusHistory) render as "done"/
-  // "current" with their actual date + who did it; steps still ahead of the
-  // current status render as "pending" with no date, never a fabricated one.
-  // Orders that predate statusHistory (see StatusHistoryEntry's own comment,
-  // cart.model.ts) have none recorded - falls back to a single node built
-  // from dateProcessed + the current status, rather than inventing a history
-  // that was never captured.
-  get timeline(): TimelineNode[] {
-    const recorded = this.selectedItem.statusHistory?.length
-      ? this.selectedItem.statusHistory
-      : [{ status: (this.selectedItem.fulfillmentStatus ?? 'new') as FulfillmentStatus, date: this.selectedItem.dateProcessed as Timestamp }];
-
-    const doneNodes: TimelineNode[] = recorded.map((entry) => ({
-      step: this.stepFor(entry.status),
-      state: 'done',
-      date: entry.date,
-      by: entry.by
-    }));
-
-    // The most recently recorded transition is the order's current state,
-    // not a finished one - correct that single node after the fact rather
-    // than special-casing the map above.
-    if (doneNodes.length) {
-      doneNodes[doneNodes.length - 1].state = 'current';
-    }
-
-    // Path-aware (standard vs Amazon branch) so an Amazon order's timeline
-    // shows "Send Confirmation Email" ahead, not label/packaging steps.
-    const path = stepsFor(this.selectedItem.fulfillmentStatus, this.selectedItem.statusHistory);
-    const currentIndex = path.findIndex((s) => s.status === this.selectedItem.fulfillmentStatus);
-    const upcoming: TimelineNode[] = currentIndex >= 0
-      ? path.slice(currentIndex + 1).map((step) => ({ step, state: 'pending' as const }))
-      : [];
-
-    return [...doneNodes, ...upcoming];
-  }
-
-  private stepFor(status: FulfillmentStatus): FulfillmentStep {
-    // The order's OWN path first, so an Amazon order's 'closed' node reads
-    // "Confirmation Email Sent" rather than the standard path's "Product
-    // Shipped" (both paths share the 'closed' status).
-    const path = stepsFor(this.selectedItem.fulfillmentStatus, this.selectedItem.statusHistory);
-    return path.find((s) => s.status === status) ??
-      [...FULFILLMENT_STEPS, ...AMAZON_FULFILLMENT_STEPS].find((s) => s.status === status) ??
-      { status, label: status, statusLabel: status };
   }
 
   // ---- Workflow actions ----

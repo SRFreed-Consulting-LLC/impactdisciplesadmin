@@ -11,6 +11,7 @@ import { ContactDetailsDialogComponent } from './contacts/contact-details-dialog
 import { AddContactNoteDialogComponent } from './contacts/add-contact-note-dialog.component';
 import { PurchasesComponent } from './purchases/purchases.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
+import { OrderTimelineComponent } from './purchase-details/order-timeline/order-timeline.component';
 import { FulfillmentComponent } from './fulfillment/fulfillment.component';
 import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
 import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
@@ -80,6 +81,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
     AddContactNoteDialogComponent,
     PurchasesComponent,
     PurchaseDetailsComponent,
+    OrderTimelineComponent,
     FulfillmentComponent,
     CustomFormSubmissionsComponent,
     CustomFormSubmissionDetailDialogComponent,

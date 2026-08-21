@@ -132,37 +132,7 @@
   <!-- Timeline + Items -->
   <div class="tl">
     <div>
-      <p class="section-label">Order Timeline</p>
-      <div class="tl__events">
-        @for (node of timeline; track node.step.status) {
-          <div class="tl__event" [class]="'tl__event--' + node.state">
-            <b>{{ node.step.label }}</b>
-            @if (node.date) {
-              <div class="tl__when">{{ $any(node.date) | date: 'medium' }}@if (node.by) { &middot; {{ node.by }} }</div>
-            } @else if (node.state === 'pending') {
-              <div class="tl__when tl__when--pending">Pending</div>
-            }
-          </div>
-        }
-      </div>
-
-      @if (refundHistory().length > 0) {
-        <p class="section-label">Refunds</p>
-        <div class="tl__events">
-          @for (refund of refundHistory(); track $index) {
-            <div class="tl__event tl__event--refund">
-              <b>{{ refund.amount | currency }} refunded</b>
-              <div class="tl__when">
-                {{ $any(refund.date) | date: 'medium' }}@if (refund.by) { &middot; {{ refund.by }} }
-                @if (refund.refundId) { &middot; PayPal {{ refund.refundId }} }
-              </div>
-              @if (refund.licensesRevoked?.length) {
-                <div class="tl__when">{{ refund.licensesRevoked!.length }} library license(s) revoked</div>
-              }
-            </div>
-          }
-        </div>
-      }
+      <app-order-timeline [item]="selectedItem"></app-order-timeline>
     </div>
     <div>
       <p class="section-label">Items</p>
