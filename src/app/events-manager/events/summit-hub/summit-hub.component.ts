@@ -11,6 +11,7 @@ import { eventDayDates } from '../event-agenda/session-block.util';
 import { countsByItemId, noBreakoutRegistrations, pickedPercent, sessionsNearCapacity, thisWeekCount } from '../summit-stats.util';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
+import { toTimeValue } from '../event-time.util';
 
 // Summit Mission Control - what opening a summit from the list lands on
 // (user decision 2026-08-19: "land on mission control"): an operations hub,
@@ -26,13 +27,42 @@ import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 })
 export class SummitHubComponent implements OnInit {
   @Input() event: EventModel;
-  // Fed by the parent (events.component.hubPreviewData()) - the saved
-  // summit mapped for the preview rail; the hub itself never edits.
-  @Input() preview: SummitPreviewData = {};
   @Output() closed = new EventEmitter<void>();
   // Tab key of the editor to open ('info' | 'application' | 'agenda').
   @Output() edit = new EventEmitter<string>();
   @Output() openCommandCenter = new EventEmitter<void>();
+
+  // The saved summit mapped for the preview rail. Was an @Input the parent
+  // computed and pushed down (events.component.hubPreviewData()), which meant
+  // EventsComponent derived preview data for a child that already held the
+  // very object it derived it from - moved here 2026-08-21 (bucket A item #5).
+  //
+  // A getter, not a field: it is re-read each change-detection cycle, exactly
+  // as the parent's `[preview]="hubPreviewData()"` binding was, so the timing
+  // is unchanged. Deliberately reads `event` and NOT the re-fetched `fresh`
+  // copy below - the parent fed the list's own item, and using the fresher
+  // doc here would be a behaviour change, not a move. The hub never edits, so
+  // this always previews SAVED values.
+  get preview(): SummitPreviewData {
+    const item = this.event;
+    if (!item) return {};
+    return {
+      eventName: item.eventName,
+      startDate: item.startDate as Date | string,
+      endDate: item.endDate as Date | string,
+      checkIn: toTimeValue(item.checkIn),
+      description: item.description,
+      videoId: item.videoId,
+      imageUrl: item.imageUrl ?? null,
+      venue: item.venue ?? null,
+      costInDollars: item.costInDollars,
+      diningOptions: item.diningOptions ?? null,
+      checkinInstructions: item.checkinInstructions ?? null,
+      whatsNext: item.whatsNext ?? null,
+      faqList: item.faqList ?? null,
+      agendaItems: item.agendaItems ?? null
+    };
+  }
 
   loading = true;
   registrations: EventRegistrationModel[] = [];

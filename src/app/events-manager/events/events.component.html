@@ -414,7 +414,6 @@
 @if (mode === 'hub' && hubItem; as hubEvent) {
   <app-summit-hub
     [event]="hubEvent"
-    [preview]="hubPreviewData()"
     (closed)="closeHub()"
     (edit)="editFromHub($event)"
     (openCommandCenter)="commandCenterFromHub()">

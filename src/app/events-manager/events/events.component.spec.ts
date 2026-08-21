@@ -384,25 +384,6 @@ describe('EventsComponent (characterization, pre-split)', () => {
     });
   });
 
-  describe('hubPreviewData', () => {
-    it('is an empty object when no summit is selected', () => {
-      expect(makeComponent(true).component.hubPreviewData()).toEqual({});
-    });
-
-    it('previews the SAVED item, not form values', () => {
-      const { component } = makeComponent(true);
-      component.showHub(anEvent({
-        eventName: 'Summit 2026',
-        costInDollars: 199,
-        videoId: 'abc123',
-      }));
-      const preview = component.hubPreviewData();
-      expect(preview.eventName).toBe('Summit 2026');
-      expect(preview.costInDollars).toBe(199);
-      expect(preview.videoId).toBe('abc123');
-    });
-  });
-
   describe('summitPreviewData', () => {
     it('reads live form values so the preview updates before Save', () => {
       const { component } = makeComponent(true);

@@ -16,6 +16,7 @@ import { EMailTemplatesService } from 'src/app/common/services/data/email-templa
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
+import { toTimeValue } from './event-time.util';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
@@ -374,28 +375,6 @@ export class EventsComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Mission Control's rail previews the SAVED summit (the hub doesn't edit).
-  hubPreviewData(): SummitPreviewData {
-    const item = this.hubItem;
-    if (!item) return {};
-    return {
-      eventName: item.eventName,
-      startDate: item.startDate as Date | string,
-      endDate: item.endDate as Date | string,
-      checkIn: this.toTimeValue(item.checkIn),
-      description: item.description,
-      videoId: item.videoId,
-      imageUrl: item.imageUrl ?? null,
-      venue: item.venue ?? null,
-      costInDollars: item.costInDollars,
-      diningOptions: item.diningOptions ?? null,
-      checkinInstructions: item.checkinInstructions ?? null,
-      whatsNext: item.whatsNext ?? null,
-      faqList: item.faqList ?? null,
-      agendaItems: item.agendaItems ?? null
-    };
-  }
-
   // ---- Events (regular) screen: attendance-first pill row ----
   // Three pills (In-Person / Online / Both) replace the Summit/Online
   // checkboxes on the regular-event Details tab - they map onto the exact
@@ -520,7 +499,7 @@ export class EventsComponent implements OnInit, OnDestroy {
       emailTemplate: [item.emailTemplate ?? null],
       startDate: [this.toInputValue(item.startDate), Validators.required],
       endDate: [this.toInputValue(item.endDate)],
-      checkIn: [this.toTimeValue(item.checkIn)],
+      checkIn: [toTimeValue(item.checkIn)],
       costInDollars: [item.costInDollars ?? 0],
       isSummit: [item.isSummit ?? false],
       earlyRegistration: [item.earlyRegistration ?? false],
@@ -578,25 +557,6 @@ export class EventsComponent implements OnInit, OnDestroy {
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  // checkIn is actually persisted as a plain "HH:mm" string (see onSave() -
-  // unlike startDate/endDate it's never converted to a Date, despite
-  // EventModel typing the field as Timestamp), which is already exactly
-  // the shape <input type="time"> wants back - returning it directly here
-  // was the missing piece. Without this, a saved check-in time appeared to
-  // work (the string really was written) but silently failed to redisplay
-  // on the next edit: `new Date("14:30")` alone isn't a valid date, so the
-  // old code always fell through to returning ''.
-  private toTimeValue(value: unknown): string {
-    if (!value) return '';
-    if (typeof value === 'string' && /^\d{2}:\d{2}$/.test(value)) {
-      return value;
-    }
-    const d = value instanceof Date ? value : new Date(value as string | number);
-    if (isNaN(d.getTime())) return '';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   showImageUploader(): void {
