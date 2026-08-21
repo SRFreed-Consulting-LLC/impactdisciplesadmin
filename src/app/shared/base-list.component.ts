@@ -32,8 +32,18 @@ import { DataGridColumn, DataGridRowAction } from './data-grid/data-grid.model';
 export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
   /** Singular display name used in the grid title and snackbars, e.g. 'Coupon'. */
   abstract readonly itemType: string;
-  /** NAV_CONFIG screen key the permission checks use. */
-  protected abstract readonly screenKey: string;
+  /**
+   * NAV_CONFIG screen key the permission checks use, or `null` for a screen
+   * that is NOT permission-gated in its own right.
+   *
+   * `null` is for the dialog-hosted sub-editors (Product Categories, Product
+   * Series - opened from the Products screen's menu, no route of their own):
+   * they have no NAV_CONFIG entry, and access to them is already gated by the
+   * host screen you have to be on to open them. Inventing a key for those
+   * would ADD gating where there is none today and could hide New/Delete from
+   * staff who use them now.
+   */
+  protected abstract readonly screenKey: string | null;
   abstract readonly columns: DataGridColumn<T>[];
   /** The add/edit dialog, opened with `data: { item }` (null = new). */
   protected abstract readonly dialogComponent: ComponentType<unknown>;
@@ -51,9 +61,32 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
       icon: 'delete',
       tooltip: 'DELETE',
       onClick: (item) => this.delete(item),
-      visible: () => this.permissionService.canDelete(this.screenKey),
+      visible: () => this.canDeleteHere(),
     },
   ];
+
+  /** True when this screen has no key of its own - see `screenKey`. */
+  protected get ungated(): boolean {
+    return this.screenKey === null;
+  }
+
+  protected canAddHere(): boolean {
+    return this.ungated || this.permissionService.canAdd(this.screenKey!);
+  }
+
+  protected canEditHere(): boolean {
+    return this.ungated || this.permissionService.canEdit(this.screenKey!);
+  }
+
+  /**
+   * Which permission the delete action rides. Overridable because at least
+   * one screen has historically gated delete on canEdit rather than
+   * canDelete (Podcast Categories), and quietly "correcting" that here would
+   * take the button away from anyone holding edit-without-delete.
+   */
+  protected canDeleteHere(): boolean {
+    return this.ungated || this.permissionService.canDelete(this.screenKey!);
+  }
 
   constructor(
     protected readonly service: BaseService<T>,
@@ -65,7 +98,7 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
 
   ngOnInit(): void {
     this.items$ = this.loadItems();
-    this.headerActions = this.permissionService.canAdd(this.screenKey)
+    this.headerActions = this.canAddHere()
       ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }]
       : [];
   }
@@ -76,21 +109,21 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
   }
 
   showAddModal(): void {
-    if (!this.permissionService.canAdd(this.screenKey)) {
+    if (!this.canAddHere()) {
       return;
     }
     this.dialog.open(this.dialogComponent, { ...this.dialogConfig, data: { item: null } });
   }
 
   showEditModal(item: T): void {
-    if (!this.permissionService.canEdit(this.screenKey)) {
+    if (!this.canEditHere()) {
       return;
     }
     this.dialog.open(this.dialogComponent, { ...this.dialogConfig, data: { item } });
   }
 
   delete(item: T): void {
-    if (!this.permissionService.canDelete(this.screenKey)) {
+    if (!this.canDeleteHere()) {
       return;
     }
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {

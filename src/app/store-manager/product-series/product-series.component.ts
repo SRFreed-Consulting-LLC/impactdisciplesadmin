@@ -1,12 +1,13 @@
-import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Component } from '@angular/core';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { SeriesModel } from '@impact-common/shared/models/utils/series.model';
 import { SeriesService } from 'src/app/common/services/data/series.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseListComponent } from '../../shared/base-list.component';
 import { SeriesModalComponent } from './series-modal/series-modal.component';
-import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Opened via MatDialog.open(ProductSeriesComponent, ...) from
 // ProductsComponent's "Series" menu item - same pattern as
@@ -14,66 +15,40 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 // pod-cast-categories.component). Replaces the old NGXS
 // ShowProductSeriesModal/ShowSeriesModal action-driven, always-mounted
 // pattern.
+//
+// On BaseListComponent since 2026-08-21 (bucket A item #6), with screenKey
+// NULL - see ProductCategoriesComponent's comment for why that is
+// deliberate rather than an oversight.
 @Component({
     selector: 'app-product-series',
     templateUrl: './product-series.component.html',
     styleUrls: ['./product-series.component.css'],
     standalone: false
 })
-export class ProductSeriesComponent implements OnInit {
-  series$: Observable<SeriesModel[]>;
-
-  columns: DataGridColumn<SeriesModel>[] = [
+export class ProductSeriesComponent extends BaseListComponent<SeriesModel> {
+  readonly itemType = 'Series';
+  protected readonly screenKey = null;
+  readonly columns: DataGridColumn<SeriesModel>[] = [
     { key: 'imageUrl', label: 'Image', filterable: false, sortable: false, value: (item) => item.imageUrl?.name ?? '' },
     { key: 'order', label: 'Order', type: 'number', filterable: false },
     { key: 'name', label: 'Name' },
     { key: 'showInStore', label: 'Show In Store', filterable: false, value: (item) => (item.showInStore ? 'Yes' : 'No') }
   ];
-  rowActions: DataGridRowAction<SeriesModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
-
-  itemType = 'Series';
-
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
+  protected readonly dialogComponent = SeriesModalComponent;
+  protected override readonly dialogConfig: MatDialogConfig = { width: '500px' };
 
   constructor(
-    private service: SeriesService,
-    private dialog: MatDialog,
-    private dialogRef: MatDialogRef<ProductSeriesComponent>,
-    private confirmService: ConfirmService,
-    private snackbar: SnackbarService
-  ) {}
-
-  ngOnInit(): void {
-    this.series$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+    service: SeriesService,
+    permissionService: PermissionService,
+    dialog: MatDialog,
+    confirmService: ConfirmService,
+    snackbar: SnackbarService,
+    private readonly dialogRef: MatDialogRef<ProductSeriesComponent>
+  ) {
+    super(service, permissionService, dialog, confirmService, snackbar);
   }
 
   onClose(): void {
     this.dialogRef.close();
-  }
-
-  showAddModal(): void {
-    this.dialog.open(SeriesModalComponent, {
-      width: '500px',
-      data: { item: null }
-    });
-  }
-
-  showEditModal(item: SeriesModel): void {
-    this.dialog.open(SeriesModalComponent, {
-      width: '500px',
-      data: { item }
-    });
-  }
-
-  delete(item: SeriesModel): void {
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
   }
 }

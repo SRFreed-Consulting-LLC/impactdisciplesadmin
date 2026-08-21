@@ -13,7 +13,7 @@
     [showHeader]="false"
     [columns]="columns"
     [rowActions]="rowActions"
-    [rows]="(categories$ | async) ?? []"
+    [rows]="(items$ | async) ?? []"
     [loading]="(loading$ | async) ?? false"
     tableClass="category-table"
     initialSortKey="tag"

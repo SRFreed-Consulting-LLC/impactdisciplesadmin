@@ -1,12 +1,13 @@
-import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Component } from '@angular/core';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { ProductCategoriesService } from 'src/app/common/services/data/product-categories.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseListComponent } from '../../shared/base-list.component';
 import { CategoryModalComponent } from './category-modal/category-modal.component';
-import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Opened via MatDialog.open(ProductCategoriesComponent, ...) from
 // ProductsComponent's "Categories" menu item - there is no standalone
@@ -15,63 +16,42 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
 // from). Replaces the old NGXS ShowProductCategoriesModal/ShowCategoryModal
 // action-driven, always-mounted-in-template pattern - no other migrated
 // screen in this app invokes dialogs that way.
+//
+// On BaseListComponent since 2026-08-21 (bucket A item #6). screenKey is
+// NULL on purpose: this dialog has no NAV_CONFIG entry of its own and has
+// never been permission-gated - you already have to be on the (gated)
+// Products screen to open it. Giving it a key here would ADD gating that
+// does not exist today and could take New/Delete away from staff who use
+// it now. The dialogRef is this screen's own, on top of the base skeleton -
+// the base knows nothing about being hosted in a dialog.
 @Component({
     selector: 'app-product-categories',
     templateUrl: './product-categories.component.html',
     styleUrls: ['./product-categories.component.css'],
     standalone: false
 })
-export class ProductCategoriesComponent implements OnInit {
-  categories$: Observable<TagModel[]>;
-  columns: DataGridColumn<TagModel>[] = [
+export class ProductCategoriesComponent extends BaseListComponent<TagModel> {
+  readonly itemType = 'Category';
+  protected readonly screenKey = null;
+  readonly columns: DataGridColumn<TagModel>[] = [
     { key: 'tag', label: 'Tag' },
     { key: 'showInStore', label: 'Show In Store', filterable: false, value: (item) => (item.showInStore ? 'Yes' : 'No') }
   ];
-  rowActions: DataGridRowAction<TagModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
-
-  itemType = 'Category';
-
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
+  protected readonly dialogComponent = CategoryModalComponent;
+  protected override readonly dialogConfig: MatDialogConfig = { width: '400px' };
 
   constructor(
-    private service: ProductCategoriesService,
-    private dialog: MatDialog,
-    private dialogRef: MatDialogRef<ProductCategoriesComponent>,
-    private confirmService: ConfirmService,
-    private snackbar: SnackbarService
-  ) {}
-
-  ngOnInit(): void {
-    this.categories$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
+    service: ProductCategoriesService,
+    permissionService: PermissionService,
+    dialog: MatDialog,
+    confirmService: ConfirmService,
+    snackbar: SnackbarService,
+    private readonly dialogRef: MatDialogRef<ProductCategoriesComponent>
+  ) {
+    super(service, permissionService, dialog, confirmService, snackbar);
   }
 
   onClose(): void {
     this.dialogRef.close();
-  }
-
-  showAddModal(): void {
-    this.dialog.open(CategoryModalComponent, {
-      width: '400px',
-      data: { item: null }
-    });
-  }
-
-  showEditModal(item: TagModel): void {
-    this.dialog.open(CategoryModalComponent, {
-      width: '400px',
-      data: { item }
-    });
-  }
-
-  delete(item: TagModel): void {
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
   }
 }

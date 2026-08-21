@@ -11,7 +11,7 @@
     [showHeader]="false"
     [columns]="columns"
     [rowActions]="rowActions"
-    [rows]="(series$ | async) ?? []"
+    [rows]="(items$ | async) ?? []"
     [loading]="(loading$ | async) ?? false"
     tableClass="series-table"
     initialSortKey="order"
