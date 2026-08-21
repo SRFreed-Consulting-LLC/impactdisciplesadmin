@@ -8,7 +8,7 @@ import { STARTER_TEMPLATES } from 'src/app/common/utils/email/starter-templates'
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 
 // What the shell does with the choice: start a new email from a COPY of
 // the design, or jump to editing the template itself.

@@ -7,7 +7,7 @@ import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-preview-dialog.component';

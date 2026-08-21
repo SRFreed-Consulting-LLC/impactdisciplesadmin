@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
+import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

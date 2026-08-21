@@ -1,5 +1,5 @@
-import { Role } from "../../lists/roles.enum";
-import { OrganizationModel } from "../domain/organization.model";
+import { Role } from "@impact-common/shared/lists/roles.enum";
+import { OrganizationModel } from "@impact-common/shared/models/domain/organization.model";
 import { Person } from "@impact-common/shared/models/domain/utils/person.model";
 import { ScreenPermission } from "./screen-permission.model";
 import { LibraryNodePermission } from "../domain/library/library-node-permission.model";

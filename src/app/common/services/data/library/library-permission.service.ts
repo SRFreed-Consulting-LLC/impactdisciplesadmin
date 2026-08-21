@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Firestore, doc, runTransaction } from '@angular/fire/firestore';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { hasRole, Role } from 'src/app/common/lists/roles.enum';
+import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { LibraryNodePermission, LibraryNodeType } from 'src/app/common/models/domain/library/library-node-permission.model';
 import { BookSeriesService } from './book-series.service';

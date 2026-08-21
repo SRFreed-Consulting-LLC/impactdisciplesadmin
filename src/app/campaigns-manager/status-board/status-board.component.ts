@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CampaignModel, CampaignStatus, campaignKindLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
-import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 
 // Status Board (kept in v2 by user choice, adapted to goal/channels): the
 // same campaign docs as the Campaigns list, arranged two ways behind one

@@ -6,7 +6,7 @@ import { ScreenPermission } from 'src/app/common/models/admin/screen-permission.
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService, PermissionNode } from 'src/app/common/services/permission.service';
-import { Role } from 'src/app/common/lists/roles.enum';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';

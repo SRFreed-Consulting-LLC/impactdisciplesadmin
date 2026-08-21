@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { CoachModel } from '@impact-common/shared/models/domain/coach.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';

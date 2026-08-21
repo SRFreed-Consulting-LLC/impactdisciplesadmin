@@ -3,7 +3,7 @@ import { Functions } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
-import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm, FulfillmentStatus } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from './purchases.service';
 import { EMailService } from './email.service';
 import { EMailTemplatesService } from './email-templates.service';

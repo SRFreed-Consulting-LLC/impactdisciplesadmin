@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
+import { OrganizationModel } from '@impact-common/shared/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
-import { LocationModel } from 'src/app/common/models/domain/location.model';
+import { LocationModel } from '@impact-common/shared/models/domain/location.model';
 import { LocationService } from 'src/app/common/services/data/location.service';
-import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 

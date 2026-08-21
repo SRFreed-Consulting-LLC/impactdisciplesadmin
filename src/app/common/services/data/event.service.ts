@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO, QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 
 @Injectable({

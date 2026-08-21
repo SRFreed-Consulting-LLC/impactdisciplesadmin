@@ -1,5 +1,5 @@
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { FIELD_TYPE_META, FormFieldDef } from 'src/app/common/models/domain/form-field.model';
+import { FIELD_TYPE_META, FormFieldDef } from '@impact-common/shared/models/domain/form-field.model';
 
 // Builds one flat top-level FormGroup for a whole fields[] tree, keyed by
 // each data field's own id - including fields nested inside a 'columns'

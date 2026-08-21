@@ -1,4 +1,4 @@
-import { Role } from 'src/app/common/lists/roles.enum';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 
 // Single source of truth for the whole left nav: the top-level entries
 // (Home + the "manager" modules) plus, for each manager, the sub-screens

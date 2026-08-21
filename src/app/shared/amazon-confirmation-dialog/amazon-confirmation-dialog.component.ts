@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { SnackbarService } from '../snackbar.service';
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AdminAuthService } from '../forms/admin/admin-auth.service';
 import { AdminUserService } from './data/admin-user.service';
-import { Role } from '../lists/roles.enum';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 import { ScreenPermission } from '../models/admin/screen-permission.model';
 
 // A handful of things already allowed Employee role broadly before this

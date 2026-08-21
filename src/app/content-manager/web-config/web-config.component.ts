@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { WebConfigModel } from 'src/app/common/models/utils/web-config.model';
+import { WebConfigModel } from '@impact-common/shared/models/utils/web-config.model';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { SnackbarService } from '../../shared/snackbar.service';

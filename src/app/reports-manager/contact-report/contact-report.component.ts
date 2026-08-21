@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { EnumHelper } from 'src/app/common/utils/enum_helper';
+import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 

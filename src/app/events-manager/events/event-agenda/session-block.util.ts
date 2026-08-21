@@ -1,5 +1,5 @@
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 
 // Either CoachModel or ImpactTeamMemberModel satisfies this structurally -
 // since the Impact Team split (2026-08, see impact-team.service.ts's own

@@ -2,10 +2,10 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { ShippingLabelRequest } from 'src/app/common/models/domain/shipment-label-batch-request.model';
+import { ShippingLabelRequest } from '@impact-common/shared/models/domain/shipment-label-batch-request.model';
 import { ShippingModel, ShippingRequest, ShippingToAddress } from '@impact-common/shared/models/domain/shipment.model';
 import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
-import { EnumHelper } from 'src/app/common/utils/enum_helper';
+import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface ShippingLabelDialogData {

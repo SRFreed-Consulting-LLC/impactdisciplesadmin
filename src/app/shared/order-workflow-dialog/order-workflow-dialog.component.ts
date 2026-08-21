@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { FulfillmentStep, segmentState, stepsFor } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';

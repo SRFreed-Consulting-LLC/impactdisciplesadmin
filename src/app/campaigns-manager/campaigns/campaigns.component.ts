@@ -6,7 +6,7 @@ import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
-import { dateFromTimestamp, toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { describeCampaignDelete, describeCampaignDeleteResult } from './campaign-delete-text';

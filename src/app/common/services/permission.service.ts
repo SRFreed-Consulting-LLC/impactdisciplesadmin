@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AdminAuthService } from '../forms/admin/admin-auth.service';
-import { hasRole, Role } from '../lists/roles.enum';
+import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
 import { NAV_CONFIG, NavGroup, NavLeaf } from '../../core/main-screen/nav-config';
 import { AdminUser } from '../models/admin/admin-user.model';
 import { EffectivePermission, ScreenPermission } from '../models/admin/screen-permission.model';

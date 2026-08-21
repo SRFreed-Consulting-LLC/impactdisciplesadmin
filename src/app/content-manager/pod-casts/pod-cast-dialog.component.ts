@@ -7,7 +7,7 @@ import { PodCastService } from 'src/app/common/services/data/pod-cast.service';
 import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface PodCastDialogData {

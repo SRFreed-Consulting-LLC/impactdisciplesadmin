@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { formatFieldValue } from 'src/app/common/models/domain/form-field.model';
-import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
+import { formatFieldValue } from '@impact-common/shared/models/domain/form-field.model';
+import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
 import { extractSubmission } from '../../shared/form-submission-mapping.util';
 import { CreateOrgContactDialogComponent, CreateOrgContactDialogResult } from '../../shared/create-org-contact-dialog/create-org-contact-dialog.component';
 

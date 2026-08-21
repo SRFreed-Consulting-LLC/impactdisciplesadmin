@@ -1,6 +1,6 @@
 import { MatDialogRef } from '@angular/material/dialog';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { SessionBlock } from '../event-agenda/session-block.util';
 import { SessionAssignmentDialogComponent } from './session-assignment-dialog.component';
 import type { SummitCommandCenterComponent } from './summit-command-center.component';

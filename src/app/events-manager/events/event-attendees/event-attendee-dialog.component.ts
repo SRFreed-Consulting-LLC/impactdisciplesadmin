@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { SnackbarService } from '../../../shared/snackbar.service';

@@ -1,7 +1,7 @@
 import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { SnackbarService } from '../../../shared/snackbar.service';

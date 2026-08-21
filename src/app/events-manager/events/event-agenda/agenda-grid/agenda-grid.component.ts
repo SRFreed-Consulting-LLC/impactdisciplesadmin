@@ -1,9 +1,9 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { AgendaItemDialogComponent, AgendaItemDialogResult } from '../agenda-item-dialog.component';
 import { BreakoutBlockDialogComponent, BreakoutBlockDialogResult } from '../breakout-block-dialog.component';
 import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, Instructor, itemTitle, SessionBlock } from '../session-block.util';

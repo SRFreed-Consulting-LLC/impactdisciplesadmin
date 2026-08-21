@@ -1,7 +1,7 @@
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 
 // Pure derivations over one event's registrations + agenda items - shared
 // by the Summit Mission Control hub and the Attendee Command Center, both

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactService } from 'src/app/common/services/data/contact.service';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

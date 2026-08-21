@@ -9,7 +9,7 @@ import {
   FormFieldStyle,
   setColumnCount,
   supportsLabelDisplay
-} from 'src/app/common/models/domain/form-field.model';
+} from '@impact-common/shared/models/domain/form-field.model';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 
 // Settings drawer for whichever field is selected in the Form Builder

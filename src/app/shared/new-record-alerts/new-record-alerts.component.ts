@@ -6,7 +6,7 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { NewRecordTracker } from '../new-record-tracking.util';
 
 interface AlertSource {

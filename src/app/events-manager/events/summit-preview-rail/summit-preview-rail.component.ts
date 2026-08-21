@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { itemTitle } from 'src/app/events-manager/events/event-agenda/session-block.util';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 
 type RailView = 'web' | 'phone' | 'app';

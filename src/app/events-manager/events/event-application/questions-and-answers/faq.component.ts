@@ -2,7 +2,7 @@ import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/cor
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { FAQModel } from '@impact-common/shared/models/utils/faq.model';
 import { FAQService } from 'src/app/common/services/data/faq.service';
 import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';

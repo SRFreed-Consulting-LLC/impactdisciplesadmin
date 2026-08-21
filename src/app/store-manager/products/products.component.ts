@@ -12,7 +12,7 @@ import { SeriesService } from 'src/app/common/services/data/series.service';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
 import { LibraryBookModel } from 'src/app/common/models/domain/library/library-book.model';
 import { LibraryBookService } from 'src/app/common/services/data/library/library-book.service';
-import { EnumHelper } from 'src/app/common/utils/enum_helper';
+import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

@@ -2,7 +2,7 @@ import { of } from 'rxjs';
 import { PermissionService } from './permission.service';
 import { AdminAuthService } from '../forms/admin/admin-auth.service';
 import { AdminUser } from '../models/admin/admin-user.model';
-import { Role } from '../lists/roles.enum';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 import { ScreenPermission } from '../models/admin/screen-permission.model';
 
 // PermissionService's only real dependency is

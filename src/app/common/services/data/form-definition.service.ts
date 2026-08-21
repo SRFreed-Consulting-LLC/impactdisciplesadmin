@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { FormDefinitionModel } from 'src/app/common/models/domain/form-definition.model';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { FormDefinitionModel } from '@impact-common/shared/models/domain/form-definition.model';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 
 @Injectable({

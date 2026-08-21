@@ -1,5 +1,5 @@
-import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
-import { FormFieldType } from 'src/app/common/models/domain/form-field.model';
+import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
+import { FormFieldType } from '@impact-common/shared/models/domain/form-field.model';
 import { Address } from '@impact-common/shared/models/domain/utils/address.model';
 import { Phone } from '@impact-common/shared/models/domain/utils/phone.model';
 

@@ -13,7 +13,7 @@ import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service'
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 
 // Email touch editor (Campaign Manager v2, Phase 2): authors ONE email of
 // a campaign - subject, content (snapshotted from a mail_templates doc at

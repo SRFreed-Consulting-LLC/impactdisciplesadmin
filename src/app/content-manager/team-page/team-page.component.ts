@@ -1,9 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { ImpactTeamMemberModel } from 'src/app/common/models/domain/impact-team-member.model';
+import { ImpactTeamMemberModel } from '@impact-common/shared/models/domain/impact-team-member.model';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
-import { OrganizationModel } from 'src/app/common/models/domain/organization.model';
+import { OrganizationModel } from '@impact-common/shared/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
-import { EventVenue } from 'src/app/common/models/domain/event.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { EventVenue } from '@impact-common/shared/models/domain/event.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { FAQModel } from '@impact-common/shared/models/utils/faq.model';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 
 // What the HOST feeds the preview - live form values + the resolved venue,
 // never a saved model (the whole point is seeing unsaved edits).

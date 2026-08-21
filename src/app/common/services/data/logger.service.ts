@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { LogMessage } from "@impact-common/shared/models/utils/log-message.model";
 import { FirebaseDAO } from '../../dao/firebase.dao';
 import { Timestamp } from "firebase/firestore";
-import { dateFromTimestamp } from "src/app/common/utils/date-from-timestamp";
+import { dateFromTimestamp } from "@impact-common/shared/utils/date-from-timestamp";
 import { BaseService } from "./base.service";
 import { Observable, from, map, of } from "rxjs";
 

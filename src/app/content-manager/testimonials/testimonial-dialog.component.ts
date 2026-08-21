@@ -6,7 +6,7 @@ import { Timestamp } from 'firebase/firestore';
 import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types.enum';
-import { EnumHelper } from 'src/app/common/utils/enum_helper';
+import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface TestimonialDialogData {

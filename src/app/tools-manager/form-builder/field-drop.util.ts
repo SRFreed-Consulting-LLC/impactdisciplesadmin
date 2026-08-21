@@ -1,5 +1,5 @@
 import { moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import { createFieldDef, FormFieldDef, FormFieldType } from 'src/app/common/models/domain/form-field.model';
+import { createFieldDef, FormFieldDef, FormFieldType } from '@impact-common/shared/models/domain/form-field.model';
 
 export const PALETTE_PREFIX = 'palette-';
 export const COLUMN_PREFIX = 'column-';

@@ -1,4 +1,4 @@
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import {
   blockLabel,
   buildDaySchedule,

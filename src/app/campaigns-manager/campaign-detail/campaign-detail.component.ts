@@ -11,7 +11,7 @@ import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-preview-dialog.component';
 import { PublishWebDialogComponent } from './publish-web-dialog.component';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

@@ -8,7 +8,7 @@ import { CampaignPopupModel } from 'src/app/common/models/domain/campaign-popup.
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 
 // Human names for snackbars/buttons - distinct from the chip labels in

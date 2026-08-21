@@ -2,13 +2,13 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Unsubscribe } from 'firebase/firestore';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { EMailModel } from 'src/app/common/models/admin/mail.model';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';

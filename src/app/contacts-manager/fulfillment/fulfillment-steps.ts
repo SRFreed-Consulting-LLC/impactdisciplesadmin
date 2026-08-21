@@ -1,4 +1,4 @@
-import { FulfillmentStatus, StatusHistoryEntry } from 'src/app/common/models/utils/cart.model';
+import { FulfillmentStatus, StatusHistoryEntry } from '@impact-common/shared/models/utils/cart.model';
 
 // Segmented Progress Bar concept (option 4) from the reviewed mockup -
 // https://claude.ai/code/artifact/6d7ac162-4588-40cf-b4b6-243051aa1045 -

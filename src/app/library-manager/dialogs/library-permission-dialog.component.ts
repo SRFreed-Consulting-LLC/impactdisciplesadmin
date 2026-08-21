@@ -5,7 +5,7 @@ import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { LibraryPermissionService } from 'src/app/common/services/data/library/library-permission.service';
-import { Role } from 'src/app/common/lists/roles.enum';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 import { LibraryNodeType } from 'src/app/common/models/domain/library/library-node-permission.model';
 
 export interface LibraryPermissionDialogData {

@@ -5,7 +5,7 @@ import {
   segmentState,
   stepsFor,
 } from './fulfillment-steps';
-import { StatusHistoryEntry } from 'src/app/common/models/utils/cart.model';
+import { StatusHistoryEntry } from '@impact-common/shared/models/utils/cart.model';
 
 // The fulfillment workflow's two paths (standard in-house vs Amazon) are
 // told apart by stepsFor() - the dashboard workflow dialog, the

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { controlStyleVars, FormControlStyle, FormFieldDef } from 'src/app/common/models/domain/form-field.model';
+import { controlStyleVars, FormControlStyle, FormFieldDef } from '@impact-common/shared/models/domain/form-field.model';
 import { buildFormGroup } from './build-form-group';
 
 // Renders a fields[] tree as an actual reactive form - used both for the

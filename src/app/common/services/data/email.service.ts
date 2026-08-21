@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { EMailModel, MessageModel, TemplateModel } from 'src/app/common/models/admin/mail.model';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { htmlToPlainText } from '@impact-common/shared/utils/html-to-text';
 import { BaseService } from './base.service';
 

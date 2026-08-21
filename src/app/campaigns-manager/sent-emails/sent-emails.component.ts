@@ -7,7 +7,7 @@ import { CampaignEmailService } from 'src/app/common/services/data/campaign-emai
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SentEmailPreviewDialogComponent } from './sent-email-preview-dialog.component';
 
 // Sent Emails - the global EMAIL LOG (Campaign Manager v2): every email

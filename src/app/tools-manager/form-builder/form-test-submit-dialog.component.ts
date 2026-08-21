@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { flattenDataFields, FormControlStyle, FormFieldDef } from 'src/app/common/models/domain/form-field.model';
-import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
+import { flattenDataFields, FormControlStyle, FormFieldDef } from '@impact-common/shared/models/domain/form-field.model';
+import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 

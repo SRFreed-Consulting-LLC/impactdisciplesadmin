@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { collection, documentId, getDocs, query, where } from '@angular/fire/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { CoachModel } from 'src/app/common/models/domain/coach.model';
+import { CoachModel } from '@impact-common/shared/models/domain/coach.model';
 import { BaseService } from './base.service';
 
 @Injectable({

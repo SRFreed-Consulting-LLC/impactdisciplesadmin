@@ -4,7 +4,7 @@ import { MatCheckboxChange } from '@angular/material/checkbox';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { ScreenPermission } from 'src/app/common/models/admin/screen-permission.model';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
-import { Role } from 'src/app/common/lists/roles.enum';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 
 export interface ScreenPermissionsDialogData {
   screenKey: string;

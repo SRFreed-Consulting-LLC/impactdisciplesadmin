@@ -1,5 +1,5 @@
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { FAQModel } from '@impact-common/shared/models/utils/faq.model';
 import { copyAgendaSkeleton, copySummitContent } from './summit-copy.util';
 

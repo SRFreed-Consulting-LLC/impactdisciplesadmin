@@ -1,6 +1,6 @@
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import {
   countsByItemId,
   noBreakoutRegistrations,

@@ -2,7 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { AffilliatePaymentModel } from 'src/app/common/models/utils/affilliate-payment.model';
 import { AffilliatePaymentsService } from 'src/app/common/services/data/affiliate-payment.service';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 

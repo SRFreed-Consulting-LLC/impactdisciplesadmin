@@ -1,10 +1,10 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { blockLabel, groupAgendaItemsIntoBlocks, SessionBlock } from '../event-agenda/session-block.util';
 import { countsByItemId, noBreakoutRegistrations, weeklyBuckets, WeeklyBucket } from '../summit-stats.util';

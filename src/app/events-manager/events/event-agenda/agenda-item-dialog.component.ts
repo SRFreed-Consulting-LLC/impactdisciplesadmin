@@ -1,7 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
 import { CoachQuickCreateDialogComponent } from './coach-quick-create-dialog.component';
 import { Instructor } from './session-block.util';

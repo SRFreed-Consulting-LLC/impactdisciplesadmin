@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
+import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';

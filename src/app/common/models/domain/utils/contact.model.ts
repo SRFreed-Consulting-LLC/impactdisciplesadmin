@@ -1,5 +1,5 @@
 import { Timestamp } from "firebase/firestore";
-import { Role } from "src/app/common/lists/roles.enum";
+import { Role } from "@impact-common/shared/lists/roles.enum";
 import { Person } from "@impact-common/shared/models/domain/utils/person.model";
 import { ContactNoteModel } from "./contact-note.model";
 

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { LocationModel } from 'src/app/common/models/domain/location.model';
+import { LocationModel } from '@impact-common/shared/models/domain/location.model';
 import { LocationService } from 'src/app/common/services/data/location.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 

@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { controlStyleVars, FIELD_TYPE_META, FormFieldDef, IMAGE_WIDTH_CSS, fieldStyleObject } from 'src/app/common/models/domain/form-field.model';
+import { controlStyleVars, FIELD_TYPE_META, FormFieldDef, IMAGE_WIDTH_CSS, fieldStyleObject } from '@impact-common/shared/models/domain/form-field.model';
 
 // Renders exactly one FormFieldDef against the shared top-level FormGroup a
 // parent app-form-renderer built (see build-form-group.ts) - dispatches by

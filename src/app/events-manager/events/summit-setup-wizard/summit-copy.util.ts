@@ -1,6 +1,6 @@
-import { EventModel } from 'src/app/common/models/domain/event.model';
-import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { generateAgendaItemId } from '../event-agenda/session-block.util';
 
 // "Copy from last summit" (user decision 2026-08-19) - pure functions so

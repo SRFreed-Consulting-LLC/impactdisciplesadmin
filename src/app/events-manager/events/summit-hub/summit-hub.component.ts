@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
-import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
+import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
-import { LocationModel } from 'src/app/common/models/domain/location.model';
+import { LocationModel } from '@impact-common/shared/models/domain/location.model';
 import { LocationService } from 'src/app/common/services/data/location.service';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { eventDayDates } from '../event-agenda/session-block.util';
 import { countsByItemId, noBreakoutRegistrations, pickedPercent, sessionsNearCapacity, thisWeekCount } from '../summit-stats.util';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';

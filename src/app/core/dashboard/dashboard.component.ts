@@ -1,19 +1,19 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, takeUntil } from 'rxjs';
-import { CheckoutForm } from 'src/app/common/models/utils/cart.model';
+import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { OrderWorkflowDialogComponent } from '../../shared/order-workflow-dialog/order-workflow-dialog.component';
 import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
 import { CreateOrgContactDialogComponent } from '../../shared/create-org-contact-dialog/create-org-contact-dialog.component';
 import { extractSubmission, submitterIdentity } from '../../shared/form-submission-mapping.util';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
-import { EventModel } from 'src/app/common/models/domain/event.model';
+import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { LocationService } from 'src/app/common/services/data/location.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
-import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
-import { toMillis } from 'src/app/common/utils/date-from-timestamp';
+import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { FulfillmentStep, segmentState, stepsFor } from '../../contacts-manager/fulfillment/fulfillment-steps';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 
