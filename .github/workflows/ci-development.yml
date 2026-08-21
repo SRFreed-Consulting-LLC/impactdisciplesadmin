@@ -1,0 +1,114 @@
+name: CI (development)
+
+# Build + lint + unit-test gate for the admin app AND its Cloud Functions -
+# runs on every push to "development" and on pull requests targeting it.
+# Added 2026-08-21 (refactor sweep, bucket B): until now this repo had no CI,
+# so a broken spec, a non-compiling change, or a function added without its
+# shared-contract entry only surfaced on someone's machine.
+#
+# Deliberately NOT run here (need the Emulator Suite + Java): the
+# integration/ suite (`npm run test:integration`), the rules tests
+# (`npm run test:rules`) and e2e/e2e-cross - those stay local for now.
+# No deploy step either: deploys stay manual (build-deploy-dev / deploy-dev)
+# until a FIREBASE_SERVICE_ACCOUNT secret exists - see the commented block at
+# the bottom.
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+concurrency:
+  group: ci-development-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: Angular app
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # src/common (impact-discipleship-library-common) is a public
+          # submodule; the default token is enough to clone it.
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # --legacy-peer-deps: @angular/fire@20.0.1's peer range still points at
+      # Angular 20.0.x, one minor behind this app's ^20.3 packages; the code is
+      # compatible, the peer metadata is stale (same as the web/reader repos).
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # Blocking: the app lints clean as of 2026-08-21 (the "194 pre-existing
+      # findings" note in older docs is stale).
+      - name: Lint
+        run: npm run lint
+
+      # ubuntu-latest ships Google Chrome for the Karma ChromeHeadless launcher.
+      - name: Unit tests
+        run: npm test
+
+      - name: Build (development configuration)
+        run: npm run build-dev
+
+  functions:
+    name: Cloud Functions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # scripts/sync-shared.js copies the shared contract/config slices
+          # from ../src/common into functions/src/common on every build.
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Matches functions/package.json engines.node (the deployed runtime).
+          node-version: 22
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `npm test` = prebuild (sync shared slices) + tsc + node:test, which
+      # includes test/contract.test.js - index.ts must export exactly the
+      # names in the shared functions contract.
+      - name: Build + unit tests (incl. contract drift guard)
+        run: npm test
+
+      # ---- To enable CI deploys later (dev project) ----
+      # 1. Add a FIREBASE_SERVICE_ACCOUNT repository secret (service account
+      #    JSON with Firebase Hosting Admin + Cloud Functions Developer +
+      #    Service Account User on impactdisciplesdev).
+      # 2. Uncomment in the `app` job:
+      # - name: Install firebase-tools
+      #   run: npm install -g firebase-tools@14.17.0
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v3
+      #   with:
+      #     credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      # - name: Deploy (development hosting + functions)
+      #   if: github.event_name == 'push'
+      #   run: firebase use impactdisciplesdev && firebase deploy --only hosting:development,functions --non-interactive

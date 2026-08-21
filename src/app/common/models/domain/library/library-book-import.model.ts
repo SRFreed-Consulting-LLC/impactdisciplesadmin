@@ -8,7 +8,6 @@
 // (library-book-schema-assembler.util.ts) and writes the library content.
 import type {
   BlockSection,
-  BookImportRequest,
   BookPlan,
   ImportBlock,
   ImportDailyReading,
