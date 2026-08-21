@@ -31,11 +31,22 @@ const ENV_VARS = {
   WEB_APP_DOMAIN: "http://localhost:4200",
 };
 
+// Anything a function declares as a SECRET must appear here, even if the same
+// name is already in ENV_VARS above - the emulator resolves the two through
+// different channels. A secret that is missing from .secret.local is fetched
+// from REAL Google Secret Manager, which 403s against the demo-* project and
+// kills the functions worker on load; the symptom is every function failing
+// with "Failed to load function" and every integration test hanging until it
+// times out, which is what TAX_API_KEY did until 2026-08-21. Sources of truth
+// for this list: defineSecret("...") calls and .runWith({secrets: [...]}).
 const SECRETS = {
   PAYPAL_SANDBOX_CLIENT_SECRET: "fake-paypal-sandbox-secret",
   PAYPAL_LIVE_CLIENT_SECRET: "fake-paypal-live-secret",
   PAYPAL_CLIENT_SECRET: "fake-paypal-secret-emulator",
   ANTHROPIC_API_KEY: "fake-anthropic-key",
+  // Declared via .runWith({secrets: [...]}) in paypal.functions.ts, not
+  // defineSecret() - easy to miss when grepping for the latter.
+  TAX_API_KEY: "fake-tax-key",
 };
 
 const toDotenv = (obj) =>
