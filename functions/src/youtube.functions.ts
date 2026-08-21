@@ -1,5 +1,7 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import * as functions from "firebase-functions";
+// v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
+// the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
+// secrets plumbing) until a deliberate 2nd-gen migration.
+import * as functions from "firebase-functions/v1";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 /**
@@ -64,7 +66,7 @@ exports.get_youtube_videos = functions
     return restrictedCors(request, response, async () => {
       try {
         await requireStaffAuth(request);
-      } catch (err) {
+      } catch {
         response.status(401).send({code: 401, error: "Unauthorized"});
         return;
       }

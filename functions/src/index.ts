@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 // Every other file in this codebase (admin-users.functions.ts, utils/
 // security.functions.ts, new-record-alerts.functions.ts, ...) calls
 // admin.firestore()/admin.auth() directly without ever calling

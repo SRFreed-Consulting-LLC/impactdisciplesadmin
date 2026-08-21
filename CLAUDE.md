@@ -76,11 +76,13 @@ npm run deploy-prod     # firebase use impactdisciples-a82a8 && firebase deploy 
 npm run logs
 ```
 
-`functions/` still uses ESLint 8 + `.eslintrc`-style config while the ESLint auto-detected from the
-repo root is the Angular app's flat `eslint.config.js` — `functions/package.json`'s `lint` script
-sets `ESLINT_USE_FLAT_CONFIG=false` via `cross-env` to force legacy-config resolution. If you see
-`Invalid option '--ext'`, that's this mismatch resurfacing; the fix is already applied, don't remove
-the `cross-env`/`ESLINT_USE_FLAT_CONFIG` bits.
+`functions/` runs on Node 22 / firebase-functions 7 / firebase-admin 13 / TypeScript 5.8 with an ESLint 9
+flat config (`functions/eslint.config.js`: eslint + typescript-eslint recommended + the Google style
+rules) since 2026-08-20 - the old ESLint 8 `.eslintrc.js` + `cross-env ESLINT_USE_FLAT_CONFIG=false`
+workaround is gone. The five 1st-gen HTTP functions (`paypal`, `shipping`, `subscriptions`,
+`youtube`, `library-license-grant`) import from `firebase-functions/v1` on purpose - v6+ exports the
+v2 API at the package root; moving them to 2nd gen is a separate decision. firebase-admin stays on
+13.x because 14 drops the namespaced `admin.firestore()`/`admin.auth()` API (~60 call sites).
 
 Firebase deploys of `functions/` predeploy-run `functions/`'s own `lint` and `build` (see
 `firebase.json`).

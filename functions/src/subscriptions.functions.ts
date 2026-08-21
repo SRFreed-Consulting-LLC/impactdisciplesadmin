@@ -1,6 +1,9 @@
 import admin = require("firebase-admin");
 import {Timestamp} from "firebase-admin/firestore";
-import * as functions from "firebase-functions";
+// v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
+// the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
+// secrets plumbing) until a deliberate 2nd-gen migration.
+import * as functions from "firebase-functions/v1";
 import {restrictedCors} from "./utils/security.functions";
 import {queueSubscriptionConfirmation} from "./transactional-emails";
 import {

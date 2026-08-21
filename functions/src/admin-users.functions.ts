@@ -111,7 +111,7 @@ export const createAdminUser = onCall(async (request):
       billingAddress: data.billingAddress ?? null,
       firebaseUID: userRecord.uid,
     });
-  } catch (err) {
+  } catch {
     try {
       await admin.auth().deleteUser(userRecord.uid);
     } catch (cleanupErr) {
