@@ -1,127 +1,18 @@
-<div class="groups-header">
-  <h3>Impact Groups</h3>
-</div>
-
-@if (loading()) {
-  <div class="loading">
-    <mat-spinner diameter="32"></mat-spinner>
-  </div>
-} @else {
-  <div class="filter-bar">
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Search</mat-label>
-      <input
-        matInput
-        [ngModel]="search()"
-        (ngModelChange)="search.set($event)"
-        placeholder="Title, leader, book, location…"
-      />
-      <mat-icon matPrefix>search</mat-icon>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Type</mat-label>
-      <mat-select [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)">
-        <mat-option value="">All types</mat-option>
-        <mat-option value="in-person">In-Person</mat-option>
-        <mat-option value="online">Online</mat-option>
-        <mat-option value="hybrid">Hybrid</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Status</mat-label>
-      <mat-select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-        <mat-option value="">All statuses</mat-option>
-        <mat-option value="open">Open</mat-option>
-        <mat-option value="closed">Closed</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Visibility</mat-label>
-      <mat-select [ngModel]="visibilityFilter()" (ngModelChange)="visibilityFilter.set($event)">
-        <mat-option value="">All</mat-option>
-        <mat-option value="public">Open to the public</mat-option>
-        <mat-option value="invite-only">By invite only</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </div>
-
-  @if (visibleRows().length === 0) {
-    <p class="empty-state">No Impact Groups match the current filters.</p>
-  } @else {
-    <div class="table-scroll">
-      <table mat-table [dataSource]="visibleRows()" [trackBy]="trackByGroupId" class="groups-table">
-        <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef>Impact Group</th>
-          <td mat-cell *matCellDef="let row">
-            <div class="group-title">{{ row.group.title }}</div>
-            <mat-chip-set>
-              @if (row.group.status === 'closed') {
-                <mat-chip class="chip-closed">Closed</mat-chip>
-              }
-              @if (row.group.groupVisibility === 'invite-only') {
-                <mat-chip class="chip-invite-only">Invite only</mat-chip>
-              }
-            </mat-chip-set>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="leader">
-          <th mat-header-cell *matHeaderCellDef>Leader</th>
-          <td mat-cell *matCellDef="let row">
-            <div class="leader-name">{{ row.group.creatorDisplayName }}</div>
-            <div class="leader-email">{{ row.group.creatorEmail }}</div>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="members">
-          <th mat-header-cell *matHeaderCellDef>Members</th>
-          <td mat-cell *matCellDef="let row">
-            {{ row.memberCount }}
-            @if (row.pendingCount > 0) {
-              <span class="pending-count" matTooltip="Pending join requests"
-                >({{ row.pendingCount }} pending)</span
-              >
-            }
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="book">
-          <th mat-header-cell *matHeaderCellDef>Book</th>
-          <td mat-cell *matCellDef="let row">{{ row.bookTitle }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="location">
-          <th mat-header-cell *matHeaderCellDef>Location</th>
-          <td mat-cell *matCellDef="let row">{{ row.locationLabel || '—' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
-          <td mat-cell *matCellDef="let row">{{ meetingTypeLabel(row.meetingType) }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let row" class="actions-cell">
-            <button mat-icon-button matTooltip="Delete" (click)="deleteGroup(row.group, $event)">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-        <tr
-          mat-row
-          *matRowDef="let row; columns: displayedColumns"
-          class="group-row"
-          tabindex="0"
-          (click)="openEditDialog(row.group)"
-          (keydown.enter)="openEditDialog(row.group)"
-        ></tr>
-      </table>
-    </div>
-  }
-}
+<!-- Shared <app-data-grid> since 2026-08-21 (bucket A item #1). Replaced a
+     hand-rolled mat-table plus its own search box and type/status/visibility
+     dropdowns, spinner and empty state. Filtering is the grid's per-column
+     filter row now, matching every other list in this app. -->
+<app-data-grid
+  title="Impact Groups"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="visibleRows()"
+  [loading]="loading()"
+  emptyMessage="No Impact Groups yet."
+  tableClass="groups-table"
+  exportFileName="impact-groups.xlsx"
+  exportWorksheetName="Impact Groups"
+  initialSortKey="title"
+  initialSortDirection="asc"
+  (rowDoubleClick)="openEditDialog($event.group)">
+</app-data-grid>

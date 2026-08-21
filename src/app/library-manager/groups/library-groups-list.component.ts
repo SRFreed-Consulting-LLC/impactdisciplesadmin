@@ -1,17 +1,9 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { DataGridColumn, DataGridRowAction } from 'src/app/shared/data-grid/data-grid.model';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { LibraryDiscussionGroupService } from 'src/app/common/services/data/library/library-discussion-group.service';
@@ -65,35 +57,34 @@ const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
 @Component({
   selector: 'app-library-groups-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatButtonModule,
-    MatChipsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatSelectModule,
-    MatTableModule,
-    MatTooltipModule,
-  ],
+  // SharedModule for <app-data-grid> - see lesson-templates-list.
+  imports: [CommonModule, SharedModule],
   templateUrl: './library-groups-list.component.html',
   styleUrl: './library-groups-list.component.scss',
 })
 export class LibraryGroupsListComponent {
-  readonly displayedColumns = ['title', 'leader', 'members', 'book', 'location', 'type', 'actions'];
+  readonly columns: DataGridColumn<GroupRow>[] = [
+    { key: 'title', label: 'Title', value: (r) => r.group.title },
+    { key: 'leader', label: 'Leader', value: (r) => r.group.creatorDisplayName || r.group.creatorEmail },
+    // Denormalized counters - see the row mapping's own comment on why these
+    // are read off the doc rather than computed from a membership fetch.
+    { key: 'members', label: 'Members', type: 'number', value: (r) => r.memberCount },
+    { key: 'pending', label: 'Pending', type: 'number', value: (r) => r.pendingCount },
+    { key: 'book', label: 'Book', value: (r) => r.bookTitle },
+    { key: 'location', label: 'Location', value: (r) => r.locationLabel ?? '' },
+    { key: 'type', label: 'Meeting', value: (r) => this.meetingTypeLabel(r.meetingType) },
+    { key: 'status', label: 'Status', value: (r) => (r.group.status === 'closed' ? 'Closed' : 'Open') },
+  ];
+
+  readonly rowActions: DataGridRowAction<GroupRow>[] = [
+    { icon: 'delete_outline', tooltip: 'Delete', onClick: (r) => void this.deleteGroup(r.group) },
+  ];
 
   meetingTypeLabel(type: MeetingType): string {
     return MEETING_TYPE_LABELS[type];
   }
 
   readonly loading = signal(true);
-  readonly search = signal('');
-  readonly typeFilter = signal<MeetingType | ''>('');
-  readonly statusFilter = signal<'open' | 'closed' | ''>('');
-  readonly visibilityFilter = signal<'public' | 'invite-only' | ''>('');
 
   private readonly groups = signal<DiscussionGroup[]>([]);
   private readonly books = signal<GroupWizardBook[]>([]);
@@ -106,7 +97,7 @@ export class LibraryGroupsListComponent {
     return map;
   });
 
-  private readonly rows = computed<GroupRow[]>(() => {
+  readonly rows = computed<GroupRow[]>(() => {
     return this.groups().map((group) => {
       const offersInPerson = !!(group.location || group.inPersonLocation);
       const offersOnline = !!group.onlineInfo;
@@ -127,45 +118,9 @@ export class LibraryGroupsListComponent {
     });
   });
 
-  trackByGroupId(_index: number, row: GroupRow): string {
-    return row.group.id;
-  }
-
-  readonly visibleRows = computed<GroupRow[]>(() => {
-    const search = this.search().trim().toLowerCase();
-    const type = this.typeFilter();
-    const status = this.statusFilter();
-    const visibility = this.visibilityFilter();
-    return this.rows().filter((row) => {
-      if (type && row.meetingType !== type) {
-        return false;
-      }
-      if (status && row.group.status !== status) {
-        return false;
-      }
-      if (visibility) {
-        const groupVisibility = row.group.groupVisibility ?? 'public';
-        if (groupVisibility !== visibility) {
-          return false;
-        }
-      }
-      if (search) {
-        const haystack = [
-          row.group.title,
-          row.group.creatorDisplayName,
-          row.group.creatorEmail,
-          row.bookTitle,
-          row.locationLabel ?? '',
-        ]
-          .join(' ')
-          .toLowerCase();
-        if (!haystack.includes(search)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  });
+  /** The grid owns filtering now (its per-column filter row), so this is
+   *  simply every row - kept as a name the template and specs already use. */
+  readonly visibleRows = this.rows;
 
   constructor(
     private groupsService: LibraryDiscussionGroupService,
@@ -222,9 +177,9 @@ export class LibraryGroupsListComponent {
     }
   }
 
-  async deleteGroup(group: DiscussionGroup, event: Event): Promise<void> {
-    event.stopPropagation();
-    event.preventDefault();
+  // No Event argument - the grid owns the action button and rows open on
+  // DOUBLE-click, so the old stopPropagation guard is unnecessary.
+  async deleteGroup(group: DiscussionGroup): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       `Permanently delete "${group.title}"? This removes its members, chat, and messages too, and cannot be undone.`,
       'Delete Impact Group',
