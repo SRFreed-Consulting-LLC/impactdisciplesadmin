@@ -142,67 +142,24 @@
             the per-book licenses below are informational.
           </p>
         }
-        @if (licenses().length === 0) {
-          <p class="empty-state">No individual book licenses.</p>
-        } @else {
-          <div class="table-scroll">
-            <table
-              mat-table
-              [dataSource]="licenses()"
-              [trackBy]="trackByLicenseBookId"
-              class="licenses-table"
-            >
-              <ng-container matColumnDef="book">
-                <th mat-header-cell *matHeaderCellDef>Book</th>
-                <td mat-cell *matCellDef="let license">{{ bookTitle(license.bookId) }}</td>
-              </ng-container>
-              <ng-container matColumnDef="source">
-                <th mat-header-cell *matHeaderCellDef>Source</th>
-                <td mat-cell *matCellDef="let license">{{ sourceLabel(license) }}</td>
-              </ng-container>
-              <ng-container matColumnDef="date">
-                <th mat-header-cell *matHeaderCellDef>Date</th>
-                <td mat-cell *matCellDef="let license">
-                  {{ license.purchaseDate ? (license.purchaseDate | date: 'mediumDate') : '—' }}
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef></th>
-                <td mat-cell *matCellDef="let license">
-                  @if (license.source === 'admin-grant') {
-                    <button
-                      mat-icon-button
-                      matTooltip="Remove this granted license"
-                      (click)="removeLicense(license)"
-                    >
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  } @else if (license.source === 'store-purchase') {
-                    <button
-                      mat-icon-button
-                      matTooltip="Remove this purchased license (does NOT refund - refunds live on the Purchases screen)"
-                      (click)="removeStoreLicense(license)"
-                    >
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  } @else {
-                    <mat-icon
-                      class="locked-license"
-                      [matTooltip]="
-                        license.source === 'group-license'
-                          ? 'Assigned via an Impact Group license - manage it from the group'
-                          : 'Legacy purchase entry - contact support to change it'
-                      "
-                      >lock</mat-icon
-                    >
-                  }
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="licenseColumns; sticky: true"></tr>
-              <tr mat-row *matRowDef="let row; columns: licenseColumns"></tr>
-            </table>
-          </div>
-        }
+        <!-- Shared <app-data-grid> since 2026-08-21 (bucket A item #1).
+             Chrome trimmed (no filter row, columns picker or export): this is
+             a small embedded panel inside a detail screen, not a list page.
+             The two removable sources become row actions gated on their own
+             source; group-license and legacy entries are not removable here
+             at all, which the Source column now says in words instead of
+             showing a lock icon nobody can click. -->
+        <app-data-grid
+          [showHeader]="false"
+          [showFilterRow]="false"
+          [showColumnsButton]="false"
+          [showExportButton]="false"
+          [columns]="licenseGridColumns"
+          [rowActions]="licenseRowActions"
+          [rows]="licenses()"
+          emptyMessage="No individual book licenses."
+          tableClass="licenses-table">
+        </app-data-grid>
       </section>
     </div>
   </div>

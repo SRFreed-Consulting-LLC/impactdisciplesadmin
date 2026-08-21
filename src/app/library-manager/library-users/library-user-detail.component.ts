@@ -11,7 +11,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { DataGridColumn, DataGridRowAction } from 'src/app/shared/data-grid/data-grid.model';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
@@ -69,8 +70,8 @@ import {
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
-    MatTableModule,
     MatTooltipModule,
+    SharedModule,
   ],
   templateUrl: './library-user-detail.component.html',
   styleUrl: './library-user-detail.component.scss',
@@ -97,7 +98,6 @@ export class LibraryUserDetailComponent {
   readonly togglingAccess = signal(false);
   private readonly bookTitles = signal<Map<string, string>>(new Map());
 
-  readonly licenseColumns = ['book', 'source', 'date', 'actions'];
 
   readonly displayName = computed(() => {
     const user = this.profile();
@@ -106,9 +106,47 @@ export class LibraryUserDetailComponent {
       : this.email;
   });
 
-  trackByLicenseBookId(_index: number, license: LibraryUserBookLicense): string {
-    return license.bookId;
+  // The licenses panel renders through <app-data-grid> (2026-08-21, bucket A
+  // item #1). Only the two removable sources get a row action, each gated on
+  // its own source so the admin-grant path can never revoke a store purchase.
+  readonly licenseGridColumns: DataGridColumn<LibraryUserBookLicense>[] = [
+    { key: 'book', label: 'Book', value: (l) => this.bookTitle(l.bookId) },
+    { key: 'source', label: 'Source', value: (l) => this.sourceLabel(l) },
+    { key: 'purchaseDate', label: 'Date', type: 'date', dateFormat: 'mediumDate' },
+    // Carries what the old lock icon's tooltip said. A row with no remove
+    // button needs to explain WHERE it is managed instead, and a column says
+    // it outright rather than hiding it behind a hover on a disabled icon.
+    { key: 'managedElsewhere', label: '', value: (l) => this.managedElsewhereNote(l) },
+  ];
+
+  /** Empty for the two sources this screen can remove; otherwise where the
+   *  license is actually managed. */
+  managedElsewhereNote(license: LibraryUserBookLicense): string {
+    switch (license.source) {
+      case 'admin-grant':
+      case 'store-purchase':
+        return '';
+      case 'group-license':
+        return 'Managed from the Impact Group';
+      default:
+        return 'Legacy entry - contact support to change it';
+    }
   }
+
+  readonly licenseRowActions: DataGridRowAction<LibraryUserBookLicense>[] = [
+    {
+      icon: 'delete_outline',
+      tooltip: 'Remove this granted license',
+      onClick: (l) => void this.removeLicense(l),
+      visible: (l) => this.isAdmin() && l.source === 'admin-grant',
+    },
+    {
+      icon: 'delete_outline',
+      tooltip: 'Remove this purchased license (does NOT refund - refunds live on the Purchases screen)',
+      onClick: (l) => void this.removeStoreLicense(l),
+      visible: (l) => this.isAdmin() && l.source === 'store-purchase',
+    },
+  ];
 
   readonly licenses = computed<LibraryUserBookLicense[]>(() => {
     const list = this.profile()?.bookLicenses;

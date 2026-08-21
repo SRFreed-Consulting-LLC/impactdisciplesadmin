@@ -57,6 +57,14 @@ const DAILY_READING_FIELDS: { key: keyof LibraryDailyReadingTranslation; label: 
  *   (LibraryCommonTranslationService.findCommonPhrases() is ready for it,
  *   see that service's own doc comment).
  */
+// Deliberately NOT on <app-data-grid>, unlike the list screens folded onto
+// it in 2026-08's Library Manager pass (bucket A item #1). The two <table>
+// elements here are side-by-side TRANSLATION EDITORS - source text in one
+// column, an editable textarea for the target language in the next - not
+// lists of records. The grid renders read-only cells with a filter row,
+// columns picker and export, none of which belong on a form, and every
+// editable cell would need its own template to reproduce. The shared grid is
+// for list screens; this is a form laid out in a table.
 @Component({
   selector: 'app-lesson-translation',
   standalone: true,
