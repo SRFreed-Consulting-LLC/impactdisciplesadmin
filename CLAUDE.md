@@ -10,12 +10,19 @@ server tier of its own besides Cloud Functions in `functions/`. This app was rec
 DevExtreme onto Material (branch `migrate-from-devexpress`) — most list/table screens follow the
 pagination + Columns/Export pattern described below rather than older DevExtreme-era code.
 
-There is a sibling public-facing app, `impactdisciples-web`, and another admin-style app,
-`impact-discipleship-library-manager-new`, that share the same Firebase projects and some copied
-patterns (e.g. the login screen). They are not part of this git repo, but they are reachable as
-sibling directories one level up (`../impactdisciples - web`, `../impact-discipleship-library-manager-new`,
-note the spaces) on a machine that has both checked out side by side - worth checking for before
-assuming a cross-repo change is out of reach.
+There are two sibling apps that share the same Firebase projects: the public site `impactdisciples-web`
+and the patron Library Reader `impact-discipleship-library-new`. (The former standalone Library
+Manager CMS, `impact-discipleship-library-manager-new`, was decommissioned 2026-08-16 and folded into
+this app as the `library-manager` module; its folder may still exist on disk as a dead reference
+shell.) They are not part of this git repo, but are reachable as sibling directories one level up
+(`../impactdisciples - web`, `../impact-discipleship-library-new`, note the spaces) on a machine that
+has them checked out side by side - worth checking for before assuming a cross-repo change is out of
+reach. All three apps + `functions/` consume the same shared git submodule, `src/common`
+(`impact-discipleship-library-common`, aliased `@impact-common/*`): its `src/shared/` slice holds the
+web/admin domain models + enums + date util, `config/firebase-projects.ts` (project configs,
+`functionUrl()`, app URLs, CORS origins) and `contract/*` (every Cloud Function's name and the
+request/response types) - see the Cloud Functions section. Shared code changes go in the submodule
+first (push it first), then bump the pointer in each consumer.
 
 ## Commands
 
@@ -459,8 +466,10 @@ Plain Node/Express-style `onRequest` HTTP functions (not callable functions), on
 (`paypal.functions.ts`, `shipping.functions.ts`, `purchase-fulfillment.functions.ts`,
 `new-record-alerts.functions.ts` — this replaced `notifications.functions.ts` —
 `admin-users.functions.ts`, `subscriptions.functions.ts`, `youtube.functions.ts`,
-`customer-upsert.functions.ts`, `event-registration-customer-upsert.functions.ts`,
-`mailchimp-sync.functions.ts`), each `require`d and re-exported from `functions/src/index.ts`.
+`customer-upsert.functions.ts`, `event-registration-customer-upsert.functions.ts`, the
+`library-*.functions.ts` family behind the reader app, the `campaign-*.functions.ts` send/tracking/
+admin engine), each `require`d and re-exported from `functions/src/index.ts` - and `index.ts` must
+export exactly the names in the shared contract (`functions/test/contract.test.js` enforces it).
 Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
 `functions/src/utils/security.functions.ts`.
 

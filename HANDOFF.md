@@ -1,3 +1,7 @@
+> **Historical (2026-08-09).** Superseded by CLAUDE.md and the 2026-08-20 refactor sweep report
+> (https://claude.ai/code/artifact/d8c81879-4c14-4bae-8e7e-6746d6ba7f6c): the BookService /
+> named-database / wide-open-rules state described below no longer exists. Kept for context only.
+
 # Session Handoff — 2026-08-09 (v3, supersedes both earlier versions)
 
 Repo: `impactdisciples - admin` (branch `migrate-from-devexpress`, Angular 20

@@ -46,9 +46,9 @@ leave `__datatype__` fields alone.
 
 ## Convention for the scripts that write (import.js, promote.js, fix-date-shapes.js)
 
-Not built yet - when they land, they follow the same dry-run-by-default
-convention already used in this app suite's other repos
-(`impact-discipleship-library-new/manager-new`'s `scripts/`): default to a
+They exist (see the files above, plus the one-off backfill/migration scripts
+alongside them and the executed one-offs under `scripts/archive/`) and follow
+the same dry-run-by-default convention as the reader repo's `scripts/`: default to a
 dry run that reports what *would* change, require an explicit flag
 (`--execute`) to actually write, and tag every doc they touch so
 promoted/imported data stays distinguishable from organically-created data.
