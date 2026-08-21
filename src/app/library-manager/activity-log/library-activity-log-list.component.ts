@@ -1,15 +1,9 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { SelectionModel } from '@angular/cdk/collections';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { DataGridColumn, DataGridRowAction } from 'src/app/shared/data-grid/data-grid.model';
+import { ListHeaderAction } from 'src/app/shared/list-header/list-header.component';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
@@ -19,10 +13,6 @@ import {
   LibraryActivityAction,
   LibraryActivityLogEntry,
 } from 'src/app/common/models/domain/library/library-activity-log.model';
-import {
-  LibraryRowSelection,
-  createLibraryRowSelection,
-} from 'src/app/common/services/data/library/library-row-selection.util';
 
 interface ActivityRow extends LibraryActivityLogEntry {
   /** Current display name/email from admin_users, falling back to the name
@@ -46,38 +36,42 @@ interface ActivityRow extends LibraryActivityLogEntry {
 @Component({
   selector: 'app-library-activity-log-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatSelectModule,
-    MatProgressSpinnerModule,
-    MatTableModule,
-    MatTooltipModule,
-  ],
+  // SharedModule for <app-data-grid> - see lesson-templates-list.
+  imports: [CommonModule, SharedModule],
   templateUrl: './library-activity-log-list.component.html',
   styleUrl: './library-activity-log-list.component.scss',
 })
 export class LibraryActivityLogListComponent {
   readonly actionLabels = LIBRARY_ACTIVITY_ACTION_LABELS;
-  readonly actions = Object.keys(LIBRARY_ACTIVITY_ACTION_LABELS) as LibraryActivityAction[];
+  readonly columns: DataGridColumn<ActivityRow>[] = [
+    { key: 'timestamp', label: 'When', type: 'date', dateFormat: 'MMM d, y, h:mm a' },
+    { key: 'actorDisplayName', label: 'Who' },
+    { key: 'actorEmail', label: 'Email' },
+    { key: 'action', label: 'Action', value: (r) => this.actionLabel(r.action) },
+    { key: 'targetName', label: 'Target' },
+    { key: 'detail', label: 'Detail' },
+  ];
+
+  readonly headerActions: ListHeaderAction[] = [
+    { label: 'Delete Selected', icon: 'delete_sweep', onClick: () => void this.deleteSelected() },
+  ];
+
+  readonly rowActions: DataGridRowAction<ActivityRow>[] = [
+    { icon: 'delete_outline', tooltip: 'Delete', onClick: (r) => void this.deleteOne(r) },
+  ];
 
   readonly loading = signal(true);
-  readonly search = signal('');
-  readonly userFilter = signal('');
-  readonly actionFilter = signal<LibraryActivityAction | ''>('');
 
-  private readonly selection: LibraryRowSelection = createLibraryRowSelection();
-  readonly selected = this.selection.selected;
+  /** The grid renders and drives the checkbox column from this - a CDK
+   *  SelectionModel because that is what <app-data-grid> speaks
+   *  (2026-08-21, bucket A item #1, replacing this module's own
+   *  LibraryRowSelection util). Holds the ROWS; deleteSelected maps to ids. */
+  readonly selection = new SelectionModel<ActivityRow>(true, []);
 
   private readonly events = signal<LibraryActivityLogEntry[]>([]);
   private readonly usersByUid = signal<ReadonlyMap<string, AdminUser>>(new Map());
 
-  private readonly rows = computed<ActivityRow[]>(() => {
+  readonly rows = computed<ActivityRow[]>(() => {
     const users = this.usersByUid();
     return this.events().map((entry) => {
       const user = users.get(entry.actorUid);
@@ -89,51 +83,6 @@ export class LibraryActivityLogListComponent {
       };
     });
   });
-
-  readonly actorOptions = computed(() => {
-    const seen = new Map<string, string>();
-    for (const row of this.rows()) {
-      if (!seen.has(row.actorUid)) {
-        seen.set(row.actorUid, row.actorDisplayName);
-      }
-    }
-    return [...seen.entries()]
-      .map(([uid, name]) => ({ uid, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  });
-
-  readonly visibleRows = computed<ActivityRow[]>(() => {
-    const search = this.search().trim().toLowerCase();
-    const userFilter = this.userFilter();
-    const actionFilter = this.actionFilter();
-    return this.rows().filter((row) => {
-      if (userFilter && row.actorUid !== userFilter) {
-        return false;
-      }
-      if (actionFilter && row.action !== actionFilter) {
-        return false;
-      }
-      if (search) {
-        const haystack = [
-          row.actorDisplayName,
-          row.actorEmail,
-          this.actionLabels[row.action],
-          row.targetName ?? '',
-          row.detail ?? '',
-        ]
-          .join(' ')
-          .toLowerCase();
-        if (!haystack.includes(search)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  });
-
-  readonly allVisibleSelected = computed(() =>
-    this.selection.allVisibleSelected(this.visibleRows().map((row) => row.id!)),
-  );
 
   constructor(
     private activityLog: LibraryActivityLogService,
@@ -147,24 +96,17 @@ export class LibraryActivityLogListComponent {
     this.activityLog.getAllActivity().subscribe((events) => {
       this.events.set(events);
       this.loading.set(false);
-      this.selection.pruneToLiveIds(events.map((e) => e.id!));
+      const liveIds = new Set(events.map((e) => e.id));
+      for (const row of this.selection.selected) {
+        if (!liveIds.has(row.id)) {
+          this.selection.deselect(row);
+        }
+      }
     });
   }
 
   actionLabel(action: LibraryActivityAction): string {
     return this.actionLabels[action];
-  }
-
-  isSelected(id: string): boolean {
-    return this.selection.isSelected(id);
-  }
-
-  toggleRow(id: string, event: MatCheckboxChange): void {
-    this.selection.toggle(id, event.checked);
-  }
-
-  toggleSelectAllVisible(): void {
-    this.selection.toggleAllVisible(this.visibleRows().map((row) => row.id!));
   }
 
   async deleteOne(row: ActivityRow): Promise<void> {
@@ -179,7 +121,7 @@ export class LibraryActivityLogListComponent {
   }
 
   async deleteSelected(): Promise<void> {
-    const ids = [...this.selected()];
+    const ids = this.selection.selected.map((row) => row.id!);
     if (ids.length === 0) {
       return;
     }
