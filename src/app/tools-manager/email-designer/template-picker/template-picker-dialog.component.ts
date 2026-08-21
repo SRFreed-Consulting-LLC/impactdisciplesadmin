@@ -49,8 +49,9 @@ interface PastEmailCard {
 // its compiled email. "Use" starts a new email from a copy (fresh ids,
 // never linked); "Edit" opens the template itself in the designer. A
 // collapsed "Past Emails" section pages through the sent-email history
-// (Sent Emails screen's data) - Use only, since history isn't editable;
-// the copy it creates is.
+// (the same campaign_emails docs the Sent Emails log lists) - Use only,
+// since history isn't editable; the copy it creates is. Since 2026-08-21
+// this is the ONLY "start from something we already sent" path.
 @Component({
     selector: 'app-template-picker-dialog',
     templateUrl: './template-picker-dialog.component.html',

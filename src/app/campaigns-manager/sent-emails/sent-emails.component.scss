@@ -1,5 +1,3 @@
-// The grid supplies all structure; nothing screen-specific yet.
-
 /* Full-height list: resolved height chain so the grid scrolls internally
    with its sticky header (see data-grid.component.scss) instead of growing
    the page - 2026-08-19 list-screen audit. */
@@ -9,9 +7,34 @@
   height: 100%;
 }
 
+/* Back bar - mirrors campaign-detail's .detail-header, the other in-page
+   view this screen now sits alongside. */
+.sent-emails-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 8px 20px 0 0;
+  color: var(--app-content-ink);
+
+  &__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+}
+
 app-data-grid {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Rows navigate to their campaign on click - say so. The table lives in
+   app-data-grid's own view, so this has to pierce encapsulation; same
+   ::ng-deep reach the report screens use to restyle .table-scroll. */
+:host ::ng-deep .sent-emails-table tbody tr {
+  cursor: pointer;
 }

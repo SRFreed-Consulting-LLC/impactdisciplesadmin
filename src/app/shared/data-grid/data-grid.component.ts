@@ -107,6 +107,10 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
    *  just a normal RxJS Subject, so leaving this unbound is a real "no
    *  double-click behavior", not a special case this component handles. */
   @Output() rowDoubleClick = new EventEmitter<T>();
+  /** Single-click on a row. Same "unbound means no behavior" contract as
+   *  rowDoubleClick above. Row action buttons stopPropagation, so clicking
+   *  an icon never also counts as a row click. */
+  @Output() rowClick = new EventEmitter<T>();
   @Output() visibleRowsChange = new EventEmitter<T[]>();
   /** Fires after every master-toggle/row-toggle on [selection] - for
    *  callers that need a side effect on change (e.g. FAQComponent syncing
@@ -283,6 +287,10 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
 
   onRowDoubleClick(row: T): void {
     this.rowDoubleClick.emit(row);
+  }
+
+  onRowClick(row: T): void {
+    this.rowClick.emit(row);
   }
 
   // No-ops in static mode (there's nothing to page in) - safe to always

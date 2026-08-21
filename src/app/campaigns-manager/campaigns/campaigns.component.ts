@@ -18,6 +18,12 @@ import { describeCampaignDelete, describeCampaignDeleteResult } from './campaign
 // timeline), in-page like Products' editor, deep-linkable via
 // ?campaignId=. New Campaign / Edit Campaign open the wizard (Phase 2);
 // emails are authored on the detail view's touch editor.
+//
+// Also HOSTS the Sent Emails log (2026-08-21) - the read-only history of
+// every email across every campaign, opened from a button in this grid's
+// own header rather than the nav leaf it used to be. Clicking one of its
+// rows lands on that email's campaign here, which is why this screen owns
+// it rather than the manager shell.
 @Component({
     selector: 'app-campaigns',
     templateUrl: './campaigns.component.html',
@@ -25,7 +31,7 @@ import { describeCampaignDelete, describeCampaignDeleteResult } from './campaign
     standalone: false
 })
 export class CampaignsComponent implements OnInit, OnDestroy {
-  mode: 'list' | 'detail' | 'wizard' = 'list';
+  mode: 'list' | 'detail' | 'wizard' | 'sentEmails' = 'list';
 
   /** The campaign the wizard edits; null = creating a new one. */
   wizardCampaign: CampaignModel | null = null;
@@ -262,6 +268,32 @@ export class CampaignsComponent implements OnInit, OnDestroy {
     this.wizardCampaign = campaign;
     this.wizardReturnMode = 'detail';
     this.mode = 'wizard';
+  }
+
+  // ---- Sent Emails (the in-page email history) ----
+  // Read-only, so it rides this screen's VIEW grant - no add/edit check.
+  openSentEmails(): void {
+    this.mode = 'sentEmails';
+  }
+
+  onSentEmailsClosed(): void {
+    this.mode = 'list';
+  }
+
+  // A row click in the log means "take me to this email's campaign".
+  // Fetched by id rather than looked up in the paged list - the campaign
+  // may sit many pages down, or not be loaded at all, the same reason the
+  // ?campaignId= deep link fetches instead of scanning. A campaign that no
+  // longer exists returns to the list rather than blanking the screen.
+  openCampaignFromSentEmails(campaignId: string): void {
+    this.service.getById(campaignId).then((campaign) => {
+      if (campaign) {
+        this.openDetail(campaign);
+      } else {
+        this.snackbar.error('That campaign no longer exists.');
+        this.mode = 'list';
+      }
+    });
   }
 
   onWizardClosed(saved: CampaignModel | null): void {

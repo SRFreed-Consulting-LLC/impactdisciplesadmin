@@ -265,10 +265,15 @@ export const NAV_CONFIG: NavGroup[] = [
     items: [
       { label: 'Campaigns', slug: 'campaigns' },
       { label: 'Status Board', slug: 'status-board' },
-      // Email-campaign HISTORY (type 'email' - the imported Mailchimp
-      // archive today, this app's own future one-time sends later).
-      // Read-only: preview + copy-into-designer, never edit/re-send.
-      { label: 'Sent Emails', slug: 'sent-emails' },
+      // 'Sent Emails' is no longer a leaf here (2026-08-21): the email
+      // HISTORY is now reached from a 'Sent Emails' button in the
+      // Campaigns screen's own grid header, hosted in-page by that screen
+      // the same way campaign detail and the wizard already are. It is a
+      // read-only historical account (preview only - the copy-into-designer
+      // jump moved to the designer's own 'Past Emails' template picker), so
+      // it needs no NavLeaf/screenKey of its own: it rides
+      // campaigns-manager.campaigns' view grant, matching the Composer
+      // treatment described at the top of this group.
       // Every email flagged publishToWeb across ALL campaigns = what the
       // public Monthly Newsletter page shows (2026-08-20). The flag is per
       // email and the published issues span several campaigns, so this is

@@ -94,8 +94,11 @@ export class EmailDesignerComponent implements OnInit {
 
     if (!this.templateId) {
       // ?fromEmail=<id>: seed a NEW design from a past sent email's body
-      // (Sent Emails screen's "Open in designer" action; the campaign_emails
-      // doc is never touched). Skips the picker - the user already chose.
+      // (the picker's "Past Emails" cards; the campaign_emails doc is never
+      // touched). Skips the picker - the user already chose. Sent Emails'
+      // own "open in designer" row action fed this too until 2026-08-21,
+      // when that screen became a read-only history; the picker is the one
+      // way in now.
       const fromEmailId = this.route.snapshot.queryParamMap.get('fromEmail');
       if (fromEmailId) {
         this.campaignEmailService.getById(fromEmailId).then((email) => {

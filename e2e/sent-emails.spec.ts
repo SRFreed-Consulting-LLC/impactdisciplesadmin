@@ -1,14 +1,18 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// Campaigns Manager > Sent Emails - the global email LOG (Campaign
-// Manager v2): every campaign_emails touch across every campaign, newest
-// first. Read-only surface: paged rows with engagement stats, a preview
-// dialog, and an open-in-designer jump that seeds a COPY.
+// Campaigns Manager > Campaigns > "Sent Emails" - the global email LOG
+// (Campaign Manager v2): every campaign_emails touch across every
+// campaign, newest first. Purely historical since 2026-08-21: paged rows
+// with engagement stats, a preview dialog, and a row click that lands on
+// that email's campaign. No editing, and no nav leaf of its own - it is
+// reached from the button in the Campaigns grid header.
 test.describe('Sent Emails', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/campaigns-manager?tab=sent-emails');
+    await page.goto('/campaigns-manager?tab=campaigns');
+    await page.locator('.campaigns-table').waitFor();
+    await page.getByRole('button', { name: 'Sent Emails' }).click();
     await page.locator('.sent-emails-table').waitFor();
   });
 
@@ -43,13 +47,27 @@ test.describe('Sent Emails', () => {
     await expect.poll(frameText, { timeout: 10000 }).toBeGreaterThan(50);
   });
 
-  test('open in designer seeds a copy on /new with the html block', async ({ page }) => {
+  // The preview icon must NOT also count as a row click - the grid's row
+  // action buttons stopPropagation for exactly this reason.
+  test('preview icon does not navigate away from the log', async ({ page }) => {
     const firstRow = page.locator('.sent-emails-table tbody tr').first();
     await firstRow.waitFor();
-    await firstRow.locator('button:has(mat-icon:text("brush"))').click();
+    await firstRow.locator('button:has(mat-icon:text("visibility"))').click();
+    await expect(page.locator('app-sent-email-preview-dialog')).toBeVisible();
+    await expect(page.locator('.sent-emails-table')).toBeVisible();
+  });
 
-    // Doc ids are mc_<id> for imports and auto-ids for our own sends.
-    await expect(page).toHaveURL(/email-designer\/new\?fromEmail=./);
-    await expect(page.locator('.html-view').first()).toBeVisible({ timeout: 15000 });
+  test('clicking a row opens that email\'s campaign detail', async ({ page }) => {
+    const firstRow = page.locator('.sent-emails-table tbody tr').first();
+    await firstRow.waitFor();
+    // The Campaign column (index 1) names where this row should land.
+    const campaignName = (await firstRow.locator('td').nth(1).innerText()).trim();
+    await firstRow.locator('td').first().click();
+
+    await expect(page.locator('app-campaign-detail')).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(/campaignId=./);
+    if (campaignName) {
+      await expect(page.locator('.detail-header__name')).toHaveText(campaignName);
+    }
   });
 });

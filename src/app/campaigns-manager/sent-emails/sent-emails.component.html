@@ -1,10 +1,22 @@
+<!-- Own back bar (this screen is hosted in-page by Campaigns now, not a
+     tab) - same shape as campaign-detail's .detail-header. The grid below
+     keeps its own header row with an EMPTY title so the Columns and
+     Export to Excel buttons it supplies survive without repeating the
+     title this bar already shows. -->
+<div class="sent-emails-header">
+  <button mat-icon-button matTooltip="Back to Campaigns" (click)="back()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <h2 class="sent-emails-header__title">Sent Emails</h2>
+</div>
+
 <app-data-grid
-  [title]="'Sent Emails'"
+  [title]="''"
   [columns]="columns"
   [rowActions]="rowActions"
   [pagedSource]="paged"
   tableClass="sent-emails-table"
   exportFileName="sent-emails.xlsx"
   emptyMessage="No sent emails found."
-  (rowDoubleClick)="preview($event)">
+  (rowClick)="rowClicked($event)">
 </app-data-grid>

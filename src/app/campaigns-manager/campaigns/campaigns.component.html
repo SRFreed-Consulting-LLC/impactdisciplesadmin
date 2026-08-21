@@ -60,6 +60,15 @@
     tableClass="campaigns-table"
     exportFileName="campaigns.xlsx"
     (rowDoubleClick)="openDetail($event)">
+    <!-- The email HISTORY, reached from here rather than a nav leaf of its
+         own (2026-08-21). Projected into the grid header rather than added
+         to [headerActions]: a second ListHeaderAction collapses BOTH into a
+         kebab menu (see list-header.component.ts), which would bury New
+         Campaign. -->
+    <button dataGridHeaderExtra mat-raised-button color="primary" type="button" (click)="openSentEmails()">
+      <mat-icon>history</mat-icon>
+      Sent Emails
+    </button>
     <ng-template appDataGridCell="kind" let-row>
       <span class="chip" [class]="'kind-' + row.goal">{{ kindLabel(row) }}</span>
     </ng-template>
@@ -77,6 +86,11 @@
 @if (mode === 'detail' && selectedCampaign) {
   <app-campaign-detail [campaign]="selectedCampaign" (closed)="onDetailClosed()"
     (edit)="editCampaign($event)" (deleted)="onDetailDeleted()"></app-campaign-detail>
+}
+
+@if (mode === 'sentEmails') {
+  <app-sent-emails (closed)="onSentEmailsClosed()"
+    (openCampaign)="openCampaignFromSentEmails($event)"></app-sent-emails>
 }
 
 @if (mode === 'wizard') {
