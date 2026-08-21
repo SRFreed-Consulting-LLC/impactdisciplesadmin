@@ -1,11 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { DataGridColumn } from 'src/app/shared/data-grid/data-grid.model';
 import { AdminMessage } from '@impact-common/models/library-user-message.model';
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
 import { LibraryMessageDetailDialogComponent } from '../dialogs/library-message-detail-dialog.component';
@@ -22,15 +19,8 @@ import { LibraryMessageDetailDialogComponent } from '../dialogs/library-message-
 @Component({
   selector: 'app-message-history',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatTableModule,
-    MatTooltipModule,
-  ],
+  // SharedModule for <app-data-grid> - see lesson-templates-list.
+  imports: [CommonModule, SharedModule],
   templateUrl: './message-history.component.html',
   styleUrl: './message-history.component.scss',
 })
@@ -38,7 +28,16 @@ export class MessageHistoryComponent {
   private readonly libraryUserService = inject(LibraryUserService);
   private readonly dialog = inject(MatDialog);
 
-  readonly displayedColumns = ['sentAt', 'title', 'sentBy', 'recipients', 'delivered'];
+  readonly columns: DataGridColumn<AdminMessage>[] = [
+    { key: 'sentAt', label: 'Sent', type: 'date', dateFormat: 'medium' },
+    { key: 'title', label: 'Title' },
+    { key: 'sentByName', label: 'Sent by' },
+    { key: 'recipients', label: 'Recipients', value: (m) => this.scopeLabel(m) },
+    // Recipients whose DEVICE notification was delivered - everyone also
+    // gets the message in their reader-app inbox regardless, which is why
+    // this is a ratio rather than a pass/fail.
+    { key: 'delivered', label: 'Push delivered', value: (m) => this.deliveredLabel(m) },
+  ];
   readonly messages = signal<AdminMessage[]>([]);
   readonly loading = signal(true);
 
@@ -49,8 +48,8 @@ export class MessageHistoryComponent {
     });
   }
 
-  trackByMessageId(_index: number, message: AdminMessage): string {
-    return message.id;
+  deliveredLabel(message: AdminMessage): string {
+    return `${message.pushSuccessCount}/${message.recipientCount}`;
   }
 
   scopeLabel(message: AdminMessage): string {

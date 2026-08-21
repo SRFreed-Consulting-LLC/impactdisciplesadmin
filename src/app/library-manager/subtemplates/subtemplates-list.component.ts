@@ -2,12 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTableModule } from '@angular/material/table';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { SharedModule } from 'src/app/shared/shared.module';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { DataGridColumn, DataGridRowAction } from 'src/app/shared/data-grid/data-grid.model';
+import { ListHeaderAction } from 'src/app/shared/list-header/list-header.component';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { LibrarySubtemplateService } from 'src/app/common/services/data/library/library-subtemplate.service';
 import {
@@ -36,14 +34,29 @@ const TYPE_LABELS: Record<LibrarySubtemplateType, string> = {
 @Component({
   selector: 'app-subtemplates-list',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatTableModule, MatProgressSpinnerModule, MatTooltipModule],
+  // SharedModule for <app-data-grid> - see lesson-templates-list for the
+  // full note on why a standalone component imports the module.
+  imports: [CommonModule, SharedModule],
   templateUrl: './subtemplates-list.component.html',
   styleUrl: './subtemplates-list.component.scss',
 })
 export class SubtemplatesListComponent implements OnInit {
-  readonly displayedColumns = ['title', 'type', 'fieldCount', 'actions'];
   subtemplates: LibrarySubtemplateModel[] = [];
   loading = true;
+
+  readonly columns: DataGridColumn<LibrarySubtemplateModel>[] = [
+    { key: 'title', label: 'Title' },
+    { key: 'type', label: 'Type', value: (s) => this.typeLabel(s.type) },
+    { key: 'fieldCount', label: 'Fields', type: 'number', value: (s) => this.fieldCount(s) },
+  ];
+
+  readonly headerActions: ListHeaderAction[] = [
+    { label: 'New Subtemplate', icon: 'post_add', onClick: () => void this.createSubtemplate() },
+  ];
+
+  readonly rowActions: DataGridRowAction<LibrarySubtemplateModel>[] = [
+    { icon: 'delete_outline', tooltip: 'Delete', onClick: (s) => void this.deleteSubtemplate(s) },
+  ];
 
   constructor(
     private subtemplateService: LibrarySubtemplateService,
@@ -62,10 +75,6 @@ export class SubtemplatesListComponent implements OnInit {
       this.subtemplates = subtemplates;
       this.loading = false;
     });
-  }
-
-  trackBySubtemplateId(_index: number, subtemplate: LibrarySubtemplateModel): string {
-    return subtemplate.id!;
   }
 
   fieldCount(subtemplate: LibrarySubtemplateModel): number {
@@ -90,9 +99,9 @@ export class SubtemplatesListComponent implements OnInit {
     void this.router.navigate(['/library-manager/subtemplates', subtemplateId]);
   }
 
-  async deleteSubtemplate(subtemplate: LibrarySubtemplateModel, event: Event): Promise<void> {
-    event.stopPropagation();
-    event.preventDefault();
+  // No Event argument - the grid owns the action button and rows open on
+  // DOUBLE-click, so the old stopPropagation guard is unnecessary.
+  async deleteSubtemplate(subtemplate: LibrarySubtemplateModel): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       `Delete the "${subtemplate.title}" subtemplate? This cannot be undone.`,
       'Delete subtemplate',
