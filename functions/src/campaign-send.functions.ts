@@ -9,6 +9,14 @@ import {queueMail, UNSUBSCRIBE_URL} from "./transactional-emails";
 import {TRACKING_BASE} from "./campaign-tracking.functions";
 import {renderMergeTags} from "./utils/merge-tags.functions";
 import {toMillis} from "./utils/date-normalize.functions";
+import {
+  EnqueueCampaignEmailRequest,
+  EnqueueCampaignEmailResult,
+  PreviewCampaignAudienceRequest,
+  PreviewCampaignAudienceResult,
+  SendCampaignTestEmailRequest,
+  SendCampaignTestEmailResult,
+} from "./common/shared/contract/admin-callables.types";
 
 // Campaign Manager v2's UNIFIED SEND ENGINE (Phase 2 of the plan) - the
 // one server-side path every campaign email goes through, whatever its
@@ -481,9 +489,11 @@ async function drainQueued(
 
 export const enqueueCampaignEmail = onCall(
   {timeoutSeconds: 300},
-  async (request) => {
+  async (request):
+  Promise<EnqueueCampaignEmailResult> => {
     await requireAdminRole(request.auth?.uid);
-    const {emailId} = (request.data ?? {}) as {emailId?: string};
+    const {emailId} =
+      (request.data ?? {}) as Partial<EnqueueCampaignEmailRequest>;
     if (!emailId) {
       throw new HttpsError("invalid-argument", "emailId is required.");
     }
@@ -515,9 +525,11 @@ export const enqueueCampaignEmail = onCall(
   }
 );
 
-export const previewCampaignAudience = onCall(async (request) => {
+export const previewCampaignAudience = onCall(async (request):
+  Promise<PreviewCampaignAudienceResult> => {
   await requireAdminRole(request.auth?.uid);
-  const {audience} = (request.data ?? {}) as {audience?: AudienceSpec};
+  const {audience} =
+    (request.data ?? {}) as Partial<PreviewCampaignAudienceRequest>;
   if (!audience?.mode) {
     throw new HttpsError("invalid-argument", "audience.mode is required.");
   }
@@ -525,10 +537,11 @@ export const previewCampaignAudience = onCall(async (request) => {
   return {count: recipients.length, sample: recipients.slice(0, 10)};
 });
 
-export const sendCampaignTestEmail = onCall(async (request) => {
+export const sendCampaignTestEmail = onCall(async (request):
+  Promise<SendCampaignTestEmailResult> => {
   await requireAdminRole(request.auth?.uid);
   const {emailId, to} =
-    (request.data ?? {}) as {emailId?: string; to?: string};
+    (request.data ?? {}) as Partial<SendCampaignTestEmailRequest>;
   if (!emailId || !to?.includes("@")) {
     throw new HttpsError("invalid-argument",
       "emailId and a valid 'to' are required.");

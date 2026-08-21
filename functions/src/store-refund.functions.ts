@@ -9,6 +9,12 @@ import {
   getCaptureId,
   refundCapture,
 } from "./library-paypal";
+import {
+  RefundStorePurchaseRequest,
+  RefundStorePurchaseResult,
+  RevokeStorePurchasedLicenseRequest,
+  RevokeStorePurchasedLicenseResult,
+} from "./common/shared/contract/admin-callables.types";
 
 // Pre-prod hardening #6: the missing refund->revoke symmetry. Until now a
 // refunded digital-book purchase kept its library access forever (grant
@@ -265,14 +271,12 @@ export const refundStorePurchase = onCall(
     secrets: [paypalSandboxSecret, paypalLiveSecret, webPaypalSecret],
     timeoutSeconds: 120,
   },
-  async (request) => {
+  async (request):
+  Promise<RefundStorePurchaseResult> => {
     await requireAdminRole(request.auth?.uid);
 
-    const {purchaseId, revokeLicenses, amount} = (request.data ?? {}) as {
-      purchaseId?: string;
-      revokeLicenses?: boolean;
-      amount?: number | null;
-    };
+    const {purchaseId, revokeLicenses, amount} =
+      (request.data ?? {}) as Partial<RefundStorePurchaseRequest>;
     if (!purchaseId) {
       throw new HttpsError("invalid-argument", "purchaseId is required.");
     }
@@ -422,14 +426,12 @@ export const refundStorePurchase = onCall(
  * one library user, without refunding anything. Used by the Library Users
  * detail screen's license list.
  */
-export const revokeStorePurchasedLicense = onCall(async (request) => {
+export const revokeStorePurchasedLicense = onCall(async (request):
+  Promise<RevokeStorePurchasedLicenseResult> => {
   await requireAdminRole(request.auth?.uid);
 
-  const {email, bookId, storePurchaseId} = (request.data ?? {}) as {
-    email?: string;
-    bookId?: string;
-    storePurchaseId?: string;
-  };
+  const {email, bookId, storePurchaseId} =
+    (request.data ?? {}) as Partial<RevokeStorePurchasedLicenseRequest>;
   if (!email || !bookId) {
     throw new HttpsError("invalid-argument", "email and bookId are required.");
   }

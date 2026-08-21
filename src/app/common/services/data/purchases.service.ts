@@ -13,6 +13,10 @@ import { BaseService } from './base.service';
 import { EMailService } from './email.service';
 import { EMailTemplatesService } from './email-templates.service';
 import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
+import {
+  RefundStorePurchaseRequest,
+  RefundStorePurchaseResult,
+} from '@impact-common/shared/contract/admin-callables.types';
 
 // The mail_templates doc sendAmazonConfirmation() renders - looked up BY
 // NAME, same load-bearing-name convention as the "Sales Receipt" template
@@ -21,15 +25,8 @@ import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-con
 export const AMAZON_CONFIRMATION_TEMPLATE_NAME = 'Amazon Shipping Confirmation';
 
 // refundStorePurchase's response shape (functions/src/store-refund.functions.ts).
-export interface RefundResult {
-  refunded: boolean;
-  fullyRefunded: boolean;
-  refundAmount: number;
-  fulfillmentClosed: boolean;
-  paypalRefunded: boolean;
-  refundId: string | null;
-  revokedBookIds: string[];
-}
+/** Alias of the shared contract's RefundStorePurchaseResult (Stage 2e-ii). */
+export type RefundResult = RefundStorePurchaseResult;
 
 @Injectable({
   providedIn: 'root'
@@ -65,10 +62,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     revokeLicenses: boolean,
     amount?: number
   ): Promise<RefundResult> {
-    const fn = httpsCallable<
-      { purchaseId: string; revokeLicenses: boolean; amount?: number },
-      RefundResult
-    >(this.functions, CALLABLE_FUNCTIONS.refundStorePurchase);
+    const fn = httpsCallable<RefundStorePurchaseRequest, RefundStorePurchaseResult>(this.functions, CALLABLE_FUNCTIONS.refundStorePurchase);
     const result = await fn({ purchaseId, revokeLicenses, ...(amount != null ? { amount } : {}) });
     return result.data;
   }

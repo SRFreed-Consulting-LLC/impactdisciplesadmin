@@ -3,6 +3,10 @@ import * as admin from "firebase-admin";
 import {Timestamp, FieldValue} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {toTimestamp} from "./utils/date-normalize.functions";
+import {
+  ApplyTagRuleRetroactivelyRequest,
+  ApplyTagRuleRetroactivelyResult,
+} from "./common/shared/contract/admin-callables.types";
 
 // Customer tag rules: "customer purchased product X => tag 'Impact 1'",
 // "customer registered for event Y => tag 'DMC'". Rules live in the
@@ -505,10 +509,12 @@ export async function runRuleBackfill(
  */
 export const applyTagRuleRetroactively = onCall(
   {timeoutSeconds: 540},
-  async (request) => {
+  async (request):
+  Promise<ApplyTagRuleRetroactivelyResult> => {
     await requireAdminRole(request.auth?.uid);
 
-    const {ruleId} = (request.data ?? {}) as {ruleId?: string};
+    const {ruleId} =
+      (request.data ?? {}) as Partial<ApplyTagRuleRetroactivelyRequest>;
     if (!ruleId) {
       throw new HttpsError("invalid-argument", "ruleId is required.");
     }

@@ -4,16 +4,15 @@ import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { TagRuleModel } from 'src/app/common/models/domain/tag-rule.model';
 import { BaseService } from './base.service';
 import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
+import {
+  ApplyTagRuleRetroactivelyRequest,
+  ApplyTagRuleRetroactivelyResult,
+} from '@impact-common/shared/contract/admin-callables.types';
 
 // The applyTagRuleRetroactively callable's result counts
 // (functions/src/tag-rules.functions.ts).
-export interface RetroactiveTagResult {
-  scanned: number;
-  matched: number;
-  customersTagged: number;
-  applicationsCreated: number;
-  skippedNoCustomer: number;
-}
+/** Alias of the shared contract's ApplyTagRuleRetroactivelyResult (Stage 2e-ii). */
+export type RetroactiveTagResult = ApplyTagRuleRetroactivelyResult;
 
 @Injectable({
   providedIn: 'root'
@@ -30,7 +29,7 @@ export class TagRuleService extends BaseService<TagRuleModel> {
   /** Admin-triggered sweep of historic purchases/event-registrations for
    *  one rule - server-side paging, returns the result counts. */
   async applyRetroactively(ruleId: string): Promise<RetroactiveTagResult> {
-    const fn = httpsCallable<{ ruleId: string }, RetroactiveTagResult>(
+    const fn = httpsCallable<ApplyTagRuleRetroactivelyRequest, ApplyTagRuleRetroactivelyResult>(
       this.functions, CALLABLE_FUNCTIONS.applyTagRuleRetroactively
     );
     const result = await fn({ ruleId });

@@ -1,8 +1,12 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
-
-type AdminUserRole = "Admin" | "Employee" | "Editor";
+import {
+  CreateAdminUserRequest,
+  CreateAdminUserResult,
+  DeleteAdminUserRequest,
+  DeleteAdminUserResult,
+} from "./common/shared/contract/admin-callables.types";
 
 /**
  * Throws unless `callerUid` has an admin_users record (matched by its
@@ -51,18 +55,11 @@ export async function requireAdminRole(
  * everything here in the one create call avoids a follow-up write that
  * would otherwise have to carefully not clobber firebaseUID/role/etc.
  */
-export const createAdminUser = onCall(async (request) => {
+export const createAdminUser = onCall(async (request):
+  Promise<CreateAdminUserResult> => {
   await requireAdminRole(request.auth?.uid);
 
-  const data = (request.data ?? {}) as {
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    role?: AdminUserRole;
-    phone?: unknown;
-    shippingAddress?: unknown;
-    billingAddress?: unknown;
-  };
+  const data = (request.data ?? {}) as Partial<CreateAdminUserRequest>;
   const {email, firstName, lastName, role} = data;
 
   if (!email || !firstName || !lastName || !role) {
@@ -136,10 +133,11 @@ export const createAdminUser = onCall(async (request) => {
  * Firebase Auth account, keeping the two in sync. Caller must be an Admin
  * and cannot delete their own account.
  */
-export const deleteAdminUser = onCall(async (request) => {
+export const deleteAdminUser = onCall(async (request):
+  Promise<DeleteAdminUserResult> => {
   await requireAdminRole(request.auth?.uid);
 
-  const {docId} = (request.data ?? {}) as {docId?: string};
+  const {docId} = (request.data ?? {}) as Partial<DeleteAdminUserRequest>;
   if (!docId) {
     throw new HttpsError("invalid-argument", "docId is required.");
   }

@@ -1,6 +1,10 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {requireAdminRole} from "./admin-users.functions";
+import {
+  DeleteCampaignRequest,
+  DeleteCampaignResult,
+} from "./common/shared/contract/admin-callables.types";
 
 // Campaign delete (2026-08-20, server-side since the same day's follow-up):
 // one callable, `deleteCampaign`, with a dryRun mode the confirm dialog
@@ -209,10 +213,11 @@ async function deleteUnreferencedImages(
 //               imageCandidates}
 //   execute -> {emailsDeleted, popupDeleted, imagesDeleted[], imagesKept[],
 //               imagesFailed[]}
-export const deleteCampaign = onCall(async (request) => {
+export const deleteCampaign = onCall(async (request):
+  Promise<DeleteCampaignResult> => {
   await requireAdminRole(request.auth?.uid);
   const {campaignId, dryRun} =
-    (request.data ?? {}) as {campaignId?: string; dryRun?: boolean};
+    (request.data ?? {}) as Partial<DeleteCampaignRequest>;
   if (!campaignId || typeof campaignId !== "string") {
     throw new HttpsError("invalid-argument", "campaignId is required.");
   }

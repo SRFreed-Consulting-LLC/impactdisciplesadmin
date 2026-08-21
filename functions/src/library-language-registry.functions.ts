@@ -3,6 +3,9 @@ import {onCall} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {Timestamp} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
+import {
+  RebuildLanguageRegistryResult,
+} from "./common/shared/contract/admin-callables.types";
 
 // Sweep 2026-08-17: the reader's "which languages exist" discovery used to
 // run getDocs(collectionGroup('translations')) - which forced the
@@ -58,7 +61,8 @@ export const onTranslationLocaleRegistry = onDocumentWritten(
  * manual "fix it" if the add-only trigger ever drifts. Admin-only. Uses
  * the collection-group scan the reader no longer may (staff can).
  */
-export const rebuildLanguageRegistry = onCall(async (request) => {
+export const rebuildLanguageRegistry = onCall(async (request):
+  Promise<RebuildLanguageRegistryResult> => {
   await requireAdminRole(request.auth?.uid);
   const snap = await db.collectionGroup("translations").get();
   const locales: Record<string, string> = {};

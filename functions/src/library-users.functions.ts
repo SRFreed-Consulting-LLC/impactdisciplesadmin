@@ -4,6 +4,18 @@ import {getMessaging} from "firebase-admin/messaging";
 import * as admin from "firebase-admin";
 import {requireAdminRole} from "./admin-users.functions";
 import {sendLibraryPushToUser, truncate} from "./library-push-notifications";
+import {
+  GrantLibraryUserLicensesRequest,
+  GrantLibraryUserLicensesResult,
+  RevokeAdminGrantedLicenseRequest,
+  RevokeAdminGrantedLicenseResult,
+  SendLibraryUserMessageRequest,
+  SendLibraryUserMessageResult,
+  SetLibraryUserRevokedRequest,
+  SetLibraryUserRevokedResult,
+  UpdateLibraryUserRequest,
+  UpdateLibraryUserResult,
+} from "./common/shared/contract/admin-callables.types";
 
 /**
  * Ported from impact-discipleship-library-manager-new's own Library Users
@@ -49,12 +61,12 @@ type LibraryUserEditableField = (typeof LIBRARY_USER_EDITABLE_FIELDS)[number];
  * preferredLanguage, notificationsEnabled) stay the user's own - the
  * reader app would overwrite an admin's value on their next save anyway.
  */
-export const updateLibraryUser = onCall(async (request) => {
+export const updateLibraryUser = onCall(async (request):
+  Promise<UpdateLibraryUserResult> => {
   await requireAdminRole(request.auth?.uid);
 
-  const {email, ...fields} = (request.data ?? {}) as {
-    email?: string;
-  } & Record<string, unknown>;
+  const {email, ...fields} =
+    (request.data ?? {}) as Partial<UpdateLibraryUserRequest>;
   if (!email) {
     throw new HttpsError("invalid-argument", "email is required.");
   }
@@ -117,7 +129,8 @@ export const updateLibraryUser = onCall(async (request) => {
  * say so. On revoke, refresh tokens are also revoked so live sessions
  * can't renew.
  */
-export const setLibraryUserRevoked = onCall(async (request) => {
+export const setLibraryUserRevoked = onCall(async (request):
+  Promise<SetLibraryUserRevokedResult> => {
   await requireAdminRole(request.auth?.uid);
   // requireAdminRole throws for a missing/invalid uid, so request.auth is
   // genuinely defined below -- this makes that explicit for TypeScript
@@ -126,10 +139,8 @@ export const setLibraryUserRevoked = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
 
-  const {email, revoked} = (request.data ?? {}) as {
-    email?: string;
-    revoked?: boolean;
-  };
+  const {email, revoked} =
+    (request.data ?? {}) as Partial<SetLibraryUserRevokedRequest>;
   if (!email || typeof revoked !== "boolean") {
     throw new HttpsError("invalid-argument", "email and revoked are required.");
   }
@@ -184,7 +195,8 @@ export const setLibraryUserRevoked = onCall(async (request) => {
  * overwritten (a grant must not destroy purchase provenance). May create
  * the doc (pre-grant before first sign-in) but never writes `userId`.
  */
-export const grantLibraryUserLicenses = onCall(async (request) => {
+export const grantLibraryUserLicenses = onCall(async (request):
+  Promise<GrantLibraryUserLicensesResult> => {
   await requireAdminRole(request.auth?.uid);
   // requireAdminRole throws for a missing/invalid uid, so request.auth is
   // genuinely defined below -- this makes that explicit for TypeScript
@@ -193,10 +205,8 @@ export const grantLibraryUserLicenses = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
 
-  const {email, bookIds} = (request.data ?? {}) as {
-    email?: string;
-    bookIds?: string[];
-  };
+  const {email, bookIds} =
+    (request.data ?? {}) as Partial<GrantLibraryUserLicensesRequest>;
   if (
     !email ||
     !Array.isArray(bookIds) ||
@@ -283,13 +293,12 @@ export const grantLibraryUserLicenses = onCall(async (request) => {
  * licensedBookIds entry is only dropped when no remaining bookLicenses
  * entry still covers the book.
  */
-export const revokeAdminGrantedLicense = onCall(async (request) => {
+export const revokeAdminGrantedLicense = onCall(async (request):
+  Promise<RevokeAdminGrantedLicenseResult> => {
   await requireAdminRole(request.auth?.uid);
 
-  const {email, bookId} = (request.data ?? {}) as {
-    email?: string;
-    bookId?: string;
-  };
+  const {email, bookId} =
+    (request.data ?? {}) as Partial<RevokeAdminGrantedLicenseRequest>;
   if (!email || !bookId) {
     throw new HttpsError("invalid-argument", "email and bookId are required.");
   }
@@ -353,7 +362,8 @@ export const revokeAdminGrantedLicense = onCall(async (request) => {
  */
 export const sendLibraryUserMessage = onCall(
   {timeoutSeconds: 300},
-  async (request) => {
+  async (request):
+  Promise<SendLibraryUserMessageResult> => {
     await requireAdminRole(request.auth?.uid);
     // requireAdminRole throws for a missing/invalid uid, so request.auth is
     // genuinely defined below -- this makes that explicit for TypeScript
@@ -362,11 +372,8 @@ export const sendLibraryUserMessage = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
-    const {recipients, title, body} = (request.data ?? {}) as {
-      recipients?: string[] | "all";
-      title?: string;
-      body?: string;
-    };
+    const {recipients, title, body} =
+      (request.data ?? {}) as Partial<SendLibraryUserMessageRequest>;
     const trimmedTitle = (title ?? "").trim();
     const trimmedBody = (body ?? "").trim();
     if (!trimmedTitle || trimmedTitle.length > 120) {

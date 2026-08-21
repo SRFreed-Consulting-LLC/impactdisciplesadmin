@@ -21,6 +21,20 @@ import { AdminMessage } from '@impact-common/models/library-user-message.model';
 import { LibraryUser } from 'src/app/common/models/domain/library/library-user.model';
 import { LibraryActivityLogService } from './library-activity-log.service';
 import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
+import {
+  GrantLibraryUserLicensesRequest,
+  GrantLibraryUserLicensesResult,
+  RevokeAdminGrantedLicenseRequest,
+  RevokeAdminGrantedLicenseResult,
+  RevokeStorePurchasedLicenseRequest,
+  RevokeStorePurchasedLicenseResult,
+  SendLibraryUserMessageRequest,
+  SendLibraryUserMessageResult,
+  SetLibraryUserRevokedRequest,
+  SetLibraryUserRevokedResult,
+  UpdateLibraryUserRequest,
+  UpdateLibraryUserResult,
+} from '@impact-common/shared/contract/admin-callables.types';
 
 /**
  * The `libraryUsers` collection - owned and written by the reader app
@@ -123,7 +137,7 @@ export class LibraryUserService {
     targetName: string,
   ): Promise<void> {
     const correlationId = newCorrelationId();
-    const fn = httpsCallable<Record<string, unknown>, { email: string }>(
+    const fn = httpsCallable<UpdateLibraryUserRequest, UpdateLibraryUserResult>(
       this.functions,
       CALLABLE_FUNCTIONS.updateLibraryUser,
     );
@@ -143,10 +157,7 @@ export class LibraryUserService {
    *  email - false for legacy-import docs whose owner never signed in. */
   async setRevoked(email: string, revoked: boolean, targetName: string): Promise<boolean> {
     const correlationId = newCorrelationId();
-    const fn = httpsCallable<
-      { email: string; revoked: boolean; correlationId: string },
-      { email: string; revoked: boolean; authAccountFound: boolean }
-    >(this.functions, CALLABLE_FUNCTIONS.setLibraryUserRevoked);
+    const fn = httpsCallable<SetLibraryUserRevokedRequest, SetLibraryUserRevokedResult>(this.functions, CALLABLE_FUNCTIONS.setLibraryUserRevoked);
     let result;
     try {
       result = await fn({ email, revoked, correlationId });
@@ -168,10 +179,7 @@ export class LibraryUserService {
     bookTitles: string[],
   ): Promise<{ granted: string[]; skipped: string[] }> {
     const correlationId = newCorrelationId();
-    const fn = httpsCallable<
-      { email: string; bookIds: string[]; correlationId: string },
-      { granted: string[]; skipped: string[] }
-    >(this.functions, CALLABLE_FUNCTIONS.grantLibraryUserLicenses);
+    const fn = httpsCallable<GrantLibraryUserLicensesRequest, GrantLibraryUserLicensesResult>(this.functions, CALLABLE_FUNCTIONS.grantLibraryUserLicenses);
     let result;
     try {
       result = await fn({ email, bookIds, correlationId });
@@ -196,10 +204,7 @@ export class LibraryUserService {
     bookTitle: string,
   ): Promise<boolean> {
     const correlationId = newCorrelationId();
-    const fn = httpsCallable<
-      { email: string; bookId: string; correlationId: string },
-      { removed: boolean }
-    >(this.functions, CALLABLE_FUNCTIONS.revokeAdminGrantedLicense);
+    const fn = httpsCallable<RevokeAdminGrantedLicenseRequest, RevokeAdminGrantedLicenseResult>(this.functions, CALLABLE_FUNCTIONS.revokeAdminGrantedLicense);
     let result;
     try {
       result = await fn({ email, bookId, correlationId });
@@ -226,10 +231,7 @@ export class LibraryUserService {
     bookTitle: string,
   ): Promise<boolean> {
     const correlationId = newCorrelationId();
-    const fn = httpsCallable<
-      { email: string; bookId: string; correlationId: string },
-      { removed: boolean }
-    >(this.functions, CALLABLE_FUNCTIONS.revokeStorePurchasedLicense);
+    const fn = httpsCallable<RevokeStorePurchasedLicenseRequest, RevokeStorePurchasedLicenseResult>(this.functions, CALLABLE_FUNCTIONS.revokeStorePurchasedLicense);
     let result;
     try {
       result = await fn({ email, bookId, correlationId });
@@ -253,10 +255,7 @@ export class LibraryUserService {
     body: string,
   ): Promise<{ messageId: string; recipientCount: number; pushSuccessCount: number }> {
     const correlationId = newCorrelationId();
-    const fn = httpsCallable<
-      { recipients: string[] | 'all'; title: string; body: string; correlationId: string },
-      { messageId: string; recipientCount: number; pushSuccessCount: number }
-    >(this.functions, CALLABLE_FUNCTIONS.sendLibraryUserMessage);
+    const fn = httpsCallable<SendLibraryUserMessageRequest, SendLibraryUserMessageResult>(this.functions, CALLABLE_FUNCTIONS.sendLibraryUserMessage);
     let result;
     try {
       result = await fn({ recipients, title, body, correlationId });
