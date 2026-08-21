@@ -1,7 +1,4 @@
-// v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
-// the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
-// secrets plumbing) until a deliberate 2nd-gen migration.
-import * as functions from "firebase-functions/v1";
+import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 // Lazily required on first use rather than at module load: index.ts pulls
@@ -24,9 +21,9 @@ function getShipEngineClient() {
   return new CachedShipEngine(process.env.SHIP_ENGINE_API_KEY);
 }
 
-exports.get_shipping_rates = functions
-  .runWith({secrets: ["SHIP_ENGINE_API_KEY"]})
-  .https.onRequest((request, response) => {
+exports.get_shipping_rates = onRequest(
+  {secrets: ["SHIP_ENGINE_API_KEY"]},
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       const shipengine = getShipEngineClient();
 
@@ -46,9 +43,9 @@ exports.get_shipping_rates = functions
     });
   });
 
-exports.get_shipping_label = functions
-  .runWith({secrets: ["SHIP_ENGINE_API_KEY"]})
-  .https.onRequest((request, response) => {
+exports.get_shipping_label = onRequest(
+  {secrets: ["SHIP_ENGINE_API_KEY"]},
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       // Purchasing a label costs real postage -- only recognized staff
       // (admin app, real Firebase Auth session) may call this.

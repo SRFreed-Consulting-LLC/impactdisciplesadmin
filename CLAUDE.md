@@ -94,9 +94,21 @@ npm run logs
 `functions/` runs on Node 22 / firebase-functions 7 / firebase-admin 14 / TypeScript 5.8 with an ESLint 9
 flat config (`functions/eslint.config.js`: eslint + typescript-eslint recommended + the Google style
 rules) since 2026-08-20 - the old ESLint 8 `.eslintrc.js` + `cross-env ESLINT_USE_FLAT_CONFIG=false`
-workaround is gone. The five 1st-gen HTTP functions (`paypal`, `shipping`, `subscriptions`,
-`youtube`, `library-license-grant`) import from `firebase-functions/v1` on purpose - v6+ exports the
-v2 API at the package root; moving them to 2nd gen is a separate decision. firebase-admin moved to
+workaround is gone. **Everything is 2nd-gen as of 2026-08-21** - the last four 1st-gen files
+(`paypal`, `shipping`, `subscriptions`, `youtube`; `library-license-grant` was already v2 despite an
+older version of this line claiming otherwise) moved to `firebase-functions/v2/https`. Nothing
+imports `firebase-functions/v1` any more; new functions must not reintroduce it. Two things that
+migration established and that a future one needs to know: **a deployed function's generation cannot
+be changed in place** - firebase-tools hard-throws "Upgrading from 1st Gen to 2nd Gen is not yet
+supported" with no `--force`, so each function must be `functions:delete`d and redeployed, and
+because that throw aborts the whole deploy plan, half-migrated code blocks EVERY functions deploy in
+that project until it is finished; and **2nd gen defaults to 80 concurrent requests per instance**
+(1st gen served one at a time), so module-level mutable state is now shared across in-flight
+requests - the existing module-level caches (`cachedClientId`, `CachedShipEngine`, library-paypal's
+`tokenCache`) are all idempotent and safe, but anything request-scoped at module scope would not be.
+Underscore function names (`create_paypal_order`) are fine in 2nd gen, and the
+`cloudfunctions.net/<name>` URL is unchanged across generations, so client callers needed no edits.
+firebase-admin moved to
 14.x on 2026-08-21: use the MODULAR API only (`getFirestore()`, `getAuth()`, `getStorage()`,
 `getApp()`, `applicationDefault()`, and `Timestamp`/`FieldValue`/`FieldPath`/`DocumentData` imported
 from `firebase-admin/firestore`). v14's package root exports only App/initializeApp/getApp/

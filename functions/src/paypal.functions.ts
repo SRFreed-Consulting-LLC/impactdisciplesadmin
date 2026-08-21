@@ -1,7 +1,4 @@
-// v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
-// the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
-// secrets plumbing) until a deliberate 2nd-gen migration.
-import * as functions from "firebase-functions/v1";
+import {onRequest} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
 import {queueWebOrderEmails} from "./transactional-emails";
@@ -454,9 +451,9 @@ async function logCheckoutFailure(
   return errorCode;
 }
 
-exports.create_paypal_order = functions
-  .runWith({secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]})
-  .https.onRequest((request, response) => {
+exports.create_paypal_order = onRequest(
+  {secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]},
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
         const body =
@@ -639,9 +636,9 @@ exports.create_paypal_order = functions
     });
   });
 
-exports.capture_paypal_order = functions
-  .runWith({secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]})
-  .https.onRequest((request, response) => {
+exports.capture_paypal_order = onRequest(
+  {secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]},
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
         const orderId: string | undefined = request.body?.orderId;

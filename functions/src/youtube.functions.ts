@@ -1,7 +1,4 @@
-// v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
-// the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
-// secrets plumbing) until a deliberate 2nd-gen migration.
-import * as functions from "firebase-functions/v1";
+import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 /**
@@ -60,9 +57,9 @@ async function fetchAndSendPlaylistVideos(response): Promise<void> {
 
 // Staff-gated: only a signed-in admin's own Firebase Auth session may call
 // this. This is what the admin app's own podcast-management page uses.
-exports.get_youtube_videos = functions
-  .runWith({secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]})
-  .https.onRequest((request, response) => {
+exports.get_youtube_videos = onRequest(
+  {secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]},
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
         await requireStaffAuth(request);
@@ -86,9 +83,9 @@ exports.get_youtube_videos = functions
 // video list itself is not sensitive (it's the same content already
 // public on YouTube); only the API key needed protecting, and this keeps
 // it server-side exactly the same way the staff-gated version does.
-exports.get_youtube_videos_public = functions
-  .runWith({secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]})
-  .https.onRequest((request, response) => {
+exports.get_youtube_videos_public = onRequest(
+  {secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]},
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       await fetchAndSendPlaylistVideos(response);
     });

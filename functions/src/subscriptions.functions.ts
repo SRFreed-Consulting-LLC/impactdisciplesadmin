@@ -1,8 +1,6 @@
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
-// v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
-// the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
-// secrets plumbing) until a deliberate 2nd-gen migration.
-import * as functions from "firebase-functions/v1";
+import {onRequest} from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
 import {queueSubscriptionConfirmation} from "./transactional-emails";
 import {
@@ -58,8 +56,8 @@ function fieldsForType(
 // PendingCustomerChange - a first/last name mismatch on a newsletter
 // signup isn't worth flagging for manual review the way a shipping address
 // is.
-exports.subscribe_to_email_list = functions
-  .https.onRequest((request, response) => {
+exports.subscribe_to_email_list = onRequest(
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
         const body =
@@ -133,7 +131,7 @@ exports.subscribe_to_email_list = functions
           try {
             await queueSubscriptionConfirmation(db, type, firstName, email);
           } catch (mailErr) {
-            functions.logger.error(
+            logger.error(
               "Failed to queue subscription confirmation", mailErr
             );
           }
@@ -154,7 +152,7 @@ exports.subscribe_to_email_list = functions
 
         response.send({subscribed: true, alreadySubscribed});
       } catch (err) {
-        functions.logger.error("subscribe_to_email_list failed", err);
+        logger.error("subscribe_to_email_list failed", err);
         response.status(500).send("Something went wrong");
       }
     });
@@ -178,8 +176,8 @@ exports.subscribe_to_email_list = functions
 // particular link is for). The `*SubscribedDate` field is left alone on
 // unsubscribe - it records "last subscribed", not "currently subscribed
 // since", so it stays meaningful history if they resubscribe later.
-exports.unsubscribe_from_email_list = functions
-  .https.onRequest((request, response) => {
+exports.unsubscribe_from_email_list = onRequest(
+  (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
         const email = request.query.email;
@@ -211,7 +209,7 @@ exports.unsubscribe_from_email_list = functions
 
         response.send("You have been successfully removed from the list");
       } catch (err) {
-        functions.logger.error("unsubscribe_from_email_list failed", err);
+        logger.error("unsubscribe_from_email_list failed", err);
         response.status(500).send("Unable to process unsubscribe request");
       }
     });
