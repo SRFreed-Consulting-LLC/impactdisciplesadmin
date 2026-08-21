@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { TagRuleModel } from 'src/app/common/models/domain/tag-rule.model';
@@ -19,9 +19,10 @@ export type RetroactiveTagResult = ApplyTagRuleRetroactivelyResult;
 })
 export class TagRuleService extends BaseService<TagRuleModel> {
   // Same field-inject pattern PurchasesService uses for its callable.
-  private functions = inject(Functions);
-
-  constructor(public override dao: FirebaseDAO<TagRuleModel>) {
+  constructor(
+    public override dao: FirebaseDAO<TagRuleModel>,
+    private functions: Functions
+  ) {
     super(dao);
     this.table = 'tag_rules';
   }

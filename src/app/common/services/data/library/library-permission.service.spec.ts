@@ -1,15 +1,7 @@
-import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject } from 'rxjs';
-import { Firestore } from '@angular/fire/firestore';
 import { Role } from '@impact-common/shared/lists/roles.enum';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { LibraryNodePermission } from 'src/app/common/models/domain/library/library-node-permission.model';
-import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { BookSeriesService } from './book-series.service';
-import { LibraryBookService } from './library-book.service';
-import { LibraryUnitService } from './library-unit.service';
-import { LibraryLessonService } from './library-lesson.service';
-import { LibraryActivityLogService } from './library-activity-log.service';
 import { LibraryEffectivePermission, LibraryPermissionService } from './library-permission.service';
 
 // LibraryPermissionService decides what an Editor may see and do anywhere in
@@ -18,10 +10,11 @@ import { LibraryEffectivePermission, LibraryPermissionService } from './library-
 // Browse stays navigable. Getting either half wrong silently either hides an
 // Editor's own content or shows them someone else's, so this pins both.
 //
-// House convention is hand-construction with duck-typed deps
-// (permission.service.spec.ts), but this service uses inject() FIELD
-// initializers - so, like purchases.service.spec.ts, it uses the minimal
-// TestBed with inert stubs. Nothing here touches Firebase or the network.
+// Hand-constructed with duck-typed deps, matching the house convention
+// (permission.service.spec.ts). This used to need a minimal TestBed because
+// the service took its dependencies through inject() FIELD initializers;
+// those moved into the constructor on 2026-08-21 (bucket A item #7).
+// Nothing here touches Firebase or the network.
 //
 // Not covered here: setPermission(), which is a Firestore transaction
 // (runTransaction/doc are module-level @angular/fire functions) - a write
@@ -66,33 +59,20 @@ describe('LibraryPermissionService', () => {
     lessonLookups = [];
     user$ = new BehaviorSubject<AdminUser | null>(null);
 
-    TestBed.configureTestingModule({
-      providers: [
-        LibraryPermissionService,
-        { provide: Firestore, useValue: {} },
-        { provide: AdminAuthService, useValue: { dao: { loggedInUser$: user$ } } },
-        { provide: LibraryActivityLogService, useValue: { log: () => Promise.resolve() } },
-        { provide: BookSeriesService, useValue: {} },
-        {
-          provide: LibraryBookService,
-          useValue: { getById: (id: string) => Promise.resolve(CONTENT.books[id]) }
-        },
-        {
-          provide: LibraryUnitService,
-          useValue: { getById: (id: string) => Promise.resolve(CONTENT.units[id]) }
-        },
-        {
-          provide: LibraryLessonService,
-          useValue: {
-            getById: (id: string) => {
-              lessonLookups.push(id);
-              return Promise.resolve(CONTENT.lessons[id]);
-            }
-          }
+    service = new LibraryPermissionService(
+      {} as never,                                                    // firestore
+      { dao: { loggedInUser$: user$ } } as never,                      // authService
+      { log: () => Promise.resolve() } as never,                       // activityLog
+      {} as never,                                                     // seriesService
+      { getById: (id: string) => Promise.resolve(CONTENT.books[id]) } as never,
+      { getById: (id: string) => Promise.resolve(CONTENT.units[id]) } as never,
+      {
+        getById: (id: string) => {
+          lessonLookups.push(id);
+          return Promise.resolve(CONTENT.lessons[id]);
         }
-      ]
-    });
-    service = TestBed.inject(LibraryPermissionService);
+      } as never,
+    );
   });
 
   describe('isFullAccess', () => {

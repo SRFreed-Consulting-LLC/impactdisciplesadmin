@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { CampaignAudience, CampaignModel, emptyCampaignStats } from 'src/app/common/models/domain/campaign.model';
@@ -37,9 +37,10 @@ export type { CampaignDeleteResult } from '@impact-common/shared/contract/admin-
 })
 export class CampaignService extends BaseService<CampaignModel>{
   // Same field-inject pattern TagRuleService/PurchasesService use.
-  private functions = inject(Functions);
-
-  constructor(public override dao: FirebaseDAO<CampaignModel> ) {
+  constructor(
+    public override dao: FirebaseDAO<CampaignModel>,
+    private functions: Functions
+  ) {
     super(dao)
     this.table="campaigns"
     this.fromFirestore = CampaignService.fromFirestore

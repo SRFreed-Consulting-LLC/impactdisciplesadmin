@@ -1,19 +1,13 @@
-import { TestBed } from '@angular/core/testing';
-import { Functions } from '@angular/fire/functions';
-import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { CheckoutForm, FulfillmentStatus } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from './purchases.service';
-import { EMailService } from './email.service';
-import { EMailTemplatesService } from './email-templates.service';
 
-// House convention is hand-construction with duck-typed deps (see
-// permission.service.spec.ts) - PurchasesService is the one service that
-// can't be built that way, because its `functions = inject(Functions)`
-// FIELD initializer requires an injection context. So this spec uses the
-// minimal TestBed instead: every provider is an inert stub, nothing touches
-// Firebase or the network.
+// Hand-constructed with duck-typed deps, matching the house convention (see
+// permission.service.spec.ts). This spec used to be the ONE exception,
+// forced onto a minimal TestBed because PurchasesService took its Functions
+// dependency through a `functions = inject(Functions)` FIELD initializer,
+// which needs an injection context. That moved into the constructor on
+// 2026-08-21 (bucket A item #7), so the exception is gone and this reads
+// like every other service spec in the app.
 describe('PurchasesService', () => {
   let service: PurchasesService;
   let updates: { id: string; value: CheckoutForm }[];
@@ -27,34 +21,31 @@ describe('PurchasesService', () => {
     templates = [];
     sentEmails = [];
 
-    TestBed.configureTestingModule({
-      providers: [
-        PurchasesService,
-        {
-          provide: FirebaseDAO,
-          useValue: {
-            update: (id: string, value: CheckoutForm) => {
-              updates.push({ id, value });
-              return Promise.resolve(value);
-            },
-          },
-        },
-        { provide: AdminAuthService, useValue: { getLoggedInUser: () => loggedInUser } },
-        { provide: SnackbarService, useValue: {} },
-        {
-          provide: EMailService,
-          useValue: {
-            sendHtmlEmail: (to: string, subject: string, html: string) => {
-              sentEmails.push({ to, subject, html });
-              return Promise.resolve();
-            },
-          },
-        },
-        { provide: EMailTemplatesService, useValue: { getAllByValue: () => Promise.resolve(templates) } },
-        { provide: Functions, useValue: {} },
-      ],
-    });
-    service = TestBed.inject(PurchasesService);
+    const dao = {
+      update: (id: string, value: CheckoutForm) => {
+        updates.push({ id, value });
+        return Promise.resolve(value);
+      },
+    };
+    const authService = { getLoggedInUser: () => loggedInUser };
+    const snackbar = {};
+    const emailService = {
+      sendHtmlEmail: (to: string, subject: string, html: string) => {
+        sentEmails.push({ to, subject, html });
+        return Promise.resolve();
+      },
+    };
+    const emailTemplatesService = { getAllByValue: () => Promise.resolve(templates) };
+    const functions = {};
+
+    service = new PurchasesService(
+      dao as never,
+      authService as never,
+      snackbar as never,
+      emailService as never,
+      emailTemplatesService as never,
+      functions as never,
+    );
   });
 
   const order = (overrides: Partial<CheckoutForm> = {}): CheckoutForm =>

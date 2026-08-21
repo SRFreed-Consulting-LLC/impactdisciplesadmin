@@ -118,9 +118,12 @@ project id `demo-impact`):
 1. **Unit** — Karma/Jasmine in this repo and the web repo (`npm run test` in each; the web
    repo's suite was created by this program), plus `functions/`'s own node:test suite
    (`cd functions && npm test`, runs against compiled `lib/`). House style: hand-constructed
-   classes with duck-typed deps, NEVER TestBed/DI (see `permission.service.spec.ts`'s comment;
-   the one exception is `purchases.service.spec.ts`, forced by an `inject()` field initializer —
-   all-stub providers).
+   classes with duck-typed deps, NEVER TestBed/DI (see `permission.service.spec.ts`'s comment).
+   `purchases.service.spec.ts` used to be the one exception, forced onto a minimal all-stub
+   TestBed by an `inject()` FIELD initializer; that moved into the constructor on 2026-08-21
+   and the spec is hand-constructed like the rest. If you ever need TestBed again, that is a
+   signal the class under test took a dependency through `inject()` — move it to the
+   constructor instead (`library-manager/**` is the remaining holdout, see below).
 2. **Integration** (`integration/`, `npm run test:integration`, emulator must be up) — the REAL
    Cloud Functions running in the emulator, driven over HTTP/callables + Admin-SDK doc writes:
    registration flow, customer upserts, checkout money path, campaign send engine + tracking,
@@ -332,7 +335,14 @@ UI (list header, column filter, dialogs, image uploader, table export/loading, p
 infrastructure) and is imported by every feature module. This codebase is deliberately
 NgModule-based with constructor injection throughout, not standalone components/`inject()` — see the
 `prefer-standalone`/`prefer-inject` overrides in `eslint.config.js`; don't convert files one at a
-time, that migration is out of scope for incidental changes. (The `*ngIf`/`*ngFor` → `@if`/`@for`
+time, that migration is out of scope for incidental changes.
+**Where the second idiom still lives (2026-08-21):** `inject()` and signals are now confined to
+`library-manager/**` (17 of the 23 `inject()` files, 13 of the 15 signal files) — the module folded
+in from the decommissioned standalone Library Manager, which had its own house style. Converting it
+belongs to the Library Manager fold, NOT to incidental work; it will be restructured wholesale.
+The only other legitimate `inject()` uses are the two FUNCTIONAL route guards (`authGuard` in
+`admin-auth.service.ts`, `libraryUnsavedChangesGuard`) — a `CanActivateFn`/`CanDeactivateFn` has no
+constructor, so `inject()` is the only option there and those must stay as they are. (The `*ngIf`/`*ngFor` → `@if`/`@for`
 control-flow migration was a separate, smaller lift and was completed codebase-wide on
 2026-08-12 via `ng generate @angular/core:control-flow-migration`; `@angular-eslint/template/prefer-control-flow`
 is back on at `error` in `eslint.config.js` now that it's done — don't reintroduce `*ngIf`/`*ngFor`/`*ngSwitch`

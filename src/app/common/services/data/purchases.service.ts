@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
@@ -37,7 +37,8 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     private authService: AdminAuthService,
     private snackbar: SnackbarService,
     private emailService: EMailService,
-    private emailTemplatesService: EMailTemplatesService
+    private emailTemplatesService: EMailTemplatesService,
+    private functions: Functions
   ) {
     super(dao)
     this.table="purchases"
@@ -49,8 +50,6 @@ export class PurchasesService extends BaseService<CheckoutForm>{
 
     return data;
   };
-
-  private functions = inject(Functions);
 
   /** Refund via the refundStorePurchase Cloud Function - the full
    *  remaining amount when `amount` is omitted, or an admin-chosen partial
@@ -86,8 +85,6 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     const refundedCents = Math.round((item.refundAmount ?? 0) * 100);
     return Math.max(0, chargedCents - refundedCents) / 100;
   }
-
-
 
   // Appends one entry to the Sale Details tab's timeline (see
   // StatusHistoryEntry's own comment, cart.model.ts) - every transition

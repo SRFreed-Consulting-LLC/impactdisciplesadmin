@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Firestore, doc, runTransaction } from '@angular/fire/firestore';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
@@ -51,14 +51,6 @@ const ALL: LibraryEffectivePermission = { view: true, add: true, edit: true, del
   providedIn: 'root'
 })
 export class LibraryPermissionService {
-  private readonly firestore = inject(Firestore);
-  private readonly authService = inject(AdminAuthService);
-  private readonly activityLog = inject(LibraryActivityLogService);
-  private readonly seriesService = inject(BookSeriesService);
-  private readonly bookService = inject(LibraryBookService);
-  private readonly unitService = inject(LibraryUnitService);
-  private readonly lessonService = inject(LibraryLessonService);
-
   // Plain field, not a signal - re-derived synchronously on every call to
   // isFullAccess()/effectivePermission() below instead, same pattern as
   // PermissionService.isFullAccess() (screen-permission gating) already
@@ -72,7 +64,15 @@ export class LibraryPermissionService {
    *  a real explicit grant. Empty for Admin/Root, who don't need it. */
   readonly ancestorVisibility = signal<ReadonlySet<string>>(new Set());
 
-  constructor() {
+  constructor(
+    private readonly firestore: Firestore,
+    private readonly authService: AdminAuthService,
+    private readonly activityLog: LibraryActivityLogService,
+    private readonly seriesService: BookSeriesService,
+    private readonly bookService: LibraryBookService,
+    private readonly unitService: LibraryUnitService,
+    private readonly lessonService: LibraryLessonService
+  ) {
     this.authService.dao.loggedInUser$.subscribe((user) => {
       this.currentUser = user;
       if (!user || hasRole(user.role, [Role.ADMIN])) {
