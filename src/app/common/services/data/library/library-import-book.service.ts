@@ -11,6 +11,7 @@ import { LibraryUnitService } from './library-unit.service';
 import { LibraryLessonService } from './library-lesson.service';
 import { assembleLibraryLessonSchema } from './library-book-schema-assembler.util';
 import { LibraryFormioSchema } from 'src/app/common/models/domain/library/library-lesson.model';
+import { BookImportRequest } from '@impact-common/shared/contract/book-import.types';
 import {
   LibraryBookPlan,
   LibraryImportBookRequest,
@@ -254,11 +255,11 @@ export class LibraryImportBookService {
     });
   }
 
-  private async call<T>(data: Record<string, unknown>): Promise<T> {
+  private async call<T>(data: BookImportRequest): Promise<T> {
     // The default callable client timeout is 70s, but Claude reading a whole
     // PDF (plan) or transcribing a lesson can take longer - match the Cloud
     // Function's own 540s timeout so the client doesn't give up first.
-    const callable = httpsCallable<Record<string, unknown>, T>(this.functions, CALLABLE_FUNCTIONS.importBookFromPdf, {
+    const callable = httpsCallable<BookImportRequest, T>(this.functions, CALLABLE_FUNCTIONS.importBookFromPdf, {
       timeout: 540_000,
     });
     const result = await callable(data);

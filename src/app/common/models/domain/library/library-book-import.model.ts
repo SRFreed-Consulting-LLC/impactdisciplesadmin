@@ -1,62 +1,33 @@
-// Client mirror of the AI book-import "block model" the importBookFromPdf
-// Cloud Function speaks (functions/src/book-import/types.ts). Keep the two
-// in sync. Ported from impact-discipleship-library-manager-new's
-// core/models/book-import.models.ts. The function parses a PDF into these
-// shapes; the client assembles them into Form.io schemas
-// (library-book-schema-assembler.util.ts) and writes the library content,
-// so the exact component templates live on this side, in code.
+// The AI book-import "block model" the importBookFromPdf Cloud Function
+// speaks now lives ONCE in the shared submodule
+// (@impact-common/shared/contract/book-import.types - Stage 2e-ii, 2026-08-20);
+// functions/src/book-import/types.ts re-exports the same file, so the two
+// sides can no longer drift. The Library* names below are kept as aliases
+// so existing imports in this app keep working. The function parses a PDF
+// into these shapes; this client assembles them into Form.io schemas
+// (library-book-schema-assembler.util.ts) and writes the library content.
+import type {
+  BlockSection,
+  BookImportRequest,
+  BookPlan,
+  ImportBlock,
+  ImportDailyReading,
+  LessonContent,
+  PlannedLesson,
+  PlannedUnit,
+} from '@impact-common/shared/contract/book-import.types';
 
-export type LibraryBlockSection = 'lesson' | 'discussion';
+export type { BookImportRequest, BookImportResponse } from '@impact-common/shared/contract/book-import.types';
 
-export type LibraryImportBlock =
-  | { kind: 'heading'; text: string; section?: LibraryBlockSection }
-  | { kind: 'content'; html: string; section?: LibraryBlockSection }
-  | {
-      kind: 'question';
-      prompt: string;
-      inputType: 'textarea' | 'textfield';
-      section?: LibraryBlockSection;
-    }
-  | { kind: 'image'; page: number; alt?: string; caption?: string; section?: LibraryBlockSection };
+export type LibraryBlockSection = BlockSection;
+export type LibraryImportBlock = ImportBlock;
+export type LibraryImportDailyReading = ImportDailyReading;
+export type LibraryPlannedLesson = PlannedLesson;
+export type LibraryPlannedUnit = PlannedUnit;
+export type LibraryBookPlan = BookPlan;
+export type LibraryLessonContent = LessonContent;
 
-export interface LibraryImportDailyReading {
-  goal?: string;
-  memoryVerse?: string;
-  monVerse?: string;
-  tueVerse?: string;
-  wedVerse?: string;
-  thuVerse?: string;
-  friVerse?: string;
-}
-
-export interface LibraryPlannedLesson {
-  title: string;
-  hasQuestions: boolean;
-  imageCount: number;
-  hasDailyReading: boolean;
-  pageStart?: number;
-  pageEnd?: number;
-}
-
-export interface LibraryPlannedUnit {
-  title: string;
-  lessons: LibraryPlannedLesson[];
-}
-
-export interface LibraryBookPlan {
-  book: {
-    title: string;
-    description?: string;
-    author?: string;
-    year?: string;
-  };
-  units: LibraryPlannedUnit[];
-}
-
-export interface LibraryLessonContent {
-  blocks: LibraryImportBlock[];
-  dailyReading?: LibraryImportDailyReading;
-}
+// ---- Client-only shapes (the import dialog's own state) ----
 
 /** Whether a new book is added to an existing series or a brand-new one. */
 export interface LibrarySeriesChoice {
