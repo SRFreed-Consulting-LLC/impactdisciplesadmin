@@ -523,6 +523,12 @@ DMP: 9. Zero contacts carry both Summit and Paid Summit (the either/or holds).
 
 ## Mailchimp sunset (Phase 7) — images re-hosted + audience reconciled + sync removed, DEV + PROD DONE 2026-08-20
 
+> **The one-time scripts referenced throughout this section were deleted on 2026-08-21**
+> (`scripts/archive/mailchimp-sunset/` — 7 scripts + a README). All had been run on dev AND
+> prod, nothing imported them, and they still used the firebase-admin namespaced API that
+> v14 removed. Recover from git history if a re-run is ever needed. The narrative below is
+> kept as the record of what they did.
+
 **Images**: `scripts/archive/mailchimp-sunset/rehost-mailchimp-images.js` (dry-run default) moved every Mailchimp-CDN image
 referenced by `campaign_emails` + `mail_templates` — 623 distinct files (+2 from an unrelated
 third-party bucket, `sawa-dev-2-storage-bucket`) — to `email-assets/mailchimp/<sha1>.<ext>` in the

@@ -23,7 +23,7 @@ import {getFirestore} from "firebase-admin/firestore";
 // never "every newsletter-kind send" (the regrouped Monthly Newsletter
 // campaign holds promos too, and published issues came from the prayer
 // letter and standalone campaigns as well - see
-// scripts/backfill-newsletter-archive.js).
+// backfill-newsletter-archive.js, removed 2026-08-21).
 
 const ARCHIVE_LIMIT = 200;
 

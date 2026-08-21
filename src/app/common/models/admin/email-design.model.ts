@@ -520,7 +520,7 @@ export function createDesignFromLegacyHtml(html: string): EmailDesign {
 // e.g. a Mailchimp-rendered campaign) as one full-width HTML block: head
 // <style> blocks + body content are extracted (nesting a second <html>
 // document inside the builder's own skeleton would be invalid) and scripts
-// stripped. Client twin of scripts/import-mailchimp-campaigns.js's
+// stripped. Client twin of import-mailchimp-campaigns.js's (removed)
 // designWithHtmlBlock()/extractEmbeddable() - keep them in sync.
 export function createDesignFromFullHtml(fullHtml: string): EmailDesign {
   const source = fullHtml ?? '';

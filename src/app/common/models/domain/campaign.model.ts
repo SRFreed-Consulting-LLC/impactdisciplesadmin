@@ -17,7 +17,7 @@ import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 // after a tagging purchase/registration) lives on as a touch's
 // sendConfig.mode 'tagTriggered'; the 477 imported Mailchimp sends were
 // regrouped from 1:1 type-'email' campaigns into proper multi-email
-// campaigns by scripts/apply-campaign-regroup.js.
+// campaigns by apply-campaign-regroup.js (removed).
 export type CampaignGoal = 'product' | 'event' | 'other';
 
 // Finer flavor when goal is 'other' - drives display grouping only, no

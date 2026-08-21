@@ -218,4 +218,4 @@ exports.cancelGroupInvite = libraryGroups.cancelGroupInvite;
 // 2026-08-20 - Phase 7 of Campaign Manager v2: the app's own send engine,
 // subscriber flags on `customers`, and the re-hosted email archive replaced
 // every Mailchimp role; the audience was reconciled into `customers` first
-// (scripts/reconcile-mailchimp-audience.js, see MIGRATION.md).
+// (reconcile-mailchimp-audience.js, removed 2026-08-21; see MIGRATION.md).

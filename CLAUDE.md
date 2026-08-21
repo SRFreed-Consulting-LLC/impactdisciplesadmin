@@ -91,13 +91,20 @@ npm run deploy-prod     # firebase use impactdisciples-a82a8 && firebase deploy 
 npm run logs
 ```
 
-`functions/` runs on Node 22 / firebase-functions 7 / firebase-admin 13 / TypeScript 5.8 with an ESLint 9
+`functions/` runs on Node 22 / firebase-functions 7 / firebase-admin 14 / TypeScript 5.8 with an ESLint 9
 flat config (`functions/eslint.config.js`: eslint + typescript-eslint recommended + the Google style
 rules) since 2026-08-20 - the old ESLint 8 `.eslintrc.js` + `cross-env ESLINT_USE_FLAT_CONFIG=false`
 workaround is gone. The five 1st-gen HTTP functions (`paypal`, `shipping`, `subscriptions`,
 `youtube`, `library-license-grant`) import from `firebase-functions/v1` on purpose - v6+ exports the
-v2 API at the package root; moving them to 2nd gen is a separate decision. firebase-admin stays on
-13.x because 14 drops the namespaced `admin.firestore()`/`admin.auth()` API (~60 call sites).
+v2 API at the package root; moving them to 2nd gen is a separate decision. firebase-admin moved to
+14.x on 2026-08-21: use the MODULAR API only (`getFirestore()`, `getAuth()`, `getStorage()`,
+`getApp()`, `applicationDefault()`, and `Timestamp`/`FieldValue`/`FieldPath`/`DocumentData` imported
+from `firebase-admin/firestore`). v14's package root exports only App/initializeApp/getApp/
+credential-factory/errors — the whole namespaced surface (`admin.firestore()`, `admin.auth()`,
+`admin.storage()`, `admin.app()`, `admin.credential.*`) is gone. This applies to `scripts/` and
+`integration/` too: they resolve firebase-admin out of `functions/node_modules` on purpose, and
+`scripts/lib/firestore-admin.js` is their shared bootstrap (it exports the whole
+`firebase-admin/firestore` module as `firestore`, the modular stand-in for the old namespace).
 
 Firebase deploys of `functions/` predeploy-run `functions/`'s own `lint` and `build` (see
 `firebase.json`).
@@ -508,7 +515,7 @@ Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
   `@mailchimp/mailchimp_marketing` dependency, `MailchimpConfigModel/Service`, the
   `campaigns-manager/mailchimp-settings/` screen, the `integration_settings` collection + rules
   block, and the `addMailchimpSourceTag` hooks in the two customer-upsert functions are all gone.
-  The audience was reconciled into `customers` first (`scripts/archive/mailchimp-sunset/reconcile-mailchimp-audience.js`;
+  The audience was reconciled into `customers` first (`reconcile-mailchimp-audience.js` (removed 2026-08-21; in git history);
   MIGRATION.md has the numbers). Nothing in the suite talks to Mailchimp any more — the only
   Mailchimp words left in code are the `*|TAG|*` merge-tag syntax (ours now) and the one-time
   import/backfill scripts.
@@ -552,8 +559,8 @@ sentAt/per-email stats/sendConfig; composite index `campaign_emails(campaignId, 
 the detail timeline. The 477 imported Mailchimp sends were REGROUPED into 78 campaigns (Blog Posts
 149 emails, DMP Program 50, Disciple-Making Minute 43, Monthly Newsletter 40, Prayer Letter 30,
 Podcast 23, summits by year, per-product/event pushes, singletons) via
-`scripts/archive/mailchimp-sunset/propose-campaign-regroup.js` (auto-proposal, user-reviewed) +
-`scripts/archive/mailchimp-sunset/apply-campaign-regroup.js` (idempotent, exports a full JSON backup to scripts/output/
+`propose-campaign-regroup.js` (removed 2026-08-21; in git history) (auto-proposal, user-reviewed) +
+`apply-campaign-regroup.js` (removed 2026-08-21; in git history) (idempotent, exports a full JSON backup to scripts/output/
 first — the undo path). Surfaces: Campaigns list (all campaigns, kind/channel chips, funnel
 columns) → in-page **campaign-detail** (funnel tiles + touches timeline, `?campaignId=` deep link),
 Status Board (board+calendar lenses, cards deep-link to detail), **Sent Emails** = the global email
@@ -641,7 +648,7 @@ the rule. Set it from campaign detail's touch row (globe icon → "Show on websi
 sending touches only) or the Subscriber Report send dialog's checkbox. Retired: the Content
 Manager's Monthly Newsletters screen/service/model and the `monthly-newsletter` collection + its
 rules block (web repo: `NewsletterArchiveService` + `/monthly-newsletter/:id` sandboxed-srcdoc
-viewer replace the Firestore read). `scripts/archive/mailchimp-sunset/backfill-newsletter-archive.js` maps legacy rows to
+viewer replace the Firestore read). `backfill-newsletter-archive.js` (removed 2026-08-21; in git history) maps legacy rows to
 `mc_*` touches via the Mailchimp API's archive_url (dry-run default, `--execute`) — MIGRATION.md
 has the prod runbook. Phase 7 note: the archived snapshots' images still live on Mailchimp's CDN
 (`mcusercontent.com`); the sunset must keep the account alive or re-host them. **Website
@@ -665,7 +672,7 @@ images. Surfaces: list row trash icon and the detail header DELETE button, both 
 `canDelete('campaigns-manager.campaigns')`; confirm copy + result snackbar in
 `campaigns/campaign-delete-text.ts` (shows the image-candidate count / unused-removed count).
 
-**Mailchimp image re-host (2026-08-20, Phase 7 step)**: `scripts/archive/mailchimp-sunset/rehost-mailchimp-images.js` moved
+**Mailchimp image re-host (2026-08-20, Phase 7 step)**: `rehost-mailchimp-images.js` (removed 2026-08-21; in git history) moved
 every Mailchimp-CDN image referenced by `campaign_emails` + `mail_templates` (623 distinct files)
 to `email-assets/mailchimp/<sha1>.<ext>` in the shared bucket and rewrote the docs in dev AND prod
 (map in `scripts/output/rehost-map.json`, gitignored). Zero Mailchimp-host references remain in
