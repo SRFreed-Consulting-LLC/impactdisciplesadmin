@@ -1,0 +1,259 @@
+// Deliberately mirrors email-designer.component.scss: this is the same
+// builder in a different shell, and an admin moving between System
+// Templates and a campaign email should not feel two different editors.
+// The additions here are the status chip and the Schedule slide-over.
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.editor-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #e9ecef;
+  position: relative; // anchors the schedule panel/backdrop
+}
+
+.editor-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e5ea;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.topbar-fields {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+// Compact, borderless inline fields - the Mailchimp "click the name to edit
+// it" affordance without a full mat-form-field's chrome.
+.label-input,
+.subject-input {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: transparent;
+  min-width: 0;
+  // Explicit: the app-wide theme paints toolbar text white, which would be
+  // invisible against this editor's white top bar (the same trap the System
+  // Templates designer hit).
+  color: #22282f;
+
+  &::placeholder {
+    color: #8a93a0;
+  }
+
+  &:hover {
+    border-color: #dbe0e6;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #9ec4c1;
+    background: #ffffff;
+  }
+}
+
+.label-input {
+  font-weight: 600;
+  width: 220px;
+}
+
+.subject-input {
+  width: 240px;
+  color: #555e69;
+}
+
+.preheader-input {
+  width: 180px;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 26px;
+  background: #e2e5ea;
+  margin: 0 6px;
+  flex: none;
+}
+
+.topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.device-toggle mat-icon {
+  font-size: 19px;
+  height: 19px;
+  width: 19px;
+}
+
+.topbar-action {
+  color: #0e6e6e;
+
+  &--open {
+    background: #e6f2f2;
+  }
+}
+
+.save-button {
+  min-width: 96px;
+  margin-left: 4px;
+}
+
+// Where this email stands, so an admin never has to open the drawer just to
+// find out whether it is scheduled.
+.status-chip {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef1f4;
+  color: #555e69;
+  white-space: nowrap;
+
+  &--scheduled {
+    background: #e6f2f2;
+    color: #0e6e6e;
+  }
+}
+
+.editor-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-work {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.editor-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.editor-panel {
+  flex: none;
+  width: 340px;
+  border-left: 1px solid #e2e5ea;
+  background: #ffffff;
+  overflow-y: auto;
+}
+
+// ---- Schedule slide-over ----
+
+.schedule-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 26, 33, .32);
+  z-index: 5;
+  // Reset the button chrome - this is an overlay, not a control that should
+  // look like one.
+  border: none;
+  padding: 0;
+  cursor: default;
+  appearance: none;
+
+  &:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: -4px;
+  }
+}
+
+.schedule-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 92vw;
+  background: #ffffff;
+  border-left: 1px solid #e2e5ea;
+  box-shadow: -8px 0 24px rgba(20, 26, 33, .12);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  color: #22282f;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 8px 12px 20px;
+    border-bottom: 1px solid #e2e5ea;
+    flex: none;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e5ea;
+    margin-top: 4px;
+  }
+}
+
+.schedule-label {
+  margin: 4px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  color: #8a93a0;
+}
+
+.schedule-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schedule-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7480;
+}
+
+.full-width {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .schedule-panel {
+    animation: schedule-in 160ms ease-out;
+  }
+
+  @keyframes schedule-in {
+    from { transform: translateX(12px); opacity: .6; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+}

@@ -1,0 +1,145 @@
+<div class="editor-shell">
+  <mat-toolbar class="editor-topbar">
+    <button mat-icon-button matTooltip="Back to campaign" (click)="backToCampaign()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+
+    <form [formGroup]="form" class="topbar-fields">
+      <input class="label-input" formControlName="label"
+             placeholder="Email name (shown on the timeline)" aria-label="Email name">
+      <input class="subject-input" formControlName="subject"
+             placeholder="Subject line" aria-label="Subject line">
+      <!-- The inbox snippet next to the subject - compiled as a hidden
+           preheader div. Lives on the design doc itself, not the touch. -->
+      <input class="subject-input preheader-input" [(ngModel)]="state.design.preheader"
+             [ngModelOptions]="{standalone: true}" (ngModelChange)="state.dirty = true"
+             placeholder="Preview text" aria-label="Preview text (preheader)"
+             matTooltip="The snippet shown next to the subject in the inbox">
+    </form>
+
+    <span class="topbar-divider"></span>
+
+    <button mat-icon-button matTooltip="Undo (Ctrl+Z)" [disabled]="!state.canUndo" (click)="state.undo()">
+      <mat-icon>undo</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Redo (Ctrl+Y)" [disabled]="!state.canRedo" (click)="state.redo()">
+      <mat-icon>redo</mat-icon>
+    </button>
+
+    <span class="topbar-divider"></span>
+
+    <mat-button-toggle-group class="device-toggle" hideSingleSelectionIndicator
+                             [value]="state.viewMode" (change)="setViewMode($event.value)">
+      <mat-button-toggle value="desktop" matTooltip="Desktop view">
+        <mat-icon>desktop_windows</mat-icon>
+      </mat-button-toggle>
+      <mat-button-toggle value="mobile" matTooltip="Mobile view">
+        <mat-icon>smartphone</mat-icon>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <span class="topbar-spacer"></span>
+
+    <span class="status-chip" [class.status-chip--scheduled]="touch?.status === 'scheduled'">
+      {{ statusLabel }}
+    </span>
+
+    <button mat-icon-button matTooltip="Start from a template" (click)="openTemplatePicker()">
+      <mat-icon>dashboard_customize</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Save this design as a campaign template"
+            (click)="saveAsTemplate()">
+      <mat-icon>bookmark_add</mat-icon>
+    </button>
+
+    <button mat-button class="topbar-action" [disabled]="loading$ | async" (click)="onPreview()">
+      Preview
+    </button>
+    <button mat-stroked-button class="topbar-action" [class.topbar-action--open]="scheduleOpen"
+            (click)="toggleSchedule()">
+      <mat-icon>schedule</mat-icon>
+      Schedule
+    </button>
+    <button mat-flat-button color="primary" class="save-button"
+            [disabled]="saving || sending || (loading$ | async)" (click)="saveDraft()">
+      @if (saving) { Saving… } @else { Save }
+    </button>
+  </mat-toolbar>
+
+  @if (loading$ | async) {
+    <div class="editor-loading">
+      <mat-spinner diameter="42"></mat-spinner>
+    </div>
+  } @else {
+    <div class="editor-work">
+      <app-design-canvas class="editor-canvas" (backgroundClick)="onCanvasBackgroundClick()"></app-design-canvas>
+      <app-designer-side-panel class="editor-panel"></app-designer-side-panel>
+    </div>
+  }
+
+  <!-- Schedule slide-over: everything about WHEN and TO WHOM. Kept off the
+       canvas so the design has the full width, and off a second permanent
+       rail so three panels never compete below ~1500px. -->
+  @if (scheduleOpen) {
+    <!-- A real button, not a click-handling div: it is dismiss-on-click
+         chrome, so it has to be focusable and keyboard-operable. Escape
+         closes the panel too (see onKeydown). -->
+    <button type="button" class="schedule-backdrop" aria-label="Close schedule panel"
+            (click)="toggleSchedule()"></button>
+    <aside class="schedule-panel" role="dialog" aria-label="Schedule this email">
+      <div class="schedule-panel__head">
+        <h2 class="schedule-panel__title">Schedule</h2>
+        <button mat-icon-button matTooltip="Close" (click)="toggleSchedule()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="form" class="schedule-panel__body">
+        <p class="schedule-label">WHEN DOES IT SEND?</p>
+        <mat-radio-group formControlName="sendMode" class="schedule-modes">
+          <mat-radio-button value="now">Send now</mat-radio-button>
+          <mat-radio-button value="scheduled">Schedule for later</mat-radio-button>
+          <mat-radio-button value="tagTriggered">Automated (tag-triggered)</mat-radio-button>
+        </mat-radio-group>
+
+        @if (sendMode === 'scheduled') {
+          <app-date-time-field formControlName="scheduledAt" label="Send at" [required]="true"></app-date-time-field>
+        }
+        @if (sendMode === 'tagTriggered') {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Trigger tags (any of)</mat-label>
+            <mat-select formControlName="triggerTags" multiple>
+              @for (tag of knownTags; track tag) {
+                <mat-option [value]="tag">{{ tag }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Days after tagging</mat-label>
+            <input matInput type="number" min="0" formControlName="afterDays">
+          </mat-form-field>
+          <p class="schedule-hint">
+            Each contact gets this once, that many days after the purchase/registration
+            that tagged them - the audience is the tag itself.
+          </p>
+        }
+
+        <p class="schedule-label">TEST</p>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Send test to</mat-label>
+          <input matInput [(ngModel)]="testEmail" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+        <button mat-stroked-button type="button" class="full-width" [disabled]="saving" (click)="sendTest()">
+          SEND TEST
+        </button>
+
+        <div class="schedule-panel__actions">
+          <app-indicator-button title="SAVE" [isInProgress]="saving"
+                                (clicked)="saveDraft()"></app-indicator-button>
+          <app-indicator-button [title]="primaryActionLabel" [isInProgress]="sending"
+                                (clicked)="onPrimaryAction()"></app-indicator-button>
+        </div>
+      </form>
+    </aside>
+  }
+</div>

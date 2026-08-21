@@ -4,7 +4,7 @@ import Quill from 'quill';
 
 /**
  * Replaces dx-html-editor's built-in "variable" toolbar button + dxo-variables
- * datasource (used by Email Templates and the Customers "Send Email" dialog to
+ * datasource (used by System Templates and the Customers "Send Email" dialog to
  * insert {{Recipient First Name}}-style placeholders). Quill has no equivalent
  * built-in, so this renders as a small menu button next to the quill-editor;
  * selecting an entry emits the raw variable name and the parent inserts it at

@@ -14,7 +14,7 @@ import { EventModel } from '@impact-common/shared/models/domain/event.model';
 // Campaign wizard (Campaign Manager v2, Phase 2): creates/edits the
 // campaign SHELL - what's promoted (goal), through which channels, to
 // whom (audience). The emails themselves are touches added on the detail
-// view (email-touch-editor); web popups arrive in Phase 5 (the checkbox
+// view (campaign-email-editor); web popups arrive in Phase 5 (the checkbox
 // is visible but disabled so the shape of the feature is discoverable).
 // In-page mode hosted by campaigns.component, same no-route treatment as
 // the detail view.

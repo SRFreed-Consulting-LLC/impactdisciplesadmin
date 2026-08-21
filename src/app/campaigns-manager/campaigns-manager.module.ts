@@ -21,7 +21,6 @@ import { CampaignDetailComponent } from './campaign-detail/campaign-detail.compo
 import { PublishWebDialogComponent } from './campaign-detail/publish-web-dialog.component';
 import { WebNewslettersComponent } from './web-newsletters/web-newsletters.component';
 import { CampaignWizardComponent } from './campaign-wizard/campaign-wizard.component';
-import { EmailTouchEditorComponent } from './email-touch-editor/email-touch-editor.component';
 import { PopupEditorComponent } from './popup-editor/popup-editor.component';
 import { SocialComposerComponent } from './social-composer/social-composer.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
@@ -42,7 +41,6 @@ import { QuillModule } from 'ngx-quill';
     PublishWebDialogComponent,
     WebNewslettersComponent,
     CampaignWizardComponent,
-    EmailTouchEditorComponent,
     PopupEditorComponent,
     SocialComposerComponent,
     StatusBoardComponent,

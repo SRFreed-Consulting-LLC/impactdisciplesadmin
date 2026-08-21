@@ -1,7 +1,4 @@
-@if (mode === 'editTouch') {
-  <app-email-touch-editor [campaign]="campaign" [touch]="editingTouch"
-    (closed)="onEditorClosed($event)"></app-email-touch-editor>
-} @else if (mode === 'editPopup') {
+@if (mode === 'editPopup') {
   <app-popup-editor [campaign]="campaign" [popup]="popup"
     (closed)="onPopupClosed($event)"></app-popup-editor>
 } @else if (mode === 'social') {
@@ -157,6 +154,12 @@
               <button mat-icon-button [matTooltip]="touch.publishToWeb ? 'SHOWN ON WEBSITE' : 'SHOW ON WEBSITE'"
                 (click)="$event.stopPropagation(); publishToWeb(touch)">
                 <mat-icon>{{ touch.publishToWeb ? 'public' : 'public_off' }}</mat-icon>
+              </button>
+            }
+            @if (canDeleteTouch(touch)) {
+              <button mat-icon-button matTooltip="DELETE"
+                (click)="$event.stopPropagation(); deleteTouch(touch)">
+                <mat-icon>delete</mat-icon>
               </button>
             }
           </span>

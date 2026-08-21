@@ -30,7 +30,7 @@ export class EmailTemplateDialogComponent {
   // placeholders swapped in when the template is actually sent.
   emailVals: string[] = ['Recipient First Name', 'Recipient Last Name', 'Sender First Name', 'Sender Last Name'];
 
-  private itemType = 'Email Template';
+  private itemType = 'System Template';
   private quill: Quill | undefined;
 
   constructor(
@@ -67,7 +67,14 @@ export class EmailTemplateDialogComponent {
     }
 
     this.inProgress$.next(true);
-    const value: MailTemplateModel = { ...this.data.item, ...this.form.value };
+    // Reached only from the System Templates screen, so a new template
+    // authored here is a system one. An edit keeps whatever kind the doc
+    // already had rather than restamping it.
+    const value: MailTemplateModel = {
+      ...this.data.item,
+      ...this.form.value,
+      kind: this.data.item?.kind ?? 'system'
+    };
 
     const request = this.isEdit
       ? this.service.update(value.id!, value)

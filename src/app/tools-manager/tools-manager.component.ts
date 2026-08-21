@@ -6,7 +6,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-config';
 
 // Tools Manager - utility/configuration screens, not customer or content
-// records (Web Config, Email Templates, Shipping Labels, Form Builder -
+// records (Web Config, System Templates, Shipping Labels, Form Builder -
 // the thing that BUILDS a form, as opposed to Custom Form Submissions,
 // which is the customer-submitted data that comes back from one and lives
 // under Customers Manager instead). Same tab-shell shape as every other

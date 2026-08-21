@@ -1,8 +1,15 @@
 import { Injectable } from '@angular/core';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
+import { MailTemplateModel, MailTemplateKind } from 'src/app/common/models/admin/mail.model';
 import { BaseService } from './base.service';
 
+// One collection, two lists (2026-08-21): `mail_templates` holds both the
+// SYSTEM templates the app sends from (receipts, event confirmations,
+// product follow-ups - resolved by name or id inside Cloud Functions) and
+// the CAMPAIGN templates the campaign email editor offers as starting
+// points. They are kept apart by the `kind` field rather than a second
+// collection so both lists keep sharing one service, one designer, and one
+// firestore.rules entry - see MailTemplateModel's own comment.
 @Injectable({
   providedIn: 'root'
 })
@@ -11,4 +18,19 @@ export class EMailTemplatesService extends BaseService<MailTemplateModel> {
     super(dao)
     this.table="mail_templates"
   }
+
+  /** Templates of one kind. Docs written before the split carry no `kind`
+   *  at all and count as 'system' - the filter is applied in memory for
+   *  exactly that reason: a Firestore where('kind','==','system') would
+   *  silently drop every one of them (Firestore only matches documents
+   *  that HAVE the field). */
+  async getAllOfKind(kind: MailTemplateKind): Promise<MailTemplateModel[]> {
+    const all = await this.getAll();
+    return all.filter((template) => kindOf(template) === kind);
+  }
+}
+
+/** A template's list, defaulting an absent `kind` to 'system'. */
+export function kindOf(template: MailTemplateModel): MailTemplateKind {
+  return template.kind === 'campaign' ? 'campaign' : 'system';
 }

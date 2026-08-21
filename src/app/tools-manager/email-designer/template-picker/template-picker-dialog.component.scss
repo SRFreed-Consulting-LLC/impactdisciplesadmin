@@ -21,6 +21,8 @@
 }
 
 .tcard {
+  // Anchors .tcard__delete, which floats over the preview iframe.
+  position: relative;
   border: 1px solid #dbe0e6;
   border-radius: 10px;
   overflow: hidden;
@@ -180,4 +182,63 @@
   color: #8a93a0;
   font-size: 13px;
   font-style: italic;
+}
+
+// The delete affordance on a saved template card. Sits above the preview
+// iframe rather than inside the hover overlay so it is reachable by
+// keyboard without hovering, and stopPropagation in deleteCard() keeps it
+// from also counting as a card click.
+.tcard__delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(20, 26, 33, .55);
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease-out, background 120ms ease-out;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+  }
+
+  &:hover {
+    background: #9c2f1c;
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid #0e6e6e;
+    outline-offset: 2px;
+  }
+}
+
+.tcard:hover .tcard__delete,
+.tcard:focus-within .tcard__delete {
+  opacity: 1;
+}
+
+// "3 sends share this subject" - shown because the Past Emails list
+// collapses resends and earlier editions onto one card.
+.tcard__editions {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #eef1f4;
+  color: #555e69;
+  font-size: 10px;
+  font-weight: 700;
 }

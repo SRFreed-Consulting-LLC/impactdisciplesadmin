@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// The Mailchimp-style email builder (Tools Manager > Email Templates >
+// The Mailchimp-style email builder (Tools Manager > System Templates >
 // New Email Design; /tools-manager/email-designer/new | :id). CDK drag-drop
 // needs real mouse movement past the drag threshold, hence dragTo() rather
 // than Playwright's dragAndDrop() (which dispatches too few move events for
@@ -166,7 +166,7 @@ test.describe('Email designer', () => {
   });
 
   test('legacy rich-text templates open in the designer with their content imported', async ({ page }) => {
-    await page.goto('/tools-manager?tab=email-templates');
+    await page.goto('/tools-manager?tab=system-templates');
     // Every legacy row shows Rich Text in the Editor column.
     const legacyRow = page.locator('tr:has-text("Rich Text")').first();
     await legacyRow.waitFor();
@@ -186,6 +186,6 @@ test.describe('Email designer', () => {
     // prompt, and nothing about the stored template changed.
     await page.click('mat-toolbar button:has(mat-icon:text("arrow_back"))');
     await expect(page.locator('mat-dialog-container')).toHaveCount(0);
-    await expect(page).toHaveURL(/tab=email-templates/);
+    await expect(page).toHaveURL(/tab=system-templates/);
   });
 });

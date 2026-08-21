@@ -22,21 +22,29 @@
     }
   </div>
 
-  <p class="picker-label">YOUR TEMPLATES</p>
+  <p class="picker-label">{{ savedLabel }}</p>
   @if (loadingSaved) {
     <div class="gallery-loading"><mat-spinner diameter="30"></mat-spinner></div>
   } @else if (savedCards.length === 0) {
-    <p class="gallery-empty">No saved templates yet - any email design you save appears here.</p>
+    <p class="gallery-empty">{{ savedEmptyText }}</p>
   } @else {
     <div class="card-grid">
       @for (card of savedCards; track card.key) {
         <div class="tcard">
+          @if (canDeleteCards) {
+            <button type="button" class="tcard__delete" [matTooltip]="'Delete ' + card.name"
+                    [attr.aria-label]="'Delete ' + card.name" (click)="deleteCard(card, $event)">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
           <div class="tcard__preview">
             <iframe class="tcard__frame" sandbox="allow-same-origin" tabindex="-1"
                     [title]="card.name + ' preview'" [srcdoc]="card.srcdoc"></iframe>
             <div class="tcard__hover">
               <button mat-flat-button color="primary" (click)="useCard(card)">Use</button>
-              <button mat-stroked-button class="tcard__edit" (click)="editCard(card)">Edit</button>
+              @if (canEditCards) {
+                <button mat-stroked-button class="tcard__edit" (click)="editCard(card)">Edit</button>
+              }
             </div>
           </div>
           <div class="tcard__meta">
@@ -84,7 +92,17 @@
             </div>
             <div class="tcard__meta">
               <span class="tcard__name">{{ card.name }}</span>
-              <span class="tcard__sub">{{ [card.subject, card.sentLabel].join(' · ') }}</span>
+              <span class="tcard__sub">
+                {{ [card.subject, card.sentLabel].join(' · ') }}
+                @if (card.editions > 1) {
+                  <!-- Resends and earlier editions of the same email collapse
+                       into this card; the newest one is what you copy. -->
+                  <span class="tcard__editions"
+                        [matTooltip]="card.editions + ' sends share this subject - showing the most recent'">
+                    ×{{ card.editions }}
+                  </span>
+                }
+              </span>
             </div>
           </div>
         }

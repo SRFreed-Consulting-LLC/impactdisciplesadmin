@@ -18,9 +18,12 @@ import { SendTestDialogComponent } from './preview/send-test-dialog.component';
 import { TemplatePickerDialogComponent, TemplatePickerResult } from './template-picker/template-picker-dialog.component';
 
 // Full-screen Mailchimp-style email builder. Reached from Tools Manager >
-// Email Templates ("New Email Design" / editing a builder template) at
+// System Templates ("New Email Design" / editing a builder template) at
 // /tools-manager/email-designer/new | /:id. No NavLeaf of its own - it
-// rides the tools-manager.email-templates grants (see nav-config.ts).
+// rides the tools-manager.system-templates grants (see nav-config.ts).
+//
+// This instance only ever authors SYSTEM templates - the campaign email
+// editor has its own gallery and its own "Save as template" (2026-08-21).
 @Component({
     selector: 'app-email-designer',
     templateUrl: './email-designer.component.html',
@@ -85,8 +88,8 @@ export class EmailDesignerComponent implements OnInit {
 
   private checkAccessAndLoad(): void {
     const allowed = this.templateId
-      ? this.permissionService.canEdit('tools-manager.email-templates')
-      : this.permissionService.canAdd('tools-manager.email-templates');
+      ? this.permissionService.canEdit('tools-manager.system-templates')
+      : this.permissionService.canAdd('tools-manager.system-templates');
     if (!allowed) {
       this.backToList();
       return;
@@ -227,6 +230,8 @@ export class EmailDesignerComponent implements OnInit {
       ...(this.existing ?? { attachments: [] as unknown[] }),
       name,
       subject: this.templateSubject.trim(),
+      // Edits keep the doc's existing kind; anything new from here is system.
+      kind: this.existing?.kind ?? 'system',
       design,
       html: compileEmailDesign(design, { title: name })
     } as MailTemplateModel;
@@ -254,6 +259,6 @@ export class EmailDesignerComponent implements OnInit {
   }
 
   private backToList(): void {
-    this.router.navigate(['/tools-manager'], { queryParams: { tab: 'email-templates' } });
+    this.router.navigate(['/tools-manager'], { queryParams: { tab: 'system-templates' } });
   }
 }

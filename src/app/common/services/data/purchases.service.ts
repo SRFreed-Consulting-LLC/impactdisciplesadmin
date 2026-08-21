@@ -327,7 +327,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     }
     const templates = await this.emailTemplatesService.getAllByValue('name', AMAZON_CONFIRMATION_TEMPLATE_NAME);
     if (!templates.length) {
-      throw new Error(`Email template "${AMAZON_CONFIRMATION_TEMPLATE_NAME}" not found - create it under Tools Manager > Email Templates.`);
+      throw new Error(`Email template "${AMAZON_CONFIRMATION_TEMPLATE_NAME}" not found - create it under Tools Manager > System Templates.`);
     }
     const trimmedTracking = tracking?.trim() || '';
     const context = {

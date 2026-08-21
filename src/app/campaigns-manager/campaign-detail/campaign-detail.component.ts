@@ -45,8 +45,7 @@ export class CampaignDetailComponent implements OnInit {
   // Fired after a successful cascade delete - the host returns to the list.
   @Output() deleted = new EventEmitter<void>();
 
-  mode: 'view' | 'editTouch' | 'editPopup' | 'social' = 'view';
-  editingTouch: CampaignEmailModel | null = null;
+  mode: 'view' | 'editPopup' | 'social' = 'view';
 
   touches: CampaignEmailModel[] = [];
   loadingTouches = true;
@@ -144,8 +143,8 @@ export class CampaignDetailComponent implements OnInit {
   }
 
   canOpenInDesigner(): boolean {
-    // The designer rides Email Templates' grants (see EmailDesignerComponent).
-    return this.permissionService.canAdd('tools-manager.email-templates');
+    // The designer rides System Templates' grants (see EmailDesignerComponent).
+    return this.permissionService.canAdd('tools-manager.system-templates');
   }
 
   canEditCampaign(): boolean {
@@ -163,31 +162,57 @@ export class CampaignDetailComponent implements OnInit {
     return (touch.status === 'draft' || touch.status === 'scheduled') && this.canEditCampaign();
   }
 
+  // An email that never went out can be deleted outright (2026-08-21).
+  // Deliberately the same set the timeline lets you EDIT - draft and
+  // scheduled - because "not sent" is the real criterion and a scheduled
+  // touch is simply one the hourly scheduler has not reached yet; deleting
+  // it is how you call a planned send off. Never 'sending' (its ledger is
+  // mid-drain and deleting the touch would strand it) and never 'sent'
+  // (that is history, and it may be published to the public site).
+  canDeleteTouch(touch: CampaignEmailModel): boolean {
+    return (touch.status === 'draft' || touch.status === 'scheduled') &&
+      this.permissionService.canDelete('campaigns-manager.campaigns');
+  }
+
+  async deleteTouch(touch: CampaignEmailModel): Promise<void> {
+    if (!this.canDeleteTouch(touch)) {
+      return;
+    }
+    const name = touch.label || touch.subject || 'this email';
+    const scheduled = touch.status === 'scheduled';
+    const confirmed = await this.confirmService.confirm(
+      `Delete <b>${name}</b>?` +
+      (scheduled ? ' It is scheduled to send, and deleting it cancels that send.' : '') +
+      ' This cannot be undone.',
+      'Delete Email'
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.emailService.delete(touch.id!);
+      this.snackbar.success('Email deleted');
+      this.loadTouches();
+    } catch (err) {
+      this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));
+    }
+  }
+
+  // Both routes leave this screen for the full-screen campaign email
+  // editor (2026-08-21) - designing and scheduling happen together there,
+  // so there is no longer an in-page 'editTouch' mode. Coming back is an
+  // ordinary navigation to ?campaignId=, which reloads the timeline and
+  // the header counters from scratch - that is why the old
+  // onEditorClosed() refresh is gone rather than moved.
   newEmail(): void {
-    this.editingTouch = null;
-    this.mode = 'editTouch';
+    this.router.navigate(['/campaigns-manager/email', this.campaign.id, 'new']);
   }
 
   editTouch(touch: CampaignEmailModel): void {
     if (!this.isEditableTouch(touch)) {
       return;
     }
-    this.editingTouch = touch;
-    this.mode = 'editTouch';
-  }
-
-  onEditorClosed(saved: boolean): void {
-    this.mode = 'view';
-    this.editingTouch = null;
-    if (saved) {
-      this.loadTouches();
-      // Sends bump the campaign's own counters - refresh the header too.
-      this.campaignService.getById(this.campaign.id!).then((fresh) => {
-        if (fresh) {
-          this.campaign = fresh;
-        }
-      });
-    }
+    this.router.navigate(['/campaigns-manager/email', this.campaign.id, touch.id]);
   }
 
   touchStatusLabel(touch: CampaignEmailModel): string {

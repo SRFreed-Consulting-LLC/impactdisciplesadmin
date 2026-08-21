@@ -27,7 +27,7 @@ import { Role } from '@impact-common/shared/lists/roles.enum';
 //     2026-08-15 once subscriber state became just 2 flags on a customer
 //     record - see Reports Manager's own Subscribers report below, which
 //     absorbed its functionality instead.
-//   - Tools Manager: utility/configuration screens, not records - Email
+//   - Tools Manager: utility/configuration screens, not records - System
 //     Templates, Shipping Labels, Form Builder (the thing
 //     that BUILDS a form, as opposed to Custom Form Submissions, which is
 //     the data that comes back from one).
@@ -238,12 +238,20 @@ export const NAV_CONFIG: NavGroup[] = [
     icon: 'build',
     roles: [Role.ADMIN],
     items: [
+      // Renamed from 'Email Templates' 2026-08-21 when campaign templates
+      // were split out: this screen is now ONLY the templates the app
+      // itself sends from - sales receipts, event registration
+      // confirmations, product follow-ups - each resolved by name or id
+      // inside a Cloud Function. Marketing templates live in the campaign
+      // email editor's own gallery and never appear here (see
+      // MailTemplateModel's 'kind').
+      //
       // The full-screen email builder route (/tools-manager/email-designer/
       // new | :id) deliberately has NO NavLeaf/screenKey of its own - it is
-      // Email Templates' editing surface and rides this entry's grants
+      // System Templates' editing surface and rides this entry's grants
       // (EmailDesignerComponent checks canAdd/canEdit on
-      // tools-manager.email-templates and bounces back here if denied).
-      { label: 'Email Templates', slug: 'email-templates' },
+      // tools-manager.system-templates and bounces back here if denied).
+      { label: 'System Templates', slug: 'system-templates' },
       { label: 'Shipping Labels', slug: 'shipping-labels' },
       { label: 'Form Builder', slug: 'form-builder' }
     ]
