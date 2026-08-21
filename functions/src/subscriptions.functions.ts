@@ -7,6 +7,9 @@ import {
   recordCampaignConversion,
   sanitizeAttribution,
 } from "./campaign-tracking.functions";
+import {
+  SubscribeToEmailListRequest,
+} from "./common/shared/contract/web-http.types";
 
 // Newsletter/Prayer Team subscription state used to be its own collection
 // (`subscriptions`, one doc per email+type) - it's now just 2 booleans on
@@ -57,7 +60,8 @@ exports.subscribe_to_email_list = functions
   .https.onRequest((request, response) => {
     return restrictedCors(request, response, async () => {
       try {
-        const body = request.body ?? {};
+        const body =
+          (request.body ?? {}) as Partial<SubscribeToEmailListRequest>;
         // Trim + length-cap (same 100/200 pattern as the event-registration
         // endpoints) - these land on a customers doc and get interpolated
         // into the branded confirmation email, so they must not be

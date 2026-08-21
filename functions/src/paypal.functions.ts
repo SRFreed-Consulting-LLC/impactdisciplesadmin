@@ -14,6 +14,9 @@ import {
   PricingCartItemInput,
   PricingResult,
 } from "./utils/checkout-pricing.functions";
+import {
+  CreatePaypalOrderRequest,
+} from "./common/shared/contract/web-http.types";
 
 // Server-side counterpart to impactdisciples-web's checkout.component.ts.
 // Two public HTTP functions (no requireStaffAuth -- anonymous storefront
@@ -483,7 +486,8 @@ exports.create_paypal_order = functions
   .https.onRequest((request, response) => {
     return restrictedCors(request, response, async () => {
       try {
-        const body = request.body ?? {};
+        const body =
+          (request.body ?? {}) as Partial<CreatePaypalOrderRequest>;
 
         if (!Array.isArray(body.cartItems) || body.cartItems.length === 0) {
           response.status(400)
@@ -515,7 +519,8 @@ exports.create_paypal_order = functions
             body.cartItems
           ) as unknown as PricingCartItemInput[],
           couponCode: body.couponCode,
-          shippingAddress: body.shippingAddress,
+          shippingAddress: body.shippingAddress as
+            {state?: string; zip?: string; [key: string]: unknown} | undefined,
           shippingRate: body.shippingRate ?? 0,
         });
 

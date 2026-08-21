@@ -9,6 +9,10 @@ import {
   recordCampaignConversion,
   sanitizeAttribution,
 } from "./campaign-tracking.functions";
+import {
+  RegisterForEventRequest,
+  UpdateMySessionsRequest,
+} from "./common/shared/contract/web-http.types";
 
 /**
  * Pre-prod checklist #2: the public event-registration flows, moved
@@ -177,7 +181,8 @@ export const registerForEventHttp = onRequest((request, response) => {
       response.status(405).send({error: "POST required."});
       return;
     }
-    const body = (request.body ?? {}) as Record<string, unknown>;
+    const body =
+      (request.body ?? {}) as Partial<RegisterForEventRequest>;
     const eventId = typeof body.eventId === "string" ? body.eventId.trim() : "";
     const firstName =
       typeof body.firstName === "string" ?
@@ -312,7 +317,8 @@ export const updateMySessionsHttp = onRequest((request, response) => {
       response.status(405).send({error: "POST required."});
       return;
     }
-    const body = (request.body ?? {}) as Record<string, unknown>;
+    const body =
+      (request.body ?? {}) as Partial<UpdateMySessionsRequest>;
     const registrationId =
       typeof body.registrationId === "string" ? body.registrationId.trim() : "";
     const sessionId =
