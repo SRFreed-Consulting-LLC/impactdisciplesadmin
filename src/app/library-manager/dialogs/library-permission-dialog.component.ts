@@ -34,6 +34,14 @@ interface LibraryPermissionRow {
  * section at all (can't even see it, see nav-config.ts). Opened from a
  * "Manage Permissions" action on a Browse row (see that component).
  */
+// Deliberately NOT on <app-data-grid>, unlike the list screens folded onto
+// it in 2026-08's Library Manager pass (bucket A item #1). This is a
+// permission MATRIX, not a data list: four interactive checkbox columns per
+// row plus a two-line name/email cell would need five cell templates to
+// reproduce, and the grid's list chrome - filter row, columns picker, Excel
+// export - is wrong for a compact dialog and would have to be switched off
+// again. The result would be longer than the plain table below, not
+// shorter. The shared grid is for list screens; this isn't one.
 @Component({
   selector: 'app-library-permission-dialog',
   standalone: true,
