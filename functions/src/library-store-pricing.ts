@@ -35,3 +35,39 @@ export function effectivePrice(product: ProductDoc): number {
   const sale = product.salePrice;
   return sale && sale > 0 && sale < cost ? sale : cost;
 }
+
+/** What a bulk group-license purchase costs, all figures rounded to cents. */
+export interface GroupLicensePricing {
+  subtotal: number;
+  discount: number;
+  total: number;
+  /** Per-license price after the tier discount - stored on each license so
+   *  a later refund knows what one seat was actually worth. */
+  unitDiscountPrice: number;
+}
+
+/**
+ * Server-authoritative pricing for purchaseGroupLicenses, extracted so the
+ * arithmetic can be unit-tested without an emulator (the amount computed
+ * here is what a PayPal capture is verified against - if it drifts, either
+ * a legitimate payment is rejected or an underpayment is accepted).
+ * @param {number} unitPrice Effective per-license price (see effectivePrice).
+ * @param {number} quantity How many licenses are being bought.
+ * @param {number} percentOff Resolved bulk-discount tier percentage, 0-100.
+ * @return {GroupLicensePricing} Subtotal, discount, total and unit price.
+ */
+export function computeGroupLicensePricing(
+  unitPrice: number,
+  quantity: number,
+  percentOff: number
+): GroupLicensePricing {
+  const subtotal = round2(unitPrice * quantity);
+  const discount = round2((subtotal * percentOff) / 100);
+  const total = round2(subtotal - discount);
+  return {
+    subtotal,
+    discount,
+    total,
+    unitDiscountPrice: quantity ? round2(total / quantity) : 0,
+  };
+}

@@ -8,7 +8,13 @@ import {
   resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyLicenseGrant} from "./library-group-license-grant";
-import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
+import {
+  ProductDoc,
+  computeGroupLicensePricing,
+  effectivePrice,
+} from "./library-store-pricing";
+import {BulkDiscountTier} from "./common/models/bulk-discount-tier.model";
+import {resolveBulkDiscountPercent} from "./common/models/bulk-discount.util";
 import {queueInviteDeclineEmail} from "./transactional-emails";
 import {applyLicenseRevoke} from "./library-group-license-revoke";
 import {selectMembersToCopy} from "./library-group-members-copy";
@@ -180,22 +186,15 @@ export const purchaseGroupLicenses = onCall(
     const unitPrice = effectivePrice(product);
 
     const tiersSnap = await libraryDb.collection("bulkDiscountTiers").get();
-    const tiers = tiersSnap.docs.map(
-      (d) => d.data() as { numberOfBooks: number; percentOff: number }
-    );
-    const resolvedPercentOff =
-      tiers
-        .filter((t) => t.numberOfBooks <= quantity)
-        .reduce<{ numberOfBooks: number; percentOff: number } | undefined>(
-          (best, t) =>
-            t.numberOfBooks > (best?.numberOfBooks ?? -1) ? t : best,
-          undefined
-        )?.percentOff ?? 0;
+    const tiers = tiersSnap.docs.map((d) => d.data() as BulkDiscountTier);
+    // The SHARED tier lookup (submodule, copied in by sync-shared.js) - the
+    // reader app prices its own purchase preview with the exact same
+    // function, so the quoted and charged amounts can't diverge. `?? 0`
+    // guards a malformed tier row whose percentOff isn't set.
+    const resolvedPercentOff = resolveBulkDiscountPercent(tiers, quantity) ?? 0;
 
-    const subtotal = round2(unitPrice * quantity);
-    const discount = round2((subtotal * resolvedPercentOff) / 100);
-    const total = round2(subtotal - discount);
-    const unitDiscountPrice = quantity ? round2(total / quantity) : 0;
+    const {discount, total, unitDiscountPrice} =
+      computeGroupLicensePricing(unitPrice, quantity, resolvedPercentOff);
 
     if (!payPalOrderId && total > 0) {
       throw new HttpsError(

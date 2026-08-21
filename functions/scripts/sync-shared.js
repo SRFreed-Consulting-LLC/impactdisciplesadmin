@@ -20,7 +20,14 @@ const path = require("path");
 const SLICES = ["config", "contract", "lists"];
 // Individual SDK-free model files the contract types reference (the rest of
 // shared/models imports the client firebase SDK and must NOT be copied).
-const EXTRA_FILES = ["models/discussion-group.model.ts"];
+const EXTRA_FILES = [
+  "models/discussion-group.model.ts",
+  // The bulk-discount tier lookup a group-license purchase is priced with -
+  // shared verbatim with the reader app (and covered by its own spec there)
+  // so the two can't drift into charging different amounts.
+  "models/bulk-discount-tier.model.ts",
+  "models/bulk-discount.util.ts",
+];
 const fromRoot = path.resolve(__dirname, "..", "..", "src", "common", "src");
 const from = path.join(fromRoot, "shared");
 const to = path.resolve(__dirname, "..", "src", "common");

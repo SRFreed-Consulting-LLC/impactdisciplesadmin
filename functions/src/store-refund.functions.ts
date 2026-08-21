@@ -32,7 +32,11 @@ const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 // capture made by that app must be refunded with that app's credentials.
 const webPaypalSecret = defineSecret("PAYPAL_CLIENT_SECRET");
 
-const db = admin.firestore();
+// The Firestore handle is taken inside each function rather than at module
+// load (same as campaign-admin.functions.ts): a module-level
+// admin.firestore() throws "default Firebase app does not exist" the moment
+// anything requires this file without initializing the SDK first - which is
+// exactly what the pure-unit suite (test/store-refund.test.js) does.
 
 const WEB_API_HOST: Record<PaypalEnvironment, string> = {
   sandbox: "https://api-m.sandbox.paypal.com",
@@ -206,6 +210,7 @@ async function stripStorePurchaseLicenses(
   purchaseId: string | undefined,
   onlyBookId?: string
 ): Promise<string[]> {
+  const db = admin.firestore();
   const ref = db.collection("libraryUsers").doc(email);
   const removedIds: string[] = [];
   await db.runTransaction(async (transaction) => {
@@ -284,6 +289,7 @@ export const refundStorePurchase = onCall(
       throw new HttpsError("invalid-argument", "amount must be a number.");
     }
 
+    const db = admin.firestore();
     const purchaseRef = db.collection("purchases").doc(purchaseId);
     const purchaseSnap = await purchaseRef.get();
     if (!purchaseSnap.exists) {
