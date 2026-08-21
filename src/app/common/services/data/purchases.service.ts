@@ -12,6 +12,7 @@ import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
 import { BaseService } from './base.service';
 import { EMailService } from './email.service';
 import { EMailTemplatesService } from './email-templates.service';
+import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 
 // The mail_templates doc sendAmazonConfirmation() renders - looked up BY
 // NAME, same load-bearing-name convention as the "Sales Receipt" template
@@ -67,7 +68,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     const fn = httpsCallable<
       { purchaseId: string; revokeLicenses: boolean; amount?: number },
       RefundResult
-    >(this.functions, 'refundStorePurchase');
+    >(this.functions, CALLABLE_FUNCTIONS.refundStorePurchase);
     const result = await fn({ purchaseId, revokeLicenses, ...(amount != null ? { amount } : {}) });
     return result.data;
   }

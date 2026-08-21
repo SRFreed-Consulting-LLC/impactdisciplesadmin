@@ -3,6 +3,7 @@ import { Functions, httpsCallable } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { TagRuleModel } from 'src/app/common/models/domain/tag-rule.model';
 import { BaseService } from './base.service';
+import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 
 // The applyTagRuleRetroactively callable's result counts
 // (functions/src/tag-rules.functions.ts).
@@ -30,7 +31,7 @@ export class TagRuleService extends BaseService<TagRuleModel> {
    *  one rule - server-side paging, returns the result counts. */
   async applyRetroactively(ruleId: string): Promise<RetroactiveTagResult> {
     const fn = httpsCallable<{ ruleId: string }, RetroactiveTagResult>(
-      this.functions, 'applyTagRuleRetroactively'
+      this.functions, CALLABLE_FUNCTIONS.applyTagRuleRetroactively
     );
     const result = await fn({ ruleId });
     return result.data;

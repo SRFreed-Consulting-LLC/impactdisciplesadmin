@@ -18,6 +18,7 @@ import {
   LibraryImportProgress,
   LibraryLessonContent,
 } from 'src/app/common/models/domain/library/library-book-import.model';
+import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 
 /** Stamped on every doc this importer writes. A guarded upsert refuses to
  *  touch a doc that exists WITHOUT this exact stamp, so a re-import can
@@ -257,7 +258,7 @@ export class LibraryImportBookService {
     // The default callable client timeout is 70s, but Claude reading a whole
     // PDF (plan) or transcribing a lesson can take longer - match the Cloud
     // Function's own 540s timeout so the client doesn't give up first.
-    const callable = httpsCallable<Record<string, unknown>, T>(this.functions, 'importBookFromPdf', {
+    const callable = httpsCallable<Record<string, unknown>, T>(this.functions, CALLABLE_FUNCTIONS.importBookFromPdf, {
       timeout: 540_000,
     });
     const result = await callable(data);

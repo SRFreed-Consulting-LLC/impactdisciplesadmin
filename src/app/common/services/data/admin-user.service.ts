@@ -5,6 +5,7 @@ import { Functions, httpsCallable } from '@angular/fire/functions';
 import { AdminUser } from '../../models/admin/admin-user.model';
 import { FirebaseDAO } from '../../dao/firebase.dao';
 import { BaseService } from './base.service';
+import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 
 export interface CreateAdminUserData {
   email: string;
@@ -39,7 +40,7 @@ export class AdminUserService extends BaseService<AdminUser>{
   // Injection context" warning (same fix as FireAuthDao's own Auth). Same
   // reasoning for injecting Functions instead of calling getFunctions().
   async createAdminUser(data: CreateAdminUserData): Promise<string> {
-    const fn = httpsCallable<CreateAdminUserData, { uid: string; docId: string }>(this.functions, 'createAdminUser');
+    const fn = httpsCallable<CreateAdminUserData, { uid: string; docId: string }>(this.functions, CALLABLE_FUNCTIONS.createAdminUser);
     const result = await fn(data);
 
     // Both records already exist at this point (the callable above already
@@ -63,7 +64,7 @@ export class AdminUserService extends BaseService<AdminUser>{
   // account together via the deleteAdminUser Cloud Function, so the two
   // never drift out of sync.
   async deleteAdminUser(docId: string): Promise<void> {
-    const fn = httpsCallable<{ docId: string }, { docId: string }>(this.functions, 'deleteAdminUser');
+    const fn = httpsCallable<{ docId: string }, { docId: string }>(this.functions, CALLABLE_FUNCTIONS.deleteAdminUser);
     await fn({ docId });
   }
 }

@@ -462,6 +462,17 @@ Plain Node/Express-style `onRequest` HTTP functions (not callable functions), on
 Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
 `functions/src/utils/security.functions.ts`.
 
+- **Shared contract + config (2026-08-20, Stage 2e of the refactor sweep)**: the suite-wide
+  function-name contract and Firebase project config live in the shared submodule
+  (`src/common/src/shared/contract/functions-contract.ts`, `.../config/firebase-projects.ts`).
+  `functions/scripts/sync-shared.js` copies the SDK-free slices (`config/`, `contract/`, `lists/`)
+  into `functions/src/shared/` on every `npm run build` (the `prebuild` script; gitignored,
+  lint-ignored - never edit it there). `restrictedCors` reads `CORS_ALLOWED_ORIGINS` from it, and
+  `functions/test/contract.test.js` fails the build when `index.ts` exports don't match the
+  contract exactly - so adding/renaming/removing a function means: edit the contract in the
+  submodule first, then index.ts, then the client apps (web env URLs, reader/admin
+  `httpsCallable` names) all read the new name from the same place.
+
 - **Customer auto-upsert**: `customer-upsert.functions.ts` and
   `event-registration-customer-upsert.functions.ts` keep Customer records created/synced
   automatically from purchase and event-registration writes — Customer data is no longer only

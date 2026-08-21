@@ -3,6 +3,7 @@ import { Functions, httpsCallable } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { CampaignAudience, CampaignModel, emptyCampaignStats } from 'src/app/common/models/domain/campaign.model';
 import { BaseService } from './base.service';
+import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 
 // What deleteCascade() is about to remove - shown in the confirm dialog
 // (the deleteCampaign callable's dryRun result).
@@ -62,12 +63,12 @@ export class CampaignService extends BaseService<CampaignModel>{
   // and tag_applications (customer facts). Refuses while any email is
   // sending or scheduled.
   async planDelete(campaignId: string): Promise<CampaignDeletePlan> {
-    const call = httpsCallable<{ campaignId: string; dryRun: boolean }, CampaignDeletePlan>(this.functions, 'deleteCampaign');
+    const call = httpsCallable<{ campaignId: string; dryRun: boolean }, CampaignDeletePlan>(this.functions, CALLABLE_FUNCTIONS.deleteCampaign);
     return (await call({ campaignId, dryRun: true })).data;
   }
 
   async deleteCascade(campaignId: string): Promise<CampaignDeleteResult> {
-    const call = httpsCallable<{ campaignId: string; dryRun: boolean }, CampaignDeleteResult>(this.functions, 'deleteCampaign');
+    const call = httpsCallable<{ campaignId: string; dryRun: boolean }, CampaignDeleteResult>(this.functions, CALLABLE_FUNCTIONS.deleteCampaign);
     return (await call({ campaignId, dryRun: false })).data;
   }
 
@@ -75,7 +76,7 @@ export class CampaignService extends BaseService<CampaignModel>{
    *  the send engine uses, so this preview can't lie. */
   async previewAudience(audience: CampaignAudience): Promise<AudiencePreview> {
     const fn = httpsCallable<{ audience: CampaignAudience }, AudiencePreview>(
-      this.functions, 'previewCampaignAudience'
+      this.functions, CALLABLE_FUNCTIONS.previewCampaignAudience
     );
     return (await fn({ audience })).data;
   }
@@ -84,7 +85,7 @@ export class CampaignService extends BaseService<CampaignModel>{
    *  first small batch immediately; the hourly scheduler paces the rest. */
   async enqueueEmail(emailId: string): Promise<EnqueueResult> {
     const fn = httpsCallable<{ emailId: string }, EnqueueResult>(
-      this.functions, 'enqueueCampaignEmail'
+      this.functions, CALLABLE_FUNCTIONS.enqueueCampaignEmail
     );
     return (await fn({ emailId })).data;
   }
@@ -93,7 +94,7 @@ export class CampaignService extends BaseService<CampaignModel>{
    *  funnel counting). */
   async sendTestEmail(emailId: string, to: string): Promise<void> {
     const fn = httpsCallable<{ emailId: string; to: string }, { mailDocId: string }>(
-      this.functions, 'sendCampaignTestEmail'
+      this.functions, CALLABLE_FUNCTIONS.sendCampaignTestEmail
     );
     await fn({ emailId, to });
   }

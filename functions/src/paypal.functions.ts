@@ -17,7 +17,8 @@ import {
 
 // Server-side counterpart to impactdisciples-web's checkout.component.ts.
 // Two public HTTP functions (no requireStaffAuth -- anonymous storefront
-// checkout must be able to call these): create_paypal_order recomputes the real order
+// checkout must be able to call these): create_paypal_order recomputes the
+// real order
 // total from Firestore and either writes a verified free Purchase directly
 // or creates a real PayPal order for that total; capture_paypal_order
 // captures payment against a previously-created order, cross-checks the
