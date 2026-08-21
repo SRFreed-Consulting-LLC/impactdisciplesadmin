@@ -117,11 +117,11 @@ export class LibraryUserDetailComponent {
       : [];
   });
 
-  /** The legacy 'all' sentinel or the international flag makes the per-book
-   *  list moot - effective access is every book. */
+  /** The international flag makes the per-book list moot - effective access
+   *  is every book. (Staff access comes from the role claim, not this doc.) */
   readonly hasAllBooks = computed(() => {
     const user = this.profile();
-    return !!user && (user.internationalUser === true || user.licensedBookIds === 'all');
+    return !!user && user.internationalUser === true;
   });
 
   readonly form = this.fb.nonNullable.group({

@@ -156,13 +156,13 @@ export class LibraryUsersListComponent {
     return [location?.city, location?.region, location?.country].filter(Boolean).join(', ');
   }
 
-  /** 'all' is the legacy staff-bypass value; an international user's
-   *  effective access is every book regardless of the stored array. */
+  /** An international user's effective access is every book regardless of
+   *  the stored array. */
   licenseLabel(user: LibraryUser): string {
-    if (user.internationalUser || user.licensedBookIds === 'all') {
+    if (user.internationalUser) {
       return 'All books';
     }
-    const count = Array.isArray(user.licensedBookIds) ? user.licensedBookIds.length : 0;
+    const count = user.licensedBookIds?.length ?? 0;
     return count === 1 ? '1 book' : `${count} books`;
   }
 

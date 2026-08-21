@@ -62,8 +62,10 @@ export interface LibraryUser {
    *  all-book access in the reader app. Reader-owned; re-set to true on the
    *  user's next non-US login regardless of any admin edit. */
   internationalUser?: boolean;
-  /** Flat licensed-book id list ('all' is the legacy staff-bypass value). */
-  licensedBookIds?: string[] | 'all';
+  /** Flat licensed-book id list - always an array (the old 'all' staff-bypass
+   *  sentinel no longer exists in dev or prod data, verified 2026-08-20;
+   *  staff access comes from the role claim). */
+  licensedBookIds?: string[];
   bookLicenses?: LibraryUserBookLicense[];
   /** Reader-owned personal preferences - read-only here. */
   preferredLanguage?: string;
