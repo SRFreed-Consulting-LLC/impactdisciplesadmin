@@ -1,0 +1,54 @@
+// Shared page chrome for the two full-page views this folder renders:
+// the event editor (event-form) and the summit attendee Command Center
+// (still hosted directly by events.component). Split out 2026-08-21 when
+// the editor moved into its own component - Angular's emulated view
+// encapsulation scopes styles per component, so a rule left behind in
+// events.component.scss simply would not reach the extracted template.
+// Both components @use this file; anything specific to one belongs in that
+// component's own stylesheet, not here.
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor__header {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.editor__title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+
+// internal body wrapper is Material's own structural element and can't
+// reliably be targeted for flex/height sizing through view encapsulation
+// (see products.component.scss for the fuller explanation).
+.editor__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// Shared with the list screen's "New" column as well as the editor's
+// Attendees tab badge.
+.new-badge {
+  background: var(--mat-sys-error);
+  color: var(--mat-sys-on-error);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
