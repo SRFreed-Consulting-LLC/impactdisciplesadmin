@@ -1,56 +1,12 @@
-// Centers the whole screen in the content area - see
-// lesson-editor.component.scss's identical note.
-:host {
-  display: block;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.templates-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  h3 {
-    margin: 0;
-    flex: 1 1 auto;
-  }
-}
-
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 48px;
-}
-
-.empty-state {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.table-scroll {
-  max-height: calc(100vh - 260px);
-  overflow-y: auto;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 4px;
-}
-
+// The screen's chrome - header row, loading spinner, empty state, table
+// scroll container, row hover/focus - all moved to <app-data-grid> on
+// 2026-08-21 (bucket A item #1), along with the rules that styled them.
+// What is left is the one table tweak this screen still asks for by name
+// via the grid's [tableClass] input.
 .templates-table {
   width: 100%;
 
   ::ng-deep .mat-mdc-header-cell {
     background: var(--mat-sys-surface-container, var(--mat-sys-surface));
-  }
-}
-
-.actions-cell {
-  white-space: nowrap;
-}
-
-.template-row {
-  cursor: pointer;
-
-  &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
   }
 }

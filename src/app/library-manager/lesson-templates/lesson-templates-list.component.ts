@@ -2,12 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTableModule } from '@angular/material/table';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { SharedModule } from 'src/app/shared/shared.module';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { DataGridColumn, DataGridRowAction } from 'src/app/shared/data-grid/data-grid.model';
+import { ListHeaderAction } from 'src/app/shared/list-header/list-header.component';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { LibraryLessonTemplateService } from 'src/app/common/services/data/library/library-lesson-template.service';
 import { LibrarySubtemplateService } from 'src/app/common/services/data/library/library-subtemplate.service';
@@ -26,14 +24,35 @@ const NONE_LABEL = '—';
 @Component({
   selector: 'app-lesson-templates-list',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatTableModule, MatProgressSpinnerModule, MatTooltipModule],
+  // SharedModule for <app-data-grid> (2026-08-21, bucket A item #1). The
+  // grid is a declared/exported member of SharedModule rather than a
+  // standalone component, so a standalone consumer imports the module.
+  imports: [CommonModule, SharedModule],
   templateUrl: './lesson-templates-list.component.html',
   styleUrl: './lesson-templates-list.component.scss',
 })
 export class LessonTemplatesListComponent implements OnInit {
-  readonly displayedColumns = ['title', 'header', 'layout', 'footer', 'actions'];
   lessonTemplates: LibraryLessonTemplateModel[] = [];
   loading = true;
+
+  // A slot column shows the referenced subtemplate's TITLE, not its id -
+  // slotLabel() also distinguishes "never set" from "points at something
+  // that was deleted", which is why these go through value() rather than
+  // binding the raw field.
+  readonly columns: DataGridColumn<LibraryLessonTemplateModel>[] = [
+    { key: 'title', label: 'Title' },
+    { key: 'header', label: 'Header', value: (t) => this.slotLabel(t.headerSubtemplateId) },
+    { key: 'layout', label: 'Layout', value: (t) => this.slotLabel(t.layoutSubtemplateId) },
+    { key: 'footer', label: 'Footer', value: (t) => this.slotLabel(t.footerSubtemplateId) },
+  ];
+
+  readonly headerActions: ListHeaderAction[] = [
+    { label: 'New Lesson Template', icon: 'post_add', onClick: () => void this.createLessonTemplate() },
+  ];
+
+  readonly rowActions: DataGridRowAction<LibraryLessonTemplateModel>[] = [
+    { icon: 'delete_outline', tooltip: 'Delete', onClick: (t) => void this.deleteLessonTemplate(t) },
+  ];
 
   private subtemplateTitlesById = new Map<string, string>();
 
@@ -58,10 +77,6 @@ export class LessonTemplatesListComponent implements OnInit {
         this.loading = false;
       },
     );
-  }
-
-  trackByTemplateId(_index: number, template: LibraryLessonTemplateModel): string {
-    return template.id!;
   }
 
   /** Slot id set but missing from this map means the referenced subtemplate
@@ -90,9 +105,11 @@ export class LessonTemplatesListComponent implements OnInit {
     void this.router.navigate(['/library-manager/lesson-templates', lessonTemplateId]);
   }
 
-  async deleteLessonTemplate(lessonTemplate: LibraryLessonTemplateModel, event: Event): Promise<void> {
-    event.stopPropagation();
-    event.preventDefault();
+  // No Event argument any more: the grid owns the action button, and rows
+  // open on DOUBLE-click, so a single click on Delete cannot also open the
+  // template - the stopPropagation/preventDefault this used to need is
+  // structurally unnecessary now.
+  async deleteLessonTemplate(lessonTemplate: LibraryLessonTemplateModel): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       `Delete the "${lessonTemplate.title}" lesson template? This cannot be undone.`,
       'Delete lesson template',
