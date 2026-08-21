@@ -18,6 +18,7 @@ import {
 import {
   CreatePaypalOrderRequest,
 } from "./common/shared/contract/web-http.types";
+import {PURCHASE_SOURCE_WEB} from "./purchase-source";
 import {
   PAYPAL_API_HOST,
   getAccessTokenWithCredentials,
@@ -511,7 +512,8 @@ exports.create_paypal_order = functions
           let docRef;
           try {
             docRef = await getFirestore()
-              .collection("purchases").add(checkoutForm);
+              .collection("purchases")
+              .add({...checkoutForm, source: PURCHASE_SOURCE_WEB});
           } catch (err) {
             console.error("Failed to save free/coupon order", err);
             response.status(400).send({
@@ -738,7 +740,8 @@ exports.capture_paypal_order = functions
         // through, recording it hit a problem, here's who to contact.
         try {
           const docRef = await getFirestore()
-            .collection("purchases").add(checkoutForm);
+            .collection("purchases")
+            .add({...checkoutForm, source: PURCHASE_SOURCE_WEB});
 
           await pendingRef.update({
             status: "captured",

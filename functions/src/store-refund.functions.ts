@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
+import {purchaseSourceOf} from "./purchase-source";
 import {
   PaypalEnvironment,
   getAccessToken,
@@ -64,6 +65,9 @@ interface PurchaseDoc {
   fulfillmentStatus?: string;
   statusHistory?: StatusHistoryEntryDoc[];
   paypalEnvironment?: string;
+  /** Which storefront wrote this doc - see purchase-source.ts. Optional
+   *  because documents written before 2026-08-21 do not carry it. */
+  source?: string;
   payPalReceipt?: {
     purchase_units?: Array<{amount?: {value?: string}}>;
   };
@@ -273,11 +277,13 @@ export const refundStorePurchase = onCall(
     let refundId: string | undefined;
     let refundStatus: string | undefined;
     if (needsPaypalRefund) {
-      // Reader-store purchases stamp paypalEnvironment; web-storefront
-      // purchases don't and follow the project-based default the web
-      // checkout itself uses (sandbox everywhere except production).
-      const isReaderPurchase =
-        typeof purchase.paypalEnvironment === "string";
+      // Which storefront wrote this purchase decides WHICH PAYPAL APP the
+      // money goes back through - they are two different apps with
+      // different credentials. Since 2026-08-21 that is recorded
+      // explicitly on the doc (`source`); purchaseSourceOf falls back to
+      // the old paypalEnvironment inference for documents written before
+      // then. See purchase-source.ts.
+      const isReaderPurchase = purchaseSourceOf(purchase) === "reader";
       const env: PaypalEnvironment = isReaderPurchase ?
         (purchase.paypalEnvironment as PaypalEnvironment) :
         (process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?

@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {defineSecret} from "firebase-functions/params";
 import {
@@ -278,6 +279,7 @@ export const purchaseGroupLicenses = onCall(
         }) :
       undefined;
     await purchaseRef.set({
+      source: PURCHASE_SOURCE_READER,
       email,
       userId: uid,
       ...(leaderProfile?.firstName ?

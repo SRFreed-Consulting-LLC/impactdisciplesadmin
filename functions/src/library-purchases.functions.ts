@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {defineSecret} from "firebase-functions/params";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {
@@ -273,6 +274,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     // net if this function dies mid-way; both grants key on this doc's id
     // so they converge idempotently.
     await purchaseRef.set({
+      source: PURCHASE_SOURCE_READER,
       email,
       userId: uid,
       ...(profile?.firstName ? {firstName: profile.firstName} : {}),
