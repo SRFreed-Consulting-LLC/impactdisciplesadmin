@@ -1,5 +1,12 @@
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {
+  CreateMyReaderProfileRequest,
+  CreateMyReaderProfileResult,
+  RecordMyLoginResult,
+  UpdateMyPreferencesRequest,
+  UpdateMyPreferencesResult,
+} from "./common/shared/contract/library-callables.types";
 
 /**
  * Phase 6 port of the reader app's libraryUsers self-service PROFILE
@@ -137,7 +144,8 @@ function cleanLocation(raw: unknown): LocationInput | undefined {
  * enforced by rules reading this doc, so it must exist). The sticky
  * internationalUser flag is only ever set true, never cleared.
  */
-export const recordMyLogin = onCall(async (request) => {
+export const recordMyLogin = onCall(async (request):
+  Promise<RecordMyLoginResult> => {
   const {email, uid} = callerIdentity(request);
   const location = cleanLocation((request.data ?? {}).location);
   // internationalUser is decided from the SERVER-resolved country only
@@ -179,12 +187,11 @@ export const recordMyLogin = onCall(async (request) => {
  * profile doc right after signup - merge:true so an existing imported
  * doc's licenses/legacy fields are linked up, never clobbered.
  */
-export const createMyReaderProfile = onCall(async (request) => {
+export const createMyReaderProfile = onCall(async (request):
+  Promise<CreateMyReaderProfileResult> => {
   const {email, uid} = callerIdentity(request);
-  const {firstName, lastName} = (request.data ?? {}) as {
-    firstName?: string;
-    lastName?: string;
-  };
+  const {firstName, lastName} =
+    (request.data ?? {}) as Partial<CreateMyReaderProfileRequest>;
   if (typeof firstName !== "string" || typeof lastName !== "string") {
     throw new HttpsError(
       "invalid-argument",
@@ -232,9 +239,10 @@ const PREFERENCE_FIELDS = [
  * Creates the doc if missing: saving your own preferences is a deliberate
  * act any signed-in patron may take.
  */
-export const updateMyPreferences = onCall(async (request) => {
+export const updateMyPreferences = onCall(async (request):
+  Promise<UpdateMyPreferencesResult> => {
   const {email, uid} = callerIdentity(request);
-  const data = (request.data ?? {}) as Record<string, unknown>;
+  const data = (request.data ?? {}) as Partial<UpdateMyPreferencesRequest>;
   const changes: Record<string, string | boolean> = {};
   for (const [key, value] of Object.entries(data)) {
     if (!(PREFERENCE_FIELDS as readonly string[]).includes(key)) {

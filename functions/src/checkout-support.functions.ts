@@ -3,6 +3,9 @@ import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
+import {
+  LookupCouponResult,
+} from "./common/shared/contract/library-callables.types";
 
 /**
  * Pre-prod checklist items #4 and #5: retire two anonymous client
@@ -93,7 +96,8 @@ export const lookupCouponHttp = onRequest((request, response) => {
  *  Firebase Auth), the reader is always signed in by the time its store
  *  screen exists, so this face requires it - shrinking the anonymous
  *  brute-force surface to just the endpoint that genuinely needs it. */
-export const lookupCoupon = onCall(async (request) => {
+export const lookupCoupon = onCall(async (request):
+  Promise<LookupCouponResult> => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Copies the SDK-free slices of the shared submodule (../src/common/src/shared)
-// into functions/src/shared so the Cloud Functions compile against the same
-// contract/config/enums the three client apps use. Runs automatically as
+// into functions/src/common - mirroring the submodule's src/ layout - so the
+// Cloud Functions compile against the same contract/config/enums the three
+// client apps use. Runs automatically as
 // the `prebuild` npm script (so `npm run build`, `npm test`, `npm run serve`
-// and the firebase predeploy all get a fresh copy); functions/src/shared is
+// and the firebase predeploy all get a fresh copy); functions/src/common is
 // gitignored - never edit it by hand, edit the submodule and re-run.
 //
 // Why a copy and not an import/symlink: `firebase deploy` uploads only the
@@ -16,8 +17,15 @@ const fs = require("fs");
 const path = require("path");
 
 const SLICES = ["config", "contract", "lists"];
-const from = path.resolve(__dirname, "..", "..", "src", "common", "src", "shared");
-const to = path.resolve(__dirname, "..", "src", "shared");
+// Individual SDK-free model files the contract types reference (the rest of
+// shared/models imports the client firebase SDK and must NOT be copied).
+const EXTRA_FILES = ["models/discussion-group.model.ts"];
+const fromRoot = path.resolve(__dirname, "..", "..", "src", "common", "src");
+const from = path.join(fromRoot, "shared");
+// Mirrors the submodule's src/ layout under functions/src/common so relative
+// imports inside the copied files (e.g. contract -> ../../models/...) resolve
+// exactly as they do in the apps, which alias the same tree as @impact-common/*.
+const to = path.resolve(__dirname, "..", "src", "common");
 
 if (!fs.existsSync(from)) {
   console.error(`[sync-shared] shared submodule not found at ${from} - run \`git submodule update --init\` in the repo root.`);
@@ -29,11 +37,17 @@ let copied = 0;
 for (const slice of SLICES) {
   const src = path.join(from, slice);
   if (!fs.existsSync(src)) continue;
-  fs.cpSync(src, path.join(to, slice), {
+  fs.cpSync(src, path.join(to, "shared", slice), {
     recursive: true,
     filter: (p) => fs.statSync(p).isDirectory() || (p.endsWith(".ts") && !p.endsWith(".spec.ts")),
   });
   copied += 1;
+}
+for (const rel of EXTRA_FILES) {
+  const src = path.join(fromRoot, rel);
+  if (!fs.existsSync(src)) continue;
+  fs.mkdirSync(path.dirname(path.join(to, rel)), {recursive: true});
+  fs.copyFileSync(src, path.join(to, rel));
 }
 fs.writeFileSync(
   path.join(to, "README.md"),

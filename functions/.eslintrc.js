@@ -22,7 +22,7 @@ module.exports = {
     "/generated/**/*", // Ignore generated files.
     // Copied from the shared submodule by scripts/sync-shared.js - not this
     // package's code to lint (the submodule is lint-ignored in the apps too).
-    "/src/shared/**/*",
+    "/src/common/**/*",
     // Build helper, not deployed code; outside tsconfig's include so the
     // type-aware parser can't load it.
     "/scripts/**/*",

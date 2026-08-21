@@ -4,6 +4,22 @@ import {
   escapeHtml,
   queueGroupInviteEmail,
 } from "./transactional-emails";
+import {
+  ApproveGroupMembershipRequest,
+  ApproveGroupMembershipResult,
+  CancelGroupInviteRequest,
+  CancelGroupInviteResult,
+  CloseMyGroupRequest,
+  CloseMyGroupResult,
+  CreateGroupRequest,
+  CreateGroupResult,
+  RejectGroupMembershipRequest,
+  RejectGroupMembershipResult,
+  RequestToJoinGroupRequest,
+  RequestToJoinGroupResult,
+  SendGroupInviteRequest,
+  SendGroupInviteResult,
+} from "./common/shared/contract/library-callables.types";
 
 /**
  * Phase 6 port of the reader app's Impact Groups MEMBERSHIP write surface
@@ -91,9 +107,10 @@ function cleanText(value: unknown, max = TEXT_MAX): string | undefined {
 }
 
 /** Creates a group + the creator's own approved membership atomically. */
-export const createGroup = onCall(async (request) => {
+export const createGroup = onCall(async (request):
+  Promise<CreateGroupResult> => {
   const email = callerEmail(request);
-  const data = (request.data ?? {}) as Record<string, unknown>;
+  const data = (request.data ?? {}) as Partial<CreateGroupRequest>;
 
   const bookId = cleanText(data.bookId, 200);
   const title = cleanText(data.title, 200);
@@ -146,7 +163,7 @@ export const createGroup = onCall(async (request) => {
   // legacy free-text inPersonLocation shape is still accepted for parity.
   let location: Record<string, unknown> | undefined;
   if (typeof data.location === "object" && data.location !== null) {
-    const raw = data.location as Record<string, unknown>;
+    const raw = data.location as unknown as Record<string, unknown>;
     const country = cleanText(raw.country, 100);
     const city = cleanText(raw.city, 100);
     const locationType =
@@ -211,9 +228,10 @@ export const createGroup = onCall(async (request) => {
 });
 
 /** Writes the caller's own 'pending' membership request. */
-export const requestToJoinGroup = onCall(async (request) => {
+export const requestToJoinGroup = onCall(async (request):
+  Promise<RequestToJoinGroupResult> => {
   const email = callerEmail(request);
-  const {groupId} = (request.data ?? {}) as {groupId?: string};
+  const {groupId} = (request.data ?? {}) as Partial<RequestToJoinGroupRequest>;
   const displayName =
     cleanText((request.data ?? {}).displayName, 100) ?? email;
   if (!groupId) {
@@ -248,12 +266,11 @@ export const requestToJoinGroup = onCall(async (request) => {
 });
 
 /** Creator-only: approves a pending request; auto-closes at capacity. */
-export const approveGroupMembership = onCall(async (request) => {
+export const approveGroupMembership = onCall(async (request):
+  Promise<ApproveGroupMembershipResult> => {
   const email = callerEmail(request);
-  const {groupId, memberEmail} = (request.data ?? {}) as {
-    groupId?: string;
-    memberEmail?: string;
-  };
+  const {groupId, memberEmail} =
+    (request.data ?? {}) as Partial<ApproveGroupMembershipRequest>;
   if (!groupId || !memberEmail) {
     throw new HttpsError(
       "invalid-argument",
@@ -301,12 +318,11 @@ export const approveGroupMembership = onCall(async (request) => {
 
 /** Creator-only: marks a request rejected (doc kept, not deleted, so the
  *  requester stays visible in Manage and a conversation can follow). */
-export const rejectGroupMembership = onCall(async (request) => {
+export const rejectGroupMembership = onCall(async (request):
+  Promise<RejectGroupMembershipResult> => {
   const email = callerEmail(request);
-  const {groupId, memberEmail} = (request.data ?? {}) as {
-    groupId?: string;
-    memberEmail?: string;
-  };
+  const {groupId, memberEmail} =
+    (request.data ?? {}) as Partial<RejectGroupMembershipRequest>;
   if (!groupId || !memberEmail) {
     throw new HttpsError(
       "invalid-argument",
@@ -330,9 +346,10 @@ export const rejectGroupMembership = onCall(async (request) => {
 
 /** Creator-only: soft-close (document + members kept, hidden from the
  *  open browse list). */
-export const closeMyGroup = onCall(async (request) => {
+export const closeMyGroup = onCall(async (request):
+  Promise<CloseMyGroupResult> => {
   const email = callerEmail(request);
-  const {groupId} = (request.data ?? {}) as {groupId?: string};
+  const {groupId} = (request.data ?? {}) as Partial<CloseMyGroupRequest>;
   if (!groupId) {
     throw new HttpsError("invalid-argument", "groupId is required.");
   }
@@ -347,15 +364,11 @@ export const closeMyGroup = onCall(async (request) => {
 
 /** Creator-only: sends an invite. Group title/book/leader fields derive
  *  from the group doc, never from the client. */
-export const sendGroupInvite = onCall(async (request) => {
+export const sendGroupInvite = onCall(async (request):
+  Promise<SendGroupInviteResult> => {
   const email = callerEmail(request);
   const {groupId, inviteeEmail, licenseIntent, bookTitle} =
-    (request.data ?? {}) as {
-    groupId?: string;
-    inviteeEmail?: string;
-    licenseIntent?: boolean;
-    bookTitle?: string;
-  };
+    (request.data ?? {}) as Partial<SendGroupInviteRequest>;
   const invitee = (inviteeEmail ?? "").trim().toLowerCase();
   if (!groupId || !invitee || !invitee.includes("@")) {
     throw new HttpsError(
@@ -454,9 +467,10 @@ function buildMeetingLine(group: Record<string, unknown>): string {
 
 /** Cancels the caller's own still-pending invite - accepted/declined
  *  invites stay as historical records. */
-export const cancelGroupInvite = onCall(async (request) => {
+export const cancelGroupInvite = onCall(async (request):
+  Promise<CancelGroupInviteResult> => {
   const email = callerEmail(request);
-  const {inviteId} = (request.data ?? {}) as {inviteId?: string};
+  const {inviteId} = (request.data ?? {}) as Partial<CancelGroupInviteRequest>;
   if (!inviteId) {
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }

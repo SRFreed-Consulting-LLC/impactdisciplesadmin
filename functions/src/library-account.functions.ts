@@ -1,6 +1,9 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import {
+  DeleteMyAccountResult,
+} from "./common/shared/contract/library-callables.types";
 
 /**
  * Self-service account deletion for the reader app (Settings > Account >
@@ -30,7 +33,8 @@ import * as logger from "firebase-functions/logger";
  */
 const db = admin.firestore();
 
-export const deleteMyAccount = onCall(async (request) => {
+export const deleteMyAccount = onCall(async (request):
+  Promise<DeleteMyAccountResult> => {
   const email = request.auth?.token.email?.trim().toLowerCase();
   const uid = request.auth?.uid;
   if (!email || !uid) {

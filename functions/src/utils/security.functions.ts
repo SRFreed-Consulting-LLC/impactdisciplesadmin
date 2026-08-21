@@ -16,7 +16,7 @@ import * as functions from "firebase-functions";
 // whole suite, in the shared submodule (src/common/src/shared/config/
 // firebase-projects.ts, copied in by scripts/sync-shared.js as part of the
 // build). Add a hosting site there, not here.
-import {CORS_ALLOWED_ORIGINS} from "../shared/config/firebase-projects";
+import {CORS_ALLOWED_ORIGINS} from "../common/shared/config/firebase-projects";
 
 const ALLOWED_ORIGINS: readonly string[] = CORS_ALLOWED_ORIGINS;
 

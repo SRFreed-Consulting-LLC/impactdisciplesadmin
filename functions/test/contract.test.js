@@ -1,6 +1,6 @@
 // Drift guard for the shared functions contract
 // (src/common/src/shared/contract/functions-contract.ts, copied into
-// src/shared by scripts/sync-shared.js): index.ts must export exactly the
+// src/common by scripts/sync-shared.js): index.ts must export exactly the
 // names the contract declares. Adding, renaming or removing a function
 // therefore fails `npm test` / the predeploy build until the contract -
 // and with it every client app that reads names from it - is updated.
@@ -18,7 +18,7 @@ const {
   CALLABLE_FUNCTIONS,
   TRIGGER_FUNCTIONS,
   ALL_FUNCTION_NAMES,
-} = require("../lib/shared/contract/functions-contract");
+} = require("../lib/common/shared/contract/functions-contract");
 
 /**
  * Names exported from src/index.ts (`exports.<name> = ...`).

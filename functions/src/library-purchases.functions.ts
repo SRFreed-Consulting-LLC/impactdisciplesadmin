@@ -10,6 +10,9 @@ import {
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
 import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
 import {queueReaderReceiptEmail} from "./transactional-emails";
+import {
+  VerifyAndGrantReaderStorePurchaseResult,
+} from "./common/shared/contract/library-callables.types";
 
 /**
  * verifyAndGrantReaderStorePurchase - the reader app's own StoreComponent
@@ -66,7 +69,7 @@ function couponAppliesTo(coupon: CouponDoc, productId: string): boolean {
 
 export const verifyAndGrantReaderStorePurchase = onCall(
   {secrets: [paypalSandboxSecret, paypalLiveSecret], timeoutSeconds: 120},
-  async (request) => {
+  async (request): Promise<VerifyAndGrantReaderStorePurchaseResult> => {
     const email = request.auth?.token.email?.trim().toLowerCase();
     const uid = request.auth?.uid;
     if (!email || !uid) {

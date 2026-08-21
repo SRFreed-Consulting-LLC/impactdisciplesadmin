@@ -12,6 +12,23 @@ import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
 import {queueInviteDeclineEmail} from "./transactional-emails";
 import {applyLicenseRevoke} from "./library-group-license-revoke";
 import {selectMembersToCopy} from "./library-group-members-copy";
+import {
+  AcceptGroupInviteRequest,
+  AcceptGroupInviteResult,
+  AssignGroupLicenseRequest,
+  AssignGroupLicenseResult,
+  CopyGroupMembersResult,
+  DeclineGroupInviteRequest,
+  DeclineGroupInviteResult,
+  GetInviteDetailsRequest,
+  GetInviteDetailsResult,
+  LeaveGroupAndRevokeLicenseRequest,
+  LeaveGroupAndRevokeLicenseResult,
+  PurchaseGroupLicensesRequest,
+  PurchaseGroupLicensesResult,
+  RevokeGroupLicenseRequest,
+  RevokeGroupLicenseResult,
+} from "./common/shared/contract/library-callables.types";
 
 /**
  * Ported from impact-discipleship-library-manager-new's own Impact Group
@@ -115,7 +132,7 @@ async function requireGroupLeader(
  */
 export const purchaseGroupLicenses = onCall(
   {secrets: [paypalSandboxSecret, paypalLiveSecret]},
-  async (request) => {
+  async (request): Promise<PurchaseGroupLicensesResult> => {
     const email = request.auth?.token.email?.trim().toLowerCase();
     const uid = request.auth?.uid;
     if (!email || !uid) {
@@ -123,11 +140,7 @@ export const purchaseGroupLicenses = onCall(
     }
 
     const {groupId, quantity, payPalOrderId} =
-      (request.data ?? {}) as {
-        groupId?: string;
-        quantity?: number;
-        payPalOrderId?: string;
-      };
+      (request.data ?? {}) as Partial<PurchaseGroupLicensesRequest>;
     if (
       !groupId ||
       !quantity ||
@@ -361,16 +374,14 @@ export const purchaseGroupLicenses = onCall(
  * `libraryUsers/{email}` doc is exactly what firestore.rules blocks from
  * any client (including the leader's), so this has to happen here.
  */
-export const assignGroupLicense = onCall(async (request) => {
+export const assignGroupLicense = onCall(async (request):
+  Promise<AssignGroupLicenseResult> => {
   const email = request.auth?.token.email?.trim().toLowerCase();
   if (!email) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
-  const {licenseId, groupId, recipientEmail} = (request.data ?? {}) as {
-    licenseId?: string;
-    groupId?: string;
-    recipientEmail?: string;
-  };
+  const {licenseId, groupId, recipientEmail} =
+    (request.data ?? {}) as Partial<AssignGroupLicenseRequest>;
   if (!licenseId || !groupId || !recipientEmail) {
     throw new HttpsError(
       "invalid-argument",
@@ -456,12 +467,14 @@ export const assignGroupLicense = onCall(async (request) => {
  * has closed or moved to a different book - that single check is what
  * makes an assignment permanent at that point.
  */
-export const revokeGroupLicense = onCall(async (request) => {
+export const revokeGroupLicense = onCall(async (request):
+  Promise<RevokeGroupLicenseResult> => {
   const email = request.auth?.token.email?.trim().toLowerCase();
   if (!email) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
-  const {licenseId} = (request.data ?? {}) as { licenseId?: string };
+  const {licenseId} =
+    (request.data ?? {}) as Partial<RevokeGroupLicenseRequest>;
   if (!licenseId) {
     throw new HttpsError("invalid-argument", "licenseId is required.");
   }
@@ -529,12 +542,14 @@ export const revokeGroupLicense = onCall(async (request) => {
  * license for it, revokes that license in the same transaction - so "a
  * license follows you only while you're in the group" actually holds.
  */
-export const leaveGroupAndRevokeLicense = onCall(async (request) => {
+export const leaveGroupAndRevokeLicense = onCall(async (request):
+  Promise<LeaveGroupAndRevokeLicenseResult> => {
   const email = request.auth?.token.email?.trim().toLowerCase();
   if (!email) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
-  const {groupId} = (request.data ?? {}) as { groupId?: string };
+  const {groupId} =
+    (request.data ?? {}) as Partial<LeaveGroupAndRevokeLicenseRequest>;
   if (!groupId) {
     throw new HttpsError("invalid-argument", "groupId is required.");
   }
@@ -582,7 +597,8 @@ export const leaveGroupAndRevokeLicense = onCall(async (request) => {
  * caller) into `targetGroupId` as pre-approved members - the reader app's
  * "Start Group for Next Book"/"Promote to Next Book" clone action.
  */
-export const copyGroupMembers = onCall(async (request) => {
+export const copyGroupMembers = onCall(async (request):
+  Promise<CopyGroupMembersResult> => {
   const email = request.auth?.token.email?.trim().toLowerCase();
   if (!email) {
     throw new HttpsError("unauthenticated", "Sign in required.");
@@ -679,8 +695,9 @@ export const copyGroupMembers = onCall(async (request) => {
  * link - no auth required. Live-reads the group/book so an edited meeting
  * time/location is always reflected, even for already-sent invites.
  */
-export const getInviteDetails = onCall(async (request) => {
-  const {inviteId} = (request.data ?? {}) as { inviteId?: string };
+export const getInviteDetails = onCall(async (request):
+  Promise<GetInviteDetailsResult> => {
+  const {inviteId} = (request.data ?? {}) as Partial<GetInviteDetailsRequest>;
   if (!inviteId) {
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }
@@ -713,7 +730,7 @@ export const getInviteDetails = onCall(async (request) => {
   // own invite-only group and generate an invite naming any email, then
   // call this no-auth function on their own just-created invite).
   return {
-    status: invite.status as string,
+    status: invite.status as GetInviteDetailsResult["status"],
     inviteeEmail: invite.inviteeEmail as string,
     leaderDisplayName: invite.leaderDisplayName as string,
     groupTitle:
@@ -734,11 +751,10 @@ export const getInviteDetails = onCall(async (request) => {
  * getInviteDetails. Idempotent: a reload or double-click after already
  * declining/accepting must never error, it just no-ops.
  */
-export const declineGroupInvite = onCall(async (request) => {
-  const {inviteId, reason} = (request.data ?? {}) as {
-    inviteId?: string;
-    reason?: string;
-  };
+export const declineGroupInvite = onCall(async (request):
+  Promise<DeclineGroupInviteResult> => {
+  const {inviteId, reason} =
+    (request.data ?? {}) as Partial<DeclineGroupInviteRequest>;
   if (!inviteId) {
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }
@@ -798,12 +814,13 @@ export const declineGroupInvite = onCall(async (request) => {
  * of the leader's still-unassigned units for the group's book. Idempotent
  * against a double-submitted accept.
  */
-export const acceptGroupInvite = onCall(async (request) => {
+export const acceptGroupInvite = onCall(async (request):
+  Promise<AcceptGroupInviteResult> => {
   const email = request.auth?.token.email?.trim().toLowerCase();
   if (!email) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
-  const {inviteId} = (request.data ?? {}) as { inviteId?: string };
+  const {inviteId} = (request.data ?? {}) as Partial<AcceptGroupInviteRequest>;
   if (!inviteId) {
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }
