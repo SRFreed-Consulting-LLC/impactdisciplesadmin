@@ -1,12 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { DataGridColumn, DataGridRowAction } from 'src/app/shared/data-grid/data-grid.model';
+import { ListHeaderAction } from 'src/app/shared/list-header/list-header.component';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { LibraryBulkDiscountTierService } from 'src/app/common/services/data/library/library-bulk-discount-tier.service';
@@ -29,19 +27,24 @@ import { EditTierDialogComponent, EditTierDialogResult } from '../dialogs/edit-t
 @Component({
   selector: 'app-library-config',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatTableModule,
-    MatTooltipModule,
-  ],
+  // SharedModule for <app-data-grid> - see lesson-templates-list.
+  imports: [CommonModule, SharedModule],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',
 })
 export class LibraryConfigComponent implements OnInit {
-  readonly displayedColumns = ['numberOfBooks', 'percentOff', 'actions'];
+  readonly columns: DataGridColumn<BulkDiscountTier>[] = [
+    { key: "numberOfBooks", label: "Number of books", type: "number" },
+    { key: "percentOff", label: "Percent off", value: (t) => t.percentOff + "%" },
+  ];
+
+  readonly headerActions: ListHeaderAction[] = [
+    { label: "New Discount Tier", icon: "add", onClick: () => void this.openCreateDialog() },
+  ];
+
+  readonly rowActions: DataGridRowAction<BulkDiscountTier>[] = [
+    { icon: "delete_outline", tooltip: "Delete", onClick: (t) => void this.deleteTier(t) },
+  ];
   tiers: BulkDiscountTier[] = [];
   loading = true;
 
@@ -63,13 +66,6 @@ export class LibraryConfigComponent implements OnInit {
       this.tiers = tiers;
       this.loading = false;
     });
-  }
-
-  /** BulkDiscountTier has no `id` field - its doc id IS
-   *  String(numberOfBooks) (see LibraryBulkDiscountTierService's doc
-   *  comment), so numberOfBooks is already its natural unique key. */
-  trackByTierId(_index: number, tier: BulkDiscountTier): number {
-    return tier.numberOfBooks;
   }
 
   async openCreateDialog(): Promise<void> {
@@ -111,9 +107,9 @@ export class LibraryConfigComponent implements OnInit {
     }
   }
 
-  async deleteTier(tier: BulkDiscountTier, event: Event): Promise<void> {
-    event.stopPropagation();
-    event.preventDefault();
+  // No Event argument - the grid owns the action button and rows open on
+  // DOUBLE-click, so the old stopPropagation guard is unnecessary.
+  async deleteTier(tier: BulkDiscountTier): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       `Delete the ${tier.numberOfBooks}-book discount tier? This cannot be undone.`,
       'Delete discount tier',

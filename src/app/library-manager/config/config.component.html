@@ -1,55 +1,24 @@
-<div class="config-header">
-  <h3>Config</h3>
-  <button mat-flat-button color="primary" (click)="openCreateDialog()">
-    <mat-icon>add</mat-icon>
-    New Discount Tier
-  </button>
-</div>
+<h3 class="config-title">Config</h3>
 
-<h4>Bulk purchase discount tiers</h4>
 <p class="hint">
   When a group leader pre-purchases licenses for their Impact Group, the highest tier at or below
   the quantity they buy applies - e.g. tiers of 5 books/10% and 10 books/20% mean buying 7 gets 10%
   off, buying 12 gets 20% off. Buying fewer than the lowest tier gets no discount.
 </p>
 
-@if (loading) {
-  <div class="loading">
-    <mat-spinner diameter="32"></mat-spinner>
-  </div>
-} @else if (tiers.length === 0) {
-  <p class="empty-state">No discount tiers yet - purchases get no discount until you add one.</p>
-} @else {
-  <div class="table-scroll">
-    <table mat-table [dataSource]="tiers" [trackBy]="trackByTierId" class="tiers-table">
-      <ng-container matColumnDef="numberOfBooks">
-        <th mat-header-cell *matHeaderCellDef>Number of books</th>
-        <td mat-cell *matCellDef="let tier">{{ tier.numberOfBooks }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="percentOff">
-        <th mat-header-cell *matHeaderCellDef>Percent off</th>
-        <td mat-cell *matCellDef="let tier">{{ tier.percentOff }}%</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let tier" class="actions-cell">
-          <button mat-icon-button matTooltip="Delete" (click)="deleteTier(tier, $event)">
-            <mat-icon>delete_outline</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr
-        mat-row
-        *matRowDef="let row; columns: displayedColumns"
-        class="tier-row"
-        tabindex="0"
-        (click)="openEditDialog(row)"
-        (keydown.enter)="openEditDialog(row)"
-      ></tr>
-    </table>
-  </div>
-}
+<!-- Shared <app-data-grid> since 2026-08-21 (bucket A item #1). The
+     explanatory hint above stays put - the grid replaces only the table,
+     its header row, spinner and empty state. -->
+<app-data-grid
+  title="Bulk purchase discount tiers"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="tiers"
+  [loading]="loading"
+  emptyMessage="No discount tiers yet - purchases get no discount until you add one."
+  tableClass="tiers-table"
+  initialSortKey="numberOfBooks"
+  initialSortDirection="asc"
+  (rowDoubleClick)="openEditDialog($event)">
+</app-data-grid>

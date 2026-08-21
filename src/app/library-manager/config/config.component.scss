@@ -1,21 +1,9 @@
-// Centers the whole screen in the content area - see
-// lesson-editor.component.scss's identical note.
-:host {
-  display: block;
-  max-width: 700px;
-  margin: 0 auto;
-}
+// Header row, spinner, empty state, scroll container and row hover moved
+// to <app-data-grid> on 2026-08-21 (bucket A item #1) with their rules.
+// The page title and the explanatory hint are still this screen's own.
 
-.config-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  h3 {
-    margin: 0;
-    flex: 1 1 auto;
-  }
+.config-title {
+  margin: 0 0 4px;
 }
 
 .hint {
@@ -23,22 +11,6 @@
   margin-bottom: 16px;
 }
 
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 48px;
-}
-
-.empty-state {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.table-scroll {
-  max-height: calc(100vh - 320px);
-  overflow-y: auto;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 4px;
-}
 
 .tiers-table {
   width: 100%;
@@ -48,14 +20,3 @@
   }
 }
 
-.actions-cell {
-  white-space: nowrap;
-}
-
-.tier-row {
-  cursor: pointer;
-
-  &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
-  }
-}
