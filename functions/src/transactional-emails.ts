@@ -57,8 +57,15 @@ export function escapeHtml(value: unknown): string {
  * @param {string} html HTML body.
  * @return {string} Plain-text approximation.
  */
-function htmlToPlainText(html: string): string {
+export function htmlToPlainText(html: string): string {
   return html
+    // <style>/<script> bodies are NOT markup the tag-stripper below can
+    // handle: stripping the tags alone leaves the CSS/JS *text* behind, so
+    // every styled template used to queue mail whose plain-text part began
+    // with a wall of raw CSS (".a{color:red}Hi Sam..."). Drop the whole
+    // element, contents included, before anything else runs.
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|tr|table|h[1-6])>/gi, "\n")
     .replace(/<[^>]+>/g, "")
@@ -70,6 +77,47 @@ function htmlToPlainText(html: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+/**
+ * Substitutes {{key}} placeholders in a mail template body.
+ *
+ * Deliberately ARBITRARY-key: the caller's model decides which placeholders
+ * exist, because staff author these templates in the admin UI and can use
+ * whatever names the calling function supplies. This is NOT the same thing
+ * as utils/merge-tags.functions.ts's renderMergeTags(), which resolves a
+ * fixed, closed MERGE_TAGS list for campaign sends - the two are separate on
+ * purpose and must not be collapsed into one another.
+ *
+ * Values are substituted verbatim; callers are responsible for escaping
+ * anything user-supplied BEFORE building the model (see escapeHtml usage at
+ * every call site).
+ *
+ * SINGLE PASS, on purpose. The three inline loops this replaced each walked
+ * Object.entries(model) substituting one key at a time, which meant a value
+ * substituted early was itself rescanned for placeholders by every later
+ * iteration. escapeHtml does not escape braces, and fields like firstName
+ * come straight off a public endpoint, so an attacker registering as
+ * "{{editRegistration}}" got that later model value expanded into the name
+ * position of their own confirmation email. Scanning the TEMPLATE once and
+ * looking each tag up in the model closes that: substituted text is output,
+ * never input.
+ * @param {string} html The template body.
+ * @param {Record<string, string>} model Placeholder name -> replacement.
+ * @return {string} The rendered body.
+ */
+export function renderPlaceholders(
+  html: string,
+  model: Record<string, string>
+): string {
+  return html.replace(
+    /\{\{(\w+)\}\}/g,
+    (match, key: string) =>
+      // hasOwnProperty, not `key in model` / `model[key]` - an inherited
+      // property name in a template ("{{constructor}}") must stay literal
+      // rather than interpolating something off Object.prototype.
+      Object.prototype.hasOwnProperty.call(model, key) ? model[key] : match
+  );
 }
 
 /**
@@ -325,10 +373,7 @@ export async function queueWebOrderEmails(
       email: escapeHtml(email),
       product_list: buildWebProductListHtml(form),
     };
-    let html = template.html ?? "";
-    for (const [key, value] of Object.entries(model)) {
-      html = html.split("{{" + key + "}}").join(value);
-    }
+    const html = renderPlaceholders(template.html ?? "", model);
     await queueMail(db, email, template.subject ?? "Sales Receipt", html);
   }
 
@@ -346,15 +391,12 @@ export async function queueWebOrderEmails(
     }
     const followUp = followUpSnap.data() as {subject?: string;
       html?: string};
-    let html = followUp.html ?? "";
     const model: Record<string, string> = {
       firstName: escapeHtml(form.firstName ?? ""),
       lastName: escapeHtml(form.lastName ?? ""),
       email: escapeHtml(email.toLowerCase()),
     };
-    for (const [key, value] of Object.entries(model)) {
-      html = html.split("{{" + key + "}}").join(value);
-    }
+    const html = renderPlaceholders(followUp.html ?? "", model);
     await queueMail(db, email, followUp.subject ?? "", html);
   }));
 }

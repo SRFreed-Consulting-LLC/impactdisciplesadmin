@@ -4,7 +4,11 @@ import {FieldValue, Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
-import {escapeHtml} from "./transactional-emails";
+import {
+  escapeHtml,
+  queueMail,
+  renderPlaceholders,
+} from "./transactional-emails";
 import {
   recordCampaignConversion,
   sanitizeAttribution,
@@ -58,21 +62,6 @@ const WEB_APP_DOMAIN =
   (process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
     "https://impactdisciples.com" :
     "https://impactdisciplesdev.web.app");
-
-/**
- * Crude but sufficient HTML-to-text for the email's plain-text part -
- * mirrors the client's htmlToPlainText usage.
- * @param {string} html The rendered email html.
- * @return {string} A plain-text rendition.
- */
-function htmlToText(html: string): string {
-  return html
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 /**
  * Renders and queues the registration confirmation email from the
@@ -147,10 +136,7 @@ async function queueConfirmationEmail(
         "'>Register for Breakout</a>",
     };
 
-    let html = template.html ?? "";
-    for (const [key, value] of Object.entries(model)) {
-      html = html.split("{{" + key + "}}").join(value);
-    }
+    const html = renderPlaceholders(template.html ?? "", model);
     // Subject is plain text (not HTML), so use the raw event name here,
     // not the HTML-escaped model value.
     const subject = (template.subject ?? "").replace(
@@ -158,12 +144,12 @@ async function queueConfirmationEmail(
       (event.eventName as string) ?? ""
     );
 
-    const mailRef = await db.collection("mail").add({
-      to: who.email,
-      date: Timestamp.now(),
-      message: {subject, html, text: htmlToText(html)},
-    });
-    return mailRef.id;
+    // Goes through queueMail rather than writing the `mail` document by
+    // hand: this used to be a second, independently-maintained copy of the
+    // same doc shape (to/date/message{subject,html,text}), which is how it
+    // drifted to its own weaker html-to-text helper. One writer means the
+    // Trigger Email contract only has to be right in one place.
+    return await queueMail(db, who.email, subject, html);
   } catch (err) {
     logger.error("Failed to queue registration email", {
       registrationId,
