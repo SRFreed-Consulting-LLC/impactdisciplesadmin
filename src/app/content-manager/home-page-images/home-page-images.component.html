@@ -5,7 +5,7 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(images$ | async) ?? []"
+  [rows]="(items$ | async) ?? []"
   [loading]="(loading$ | async) ?? false"
   tableClass="images-table"
   initialSortKey="order"

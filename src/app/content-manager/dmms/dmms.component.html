@@ -5,7 +5,7 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(dmms$ | async) ?? []"
+  [rows]="(items$ | async) ?? []"
   [loading]="(loading$ | async) ?? false"
   tableClass="dmms-table"
   [initialSortKey]="'date'"

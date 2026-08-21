@@ -3,7 +3,7 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(coupons$ | async) ?? []"
+  [rows]="(items$ | async) ?? []"
   [loading]="(loading$ | async) ?? false"
   tableClass="coupons-table"
   initialSortKey="code"

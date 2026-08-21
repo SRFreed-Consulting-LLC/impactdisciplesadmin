@@ -3,7 +3,7 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(sales$ | async) ?? []"
+  [rows]="(items$ | async) ?? []"
   [loading]="(loading$ | async) ?? false"
   tableClass="sales-table"
   exportFileName="sales.xlsx"

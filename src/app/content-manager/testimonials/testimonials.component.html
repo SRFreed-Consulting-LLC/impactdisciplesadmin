@@ -5,7 +5,7 @@
   [headerActions]="headerActions"
   [columns]="columns"
   [rowActions]="rowActions"
-  [rows]="(testimonials$ | async) ?? []"
+  [rows]="(items$ | async) ?? []"
   [loading]="(loading$ | async) ?? false"
   tableClass="testimonials-table"
   initialSortKey="date"
