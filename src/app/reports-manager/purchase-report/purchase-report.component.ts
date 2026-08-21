@@ -235,7 +235,7 @@ export class PurchaseReportComponent {
       shippingCity: item.shippingAddress?.city ?? '',
       shippingState: item.shippingAddress?.state ?? '',
       shippingZip: item.shippingAddress?.zip ?? '',
-      dateProcessed: dateFromTimestamp(item.dateProcessed),
+      dateProcessed: dateFromTimestamp(item.dateProcessed) as Date,
       itemsPurchased: (item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', '),
       total: item.total ?? 0,
       fulfillmentStatusLabel: this.getFulfillmentStatusLabel(item.fulfillmentStatus),

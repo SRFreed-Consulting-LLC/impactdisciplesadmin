@@ -149,7 +149,7 @@ export class TemplatePickerDialogComponent {
           key: email.id!,
           name: email.label || email.subject,
           subject: email.subject || null,
-          sentLabel: dateFromTimestamp(email.sentAt)?.toLocaleDateString() ?? '',
+          sentLabel: (dateFromTimestamp(email.sentAt) as Date | null)?.toLocaleDateString() ?? '',
           srcdoc: this.sanitizer.bypassSecurityTrustHtml(email.html ?? ''),
           html: email.html ?? ''
         });

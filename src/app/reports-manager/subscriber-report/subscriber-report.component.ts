@@ -203,7 +203,7 @@ export class SubscriberReportComponent {
       lastName: item.customer.lastName ?? '',
       email: item.customer.email ?? '',
       typeLabel: this.typeLabel(item.type),
-      date: dateFromTimestamp(item.customer[dateField]),
+      date: dateFromTimestamp(item.customer[dateField]) as Date,
       customer: item.customer
     };
   }
