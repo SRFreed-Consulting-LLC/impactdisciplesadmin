@@ -1,26 +1,17 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { SelectionModel } from '@angular/cdk/collections';
+import { MatDialog } from '@angular/material/dialog';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { DataGridColumn } from 'src/app/shared/data-grid/data-grid.model';
+import { ListHeaderAction } from 'src/app/shared/list-header/list-header.component';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { countryFlagEmoji } from '@impact-common/util/country-flag.util';
 import { LibraryUser } from 'src/app/common/models/domain/library/library-user.model';
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
 import { PagedCollectionSource } from 'src/app/shared/paged-collection-source';
-import {
-  LibraryRowSelection,
-  createLibraryRowSelection,
-} from 'src/app/common/services/data/library/library-row-selection.util';
 import {
   LibrarySendMessageDialogComponent,
   LibrarySendMessageDialogResult,
@@ -40,7 +31,7 @@ import {
  * id = email) instead of the whole-collection live listener this started
  * with - same conversion as Products/Customers/Log Messages. Trade-offs,
  * same as those screens: rows don't update live from other sessions, and
- * the search box + "select all visible" only cover rows loaded so far
+ * the column filters + "select all" only cover rows loaded so far
  * (scrolling to the bottom keeps loading more until the roster is fully
  * in). "Message all" is unaffected - the Cloud Function resolves 'all'
  * server-side, never from the loaded rows. The World Map keeps its own
@@ -49,67 +40,37 @@ import {
 @Component({
   selector: 'app-library-users-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterLink,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatChipsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatTableModule,
-    MatTooltipModule,
-  ],
+  // SharedModule for <app-data-grid> - see lesson-templates-list.
+  imports: [CommonModule, SharedModule],
   templateUrl: './library-users-list.component.html',
   styleUrl: './library-users-list.component.scss',
 })
 export class LibraryUsersListComponent {
-  readonly displayedColumns = [
-    'select',
-    'name',
-    'email',
-    'lastLogin',
-    'location',
-    'licenses',
-    'status',
+  readonly columns: DataGridColumn<LibraryUser>[] = [
+    { key: 'name', label: 'Name', value: (u) => this.userName(u) },
+    { key: 'email', label: 'Email' },
+    { key: 'lastLogin', label: 'Last login', type: 'date', dateFormat: 'MMM d, y' },
+    { key: 'location', label: 'Location', value: (u) => this.locationCell(u) },
+    { key: 'licenses', label: 'Licenses', value: (u) => this.licenseLabel(u) },
+    { key: 'status', label: 'Status', value: (u) => (u.revoked ? 'REVOKED' : 'Active') },
   ];
-  users: LibraryUser[] = [];
-  loading = true;
-  loadingMore = false;
-  hasMore = true;
-  filter = '';
+
+  readonly headerActions: ListHeaderAction[] = [
+    { label: 'Message Selected', icon: 'forward_to_inbox', onClick: () => void this.messageSelected() },
+    { label: 'Message All', icon: 'campaign', onClick: () => void this.messageAll() },
+  ];
 
   readonly paged: PagedCollectionSource<LibraryUser>;
 
-  /** Selected doc ids (lowercased emails). */
-  private readonly selection: LibraryRowSelection = createLibraryRowSelection();
-  readonly selected = this.selection.selected;
-
-  trackByLibraryUserId(_index: number, user: LibraryUser): string {
-    return user.id;
-  }
-
-  get filteredUsers(): LibraryUser[] {
-    const term = this.filter.trim().toLowerCase();
-    if (!term) {
-      return this.users;
-    }
-    return this.users.filter((user) =>
-      [user.email, user.firstName, user.lastName, user.location?.country, user.location?.city]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(term)),
-    );
-  }
-
-  get allVisibleSelected(): boolean {
-    return this.selection.allVisibleSelected(this.filteredUsers.map((user) => user.id));
-  }
+  /** The grid renders and drives the checkbox column from this - see its
+   *  [selection] input. A CDK SelectionModel rather than the module's own
+   *  LibraryRowSelection util, because that is what the shared grid speaks
+   *  (2026-08-21, bucket A item #1). Holds the USERS, so the messaging
+   *  paths below map to `.id` (a lowercased email) themselves. */
+  readonly selection = new SelectionModel<LibraryUser>(true, []);
 
   get selectedCount(): number {
-    return this.selected().size;
+    return this.selection.selected.length;
   }
 
   constructor(
@@ -122,33 +83,32 @@ export class LibraryUsersListComponent {
       (pageSize, cursor) => this.libraryUserService.getLibraryUsersPage(pageSize, cursor),
       50,
     );
+    // The grid consumes `paged` directly ([pagedSource]) and drives its own
+    // loading, infinite scroll and footer, so none of that is mirrored onto
+    // fields here any more. One subscription remains: dropping selections
+    // for rows that are no longer loaded, so a stale id can't be messaged.
     this.paged.rows$.subscribe((users) => {
-      this.users = users;
-      this.selection.pruneToLiveIds(users.map((user) => user.id));
+      const liveIds = new Set(users.map((user) => user.id));
+      for (const selected of this.selection.selected) {
+        if (!liveIds.has(selected.id)) {
+          this.selection.deselect(selected);
+        }
+      }
     });
-    this.paged.loading$.subscribe((loading) => (this.loading = loading));
-    this.paged.loadingMore$.subscribe((loadingMore) => (this.loadingMore = loadingMore));
-    this.paged.hasMore$.subscribe((hasMore) => (this.hasMore = hasMore));
     void this.paged.loadFirstPage();
-  }
-
-  /** Same near-bottom threshold as InfiniteScrollDirective (which isn't
-   *  importable here - it's declared in the non-standalone SharedModule):
-   *  kicks off the next page before the admin actually hits the bottom. */
-  onTableScroll(event: Event): void {
-    const element = event.target as HTMLElement;
-    const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
-    if (distanceFromBottom < 300) {
-      void this.paged.loadNextPage();
-    }
   }
 
   userName(user: LibraryUser): string {
     return [user.firstName, user.lastName].filter(Boolean).join(' ');
   }
 
-  locationFlag(user: LibraryUser): string {
-    return countryFlagEmoji(user.location?.countryCode);
+  /** Flag + place in one cell: the grid renders plain text per column, and
+   *  splitting these into two columns would give the flag its own sortable,
+   *  filterable header for no reason. */
+  locationCell(user: LibraryUser): string {
+    const flag = countryFlagEmoji(user.location?.countryCode);
+    const label = this.locationLabel(user);
+    return [flag, label].filter(Boolean).join(' ').trim();
   }
 
   locationLabel(user: LibraryUser): string {
@@ -166,24 +126,12 @@ export class LibraryUsersListComponent {
     return count === 1 ? '1 book' : `${count} books`;
   }
 
-  isSelected(id: string): boolean {
-    return this.selection.isSelected(id);
-  }
-
-  toggleRow(id: string, event: MatCheckboxChange): void {
-    this.selection.toggle(id, event.checked);
-  }
-
-  toggleSelectAllVisible(): void {
-    this.selection.toggleAllVisible(this.filteredUsers.map((user) => user.id));
-  }
-
   openDetail(user: LibraryUser): void {
     void this.router.navigate(['/library-manager/library-users', user.id]);
   }
 
   async messageSelected(): Promise<void> {
-    const emails = [...this.selected()];
+    const emails = this.selection.selected.map((user) => user.id);
     if (emails.length === 0) {
       return;
     }

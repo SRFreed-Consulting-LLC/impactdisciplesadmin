@@ -1,99 +1,11 @@
-// Wide table (7 columns) - given a generous but still-bounded max-width
-// rather than either the tighter list-screen cap (would force a horizontal
-// scrollbar) or no cap at all (would spread edge-to-edge on an ultra-wide
-// monitor) - same reasoning as lesson-translation.component.scss's table.
-:host {
-  display: block;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.library-users-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  h3 {
-    margin: 0;
-    flex: 1 1 auto;
-  }
-}
-
-.filter-field {
-  width: 280px;
-}
-
-.loading {
-  display: flex;
-  justify-content: center;
-  padding: 48px;
-}
-
-.empty-state {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.table-scroll {
-  max-height: calc(100vh - 320px);
-  overflow-y: auto;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 4px;
-}
-
-.load-more-row {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-}
-
-.library-users-table {
+// Header, search field, spinner, empty state, scroll container, load-more
+// row, checkbox cell and row hover all moved to <app-data-grid> on
+// 2026-08-21 (bucket A item #1) along with their rules. The location and
+// status cells are plain text columns now, so their chips went too.
+.users-table {
   width: 100%;
 
   ::ng-deep .mat-mdc-header-cell {
     background: var(--mat-sys-surface-container, var(--mat-sys-surface));
-  }
-}
-
-// Deliberately allowed to wrap (no nowrap) - the widest cell content, and
-// wrapping it is what keeps the whole table inside the viewport instead of
-// growing a horizontal scrollbar.
-.location-cell {
-  white-space: normal;
-}
-
-.no-location {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.intl-chip {
-  display: inline-block;
-  margin-left: 8px;
-  vertical-align: middle;
-
-  ::ng-deep .mat-mdc-chip {
-    --mdc-chip-container-height: 22px;
-  }
-}
-
-.select-cell {
-  width: 48px;
-  padding-right: 0;
-}
-
-.revoked-chip ::ng-deep .mat-mdc-chip {
-  --mdc-chip-container-height: 22px;
-  background: var(--mat-sys-error-container, #f9dedc);
-}
-
-.status-active {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.clickable-row {
-  cursor: pointer;
-
-  &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
   }
 }

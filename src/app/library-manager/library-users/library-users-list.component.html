@@ -1,168 +1,19 @@
-<div class="library-users-header">
-  <h3>Library Users</h3>
-  <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
-    <mat-label>Search library users</mat-label>
-    <input
-      matInput
-      [value]="filter"
-      (input)="filter = $any($event.target).value"
-      placeholder="Name, email, or location"
-    />
-    <mat-icon matSuffix>search</mat-icon>
-  </mat-form-field>
-  <button mat-stroked-button (click)="messageSelected()" [disabled]="selectedCount === 0">
-    <mat-icon>send</mat-icon>
-    Message selected ({{ selectedCount }})
-  </button>
-  <button mat-stroked-button (click)="messageAll()">
-    <mat-icon>campaign</mat-icon>
-    Message all
-  </button>
-  <a
-    mat-icon-button
-    routerLink="/library-manager/library-users/messages"
-    matTooltip="Sent messages"
-    aria-label="Sent messages"
-  >
-    <mat-icon>history</mat-icon>
-  </a>
-</div>
-
-@if (loading) {
-  <div class="loading">
-    <mat-spinner diameter="32"></mat-spinner>
-  </div>
-} @else if (filteredUsers.length === 0) {
-  <p class="empty-state">
-    {{
-      filter
-        ? hasMore
-          ? 'No loaded library users match this search.'
-          : 'No library users match this search.'
-        : 'No library users yet.'
-    }}
-  </p>
-  @if (filter && hasMore) {
-    <!-- Search only covers rows loaded so far - let the admin keep pulling
-         pages in from here instead of dead-ending on a hidden table. -->
-    <div class="load-more-row">
-      @if (loadingMore) {
-        <mat-spinner diameter="24"></mat-spinner>
-      } @else {
-        <button mat-stroked-button (click)="paged.loadNextPage()">Load more users</button>
-      }
-    </div>
-  }
-} @else {
-  <div class="table-scroll" (scroll)="onTableScroll($event)">
-    <table
-      mat-table
-      [dataSource]="filteredUsers"
-      [trackBy]="trackByLibraryUserId"
-      class="library-users-table"
-    >
-      <ng-container matColumnDef="select">
-        <th mat-header-cell *matHeaderCellDef class="select-cell">
-          <mat-checkbox
-            [checked]="allVisibleSelected"
-            (change)="toggleSelectAllVisible()"
-            matTooltip="Select all visible"
-          ></mat-checkbox>
-        </th>
-        <td mat-cell *matCellDef="let user" class="select-cell" (click)="$event.stopPropagation()">
-          <mat-checkbox
-            [checked]="isSelected(user.id)"
-            (change)="toggleRow(user.id, $event)"
-          ></mat-checkbox>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>Name</th>
-        <td mat-cell *matCellDef="let user">{{ userName(user) || '—' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="email">
-        <th mat-header-cell *matHeaderCellDef>Email</th>
-        <td mat-cell *matCellDef="let user">{{ user.email || user.id }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="lastLogin">
-        <th mat-header-cell *matHeaderCellDef>Last login</th>
-        <td mat-cell *matCellDef="let user">
-          {{ user.lastLogin ? (user.lastLogin | date: 'medium') : 'Never recorded' }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="location">
-        <th mat-header-cell *matHeaderCellDef>Login location</th>
-        <td mat-cell *matCellDef="let user">
-          @if (locationLabel(user)) {
-            <span
-              class="location-cell"
-              [matTooltip]="
-                user.location?.updatedAt
-                  ? 'Detected ' + (user.location?.updatedAt | date: 'medium')
-                  : ''
-              "
-            >
-              {{ locationFlag(user) }} {{ locationLabel(user) }}
-            </span>
-            @if (user.internationalUser) {
-              <mat-chip-set class="intl-chip">
-                <mat-chip
-                  matTooltip="Has signed in from outside the US - all books are free for this library user (editable on their detail page)"
-                >
-                  International
-                </mat-chip>
-              </mat-chip-set>
-            }
-          } @else {
-            <span class="no-location">Unknown</span>
-          }
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="licenses">
-        <th mat-header-cell *matHeaderCellDef>Licensed books</th>
-        <td mat-cell *matCellDef="let user">{{ licenseLabel(user) }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let user">
-          @if (user.revoked) {
-            <mat-chip-set class="revoked-chip">
-              <mat-chip
-                matTooltip="Access revoked - sign-in disabled. Restore from the detail page."
-                >Revoked</mat-chip
-              >
-            </mat-chip-set>
-          } @else {
-            <span class="status-active">Active</span>
-          }
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr
-        mat-row
-        *matRowDef="let row; columns: displayedColumns"
-        class="clickable-row"
-        (click)="openDetail(row)"
-      ></tr>
-    </table>
-
-    @if (hasMore) {
-      <div class="load-more-row">
-        @if (loadingMore) {
-          <mat-spinner diameter="24"></mat-spinner>
-        } @else {
-          <!-- Scroll-to-bottom also loads the next page (onTableScroll);
-               the button covers the not-actually-scrollable edge case. -->
-          <button mat-stroked-button (click)="paged.loadNextPage()">Load more</button>
-        }
-      </div>
-    }
-  </div>
-}
+<!-- Shared <app-data-grid> since 2026-08-21 (bucket A item #1). Replaced a
+     hand-rolled mat-table plus its own search box, checkbox column, spinner,
+     "Load more" buttons and a duplicated copy of InfiniteScrollDirective.
+     In PAGED mode the grid owns loading, infinite scroll and the footer, so
+     this screen just hands it the source; the checkbox column comes from
+     [selection], and filtering is the grid's own per-column filter row -
+     the same way an admin filters every other list in this app. -->
+<app-data-grid
+  title="Library Users"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [pagedSource]="paged"
+  [selection]="selection"
+  emptyMessage="No library users yet."
+  tableClass="users-table"
+  exportFileName="library-users.xlsx"
+  exportWorksheetName="Library Users"
+  (rowDoubleClick)="openDetail($event)">
+</app-data-grid>
