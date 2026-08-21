@@ -156,6 +156,21 @@ export class CampaignModel extends BaseModel {
   // Where this record came from; null/absent = created in this app.
   source?: 'mailchimp' | null;
 
+  /**
+   * Staff pinned this campaign to the top of the Campaigns screen (2026-08-21).
+   * For the handful of ongoing series people open constantly - Monthly
+   * Newsletter, Prayer Letter - which otherwise sink down a list ordered by
+   * startDate.
+   *
+   * Optional and ABSENT on almost every doc, which is deliberate: the
+   * Campaigns list is a Firestore cursor-paged query, and adding `pinned` to
+   * its orderBy would drop every campaign that lacks the field (Firestore
+   * orders only documents that HAVE the ordered field). So pinned campaigns
+   * are fetched separately and rendered above the list instead - see
+   * CampaignsComponent.loadPinned(). Nothing needs backfilling.
+   */
+  pinned?: boolean;
+
   stats: CampaignStats = emptyCampaignStats();
 
   // Assisted-manual social publishing (see CampaignSocial). Null/absent =

@@ -1,4 +1,33 @@
 @if (mode === 'list') {
+  <!-- Pinned campaigns - the ongoing series staff open constantly, kept
+       above the paged list rather than sorted into it (see the component's
+       loadPinned() comment for why). Same card shape as Live Now below. -->
+  @if (pinnedCampaigns.length) {
+    <div class="hub hub--pinned">
+      <div class="hub__label">
+        <mat-icon class="hub__label-icon">push_pin</mat-icon>
+        Pinned · {{ pinnedCampaigns.length }}
+      </div>
+      <div class="hub__cards">
+        @for (campaign of pinnedCampaigns; track campaign.id) {
+          <button type="button" class="hub-card" (click)="openDetail(campaign)">
+            <div class="hub-card__name">
+              <span class="hub-card__title">{{ campaign.name }}</span>
+              <span class="chip" [class]="'kind-' + campaign.goal">{{ kindLabel(campaign) }}</span>
+            </div>
+            <div class="hub-card__stats">
+              @for (stat of hubStats(campaign); track stat.label) {
+                <div class="stat">
+                  <div class="stat__value">{{ stat.value }}</div>
+                  <div class="stat__label">{{ stat.label }}</div>
+                </div>
+              }
+            </div>
+          </button>
+        }
+      </div>
+    </div>
+  }
   @if (liveCampaigns.length) {
     <div class="hub">
       <div class="hub__label">Live Now · {{ liveCampaigns.length }}</div>

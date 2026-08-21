@@ -111,3 +111,18 @@ app-data-grid {
   display: flex;
   flex-direction: column;
 }
+
+// Pinned strip (2026-08-21) - same card shape as the Live Now hub, with a
+// label row that carries the pin icon so the two strips are tellable apart
+// at a glance when both are showing.
+.hub__label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hub__label-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}

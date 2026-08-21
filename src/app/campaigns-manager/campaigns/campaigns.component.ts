@@ -82,6 +82,7 @@ export class CampaignsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.paged.loadFirstPage();
     this.loadHub();
+    this.loadPinned();
 
     // ?campaignId= deep link (Status Board cards route here with it; same
     // pattern as Purchases' purchaseId deep link).
@@ -141,9 +142,61 @@ export class CampaignsComponent implements OnInit, OnDestroy {
     return this.permissionService.canDelete(this.screenKey);
   }
 
+  get canPin(): boolean {
+    return this.permissionService.canEdit(this.screenKey);
+  }
+
   rowActions: DataGridRowAction<CampaignModel>[] = [
+    {
+      icon: 'push_pin',
+      tooltip: 'PIN TO TOP',
+      onClick: (item) => this.togglePin(item),
+      visible: (item) => this.canPin && !item.pinned,
+    },
+    {
+      icon: 'push_pin',
+      tooltip: 'UNPIN',
+      onClick: (item) => this.togglePin(item),
+      visible: (item) => this.canPin && !!item.pinned,
+    },
     { icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteCampaign(item), visible: () => this.canDelete }
   ];
+
+  // ---- Pinned ----
+  // A handful of ongoing series (Monthly Newsletter, Prayer Letter) that
+  // staff open constantly and which otherwise sink down a list ordered by
+  // startDate.
+  //
+  // Fetched as their own small query and rendered ABOVE the list rather than
+  // being sorted to the top of it - the list is a Firestore cursor-paged
+  // query, so a client-side sort would only float a pinned campaign to the
+  // top of the page it happens to be on, and adding `pinned` to the query's
+  // orderBy would drop every campaign that lacks the field (Firestore orders
+  // only documents that HAVE it). Same shape as the Live Now hub above.
+  pinnedCampaigns: CampaignModel[] = [];
+
+  private loadPinned(): void {
+    this.service.getAllByValue('pinned', true).then((pinned) => {
+      this.pinnedCampaigns = pinned.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+    });
+  }
+
+  async togglePin(item: CampaignModel): Promise<void> {
+    if (!this.canPin) {
+      return;
+    }
+    const next = !item.pinned;
+    try {
+      await this.service.update(item.id!, { ...item, pinned: next });
+      // Keep the row the grid is already rendering in step, so the action
+      // icon flips without waiting for the list to reload.
+      item.pinned = next;
+      this.loadPinned();
+      this.snackbar.success(next ? `${item.name} pinned to top` : `${item.name} unpinned`);
+    } catch (err) {
+      this.snackbar.error('Could not update pin: ' + ((err as Error)?.message ?? err));
+    }
+  }
 
   // Cascade delete (campaign + its emails + its popup) behind a confirm
   // that spells out what goes - see CampaignService.deleteCascade() for
@@ -178,6 +231,7 @@ export class CampaignsComponent implements OnInit, OnDestroy {
     this.onDetailClosed();
     this.paged.loadFirstPage();
     this.loadHub();
+    this.loadPinned();
   }
 
   openDetail(item: CampaignModel): void {
