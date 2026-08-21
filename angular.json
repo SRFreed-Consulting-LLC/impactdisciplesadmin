@@ -22,7 +22,7 @@
             ],
             "allowedCommonJsDependencies": [
               "jszip", "lodash", "@formio/js", "dompurify", "leaflet",
-              "raf", "rgbcolor", "html2canvas", "exceljs", "file-saver", "quill-delta",
+              "html2canvas", "exceljs", "file-saver", "quill-delta",
               "core-js/modules/es.array.index-of.js", "core-js/modules/es.array.iterator.js",
               "core-js/modules/es.array.reduce.js", "core-js/modules/es.array.reverse.js",
               "core-js/modules/es.promise.js", "core-js/modules/es.regexp.to-string.js",
