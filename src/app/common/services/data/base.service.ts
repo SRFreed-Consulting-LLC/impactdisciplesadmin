@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { DocumentData, OrderByDirection, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
 import { FirebaseDAO, PagedResult, WhereFilterOperandKeys, QueryParam } from 'src/app/common/dao/firebase.dao';
-import { BaseModel } from 'src/app/common/models/base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { Observable } from 'rxjs';
 
 @Injectable({

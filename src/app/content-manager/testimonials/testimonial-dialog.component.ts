@@ -3,9 +3,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { TestimonialModel } from 'src/app/common/models/domain/testimonial.model';
+import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
-import { TESTIMONIAL_TYPES } from 'src/app/common/lists/testimonial_types.enum';
+import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types.enum';
 import { EnumHelper } from 'src/app/common/utils/enum_helper';
 import { SnackbarService } from '../../shared/snackbar.service';
 

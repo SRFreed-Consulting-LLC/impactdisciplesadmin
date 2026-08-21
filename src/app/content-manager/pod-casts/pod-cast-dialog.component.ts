@@ -2,11 +2,11 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
+import { PodCastModel } from '@impact-common/shared/models/domain/pod-cast.model';
 import { PodCastService } from 'src/app/common/services/data/pod-cast.service';
-import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 

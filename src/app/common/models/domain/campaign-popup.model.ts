@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { BaseModel } from '../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 
 // A campaign's web-channel popup (Campaign Manager v2, Phase 5) - one per
 // campaign, doc id == campaignId, in its own PUBLIC-READABLE collection

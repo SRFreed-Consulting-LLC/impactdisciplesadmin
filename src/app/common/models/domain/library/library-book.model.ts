@@ -1,4 +1,4 @@
-import { BaseModel } from '../../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 
 export interface BookLanguage {
   id: string;

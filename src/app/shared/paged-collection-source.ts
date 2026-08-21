@@ -1,7 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { PagedResult } from 'src/app/common/dao/firebase.dao';
-import { BaseModel } from 'src/app/common/models/base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 
 // Client-side accumulator driving "infinite scroll" over BaseService.getPage()
 // - a one-time (not live) fetch per batch, unlike streamAll()'s "subscribe to

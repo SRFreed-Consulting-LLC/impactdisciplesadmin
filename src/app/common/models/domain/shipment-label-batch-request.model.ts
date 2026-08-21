@@ -1,5 +1,5 @@
-import { BaseModel } from '../base.model';
-import { ShippingFromAddress, ShippingRequest } from './shipment.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
+import { ShippingFromAddress, ShippingRequest } from '@impact-common/shared/models/domain/shipment.model';
 
 export class ShippingLabelBatchRequest extends BaseModel {
   createdDate: Date;

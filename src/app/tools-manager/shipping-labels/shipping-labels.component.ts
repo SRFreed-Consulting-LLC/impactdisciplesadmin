@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ShippingLabelBatchRequest, ShippingLabelRequest } from 'src/app/common/models/domain/shipment-label-batch-request.model';
-import { ShippingFromAddress } from 'src/app/common/models/domain/shipment.model';
+import { ShippingFromAddress } from '@impact-common/shared/models/domain/shipment.model';
 import { ShippingLabelBatchService } from 'src/app/common/services/data/shipping-label-batch.service';
 import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';

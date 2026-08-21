@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 import { Role } from "src/app/common/lists/roles.enum";
-import { Person } from "./person.model";
+import { Person } from "@impact-common/shared/models/domain/utils/person.model";
 import { ContactNoteModel } from "./contact-note.model";
 
 // A customer record is now created/kept up to date automatically from two

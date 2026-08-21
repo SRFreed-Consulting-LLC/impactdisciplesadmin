@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { BaseService } from './base.service';
-import { HomePageImageModel } from 'src/app/common/models/domain/home-page-image.model';
+import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
 
 @Injectable({
   providedIn: 'root'

@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { LogMessage } from "../../models/utils/log-message.model";
+import { LogMessage } from "@impact-common/shared/models/utils/log-message.model";
 import { FirebaseDAO } from '../../dao/firebase.dao';
 import { Timestamp } from "firebase/firestore";
 import { dateFromTimestamp } from "src/app/common/utils/date-from-timestamp";

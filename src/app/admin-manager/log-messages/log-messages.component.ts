@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { LogMessage } from 'src/app/common/models/utils/log-message.model';
+import { LogMessage } from '@impact-common/shared/models/utils/log-message.model';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';

@@ -4,7 +4,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { MatChipInputEvent } from '@angular/material/chips';
 import { MatAutocompleteSelectedEvent, MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { map, Observable, startWith } from 'rxjs';
-import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 
 // Material replacement for DevExtreme's dx-tag-box with acceptCustomValue +
 // onCustomItemCreating (used today by Pod Casts' "Tags" field): a chip list

@@ -6,8 +6,8 @@ import { BaseService } from './base.service';
 import { ShippingLabelRequest } from 'src/app/common/models/domain/shipment-label-batch-request.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { Timestamp } from 'firebase/firestore';
-import { Package, RateOptions, ShippingModel, ShippingRequest, WeightDetail } from 'src/app/common/models/domain/shipment.model';
-import { UNIT_OF_MEASURE } from 'src/app/common/lists/unit_of_measure.enum';
+import { Package, RateOptions, ShippingModel, ShippingRequest, WeightDetail } from '@impact-common/shared/models/domain/shipment.model';
+import { UNIT_OF_MEASURE } from '@impact-common/shared/lists/unit_of_measure.enum';
 
 
 @Injectable({

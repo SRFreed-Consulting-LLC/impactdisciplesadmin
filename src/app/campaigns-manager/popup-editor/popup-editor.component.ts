@@ -8,7 +8,7 @@ import { CampaignPopupService, PopupTemplateService } from 'src/app/common/servi
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
-import { ProductModel } from 'src/app/common/models/utils/product.model';
+import { ProductModel } from '@impact-common/shared/models/utils/product.model';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';

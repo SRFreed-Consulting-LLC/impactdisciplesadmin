@@ -8,7 +8,7 @@ import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
-import { ProductModel } from 'src/app/common/models/utils/product.model';
+import { ProductModel } from '@impact-common/shared/models/utils/product.model';
 import { EventModel } from 'src/app/common/models/domain/event.model';
 
 // Campaign wizard (Campaign Manager v2, Phase 2): creates/edits the

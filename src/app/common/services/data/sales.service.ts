@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { BaseService } from './base.service';
-import { SaleModel } from 'src/app/common/models/utils/sale.model';
+import { SaleModel } from '@impact-common/shared/models/utils/sale.model';
 
 @Injectable({
   providedIn: 'root'

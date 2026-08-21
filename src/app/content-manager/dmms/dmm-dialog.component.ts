@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { DMMModel } from 'src/app/common/models/domain/dmm.model';
+import { DMMModel } from '@impact-common/shared/models/domain/dmm.model';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';

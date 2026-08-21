@@ -1,4 +1,4 @@
-import { BaseModel } from '../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 
 export class CourseModel extends BaseModel {
   title: string;

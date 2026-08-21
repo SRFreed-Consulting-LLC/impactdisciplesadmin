@@ -3,9 +3,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
-import { HomePageImageModel } from 'src/app/common/models/domain/home-page-image.model';
+import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
 import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import menuData from 'src/app/common/services/data/nav-menu-data';
 import { SnackbarService } from '../../shared/snackbar.service';
 

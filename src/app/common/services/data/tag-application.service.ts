@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { BaseModel } from 'src/app/common/models/base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { BaseService } from './base.service';
 
 // One doc per (customer email, tag) - when/why a tag landed on a customer,

@@ -1,6 +1,6 @@
 import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { PagedResult } from 'src/app/common/dao/firebase.dao';
-import { BaseModel } from 'src/app/common/models/base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { PagedCollectionSource } from './paged-collection-source';
 
 interface Row extends BaseModel {

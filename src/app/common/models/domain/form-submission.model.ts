@@ -1,4 +1,4 @@
-import { BaseModel } from '../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { FormFieldType } from './form-field.model';
 
 // A single submission of a Form Builder form, viewed under Web Manager >

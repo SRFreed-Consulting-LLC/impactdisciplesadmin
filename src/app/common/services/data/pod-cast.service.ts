@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
+import { PodCastModel } from '@impact-common/shared/models/domain/pod-cast.model';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 import { environment } from 'src/environments/environment';

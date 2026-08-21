@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { SaleModel } from 'src/app/common/models/utils/sale.model';
+import { SaleModel } from '@impact-common/shared/models/utils/sale.model';
 import { SalesService } from 'src/app/common/services/data/sales.service';
 import { MatDialog } from '@angular/material/dialog';
 import { PermissionService } from 'src/app/common/services/permission.service';

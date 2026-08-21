@@ -1,6 +1,6 @@
-import { BaseModel } from "../base.model";
-import { Address } from "./utils/address.model";
-import { Phone } from "./utils/phone.model";
+import { BaseModel } from "@impact-common/shared/models/base.model";
+import { Address } from "@impact-common/shared/models/domain/utils/address.model";
+import { Phone } from "@impact-common/shared/models/domain/utils/phone.model";
 
 // The person who fronts an organization for us. Embedded (not a ref) so an
 // org can carry a PoC before that person exists as a Contact; "Promote to

@@ -4,7 +4,7 @@ import { Firestore, collection } from '@angular/fire/firestore';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
-import { BaseModel } from '../models/base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { Unsubscribe } from 'firebase/auth';
 
 // One page of a getPage() call. cursor is the raw QueryDocumentSnapshot for

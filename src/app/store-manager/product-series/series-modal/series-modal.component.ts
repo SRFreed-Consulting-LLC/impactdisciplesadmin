@@ -2,9 +2,9 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { SeriesModel } from 'src/app/common/models/utils/series.model';
+import { SeriesModel } from '@impact-common/shared/models/utils/series.model';
 import { SeriesService } from 'src/app/common/services/data/series.service';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { SnackbarService } from '../../../shared/snackbar.service';
 
 export interface SeriesModalData {

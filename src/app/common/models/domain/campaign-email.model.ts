@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { BaseModel } from '../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { CampaignAudience, EmailStats, emptyEmailStats } from './campaign.model';
 
 // One email "touch" of a campaign (Campaign Manager v2): a single email

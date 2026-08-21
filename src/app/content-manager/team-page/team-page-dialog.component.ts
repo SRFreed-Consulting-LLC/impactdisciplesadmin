@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { ImpactTeamMemberModel } from 'src/app/common/models/domain/impact-team-member.model';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { SnackbarService } from '../../shared/snackbar.service';
 

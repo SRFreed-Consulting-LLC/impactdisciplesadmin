@@ -1,6 +1,6 @@
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { AgendaItem } from 'src/app/common/models/domain/utils/agenda-item.model';
-import { FAQModel } from 'src/app/common/models/utils/faq.model';
+import { FAQModel } from '@impact-common/shared/models/utils/faq.model';
 import { copyAgendaSkeleton, copySummitContent } from './summit-copy.util';
 
 // Source summit: Aug 10-11 2025. Fixture months are all August (source and

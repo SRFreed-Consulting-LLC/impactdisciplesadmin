@@ -1,8 +1,8 @@
-import { Countries } from "../lists/countries.enum";
-import { PHONE_TYPES } from "../lists/phone_types.enum";
-import { States } from "../lists/states.enum";
-import { TESTIMONIAL_TYPES } from "../lists/testimonial_types.enum";
-import { UNIT_OF_MEASURE } from "../lists/unit_of_measure.enum";
+import { Countries } from "@impact-common/shared/lists/countries.enum";
+import { PHONE_TYPES } from "@impact-common/shared/lists/phone_types.enum";
+import { States } from "@impact-common/shared/lists/states.enum";
+import { TESTIMONIAL_TYPES } from "@impact-common/shared/lists/testimonial_types.enum";
+import { UNIT_OF_MEASURE } from "@impact-common/shared/lists/unit_of_measure.enum";
 
 export class EnumHelper {
   static getPhoneTypesAsArray(): PHONE_TYPES[] {

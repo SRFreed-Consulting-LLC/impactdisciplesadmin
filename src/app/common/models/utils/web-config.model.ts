@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore";
-import { BaseModel } from "../base.model";
-import { Address } from "../domain/utils/address.model";
+import { BaseModel } from "@impact-common/shared/models/base.model";
+import { Address } from "@impact-common/shared/models/domain/utils/address.model";
 
 export class WebConfigModel extends BaseModel{
   policy: string;

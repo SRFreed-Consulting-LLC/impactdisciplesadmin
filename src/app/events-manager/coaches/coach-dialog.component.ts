@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { CoachModel } from 'src/app/common/models/domain/coach.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { SnackbarService } from '../../shared/snackbar.service';
 

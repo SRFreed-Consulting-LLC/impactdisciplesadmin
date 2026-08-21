@@ -1,7 +1,7 @@
-import { BaseModel } from "../base.model";
-import { TrainingRoomModel } from "./training-room.model";
-import { Address } from "./utils/address.model";
-import { Phone } from "./utils/phone.model";
+import { BaseModel } from "@impact-common/shared/models/base.model";
+import { TrainingRoomModel } from "@impact-common/shared/models/domain/training-room.model";
+import { Address } from "@impact-common/shared/models/domain/utils/address.model";
+import { Phone } from "@impact-common/shared/models/domain/utils/phone.model";
 
 // A site belonging to an organization - a CHILD record of an org as of the
 // 2026-08 restructure (administered inside Contacts Manager > Organizations,

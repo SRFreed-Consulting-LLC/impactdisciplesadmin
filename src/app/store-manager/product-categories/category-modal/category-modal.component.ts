@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { ProductCategoriesService } from 'src/app/common/services/data/product-categories.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 

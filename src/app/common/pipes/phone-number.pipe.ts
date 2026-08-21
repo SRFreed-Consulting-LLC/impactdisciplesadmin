@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { Phone } from '../models/domain/utils/phone.model';
+import { Phone } from '@impact-common/shared/models/domain/utils/phone.model';
 
 @Pipe({
     name: 'phoneNumberMask',

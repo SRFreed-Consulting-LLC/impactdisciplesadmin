@@ -1,10 +1,10 @@
 import { Timestamp } from 'firebase/firestore';
-import { BaseModel } from "src/app/common/models/base.model";
-import { Address } from "src/app/common/models/domain/utils/address.model";
-import { Phone } from "src/app/common/models/domain/utils/phone.model";
-import { UNIT_OF_MEASURE } from 'src/app/common/lists/unit_of_measure.enum';
+import { BaseModel } from "@impact-common/shared/models/base.model";
+import { Address } from "@impact-common/shared/models/domain/utils/address.model";
+import { Phone } from "@impact-common/shared/models/domain/utils/phone.model";
+import { UNIT_OF_MEASURE } from '@impact-common/shared/lists/unit_of_measure.enum';
 import { IClientAuthorizeCallbackData } from 'ngx-paypal';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { ShippingLabelResponse, ShippingRate } from 'src/app/common/models/domain/shipment-label-batch-request.model';
 
 export interface CartItem {

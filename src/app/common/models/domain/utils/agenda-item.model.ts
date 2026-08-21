@@ -1,4 +1,4 @@
-import { BaseModel } from "../../base.model";
+import { BaseModel } from "@impact-common/shared/models/base.model";
 
 // One entry in EventModel.agendaItems[]. A breakout session is an item with
 // isCourse: true - since the 2026-08 Courses retirement it is fully

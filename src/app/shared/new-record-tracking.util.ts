@@ -1,4 +1,4 @@
-import { BaseModel } from '../common/models/base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { BaseService } from '../common/services/data/base.service';
 
 export interface NewRecordTrackable extends BaseModel {

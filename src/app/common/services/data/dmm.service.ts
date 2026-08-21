@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FirebaseDAO } from '../../dao/firebase.dao';
-import { DMMModel } from '../../models/domain/dmm.model';
+import { DMMModel } from '@impact-common/shared/models/domain/dmm.model';
 import { BaseService } from './base.service';
 import { dateFromTimestamp } from '../../utils/date-from-timestamp';
 import { Timestamp } from 'firebase/firestore';

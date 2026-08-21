@@ -1,12 +1,12 @@
 import { LocationModel } from './location.model';
-import { BaseModel } from "../base.model";
+import { BaseModel } from "@impact-common/shared/models/base.model";
 import { AdminUser } from '../admin/admin-user.model';
 import { Timestamp } from 'firebase/firestore';
 import { OrganizationModel } from './organization.model';
 import { AgendaItem } from './utils/agenda-item.model';
-import { FAQModel } from '../utils/faq.model';
-import { ImageModel } from '../utils/image.model';
-import { Address } from './utils/address.model';
+import { FAQModel } from '@impact-common/shared/models/utils/faq.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
+import { Address } from '@impact-common/shared/models/domain/utils/address.model';
 
 // Where this event happens, snapshotted at admin save time from the chosen
 // location record - or, when the organization has no location children,

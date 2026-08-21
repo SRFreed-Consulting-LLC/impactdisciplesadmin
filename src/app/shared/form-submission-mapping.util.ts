@@ -1,7 +1,7 @@
 import { FormSubmissionModel } from 'src/app/common/models/domain/form-submission.model';
 import { FormFieldType } from 'src/app/common/models/domain/form-field.model';
-import { Address } from 'src/app/common/models/domain/utils/address.model';
-import { Phone } from 'src/app/common/models/domain/utils/phone.model';
+import { Address } from '@impact-common/shared/models/domain/utils/address.model';
+import { Phone } from '@impact-common/shared/models/domain/utils/phone.model';
 
 // Label-heuristic extraction over a form submission's UUID-keyed values -
 // the ONE place that guesses what a dynamic form's fields mean (fields are

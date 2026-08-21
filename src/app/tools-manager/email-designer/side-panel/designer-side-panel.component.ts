@@ -24,7 +24,7 @@ import {
 } from 'src/app/common/models/admin/email-design.model';
 import DOMPurify from 'dompurify';
 import { parseVideoUrl, vimeoOembedUrl } from '../video-url.util';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { BLOCK_PALETTE_ID, LAYOUT_PALETTE_ID, LAYOUT_PRESETS, LayoutPreset } from '../block-drop.util';
 import { DesignerStateService } from '../designer-state.service';
 

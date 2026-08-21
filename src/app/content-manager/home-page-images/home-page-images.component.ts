@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { HomePageImageModel } from 'src/app/common/models/domain/home-page-image.model';
+import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
 import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

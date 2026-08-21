@@ -1,4 +1,4 @@
-import { BaseModel } from '../../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 
 // Mirrors impact-discipleship-library-manager-new's own Unit shape - see
 // book-series.model.ts's own comment on why this is a fresh model.

@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
-import { SaleModel } from 'src/app/common/models/utils/sale.model';
+import { SaleModel } from '@impact-common/shared/models/utils/sale.model';
 import { SalesService } from 'src/app/common/services/data/sales.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { parseSaleDate } from './sale-date.util';

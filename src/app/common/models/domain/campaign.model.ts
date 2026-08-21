@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { BaseModel } from '../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { toMillis } from '../../utils/date-from-timestamp';
 
 // Campaign Manager v2 (2026-08-18, designed with the user - see the

@@ -1,9 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { PodCastModel } from 'src/app/common/models/domain/pod-cast.model';
+import { PodCastModel } from '@impact-common/shared/models/domain/pod-cast.model';
 import { PodCastService, YoutubePlaylistItem } from 'src/app/common/services/data/pod-cast.service';
-import { TagModel } from 'src/app/common/models/domain/tag.model';
+import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { PodCastCategoriesService } from 'src/app/common/services/data/pod-cast-categories.service';
 import { PodCastTagsService } from 'src/app/common/services/data/pod-cast-tags.service';
 import { PermissionService } from 'src/app/common/services/permission.service';

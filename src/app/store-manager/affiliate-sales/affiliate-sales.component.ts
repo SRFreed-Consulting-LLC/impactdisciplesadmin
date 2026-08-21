@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
-import { AffilliateSaleModel } from 'src/app/common/models/utils/affilliate-sale.model';
+import { AffilliateSaleModel } from '@impact-common/shared/models/utils/affilliate-sale.model';
 import { AffilliateSalesService } from 'src/app/common/services/data/affiliate-sales.service';
 import { dateFromTimestamp } from 'src/app/common/utils/date-from-timestamp';
 import { map, Observable } from 'rxjs';

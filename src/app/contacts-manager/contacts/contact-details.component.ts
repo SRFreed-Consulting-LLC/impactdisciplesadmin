@@ -16,8 +16,8 @@ import { TagApplicationService } from 'src/app/common/services/data/tag-applicat
 import { EventModel } from 'src/app/common/models/domain/event.model';
 import { EventRegistrationModel } from 'src/app/common/models/domain/event-registration.model';
 import { CheckoutForm, FulfillmentStatus } from 'src/app/common/models/utils/cart.model';
-import { Address } from 'src/app/common/models/domain/utils/address.model';
-import { Phone } from 'src/app/common/models/domain/utils/phone.model';
+import { Address } from '@impact-common/shared/models/domain/utils/address.model';
+import { Phone } from '@impact-common/shared/models/domain/utils/phone.model';
 import { FULFILLMENT_STEPS } from '../fulfillment/fulfillment-steps';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';

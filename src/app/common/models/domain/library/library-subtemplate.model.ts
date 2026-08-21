@@ -1,4 +1,4 @@
-import { BaseModel } from '../../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { LibraryFormioSchema } from './library-lesson.model';
 
 export type LibrarySubtemplateType = 'header' | 'footer' | 'layout';

@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { BaseModel } from '../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { EmailDesign } from './email-design.model';
 
 export class MailTemplateModel extends BaseModel {

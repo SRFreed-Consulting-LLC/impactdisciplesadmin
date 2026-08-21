@@ -10,7 +10,7 @@ import {
   setColumnCount,
   supportsLabelDisplay
 } from 'src/app/common/models/domain/form-field.model';
-import { ImageModel } from 'src/app/common/models/utils/image.model';
+import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 
 // Settings drawer for whichever field is selected in the Form Builder
 // canvas - edits apply live, mutating the field object in place (same

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { DMMModel } from 'src/app/common/models/domain/dmm.model';
+import { DMMModel } from '@impact-common/shared/models/domain/dmm.model';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

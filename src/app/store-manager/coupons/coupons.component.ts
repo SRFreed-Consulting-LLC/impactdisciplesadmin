@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { CouponModel } from 'src/app/common/models/utils/coupon.model';
+import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';

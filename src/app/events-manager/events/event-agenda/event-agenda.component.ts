@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { EventModel } from 'src/app/common/models/domain/event.model';
-import { TrainingRoomModel } from 'src/app/common/models/domain/training-room.model';
+import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { LocationService } from 'src/app/common/services/data/location.service';

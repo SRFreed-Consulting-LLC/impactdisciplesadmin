@@ -1,4 +1,4 @@
-import { BaseModel } from '../../base.model';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 
 // Mirrors the shared submodule's BookSeries shape
 // (src/common/src/models/library.models.ts) field-for-field - the reader app
