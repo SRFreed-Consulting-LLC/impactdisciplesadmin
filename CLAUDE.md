@@ -112,7 +112,14 @@ project id `demo-impact`):
    library license grants. `integration/helpers/emulator.js` is the harness;
    `integration/dao-semantics.test.js` pins the client-SDK contracts FirebaseDAO depends on.
 3. **Rules** (`integration/rules/`, `npm run test:rules`) — firestore.rules over
-   @firebase/rules-unit-testing v4 (own `demo-rules` namespace, safe alongside everything else).
+   @firebase/rules-unit-testing v4 (own `demo-rules`/`demo-reader-rules` namespaces, safe
+   alongside everything else). TWO files, both run by that one command: `firestore-rules.test.js`
+   (node:test; staff `role`-claim + anonymous populations, 15 assertions) and `reader-rules.js`
+   (its own tiny harness, 31 assertions over the email-keyed patron population — the license
+   paywall, self-license-grant lockdown, group/roster/invite enumeration, inbox messages, the
+   pre-auth errorLogs exception). The reader file **moved here from the reader repo 2026-08-21**:
+   it always read this repo's rules by a cross-repo relative path, so it now lives beside the
+   file it tests. Emulator must be up (`npm run emu`) and Java installed.
 4. **Cross-app E2E** (`e2e-cross/`, `npm run e2e:cross`) — Playwright flows spanning the admin
    (:5200), web (:4200), and reader (:4300) apps, each served with its `emulator` build
    configuration (`npm run start-emu` in each repo; `playwright.cross.config.ts` starts/reuses
