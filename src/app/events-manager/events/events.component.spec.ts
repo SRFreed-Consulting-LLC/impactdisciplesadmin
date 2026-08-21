@@ -522,4 +522,136 @@ describe('EventsComponent (characterization, pre-split)', () => {
       expect(component.inProgress$.value).toBeFalse();
     });
   });
+
+  // ---------------------------------------------------------------------
+  // EXTRACTION BOUNDARY (bucket A item #5, option 2 - pulling the edit form
+  // out into its own component). Everything above pins behaviour; this block
+  // pins the CONTRACTS that only hold because the form currently lives in
+  // the same class as the state it reads.
+  //
+  // The template hands the same `editingItem` object to three children -
+  // <app-event-application>, <app-event-agenda>, <app-event-attendees>, all
+  // bound `[event]="item"` - and they MUTATE it in place rather than
+  // emitting changes back. onSave then reads those mutations off that same
+  // object. Passing a copy across a new component boundary, or rebuilding
+  // the object from form values, would silently drop everything the four tab
+  // children edit. That is the single most likely way option 2 breaks, and
+  // it is invisible to a class-level test unless it is asserted directly.
+  // ---------------------------------------------------------------------
+  describe('editingItem identity contract', () => {
+    it('save reads mutations the tab children made IN PLACE on editingItem', () => {
+      const { component, deps } = makeComponent(true);
+      deps.service.update.and.returnValue(Promise.resolve(anEvent()));
+      component.showEditModal(anEvent({ eventName: 'Summit' }));
+      fillRequired(component);
+
+      // Exactly what app-event-agenda / app-event-application do today:
+      // reach into the bound object and mutate it. No form control, no
+      // output event.
+      const item = component.editingItem!;
+      item.agendaItems = [{ id: 'a1', title: 'Opening Session' }] as never;
+      item.diningOptions = 'Boxed lunch' as never;
+      item.whatsNext = 'Debrief Monday' as never;
+
+      component.onSave();
+
+      const written = deps.service.update.calls.mostRecent().args[1] as Record<string, unknown>;
+      expect(written['agendaItems']).toEqual([{ id: 'a1', title: 'Opening Session' }] as never);
+      expect(written['diningOptions']).toBe('Boxed lunch');
+      expect(written['whatsNext']).toBe('Debrief Monday');
+    });
+
+    it('the live preview sees those same in-place mutations before save', () => {
+      const { component } = makeComponent(true);
+      component.showEditModal(anEvent());
+      component.editingItem!.checkinInstructions = 'Door B' as never;
+      expect(component.summitPreviewData().checkinInstructions).toBe('Door B' as never);
+    });
+
+    it('form values WIN over editingItem for keys the form owns', () => {
+      // Merge order is {...editingItem, ...formRawValue}. The two field sets
+      // are not supposed to overlap, but the precedence is what makes an
+      // edit to a form field actually stick.
+      const { component, deps } = makeComponent(false);
+      deps.service.update.and.returnValue(Promise.resolve(anEvent()));
+      component.showEditModal(anEvent({ eventName: 'Stale Name' }));
+      fillRequired(component);
+      component.form.get('eventName')?.setValue('Typed Name');
+
+      component.onSave();
+
+      const written = deps.service.update.calls.mostRecent().args[1] as Record<string, unknown>;
+      expect(written['eventName']).toBe('Typed Name');
+    });
+
+    it('editing mutates a COPY, so an abandoned edit cannot corrupt the list row', () => {
+      const { component } = makeComponent(false);
+      const listRow = anEvent({ eventName: 'On The List' });
+      component.showEditModal(listRow);
+      component.editingItem!.eventName = 'Scribbled Over';
+      component.editingItem!.whatsNext = 'Uncommitted' as never;
+      component.onCancel();
+      expect(listRow.eventName).toBe('On The List');
+      expect(listRow.whatsNext).toBeUndefined();
+    });
+
+    it('converts form dates to real Dates on save', () => {
+      const { component, deps } = makeComponent(false);
+      deps.service.update.and.returnValue(Promise.resolve(anEvent()));
+      component.showEditModal(anEvent());
+      fillRequired(component);
+
+      component.onSave();
+
+      const written = deps.service.update.calls.mostRecent().args[1] as Record<string, unknown>;
+      expect(written['startDate'] instanceof Date).toBeTrue();
+      expect((written['startDate'] as Date).getFullYear()).toBe(2026);
+    });
+  });
+
+  describe('tab selection', () => {
+    it('resets to the first tab whenever the editor opens', () => {
+      const { component } = makeComponent(true);
+      component.showHub(anEvent());
+      component.editFromHub('agenda');
+      expect(component.selectedTabIndex).toBeGreaterThan(0);
+      // Re-opening from the list must not inherit the previous tab.
+      component.closeHub();
+      component.showEditModal(anEvent());
+      expect(component.selectedTabIndex).toBe(0);
+    });
+
+    it('derives the tab index from VISIBLE tabs, not a fixed position', () => {
+      const { component, deps } = makeComponent(true);
+      // Hide the middle summit tab; 'agenda' shifts down a slot.
+      deps.permissions['events-manager.summit.application'] = false;
+      component.showHub(anEvent());
+      component.editFromHub('agenda');
+      expect(component.selectedTabIndex).toBe(1);
+    });
+
+    it('falls back to the first tab for an unknown or hidden tab key', () => {
+      const { component } = makeComponent(true);
+      component.showHub(anEvent());
+      component.editFromHub('does-not-exist');
+      expect(component.selectedTabIndex).toBe(0);
+    });
+
+    it('summitSectionLabel names the section the editor is sitting on', () => {
+      const { component } = makeComponent(true);
+      component.showEditModal(anEvent());
+      component.selectedTabIndex = 0;
+      expect(component.summitSectionLabel()).toBe('Info & Pricing');
+      component.selectedTabIndex = 2;
+      expect(component.summitSectionLabel()).toBe('Agenda Builder');
+    });
+
+    it('summitSectionLabel follows the VISIBLE tab set', () => {
+      const { component, deps } = makeComponent(true);
+      deps.permissions['events-manager.summit.info'] = false;
+      component.showEditModal(anEvent());
+      component.selectedTabIndex = 0;
+      expect(component.summitSectionLabel()).toBe('Attendee App Content');
+    });
+  });
 });
