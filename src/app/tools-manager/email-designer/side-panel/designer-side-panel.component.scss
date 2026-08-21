@@ -15,8 +15,6 @@
   }
 }
 
-// ------------------------------------------------------------ tabs
-
 .panel-tabs {
   display: flex;
   border-bottom: 1px solid #e2e5ea;
@@ -43,8 +41,6 @@
     outline-offset: -2px;
   }
 }
-
-// ------------------------------------------------------------ settings
 
 .panel-header {
   display: flex;
@@ -164,56 +160,6 @@ textarea.code-input {
   padding-top: 12px;
 }
 
-.social-row {
-  border: 1px solid #eef1f4;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-
-  .social-row-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-  }
-
-  .social-name {
-    font-weight: 600;
-    font-size: 12.5px;
-  }
-
-  .social-tools {
-    display: flex;
-
-    button {
-      width: 28px;
-      height: 28px;
-      padding: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    mat-icon {
-      font-size: 15px;
-      width: 15px;
-      height: 15px;
-    }
-  }
-}
-
-.add-network {
-  margin-top: 2px;
-
-  mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-  }
-}
-
-// ------------------------------------------------------------ palettes
-
 .palette-label {
   font-size: 10.5px;
   font-weight: 700;
@@ -280,9 +226,6 @@ textarea.code-input {
   }
 }
 
-// While a palette chip is dragged, CDK clones it as the preview - keep the
-// clone looking like the chip, not an unstyled div.
-.cdk-drag-preview.chip,
 .cdk-drag-preview.layout-tile {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }

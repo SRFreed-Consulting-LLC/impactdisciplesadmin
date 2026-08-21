@@ -169,19 +169,8 @@ describe('DesignerSidePanelComponent (characterization, pre-split)', () => {
       expect(scale()).toBe(100);
     });
 
-    it('social icon size clamps to 16..64 and spacing to 0..40', () => {
-      const { component } = makeComponent();
-      const block = { props: {} } as unknown as EmailBlock;
-      const props = () => (block as never as { props: { iconSize: number; spacing: number } }).props;
-      run((b) => component.setSocialIconSize(b, 999), block);
-      expect(props().iconSize).toBe(64);
-      run((b) => component.setSocialIconSize(b, 1), block);
-      expect(props().iconSize).toBe(16);
-      run((b) => component.setSocialSpacing(b, 999), block);
-      expect(props().spacing).toBe(40);
-      run((b) => component.setSocialSpacing(b, -5), block);
-      expect(props().spacing).toBe(0);
-    });
+    // The social icon-size/spacing clamps moved with the social editor -
+    // see block-settings/social-block-settings.component.spec.ts.
 
     it('divider thickness clamps to 1..12 but keeps an explicit null', () => {
       const { component } = makeComponent();
@@ -206,15 +195,8 @@ describe('DesignerSidePanelComponent (characterization, pre-split)', () => {
       expect(href()).toBe('https://x.test');
     });
 
-    it('a blank unsubscribe label falls back to "Unsubscribe"', () => {
-      const { component } = makeComponent();
-      const block = { props: {} } as unknown as EmailBlock;
-      const label = () => (block as never as { props: { unsubscribeLabel: string } }).props.unsubscribeLabel;
-      component.setFooterUnsubscribeLabel(block, '   ')();
-      expect(label()).toBe('Unsubscribe');
-      component.setFooterUnsubscribeLabel(block, ' Opt out ')();
-      expect(label()).toBe('Opt out');
-    });
+    // The unsubscribe-label fallback moved with the footer editor - see
+    // block-settings/footer-block-settings.component.spec.ts.
 
     it('an empty block font becomes null, not an empty string', () => {
       const { component } = makeComponent();
@@ -230,88 +212,7 @@ describe('DesignerSidePanelComponent (characterization, pre-split)', () => {
     });
   });
 
-  // Author types plain text; it is stored as HTML and read back as text.
-  // The round trip has to survive characters that are meaningful in markup.
-  describe('footer address round trip', () => {
-    function footer() {
-      return { props: {} } as unknown as EmailBlock;
-    }
-    const html = (b: EmailBlock) => (b as never as { props: { addressHtml: string } }).props.addressHtml;
 
-    it('escapes markup characters on the way in', () => {
-      const { component } = makeComponent();
-      const block = footer();
-      component.setFooterAddress(block, 'Smith & Sons <HQ>')();
-      expect(html(block)).not.toContain('<HQ>');
-      expect(html(block)).toContain('&amp;');
-      expect(html(block)).toContain('&lt;HQ&gt;');
-    });
-
-    it('turns newlines into <br> and reads them back as newlines', () => {
-      const { component } = makeComponent();
-      const block = footer();
-      component.setFooterAddress(block, 'Line one\nLine two')();
-      expect(html(block)).toContain('<br>');
-      expect(component.footerAddressText(block)).toBe('Line one\nLine two');
-    });
-
-    it('round-trips escaped characters back to their plain form', () => {
-      const { component } = makeComponent();
-      const block = footer();
-      component.setFooterAddress(block, 'Smith & Sons <HQ>')();
-      expect(component.footerAddressText(block)).toBe('Smith & Sons <HQ>');
-    });
-
-    it('stores empty for blank input, and reads back empty', () => {
-      const { component } = makeComponent();
-      const block = footer();
-      component.setFooterAddress(block, '   ')();
-      expect(html(block)).toBe('');
-      expect(component.footerAddressText(block)).toBe('');
-    });
-  });
-
-  describe('social networks', () => {
-    function socialBlock(count: number) {
-      return {
-        props: {
-          networks: Array.from({ length: count }, (_, i) => ({ network: 'custom', url: '', label: `N${i}`, iconUrl: null })),
-        },
-      } as unknown as EmailBlock;
-    }
-    const labels = (b: EmailBlock) =>
-      (b as never as { props: { networks: { label: string }[] } }).props.networks.map((n) => n.label);
-
-    it('appends a preset network', () => {
-      const { component } = makeComponent();
-      const block = socialBlock(1);
-      component.addSocialNetwork(block, { network: 'facebook', label: 'Facebook' });
-      expect(labels(block)).toEqual(['N0', 'Facebook']);
-    });
-
-    it('removes by index', () => {
-      const { component } = makeComponent();
-      const block = socialBlock(3);
-      component.removeSocialNetwork(block, 1);
-      expect(labels(block)).toEqual(['N0', 'N2']);
-    });
-
-    it('reorders within bounds', () => {
-      const { component } = makeComponent();
-      const block = socialBlock(3);
-      component.moveSocialNetwork(block, 0, 1);
-      expect(labels(block)).toEqual(['N1', 'N0', 'N2']);
-    });
-
-    it('refuses to move past either end, and does not commit', () => {
-      const { component, commits } = makeComponent();
-      const block = socialBlock(2);
-      component.moveSocialNetwork(block, 0, -1);
-      component.moveSocialNetwork(block, 1, 1);
-      expect(labels(block)).toEqual(['N0', 'N1']);
-      expect(commits.length).toBe(0);
-    });
-  });
 
   // The picker serves two different callers, and picking the wrong branch
   // would write a thumbnail onto an image block or vice versa.

@@ -25,6 +25,8 @@ import { DesignCanvasComponent } from './canvas/design-canvas.component';
 import { BlockHostComponent } from './canvas/block-host.component';
 import { InlineTextEditorComponent } from './inline-editor/inline-text-editor.component';
 import { DesignerSidePanelComponent } from './side-panel/designer-side-panel.component';
+import { SocialBlockSettingsComponent } from './side-panel/block-settings/social-block-settings.component';
+import { FooterBlockSettingsComponent } from './side-panel/block-settings/footer-block-settings.component';
 import { BlockStyleEditorComponent } from './side-panel/block-style-editor.component';
 import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.component';
 import { PreviewDialogComponent } from './preview/preview-dialog.component';
@@ -62,6 +64,8 @@ import { TemplatePickerDialogComponent } from './template-picker/template-picker
     BlockHostComponent,
     InlineTextEditorComponent,
     DesignerSidePanelComponent,
+    SocialBlockSettingsComponent,
+    FooterBlockSettingsComponent,
     BlockStyleEditorComponent,
     GlobalStylesPanelComponent,
     PreviewDialogComponent,

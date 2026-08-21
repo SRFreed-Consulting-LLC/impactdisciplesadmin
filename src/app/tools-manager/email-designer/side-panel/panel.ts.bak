@@ -16,6 +16,7 @@ import {
   ImageProps,
   LogoBlock,
   SocialBlock,
+  SocialNetwork,
   SpacerBlock,
   TextBlock,
   VideoBlock,
@@ -263,7 +264,106 @@ export class DesignerSidePanelComponent {
     }
   }
 
+  // ------------------------------------------------------------ social
+
+  readonly networkPresets: { network: SocialNetwork; label: string; urlHint: string }[] = [
+    { network: 'facebook', label: 'Facebook', urlHint: 'https://facebook.com/yourpage' },
+    { network: 'instagram', label: 'Instagram', urlHint: 'https://instagram.com/yourprofile' },
+    { network: 'x', label: 'X', urlHint: 'https://x.com/yourhandle' },
+    { network: 'youtube', label: 'YouTube', urlHint: 'https://youtube.com/@yourchannel' },
+    { network: 'linkedin', label: 'LinkedIn', urlHint: 'https://linkedin.com/company/yours' },
+    { network: 'tiktok', label: 'TikTok', urlHint: 'https://tiktok.com/@yourhandle' },
+    { network: 'custom', label: 'Custom link', urlHint: 'https://' }
+  ];
+
+  addSocialNetwork(block: EmailBlock, preset: { network: SocialNetwork; label: string }): void {
+    const social = block as SocialBlock;
+    this.state.commit(() => {
+      social.props.networks.push({ network: preset.network, url: '', label: preset.label, iconUrl: null });
+    });
+  }
+
+  removeSocialNetwork(block: EmailBlock, index: number): void {
+    const social = block as SocialBlock;
+    this.state.commit(() => {
+      social.props.networks.splice(index, 1);
+    });
+  }
+
+  moveSocialNetwork(block: EmailBlock, index: number, delta: -1 | 1): void {
+    const social = block as SocialBlock;
+    const to = index + delta;
+    if (to < 0 || to >= social.props.networks.length) {
+      return;
+    }
+    this.state.commit(() => {
+      const [entry] = social.props.networks.splice(index, 1);
+      social.props.networks.splice(to, 0, entry);
+    });
+  }
+
+  setSocialUrl(block: EmailBlock, index: number, url: string): () => void {
+    return () => {
+      (block as SocialBlock).props.networks[index].url = url;
+    };
+  }
+
+  setSocialLabel(block: EmailBlock, index: number, label: string): () => void {
+    return () => {
+      (block as SocialBlock).props.networks[index].label = label;
+    };
+  }
+
+  setSocialIconSize(block: EmailBlock, value: string | number): () => void {
+    return () => {
+      (block as SocialBlock).props.iconSize = Math.min(64, Math.max(16, Number(value) || 32));
+    };
+  }
+
+  setSocialSpacing(block: EmailBlock, value: string | number): () => void {
+    return () => {
+      (block as SocialBlock).props.spacing = Math.min(40, Math.max(0, Number(value) || 14));
+    };
+  }
+
   // ------------------------------------------------------------ footer
+
+  setFooterAddress(block: EmailBlock, text: string): () => void {
+    return () => {
+      // Stored as a simple div so the compiler treats it like any other
+      // authored fragment; plain text in, escaped-ish out (no markup entry).
+      const footer = block as FooterBlock;
+      footer.props.addressHtml = text.trim() ? '<div>' + this.escapeText(text.trim()).replace(/\n/g, '<br>') + '</div>' : '';
+    };
+  }
+
+  footerAddressText(block: EmailBlock): string {
+    const html = (block as FooterBlock).props.addressHtml ?? '';
+    return html
+      .replace(/<br\s*\/?>/g, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+  }
+
+  setFooterReminder(block: EmailBlock, text: string): () => void {
+    return () => {
+      (block as FooterBlock).props.permissionReminder = text;
+    };
+  }
+
+  setFooterUnsubscribe(block: EmailBlock, include: boolean): () => void {
+    return () => {
+      (block as FooterBlock).props.includeUnsubscribe = include;
+    };
+  }
+
+  setFooterUnsubscribeLabel(block: EmailBlock, label: string): () => void {
+    return () => {
+      (block as FooterBlock).props.unsubscribeLabel = label.trim() || 'Unsubscribe';
+    };
+  }
 
   // ------------------------------------------------------------ button / divider overrides
 
@@ -284,6 +384,10 @@ export class DesignerSidePanelComponent {
         divider.props.color = (value as string) ?? null;
       }
     };
+  }
+
+  private escapeText(value: string): string {
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   // ------------------------------------------------------------ fonts

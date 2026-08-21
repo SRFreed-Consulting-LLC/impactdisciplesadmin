@@ -1,0 +1,43 @@
+  @for (network of block.props.networks; track $index) {
+    <div class="social-row">
+      <div class="social-row-head">
+        <span class="social-name">{{ network.label }}</span>
+        <span class="social-tools">
+          <button mat-icon-button (click)="moveNetwork($index, -1)" matTooltip="Move up" [disabled]="$index === 0">
+            <mat-icon>arrow_upward</mat-icon>
+          </button>
+          <button mat-icon-button (click)="moveNetwork($index, 1)" matTooltip="Move down"
+                  [disabled]="$index === block.props.networks.length - 1">
+            <mat-icon>arrow_downward</mat-icon>
+          </button>
+          <button mat-icon-button (click)="removeNetwork($index)" matTooltip="Remove">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+      </div>
+      <input class="text-input" placeholder="https://" [value]="network.url"
+             (change)="commit(setUrl($index, $any($event.target).value))"
+             [attr.aria-label]="network.label + ' URL'">
+    </div>
+  }
+  <button mat-stroked-button class="add-network" [matMenuTriggerFor]="networkMenu">
+    <mat-icon>add</mat-icon> Add network
+  </button>
+  <mat-menu #networkMenu="matMenu">
+    @for (preset of networkPresets; track preset.network) {
+      <button mat-menu-item (click)="addNetwork(preset)">{{ preset.label }}</button>
+    }
+  </mat-menu>
+  <div class="field-row" style="margin-top: 14px;">
+    <span class="field-label">Icon size / spacing (px)</span>
+    <div class="inline-controls">
+      <input class="text-input narrow" type="number" min="16" max="64"
+             [value]="block.props.iconSize"
+             (change)="commit(setIconSize($any($event.target).value))"
+             aria-label="Icon size">
+      <input class="text-input narrow" type="number" min="0" max="40"
+             [value]="block.props.spacing"
+             (change)="commit(setSpacing($any($event.target).value))"
+             aria-label="Icon spacing">
+    </div>
+  </div>

@@ -1,0 +1,26 @@
+  <div class="field-row">
+    <span class="field-label">Organization address</span>
+    <textarea class="text-input" rows="3" placeholder="Impact Disciples&#10;1234 Street Rd, City, ST 00000"
+              [value]="addressText()"
+              (change)="commit(setAddress($any($event.target).value))"></textarea>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Permission reminder</span>
+    <textarea class="text-input" rows="2" [value]="block.props.permissionReminder"
+              (change)="commit(setReminder($any($event.target).value))"></textarea>
+  </div>
+  <div class="field-row">
+    <mat-slide-toggle [checked]="block.props.includeUnsubscribe"
+        (change)="commit(setUnsubscribe($event.checked))">
+      Include unsubscribe link
+    </mat-slide-toggle>
+  </div>
+  @if (block.props.includeUnsubscribe) {
+    <div class="field-row">
+      <span class="field-label">Unsubscribe link text</span>
+      <input class="text-input" [value]="block.props.unsubscribeLabel"
+             (change)="commit(setUnsubscribeLabel($any($event.target).value))">
+    </div>
+  }
+  <p class="hint">The unsubscribe link sends as the *&#124;UNSUB&#124;* merge tag and resolves to the
+    right unsubscribe URL per recipient at send time.</p>

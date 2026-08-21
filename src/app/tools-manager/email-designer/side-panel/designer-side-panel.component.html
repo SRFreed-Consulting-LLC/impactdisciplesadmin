@@ -156,77 +156,10 @@
             in their browser (email clients can't embed players).</p>
         }
         @case ('social') {
-          @for (network of asSocial(block).props.networks; track $index) {
-            <div class="social-row">
-              <div class="social-row-head">
-                <span class="social-name">{{ network.label }}</span>
-                <span class="social-tools">
-                  <button mat-icon-button (click)="moveSocialNetwork(block, $index, -1)" matTooltip="Move up" [disabled]="$index === 0">
-                    <mat-icon>arrow_upward</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="moveSocialNetwork(block, $index, 1)" matTooltip="Move down"
-                          [disabled]="$index === asSocial(block).props.networks.length - 1">
-                    <mat-icon>arrow_downward</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="removeSocialNetwork(block, $index)" matTooltip="Remove">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <input class="text-input" placeholder="https://" [value]="network.url"
-                     (change)="commitBlockChange(setSocialUrl(block, $index, $any($event.target).value))"
-                     [attr.aria-label]="network.label + ' URL'">
-            </div>
-          }
-          <button mat-stroked-button class="add-network" [matMenuTriggerFor]="networkMenu">
-            <mat-icon>add</mat-icon> Add network
-          </button>
-          <mat-menu #networkMenu="matMenu">
-            @for (preset of networkPresets; track preset.network) {
-              <button mat-menu-item (click)="addSocialNetwork(block, preset)">{{ preset.label }}</button>
-            }
-          </mat-menu>
-          <div class="field-row" style="margin-top: 14px;">
-            <span class="field-label">Icon size / spacing (px)</span>
-            <div class="inline-controls">
-              <input class="text-input narrow" type="number" min="16" max="64"
-                     [value]="asSocial(block).props.iconSize"
-                     (change)="commitBlockChange(setSocialIconSize(block, $any($event.target).value))"
-                     aria-label="Icon size">
-              <input class="text-input narrow" type="number" min="0" max="40"
-                     [value]="asSocial(block).props.spacing"
-                     (change)="commitBlockChange(setSocialSpacing(block, $any($event.target).value))"
-                     aria-label="Icon spacing">
-            </div>
-          </div>
+          <app-social-block-settings [block]="asSocial(block)"></app-social-block-settings>
         }
         @case ('footer') {
-          <div class="field-row">
-            <span class="field-label">Organization address</span>
-            <textarea class="text-input" rows="3" placeholder="Impact Disciples&#10;1234 Street Rd, City, ST 00000"
-                      [value]="footerAddressText(block)"
-                      (change)="commitBlockChange(setFooterAddress(block, $any($event.target).value))"></textarea>
-          </div>
-          <div class="field-row">
-            <span class="field-label">Permission reminder</span>
-            <textarea class="text-input" rows="2" [value]="asFooter(block).props.permissionReminder"
-                      (change)="commitBlockChange(setFooterReminder(block, $any($event.target).value))"></textarea>
-          </div>
-          <div class="field-row">
-            <mat-slide-toggle [checked]="asFooter(block).props.includeUnsubscribe"
-                (change)="commitBlockChange(setFooterUnsubscribe(block, $event.checked))">
-              Include unsubscribe link
-            </mat-slide-toggle>
-          </div>
-          @if (asFooter(block).props.includeUnsubscribe) {
-            <div class="field-row">
-              <span class="field-label">Unsubscribe link text</span>
-              <input class="text-input" [value]="asFooter(block).props.unsubscribeLabel"
-                     (change)="commitBlockChange(setFooterUnsubscribeLabel(block, $any($event.target).value))">
-            </div>
-          }
-          <p class="hint">The unsubscribe link sends as the *&#124;UNSUB&#124;* merge tag and resolves to the
-            right unsubscribe URL per recipient at send time.</p>
+          <app-footer-block-settings [block]="asFooter(block)"></app-footer-block-settings>
         }
       }
       <div class="field-row visibility-row">
