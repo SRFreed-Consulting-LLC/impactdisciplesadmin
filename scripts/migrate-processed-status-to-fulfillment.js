@@ -28,7 +28,7 @@
 //   node scripts/migrate-processed-status-to-fulfillment.js --project=dev
 //   node scripts/migrate-processed-status-to-fulfillment.js --project=dev --execute
 
-const { admin, resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
+const { firestore, resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
 
 function hasPhysicalItem(cartItems) {
   if (!Array.isArray(cartItems)) return false;
@@ -83,7 +83,7 @@ async function main() {
     let changed = false;
 
     if ("processedStatus" in data) {
-      updates.processedStatus = admin.firestore.FieldValue.delete();
+      updates.processedStatus = firestore.FieldValue.delete();
       processedStatusRemoved++;
       changed = true;
     }

@@ -2,8 +2,7 @@ import {
   onDocumentCreated,
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
-import * as admin from "firebase-admin";
-import {FieldValue} from "firebase-admin/firestore";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 
 // Backs the top-bar "new record" alert bell. Three source collections each
 // get an onCreate/onUpdate trigger pair (below) that:
@@ -58,7 +57,7 @@ function registerNewRecordTriggers(
     }
 
     await snap.ref.update({newRecordStatus: "new"});
-    await admin.firestore().doc(NEW_RECORD_COUNTS_DOC).set(
+    await getFirestore().doc(NEW_RECORD_COUNTS_DOC).set(
       {[countField]: FieldValue.increment(1)},
       {merge: true}
     );
@@ -72,7 +71,7 @@ function registerNewRecordTriggers(
     // every doc is counted at most once (on creation), so this is the only
     // write that should ever decrement it.
     if (before?.newRecordStatus === "new" && after?.newRecordStatus !== "new") {
-      await admin.firestore().doc(NEW_RECORD_COUNTS_DOC).set(
+      await getFirestore().doc(NEW_RECORD_COUNTS_DOC).set(
         {[countField]: FieldValue.increment(-1)},
         {merge: true}
       );

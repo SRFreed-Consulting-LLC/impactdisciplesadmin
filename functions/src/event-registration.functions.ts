@@ -1,7 +1,6 @@
 import {onRequest} from "firebase-functions/v2/https";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
-import {FieldValue, Timestamp} from "firebase-admin/firestore";
-import * as admin from "firebase-admin";
+import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
 import {
@@ -51,7 +50,7 @@ import {
  * firestore.rules then locks event-registrations to staff; the admin
  * app's attendee screens are unaffected (role claim).
  */
-const db = admin.firestore();
+const db = getFirestore();
 
 // Server-pinned domain for the breakout-registration link in the
 // confirmation email. Env override wins; otherwise the production project

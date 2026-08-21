@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
 import {requireAdminRole} from "./admin-users.functions";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
 import {
   DeleteCampaignRequest,
   DeleteCampaignResult,
@@ -78,7 +79,7 @@ export function collectStorageRefs(
   } else if (Array.isArray(value)) {
     value.forEach((v) => collectStorageRefs(v, into));
   } else if (value && typeof value === "object" &&
-      !(value instanceof admin.firestore.Timestamp)) {
+      !(value instanceof Timestamp)) {
     Object.values(value as Record<string, unknown>)
       .forEach((v) => collectStorageRefs(v, into));
   }
@@ -197,7 +198,7 @@ async function deleteUnreferencedImages(
   const failed: string[] = [];
   for (const ref of pending.values()) {
     try {
-      await admin.storage().bucket(ref.bucket).file(ref.objectPath)
+      await getStorage().bucket(ref.bucket).file(ref.objectPath)
         .delete({ignoreNotFound: true});
       deleted.push(ref.objectPath);
     } catch (err) {
@@ -221,7 +222,7 @@ export const deleteCampaign = onCall(async (request):
   if (!campaignId || typeof campaignId !== "string") {
     throw new HttpsError("invalid-argument", "campaignId is required.");
   }
-  const db = admin.firestore();
+  const db = getFirestore();
   const loaded = await load(db, campaignId);
   const plan = planFor(loaded);
   if (dryRun) {

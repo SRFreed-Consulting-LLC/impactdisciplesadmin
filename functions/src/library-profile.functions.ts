@@ -1,5 +1,5 @@
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
 import {
   CreateMyReaderProfileRequest,
   CreateMyReaderProfileResult,
@@ -28,7 +28,7 @@ import {
  * honest-path policy per the original design. Server-side IP geolocation
  * would harden it and is a candidate for the Phase 7 pass.
  */
-const db = admin.firestore();
+const db = getFirestore();
 
 interface LocationInput {
   lat: number;

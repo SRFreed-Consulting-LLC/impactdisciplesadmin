@@ -1,9 +1,10 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {FieldPath, FieldValue} from "firebase-admin/firestore";
+import {FieldPath, FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
-import * as admin from "firebase-admin";
 import {requireAdminRole} from "./admin-users.functions";
 import {sendLibraryPushToUser, truncate} from "./library-push-notifications";
+import {getAuth} from "firebase-admin/auth";
+import {getApp} from "firebase-admin/app";
 import {
   GrantLibraryUserLicensesRequest,
   GrantLibraryUserLicensesResult,
@@ -43,8 +44,8 @@ import {
  *   this codebase (admin-users.functions.ts, book-import.functions.ts) -
  *   this codebase has no equivalent wrapper.
  */
-const libraryDb = admin.firestore();
-const messaging = getMessaging(admin.app());
+const libraryDb = getFirestore();
+const messaging = getMessaging(getApp());
 
 const LIBRARY_USER_EDITABLE_FIELDS = [
   "firstName",
@@ -153,10 +154,10 @@ export const setLibraryUserRevoked = onCall(async (request):
 
   let authAccountFound = true;
   try {
-    const userRecord = await admin.auth().getUserByEmail(normalized);
-    await admin.auth().updateUser(userRecord.uid, {disabled: revoked});
+    const userRecord = await getAuth().getUserByEmail(normalized);
+    await getAuth().updateUser(userRecord.uid, {disabled: revoked});
     if (revoked) {
-      await admin.auth().revokeRefreshTokens(userRecord.uid);
+      await getAuth().revokeRefreshTokens(userRecord.uid);
     }
   } catch (err) {
     if ((err as { code?: string }).code === "auth/user-not-found") {
@@ -401,8 +402,7 @@ export const sendLibraryUserMessage = onCall(
     // This app's own admin_users, matched by firebaseUID - same lookup
     // requireAdminRole above already did, repeated here for the sender's
     // display name rather than threading it back out of that helper.
-    const senderSnap = await admin
-      .firestore()
+    const senderSnap = await getFirestore()
       .collection("admin_users")
       .where("firebaseUID", "==", request.auth.uid)
       .limit(1)

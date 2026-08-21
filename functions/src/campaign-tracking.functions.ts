@@ -2,8 +2,7 @@
    the repo's snake_case onRequest convention (subscribe_to_email_list,
    create_paypal_order, ...). */
 import {onRequest} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
-import {Timestamp, FieldValue} from "firebase-admin/firestore";
+import {Timestamp, FieldValue, getFirestore} from "firebase-admin/firestore";
 
 // Campaign Manager v2, Phase 3: OUR OWN engagement tracking - the reason
 // the send engine can eventually replace Mailchimp's reports.
@@ -214,7 +213,7 @@ export async function campaignForCoupon(
 // re-fires through caching proxies.
 export const campaign_open = onRequest(async (request, response) => {
   try {
-    const db = admin.firestore();
+    const db = getFirestore();
     const ledgerDoc = await ledgerByToken(db, String(request.query.t ?? ""));
     if (ledgerDoc) {
       const ledger = ledgerDoc.data();
@@ -265,7 +264,7 @@ export const campaign_web_event = onRequest(async (request, response) => {
       response.status(204).send("");
       return;
     }
-    const db = admin.firestore();
+    const db = getFirestore();
     const campaignSnap = await db.collection("campaigns").doc(cid).get();
     const data = campaignSnap.data();
     if (campaignSnap.exists && data) {
@@ -300,7 +299,7 @@ export const campaign_web_event = onRequest(async (request, response) => {
 export const campaign_click = onRequest(async (request, response) => {
   let target = FALLBACK_REDIRECT;
   try {
-    const db = admin.firestore();
+    const db = getFirestore();
     const linkId = String(request.query.l ?? "");
     const ledgerDoc = await ledgerByToken(db, String(request.query.t ?? ""));
     if (ledgerDoc) {

@@ -46,7 +46,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const {resolveProjectId, getFirestoreFor, admin} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor, firestore} = require("./lib/firestore-admin");
 const {fromPortable} = require("./lib/firestore-json");
 const {normalizeDoc} = require("./lib/normalize-dates");
 const {
@@ -153,8 +153,8 @@ async function main() {
   if (fs.existsSync(eventsFile)) {
     const eventDocs = JSON.parse(fs.readFileSync(eventsFile));
     for (const {id, data} of eventDocs) {
-      const restored = fromPortable(data, db, admin.firestore);
-      const {data: normalized} = normalizeDoc("events", restored, admin.firestore);
+      const restored = fromPortable(data, db, firestore);
+      const {data: normalized} = normalizeDoc("events", restored, firestore);
       eventStartDatesById.set(id, toDate(normalized.startDate));
     }
   }
@@ -182,9 +182,9 @@ async function main() {
     let opsInBatch = 0;
 
     for (const {id, data} of docs) {
-      const restored = fromPortable(data, db, admin.firestore);
+      const restored = fromPortable(data, db, firestore);
       const {data: normalized, changed: dateChanged, warnings} =
-        normalizeDoc(name, restored, admin.firestore);
+        normalizeDoc(name, restored, firestore);
       if (dateChanged) dateFixed++;
       allWarnings.push(...warnings);
 

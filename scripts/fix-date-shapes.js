@@ -13,7 +13,7 @@
 //   node scripts/fix-date-shapes.js --project=dev
 //   node scripts/fix-date-shapes.js --project=dev --execute
 
-const {resolveProjectId, getFirestoreFor, admin} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor, firestore} = require("./lib/firestore-admin");
 const {normalizeDoc, FIELDS_BY_COLLECTION} = require("./lib/normalize-dates");
 
 /**
@@ -55,7 +55,7 @@ async function main() {
 
     for (const doc of snap.docs) {
       const {data, changed, warnings} = normalizeDoc(
-        collectionName, doc.data(), admin.firestore
+        collectionName, doc.data(), firestore
       );
       allWarnings.push(...warnings);
       if (!changed) continue;

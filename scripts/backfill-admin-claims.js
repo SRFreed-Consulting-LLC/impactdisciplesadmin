@@ -10,7 +10,8 @@
 "use strict";
 
 const {
-  admin,
+  getApp,
+  getAuth,
   resolveProjectId,
   getFirestoreFor,
 } = require("./lib/firestore-admin.js");
@@ -30,7 +31,7 @@ async function main() {
   const execute = args.includes("--execute");
   const projectId = resolveProjectId(projectArg);
   const db = getFirestoreFor(projectId);
-  const auth = admin.app(`${projectId}::(default)`).auth();
+  const auth = getAuth(getApp(`${projectId}::(default)`));
 
   const snap = await db.collection("admin_users").get();
   console.log(

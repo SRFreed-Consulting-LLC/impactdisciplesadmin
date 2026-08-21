@@ -1,5 +1,4 @@
-import admin = require("firebase-admin");
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 // v1 (1st-gen) API on purpose: firebase-functions >= 6 exports the v2 API at
 // the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
 // secrets plumbing) until a deliberate 2nd-gen migration.
@@ -92,7 +91,7 @@ exports.subscribe_to_email_list = functions
 
         const {flagField, dateField} = fieldsForType(type);
         const now = Timestamp.now();
-        const db = admin.firestore();
+        const db = getFirestore();
         const existingSnap = await db.collection("customers")
           .where("email", "==", email)
           .limit(1)
@@ -201,7 +200,7 @@ exports.unsubscribe_from_email_list = functions
         // path); normalize here too so a mixed-case or padded value in an
         // unsubscribe link still matches instead of silently no-op'ing.
         const normalizedEmail = email.trim().toLowerCase();
-        const db = admin.firestore();
+        const db = getFirestore();
         const matches = await db.collection("customers")
           .where("email", "==", normalizedEmail)
           .get();

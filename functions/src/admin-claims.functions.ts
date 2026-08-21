@@ -1,6 +1,6 @@
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
-import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import {getAuth} from "firebase-admin/auth";
 
 /**
  * Phase 7 staff-identity foundation: mirrors admin_users role assignments
@@ -80,14 +80,14 @@ async function setRoleClaim(
   role: string | undefined
 ): Promise<void> {
   try {
-    const user = await admin.auth().getUser(uid);
+    const user = await getAuth().getUser(uid);
     const claims = {...(user.customClaims ?? {})};
     if (role) {
       claims.role = role;
     } else {
       delete claims.role;
     }
-    await admin.auth().setCustomUserClaims(uid, claims);
+    await getAuth().setCustomUserClaims(uid, claims);
     logger.info("Synced role claim", {uid, role: role ?? "(cleared)"});
   } catch (err) {
     if ((err as {code?: string}).code === "auth/user-not-found") {

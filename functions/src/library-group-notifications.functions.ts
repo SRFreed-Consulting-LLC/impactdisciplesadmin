@@ -2,10 +2,10 @@ import {
   onDocumentCreated,
   onDocumentWritten,
 } from "firebase-functions/v2/firestore";
-import {FieldValue} from "firebase-admin/firestore";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
-import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import {getApp} from "firebase-admin/app";
 import {
   getApprovedMemberEmails,
   sendLibraryPushToUser,
@@ -26,8 +26,8 @@ import {
  * "(default)" database and never fire - that's no longer relevant now
  * that "(default)" IS the database this data actually lives in.)
  */
-const libraryDb = admin.firestore();
-const messaging = getMessaging(admin.app());
+const libraryDb = getFirestore();
+const messaging = getMessaging(getApp());
 
 /** One group-doc read shared by every trigger - title for the
  *  notification heading, creatorEmail for leader-addressed events.

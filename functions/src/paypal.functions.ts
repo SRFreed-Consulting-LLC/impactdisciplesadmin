@@ -2,8 +2,7 @@
 // the package root; these HTTP functions stay 1st-gen (same URLs, runtime,
 // secrets plumbing) until a deliberate 2nd-gen migration.
 import * as functions from "firebase-functions/v1";
-import * as admin from "firebase-admin";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
 import {queueWebOrderEmails} from "./transactional-emails";
 import {
@@ -95,7 +94,7 @@ async function getPaypalClientId(): Promise<string> {
   // document when there is more than one. Silently picking the wrong config
   // in production means charging against the wrong PayPal app - read the
   // collection and refuse to guess instead.
-  const configSnap = await admin.firestore().collection("config").get();
+  const configSnap = await getFirestore().collection("config").get();
   if (configSnap.size > 1) {
     throw new Error(
       `Expected a single config document, found ${configSnap.size} ` +
@@ -267,7 +266,7 @@ async function recordPurchaseAttribution(
   orderId: string,
   amount: number
 ): Promise<void> {
-  const db = admin.firestore();
+  const db = getFirestore();
   const attribution = checkoutForm.attribution as
     {campaignId: string; emailId?: string; source?: string} | null;
   if (attribution?.campaignId) {
@@ -319,7 +318,7 @@ async function recordAffiliateSale(
     checkoutForm.total : 0;
   const discount = typeof checkoutForm.discount === "number" ?
     checkoutForm.discount : 0;
-  await admin.firestore().collection("affilliate_sales").add({
+  await getFirestore().collection("affilliate_sales").add({
     code,
     date: Timestamp.now(),
     email: checkoutForm.email ?? "",
@@ -438,7 +437,7 @@ async function logCheckoutFailure(
 ): Promise<string> {
   const errorCode = generateErrorCode();
   try {
-    await admin.firestore().collection("log-messages").add({
+    await getFirestore().collection("log-messages").add({
       id: errorCode,
       date: Timestamp.now(),
       type: "CHECKOUT",
@@ -511,7 +510,7 @@ exports.create_paypal_order = functions
           // report as a normal error and let the customer retry.
           let docRef;
           try {
-            docRef = await admin.firestore()
+            docRef = await getFirestore()
               .collection("purchases").add(checkoutForm);
           } catch (err) {
             console.error("Failed to save free/coupon order", err);
@@ -526,7 +525,7 @@ exports.create_paypal_order = functions
           // (the client no longer writes `mail`). Best-effort - the order
           // is already saved.
           try {
-            await queueWebOrderEmails(admin.firestore(), checkoutForm);
+            await queueWebOrderEmails(getFirestore(), checkoutForm);
           } catch (err) {
             console.error("Failed to queue order emails (free path)", err);
           }
@@ -605,7 +604,7 @@ exports.create_paypal_order = functions
           return;
         }
 
-        await admin.firestore()
+        await getFirestore()
           .collection("pending_orders").doc(orderData.id).set({
             status: "created",
             createdAt: Timestamp.now(),
@@ -650,7 +649,7 @@ exports.capture_paypal_order = functions
           return;
         }
 
-        const pendingRef = admin.firestore()
+        const pendingRef = getFirestore()
           .collection("pending_orders").doc(orderId);
         const pendingSnap = await pendingRef.get();
 
@@ -670,7 +669,7 @@ exports.capture_paypal_order = functions
         // double-click) just returns the already-finalized result instead
         // of double-capturing with PayPal or double-writing a Purchase.
         if (pending.status === "captured" && pending.purchaseId) {
-          const purchaseSnap = await admin.firestore()
+          const purchaseSnap = await getFirestore()
             .collection("purchases").doc(pending.purchaseId).get();
           response.send({
             checkoutForm: purchaseSnap.exists ?
@@ -738,7 +737,7 @@ exports.capture_paypal_order = functions
         // with a reference code and tell the truth -- payment went
         // through, recording it hit a problem, here's who to contact.
         try {
-          const docRef = await admin.firestore()
+          const docRef = await getFirestore()
             .collection("purchases").add(checkoutForm);
 
           await pendingRef.update({
@@ -759,7 +758,7 @@ exports.capture_paypal_order = functions
           // lost - a receipt email that never queues is worse than ~a
           // second more spinner.
           await Promise.all([
-            queueWebOrderEmails(admin.firestore(), checkoutForm)
+            queueWebOrderEmails(getFirestore(), checkoutForm)
               .catch((err) => console.error(
                 "Failed to queue order emails (captured path)", err
               )),

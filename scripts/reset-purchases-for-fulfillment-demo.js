@@ -25,7 +25,7 @@
 //   node scripts/reset-purchases-for-fulfillment-demo.js --project=dev
 //   node scripts/reset-purchases-for-fulfillment-demo.js --project=dev --execute
 
-const { admin, resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
+const { firestore, resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
 
 function hasPhysicalItem(cartItems) {
   if (!Array.isArray(cartItems)) return false;
@@ -124,7 +124,7 @@ async function main() {
     if (execute) {
       batch.update(doc.ref, {
         fulfillmentStatus: "new",
-        shippingLabel: admin.firestore.FieldValue.delete(),
+        shippingLabel: firestore.FieldValue.delete(),
       });
       ops++;
       await commitIfFull();

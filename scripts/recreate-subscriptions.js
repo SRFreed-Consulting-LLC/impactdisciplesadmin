@@ -20,7 +20,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const {resolveProjectId, getFirestoreFor, admin} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor, firestore} = require("./lib/firestore-admin");
 const {fromPortable} = require("./lib/firestore-json");
 
 const SOURCES = [
@@ -87,7 +87,7 @@ async function main() {
       }
       seenIds.add(id);
 
-      const restored = fromPortable(data, db, admin.firestore);
+      const restored = fromPortable(data, db, firestore);
       const merged = {...restored, type};
 
       if (execute) {

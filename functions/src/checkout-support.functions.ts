@@ -1,8 +1,8 @@
 import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
-import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
+import {getFirestore} from "firebase-admin/firestore";
 import {
   LookupCouponResult,
 } from "./common/shared/contract/library-callables.types";
@@ -32,7 +32,7 @@ import {
  * at-least-once delivery can't double-count. The collection is now
  * fully closed to clients.
  */
-const db = admin.firestore();
+const db = getFirestore();
 
 interface CouponPublicFields {
   id: string;

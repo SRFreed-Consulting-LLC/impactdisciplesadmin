@@ -2,9 +2,9 @@
    the repo's snake_case onRequest convention (subscribe_to_email_list,
    campaign_web_event, ...). */
 import {onRequest} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
 import {renderMergeTags} from "./utils/merge-tags.functions";
 import {toMillis} from "./utils/date-normalize.functions";
+import {getFirestore} from "firebase-admin/firestore";
 
 // Public newsletter archive (2026-08-20): the web app's Monthly Newsletter
 // page used to read a hand-maintained `monthly-newsletter` collection of
@@ -136,7 +136,7 @@ export const newsletter_archive = onRequest(async (request, response) => {
     response.status(405).type("text/plain").send("Method not allowed");
     return;
   }
-  const db = admin.firestore();
+  const db = getFirestore();
   const id = String(request.query.id ?? "").trim();
   try {
     if (id) {

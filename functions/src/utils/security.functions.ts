@@ -1,4 +1,3 @@
-import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 
 // Known origins allowed to call these HTTP functions from a browser. Update
@@ -16,6 +15,8 @@ import * as functions from "firebase-functions";
 // firebase-projects.ts, copied in by scripts/sync-shared.js as part of the
 // build). Add a hosting site there, not here.
 import {CORS_ALLOWED_ORIGINS} from "../common/shared/config/firebase-projects";
+import {DecodedIdToken, getAuth} from "firebase-admin/auth";
+import {getFirestore} from "firebase-admin/firestore";
 
 const ALLOWED_ORIGINS: readonly string[] = CORS_ALLOWED_ORIGINS;
 
@@ -50,11 +51,11 @@ export const restrictedCors = require("cors")({
  *
  * @param {functions.https.Request} request The request passed to an
  * onRequest handler.
- * @return {Promise<admin.auth.DecodedIdToken>} The decoded, verified token.
+ * @return {Promise<DecodedIdToken>} The decoded, verified token.
  */
 export async function requireStaffAuth(
   request: functions.https.Request
-): Promise<admin.auth.DecodedIdToken> {
+): Promise<DecodedIdToken> {
   const authHeader: string = request.headers.authorization || "";
   const match = /^Bearer (.+)$/.exec(authHeader);
 
@@ -62,9 +63,9 @@ export async function requireStaffAuth(
     throw new Error("Missing or malformed Authorization header");
   }
 
-  const decoded = await admin.auth().verifyIdToken(match[1]);
+  const decoded = await getAuth().verifyIdToken(match[1]);
 
-  const users = await admin.firestore()
+  const users = await getFirestore()
     .collection("admin_users")
     .where("email", "==", decoded.email)
     .limit(1)

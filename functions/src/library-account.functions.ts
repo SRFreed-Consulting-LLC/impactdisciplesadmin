@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import {getFirestore} from "firebase-admin/firestore";
+import {getAuth} from "firebase-admin/auth";
 import {
   DeleteMyAccountResult,
 } from "./common/shared/contract/library-callables.types";
@@ -31,7 +32,7 @@ import {
  * Play policy explicitly permits retaining these), and any group
  * licenses they bought (already-assigned members keep their books).
  */
-const db = admin.firestore();
+const db = getFirestore();
 
 export const deleteMyAccount = onCall(async (request):
   Promise<DeleteMyAccountResult> => {
@@ -77,7 +78,7 @@ export const deleteMyAccount = onCall(async (request):
   // 4. The Auth account itself, last - tolerant of an already-missing
   // account so a retry after a partial failure still converges.
   try {
-    await admin.auth().deleteUser(uid);
+    await getAuth().deleteUser(uid);
   } catch (err) {
     if ((err as {code?: string}).code !== "auth/user-not-found") {
       throw err;

@@ -1,6 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {defineSecret} from "firebase-functions/params";
 import {
   getAccessToken,
@@ -60,7 +59,7 @@ import {
  * book lookup goes through a `collectionGroup('books')` scan matched by
  * doc id, same pattern this app's own LibraryBookService.getById() uses.
  */
-const libraryDb = admin.firestore();
+const libraryDb = getFirestore();
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");

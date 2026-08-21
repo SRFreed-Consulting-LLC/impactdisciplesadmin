@@ -1,8 +1,8 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions";
-import * as admin from "firebase-admin";
 import {isPlausibleEmail} from "./utils/customer-match.functions";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
+import {getFirestore} from "firebase-admin/firestore";
 
 // Grants Impact Discipleship Library book licenses for digital books bought
 // through this project's store, directly from this purchases trigger.
@@ -31,7 +31,7 @@ import {applyStorePurchaseGrant} from "./library-store-license-grant";
 // perpetual in practice. Deliberately unchanged here - an open product
 // decision, not something to quietly settle inside a grant call.
 
-const libraryDb = admin.firestore();
+const libraryDb = getFirestore();
 
 interface DigitalCartItem {
   isDigitalBook?: boolean;

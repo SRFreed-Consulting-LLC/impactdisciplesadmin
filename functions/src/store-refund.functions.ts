@@ -1,7 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
-import * as admin from "firebase-admin";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {
   PaypalEnvironment,
@@ -35,7 +34,7 @@ const webPaypalSecret = defineSecret("PAYPAL_CLIENT_SECRET");
 
 // The Firestore handle is taken inside each function rather than at module
 // load (same as campaign-admin.functions.ts): a module-level
-// admin.firestore() throws "default Firebase app does not exist" the moment
+// getFirestore() throws "default Firebase app does not exist" the moment
 // anything requires this file without initializing the SDK first - which is
 // exactly what the pure-unit suite (test/store-refund.test.js) does.
 
@@ -176,7 +175,7 @@ async function stripStorePurchaseLicenses(
   purchaseId: string | undefined,
   onlyBookId?: string
 ): Promise<string[]> {
-  const db = admin.firestore();
+  const db = getFirestore();
   const ref = db.collection("libraryUsers").doc(email);
   const removedIds: string[] = [];
   await db.runTransaction(async (transaction) => {
@@ -255,7 +254,7 @@ export const refundStorePurchase = onCall(
       throw new HttpsError("invalid-argument", "amount must be a number.");
     }
 
-    const db = admin.firestore();
+    const db = getFirestore();
     const purchaseRef = db.collection("purchases").doc(purchaseId);
     const purchaseSnap = await purchaseRef.get();
     if (!purchaseSnap.exists) {

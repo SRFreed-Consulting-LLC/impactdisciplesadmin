@@ -9,7 +9,7 @@
 // independent revocation per source.
 const {test, before} = require("node:test");
 const assert = require("node:assert/strict");
-const {admin, getApp, getDb, preflight, reseed, callCallable, signIn,
+const {getAuth, getApp, getDb, preflight, reseed, callCallable, signIn,
   waitFor} = require("./helpers/emulator");
 
 const PATRON = "patron@test.local";
@@ -171,7 +171,7 @@ test("revokeAdminGrantedLicense drops the flat id only when NO other " +
 
 test("setLibraryUserRevoked disables/re-enables the Auth account and " +
   "stamps/clears the doc flags", async () => {
-  const auth = admin.auth(getApp());
+  const auth = getAuth(getApp());
 
   const revoke = await callCallable("setLibraryUserRevoked",
     {email: PATRON, revoked: true}, adminToken);

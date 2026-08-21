@@ -16,8 +16,11 @@ const path = require("path");
 const crypto = require("crypto");
 
 const functionsDir = path.join(__dirname, "..", "functions");
-const admin = require(
-  require.resolve("firebase-admin", {paths: [functionsDir]})
+const {initializeApp, applicationDefault} = require(
+  require.resolve("firebase-admin/app", {paths: [functionsDir]})
+);
+const {getStorage} = require(
+  require.resolve("firebase-admin/storage", {paths: [functionsDir]})
 );
 
 const BUCKET = "impactdisciples-a82a8.appspot.com";
@@ -47,11 +50,11 @@ async function fetchIcon(domain) {
 }
 
 (async () => {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+  initializeApp({
+    credential: applicationDefault(),
     storageBucket: BUCKET,
   });
-  const bucket = admin.storage().bucket();
+  const bucket = getStorage().bucket();
 
   for (const [network, domain] of Object.entries(NETWORKS)) {
     const bytes = await fetchIcon(domain);

@@ -1,6 +1,10 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
-import {Timestamp, FieldValue} from "firebase-admin/firestore";
+import {
+  Timestamp,
+  FieldValue,
+  FieldPath,
+  getFirestore,
+} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {toTimestamp} from "./utils/date-normalize.functions";
 import {
@@ -444,7 +448,7 @@ export async function runRuleBackfill(
   let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
   for (;;) {
     let query = db.collection(collection)
-      .orderBy(admin.firestore.FieldPath.documentId())
+      .orderBy(FieldPath.documentId())
       .limit(PAGE_SIZE);
     if (cursor) {
       query = query.startAfter(cursor);
@@ -518,7 +522,7 @@ export const applyTagRuleRetroactively = onCall(
     if (!ruleId) {
       throw new HttpsError("invalid-argument", "ruleId is required.");
     }
-    const db = admin.firestore();
+    const db = getFirestore();
     const ruleSnap = await db.collection("tag_rules").doc(ruleId).get();
     if (!ruleSnap.exists) {
       throw new HttpsError("not-found", "Tag rule not found.");

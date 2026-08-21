@@ -1,6 +1,5 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
-import * as admin from "firebase-admin";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {
   isPlausibleEmail,
   normalizedName,
@@ -61,7 +60,7 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
     // here went with the Mailchimp sync, 2026-08-20 - tag_rules on event
     // registrations are the app's own equivalent.)
 
-    const db = admin.firestore();
+    const db = getFirestore();
     const existingSnap = await db.collection("customers")
       .where("email", "==", email)
       .limit(1)

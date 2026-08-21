@@ -1,6 +1,12 @@
+// Deliberately require()-based, not ES imports: the export list below is a
+// hand-maintained ALLOWLIST of deployable triggers, and each feature module
+// must be required AFTER initializeApp() has run (see below). Keeping the
+// whole file CommonJS also keeps the emitted entry point free of the
+// __esModule interop marker that adding a single `import` would introduce.
+//
 // Every other file in this codebase (admin-users.functions.ts, utils/
 // security.functions.ts, new-record-alerts.functions.ts, ...) calls
-// admin.firestore()/admin.auth() directly without ever calling
+// getFirestore()/getAuth() directly without ever calling
 // initializeApp() itself - they all rely on SOME module in the require
 // chain having done it first. That used to be notifications.functions.ts
 // (removed - the push-notification feature it backed is gone), so this is
@@ -8,16 +14,21 @@
 // tucked inside an unrelated feature file where the next person to delete
 // that feature could break every other function again without realizing
 // why.
-const admin = require("firebase-admin");
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
+// Modular entry points, not the `firebase-admin` root namespace:
+// firebase-admin 14 removed admin.firestore()/admin.auth()/admin.storage()
+// AND the admin.credential.* namespace - applicationDefault() is now a
+// top-level export of firebase-admin/app.
+const {initializeApp, applicationDefault} = require("firebase-admin/app");
+initializeApp({
+  credential: applicationDefault(),
 });
 // The Admin SDK throws on any `undefined` field value by default (e.g. an
 // optional CheckoutForm field like billingAddress/phone genuinely absent
 // from a request) rather than just omitting it - paypal.functions.ts hit
 // this writing a Purchase doc built from a partially-filled request. Set
-// once, here, before any function's first admin.firestore() call.
-admin.firestore().settings({ignoreUndefinedProperties: true});
+// once, here, before any function's first getFirestore() call.
+const {getFirestore} = require("firebase-admin/firestore");
+getFirestore().settings({ignoreUndefinedProperties: true});
 
 const shipping = require("./shipping.functions");
 exports.get_shipping_rates = shipping.get_shipping_rates;

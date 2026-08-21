@@ -1,5 +1,5 @@
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
 import {
   escapeHtml,
   queueGroupInviteEmail,
@@ -44,7 +44,7 @@ import {
  *   creator), rather than trusting client-supplied copies of any of
  *   them.
  */
-const db = admin.firestore();
+const db = getFirestore();
 
 /** Patron-authored free-text ceiling, matching firestore.rules' own
  *  4000-char convention for this feature. */

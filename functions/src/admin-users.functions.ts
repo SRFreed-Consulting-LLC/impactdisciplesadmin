@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
+import {getAuth} from "firebase-admin/auth";
 import {
   CreateAdminUserRequest,
   CreateAdminUserResult,
@@ -30,7 +31,7 @@ export async function requireAdminRole(
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
 
-  const snap = await admin.firestore()
+  const snap = await getFirestore()
     .collection("admin_users")
     .where("firebaseUID", "==", callerUid)
     .limit(1)
@@ -75,7 +76,7 @@ export const createAdminUser = onCall(async (request):
     );
   }
 
-  const userRecord = await admin.auth().createUser({email}).catch((err) => {
+  const userRecord = await getAuth().createUser({email}).catch((err) => {
     // Uncaught errors are masked as a generic "internal" error by the
     // callable framework before reaching the client, so the specific,
     // useful ones need to be translated into HttpsErrors explicitly here.
@@ -101,7 +102,7 @@ export const createAdminUser = onCall(async (request):
   // style deleteAdminUser already uses below.
   let docRef;
   try {
-    docRef = await admin.firestore().collection("admin_users").add({
+    docRef = await getFirestore().collection("admin_users").add({
       email,
       firstName,
       lastName,
@@ -113,7 +114,7 @@ export const createAdminUser = onCall(async (request):
     });
   } catch {
     try {
-      await admin.auth().deleteUser(userRecord.uid);
+      await getAuth().deleteUser(userRecord.uid);
     } catch (cleanupErr) {
       // Best-effort - the profile-write failure below is the error that
       // actually reaches the caller either way, so just log this one.
@@ -142,7 +143,7 @@ export const deleteAdminUser = onCall(async (request):
     throw new HttpsError("invalid-argument", "docId is required.");
   }
 
-  const docRef = admin.firestore().collection("admin_users").doc(docId);
+  const docRef = getFirestore().collection("admin_users").doc(docId);
   const snap = await docRef.get();
   if (!snap.exists) {
     throw new HttpsError("not-found", "Admin User not found.");
@@ -162,7 +163,7 @@ export const deleteAdminUser = onCall(async (request):
 
   if (firebaseUID) {
     try {
-      await admin.auth().deleteUser(firebaseUID);
+      await getAuth().deleteUser(firebaseUID);
     } catch (err) {
       const code = (err as {code?: string}).code;
       if (code !== "auth/user-not-found") {

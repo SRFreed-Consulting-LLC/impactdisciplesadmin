@@ -26,13 +26,18 @@ const PROJECT_ID = "demo-impact";
 
 const path = require("path");
 const functionsDir = path.join(__dirname, "..", "functions");
-const admin = require(require.resolve("firebase-admin", {paths: [functionsDir]}));
+const {initializeApp} = require(
+  require.resolve("firebase-admin/app", {paths: [functionsDir]})
+);
+const {getAuth} = require(
+  require.resolve("firebase-admin/auth", {paths: [functionsDir]})
+);
 const {getFirestore, Timestamp} = require(
   require.resolve("firebase-admin/firestore", {paths: [functionsDir]})
 );
 const fixtures = require("./fixtures/emulator-fixtures");
 
-const app = admin.initializeApp({projectId: PROJECT_ID}, "seed-emulator");
+const app = initializeApp({projectId: PROJECT_ID}, "seed-emulator");
 const db = getFirestore(app);
 db.settings({ignoreUndefinedProperties: true});
 
@@ -80,7 +85,7 @@ async function wipe() {
 
 async function seedAuth() {
   for (const user of fixtures.AUTH_USERS) {
-    await admin.auth(app).createUser(user);
+    await getAuth(app).createUser(user);
   }
   console.log(`Created ${fixtures.AUTH_USERS.length} Auth users.`);
 }

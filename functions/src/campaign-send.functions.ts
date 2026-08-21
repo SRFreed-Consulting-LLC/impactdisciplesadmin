@@ -1,8 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
-import * as admin from "firebase-admin";
-import {Timestamp, FieldValue} from "firebase-admin/firestore";
+import {Timestamp, FieldValue, getFirestore} from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import {requireAdminRole} from "./admin-users.functions";
 import {queueMail, UNSUBSCRIBE_URL} from "./transactional-emails";
@@ -497,7 +496,7 @@ export const enqueueCampaignEmail = onCall(
     if (!emailId) {
       throw new HttpsError("invalid-argument", "emailId is required.");
     }
-    const db = admin.firestore();
+    const db = getFirestore();
     const touchSnap = await db.collection("campaign_emails").doc(emailId).get();
     if (!touchSnap.exists) {
       throw new HttpsError("not-found", "Email not found.");
@@ -533,7 +532,7 @@ export const previewCampaignAudience = onCall(async (request):
   if (!audience?.mode) {
     throw new HttpsError("invalid-argument", "audience.mode is required.");
   }
-  const recipients = await resolveAudience(admin.firestore(), audience);
+  const recipients = await resolveAudience(getFirestore(), audience);
   return {count: recipients.length, sample: recipients.slice(0, 10)};
 });
 
@@ -546,7 +545,7 @@ export const sendCampaignTestEmail = onCall(async (request):
     throw new HttpsError("invalid-argument",
       "emailId and a valid 'to' are required.");
   }
-  const db = admin.firestore();
+  const db = getFirestore();
   const touchSnap = await db.collection("campaign_emails").doc(emailId).get();
   if (!touchSnap.exists) {
     throw new HttpsError("not-found", "Email not found.");
@@ -574,7 +573,7 @@ export const campaignSendScheduler = onSchedule(
     timeoutSeconds: 300,
   },
   async () => {
-    const db = admin.firestore();
+    const db = getFirestore();
     const budget = MAX_SENDS_PER_RUN;
 
     // 1. Stale 'pending' reservations (a crashed run) go back to queued -
@@ -725,7 +724,7 @@ export const onCampaignMailDelivered = onDocumentUpdated(
         before?.delivery?.state === "SUCCESS") {
       return;
     }
-    const db = admin.firestore();
+    const db = getFirestore();
     const ledgerRef = db.collection("campaign_sends").doc(meta.sendId);
     const ledger = await ledgerRef.get();
     if (!ledger.exists || ledger.data()?.deliveredAt) {

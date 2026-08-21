@@ -19,7 +19,12 @@ const {execFileSync} = require("child_process");
 
 const REPO_ROOT = path.join(__dirname, "..", "..");
 const functionsDir = path.join(REPO_ROOT, "functions");
-const admin = require(require.resolve("firebase-admin", {paths: [functionsDir]}));
+const {initializeApp} = require(
+  require.resolve("firebase-admin/app", {paths: [functionsDir]})
+);
+const {getAuth} = require(
+  require.resolve("firebase-admin/auth", {paths: [functionsDir]})
+);
 const firestoreSubpath = require(
   require.resolve("firebase-admin/firestore", {paths: [functionsDir]})
 );
@@ -30,7 +35,7 @@ const FN_BASE = `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`;
 let app;
 function getApp() {
   if (!app) {
-    app = admin.initializeApp({projectId: PROJECT_ID}, "integration-tests");
+    app = initializeApp({projectId: PROJECT_ID}, "integration-tests");
   }
   return app;
 }
@@ -129,6 +134,6 @@ async function waitFor(fn, {timeoutMs = 20000, intervalMs = 400, label = "condit
 
 module.exports = {
   PROJECT_ID, FN_BASE,
-  admin, getApp, getDb,
+  getAuth, getApp, getDb,
   preflight, reseed, callHttp, callCallable, signIn, waitFor,
 };

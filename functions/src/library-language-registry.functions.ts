@@ -1,7 +1,6 @@
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {onCall} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {
   RebuildLanguageRegistryResult,
@@ -16,7 +15,7 @@ import {
 // The reader reads that one small doc; the translation docs themselves go
 // back to being license-gated.
 
-const db = admin.firestore();
+const db = getFirestore();
 const REGISTRY_REF = "appConfig/availableLanguages";
 
 /**

@@ -21,10 +21,23 @@
 const path = require("path");
 
 const functionsDir = path.join(__dirname, "..", "..", "functions");
-const admin = require(require.resolve("firebase-admin", {paths: [functionsDir]}));
-const {getFirestore} = require(
+// Modular entry points only. firebase-admin 14 removed the root namespace
+// helpers these scripts used to reach through (admin.firestore(),
+// admin.auth(), admin.storage(), admin.credential.*, admin.app()).
+const {initializeApp, applicationDefault, getApp} = require(
+  require.resolve("firebase-admin/app", {paths: [functionsDir]})
+);
+const {getAuth} = require(
+  require.resolve("firebase-admin/auth", {paths: [functionsDir]})
+);
+// The WHOLE firestore module, deliberately: several scripts hand this object
+// to the portable-JSON helpers (scripts/lib/firestore-json.js), which need
+// its Timestamp/GeoPoint/FieldValue constructors. It is the modular
+// replacement for what `admin.firestore` used to be as a namespace.
+const firestore = require(
   require.resolve("firebase-admin/firestore", {paths: [functionsDir]})
 );
+const {getFirestore} = firestore;
 
 const KNOWN_PROJECTS = {
   dev: "impactdisciplesdev",
@@ -62,13 +75,13 @@ const dbByKey = new Map();
  * @param {string} [databaseId] Named Firestore database, e.g.
  * "impactdiscipleship-books". Omit for the (default) database - which is
  * what every Web/Admin collection in scope for this tool lives in.
- * @return {import("firebase-admin").firestore.Firestore} Firestore client.
+ * @return {import("firebase-admin/firestore").Firestore} Firestore client.
  */
 function getFirestoreFor(projectId, databaseId) {
   const key = `${projectId}::${databaseId || "(default)"}`;
   if (!dbByKey.has(key)) {
-    const app = admin.initializeApp(
-      {credential: admin.credential.applicationDefault(), projectId},
+    const app = initializeApp(
+      {credential: applicationDefault(), projectId},
       key
     );
     const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
@@ -86,4 +99,13 @@ function getFirestoreFor(projectId, databaseId) {
   return dbByKey.get(key);
 }
 
-module.exports = {admin, resolveProjectId, getFirestoreFor, KNOWN_PROJECTS};
+module.exports = {
+  firestore,
+  getAuth,
+  getApp,
+  applicationDefault,
+  initializeApp,
+  resolveProjectId,
+  getFirestoreFor,
+  KNOWN_PROJECTS,
+};

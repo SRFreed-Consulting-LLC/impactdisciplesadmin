@@ -1,7 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
-import * as admin from "firebase-admin";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {
   getAccessToken,
   getOrderCapture,
@@ -43,7 +42,7 @@ import {
  * international patrons) never create purchase records - and therefore
  * never become customers/Mailchimp contacts - by design.
  */
-const libraryDb = admin.firestore();
+const libraryDb = getFirestore();
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");

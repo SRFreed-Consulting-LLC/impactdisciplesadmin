@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import {DocumentData, getFirestore} from "firebase-admin/firestore";
 
 // Shared server-side recompute logic for store checkout, used by both
 // create_paypal_order and capture_paypal_order (../paypal.functions.ts).
@@ -145,10 +145,10 @@ async function lookupGeorgiaTaxRate(
  * Mirrors product-details.component.ts / checkout.component.ts's own
  * getActiveSales() (isActive == true, then a client-side date-range filter
  * since Firestore can't range-filter on two different fields in one query).
- * @return {Promise<admin.firestore.DocumentData[]>} Active sales today.
+ * @return {Promise<DocumentData[]>} Active sales today.
  */
-async function getActiveSales(): Promise<admin.firestore.DocumentData[]> {
-  const snap = await admin.firestore()
+async function getActiveSales(): Promise<DocumentData[]> {
+  const snap = await getFirestore()
     .collection("sales")
     .where("isActive", "==", true)
     .get();
@@ -215,7 +215,7 @@ export async function computeOrderPricing(
     throw new Error("Invalid shippingRate");
   }
 
-  const db = admin.firestore();
+  const db = getFirestore();
 
   // These reads (config, active sales, coupon lookup, and every cart
   // item's product/event doc) are independent of one another - fetched in
@@ -241,7 +241,7 @@ export async function computeOrderPricing(
   const productSale = activeSales.find((sale) => sale.isProducts);
   const shippingSale = activeSales.find((sale) => sale.isShipping);
 
-  let coupon: admin.firestore.DocumentData | undefined;
+  let coupon: DocumentData | undefined;
   if (couponSnap) {
     const candidate = couponSnap.docs[0]?.data();
     if (candidate?.isActive) {
@@ -258,7 +258,7 @@ export async function computeOrderPricing(
     if (!docSnap.exists) {
       throw new Error(`${collectionName} ${input.id} not found`);
     }
-    const doc = docSnap.data() as admin.firestore.DocumentData;
+    const doc = docSnap.data() as DocumentData;
 
     const basePrice = input.isEvent ?
       (doc.costInDollars ?? 0) : (doc.cost ?? 0);

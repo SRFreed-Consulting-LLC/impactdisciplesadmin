@@ -24,7 +24,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const {resolveProjectId, getFirestoreFor, admin} = require("./lib/firestore-admin");
+const {resolveProjectId, getFirestoreFor, firestore} = require("./lib/firestore-admin");
 const {fromPortable} = require("./lib/firestore-json");
 
 /**
@@ -116,7 +116,7 @@ async function main() {
     let opsInBatch = 0;
 
     for (const {id, data} of snapshotDocs) {
-      const restored = fromPortable(data, db, admin.firestore);
+      const restored = fromPortable(data, db, firestore);
       if (execute) {
         // Full overwrite, NOT merge - a real restore replaces the doc
         // entirely, including wiping any fields added after the snapshot.
