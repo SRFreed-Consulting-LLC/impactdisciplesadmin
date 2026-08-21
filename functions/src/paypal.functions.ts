@@ -19,6 +19,11 @@ import {
 import {
   CreatePaypalOrderRequest,
 } from "./common/shared/contract/web-http.types";
+import {
+  PAYPAL_API_HOST,
+  getAccessTokenWithCredentials,
+  resolvePaypalEnvironment,
+} from "./library-paypal";
 
 // Server-side counterpart to impactdisciples-web's checkout.component.ts.
 // Two public HTTP functions (no requireStaffAuth -- anonymous storefront
@@ -38,67 +43,33 @@ import {
 // must be provisioned against impactdisciples-a82a8 before this is ever
 // deployed to prod -- never reuse the sandbox secret there.
 
-const PAYPAL_API_BASE = process.env.GCLOUD_PROJECT === "impactdisciples-a82a8" ?
-  "https://api-m.paypal.com" :
-  "https://api-m.sandbox.paypal.com";
-
-let cachedToken: {value: string; expiresAt: number} | null = null;
+// Which PayPal environment this deployment transacts against, and the REST
+// host that goes with it. Both come from the shared client
+// (library-paypal.ts) rather than a second local copy of the same
+// GCLOUD_PROJECT switch and host map - two copies is exactly how a live
+// token ends up being sent to the sandbox host. The web storefront is a
+// DIFFERENT PayPal app from the library/reader one, which is why the client
+// id below is read from Firestore config instead of that module's
+// hardcoded map.
+const PAYPAL_ENV = resolvePaypalEnvironment();
+const PAYPAL_API_BASE = PAYPAL_API_HOST[PAYPAL_ENV];
 
 /**
  * Obtains (and short-term caches, per warm function instance) a PayPal
- * OAuth2 client-credentials access token. Calling PayPal's REST API
- * directly via fetch rather than an SDK -- the current recommended Node
- * package for this was churning at the time this was written and its exact
- * call shape couldn't be confirmed; plain fetch avoids guessing at it.
+ * OAuth2 access token for the WEB STOREFRONT's PayPal app. Thin wrapper over
+ * the shared client so this app's credentials - a Firestore-held client id
+ * plus the PAYPAL_CLIENT_SECRET Secret Manager secret - stay in one place;
+ * the retry/backoff, the token cache and the detailed 401 diagnostics all
+ * live in library-paypal.ts now.
  * @param {string} clientId The PayPal app's public client id (from
  * Firestore config.paypalClientId -- the same one already used
  * client-side).
  * @return {Promise<string>} A bearer access token.
  */
-async function getPayPalAccessToken(clientId: string): Promise<string> {
-  if (cachedToken && cachedToken.expiresAt > Date.now()) {
-    return cachedToken.value;
-  }
-
-  const basicAuth = Buffer.from(
-    `${clientId}:${process.env.PAYPAL_CLIENT_SECRET}`
-  ).toString("base64");
-
-  const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${basicAuth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-
-  if (!response.ok) {
-    // A 401 here is nearly always a credential/environment mismatch: three
-    // things have to agree and each is provisioned separately - the API host
-    // (from GCLOUD_PROJECT), config.paypalClientId, and PAYPAL_CLIENT_SECRET.
-    // Getting a live id with a sandbox secret (or the reverse) 401s here and
-    // takes the whole storefront down, so name all three in the error rather
-    // than leaving a bare "failed". Only the client id's last 6 characters
-    // are logged - enough to tell two apps apart, not enough to be a
-    // credential - and the secret is never logged.
-    throw new Error(
-      `Failed to obtain a PayPal access token (HTTP ${response.status}) ` +
-      `from ${PAYPAL_API_BASE} using clientId ending ...` +
-      `${clientId.slice(-6)} and PAYPAL_CLIENT_SECRET ` +
-      `(${process.env.PAYPAL_CLIENT_SECRET ? "set" : "NOT SET"}). ` +
-      "A 401 means the id, the secret and the host do not all belong to the " +
-      "same PayPal app - check that this project's secret is the LIVE " +
-      "credential and config.paypalClientId is the LIVE client id."
-    );
-  }
-
-  const data = await response.json();
-  cachedToken = {
-    value: data.access_token,
-    expiresAt: Date.now() + (data.expires_in - 60) * 1000,
-  };
-  return cachedToken.value;
+function getPayPalAccessToken(clientId: string): Promise<string> {
+  return getAccessTokenWithCredentials(
+    PAYPAL_ENV, clientId, process.env.PAYPAL_CLIENT_SECRET ?? ""
+  );
 }
 
 // Per-warm-instance cache for the client id (same lifetime model as the

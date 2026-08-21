@@ -6,6 +6,7 @@ import {requireAdminRole} from "./admin-users.functions";
 import {
   PaypalEnvironment,
   getAccessToken,
+  getAccessTokenWithCredentials,
   getCaptureId,
   refundCapture,
 } from "./library-paypal";
@@ -37,41 +38,6 @@ const webPaypalSecret = defineSecret("PAYPAL_CLIENT_SECRET");
 // admin.firestore() throws "default Firebase app does not exist" the moment
 // anything requires this file without initializing the SDK first - which is
 // exactly what the pure-unit suite (test/store-refund.test.js) does.
-
-const WEB_API_HOST: Record<PaypalEnvironment, string> = {
-  sandbox: "https://api-m.sandbox.paypal.com",
-  live: "https://api-m.paypal.com",
-};
-
-/**
- * OAuth token using explicit client id + secret - needed for the web
- * storefront's PayPal app, whose client id lives in the `config`
- * collection rather than library-paypal.ts's hardcoded map.
- * @param {PaypalEnvironment} env Which PayPal environment to hit.
- * @param {string} clientId The PayPal app's client id.
- * @param {string} clientSecret The PayPal app's client secret.
- * @return {Promise<string>} A bearer access token.
- */
-async function getTokenWithCreds(
-  env: PaypalEnvironment,
-  clientId: string,
-  clientSecret: string
-): Promise<string> {
-  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const response = await fetch(`${WEB_API_HOST[env]}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  const body = (await response.json()) as {access_token?: string};
-  if (!response.ok || !body.access_token) {
-    throw new Error("PayPal auth failed for web storefront app");
-  }
-  return body.access_token;
-}
 
 interface RefundEntryDoc {
   amount: number;
@@ -332,7 +298,7 @@ export const refundStorePurchase = onCall(
             "failed-precondition", "config.paypalClientId is not set."
           );
         }
-        accessToken = await getTokenWithCreds(
+        accessToken = await getAccessTokenWithCredentials(
           env, clientId, webPaypalSecret.value()
         );
       }
