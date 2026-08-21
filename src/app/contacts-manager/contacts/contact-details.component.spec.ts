@@ -306,38 +306,6 @@ describe('ContactDetailsComponent (characterization, pre-split)', () => {
     });
   });
 
-  describe('timeline filter', () => {
-    const entries = [
-      { type: 'purchase', date: null },
-      { type: 'event', date: null },
-      { type: 'note', date: null },
-    ] as never[];
-
-    it('passes everything through under "all"', () => {
-      const { component } = makeComponent();
-      component.activeFilter = 'all';
-      expect(component.filteredTimeline(entries).length).toBe(3);
-    });
-
-    it('narrows to the active type', () => {
-      const { component } = makeComponent();
-      component.activeFilter = 'event';
-      expect(component.filteredTimeline(entries).map((e) => e.type)).toEqual(['event']);
-    });
-
-    it('explains the empty state per filter', () => {
-      const { component } = makeComponent();
-      component.activeFilter = 'all';
-      expect(component.emptyMessage()).toContain('purchases, events, or notes');
-      component.activeFilter = 'purchase';
-      expect(component.emptyMessage()).toContain('No purchases');
-      component.activeFilter = 'event';
-      expect(component.emptyMessage()).toContain('No event registrations');
-      component.activeFilter = 'note';
-      expect(component.emptyMessage()).toContain('No notes');
-    });
-  });
-
   describe('stats', () => {
     it('nets refunds out of lifetime spend', (done) => {
       const { component } = makeComponent(aContact(), {
@@ -445,19 +413,6 @@ describe('ContactDetailsComponent (characterization, pre-split)', () => {
       expect(component.addressSummary(component.form.get('billingAddress')))
         .toBe('No address on file');
       expect(component.addressSummary(null)).toBe('No address on file');
-    });
-
-    it('getEventName resolves through the events input, blank when unknown', () => {
-      const { component } = makeComponent();
-      component.events = [{ id: 'evt-1', eventName: 'Summit' }] as never;
-      expect(component.getEventName('evt-1')).toBe('Summit');
-      expect(component.getEventName('nope')).toBe('');
-    });
-
-    it('getFulfillmentStatusLabel falls back to Unknown', () => {
-      const { component } = makeComponent();
-      expect(component.getFulfillmentStatusLabel(undefined)).toBe('Unknown');
-      expect(component.getFulfillmentStatusLabel('not-a-status' as never)).toBe('Unknown');
     });
 
     it('subscriptionLabel names each list', () => {

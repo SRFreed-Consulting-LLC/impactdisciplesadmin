@@ -6,6 +6,7 @@ import { ContactsManagerComponent } from './contacts-manager.component';
 import { ContactsManagerRoutingModule } from './contacts-manager-routing.module';
 import { ContactsComponent } from './contacts/contacts.component';
 import { ContactDetailsComponent } from './contacts/contact-details.component';
+import { ContactTimelineComponent } from './contacts/contact-timeline/contact-timeline.component';
 import { ContactDetailsDialogComponent } from './contacts/contact-details-dialog.component';
 import { AddContactNoteDialogComponent } from './contacts/add-contact-note-dialog.component';
 import { PurchasesComponent } from './purchases/purchases.component';
@@ -74,6 +75,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
     ContactsManagerComponent,
     ContactsComponent,
     ContactDetailsComponent,
+    ContactTimelineComponent,
     ContactDetailsDialogComponent,
     AddContactNoteDialogComponent,
     PurchasesComponent,

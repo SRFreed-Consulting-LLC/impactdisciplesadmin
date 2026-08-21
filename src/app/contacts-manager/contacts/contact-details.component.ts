@@ -15,26 +15,16 @@ import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { TagApplicationService } from 'src/app/common/services/data/tag-application.service';
 import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
-import { CheckoutForm, FulfillmentStatus } from '@impact-common/shared/models/utils/cart.model';
+import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { Address } from '@impact-common/shared/models/domain/utils/address.model';
 import { Phone } from '@impact-common/shared/models/domain/utils/phone.model';
-import { FULFILLMENT_STEPS } from '../fulfillment/fulfillment-steps';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { AddContactNoteDialogComponent } from './add-contact-note-dialog.component';
-
-export type TimelineFilter = 'all' | 'purchase' | 'event' | 'note';
-
-export interface TimelineEntry {
-  type: 'purchase' | 'event' | 'note';
-  date: Date | null;
-  purchase?: CheckoutForm;
-  registration?: EventRegistrationModel;
-  note?: ContactNoteModel;
-}
+import { TimelineEntry } from './contact-timeline/contact-timeline.component';
 
 // Full in-page/in-dialog edit view for a single customer - replaces the old
 // CustomerDialogComponent's six-tab MatDialog (capped at 1200px/95vw, every
@@ -115,7 +105,6 @@ export class ContactDetailsComponent implements OnInit {
   // timeline$'s last emission wrapped, live, on every change-detection pass.
   private notesSubject = new BehaviorSubject<ContactNoteModel[]>([]);
 
-  activeFilter: TimelineFilter = 'all';
 
   // For the Organization select (contact.model.ts's organizationId) -
   // 18 docs, a one-time load is fine.
@@ -245,19 +234,6 @@ export class ContactDetailsComponent implements OnInit {
     return [...purchaseEntries, ...eventEntries, ...noteEntries].sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
   }
 
-  filteredTimeline(entries: TimelineEntry[]): TimelineEntry[] {
-    return this.activeFilter === 'all' ? entries : entries.filter((e) => e.type === this.activeFilter);
-  }
-
-  emptyMessage(): string {
-    switch (this.activeFilter) {
-      case 'purchase': return 'No purchases found for this contact.';
-      case 'event': return 'No event registrations found for this contact.';
-      case 'note': return 'No notes found for this contact.';
-      default: return 'No purchases, events, or notes found for this contact.';
-    }
-  }
-
   // dateFromTimestamp() (impactdisciplescommon) doesn't always return a
   // Date: it returns null when it can't parse the value, but its string
   // branch has its own bug (a regex checking for literal "dd/dd/dddd"
@@ -269,17 +245,6 @@ export class ContactDetailsComponent implements OnInit {
   private toDate(value: unknown): Date | null {
     const date = dateFromTimestamp(value);
     return date instanceof Date ? date : null;
-  }
-
-  getEventName(eventId: string): string {
-    return this.events.find((event) => event.id === eventId)?.eventName ?? '';
-  }
-
-  // Same label lookup as purchases.component.ts's own
-  // getFulfillmentStatusLabel() - this feed shows the same status this
-  // customer's purchases carry on the main Purchases screen.
-  getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
-    return FULFILLMENT_STEPS.find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
   // ---- Addresses ----
