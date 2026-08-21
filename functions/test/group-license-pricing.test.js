@@ -81,7 +81,7 @@ test("every figure is rounded to whole cents", () => {
   });
 });
 
-test("a per-license price that does not divide evenly still rounds to cents", () => {
+test("a per-license price that does not divide evenly still rounds", () => {
   const pricing = computeGroupLicensePricing(10, 3, 10);
   assert.equal(pricing.subtotal, 30);
   assert.equal(pricing.discount, 3);
@@ -91,7 +91,8 @@ test("a per-license price that does not divide evenly still rounds to cents", ()
   // 7 licenses at $10 with 10% off = $63.00 -> $9.00 each exactly;
   // 6 at $10.05 with 10% off = $60.30 -> $10.05 each.
   assert.equal(computeGroupLicensePricing(10.05, 6, 10).total, 54.27);
-  assert.equal(computeGroupLicensePricing(10.05, 6, 10).unitDiscountPrice, 9.05);
+  assert.equal(
+    computeGroupLicensePricing(10.05, 6, 10).unitDiscountPrice, 9.05);
 });
 
 test("a free product prices to zero without dividing by zero", () => {
