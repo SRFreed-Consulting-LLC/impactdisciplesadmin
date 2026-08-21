@@ -17,7 +17,7 @@ const assert = require("node:assert/strict");
 const {htmlToPlainText, renderPlaceholders} =
   require("../lib/transactional-emails");
 
-test("htmlToPlainText drops <style> element CONTENTS, not just its tags", () => {
+test("htmlToPlainText drops <style> CONTENTS, not just its tags", () => {
   const html =
     "<html><head><style>.a{color:red;font-family:Arial}</style></head>" +
     "<body><p>Hi Sam</p></body></html>";
@@ -87,7 +87,7 @@ test("renderPlaceholders substitutes values verbatim (no re-escaping)", () => {
   assert.equal(out, "<p><a href='https://x.test'>Go</a></p>");
 });
 
-test("renderPlaceholders does not re-substitute an injected placeholder", () => {
+test("renderPlaceholders does not re-substitute an injected tag", () => {
   // Regression pin. The three inline loops this helper replaced substituted
   // one key at a time, so a value substituted early was rescanned by every
   // later iteration: registering as "{{editRegistration}}" (braces survive
@@ -114,7 +114,7 @@ test("renderPlaceholders substitutes underscored keys (product_list)", () => {
   assert.equal(out, "<td><li>Book</li></td>");
 });
 
-test("renderPlaceholders with an empty model returns the body unchanged", () => {
+test("renderPlaceholders with an empty model returns body unchanged", () => {
   assert.equal(renderPlaceholders("<p>{{x}}</p>", {}), "<p>{{x}}</p>");
 });
 
