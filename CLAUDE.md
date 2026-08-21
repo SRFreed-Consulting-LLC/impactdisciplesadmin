@@ -62,6 +62,14 @@ npm run e2e
 npx playwright test e2e/smoke.spec.ts    # single spec
 
 # EMULATOR-BACKED TEST PROGRAM (see the Test program section below)
+# NOTE: `emu` pins firebase-tools 15.x via npx and does NOT use whatever
+# firebase CLI is on your PATH. firebase-tools 14.x is incompatible with
+# firebase-functions 7.x - its emulator runtime calls functions.config(),
+# which v7 removed and whose replacement throws, killing the functions
+# worker. The symptom is EVERY function failing "Failed to load function"
+# and every integration test hanging ~300s before failing. Do not "simplify"
+# this back to a bare `firebase emulators:start`. (Deploys still use the
+# CLI on PATH - that path is unaffected and upgrading it is a separate call.)
 npm run emu                              # start the Firebase Emulator Suite (demo-impact)
 npm run emu:seed                         # wipe + reseed the deterministic fixture world
 npm run test:integration                 # node:test over the REAL emulated functions
