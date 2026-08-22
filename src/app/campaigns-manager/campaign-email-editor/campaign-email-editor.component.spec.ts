@@ -75,6 +75,9 @@ describe('CampaignEmailEditorComponent', () => {
       {} as any,
       emailService as any,
       {} as any,
+      // productService / eventService - only used to seed a starter design.
+      { getById: () => Promise.resolve(null) } as any,
+      { getById: () => Promise.resolve(null) } as any,
       { getAll: () => Promise.resolve([]) } as any,
       { canAdd: () => true, canEdit: () => true } as any,
       { dao: { loggedInUser$: { pipe: () => ({ subscribe: () => undefined }) } } } as any,

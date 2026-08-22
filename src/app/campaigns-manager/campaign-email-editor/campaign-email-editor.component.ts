@@ -16,6 +16,10 @@ import {
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
+import { ProductService } from 'src/app/common/services/data/product.service';
+import { EventService } from 'src/app/common/services/data/event.service';
+import { environment } from 'src/environments/environment';
+import { StarterItem, eventStarter, productStarter, starterDesign } from '../campaign-starter';
 import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
@@ -89,6 +93,8 @@ export class CampaignEmailEditorComponent implements OnInit {
     private campaignService: CampaignService,
     private emailService: CampaignEmailService,
     private templatesService: EMailTemplatesService,
+    private productService: ProductService,
+    private eventService: EventService,
     private tagRuleService: TagRuleService,
     private permissionService: PermissionService,
     private authService: AdminAuthService,
@@ -148,9 +154,7 @@ export class CampaignEmailEditorComponent implements OnInit {
       this.campaign = campaign;
 
       if (!this.touchId) {
-        this.state.load(createDefaultDesign());
-        this.loading$.next(false);
-        this.openTemplatePicker();
+        void this.startNewTouch();
         return;
       }
 
@@ -184,6 +188,52 @@ export class CampaignEmailEditorComponent implements OnInit {
         this.loading$.next(false);
       });
     });
+  }
+
+  /**
+   * What a brand-new email starts as.
+   *
+   * A campaign that spotlights a product or an event opens on a starter built
+   * from that item - image, headline, price or date, blurb, and a button to
+   * its page - as real, editable blocks. Everything else opens blank on the
+   * template gallery, which is what every campaign used to do.
+   *
+   * The gallery is NOT force-opened over a seeded design: having content
+   * appear and then be immediately covered reads as a bug. It stays one click
+   * away on the toolbar, so picking a template instead is still a choice.
+   */
+  private async startNewTouch(): Promise<void> {
+    const item = await this.starterItem();
+
+    if (item) {
+      // The send engine rewrites every link through campaign_click at prepare
+      // time, so the plain public URL is right here - decorating it too would
+      // just put ?cid= inside a tracked link.
+      this.state.load(starterDesign(item, item.url));
+      this.loading$.next(false);
+      return;
+    }
+
+    this.state.load(createDefaultDesign());
+    this.loading$.next(false);
+    this.openTemplatePicker();
+  }
+
+  /** The campaign's product or event, normalized, or null. */
+  private async starterItem(): Promise<StarterItem | null> {
+    try {
+      if (this.campaign?.goal === 'product' && this.campaign.productId) {
+        const product = await this.productService.getById(this.campaign.productId);
+        return product ? productStarter(product, environment.publicSiteUrl) : null;
+      }
+      if (this.campaign?.goal === 'event' && this.campaign.eventId) {
+        const event = await this.eventService.getById(this.campaign.eventId);
+        return event ? eventStarter(event, environment.publicSiteUrl) : null;
+      }
+    } catch {
+      // A starter is a convenience - fall back to the blank design.
+    }
+    return null;
   }
 
   // ---- template gallery ----

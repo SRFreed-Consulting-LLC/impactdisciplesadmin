@@ -15,6 +15,7 @@ import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.c
 import { registerQuillStyleAttributors } from '../../shared/rich-text-editor/quill-style-attributors';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
+import { StarterItem, eventStarter, productStarter, starterPopupHtml } from '../campaign-starter';
 
 // Popup editor (Campaign Manager v2, Phase 5; WYSIWYG rework 2026-08-19):
 // authors a campaign's web popup - shown to EVERY site visitor (no
@@ -205,52 +206,29 @@ export class PopupEditorComponent implements OnInit {
       this.snackbar.error('Pick a ' + this.spotlightType + ' to spotlight first.');
       return;
     }
-    if (this.spotlightType === 'product') {
-      const product = this.products.find((p) => p.id === this.spotlightId);
-      if (!product) {
-        return;
-      }
-      const price = product.salePrice > 0 ? product.salePrice : product.cost;
-      this.form.patchValue({
-        title: this.form.value.title || product.title,
-        html: this.spotlightHtml(
-          product.imageUrl?.url,
-          product.title,
-          price > 0 ? '$' + price.toFixed(2) : 'Free',
-          product.description),
-        ctaUrl: `${environment.publicSiteUrl}/product-details/${product.id}`
-      });
-    } else {
-      const event = this.events.find((e) => e.id === this.spotlightId);
-      if (!event) {
-        return;
-      }
-      const date = dateFromTimestamp(event.startDate as never);
-      this.form.patchValue({
-        title: this.form.value.title || (event.eventName ?? ''),
-        html: this.spotlightHtml(
-          event.imageUrl?.url,
-          event.eventName ?? '',
-          date ? date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
-          event.description),
-        ctaUrl: `${environment.publicSiteUrl}/event-details/${event.id}`
-      });
+    const item = this.selectedStarterItem();
+
+    if (!item) {
+      return;
     }
+
+    this.form.patchValue({
+      title: this.form.value.title || item.title,
+      html: starterPopupHtml(item),
+      ctaUrl: item.url
+    });
     this.refreshPreview();
     this.snackbar.success('Spotlight applied - tweak the text and image like any rich text.');
   }
 
-  // Inline-styled so it renders identically in Quill, the preview, and the
-  // storefront's [innerHTML].
-  private spotlightHtml(imageUrl: string | undefined, heading: string, subline: string, description?: string): string {
-    const blurb = (description ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const shortBlurb = blurb.length > 160 ? blurb.slice(0, 157).trimEnd() + '…' : blurb;
-    return (imageUrl
-        ? `<p style="text-align:center;"><img src="${imageUrl}" style="max-width:60%;" alt="${heading}"></p>`
-        : '') +
-      `<h2 style="text-align:center;">${heading}</h2>` +
-      (subline ? `<p style="text-align:center;"><strong>${subline}</strong></p>` : '') +
-      (shortBlurb ? `<p style="text-align:center;">${shortBlurb}</p>` : '');
+  /** The chosen product or event, normalized for the shared starter. */
+  private selectedStarterItem(): StarterItem | null {
+    if (this.spotlightType === 'product') {
+      const product = this.products.find((p) => p.id === this.spotlightId);
+      return product ? productStarter(product, environment.publicSiteUrl) : null;
+    }
+    const event = this.events.find((e) => e.id === this.spotlightId);
+    return event ? eventStarter(event, environment.publicSiteUrl) : null;
   }
 
   private refreshPreview(): void {
