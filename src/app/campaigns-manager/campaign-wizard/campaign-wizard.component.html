@@ -215,6 +215,60 @@
     }
   </div>
 
+  <!-- SIGNUP COUPON. A shared code per campaign, pointing at a real coupons
+       record - the discount system is not duplicated onto the campaign. Sent
+       in the very confirmation email that welcomes the subscriber. -->
+  <div class="wizard-section">
+    <p class="wizard-label">THANK-YOU COUPON (OPTIONAL)</p>
+    <mat-checkbox formControlName="couponEnabled">
+      Give subscribers a discount code when they sign up
+    </mat-checkbox>
+
+    @if (couponEnabled) {
+      <div class="wizard-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Coupon</mat-label>
+          <mat-select formControlName="couponId">
+            @for (coupon of coupons; track coupon.id) {
+              <mat-option [value]="coupon.id">
+                {{ coupon.code }} — {{ coupon.percentOff }}% off
+              </mat-option>
+            }
+            <mat-option value="__new__">Create a new coupon…</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (creatingCoupon) {
+        <div class="wizard-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Code subscribers type</mat-label>
+            <input matInput formControlName="couponCode" placeholder="WELCOME10">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Percent off</mat-label>
+            <input matInput type="number" formControlName="couponPercentOff" min="1" max="100">
+          </mat-form-field>
+        </div>
+      }
+
+      @if (couponNeedsExpiry) {
+        <div class="wizard-row">
+          <app-date-time-field formControlName="couponExpiresAt"
+            label="Coupon expires"></app-date-time-field>
+        </div>
+        <p class="wizard-hint">
+          This campaign has no end date, so the coupon needs its own — otherwise
+          the code keeps working indefinitely.
+        </p>
+      } @else {
+        <p class="wizard-hint">
+          The coupon stops working when the campaign ends.
+        </p>
+      }
+    }
+  </div>
+
   <div class="wizard-actions">
     <button mat-button type="button" (click)="cancel()">Cancel</button>
     <app-indicator-button title="SAVE CAMPAIGN" [isInProgress]="saving"

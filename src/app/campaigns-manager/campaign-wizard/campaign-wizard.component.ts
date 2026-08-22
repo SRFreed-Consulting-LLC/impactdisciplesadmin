@@ -14,6 +14,8 @@ import { SeriesModel } from '@impact-common/shared/models/utils/series.model';
 import { CampaignOfferModel, OfferTargetKind } from '@impact-common/shared/models/utils/campaign-offer.model';
 import { SeriesService } from 'src/app/common/services/data/series.service';
 import { CampaignOfferService } from 'src/app/common/services/data/campaign-offer.service';
+import { CouponService } from 'src/app/common/services/data/coupon.service';
+import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
 
 // Campaign wizard (Campaign Manager v2, Phase 2): creates/edits the
 // campaign SHELL - what's promoted (goal), through which channels, to
@@ -22,6 +24,9 @@ import { CampaignOfferService } from 'src/app/common/services/data/campaign-offe
 // is visible but disabled so the shape of the feature is discoverable).
 // In-page mode hosted by campaigns.component, same no-route treatment as
 // the detail view.
+/** Sentinel for the coupon picker's "create a new one" option. */
+const NEW_COUPON = '__new__';
+
 @Component({
     selector: 'app-campaign-wizard',
     templateUrl: './campaign-wizard.component.html',
@@ -39,6 +44,7 @@ export class CampaignWizardComponent implements OnInit {
 
   products: ProductModel[] = [];
   series: SeriesModel[] = [];
+  coupons: CouponModel[] = [];
   events: EventModel[] = [];
   knownTags: string[] = [];
 
@@ -54,6 +60,7 @@ export class CampaignWizardComponent implements OnInit {
     private tagRuleService: TagRuleService,
     private seriesService: SeriesService,
     private offerService: CampaignOfferService,
+    private couponService: CouponService,
     private permissionService: PermissionService,
     private snackbar: SnackbarService,
     private fb: FormBuilder
@@ -89,7 +96,13 @@ export class CampaignWizardComponent implements OnInit {
       offerTargetId: [null],
       offerDiscountType: ['percentOff'],
       offerDiscountValue: [null],
-      offerFreeShipping: [false]
+      offerFreeShipping: [false],
+      // ---- Signup coupon ----
+      couponEnabled: [false],
+      couponId: [null],
+      couponCode: [''],
+      couponPercentOff: [null],
+      couponExpiresAt: [null]
     });
 
     // Any audience change invalidates a shown preview - the count would lie.
@@ -136,6 +149,7 @@ export class CampaignWizardComponent implements OnInit {
     }
 
     void this.initOffer();
+    void this.initCoupon();
   }
 
   get goal(): string {
@@ -292,8 +306,42 @@ export class CampaignWizardComponent implements OnInit {
         return;
       }
     }
+    if (value.couponEnabled) {
+      if (!value.couponId) {
+        this.snackbar.error('Pick a coupon to give subscribers, or create one.');
+        return;
+      }
+      if (this.creatingCoupon) {
+        const code = (value.couponCode ?? '').trim();
+        const percent = Number(value.couponPercentOff);
+        if (!code) {
+          this.snackbar.error('Enter the coupon code subscribers will type.');
+          return;
+        }
+        if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
+          this.snackbar.error('Enter a coupon percentage between 1 and 100.');
+          return;
+        }
+      }
+      // An open-ended campaign has no end date to inherit, so the expiry
+      // has to be chosen - otherwise the code stays live for years.
+      if (this.couponNeedsExpiry && !value.couponExpiresAt) {
+        this.snackbar.error('This campaign has no end date, so give the coupon its own expiry.');
+        return;
+      }
+    }
 
     this.saving = true;
+    const campaignEndDate = value.endDate ? new Date(value.endDate) : null;
+
+    let couponId: string | null = null;
+    try {
+      couponId = await this.resolveCoupon(campaignEndDate);
+    } catch (err) {
+      this.snackbar.error('Could not save the coupon: ' + ((err as Error)?.message ?? err));
+      this.saving = false;
+      return;
+    }
     // Explicit nulls, never undefined (Firestore setDoc gotcha - CLAUDE.md).
     const payload: CampaignModel = {
       ...(this.campaign ?? new CampaignModel()),
@@ -311,9 +359,9 @@ export class CampaignWizardComponent implements OnInit {
       ] as CampaignModel['channels'],
       audience: value.emailChannel ? this.buildAudience() : null,
       startDate: value.startDate ? new Date(value.startDate) : null,
-      endDate: value.endDate ? new Date(value.endDate) : null,
+      endDate: campaignEndDate,
       status: this.campaign?.status ?? 'draft',
-      couponId: this.campaign?.couponId ?? null,
+      couponId,
       source: this.campaign?.source ?? null,
       stats: this.campaign?.stats ?? emptyCampaignStats(),
       schemaVersion: 2
@@ -379,6 +427,76 @@ export class CampaignWizardComponent implements OnInit {
     };
 
     await this.offerService.publish(campaignId, offer);
+  }
+
+  // ---- Signup coupon (Campaign Manager v3) ----
+  // A shared code per campaign, not one per subscriber: the owner's call, and
+  // it means no code generation and no redemption ledger. The campaign POINTS
+  // AT a real coupons record - the discount system is not duplicated here -
+  // which is what CampaignModel.couponId has always been for.
+
+  get couponEnabled(): boolean {
+    return this.form.get('couponEnabled')?.value === true;
+  }
+
+  get creatingCoupon(): boolean {
+    return this.form.get('couponId')?.value === NEW_COUPON;
+  }
+
+  /**
+   * Whether the admin must supply a coupon expiry by hand.
+   *
+   * A coupon inherits the campaign's end date. An open-ended campaign has none
+   * to inherit, so the admin is made to pick one - otherwise a signup reward
+   * stays redeemable for years, which is the failure the expiry exists to stop.
+   */
+  get couponNeedsExpiry(): boolean {
+    return this.couponEnabled && !this.form.get('endDate')?.value;
+  }
+
+  private async initCoupon(): Promise<void> {
+    this.coupons = (await this.couponService.getAll())
+      .filter((c) => !c.isAffilliate)
+      .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''));
+
+    if (this.campaign?.couponId) {
+      this.form.patchValue({ couponEnabled: true, couponId: this.campaign.couponId });
+    }
+  }
+
+  /**
+   * Resolves the campaign's coupon, creating one when the admin chose to, and
+   * stamps the expiry on it.
+   *
+   * Returns the id to store on the campaign, or null when the campaign offers
+   * no signup reward.
+   */
+  private async resolveCoupon(campaignEndDate: Date | null): Promise<string | null> {
+    const value = this.form.value;
+    if (!value.couponEnabled) {
+      return null;
+    }
+
+    const expiresAt = campaignEndDate ??
+      (value.couponExpiresAt ? new Date(value.couponExpiresAt) : null);
+
+    if (value.couponId === NEW_COUPON) {
+      const created = await this.couponService.add({
+        code: (value.couponCode ?? '').trim(),
+        percentOff: Number(value.couponPercentOff),
+        isActive: true,
+        isAffilliate: false,
+        expiresAt
+      } as CouponModel);
+      return created.id ?? null;
+    }
+
+    // An existing coupon still gets the campaign's expiry: the campaign is what
+    // is handing the code out, so it is what decides how long it lives.
+    if (value.couponId && expiresAt) {
+      await this.couponService.updateFields(value.couponId, { expiresAt });
+    }
+    return value.couponId ?? null;
   }
 
   cancel(): void {

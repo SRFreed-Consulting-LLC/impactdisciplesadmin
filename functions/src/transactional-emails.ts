@@ -160,11 +160,39 @@ export async function queueMail(
  * @param {string} email Subscriber address.
  * @return {Promise<void>} Resolves when queued.
  */
+export interface SignupReward {
+  code: string;
+  percentOff: number;
+  expiresAt: number | null;
+}
+
+/**
+ * The reward block a campaign-issued coupon adds to a confirmation email.
+ * Empty when the signup earned nothing, which is the normal case.
+ * @param {SignupReward | null} reward The coupon, or null.
+ * @return {string} HTML, or an empty string.
+ */
+function rewardBlock(reward: SignupReward | null): string {
+  if (!reward?.code) {
+    return "";
+  }
+  const expiry = reward.expiresAt ?
+    "<div>Use it by " +
+      new Date(reward.expiresAt).toLocaleDateString("en-US", {
+        year: "numeric", month: "long", day: "numeric",
+      }) + ".</div>" :
+    "";
+  return "<br><br><div>Here is <b>" + reward.percentOff +
+    "% off</b> your next order, with our thanks. Use code <b>" +
+    escapeHtml(reward.code) + "</b> at checkout.</div>" + expiry;
+}
+
 export async function queueSubscriptionConfirmation(
   db: FirebaseFirestore.Firestore,
   type: string,
   firstName: string,
-  email: string
+  email: string,
+  reward: SignupReward | null = null
 ): Promise<void> {
   const unsubscribe =
     "<br><br><br><div>If you believe you received this confirmation by " +
@@ -178,7 +206,8 @@ export async function queueSubscriptionConfirmation(
       "<div>Dear " + escapeHtml(firstName) + ".</div><br><br>" +
       "<div>Your email address was successfully added to our Prayer " +
       "Team List! (" + escapeHtml(email) + ")</div><br><br>" +
-      "<div>God Bless! - Impact Disciples Ministry</div>" + unsubscribe;
+      rewardBlock(reward) +
+      "<br><br><div>God Bless! - Impact Disciples Ministry</div>" + unsubscribe;
     await queueMail(db, email, subject, html);
     return;
   }
@@ -191,8 +220,9 @@ export async function queueSubscriptionConfirmation(
     "Subsciption List! (" + escapeHtml(email) + ")</div><br><br>" +
     "<div>Please accept this free <a href=\"" + FREE_EBOOK_URL +
     "\" download>EBook</a> as a small token of our appreciation." +
-    "</div><br><br>" +
-    "<div>God Bless! - Impact Disciples Ministry</div>" + unsubscribe;
+    "</div>" +
+    rewardBlock(reward) +
+    "<br><br><div>God Bless! - Impact Disciples Ministry</div>" + unsubscribe;
   await queueMail(db, email, subject, html);
 }
 
