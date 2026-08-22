@@ -69,6 +69,11 @@ before(async () => {
     await setDoc(doc(db, "purchases/o1"), {total: 10});
     await setDoc(doc(db, "admin_users/a1"), {email: "admin@test.local"});
     await setDoc(doc(db, "eventSessionCounts/e1"), {counts: {}});
+    await setDoc(doc(db, "campaign_offers/camp1"), {
+      campaignId: "camp1", isActive: true,
+      target: {kind: "product", id: "p1"},
+      discount: {type: "percentOff", value: 20},
+    });
   });
 });
 
@@ -81,6 +86,19 @@ after(async () => {
 test("anon: public catalog readable, never writable", async () => {
   await assertSucceeds(getDoc(doc(anon(), "products/p1")));
   await assertFails(setDoc(doc(anon(), "products/p-new"), {title: "nope"}));
+});
+
+test("anon: campaign offers are public to read, never writable", async () => {
+  // A price a shopper sees has to be readable without auth - campaign docs
+  // are staff-only, so the offer is what the storefront reads instead.
+  await assertSucceeds(getDoc(doc(anon(), "campaign_offers/camp1")));
+  await assertSucceeds(getDocs(collection(anon(), "campaign_offers")));
+  // ...but nobody unauthenticated may mint themselves a discount.
+  await assertFails(setDoc(doc(anon(), "campaign_offers/camp-new"), {
+    campaignId: "camp-new", isActive: true,
+    target: {kind: "product", id: "p1"},
+    discount: {type: "percentOff", value: 100},
+  }));
 });
 
 test("anon: coupons are NOT enumerable (code enumeration lockdown)", async () => {

@@ -394,6 +394,16 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // A campaign's OFFER - what a shopper pays, doc id = campaignId
+    // (Campaign Manager v3). PUBLIC-readable for the same reason popups are:
+    // campaign docs stay staff-only, so anything a PRICE depends on has to be
+    // published here for the storefront to read. Like the popup doc, it must
+    // NEVER carry audience, stats or coupon codes. Replaces the sales
+    // collection, whose single global percentage overwrote every product.
+    match /campaign_offers/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     // Reusable popup recipes - the popup equivalent of mail_templates.
     match /popup_templates/{id} {
       allow read, write: if isBusinessStaff();
