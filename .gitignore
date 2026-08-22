@@ -70,3 +70,7 @@ firebase.deploy-tmp.json
 # sat in the tree until 2026-08-21). Git already holds every prior
 # version; a .bak beside the file is duplication that compiles to nothing.
 *.bak
+
+# Generated admin E2E dashboard output - rendered from a run, not source.
+# Regenerate: npm run e2e:admin && npm run e2e:admin:dashboard
+/e2e-admin/results

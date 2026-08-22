@@ -154,6 +154,23 @@ project id `demo-impact`):
    (:5200), web (:4200), and reader (:4300) apps, each served with its `emulator` build
    configuration (`npm run start-emu` in each repo; `playwright.cross.config.ts` starts/reuses
    them). The old `e2e/` suite remains as a live-dev smoke layer.
+5. **Admin E2E** (`e2e-admin/`, `npm run e2e:admin`, added 2026-08-21) — one app, one emulator,
+   the whole admin back office swept by FUNCTIONAL AREA. Exists because most admin breakage is
+   single-app UI breakage (a route moved, a lazy chunk broke, a grid stopped rendering) and
+   booting the web + reader dev servers to catch it is waste. `e2e-admin/support/areas.ts` is
+   the area registry; each spec tags itself `[area-id] Title` and the reporter groups by that.
+
+   **What belongs here vs. in `integration/`:** integration owns the data and money truths
+   (purchase → license grant, refunds, customer upserts, the send engine) — a browser adds only
+   latency to a Firestore assertion. This layer owns what the browser is uniquely able to break.
+   The campaigns rewrite of 2026-08-21 is the case in point: it changed no Cloud Function, so
+   every integration test stays green whether the campaign editor works or is a blank page.
+   `03-campaign-email.spec.ts` is the only thing in the repo that would notice.
+
+   `npm run e2e:admin:dashboard` renders `e2e-admin/results/dashboard.json` (written by
+   `support/dashboard-reporter.ts`) into a red/yellow/green page per functional area, each
+   failure carrying a plain-language explanation and a suggested fix. Areas with NO test report
+   as untested rather than green — the failure mode of every dashboard that only counts what ran.
 
 Fixture world: `scripts/fixtures/emulator-fixtures.js` (deterministic ids — summit
 `event-summit-2027`, coupons FREE100/SAVE10, seeded accounts `admin@test.local` /

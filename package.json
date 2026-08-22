@@ -23,7 +23,12 @@
     "e2e": "playwright test",
     "e2e:cross": "playwright test --config=playwright.cross.config.ts",
     "backup:dev": "node scripts/export.js --project=dev",
-    "backup:prod": "node scripts/export.js --project=prod"
+    "backup:prod": "node scripts/export.js --project=prod",
+    "e2e:admin": "playwright test --config=playwright.admin.config.ts",
+    "e2e:admin:dashboard": "node scripts/render-e2e-dashboard.js",
+    "test:coverage": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
+    "coverage:check": "node scripts/check-coverage.js",
+    "coverage:baseline": "node scripts/check-coverage.js --update"
   },
   "private": true,
   "dependencies": {
