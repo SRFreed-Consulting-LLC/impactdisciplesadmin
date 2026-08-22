@@ -93,13 +93,22 @@
                   <mat-error>Required</mat-error>
                 }
               </mat-form-field>
+              <!-- Read-only since Campaign Manager v3: a sale price is set by
+                   running a campaign with an offer, not by typing here. Shown
+                   rather than hidden so staff can still see what a product is
+                   currently selling for. -->
               <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Sale Price</mat-label>
+                <span matTextPrefix>              <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Sale Price</mat-label>
                 <span matTextPrefix>$&nbsp;</span>
                 <input matInput type="number" formControlName="salePrice" required>
                 @if (form.get('salePrice')?.hasError('required')) {
                   <mat-error>Required</mat-error>
                 }
+              </mat-form-field>nbsp;</span>
+                <input matInput type="number" formControlName="salePrice" readonly>
+                <mat-hint>Set by a campaign offer, not edited here</mat-hint>
               </mat-form-field>
             </div>
             <div class="field-row">
