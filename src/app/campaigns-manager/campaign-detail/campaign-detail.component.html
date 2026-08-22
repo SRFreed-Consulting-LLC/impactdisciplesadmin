@@ -38,6 +38,21 @@
     </div>
   </div>
   <span class="detail-header__spacer"></span>
+  <!-- Status lifecycle (2026-08-22). Nothing could take a campaign off draft
+       before this, so the Live Now hub was permanently empty and there was no
+       moment at which a discount was allowed to start. -->
+  @if (canActivate()) {
+    <button mat-flat-button color="primary" (click)="activate()"
+      matTooltip="Start this campaign - its popup and discount begin">
+      <mat-icon>play_arrow</mat-icon> ACTIVATE
+    </button>
+  }
+  @if (canEnd()) {
+    <button mat-stroked-button (click)="endCampaign()"
+      matTooltip="Stop this campaign, its popup, its discount and its coupon">
+      <mat-icon>stop</mat-icon> END CAMPAIGN
+    </button>
+  }
   @if (canEditCampaign()) {
     <button mat-stroked-button (click)="edit.emit(campaign)">
       <mat-icon>edit</mat-icon> EDIT CAMPAIGN

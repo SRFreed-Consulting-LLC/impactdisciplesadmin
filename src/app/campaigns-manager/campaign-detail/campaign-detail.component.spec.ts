@@ -5,6 +5,8 @@ import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.
 import { CampaignModel, emptyCampaignStats, emptyEmailStats } from 'src/app/common/models/domain/campaign.model';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { CampaignPopupService } from 'src/app/common/services/data/campaign-popup.service';
+import { CampaignOfferService } from 'src/app/common/services/data/campaign-offer.service';
+import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
@@ -34,6 +36,9 @@ function setup(perms: Perms = { canAdd: true, canEdit: true, canDelete: true }) 
       { provide: CampaignEmailService, useValue: { getPage: () => Promise.resolve({ items: [], cursor: null, hasMore: false }) } },
       { provide: CampaignService, useValue: {} },
       { provide: CampaignPopupService, useValue: { getById: () => Promise.resolve(null) } },
+      // Lifecycle collaborators - inert here; the cascade has its own harness below.
+      { provide: CampaignOfferService, useValue: { forCampaign: () => Promise.resolve(null) } },
+      { provide: CouponService, useValue: {} },
       { provide: ProductService, useValue: { getById: () => Promise.resolve(null) } },
       { provide: EventService, useValue: { getById: () => Promise.resolve(null) } },
       {
@@ -274,6 +279,274 @@ describe('CampaignDetailComponent', () => {
       // Imported Mailchimp history carries no status field.
       const { component } = setup();
       expect(component.touchStatusLabel(touch())).toBe('SENT');
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Status lifecycle (2026-08-22)
+//
+// Added because nothing in the app could take a campaign off draft: the wizard
+// wrote `status: campaign?.status ?? 'draft'` and no other path wrote live or
+// scheduled, so every campaign made in the UI stayed a draft and the Live Now
+// hub was permanently empty.
+//
+// What is pinned here is the part that costs money if it drifts: a draft
+// campaign never discounts, ending a campaign actually STOPS its discount, and
+// one failing cascade step is reported rather than swallowed. Its own harness,
+// so the 22 tests above keep their smaller provider set.
+
+interface LifecycleStubs {
+  status?: CampaignModel['status'];
+  startDate?: Date | null;
+  couponId?: string | null;
+  popup?: { isActive: boolean } | null;
+  offer?: Record<string, unknown> | null;
+  conflicts?: Record<string, unknown>[];
+  confirmAnswer?: boolean;
+  failOn?: 'popup' | 'offer' | 'coupon' | 'campaign';
+}
+
+function lifecycleSetup(stubs: LifecycleStubs = {}) {
+  const writes: { target: string; fields: Record<string, unknown> }[] = [];
+  const errors: string[] = [];
+  const successes: string[] = [];
+  const confirmed: string[] = [];
+
+  const record = (target: string) => (_id: string, fields: Record<string, unknown>) => {
+    if (stubs.failOn === target) {
+      return Promise.reject(new Error('boom'));
+    }
+    writes.push({ target, fields });
+    return Promise.resolve();
+  };
+
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      CampaignDetailComponent,
+      { provide: CampaignEmailService, useValue: { getPage: () => Promise.resolve({ items: [], cursor: null, hasMore: false }) } },
+      {
+        provide: CampaignService,
+        useValue: {
+          updateFields: record('campaign'),
+          getById: (id: string) => Promise.resolve({ id, name: 'Other Campaign' }),
+        },
+      },
+      { provide: CampaignPopupService, useValue: { getById: () => Promise.resolve(null), updateFields: record('popup') } },
+      {
+        provide: CampaignOfferService,
+        useValue: {
+          forCampaign: () => Promise.resolve(stubs.offer ?? null),
+          updateFields: record('offer'),
+          deactivate: (id: string) => record('offer')(id, { isActive: false }),
+          findConflicts: () => Promise.resolve(stubs.conflicts ?? []),
+        },
+      },
+      { provide: CouponService, useValue: { updateFields: record('coupon') } },
+      { provide: ProductService, useValue: { getById: () => Promise.resolve(null), getAll: () => Promise.resolve([]) } },
+      { provide: EventService, useValue: { getById: () => Promise.resolve(null) } },
+      {
+        provide: PermissionService,
+        useValue: { canAdd: () => true, canEdit: () => true, canDelete: () => true },
+      },
+      {
+        provide: ConfirmService,
+        useValue: {
+          confirm: (message: string) => {
+            confirmed.push(message);
+            return Promise.resolve(stubs.confirmAnswer ?? true);
+          },
+        },
+      },
+      {
+        provide: SnackbarService,
+        useValue: {
+          success: (m: string) => successes.push(m),
+          error: (m: string) => errors.push(m),
+        },
+      },
+      { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => ({ subscribe: () => undefined }) }) } },
+      { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
+    ],
+  });
+
+  const component = TestBed.inject(CampaignDetailComponent);
+  component.campaign = campaign({
+    status: stubs.status ?? 'draft',
+    startDate: stubs.startDate ?? null,
+    couponId: stubs.couponId ?? null,
+  });
+  component.popup = (stubs.popup ?? null) as never;
+
+  const wrote = (target: string) => writes.filter((w) => w.target === target).map((w) => w.fields);
+  return { component, wrote, errors, successes, confirmed };
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+describe('CampaignDetailComponent status lifecycle', () => {
+  describe('activate', () => {
+    it('puts a draft campaign live', async () => {
+      const { component, wrote, successes } = lifecycleSetup();
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([{ status: 'live' }]);
+      expect(successes[0]).toBe('Campaign is live');
+    });
+
+    it('schedules rather than starts when the start date is still ahead', async () => {
+      // effectiveStatus() promotes it on the day, so nobody has to come back.
+      const { component, wrote, successes } = lifecycleSetup({
+        startDate: new Date(Date.now() + DAY),
+      });
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([{ status: 'scheduled' }]);
+      expect(successes[0]).toBe('Campaign scheduled');
+    });
+
+    it('turns the offer on only when the campaign is actually live', async () => {
+      const { component, wrote } = lifecycleSetup({ offer: { campaignId: 'camp-1' } });
+
+      await component.activate();
+
+      expect(wrote('offer')).toEqual([{ isActive: true }]);
+    });
+
+    it('leaves a scheduled campaign offer switched off', async () => {
+      // The rule that matters: a campaign that has not started must not
+      // discount anything.
+      const { component, wrote } = lifecycleSetup({
+        startDate: new Date(Date.now() + DAY),
+        offer: { campaignId: 'camp-1' },
+      });
+
+      await component.activate();
+
+      expect(wrote('offer')).toEqual([{ isActive: false }]);
+    });
+
+    it('warns before activating over another live discount, naming it', async () => {
+      const { component, confirmed } = lifecycleSetup({
+        offer: { campaignId: 'camp-1', target: { kind: 'product', id: 'p1' } },
+        conflicts: [{ campaignId: 'camp-2' }],
+      });
+
+      await component.activate();
+
+      expect(confirmed.length).toBe(1);
+      expect(confirmed[0]).toContain('Other Campaign');
+    });
+
+    it('does not activate when the conflict warning is declined', async () => {
+      const { component, wrote } = lifecycleSetup({
+        offer: { campaignId: 'camp-1', target: { kind: 'product', id: 'p1' } },
+        conflicts: [{ campaignId: 'camp-2' }],
+        confirmAnswer: false,
+      });
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([]);
+    });
+
+    it('does not warn when nothing overlaps', async () => {
+      const { component, confirmed } = lifecycleSetup({
+        offer: { campaignId: 'camp-1', target: { kind: 'product', id: 'p1' } },
+        conflicts: [],
+      });
+
+      await component.activate();
+
+      expect(confirmed).toEqual([]);
+    });
+
+    it('is unavailable once the campaign has ended', () => {
+      const { component } = lifecycleSetup({ status: 'ended' });
+      expect(component.canActivate()).toBeFalse();
+    });
+  });
+
+  describe('endCampaign', () => {
+    it('ends the campaign and stamps an end date', async () => {
+      const { component, wrote } = lifecycleSetup({ status: 'live' });
+
+      await component.endCampaign();
+
+      const fields = wrote('campaign')[0];
+      expect(fields['status']).toBe('ended');
+      expect(fields['endDate']).toEqual(jasmine.any(Date));
+    });
+
+    it('stops the popup, the discount and the coupon', async () => {
+      // The cascade IS the feature - a campaign marked ended whose discount
+      // keeps applying is worse than no button at all.
+      const { component, wrote } = lifecycleSetup({
+        status: 'live',
+        popup: { isActive: true },
+        offer: { campaignId: 'camp-1' },
+        couponId: 'coupon-1',
+      });
+
+      await component.endCampaign();
+
+      expect(wrote('popup')).toEqual([{ isActive: false }]);
+      expect(wrote('offer')).toEqual([{ isActive: false }]);
+      expect(wrote('coupon')).toEqual([{ isActive: false }]);
+    });
+
+    it('skips what the campaign does not have', async () => {
+      const { component, wrote } = lifecycleSetup({ status: 'live' });
+
+      await component.endCampaign();
+
+      expect(wrote('popup')).toEqual([]);
+      expect(wrote('offer')).toEqual([]);
+      expect(wrote('coupon')).toEqual([]);
+    });
+
+    it('does nothing when the confirm is declined', async () => {
+      const { component, wrote } = lifecycleSetup({ status: 'live', confirmAnswer: false });
+
+      await component.endCampaign();
+
+      expect(wrote('campaign')).toEqual([]);
+    });
+
+    it('reports by name when a cascade step fails, instead of claiming success', async () => {
+      // Ending the campaign but silently leaving the discount live is the
+      // failure mode worth catching.
+      const { component, errors, successes } = lifecycleSetup({
+        status: 'live',
+        offer: { campaignId: 'camp-1' },
+        failOn: 'offer',
+      });
+
+      await component.endCampaign();
+
+      expect(successes).toEqual([]);
+      expect(errors[0]).toContain('discount');
+    });
+
+    it('stops before the cascade when the campaign write itself fails', async () => {
+      const { component, wrote, errors } = lifecycleSetup({
+        status: 'live',
+        popup: { isActive: true },
+        failOn: 'campaign',
+      });
+
+      await component.endCampaign();
+
+      expect(wrote('popup')).toEqual([]);
+      expect(errors[0]).toContain('Could not end the campaign');
+    });
+
+    it('is unavailable on an already-ended campaign', () => {
+      const { component } = lifecycleSetup({ status: 'ended' });
+      expect(component.canEnd()).toBeFalse();
     });
   });
 });
