@@ -54,8 +54,16 @@ test.describe('[campaign-email] Campaign Email Authoring', () => {
     // an event opens straight onto its starter instead, so this dismisses the
     // dialog when it appears and simply carries on when it does not - the
     // helper serves tests on both kinds of campaign.
+    // waitFor, not isVisible: isVisible() takes no timeout and answers
+    // immediately, so it would report "no picker" simply because the dialog
+    // had not rendered yet.
     const starter = page.getByRole('button', { name: 'Start Blank' });
-    if (await starter.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    const pickerOpened = await starter
+      .waitFor({ state: 'visible', timeout: 8_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (pickerOpened) {
       await starter.click();
       await expect(page.locator('.cdk-overlay-backdrop')).toHaveCount(0, { timeout: 15_000 });
     }
@@ -83,11 +91,18 @@ test.describe('[campaign-email] Campaign Email Authoring', () => {
     await page.goto(newEmailUrl);
     await expect(page.locator('app-campaign-email-editor')).toBeVisible({ timeout: 30_000 });
 
-    await expect(page.getByText('Start Your Email')).toHaveCount(0, { timeout: 20_000 });
-    // The seeded product's title, rendered as an editable heading block.
-    await expect(page.getByText(FIXTURES.followUpProductTitle).first())
+    // The whole starter, not just that something rendered: the product's own
+    // title, its price, and the call to action - each as its own block, which
+    // is what makes them editable rather than a lump of generated markup.
+    const canvas = page.locator('app-design-canvas');
+    await expect(canvas.getByText(FIXTURES.followUpProductTitle).first())
       .toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('button', { name: 'Start from a template' })).toBeVisible();
+    await expect(canvas.getByText('$25.00')).toBeVisible();
+    await expect(canvas.getByText('Shop Now')).toBeVisible();
+
+    // And the picker never appeared over it.
+    await expect(page.getByText('Start Your Email')).toHaveCount(0);
+    await expect(page.locator('.cdk-overlay-backdrop')).toHaveCount(0);
   });
 
   test('a new email on an OTHER campaign still opens on the starter picker', async ({ page }) => {

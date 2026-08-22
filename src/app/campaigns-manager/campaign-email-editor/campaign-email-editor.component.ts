@@ -203,20 +203,23 @@ export class CampaignEmailEditorComponent implements OnInit {
    * away on the toolbar, so picking a template instead is still a choice.
    */
   private async startNewTouch(): Promise<void> {
-    const item = await this.starterItem();
+    // Show the editor FIRST. A starter is a convenience, and gating the screen
+    // on a Firestore read means a slow or hanging lookup leaves the whole
+    // editor stuck in its loading state with Save disabled - which is exactly
+    // what it did, and what the E2E suite caught.
+    this.state.load(createDefaultDesign());
+    this.loading$.next(false);
 
-    if (item) {
-      // The send engine rewrites every link through campaign_click at prepare
-      // time, so the plain public URL is right here - decorating it too would
-      // just put ?cid= inside a tracked link.
-      this.state.load(starterDesign(item, item.url));
-      this.loading$.next(false);
+    const item = await this.starterItem();
+    if (!item) {
+      this.openTemplatePicker();
       return;
     }
 
-    this.state.load(createDefaultDesign());
-    this.loading$.next(false);
-    this.openTemplatePicker();
+    // The send engine rewrites every link through campaign_click at prepare
+    // time, so the plain public URL is right here - decorating it too would
+    // just put ?cid= inside a tracked link.
+    this.state.load(starterDesign(item, item.url));
   }
 
   /** The campaign's product or event, normalized, or null. */
@@ -230,8 +233,11 @@ export class CampaignEmailEditorComponent implements OnInit {
         const event = await this.eventService.getById(this.campaign.eventId);
         return event ? eventStarter(event, environment.publicSiteUrl) : null;
       }
-    } catch {
-      // A starter is a convenience - fall back to the blank design.
+    } catch (err) {
+      // A starter is a convenience - fall back to the blank design. But say so:
+      // swallowing this silently made a real failure look like "this campaign
+      // has nothing to spotlight", which is a much harder thing to debug.
+      console.error('Could not build a starter for this campaign', err);
     }
     return null;
   }

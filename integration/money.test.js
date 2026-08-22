@@ -11,12 +11,12 @@
 //   that into 400 "Unable to start checkout". Nothing is staged first
 //   (pending_orders is only written AFTER PayPal accepts the order), so
 //   paid-path tests can only pin the clean error + the absence of writes.
-// - The seeded "Summer Sale" (isActive, isProducts, 25% off) applies to
-//   EVERY product, and computeOrderPricing replicates the client's
-//   "sale always wins over coupon" precedence - so while that sale is
-//   live NO product can be zeroed by a coupon (even FREE100). The only
-//   coupon-to-zero path is an EVENT item (events are never on sale and
-//   have no salePrice), which is what the free-path tests use.
+// - Discounts come from CAMPAIGN OFFERS now (Campaign Manager v3); the
+//   sitewide `sales` collection is retired. So a product is only on sale
+//   while some campaign_offer names it, its series, or - for an event -
+//   the event itself. The "a discount always beats a coupon" precedence
+//   survives the change and is pinned below, but it now has to be set up
+//   per test rather than being ambient in the fixture world.
 const {test, before} = require("node:test");
 const assert = require("node:assert/strict");
 const {getDb, preflight, reseed, callHttp} = require("./helpers/emulator");
@@ -213,22 +213,96 @@ async () => {
   assert.equal(aff.size, 0);
 });
 
-test("sale beats coupon: while the 25% isProducts sale is live, FREE100 " +
-  "CANNOT zero a product - the order stays paid and hits the boundary",
+test("with NO campaign offer, FREE100 zeroes a product and the order " +
+  "completes free - the path the retired sitewide sale used to block",
 async () => {
-  const email = "sale-wins@money.test";
+  // Worth having as its own test: while the old "Summer Sale" existed it
+  // applied to every product in the world, so this was impossible and the
+  // only coupon-to-zero path was an event. Retiring sales opened it.
+  const email = "coupon-zeroes@money.test";
   const res = await callHttp("create_paypal_order", orderBody({
     email,
     couponCode: "FREE100",
     cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
   }));
-  // NOT {free:true}: the sale puts the item "on sale" (20 -> 15), and a
-  // coupon never discounts an on-sale item (replicated client precedence,
-  // see computeOrderPricing) - so itemsTotal is 15, the paid path runs,
-  // and the emulator's vendor boundary 400s it.
-  assert.equal(res.status, 400);
-  assert.equal(res.body.error, "Unable to start checkout");
-  assert.equal((await purchasesByEmail(email)).length, 0);
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.free, true);
+  assert.equal((await purchasesByEmail(email)).length, 1);
+});
+
+test("a campaign offer beats a coupon: while an offer names the product, " +
+  "FREE100 CANNOT zero it - the order stays paid and hits the boundary",
+async () => {
+  // The precedence rule that outlived the sales collection: a coupon only
+  // ever discounts an item that is not already discounted. computeOrderPricing
+  // enforces it server-side, which is the only place it counts.
+  //
+  // The offer is created and removed HERE rather than seeded, so it cannot
+  // change the pricing every other test in this file depends on.
+  const email = "offer-wins@money.test";
+  const offerRef = db.collection("campaign_offers").doc("camp-money-test");
+
+  await offerRef.set({
+    campaignId: "camp-money-test",
+    target: {kind: "product", id: "prod-book-physical"},
+    discount: {type: "percentOff", value: 25},
+    freeShipping: false,
+    isActive: true,
+    startsAt: null,
+    endsAt: null,
+    requiresAttribution: false,
+  });
+
+  try {
+    const res = await callHttp("create_paypal_order", orderBody({
+      email,
+      couponCode: "FREE100",
+      cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
+    }));
+
+    // NOT {free:true}: the offer puts the item on sale (20 -> 15) and the
+    // coupon is refused on an already-discounted line, so itemsTotal is 15,
+    // the paid path runs, and the emulator's vendor boundary 400s it.
+    assert.equal(res.status, 400);
+    assert.equal(res.body.error, "Unable to start checkout");
+    assert.equal((await purchasesByEmail(email)).length, 0);
+  } finally {
+    await offerRef.delete();
+  }
+});
+
+test("an offer that requires attribution is refused to a buyer who did " +
+  "not arrive through the campaign", async () => {
+  // The early-bird rule, enforced where money changes hands rather than only
+  // in the storefront. Without attribution the buyer pays full price, so
+  // FREE100 still zeroes the line and the order completes free.
+  const email = "unattributed@money.test";
+  const offerRef = db.collection("campaign_offers").doc("camp-gated-test");
+
+  await offerRef.set({
+    campaignId: "camp-gated-test",
+    target: {kind: "product", id: "prod-book-physical"},
+    discount: {type: "percentOff", value: 25},
+    freeShipping: false,
+    isActive: true,
+    startsAt: null,
+    endsAt: null,
+    requiresAttribution: true,
+  });
+
+  try {
+    const res = await callHttp("create_paypal_order", orderBody({
+      email,
+      couponCode: "FREE100",
+      cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
+    }));
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.free, true);
+  } finally {
+    await offerRef.delete();
+  }
 });
 
 test("an INACTIVE product is not rejected - it prices normally and " +
@@ -239,9 +313,9 @@ test("an INACTIVE product is not rejected - it prices normally and " +
     cartItems: [{id: "prod-inactive", orderQuantity: 1}],
   }));
   // prod-inactive (isActive:false, cost 99) is priced like any other
-  // product (99 - 25% sale = 74.25) and heads for PayPal - the emulator
-  // boundary is what stops it, not an inactive-product guard. Pinned
-  // as-is; flagged in the suite report as a gap worth a look.
+  // product and heads for PayPal - the emulator boundary is what stops it,
+  // not an inactive-product guard. Pinned as-is; flagged in the suite report
+  // as a gap worth a look.
   assert.equal(res.status, 400);
   assert.equal(res.body.error, "Unable to start checkout");
   assert.equal((await purchasesByEmail(email)).length, 0);

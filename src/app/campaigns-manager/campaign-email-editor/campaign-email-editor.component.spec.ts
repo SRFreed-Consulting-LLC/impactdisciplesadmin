@@ -1,6 +1,7 @@
 import { FormBuilder } from '@angular/forms';
 import { Timestamp } from 'firebase/firestore';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
+import { CampaignModel } from 'src/app/common/models/domain/campaign.model';
 // The REAL default design, not a stub: persist() compiles it to html, and a
 // hand-rolled shape silently fails that compile and makes every assertion
 // here vacuous.
@@ -248,4 +249,60 @@ describe('CampaignEmailEditorComponent', () => {
       expect(component.statusLabel).toBe('Draft · automated');
     });
   });
+
+  // Why a brand-new email opens the way it does (Campaign Manager v3).
+  //
+  // Written after the E2E suite caught this failing in the real app: a campaign
+  // that spotlights a product was still landing on the template picker, and a
+  // five-minute browser round trip is a terrible way to find out why.
+  describe('CampaignEmailEditorComponent new-touch starter', () => {
+    const PRODUCT = {
+      id: 'prod-1', title: 'Coaching Workbook', cost: 25, salePrice: 0,
+      description: 'A workbook.', imageUrl: { url: 'https://img.test/p.png' }
+    };
+
+    function newTouchComponent(campaign: Partial<CampaignModel>, product: unknown) {
+      const component = build({} as never);
+      component.campaign = campaign as never;
+      (component as unknown as { productService: unknown }).productService = {
+        getById: () => Promise.resolve(product)
+      };
+      (component as unknown as { eventService: unknown }).eventService = {
+        getById: () => Promise.resolve(null)
+      };
+      return component;
+    }
+
+    it('loads a starter built from the campaign product, and never opens the picker', async () => {
+      const component = newTouchComponent(
+        { goal: 'product', productId: 'prod-1' }, PRODUCT
+      );
+
+      const loaded: unknown[] = [];
+      (component.state as unknown as { load: (d: unknown) => void }).load =
+        (d: unknown) => { loaded.push(d); };
+      let pickerOpened = false;
+      component.openTemplatePicker = () => { pickerOpened = true; };
+
+      await (component as unknown as { startNewTouch: () => Promise<void> }).startNewTouch();
+
+      expect(pickerOpened).toBeFalse();
+      // Loaded twice on purpose: a blank design first so the editor is usable
+      // immediately, then the starter once the product resolves.
+      const design = JSON.stringify(loaded[loaded.length - 1]);
+      expect(design).toContain('Coaching Workbook');
+    });
+
+    it('falls back to the picker when the campaign spotlights nothing', async () => {
+      const component = newTouchComponent({ goal: 'other' }, null);
+
+      let pickerOpened = false;
+      component.openTemplatePicker = () => { pickerOpened = true; };
+
+      await (component as unknown as { startNewTouch: () => Promise<void> }).startNewTouch();
+
+      expect(pickerOpened).toBeTrue();
+    });
+  });
+
 });

@@ -48,7 +48,7 @@ const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
 // (product-catalog.service.ts), matching how the admin Sales screen
 // actually stores them - a Timestamp there would parse as Invalid Date and
 // silently disable every sale.
-const STRING_DATE_COLLECTIONS = new Set(["sales"]);
+const STRING_DATE_COLLECTIONS = new Set();
 
 // Fixtures carry dates as ISO strings; real data carries Timestamps (and
 // range queries/sorts depend on that - see MIGRATION.md). Convert every
