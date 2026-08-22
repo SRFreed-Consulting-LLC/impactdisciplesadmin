@@ -1,4 +1,5 @@
 import { Type } from '@angular/core';
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -8,6 +9,7 @@ import { Auth } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { Functions } from '@angular/fire/functions';
 import { Storage } from '@angular/fire/storage';
+import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { AddContactNoteDialogComponent } from 'src/app/contacts-manager/contacts/add-contact-note-dialog.component';
 import { AddressFieldComponent } from 'src/app/shared/address-field/address-field.component';
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
@@ -171,7 +173,30 @@ import { WorldMapComponent } from 'src/app/library-manager/world-map/world-map.c
 // provider costs nothing, and one pool keeps this file from becoming 67
 // bespoke setups.
 
+// A DAO shaped like the real one. Components inject SERVICES, and those
+// services are real classes that call straight through to the DAO - so a
+// bare {} here makes every stream method return undefined, and any
+// ngOnInit doing combineLatest over them throws asynchronously, after the
+// suite has already reported green.
+const daoStub = {
+  getAll: () => Promise.resolve([]),
+  getAllByValue: () => Promise.resolve([]),
+  queryAllByMultiValue: () => Promise.resolve([]),
+  getById: () => Promise.resolve(null),
+  getPage: () => Promise.resolve({ items: [], cursor: null, hasMore: false }),
+  streamAll: () => of([]),
+  streamAllOrdered: () => of([]),
+  streamByValue: () => of([]),
+  queryStreamByValue: () => of([]),
+  streamById: () => () => undefined,
+  add: () => Promise.resolve({}),
+  update: () => Promise.resolve({}),
+  updateFields: () => Promise.resolve(),
+  delete: () => Promise.resolve(),
+};
+
 const PROVIDERS = [
+  { provide: FirebaseDAO, useValue: daoStub },
   { provide: Firestore, useValue: {} },
   // FireAuthDao subscribes to onAuthStateChanged the moment it is built,
   // via fromEventPattern - a bare {} here throws asynchronously, after the
@@ -353,6 +378,18 @@ const IMPORT_ONLY: ComponentRow[] = [
   { name: 'TemplatePickerDialogComponent', type: TemplatePickerDialogComponent },
   { name: 'WorldMapComponent', type: WorldMapComponent },
 ];
+
+// NOT DONE, deliberately: an ngOnInit tier.
+//
+// Calling ngOnInit on each of these was tried (2026-08-22) and backed out.
+// With a realistic DAO stub only 5 of 119 threw synchronously - but several
+// set up combineLatest pipelines that fail LATER, asynchronously, where a
+// synchronous expect(...).not.toThrow() cannot see them. Those land in
+// afterAll and turn the whole run red without naming a culprit.
+//
+// Making that tier honest needs per-component stubs, which is what a real
+// spec for each component is. Better to write those than to bolt an
+// unreliable tier onto this one.
 
 describe('components - construction smoke', () => {
   afterEach(() => TestBed.resetTestingModule());
