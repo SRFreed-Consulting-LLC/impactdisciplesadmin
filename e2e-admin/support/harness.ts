@@ -28,6 +28,8 @@ export const FIXTURES = {
   pastTouch: 'cemail-past-1',
   pastTouchLabel: 'March issue',
   summitEvent: 'event-summit-2027',
+  /** The product camp-live spotlights - its title seeds that campaign's email starter. */
+  followUpProductTitle: 'Coaching Workbook',
   digitalProduct: 'prod-book-digital',
   retiredProduct: 'prod-retired',
   libraryBook: 'lib-book-0001',
