@@ -64,3 +64,9 @@ firebase.deploy-tmp.json
 
 # Claude Code worktrees (agent scratch checkouts) - never commit
 /.claude/worktrees/
+
+# Editor/AI safety copies - never meant to be committed (a 554-line
+# panel.ts.bak rode along with the side-panel extraction in 74ad110 and
+# sat in the tree until 2026-08-21). Git already holds every prior
+# version; a .bak beside the file is duplication that compiles to nothing.
+*.bak
