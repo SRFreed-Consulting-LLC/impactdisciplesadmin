@@ -61,6 +61,9 @@ export class CampaignsComponent implements OnInit, OnDestroy {
 
   liveCampaigns: CampaignModel[] = [];
 
+  /** Raw "live now" result, before pinned campaigns are subtracted. */
+  private liveAll: CampaignModel[] = [];
+
   selectedCampaign: CampaignModel | null = null;
 
   kindLabel = campaignKindLabel;
@@ -118,10 +121,21 @@ export class CampaignsComponent implements OnInit, OnDestroy {
       this.service.getAllByValue('status', 'live'),
       this.service.getAllByValue('status', 'scheduled')
     ]).then(([live, scheduled]) => {
-      this.liveCampaigns = [...live, ...scheduled]
+      this.liveAll = [...live, ...scheduled]
         .filter((c) => effectiveStatus(c) === 'live')
         .sort((a, b) => toMillis(a.endDate) - toMillis(b.endDate));
+      this.applyHubFilter();
     });
+  }
+
+  // A pinned campaign is already on screen in the strip above; a Live Now
+  // card for it would just duplicate it - and the six repaired long-running
+  // series (see scripts/fix-open-ended-campaign-status.js) are exactly the
+  // ones staff pin. Recomputed whenever EITHER query resolves, since they
+  // run concurrently and either can land first.
+  private applyHubFilter(): void {
+    const pinnedIds = new Set(this.pinnedCampaigns.map((c) => c.id));
+    this.liveCampaigns = this.liveAll.filter((c) => !pinnedIds.has(c.id));
   }
 
   private openRate(item: CampaignModel): number {
@@ -184,6 +198,7 @@ export class CampaignsComponent implements OnInit, OnDestroy {
   private loadPinned(): void {
     this.service.getAllByValue('pinned', true).then((pinned) => {
       this.pinnedCampaigns = pinned.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+      this.applyHubFilter();
     });
   }
 

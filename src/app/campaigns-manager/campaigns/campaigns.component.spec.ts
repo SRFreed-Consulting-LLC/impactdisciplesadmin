@@ -198,3 +198,43 @@ describe('CampaignsComponent pinning', () => {
     });
   });
 });
+
+describe('CampaignsComponent Live Now hub', () => {
+  // The pinned strip renders ABOVE the hub, so a campaign that is both
+  // pinned and live would otherwise appear twice on one screen. This
+  // stopped being hypothetical on 2026-08-22, when the six long-running
+  // series the regroup had left marked ENDED were set live again - they
+  // are exactly the campaigns staff pin.
+  function withCampaigns(pinned: CampaignModel[], live: CampaignModel[]) {
+    return makeComponent({
+      service: {
+        ...makeDeps().service,
+        getAllByValue: (field: string, value: unknown) => Promise.resolve(
+          field === 'pinned' ? pinned : value === 'live' ? live : [],
+        ),
+      },
+    });
+  }
+
+  it('does not repeat a pinned campaign as a Live Now card', async () => {
+    const newsletter = aCampaign({ id: 'grp_monthly-newsletter', name: 'Monthly Newsletter', status: 'live', pinned: true });
+    const appeal = aCampaign({ id: 'c-2', name: 'Fall Appeal', status: 'live' });
+    const { component } = withCampaigns([newsletter], [newsletter, appeal]);
+
+    component.ngOnInit();
+    await flush();
+
+    expect(component.pinnedCampaigns.map((c) => c.id)).toEqual(['grp_monthly-newsletter']);
+    expect(component.liveCampaigns.map((c) => c.id)).toEqual(['c-2']);
+  });
+
+  it('still shows live campaigns that are not pinned', async () => {
+    const appeal = aCampaign({ id: 'c-2', name: 'Fall Appeal', status: 'live' });
+    const { component } = withCampaigns([], [appeal]);
+
+    component.ngOnInit();
+    await flush();
+
+    expect(component.liveCampaigns.map((c) => c.id)).toEqual(['c-2']);
+  });
+});
