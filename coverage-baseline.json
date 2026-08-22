@@ -1,13 +1,13 @@
 {
-  "coveredStatements": 2950,
-  "coveredBranches": 1223,
-  "coveredFunctions": 685,
-  "coveredLines": 2795,
-  "filesCovered": 166,
+  "coveredStatements": 4750,
+  "coveredBranches": 1389,
+  "coveredFunctions": 936,
+  "coveredLines": 4516,
+  "filesCovered": 358,
   "pct": {
-    "statements": 50.7,
-    "branches": 45.96,
-    "functions": 40.74,
-    "lines": 50.57
+    "statements": 40.03,
+    "branches": 25.1,
+    "functions": 26.58,
+    "lines": 40.37
   }
 }
