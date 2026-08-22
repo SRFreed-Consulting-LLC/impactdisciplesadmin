@@ -157,31 +157,6 @@ async function lookupGeorgiaTaxRate(
 }
 
 /**
- * Loads every currently-active, currently-in-date-range Sale document.
- * Mirrors product-details.component.ts / checkout.component.ts's own
- * getActiveSales() (isActive == true, then a client-side date-range filter
- * since Firestore can't range-filter on two different fields in one query).
- * @return {Promise<DocumentData[]>} Active sales today.
- */
-async function getActiveSales(): Promise<DocumentData[]> {
-  const snap = await getFirestore()
-    .collection("sales")
-    .where("isActive", "==", true)
-    .get();
-
-  const today = new Date();
-
-  return snap.docs
-    .map((doc) => doc.data())
-    .filter((sale) => {
-      const start = new Date(sale.startDate);
-      const end = new Date(sale.endDate);
-      return start.getTime() <= today.getTime() &&
-        end.getTime() >= today.getTime();
-    });
-}
-
-/**
  * Recomputes an order's full price/discount/tax/shipping-discount breakdown
  * server-side from real Firestore data. The client-supplied cartItems only
  * ever carry item ids, quantities, and selections (size/color/language/
@@ -237,10 +212,8 @@ export async function computeOrderPricing(
   // item's product/event doc) are independent of one another - fetched in
   // parallel so the public checkout path pays one round trip, not one per
   // read. The pricing logic itself below is unchanged.
-  const [configSnap, activeSales, activeOffers, couponSnap, itemSnaps] =
-  await Promise.all([
+  const [configSnap, activeOffers, couponSnap, itemSnaps] = await Promise.all([
     db.collection("config").limit(1).get(),
-    getActiveSales(),
     getActiveOffers(),
     request.couponCode ?
       db.collection("coupons")
@@ -256,11 +229,8 @@ export async function computeOrderPricing(
 
   const config = configSnap.docs[0]?.data() ?? {};
 
-  // The legacy sitewide product sale is GONE (Campaign Manager v3) - a
-  // discount now comes from a campaign offer that names the product or its
-  // series. Only the shipping half of the sales collection is still read,
-  // until campaign free shipping fully replaces it.
-  const shippingSale = activeSales.find((sale) => sale.isShipping);
+  // The sales collection is retired (Campaign Manager v3). Every discount,
+  // including free shipping, now comes from a campaign offer.
   const now = Date.now();
   const attributedCampaignId = request.attributedCampaignId ?? null;
 
@@ -410,11 +380,9 @@ export async function computeOrderPricing(
     const freeShippingAmount = typeof config.freeShippingAmount === "number" ?
       config.freeShippingAmount : Infinity;
 
-    // Three rules can free shipping now - the spend threshold, a campaign
-    // offer, and the legacy shipping sale - so take the BEST for the buyer
-    // rather than letting whichever is tested first win. The old if/else let
-    // the threshold hide a better campaign offer entirely. Mirrors the
-    // storefront's bestShippingDiscount().
+    // Two rules can free shipping - the spend threshold and a campaign offer
+    // - so take the BEST for the buyer rather than the first that matches.
+    // Mirrors the storefront's bestShippingDiscount().
     const candidates: {amount: number; reason: string}[] = [];
 
     if (subtotal > freeShippingAmount) {
@@ -437,13 +405,6 @@ export async function computeOrderPricing(
       candidates.push({amount: shippingRate, reason: "Free shipping offer"});
     }
 
-    if (shippingSale) {
-      const shippingPercentOff = clampPercent(shippingSale.percentOff);
-      candidates.push({
-        amount: round2(shippingPercentOff / 100 * shippingRate),
-        reason: shippingPercentOff + "% Off",
-      });
-    }
 
     const best = candidates.sort((a, b) => b.amount - a.amount)[0];
     if (best && best.amount > 0) {

@@ -11,7 +11,6 @@ import { CouponsComponent } from './coupons/coupons.component';
 import { CouponDialogComponent } from './coupons/coupon-dialog.component';
 import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.component';
 import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
-import { SalesComponent } from './sales/sales.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
 // see src/app/shared/image-uploader/ for the full rationale (built during
@@ -19,7 +18,6 @@ import { SalesComponent } from './sales/sales.component';
 // screens still using it as of this migration pass.
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { StoreManagerRoutingModule } from './store-manager-routing.module';
-import { SaleDialogComponent } from './sales/sale-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -50,9 +48,7 @@ import { QuillModule } from 'ngx-quill';
     ProductCategoriesComponent,
     CategoryModalComponent,
     ProductSeriesComponent,
-    SeriesModalComponent,
-    SalesComponent,
-    SaleDialogComponent
+    SeriesModalComponent
   ],
   imports: [
     CommonModule,

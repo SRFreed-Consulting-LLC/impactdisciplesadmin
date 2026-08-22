@@ -117,8 +117,6 @@ import { ResetPasswordComponent } from 'src/app/core/auth/reset-password/reset-p
 import { RoomComponent } from 'src/app/events-manager/events/room/room.component';
 import { RoomDialogComponent } from 'src/app/events-manager/events/room/room-dialog.component';
 import { RouteRequestDialogComponent } from 'src/app/shared/route-request-dialog/route-request-dialog.component';
-import { SaleDialogComponent } from 'src/app/store-manager/sales/sale-dialog.component';
-import { SalesComponent } from 'src/app/store-manager/sales/sales.component';
 import { SaveAsTemplateDialogComponent } from 'src/app/campaigns-manager/campaign-email-editor/save-as-template-dialog.component';
 import { ScreenPermissionsDialogComponent } from 'src/app/core/main-screen/screen-permissions-dialog/screen-permissions-dialog.component';
 import { SendSubscriptionDialogComponent } from 'src/app/reports-manager/subscriber-report/send-subscription-dialog.component';
@@ -314,8 +312,6 @@ const CONSTRUCTIBLE: ComponentRow[] = [
   { name: 'RoomComponent', type: RoomComponent },
   { name: 'RoomDialogComponent', type: RoomDialogComponent },
   { name: 'RouteRequestDialogComponent', type: RouteRequestDialogComponent },
-  { name: 'SaleDialogComponent', type: SaleDialogComponent },
-  { name: 'SalesComponent', type: SalesComponent },
   { name: 'SaveAsTemplateDialogComponent', type: SaveAsTemplateDialogComponent },
   { name: 'ScreenPermissionsDialogComponent', type: ScreenPermissionsDialogComponent },
   { name: 'SendSubscriptionDialogComponent', type: SendSubscriptionDialogComponent },

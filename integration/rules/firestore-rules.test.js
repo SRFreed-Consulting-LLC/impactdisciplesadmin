@@ -88,6 +88,14 @@ test("anon: public catalog readable, never writable", async () => {
   await assertFails(setDoc(doc(anon(), "products/p-new"), {title: "nope"}));
 });
 
+test("anon: the retired sales collection is closed to everyone", async () => {
+  // Sales are gone (Campaign Manager v3) - discounts come from
+  // campaign_offers now. The rule is deny-all so the leftover documents are
+  // unreachable rather than quietly public while they wait to be deleted.
+  await assertFails(getDoc(doc(anon(), "sales/s1")));
+  await assertFails(getDocs(collection(anon(), "sales")));
+});
+
 test("anon: campaign offers are public to read, never writable", async () => {
   // A price a shopper sees has to be readable without auth - campaign docs
   // are staff-only, so the offer is what the storefront reads instead.

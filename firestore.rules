@@ -118,9 +118,11 @@ service cloud.firestore {
       allow read: if isBusinessStaff();
       allow write: if isBusinessStaff();
     }
+    // The sales collection is RETIRED (Campaign Manager v3) - discounts now
+    // live on campaign_offers above. Deny-all so the two dormant documents
+    // left in each project are unreachable rather than quietly public.
     match /sales/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
+      allow read, write: if false;
     }
     match /series/{id} {                    // Store Manager's Product Series -
       allow read: if true;                  // NOT library series (librarySeries)
