@@ -1,5 +1,6 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
@@ -66,11 +67,28 @@ export class SentEmailsComponent implements OnInit {
     private campaignService: CampaignService,
     private dialog: MatDialog
   ) {
-    // Newest first. Plain orderBy sentAt - docs missing sentAt (future
-    // drafts) are excluded by Firestore's orderBy semantics, which is
-    // exactly right for a SENT log.
+    // Newest first, and SENT only.
+    //
+    // This used to rely on orderBy('sentAt') alone: Firestore drops docs
+    // that lack the ordered field, so drafts - which had no sentAt - fell
+    // out for free. That invariant broke on 2026-08-21 when the campaign
+    // email editor started writing `sentAt: ... ?? null` on every save
+    // (the repo convention is that models use null for "unset", see
+    // strip-undefined.ts). An explicit null is a PRESENT field, so every
+    // draft an author saved turned up in this read-only history with a
+    // blank Sent date.
+    //
+    // The filter is now explicit rather than a side effect of ordering.
+    // `!= null` also excludes docs missing the field entirely, so it keeps
+    // the old behaviour AND drops the nulls; because the inequality is on
+    // the same field this already orders by, it needs no composite index.
+    // Deliberately not filtering on `status`: the imported Mailchimp
+    // history has no status field at all and would vanish.
     this.paged = new PagedCollectionSource<CampaignEmailModel>(
-      (pageSize, cursor) => this.emailService.getPage(pageSize, cursor, 'sentAt', 'desc'),
+      (pageSize, cursor) => this.emailService.getPage(
+        pageSize, cursor, 'sentAt', 'desc',
+        [new QueryParam('sentAt', WhereFilterOperandKeys.notEqual, null)]
+      ),
       50
     );
   }
