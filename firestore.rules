@@ -154,22 +154,6 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
-    match /home_page_popups/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /pod_casts/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /pod_cast_categories/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if isBusinessStaff();
-    }
-    match /pod_cast_tags/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if isBusinessStaff();
-    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();
@@ -414,27 +398,11 @@ service cloud.firestore {
     match /popup_templates/{id} {
       allow read, write: if isBusinessStaff();
     }
-    match /prayers/{id} {
-      allow read, write: if isBusinessStaff();
-    }
-    match /newsletters/{id} {
-      allow read, write: if isBusinessStaff();
-    }
     match /organizations/{id} {
       allow read, write: if isBusinessStaff();
     }
     match /event-announcements/{id} {
       allow read, write: if isBusinessStaff();
-    }
-    match /customer_emails/{id} {
-      allow read, write: if isBusinessStaff();
-    }
-    // Dead collections (migrated away / never used) - deny outright.
-    match /subscriptions/{id} {
-      allow read, write: if false;
-    }
-    match /shipments/{id} {
-      allow read, write: if false;
     }
 
     // ========================================================================
