@@ -11,7 +11,8 @@
     "start": "npm run shell",
     "deploy-dev": "firebase use impactdisciplesdev && firebase deploy --only functions",
     "deploy-prod": "firebase use impactdisciples-a82a8 && firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test:coverage": "npm run build && node --test --experimental-test-coverage --test-reporter=spec \"test/*.test.js\""
   },
   "engines": {
     "node": "22"
