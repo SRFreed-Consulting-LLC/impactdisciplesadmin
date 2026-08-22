@@ -209,7 +209,6 @@ export const NAV_CONFIG: NavGroup[] = [
       // Content Manager rename: the public site's configuration belongs
       // with the rest of the public-site content.
       { label: 'Web Config', slug: 'web-config' },
-      { label: 'Pod Casts', slug: 'pod-casts' },
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Home Page Images', slug: 'home-page-images' },
       // 'Home Page Popups' retired 2026-08-19 (Campaign Manager v2 Phase

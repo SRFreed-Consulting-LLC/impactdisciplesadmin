@@ -260,7 +260,8 @@ export class ProductsComponent implements OnInit {
   }
 
   // Product Tags is the one tag field that IS persisted (its own Firestore
-  // collection) - mirrors PodCastDialogComponent.onCreateTag exactly.
+  // collection) - the tag-creation pattern the removed Pod Casts dialog
+  // also used.
   onCreateProductTag(text: string): void {
     const tag: TagModel = { ...new TagModel(), tag: text, id: this.generateRandomId() };
     this.productTagService.update(tag.id!, tag);

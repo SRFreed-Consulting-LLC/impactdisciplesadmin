@@ -11,7 +11,7 @@ import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 // backed by an autocomplete over `options`. Typing a name that doesn't match
 // any existing option and pressing Enter/comma asks the parent to create it
 // (createTag) rather than creating it here - the parent owns persistence
-// (e.g. PodCastTagsService), this component only owns selection/display,
+// (e.g. ProductTagService), this component only owns selection/display,
 // the same division of responsibility as PhoneFieldComponent /
 // AddressFieldComponent (a plain @Input() group, no business logic).
 @Component({

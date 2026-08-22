@@ -4,12 +4,9 @@ import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { DMMServiceComponent } from './dmms/dmms.component';
 import { DMMDialogComponent } from './dmms/dmm-dialog.component';
-import { PodCastsComponent } from './pod-casts/pod-casts.component';
-import { PodCastDialogComponent } from './pod-casts/pod-cast-dialog.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
 import { ContentManagerComponent } from './content-manager.component';
 import { SharedModule } from '../shared/shared.module';
-import { PodCastCategoriesComponent } from './pod-cast-categories/pod-cast-categories.component';
 import { provideHttpClient } from '@angular/common/http';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
@@ -24,7 +21,6 @@ import { WebConfigComponent } from './web-config/web-config.component';
 // is now fully DevExtreme-free.
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { ContentManagerRoutingModule } from './content-manager-routing.module';
-import { PodCastCategoryDialogComponent } from './pod-cast-categories/pod-cast-category-dialog.component';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -77,12 +73,8 @@ import { QuillModule } from 'ngx-quill';
     ContentManagerComponent,
     DMMServiceComponent,
     DMMDialogComponent,
-    PodCastsComponent,
-    PodCastDialogComponent,
     TestimonialsComponent,
     TestimonialDialogComponent,
-    PodCastCategoriesComponent,
-    PodCastCategoryDialogComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
     TeamPageComponent,

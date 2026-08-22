@@ -17,7 +17,6 @@ test.describe('[content] Website Content', () => {
 
   const screens: Array<[string, string, string]> = [
     ['Disciple Making Minute', 'disciple-making-minute', 'dmms-table'],
-    ['Podcasts', 'pod-casts', 'pod-casts-table'],
     ['Testimonials', 'testimonials', 'testimonials-table'],
     ['Home Page Images', 'home-page-images', 'images-table'],
     ['Team Page', 'team-page', 'team-page-table'],

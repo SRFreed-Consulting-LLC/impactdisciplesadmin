@@ -128,13 +128,14 @@ export function collectConsoleErrors(page: Page): string[] {
     // previewed document contains. That is the sandbox WORKING; treating it
     // as a page error would make the campaign editor permanently red.
     if (/Blocked script execution in 'about:blank'|frame is sandboxed/i.test(text)) return;
-    // The emulator runs on deliberately FAKE vendor credentials
-    // (scripts/write-emulator-env.js, see CLAUDE.md) so anything calling a
-    // real third party fails by design - get_youtube_videos 502s, and the
-    // Podcasts screen reports it. That is the emulator working as intended;
-    // counting it would make Website Content permanently amber for a
-    // reason no one can fix in the app.
-    if (/Failed to fetch podcast videos|502 \(Bad Gateway\)|get_youtube_videos/i.test(text)) return;
+    // NOTE: a filter for get_youtube_videos 502s lived here until
+    // 2026-08-21. The emulator runs on deliberately FAKE vendor credentials
+    // (scripts/write-emulator-env.js), so anything calling a real third
+    // party fails by design - and the admin Pod Casts screen did. That
+    // screen is gone (podcasts now come straight from YouTube on the public
+    // site), and no admin screen calls a vendor API any more, so the
+    // exemption went with it. Add one back only alongside the screen that
+    // needs it.
     errors.push(text);
   });
   page.on('pageerror', (err) => errors.push(String(err?.message ?? err)));

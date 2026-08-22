@@ -11,7 +11,7 @@ import { NAV_CONFIG, NavGroup, NavLeaf } from './nav-config';
 // by hand every time a screen moves. These are the rules it has to keep.
 
 const groups: NavGroup[] = NAV_CONFIG;
-const leaves: Array<{ group: NavGroup; leaf: NavLeaf }> =
+const leaves: { group: NavGroup; leaf: NavLeaf }[] =
   groups.flatMap((group) => (group.items ?? []).map((leaf) => ({ group, leaf })));
 
 const screenKey = (group: NavGroup, leaf: NavLeaf) => `${group.id}.${leaf.slug}`;

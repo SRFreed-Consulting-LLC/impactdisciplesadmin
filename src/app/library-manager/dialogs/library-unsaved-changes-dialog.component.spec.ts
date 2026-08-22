@@ -31,7 +31,7 @@ import {
 describe('LibraryUnsavedChangesDialogComponent', () => {
   /** Records what the component closed the dialog with. */
   function setup(itemLabel = 'lesson') {
-    const closed: Array<LibraryUnsavedChangesDialogResult | undefined> = [];
+    const closed: (LibraryUnsavedChangesDialogResult | undefined)[] = [];
     const dialogRef = { close: (r?: LibraryUnsavedChangesDialogResult) => closed.push(r) };
 
     TestBed.configureTestingModule({

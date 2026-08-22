@@ -11,8 +11,7 @@ import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Opened via MatDialog.open(ProductSeriesComponent, ...) from
 // ProductsComponent's "Series" menu item - same pattern as
-// ProductCategoriesComponent (itself modeled on content-manager's
-// pod-cast-categories.component). Replaces the old NGXS
+// ProductCategoriesComponent. Replaces the old NGXS
 // ShowProductSeriesModal/ShowSeriesModal action-driven, always-mounted
 // pattern.
 //

@@ -11,9 +11,9 @@ import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Opened via MatDialog.open(ProductCategoriesComponent, ...) from
 // ProductsComponent's "Categories" menu item - there is no standalone
-// route for this screen, same pattern as content-manager's
-// pod-cast-categories.component (the direct precedent this was built
-// from). Replaces the old NGXS ShowProductCategoriesModal/ShowCategoryModal
+// route for this screen - the pattern was taken from content-manager's
+// former pod-cast-categories screen (removed 2026-08-21 with the rest of
+// Pod Casts). Replaces the old NGXS ShowProductCategoriesModal/ShowCategoryModal
 // action-driven, always-mounted-in-template pattern - no other migrated
 // screen in this app invokes dialogs that way.
 //
