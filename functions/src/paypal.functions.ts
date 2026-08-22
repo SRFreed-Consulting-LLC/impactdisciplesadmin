@@ -489,6 +489,12 @@ exports.create_paypal_order = onRequest(
             body.cartItems
           ) as unknown as PricingCartItemInput[],
           couponCode: body.couponCode,
+          // The campaign the buyer arrived through, sanitized the same way
+          // the purchase record's own attribution is. Only offers that
+          // REQUIRE it consult it - the event early-bird rule - and the price
+          // is re-derived from the offer rather than taken from the client.
+          attributedCampaignId:
+            sanitizeAttribution(body.attribution)?.campaignId ?? null,
           shippingAddress: body.shippingAddress as
             {state?: string; zip?: string; [key: string]: unknown} | undefined,
           shippingRate: body.shippingRate ?? 0,

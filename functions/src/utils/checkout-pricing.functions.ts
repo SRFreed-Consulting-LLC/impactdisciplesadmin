@@ -1,4 +1,9 @@
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
+import {
+  bestOfferPrice,
+  getActiveOffers,
+  grantsFreeShipping,
+} from "./campaign-offers.functions";
 
 // Shared server-side recompute logic for store checkout, used by both
 // create_paypal_order and capture_paypal_order (../paypal.functions.ts).
@@ -27,6 +32,11 @@ export interface PricedCartItem extends PricingCartItemInput {
   itemName: string;
   price: number;
   salePrice: number;
+  /**
+   * Read from the PRODUCT doc, never from the client - it decides whether a
+   * series-targeted offer covers this line, including for free shipping.
+   */
+  series?: string | null;
   discount: number;
   discountPrice: number | null;
   img?: unknown;
@@ -38,6 +48,12 @@ export interface PricedCartItem extends PricingCartItemInput {
 export interface PricingRequest {
   cartItems: PricingCartItemInput[];
   couponCode?: string;
+  /**
+   * The campaign the buyer arrived through, when there is one. Only offers
+   * that REQUIRE attribution consult it - the event early-bird rule - but it
+   * is re-derived here rather than trusted from a price the client sent.
+   */
+  attributedCampaignId?: string | null;
   shippingAddress: {state?: string; zip?: string; [key: string]: unknown};
   shippingRate: number;
 }
@@ -221,9 +237,11 @@ export async function computeOrderPricing(
   // item's product/event doc) are independent of one another - fetched in
   // parallel so the public checkout path pays one round trip, not one per
   // read. The pricing logic itself below is unchanged.
-  const [configSnap, activeSales, couponSnap, itemSnaps] = await Promise.all([
+  const [configSnap, activeSales, activeOffers, couponSnap, itemSnaps] =
+  await Promise.all([
     db.collection("config").limit(1).get(),
     getActiveSales(),
+    getActiveOffers(),
     request.couponCode ?
       db.collection("coupons")
         .where("code", "==", request.couponCode)
@@ -238,8 +256,13 @@ export async function computeOrderPricing(
 
   const config = configSnap.docs[0]?.data() ?? {};
 
-  const productSale = activeSales.find((sale) => sale.isProducts);
+  // The legacy sitewide product sale is GONE (Campaign Manager v3) - a
+  // discount now comes from a campaign offer that names the product or its
+  // series. Only the shipping half of the sales collection is still read,
+  // until campaign free shipping fully replaces it.
   const shippingSale = activeSales.find((sale) => sale.isShipping);
+  const now = Date.now();
+  const attributedCampaignId = request.attributedCampaignId ?? null;
 
   let coupon: DocumentData | undefined;
   if (couponSnap) {
@@ -263,18 +286,29 @@ export async function computeOrderPricing(
     const basePrice = input.isEvent ?
       (doc.costInDollars ?? 0) : (doc.cost ?? 0);
 
-    // A persisted per-product salePrice always applies if set; an active
-    // sitewide "isProducts" sale overrides it -- matches
-    // product-details.component.ts#checkProductForSale() precedence
-    // exactly. Events have no sale/coupon path at all today (SaleModel's
-    // isEvents flag is never read client-side), so this deliberately
-    // doesn't invent one.
-    let effectiveSalePrice = !input.isEvent && doc.salePrice > 0 ?
-      round2(doc.salePrice) : 0;
-    if (!input.isEvent && productSale) {
-      const percentOff = clampPercent(productSale.percentOff);
-      effectiveSalePrice = round2(basePrice - (percentOff / 100 * basePrice));
-    }
+    // Campaign Manager v3: a discount comes from a campaign offer that names
+    // this product, its series, or this event - resolved HERE, server-side,
+    // from the campaign_offers collection. The client sends no price at all
+    // (capCartItems strips them), so this is the only thing that decides what
+    // a card is charged.
+    //
+    // Events are priced the same way now. They previously had no discount path
+    // at all, which is what the early-bird offer needed.
+    //
+    // A stored product salePrice is NOT consulted any more: campaigns own
+    // discounts, the field is a computed display value, and every stored value
+    // was cleared by scripts/clear-product-sale-prices.js.
+    const bestPrice = bestOfferPrice(
+      activeOffers,
+      input.isEvent ?
+        {kind: "event", id: input.id} :
+        {kind: "product", id: input.id, series: doc.series ?? null},
+      basePrice,
+      now,
+      attributedCampaignId
+    );
+    const effectiveSalePrice = bestPrice !== null && bestPrice < basePrice ?
+      round2(bestPrice) : 0;
     const isOnSale = effectiveSalePrice > 0;
     // Rounded once, here, and used everywhere downstream (subtotal, taxable
     // amount, and the per-item unit_amount sent to PayPal) so nothing can
@@ -309,6 +343,7 @@ export async function computeOrderPricing(
       img: doc.imageUrl,
       eBookUrl: doc.eBookUrl,
       weight: input.isEvent ? 0 : (doc.weight ?? 0),
+      series: input.isEvent ? null : (doc.series ?? null),
       digitalBookId: doc.digitalBookId,
     });
   }
@@ -375,13 +410,45 @@ export async function computeOrderPricing(
     const freeShippingAmount = typeof config.freeShippingAmount === "number" ?
       config.freeShippingAmount : Infinity;
 
+    // Three rules can free shipping now - the spend threshold, a campaign
+    // offer, and the legacy shipping sale - so take the BEST for the buyer
+    // rather than letting whichever is tested first win. The old if/else let
+    // the threshold hide a better campaign offer entirely. Mirrors the
+    // storefront's bestShippingDiscount().
+    const candidates: {amount: number; reason: string}[] = [];
+
     if (subtotal > freeShippingAmount) {
-      shippingDiscount = shippingRate;
-      shippingDiscountReason = "Over $" + config.freeShippingAmount;
-    } else if (shippingSale) {
+      candidates.push({
+        amount: shippingRate,
+        reason: "Over $" + config.freeShippingAmount,
+      });
+    }
+
+    // Order-level grant: the cart holding one covered product frees shipping
+    // on the whole order, because shipping is quoted once per order.
+    const campaignFreeShipping = pricedItems.some((item) =>
+      !item.isEvent && grantsFreeShipping(
+        activeOffers,
+        {kind: "product", id: item.id, series: item.series ?? null},
+        now,
+        attributedCampaignId
+      ));
+    if (campaignFreeShipping) {
+      candidates.push({amount: shippingRate, reason: "Free shipping offer"});
+    }
+
+    if (shippingSale) {
       const shippingPercentOff = clampPercent(shippingSale.percentOff);
-      shippingDiscount = round2(shippingPercentOff / 100 * shippingRate);
-      shippingDiscountReason = shippingPercentOff + "% Off";
+      candidates.push({
+        amount: round2(shippingPercentOff / 100 * shippingRate),
+        reason: shippingPercentOff + "% Off",
+      });
+    }
+
+    const best = candidates.sort((a, b) => b.amount - a.amount)[0];
+    if (best && best.amount > 0) {
+      shippingDiscount = best.amount;
+      shippingDiscountReason = best.reason;
     }
   } else {
     shippingRate = 0;
