@@ -116,7 +116,9 @@ test.describe('store pricing and cart, order to fulfillment, contact upsert', ()
     // alone, which the old global sale could never have shown.
     const card = page.locator('.product', { hasText: 'Disciple-Making Field Guide' });
     await expect(card).toBeVisible({ timeout: 20_000 });
-    await expect(card).toContainText('$20.00');
+    // The card renders the currency with a space ("$ 20.00"); the cart badge
+    // below does not. Both pinned exactly as they appear.
+    await expect(card).toContainText('$ 20.00');
     await expect(card.locator('s')).toHaveCount(0);
 
     // "ADD" is an <a role="button"> with a cart-plus icon
