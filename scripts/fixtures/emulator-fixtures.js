@@ -64,7 +64,7 @@ const series = {
 const products = {
   "prod-book-physical": {
     isActive: true, showInStore: true, title: "Disciple-Making Field Guide",
-    cost: 20, salePrice: 15, category: "Books", series: "M-7 Series",
+    cost: 20, salePrice: 0, category: "Books", series: "M-7 Series",
     description: "A physical paperback.", weight: 1, uom: "POUNDS",
     seriesOrder: 1, categoryOrder: 1,
     isEBook: false, isDigitalBook: false,
@@ -73,7 +73,7 @@ const products = {
   },
   "prod-book-digital": {
     isActive: true, showInStore: true, title: "Field Guide (Library Edition)",
-    cost: 10, salePrice: 10, category: "Books",
+    cost: 10, salePrice: 0, category: "Books",
     description: "Digital book unlocked in the reader app.",
     seriesOrder: 2, categoryOrder: 2,
     isEBook: false, isDigitalBook: true, digitalBookId: "lib-book-0001",
@@ -82,17 +82,17 @@ const products = {
   },
   "prod-ebook": {
     isActive: true, showInStore: true, title: "Multiplication Primer (eBook)",
-    cost: 5, salePrice: 5, category: "Books",
+    cost: 5, salePrice: 0, category: "Books",
     description: "A PDF eBook delivered by link.",
     seriesOrder: 3, categoryOrder: 3,
     isEBook: true, isDigitalBook: false,
-    eBookUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "primer.pdf"},
+    eBookUrl: {url: "https://example.test/primer.pdf", name: "primer.pdf"},
     imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "primer.png"},
     sendFollowUpEmail: false,
   },
   "prod-shirt": {
     isActive: true, showInStore: true, title: "Impact Tee",
-    cost: 18, salePrice: 18, category: "Merchandise",
+    cost: 18, salePrice: 0, category: "Merchandise",
     description: "A t-shirt.", weight: 0.5, uom: "POUNDS",
     seriesOrder: 1, categoryOrder: 1,
     isEBook: false, isDigitalBook: false,
@@ -102,7 +102,7 @@ const products = {
   },
   "prod-followup": {
     isActive: true, showInStore: true, title: "Coaching Workbook",
-    cost: 25, salePrice: 25, category: "Books",
+    cost: 25, salePrice: 0, category: "Books",
     description: "Physical book with a follow-up email.", weight: 1.2, uom: "POUNDS",
     seriesOrder: 4, categoryOrder: 4,
     isEBook: false, isDigitalBook: false,
@@ -111,7 +111,7 @@ const products = {
   },
   "prod-inactive": {
     isActive: false, showInStore: false, title: "Retired Product",
-    cost: 99, salePrice: 99, category: "Books",
+    cost: 99, salePrice: 0, category: "Books",
     description: "Must never appear on the public store.",
     seriesOrder: 9, categoryOrder: 9,
     isEBook: false, isDigitalBook: false,
