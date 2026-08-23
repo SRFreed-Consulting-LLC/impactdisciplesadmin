@@ -81,20 +81,52 @@ describe('ProductsComponent Store preview', () => {
 
     it('points at the header toggle when the product is not live', () => {
       const reason = componentWith({ isActive: false, showInStore: true }).previewHiddenReason;
-      expect(reason).toContain('Not live');
+      expect(reason).toContain('not live');
+      expect(reason).toContain('Live toggle');
     });
 
     it('points at the Organization tab when Show in Store is off', () => {
       const reason = componentWith({ isActive: true, showInStore: false }).previewHiddenReason;
       expect(reason).toContain('Organization');
+      // A live product held back from the store is a deliberate setup, so it
+      // is stated rather than framed as something being wrong.
+      expect(reason).toContain('Live');
     });
 
     it('reports both when neither is set', () => {
       const reason = componentWith({ isActive: false, showInStore: false }) as unknown as {
         previewHiddenReason: string;
       };
-      expect(reason.previewHiddenReason).toContain('Not live');
+      expect(reason.previewHiddenReason).toContain('not live');
       expect(reason.previewHiddenReason).toContain('Store');
     });
+  });
+});
+
+// The default matters as much as the editor: both stores list a product when
+// `showInStore !== false`, so an ABSENT value means shown. Defaulting the
+// checkbox to false meant opening a product saved before this field had an
+// editor rendered it unchecked - and saving wrote a real `false`, quietly
+// pulling it from the store. Pinned here so the default can't drift back.
+describe('ProductsComponent showInStore default', () => {
+  function buildFormFor(item: Record<string, unknown> | undefined): boolean {
+    const component = Object.create(ProductsComponent.prototype) as ProductsComponent;
+    (component as unknown as { fb: FormBuilder }).fb = new FormBuilder();
+    // buildForm is private; exercised through its own name rather than
+    // reaching for the whole component lifecycle.
+    (component as unknown as { buildForm(i: unknown): void }).buildForm(item);
+    return (component as unknown as { form: FormGroup }).form.get('showInStore')?.value === true;
+  }
+
+  it('shows a brand-new product in the Store', () => {
+    expect(buildFormFor(undefined)).toBeTrue();
+  });
+
+  it('shows a product saved before this field had an editor', () => {
+    expect(buildFormFor({ title: 'Legacy' })).toBeTrue();
+  });
+
+  it('still honours an explicit false', () => {
+    expect(buildFormFor({ title: 'Hidden', showInStore: false })).toBeFalse();
   });
 });

@@ -149,11 +149,17 @@ export class ProductsComponent implements OnInit {
   }
 
   /**
-   * Why this product wouldn't appear in the Store, if it wouldn't. The
-   * storefront lists a product only when it is both live and flagged for the
-   * store, and those two switches sit on different tabs of this form - so
-   * without saying it here, an admin can produce a perfect-looking card that
-   * no shopper ever sees.
+   * Why this product wouldn't appear in the Store, if it wouldn't.
+   *
+   * Two different switches, and they mean different things. `isActive` is
+   * whether the product is live at all - off means it exists nowhere.
+   * `showInStore` is on by default and only withholds it from the store, for
+   * a product that should be available elsewhere but not sold there; that is
+   * a deliberate setup rather than a mistake, so it's stated plainly instead
+   * of warned about.
+   *
+   * Worth saying at all because the two live on different tabs of this form,
+   * so an admin can otherwise build a perfect-looking card no shopper sees.
    */
   get previewHiddenReason(): string | null {
     if (!this.form) {
@@ -161,14 +167,13 @@ export class ProductsComponent implements OnInit {
     }
     const isActive = this.form.get('isActive')?.value === true;
     const showInStore = this.form.get('showInStore')?.value === true;
-    if (!isActive && !showInStore) {
-      return 'Not live, and not set to show in the Store.';
-    }
     if (!isActive) {
-      return 'Not live - use the toggle in the header.';
+      return showInStore
+        ? 'This product is not live - use the Live toggle in the header.'
+        : 'This product is not live, and is set not to show in the Store.';
     }
     if (!showInStore) {
-      return 'Show in Store is off - see the Organization tab.';
+      return 'Live, but deliberately kept out of the Store - see Show In Store on the Organization tab.';
     }
     return null;
   }
@@ -305,9 +310,16 @@ export class ProductsComponent implements OnInit {
       categoryOrder: [item?.categoryOrder ?? null],
       series: [item?.series ?? null],
       seriesOrder: [item?.seriesOrder ?? null],
-      // Exists on the model but had no editor anywhere in the original UI -
-      // there was no admin path to ever set this real, persisted field.
-      showInStore: [item?.showInStore ?? false],
+      // Defaults to TRUE, and absence means true. Both the website store and
+      // the reader's in-app store list a product when `showInStore !== false`
+      // - absent counts as shown - so defaulting the checkbox to false was
+      // actively harmful: opening any product saved before this field had an
+      // editor rendered it unchecked, and saving then wrote a real `false`
+      // and pulled the product from the store without anyone asking for it.
+      // `isActive` is the switch for whether a product is live at all; this
+      // one only withholds it from the store, for a product that should exist
+      // elsewhere but not be sold there.
+      showInStore: [item?.showInStore ?? true],
       tags: [item?.tags ?? []]
     });
   }
