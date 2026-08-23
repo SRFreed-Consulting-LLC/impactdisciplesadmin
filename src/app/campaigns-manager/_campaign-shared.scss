@@ -3,6 +3,38 @@
 // per-component (styles are view-encapsulated, so the shell's css can't
 // cascade here).
 
+// ---- Form rows -------------------------------------------------------
+// Every campaign form row is a wrapping flexbox, but the fields carried no
+// grow rule - so each sat at Material's default width with dead space
+// beside it, and a long option label ("Everyone (all contacts)") truncated
+// inside a field that had room to spare on the row. This makes fields fill
+// the row and wrap at a readable minimum instead.
+//
+// min-width: 0 matters as much as the flex line: a flex item will not
+// shrink below its own content width without it, which is what turned a
+// long label into an overflow rather than a wrap.
+@mixin campaign-form-row($basis: 280px) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  > mat-form-field,
+  > app-date-time-field {
+    flex: 1 1 $basis;
+    min-width: 0;
+    // Grow, but not without limit: a row holding ONE select would otherwise
+    // stretch it the full width of the form, which reads as broken in the
+    // other direction. 520px comfortably fits the longest option label
+    // ("Everyone (all contacts)") and lets two fields share a wide row.
+    // .full-width opts out - it is the class for fields meant to span.
+    max-width: 520px;
+
+    &.full-width {
+      max-width: none;
+    }
+  }
+}
+
 // One stable color per campaign type, used everywhere a type appears:
 // product = accent, event = indigo-ish accent variant, lead-capture = attention.
 // The event hue is derived from the accent family so it stays distinct from

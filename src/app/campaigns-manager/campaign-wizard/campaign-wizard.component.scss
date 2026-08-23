@@ -15,7 +15,9 @@
 }
 
 .wizard-form {
-  max-width: 760px;
+  // Matches event-form, the closest sibling screen in this app. 760px was
+  // an outlier that squeezed two-field rows and truncated select labels.
+  max-width: 1100px;
   display: grid;
   gap: 6px;
 }
@@ -37,17 +39,13 @@
 }
 
 .wizard-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-
-  mat-form-field {
-    min-width: 220px;
-  }
+  @include campaign-form-row(280px);
 }
 
+// Takes roughly a double share of its row - for the field carrying the
+// most text (a tag list, a set of emails) beside a short one.
 .wizard-grow {
-  flex: 1;
+  flex-grow: 2;
 }
 
 .full-width {

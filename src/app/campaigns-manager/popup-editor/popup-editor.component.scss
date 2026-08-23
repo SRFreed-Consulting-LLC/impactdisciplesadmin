@@ -22,7 +22,9 @@
 
 .editor-body {
   display: grid;
-  grid-template-columns: minmax(380px, 520px) 1fr;
+  // The form column earns a little more room now its fields actually fill
+  // it; the preview still takes everything left over.
+  grid-template-columns: minmax(420px, 580px) 1fr;
   gap: 18px;
   align-items: start;
 
@@ -53,10 +55,10 @@
   margin: 2px 0 12px;
 }
 
+// Smaller basis than the wizard: this row sits in a narrow column beside
+// the live preview, so 280px would force every field onto its own line.
 .editor-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  @include campaign-form-row(200px);
 }
 
 .editor-num {

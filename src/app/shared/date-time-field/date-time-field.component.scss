@@ -1,10 +1,22 @@
+// inline-block host + flex inner: the component still shrink-wraps to its
+// natural width in the 8 screens that use it, but when a parent stretches
+// it (the campaign form rows now do) the date and time inputs share the
+// extra space instead of leaving it empty beside them.
+:host {
+  display: inline-block;
+  max-width: 100%;
+}
+
 .dtf {
-  display: inline-flex;
+  display: flex;
   gap: 8px;
 }
 
 .dtf__date {
-  width: 170px;
+  // Basis equals the old fixed width, so nothing moves on the screens that
+  // do not stretch this component.
+  flex: 1 1 170px;
+  min-width: 140px;
 
   input {
     cursor: pointer;
@@ -12,5 +24,6 @@
 }
 
 .dtf__time {
-  width: 130px;
+  flex: 1 1 130px;
+  min-width: 110px;
 }
