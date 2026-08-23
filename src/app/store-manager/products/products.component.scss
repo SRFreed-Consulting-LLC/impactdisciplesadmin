@@ -126,3 +126,229 @@ app-data-grid {
   font-size: 12px;
   margin-top: 4px;
 }
+
+// --- Store preview -----------------------------------------------------------
+// The editor body becomes a two-column split: the form scrolls, the preview
+// sits beside it. Below 1100px the panel would leave the form too narrow to
+// use, so it drops away entirely rather than squeezing the fields.
+
+.editor__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.editor__form {
+  flex: 1 1 auto;
+  // Without this a flex item refuses to shrink below its content width, and
+  // the wide form pushes the preview off the edge instead of sharing the row.
+  min-width: 0;
+}
+
+.store-preview {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  // Follows the form as it scrolls - the point of the panel is to watch the
+  // card change while editing fields further down.
+  position: sticky;
+  top: 0;
+
+  &--collapsed {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.store-preview__toggle {
+  flex: none;
+}
+
+// Collapsed: a slim rail that still says what it is.
+.store-preview__rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 0, 0, 0.54);
+  white-space: nowrap;
+}
+
+.store-preview__panel {
+  width: 286px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.store-preview__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.store-preview__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: #fff4e5;
+  border: 1px solid #ffb74d;
+  color: #8a5200;
+  font-size: 12px;
+  line-height: 1.4;
+
+  mat-icon {
+    flex: none;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.store-preview__note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+@media (max-width: 1100px) {
+  .store-preview {
+    display: none;
+  }
+}
+
+// --- The card itself ---------------------------------------------------------
+// Values mirror the storefront's store-postbox-item.component.scss (2px #1c1c1c
+// frame, 8px image border, dark content band, #ffcc00 price, #9d0606 sale) so
+// the preview and the real card can't drift apart in look. Scaled to 250px wide
+// to fit the panel; the storefront's image box is 250x250.
+
+.sp-product {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #1c1c1c;
+  background: #fff;
+  border-radius: 5px;
+  overflow: hidden;
+
+  &__image {
+    border: 8px solid #1c1c1c;
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 250px;
+      object-fit: contain;
+      display: block;
+      padding: 10px;
+      background: #fff;
+    }
+  }
+
+  &__tag {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    color: #9d0606;
+  }
+
+  &__image-empty {
+    height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #fafafa;
+    color: rgba(0, 0, 0, 0.38);
+    font-size: 12px;
+
+    mat-icon {
+      font-size: 34px;
+      width: 34px;
+      height: 34px;
+    }
+  }
+
+  &__content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 7px;
+    background: #1c1c1c;
+    padding: 0 5px 20px;
+
+    h5 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      color: #ffcc00;
+    }
+
+    h4 {
+      margin: 0;
+      font-weight: 600;
+      font-size: 16px;
+      color: #ffffff;
+      padding: 0 20px;
+      // The storefront reserves three lines here so cards in a row align;
+      // keeping it means a long title wraps in the preview exactly as it will
+      // on the site.
+      height: 3em;
+      overflow: hidden;
+    }
+  }
+
+  &__rule {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  &__prices {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+
+    strong {
+      color: #9d0606;
+    }
+  }
+
+  &__buttons {
+    margin-top: auto;
+    display: flex;
+    gap: 10px;
+  }
+
+  // Inert stand-ins for the storefront's view/ADD controls - this is a
+  // picture of the card, not a working one.
+  &__btn {
+    padding: 6px 16px;
+    border-radius: 3px;
+    background: #ffcc00;
+    color: #1c1c1c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    &--blue {
+      background: #1769aa;
+      color: #fff;
+    }
+  }
+}

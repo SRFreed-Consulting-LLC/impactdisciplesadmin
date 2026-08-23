@@ -90,6 +90,89 @@ export class ProductsComponent implements OnInit {
   // migrated image-uploader call site (see home-page-image-dialog.component.ts).
   card: { imageUrl?: ImageModel; eBookUrl?: ImageModel } = {};
 
+  /**
+   * Whether the Store preview panel is collapsed, remembered across visits -
+   * this editor is the densest form in the app and someone working through a
+   * batch of products shouldn't have to re-collapse the panel every time.
+   * A private window (or storage the browser blocks) just starts expanded.
+   */
+  isPreviewCollapsed = ProductsComponent.readCollapsedPreference();
+
+  private static readonly PREVIEW_COLLAPSED_KEY = 'products.previewCollapsed';
+
+  private static readCollapsedPreference(): boolean {
+    try {
+      return localStorage.getItem(ProductsComponent.PREVIEW_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  togglePreview(): void {
+    this.isPreviewCollapsed = !this.isPreviewCollapsed;
+    try {
+      localStorage.setItem(
+        ProductsComponent.PREVIEW_COLLAPSED_KEY,
+        String(this.isPreviewCollapsed)
+      );
+    } catch {
+      // A remembered panel is a convenience, never a requirement.
+    }
+  }
+
+  /**
+   * What the storefront would render for the product as currently edited.
+   *
+   * Read straight off the live form (and `card` for the image, which the
+   * uploader writes to rather than to a control), so the preview tracks
+   * typing without a subscription.
+   */
+  get preview(): {
+    title: string;
+    cost: number;
+    salePrice: number;
+    imageUrl?: string;
+    onSale: boolean;
+  } {
+    const cost = Number(this.form?.get('cost')?.value ?? 0) || 0;
+    const salePrice = Number(this.form?.get('salePrice')?.value ?? 0) || 0;
+    return {
+      title: (this.form?.get('title')?.value ?? '').trim(),
+      cost,
+      salePrice,
+      imageUrl: this.card.imageUrl?.url,
+      // Matches the storefront's own test exactly (`salePrice > 0`), so the
+      // preview can't disagree with the real card about whether a product
+      // reads as discounted.
+      onSale: salePrice > 0,
+    };
+  }
+
+  /**
+   * Why this product wouldn't appear in the Store, if it wouldn't. The
+   * storefront lists a product only when it is both live and flagged for the
+   * store, and those two switches sit on different tabs of this form - so
+   * without saying it here, an admin can produce a perfect-looking card that
+   * no shopper ever sees.
+   */
+  get previewHiddenReason(): string | null {
+    if (!this.form) {
+      return null;
+    }
+    const isActive = this.form.get('isActive')?.value === true;
+    const showInStore = this.form.get('showInStore')?.value === true;
+    if (!isActive && !showInStore) {
+      return 'Not live, and not set to show in the Store.';
+    }
+    if (!isActive) {
+      return 'Not live - use the toggle in the header.';
+    }
+    if (!showInStore) {
+      return 'Show in Store is off - see the Organization tab.';
+    }
+    return null;
+  }
+
   private editingItem: ProductModel | null = null;
 
   constructor(

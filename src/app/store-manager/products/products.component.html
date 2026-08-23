@@ -31,7 +31,8 @@
       <span class="editor__spacer"></span>
       <mat-slide-toggle formControlName="isActive">Live</mat-slide-toggle>
     </mat-toolbar>
-    <div class="editor__body">
+    <div class="editor__body" [class.editor__body--preview-collapsed]="isPreviewCollapsed">
+      <div class="editor__form">
       <mat-tab-group class="product-tabs">
         <mat-tab label="Dimensions">
           <div class="tab-content">
@@ -202,6 +203,76 @@
           </div>
         </mat-tab>
       </mat-tab-group>
+      </div>
+
+      <!-- Store preview. Deliberately a copy of the storefront's own product
+           card markup (web: store-postbox-item) rather than a shared
+           component: the two apps don't share view code, and the alternative -
+           an iframe of the live store - can't show an unsaved product. Keep
+           this in step if that card changes. -->
+      <aside class="store-preview" [class.store-preview--collapsed]="isPreviewCollapsed">
+        <button
+          mat-icon-button
+          type="button"
+          class="store-preview__toggle"
+          [attr.aria-expanded]="!isPreviewCollapsed"
+          [matTooltip]="isPreviewCollapsed ? 'Show Store preview' : 'Hide Store preview'"
+          (click)="togglePreview()">
+          <mat-icon>{{ isPreviewCollapsed ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+        </button>
+
+        @if (isPreviewCollapsed) {
+          <span class="store-preview__rail-label">STORE PREVIEW</span>
+        } @else {
+          <div class="store-preview__panel">
+            <h3 class="store-preview__title">Store preview</h3>
+
+            @if (previewHiddenReason; as reason) {
+              <p class="store-preview__warning">
+                <mat-icon>visibility_off</mat-icon>
+                <span>{{ reason }}</span>
+              </p>
+            }
+
+            <div class="sp-product">
+              <div class="sp-product__image">
+                @if (preview.onSale) {
+                  <mat-icon class="sp-product__tag">local_offer</mat-icon>
+                }
+                @if (preview.imageUrl) {
+                  <img [src]="preview.imageUrl" alt="Product preview">
+                } @else {
+                  <div class="sp-product__image-empty">
+                    <mat-icon>image</mat-icon>
+                    <span>No image yet</span>
+                  </div>
+                }
+              </div>
+              <div class="sp-product__content">
+                <hr class="sp-product__rule">
+                @if (preview.onSale) {
+                  <div class="sp-product__prices">
+                    <h5><s>$ {{ preview.cost.toFixed(2) }}</s></h5>
+                    <h5><strong>${{ preview.salePrice.toFixed(2) }}</strong></h5>
+                  </div>
+                } @else {
+                  <h5 class="sp-product__price"><strong>$ {{ preview.cost.toFixed(2) }}</strong></h5>
+                }
+                <h4>{{ preview.title || 'Untitled product' }}</h4>
+                <div class="sp-product__buttons">
+                  <span class="sp-product__btn">view</span>
+                  <span class="sp-product__btn sp-product__btn--blue">ADD</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="store-preview__note">
+              How this looks on the website store. The in-app Reader store lists
+              digital books in its own layout.
+            </p>
+          </div>
+        }
+      </aside>
     </div>
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
