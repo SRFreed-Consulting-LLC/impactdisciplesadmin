@@ -4,6 +4,7 @@ import { CampaignAudience, CampaignModel, effectiveStatus, emptyCampaignStats } 
 import { AudiencePreview, CampaignService } from 'src/app/common/services/data/campaign.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
+import { promotableEventLabel, promotableEvents } from '../promotable-events.util';
 import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -119,7 +120,10 @@ export class CampaignWizardComponent implements OnInit {
 
   ngOnInit(): void {
     this.productService.getAllByValue('isActive', true).then((products) => this.products = products);
-    this.eventService.getAllByValue('isActive', true).then((events) => this.events = events);
+    // All events, then the promotable subset: an event with early
+    // registration open is NOT active but DOES take sign-ups, so a campaign
+    // must be able to promote it (see promotable-events.util).
+    this.eventService.getAll().then((events) => this.events = promotableEvents(events));
     this.seriesService.getAll().then((series) =>
       this.series = series.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')));
     this.tagRuleService.getAll().then((rules) => {
@@ -174,6 +178,11 @@ export class CampaignWizardComponent implements OnInit {
     return this.form.get('offerTargetKind')?.value;
   }
 
+  /** Picker label for the campaign GOAL select - flags a not-live event. */
+  eventLabel(event: EventModel): string {
+    return promotableEventLabel(event);
+  }
+
   /** What the target picker lists, following the chosen target kind. */
   get offerTargetItems(): { id: string; label: string }[] {
     if (this.offerTargetKind === 'series') {
@@ -186,7 +195,7 @@ export class CampaignWizardComponent implements OnInit {
         .map((s) => ({ id: s.name!, label: s.name! }));
     }
     if (this.offerTargetKind === 'event') {
-      return this.events.map((e) => ({ id: e.id!, label: e.eventName ?? '(unnamed event)' }));
+      return this.events.map((e) => ({ id: e.id!, label: promotableEventLabel(e) }));
     }
     return this.products.map((p) => ({ id: p.id!, label: p.title ?? '(untitled product)' }));
   }

@@ -8,6 +8,7 @@ import { CampaignPopupService, PopupTemplateService } from 'src/app/common/servi
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
+import { promotableEventLabel, promotableEvents } from '../promotable-events.util';
 import { ProductModel } from '@impact-common/shared/models/utils/product.model';
 import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -96,7 +97,10 @@ export class PopupEditorComponent implements OnInit {
   ngOnInit(): void {
     this.templateService.getAll().then((templates) => this.templates = templates);
     this.productService.getAllByValue('isActive', true).then((products) => this.products = products);
-    this.eventService.getAllByValue('isActive', true).then((events) => this.events = events);
+    // All events, then the promotable subset: an event with early
+    // registration open is NOT active but DOES take sign-ups, so a campaign
+    // must be able to promote it (see promotable-events.util).
+    this.eventService.getAll().then((events) => this.events = promotableEvents(events));
 
     // Spotlight defaults follow the campaign's own goal/selection.
     if (this.campaign.goal === 'event' && this.campaign.eventId) {
@@ -180,7 +184,7 @@ export class PopupEditorComponent implements OnInit {
   get spotlightItems(): { id: string; label: string }[] {
     return this.spotlightType === 'product'
       ? this.products.map((p) => ({ id: p.id!, label: p.title }))
-      : this.events.map((e) => ({ id: e.id!, label: e.eventName ?? '(unnamed event)' }));
+      : this.events.map((e) => ({ id: e.id!, label: promotableEventLabel(e) }));
   }
 
   onTemplatePicked(templateId: string): void {

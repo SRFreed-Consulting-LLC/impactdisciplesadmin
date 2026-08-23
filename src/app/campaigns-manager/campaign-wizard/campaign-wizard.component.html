@@ -38,7 +38,7 @@
           <mat-label>Event</mat-label>
           <mat-select formControlName="eventId">
             @for (event of events; track event.id) {
-              <mat-option [value]="event.id">{{ event.eventName }}</mat-option>
+              <mat-option [value]="event.id">{{ eventLabel(event) }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
