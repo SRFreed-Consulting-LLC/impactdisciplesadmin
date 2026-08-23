@@ -104,6 +104,15 @@ exports.campaign_web_event = campaignTracking.campaign_web_event;
 const newsletterArchive = require("./newsletter-archive.functions");
 exports.newsletter_archive = newsletterArchive.newsletter_archive;
 
+// Public Impact Group finder (2026-08-23): the ONLY anonymous read path
+// onto discussionGroups. firestore.rules gates every group read behind
+// signedIn() and the public web site has no Firebase Auth at all, so the
+// web finder cannot query Firestore directly. Returns a narrow projection -
+// never onlineInfo (meeting links/passwords), member data, or a hidden
+// address.
+const libraryGroupsPublic = require("./library-groups-public.functions");
+exports.search_impact_groups = libraryGroupsPublic.search_impact_groups;
+
 // Campaign delete (2026-08-20): cascade docs + remove the campaign's
 // Storage images that nothing else references (full content-collection
 // reference scan - server-side for cost and so it can't be half-done).
