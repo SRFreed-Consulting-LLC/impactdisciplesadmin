@@ -177,7 +177,13 @@ export class CampaignWizardComponent implements OnInit {
   /** What the target picker lists, following the chosen target kind. */
   get offerTargetItems(): { id: string; label: string }[] {
     if (this.offerTargetKind === 'series') {
-      return this.series.map((s) => ({ id: s.id!, label: s.name ?? '(unnamed series)' }));
+      // Targeted by NAME, not by doc id: ProductModel.series holds the display
+      // string, so that is the only value a product can be matched on. Using
+      // the series doc id here produced an offer that silently matched nothing
+      // - it looked saved, and no price ever moved.
+      return this.series
+        .filter((s) => !!s.name)
+        .map((s) => ({ id: s.name!, label: s.name! }));
     }
     if (this.offerTargetKind === 'event') {
       return this.events.map((e) => ({ id: e.id!, label: e.eventName ?? '(unnamed event)' }));
