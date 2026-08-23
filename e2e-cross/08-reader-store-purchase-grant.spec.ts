@@ -23,11 +23,22 @@ const BOOK2_ID = 'lib-book-0002';
 const BOOK2_TITLE = 'Advanced Multiplication';
 const PURCHASE_ID = 'cross-08-purchase-0001';
 
+/**
+ * Opens the reader's library and makes sure the series shelf is EXPANDED.
+ *
+ * Ensures rather than toggles: the shelf now opens expanded, so a blind click
+ * closed it and hid every book - which reads exactly like the books being
+ * missing. aria-expanded is the shelf's own answer, so ask it.
+ */
 async function openBooksList(page: Page): Promise<void> {
   await page.goto(`${READER_URL}/books`);
-  const seriesToggle = page.locator('button.section-toggle', { hasText: 'Foundations Series' });
+  const seriesToggle = page.locator('button.shelf-toggle', { hasText: 'Foundations Series' });
   await expect(seriesToggle).toBeVisible({ timeout: 20_000 });
-  await seriesToggle.click();
+
+  if ((await seriesToggle.getAttribute('aria-expanded')) !== 'true') {
+    await seriesToggle.click();
+  }
+  await expect(seriesToggle).toHaveAttribute('aria-expanded', 'true');
 }
 
 /** The patron's libraryUsers doc via emulator-owner REST (rules-bypassing
@@ -49,7 +60,7 @@ test.describe('store purchase grants a reader license via the purchases trigger'
     await loginAsPatron(page);
     await openBooksList(page);
     await expect(
-      page.locator('button.section-toggle', { hasText: 'Foundations Series' }),
+      page.locator('button.shelf-toggle', { hasText: 'Foundations Series' }),
     ).toContainText('(1)');
     await expect(page.getByText(BOOK2_TITLE)).toHaveCount(0);
   });
@@ -119,7 +130,7 @@ test.describe('store purchase grants a reader license via the purchases trigger'
     await openBooksList(page);
 
     await expect(
-      page.locator('button.section-toggle', { hasText: 'Foundations Series' }),
+      page.locator('button.shelf-toggle', { hasText: 'Foundations Series' }),
     ).toContainText('(2)');
     await page.getByText(BOOK2_TITLE).click();
 

@@ -7,6 +7,9 @@ import { CampaignModel, CampaignSocial, SocialChannel } from 'src/app/common/mod
 import { CampaignPopupModel } from 'src/app/common/models/domain/campaign-popup.model';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
+import { ProductService } from 'src/app/common/services/data/product.service';
+import { EventService } from 'src/app/common/services/data/event.service';
+import { StarterItem, eventStarter, productStarter, starterCaption } from '../campaign-starter';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
@@ -71,6 +74,8 @@ export class SocialComposerComponent implements OnInit, OnChanges {
 
   constructor(
     private campaignService: CampaignService,
+    private productService: ProductService,
+    private eventService: EventService,
     private webConfigService: WebConfigService,
     private snackbar: SnackbarService,
     private zone: NgZone,
@@ -95,6 +100,14 @@ export class SocialComposerComponent implements OnInit, OnChanges {
         twitterOverride: social.overrides?.twitter ?? '',
         instagramOverride: social.overrides?.instagram ?? ''
       });
+    }
+
+    // A campaign that spotlights something starts with a caption about it
+    // rather than an empty box - the same starter the popup and the email
+    // use. Only when nothing has been written yet, so it can never overwrite
+    // an admin's own words.
+    if (!this.form.value.caption) {
+      void this.prefillCaption();
     }
 
     // Same singleton-doc read as the Web Config screen itself.
@@ -137,6 +150,32 @@ export class SocialComposerComponent implements OnInit, OnChanges {
 
   // Caption + hashtags, per-channel override applied - everything EXCEPT
   // the link (X counts the link separately, so the two halves stay split).
+  /**
+   * Seeds the caption from the campaign's product or event.
+   *
+   * No link goes in the caption - campaignLink() appends an attributed one
+   * per channel, and two links in one post is worse than none.
+   */
+  private async prefillCaption(): Promise<void> {
+    try {
+      let item: StarterItem | null = null;
+
+      if (this.campaign.goal === 'product' && this.campaign.productId) {
+        const product = await this.productService.getById(this.campaign.productId);
+        item = product ? productStarter(product, environment.publicSiteUrl) : null;
+      } else if (this.campaign.goal === 'event' && this.campaign.eventId) {
+        const event = await this.eventService.getById(this.campaign.eventId);
+        item = event ? eventStarter(event, environment.publicSiteUrl) : null;
+      }
+
+      if (item) {
+        this.form.patchValue({ caption: starterCaption(item) });
+      }
+    } catch {
+      // A starter is a convenience - never block the composer over one.
+    }
+  }
+
   private captionBody(channel: SocialChannel): string {
     const value = this.form.value;
     const override = (value[channel + 'Override'] ?? '').trim();

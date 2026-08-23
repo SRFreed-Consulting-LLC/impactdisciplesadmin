@@ -4,17 +4,15 @@ import { ADMIN_URL, WEB_URL, loginAsAdmin } from './support/harness';
 // Charter area: Store -> Purchases -> Contacts, across both apps.
 //
 // No reseed here: nothing below asserts absolute counts - the buyer
-// email/name are unique per run, the sale pricing is seeded reference data
+// email/name are unique per run, the product pricing is seeded reference data
 // no flow mutates, and the fulfillment walk operates only on the order this
 // run creates. (Reseeding costs 30-60s and wipes Auth; see harness.ts.)
 //
 // The checkout itself is driven SERVER-SIDE (the same create_paypal_order
 // free-order contract integration/money.test.js proves) rather than through
 // the web checkout UI, for two reasons this suite can't change:
-//  - a FREE product order is impossible while the seeded 25% isProducts
-//    sale is live (server precedence: a sale suppresses every coupon, even
-//    FREE100 - see money.test.js "sale beats coupon"), and the paid path
-//    dies deterministically at the PayPal boundary (no config doc);
+//  - the paid path dies deterministically at the PayPal boundary (no
+//    config doc);
 //  - the web checkout page itself cannot reach the payment step in the
 //    emulator world at all: checkout.component.ts's calculateShippingCost()
 //    reads `this.webConfig.freeShippingAmount`, and the fixture world has
@@ -96,8 +94,8 @@ async function pollUntil<T>(fn: () => Promise<T | null | undefined | false>, lab
 // failure, so serial (skip-remaining) beats independent reruns here.
 test.describe.configure({ mode: 'serial' });
 
-test.describe('store sale pricing and cart, order to fulfillment, contact upsert', () => {
-  test('web store shows the 25%-sale price and adding to cart updates the header badge', async ({ page }) => {
+test.describe('store pricing and cart, order to fulfillment, contact upsert', () => {
+  test('web store shows the undiscounted price and adding to cart updates the header badge', async ({ page }) => {
     await page.goto(`${WEB_URL}/store`);
 
     // The page lands in "SHOP BY SERIES" view; the Sort By <select>
@@ -110,15 +108,18 @@ test.describe('store sale pricing and cart, order to fulfillment, contact upsert
     await expect(page.getByRole('button', { name: 'M-7 Series' })).toBeVisible({ timeout: 30_000 });
     await page.selectOption('#storeSort', { label: 'All' });
 
-    // Product card (store-postbox-item.component.html): with an active
-    // sale, the struck-through cost renders as "$ 20.00" and the sale
-    // price as "$15.00" (cost 20 - the seeded 25% "Summer Sale" = 15;
-    // ProductCatalogService.applyActiveProductSale recomputes salePrice
-    // from cost, so this pins the actual on-screen rendering).
+    // Product card (store-postbox-item.component.html). Campaign Manager v3
+    // retired the sitewide sale, and no campaign offer targets this product,
+    // so it shows its plain cost with NO struck-through price beside it.
+    // The offer-driven discount has its own spec (09-campaign-offer-to-
+    // storefront) - what this pins is that an untargeted product is left
+    // alone, which the old global sale could never have shown.
     const card = page.locator('.product', { hasText: 'Disciple-Making Field Guide' });
     await expect(card).toBeVisible({ timeout: 20_000 });
-    await expect(card.locator('s')).toContainText('$ 20.00');
-    await expect(card.locator('.product__content-sales-price strong')).toContainText('$15.00');
+    // The card renders the currency with a space ("$ 20.00"); the cart badge
+    // below does not. Both pinned exactly as they appear.
+    await expect(card).toContainText('$ 20.00');
+    await expect(card.locator('s')).toHaveCount(0);
 
     // "ADD" is an <a role="button"> with a cart-plus icon
     // (store-postbox-item.component.html).
@@ -126,7 +127,7 @@ test.describe('store sale pricing and cart, order to fulfillment, contact upsert
 
     // Header cart badge (home-header.component.html): "Cart (n) — $total".
     await expect(page.locator('.header__content-cart')).toContainText('(1)');
-    await expect(page.locator('.header__content-cart')).toContainText('$15.00');
+    await expect(page.locator('.header__content-cart')).toContainText('$20.00');
   });
 
   test('a FREE100 event order lands in admin Purchases and a fulfillment step can be advanced', async ({ page }) => {

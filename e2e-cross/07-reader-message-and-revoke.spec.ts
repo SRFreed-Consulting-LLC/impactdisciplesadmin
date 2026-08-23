@@ -27,7 +27,11 @@ async function openPatronDetail(page: Page): Promise<void> {
   await page.goto(`${ADMIN_URL}/library-manager?tab=library-users`);
   const row = page.locator('tr', { hasText: PATRON });
   await expect(row).toBeVisible({ timeout: 30_000 });
-  await row.click();
+  // DOUBLE click: the Library Users grid navigates on (rowDoubleClick),
+  // like every other app-data-grid. A single click selects and goes
+  // nowhere, which is why this waited 30s for a detail page that was
+  // never coming.
+  await row.dblclick();
   await expect(page.getByRole('heading', { name: 'Book licenses' })).toBeVisible({ timeout: 20_000 });
 }
 

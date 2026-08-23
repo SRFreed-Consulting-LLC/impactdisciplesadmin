@@ -57,61 +57,61 @@ const series = {
   // by NAME (ProductModel.series is the display string, not a doc id).
   "series-m7": {
     name: "M-7 Series", order: 1, showInStore: true,
-    imageUrl: {url: "https://example.test/m7-series.png", name: "m7-series.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "m7-series.png"},
   },
 };
 
 const products = {
   "prod-book-physical": {
     isActive: true, showInStore: true, title: "Disciple-Making Field Guide",
-    cost: 20, salePrice: 15, category: "Books", series: "M-7 Series",
+    cost: 20, salePrice: 0, category: "Books", series: "M-7 Series",
     description: "A physical paperback.", weight: 1, uom: "POUNDS",
     seriesOrder: 1, categoryOrder: 1,
     isEBook: false, isDigitalBook: false,
-    imageUrl: {url: "https://example.test/field-guide.png", name: "field-guide.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "field-guide.png"},
     sendFollowUpEmail: false,
   },
   "prod-book-digital": {
     isActive: true, showInStore: true, title: "Field Guide (Library Edition)",
-    cost: 10, salePrice: 10, category: "Books",
+    cost: 10, salePrice: 0, category: "Books",
     description: "Digital book unlocked in the reader app.",
     seriesOrder: 2, categoryOrder: 2,
     isEBook: false, isDigitalBook: true, digitalBookId: "lib-book-0001",
-    imageUrl: {url: "https://example.test/field-guide-digital.png", name: "fg-digital.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "fg-digital.png"},
     sendFollowUpEmail: false,
   },
   "prod-ebook": {
     isActive: true, showInStore: true, title: "Multiplication Primer (eBook)",
-    cost: 5, salePrice: 5, category: "Books",
+    cost: 5, salePrice: 0, category: "Books",
     description: "A PDF eBook delivered by link.",
     seriesOrder: 3, categoryOrder: 3,
     isEBook: true, isDigitalBook: false,
     eBookUrl: {url: "https://example.test/primer.pdf", name: "primer.pdf"},
-    imageUrl: {url: "https://example.test/primer.png", name: "primer.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "primer.png"},
     sendFollowUpEmail: false,
   },
   "prod-shirt": {
     isActive: true, showInStore: true, title: "Impact Tee",
-    cost: 18, salePrice: 18, category: "Merchandise",
+    cost: 18, salePrice: 0, category: "Merchandise",
     description: "A t-shirt.", weight: 0.5, uom: "POUNDS",
     seriesOrder: 1, categoryOrder: 1,
     isEBook: false, isDigitalBook: false,
     sizes: ["S", "M", "L", "XL"], colors: ["Navy", "White"],
-    imageUrl: {url: "https://example.test/tee.png", name: "tee.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "tee.png"},
     sendFollowUpEmail: false,
   },
   "prod-followup": {
     isActive: true, showInStore: true, title: "Coaching Workbook",
-    cost: 25, salePrice: 25, category: "Books",
+    cost: 25, salePrice: 0, category: "Books",
     description: "Physical book with a follow-up email.", weight: 1.2, uom: "POUNDS",
     seriesOrder: 4, categoryOrder: 4,
     isEBook: false, isDigitalBook: false,
-    imageUrl: {url: "https://example.test/workbook.png", name: "workbook.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "workbook.png"},
     sendFollowUpEmail: true, followUpEmailId: "tmpl-followup",
   },
   "prod-inactive": {
     isActive: false, showInStore: false, title: "Retired Product",
-    cost: 99, salePrice: 99, category: "Books",
+    cost: 99, salePrice: 0, category: "Books",
     description: "Must never appear on the public store.",
     seriesOrder: 9, categoryOrder: 9,
     isEBook: false, isDigitalBook: false,
@@ -123,18 +123,6 @@ const coupons = {
   "coupon-free": {isActive: true, code: "FREE100", percentOff: 100, isAffilliate: false},
   "coupon-save10": {isActive: true, code: "SAVE10", percentOff: 10, isAffilliate: false},
   "coupon-expired": {isActive: false, code: "OLDCODE", percentOff: 50, isAffilliate: false},
-};
-
-const sales = {
-  // Live sale window straddling any realistic run date so pricing tests can
-  // hit an active sale. NOTE: dates stay ISO strings (see seed script's
-  // STRING_DATE_COLLECTIONS), and an isProducts sale applies to EVERY
-  // product (web's ProductCatalogService.applyActiveProductSale mutates all
-  // salePrices) - there is no per-product sale targeting.
-  "sale-summer": {
-    isActive: true, isProducts: true, name: "Summer Sale", percentOff: 25,
-    startDate: "2026-07-01T00:00:00.000Z", endDate: "2030-01-01T00:00:00.000Z",
-  },
 };
 
 // ---- contacts world -----------------------------------------------------
@@ -242,7 +230,7 @@ const events = {
     costInDollars: 0,
     agendaItems: SUMMIT_AGENDA,
     faqList: [{question: "What should I bring?", answer: "A Bible and a notebook."}],
-    imageUrl: {url: "https://example.test/summit-2027.png", name: "summit-2027.png"},
+    imageUrl: {url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", name: "summit-2027.png"},
     diningOptions: "Lunch provided both days.",
     checkinInstructions: "Check in at the Worship Center lobby.",
   },
@@ -481,7 +469,6 @@ module.exports = {
     series,
     products,
     coupons,
-    sales,
     organizations,
     locations,
     customers,

@@ -2,7 +2,10 @@ import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
-import {queueSubscriptionConfirmation} from "./transactional-emails";
+import {SignupReward, queueSubscriptionConfirmation}
+  from "./transactional-emails";
+import {effectiveCampaignStatus} from "./campaign-send.functions";
+import {toMillis} from "./utils/date-normalize.functions";
 import {
   recordCampaignConversion,
   sanitizeAttribution,
@@ -56,6 +59,77 @@ function fieldsForType(
 // PendingCustomerChange - a first/last name mismatch on a newsletter
 // signup isn't worth flagging for manual review the way a shipping address
 // is.
+/**
+ * The coupon a campaign hands out for signing up, or null.
+ *
+ * Campaign Manager v3: an "Other" campaign can reward a subscribe with a
+ * shared code. The code lives on a real `coupons` record - the discount
+ * system is NOT duplicated onto the campaign, the campaign only points at
+ * one - so this resolves campaign -> couponId -> coupon.
+ *
+ * Only a campaign that is effectively LIVE hands anything out. A draft is not
+ * running yet and an ended one is not running any more, and neither should be
+ * minting codes because someone still has an old link.
+ *
+ * Best-effort throughout: a signup must never fail because a reward could not
+ * be resolved.
+ *
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @param {string} campaignId The attributed campaign.
+ * @return {Promise<SignupReward | null>} The reward, or null.
+ */
+async function signupRewardFor(
+  db: FirebaseFirestore.Firestore,
+  campaignId: string
+): Promise<SignupReward | null> {
+  try {
+    const campaignSnap = await db.collection("campaigns").doc(campaignId).get();
+    if (!campaignSnap.exists) {
+      return null;
+    }
+    const campaign = campaignSnap.data() ?? {};
+    if (effectiveCampaignStatus(campaign as never) !== "live") {
+      return null;
+    }
+
+    const couponId = campaign.couponId;
+    if (typeof couponId !== "string" || !couponId) {
+      return null;
+    }
+
+    const couponSnap = await db.collection("coupons").doc(couponId).get();
+    if (!couponSnap.exists) {
+      return null;
+    }
+    const coupon = couponSnap.data() ?? {};
+    if (coupon.isActive !== true) {
+      return null;
+    }
+
+    const percentOff = typeof coupon.percentOff === "number" ?
+      coupon.percentOff : 0;
+    if (percentOff <= 0) {
+      return null;
+    }
+
+    const expiresMs = coupon.expiresAt ? toMillis(coupon.expiresAt) : 0;
+    // Never post a code that is already dead - the storefront would refuse it
+    // and the subscriber would just be confused.
+    if (expiresMs > 0 && expiresMs < Date.now()) {
+      return null;
+    }
+
+    return {
+      code: typeof coupon.code === "string" ? coupon.code : "",
+      percentOff,
+      expiresAt: expiresMs > 0 ? expiresMs : null,
+    };
+  } catch (err) {
+    logger.error("Failed to resolve signup reward", err);
+    return null;
+  }
+}
+
 exports.subscribe_to_email_list = onRequest(
   (request, response) => {
     return restrictedCors(request, response, async () => {
@@ -127,9 +201,18 @@ exports.subscribe_to_email_list = onRequest(
         // and the `mail` collection no longer accepts anonymous creates).
         // Fresh subscribes only - same behavior the client had. Best-effort:
         // the subscription itself already saved.
+        // Attribution is read BEFORE the email is queued now: a campaign
+        // that offers a signup coupon has to get its code into the very
+        // confirmation that welcomes the subscriber.
+        const attribution = sanitizeAttribution(body.attribution);
+
         if (!alreadySubscribed) {
+          const reward = attribution ?
+            await signupRewardFor(db, attribution.campaignId) : null;
           try {
-            await queueSubscriptionConfirmation(db, type, firstName, email);
+            await queueSubscriptionConfirmation(
+              db, type, firstName, email, reward
+            );
           } catch (mailErr) {
             logger.error(
               "Failed to queue subscription confirmation", mailErr
@@ -138,7 +221,6 @@ exports.subscribe_to_email_list = onRequest(
           // Campaign attribution (Campaign Manager v2, Phase 4): a FRESH
           // subscribe that followed a campaign link/popup credits that
           // campaign's funnel. Best-effort; validated inside.
-          const attribution = sanitizeAttribution(body.attribution);
           if (attribution) {
             await recordCampaignConversion(db, {
               campaignId: attribution.campaignId,

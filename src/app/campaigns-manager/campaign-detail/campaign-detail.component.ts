@@ -1,17 +1,19 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { CampaignModel, campaignKindLabel, channelLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
+import { CampaignModel, CampaignStatus, campaignKindLabel, channelLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CampaignPopupModel } from 'src/app/common/models/domain/campaign-popup.model';
 import { CampaignPopupService } from 'src/app/common/services/data/campaign-popup.service';
+import { CampaignOfferService } from 'src/app/common/services/data/campaign-offer.service';
+import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
+import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-preview-dialog.component';
 import { PublishWebDialogComponent } from './publish-web-dialog.component';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -65,6 +67,8 @@ export class CampaignDetailComponent implements OnInit {
     private emailService: CampaignEmailService,
     private campaignService: CampaignService,
     private popupService: CampaignPopupService,
+    private offerService: CampaignOfferService,
+    private couponService: CouponService,
     private productService: ProductService,
     private eventService: EventService,
     private permissionService: PermissionService,
@@ -311,6 +315,178 @@ export class CampaignDetailComponent implements OnInit {
 
   canDeleteCampaign(): boolean {
     return this.permissionService.canDelete('campaigns-manager.campaigns');
+  }
+
+  // ---- Status lifecycle (2026-08-22) ----
+  // Until now nothing in the app could move a campaign off draft: the wizard
+  // wrote `status: campaign?.status ?? 'draft'` and no other path ever wrote
+  // live or scheduled, so every campaign made in the UI stayed a draft forever
+  // and the Live Now hub sat empty. These two actions are that missing
+  // lifecycle - and they are what the offer hangs off, since a draft campaign
+  // must never discount anything.
+
+  canActivate(): boolean {
+    if (!this.canEditCampaign()) {
+      return false;
+    }
+    const status = effectiveStatus(this.campaign);
+    return status === 'draft' || status === 'scheduled';
+  }
+
+  canEnd(): boolean {
+    return this.canEditCampaign() && effectiveStatus(this.campaign) !== 'ended';
+  }
+
+  /**
+   * Puts the campaign live, warning first about anything it would collide with.
+   *
+   * A start date in the future means SCHEDULED rather than live -
+   * effectiveStatus() promotes it on its own when the date arrives, so nobody
+   * has to remember to come back and press this again.
+   */
+  async activate(): Promise<void> {
+    if (!this.canActivate()) {
+      return;
+    }
+
+    const conflict = await this.describeConflicts();
+    if (conflict) {
+      const proceed = await this.confirmService.confirm(conflict, 'Overlapping discount');
+      if (!proceed) {
+        return;
+      }
+    }
+
+    const startMs = toMillis(this.campaign.startDate);
+    const next: CampaignStatus = startMs > Date.now() ? 'scheduled' : 'live';
+
+    try {
+      await this.campaignService.updateFields(this.campaign.id!, { status: next });
+      this.campaign.status = next;
+
+      // The published offer carries its OWN active flag - the storefront cannot
+      // read a campaign to find out whether one is running. Only a genuinely
+      // live campaign discounts; a scheduled one waits.
+      const offer = await this.offerService.forCampaign(this.campaign.id!);
+      if (offer) {
+        await this.offerService.updateFields(this.campaign.id!, { isActive: next === 'live' });
+      }
+
+      this.snackbar.success(next === 'live' ? 'Campaign is live' : 'Campaign scheduled');
+    } catch (err) {
+      this.snackbar.error('Could not activate: ' + ((err as Error)?.message ?? err));
+    }
+  }
+
+  /**
+   * Ends the campaign and everything it is still doing.
+   *
+   * The cascade is the whole point: a campaign marked ended whose popup keeps
+   * showing and whose discount keeps applying is worse than no button at all.
+   * Each step after the status write is best-effort and reported by name, so a
+   * single failure cannot leave the campaign ended with its discount live and
+   * nobody told.
+   */
+  async endCampaign(): Promise<void> {
+    if (!this.canEnd()) {
+      return;
+    }
+    const confirmed = await this.confirmService.confirm(
+      'Ending this campaign stops its web popup, its discount and its coupon. ' +
+        'Emails already sent are unaffected, and nothing is deleted.',
+      'End Campaign'
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const endedAt = new Date();
+    try {
+      await this.campaignService.updateFields(this.campaign.id!, {
+        status: 'ended',
+        endDate: endedAt
+      });
+      this.campaign.status = 'ended';
+      this.campaign.endDate = endedAt;
+    } catch (err) {
+      this.snackbar.error('Could not end the campaign: ' + ((err as Error)?.message ?? err));
+      return;
+    }
+
+    const failures: string[] = [];
+
+    if (this.popup) {
+      try {
+        await this.popupService.updateFields(this.campaign.id!, { isActive: false });
+        this.popup.isActive = false;
+      } catch {
+        failures.push('popup');
+      }
+    }
+
+    try {
+      const offer = await this.offerService.forCampaign(this.campaign.id!);
+      if (offer) {
+        await this.offerService.deactivate(this.campaign.id!);
+      }
+    } catch {
+      failures.push('discount');
+    }
+
+    if (this.campaign.couponId) {
+      try {
+        await this.couponService.updateFields(this.campaign.couponId, { isActive: false });
+      } catch {
+        failures.push('coupon');
+      }
+    }
+
+    if (failures.length) {
+      this.snackbar.error(
+        'Campaign ended, but could not stop its ' + failures.join(' or ') + ' - check it by hand.'
+      );
+    } else {
+      this.snackbar.success('Campaign ended');
+    }
+  }
+
+  /**
+   * A human sentence naming what this campaign's discount would collide with,
+   * or null when nothing.
+   *
+   * Overlapping DISCOUNTS only. Two campaigns promoting the same thing is good
+   * marketing, and warning about that would train people to click through the
+   * warning without reading it.
+   */
+  private async describeConflicts(): Promise<string | null> {
+    const offer = await this.offerService.forCampaign(this.campaign.id!);
+    if (!offer?.target) {
+      return null;
+    }
+
+    // The catalogue is needed to decide whether a product sits inside a
+    // discounted series - the check has to resolve that both ways round.
+    const products = await this.productService.getAll();
+    const seriesOf = (productId: string): string | null =>
+      products.find((p) => p.id === productId)?.series ?? null;
+
+    const clashes = await this.offerService.findConflicts(
+      this.campaign.id!,
+      offer.target,
+      seriesOf
+    );
+    if (!clashes.length) {
+      return null;
+    }
+
+    const names = await Promise.all(
+      clashes.map(async (c) => (await this.campaignService.getById(c.campaignId))?.name ?? c.campaignId)
+    );
+
+    return (
+      'Already discounted by ' + names.map((n) => '"' + n + '"').join(' and ') + '. ' +
+      'A shopper gets the better of the two prices. Put this campaign live anyway?'
+    );
   }
 
   // Same cascade + confirm as the list row action (CampaignsComponent.

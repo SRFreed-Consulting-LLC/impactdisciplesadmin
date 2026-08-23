@@ -118,9 +118,11 @@ service cloud.firestore {
       allow read: if isBusinessStaff();
       allow write: if isBusinessStaff();
     }
+    // The sales collection is RETIRED (Campaign Manager v3) - discounts now
+    // live on campaign_offers above. Deny-all so the two dormant documents
+    // left in each project are unreachable rather than quietly public.
     match /sales/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
+      allow read, write: if false;
     }
     match /series/{id} {                    // Store Manager's Product Series -
       allow read: if true;                  // NOT library series (librarySeries)
@@ -391,6 +393,16 @@ service cloud.firestore {
     // collection: campaign docs (audience emails, revenue) stay staff-only,
     // and a popup doc must NEVER carry audience or stats.
     match /campaign_popups/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
+    // A campaign's OFFER - what a shopper pays, doc id = campaignId
+    // (Campaign Manager v3). PUBLIC-readable for the same reason popups are:
+    // campaign docs stay staff-only, so anything a PRICE depends on has to be
+    // published here for the storefront to read. Like the popup doc, it must
+    // NEVER carry audience, stats or coupon codes. Replaces the sales
+    // collection, whose single global percentage overwrote every product.
+    match /campaign_offers/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();
     }

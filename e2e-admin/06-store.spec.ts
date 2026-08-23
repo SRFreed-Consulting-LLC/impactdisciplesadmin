@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { FIXTURES, gotoTab, loginAsAdmin, waitForGrid } from './support/harness';
 
-// AREA: Store Catalog - the products, coupons and sales the public web
+// AREA: Store Catalog - the products and coupons the public web
 // store sells.
 //
 // The one assertion here worth more than the rest is that the RETIRED
@@ -56,9 +56,16 @@ test.describe('[store] Store Catalog', () => {
     expect(rows).toBeGreaterThan(0);
   });
 
-  test('sales load', async ({ page }) => {
-    await gotoTab(page, 'store-manager', 'sales');
-    await waitForGrid(page, 'sales-table');
-    await expect(page.locator('.sales-table')).toBeVisible();
+  test('Sales is gone - discounts belong to campaigns now', async ({ page }) => {
+    // Campaign Manager v3 retired Store > Sales: a discount comes from a
+    // campaign offer naming a product, a series or an event, and free
+    // shipping is a flag on that offer. Asserted rather than just deleted,
+    // because a second pricing system quietly reappearing is exactly the
+    // regression this work exists to prevent.
+    await gotoTab(page, 'store-manager', 'products');
+    await waitForGrid(page, 'products-table');
+
+    await expect(page.getByRole('link', { name: 'Sales', exact: true })).toHaveCount(0);
+    await expect(page.locator('.sales-table')).toHaveCount(0);
   });
 });

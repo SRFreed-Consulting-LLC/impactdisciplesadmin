@@ -58,10 +58,13 @@
   </div>
 
   <div class="wizard-section">
-    <p class="wizard-label">CHANNELS (either, or both)</p>
+    <p class="wizard-label">CHANNELS (pick any)</p>
     <div class="wizard-channels">
       <mat-checkbox formControlName="emailChannel">Email</mat-checkbox>
       <mat-checkbox formControlName="webChannel">Web popup</mat-checkbox>
+      <mat-checkbox formControlName="facebookChannel">Facebook</mat-checkbox>
+      <mat-checkbox formControlName="twitterChannel">X</mat-checkbox>
+      <mat-checkbox formControlName="instagramChannel">Instagram</mat-checkbox>
     </div>
     @if (form.value.webChannel) {
       <p class="wizard-hint">
@@ -69,7 +72,14 @@
         campaign page right after saving.
       </p>
     }
-    @if (!emailChannel && !form.value.webChannel) {
+    @if (form.value.facebookChannel || form.value.twitterChannel || form.value.instagramChannel) {
+      <p class="wizard-hint">
+        You'll write the captions and build the artwork from the campaign page.
+        Social posts are published by hand, then marked as posted.
+      </p>
+    }
+    @if (!emailChannel && !form.value.webChannel
+         && !form.value.facebookChannel && !form.value.twitterChannel && !form.value.instagramChannel) {
       <p class="wizard-hint">Pick at least one channel.</p>
     }
   </div>
@@ -136,6 +146,127 @@
       <app-date-time-field formControlName="startDate" label="Start"></app-date-time-field>
       <app-date-time-field formControlName="endDate" label="End"></app-date-time-field>
     </div>
+  </div>
+
+  <!-- OFFER (Campaign Manager v3). Available on every campaign type: the type
+       decides what the starter content looks like, the offer decides what a
+       shopper pays. -->
+  <div class="wizard-section">
+    <p class="wizard-label">OFFER (OPTIONAL)</p>
+    <mat-checkbox formControlName="offerEnabled">This campaign carries a discount</mat-checkbox>
+
+    @if (offerEnabled) {
+      <div class="wizard-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Applies to</mat-label>
+          <mat-select formControlName="offerTargetKind"
+            (selectionChange)="onOfferTargetKindChange($event.value)">
+            <mat-option value="product">One product</mat-option>
+            <mat-option value="series">A whole series</mat-option>
+            <mat-option value="event">An event (early bird)</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Which one</mat-label>
+          <mat-select formControlName="offerTargetId">
+            @for (item of offerTargetItems; track item.id) {
+              <mat-option [value]="item.id">{{ item.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="wizard-row">
+        @if (offerIsEarlyBird) {
+          <mat-form-field appearance="outline">
+            <mat-label>Early-bird price</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" formControlName="offerDiscountValue" min="0">
+            <mat-hint>Replaces the registration price, it is not an amount off</mat-hint>
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline">
+            <mat-label>Percent off</mat-label>
+            <span matTextSuffix>&nbsp;%</span>
+            <input matInput type="number" formControlName="offerDiscountValue" min="0" max="100">
+          </mat-form-field>
+          <mat-checkbox formControlName="offerFreeShipping">
+            Free shipping on orders containing it
+          </mat-checkbox>
+        }
+      </div>
+
+      @if (offerIsEarlyBird) {
+        <p class="wizard-hint">
+          The early-bird price is shown only to people who reach the event through
+          this campaign, and it runs for as long as the campaign does.
+        </p>
+      } @else if (form.value.offerTargetKind === 'series') {
+        <p class="wizard-hint">
+          Every product in the series is discounted, including any added to it
+          later while this campaign is running.
+        </p>
+      }
+
+      <p class="wizard-hint">
+        The discount starts when the campaign goes live and stops when it ends.
+      </p>
+    }
+  </div>
+
+  <!-- SIGNUP COUPON. A shared code per campaign, pointing at a real coupons
+       record - the discount system is not duplicated onto the campaign. Sent
+       in the very confirmation email that welcomes the subscriber. -->
+  <div class="wizard-section">
+    <p class="wizard-label">THANK-YOU COUPON (OPTIONAL)</p>
+    <mat-checkbox formControlName="couponEnabled">
+      Give subscribers a discount code when they sign up
+    </mat-checkbox>
+
+    @if (couponEnabled) {
+      <div class="wizard-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Coupon</mat-label>
+          <mat-select formControlName="couponId">
+            @for (coupon of coupons; track coupon.id) {
+              <mat-option [value]="coupon.id">
+                {{ coupon.code }} — {{ coupon.percentOff }}% off
+              </mat-option>
+            }
+            <mat-option value="__new__">Create a new coupon…</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (creatingCoupon) {
+        <div class="wizard-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Code subscribers type</mat-label>
+            <input matInput formControlName="couponCode" placeholder="WELCOME10">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Percent off</mat-label>
+            <input matInput type="number" formControlName="couponPercentOff" min="1" max="100">
+          </mat-form-field>
+        </div>
+      }
+
+      @if (couponNeedsExpiry) {
+        <div class="wizard-row">
+          <app-date-time-field formControlName="couponExpiresAt"
+            label="Coupon expires"></app-date-time-field>
+        </div>
+        <p class="wizard-hint">
+          This campaign has no end date, so the coupon needs its own — otherwise
+          the code keeps working indefinitely.
+        </p>
+      } @else {
+        <p class="wizard-hint">
+          The coupon stops working when the campaign ends.
+        </p>
+      }
+    }
   </div>
 
   <div class="wizard-actions">

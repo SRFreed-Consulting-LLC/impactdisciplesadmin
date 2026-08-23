@@ -194,8 +194,7 @@ export const NAV_CONFIG: NavGroup[] = [
     roles: [Role.ADMIN],
     items: [
       { label: 'Products', slug: 'products', roles: [Role.ADMIN] },
-      { label: 'Coupons', slug: 'coupons', roles: [Role.ADMIN] },
-      { label: 'Sales', slug: 'sales', roles: [Role.ADMIN] }
+      { label: 'Coupons', slug: 'coupons', roles: [Role.ADMIN] }
     ]
   },
   {

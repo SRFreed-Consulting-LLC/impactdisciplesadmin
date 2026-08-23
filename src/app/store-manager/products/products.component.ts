@@ -207,7 +207,10 @@ export class ProductsComponent implements OnInit {
       // Details
       title: [item?.title ?? '', Validators.required],
       cost: [item?.cost ?? 0, Validators.required],
-      salePrice: [item?.salePrice ?? 0, Validators.required],
+      // Campaign Manager v3: campaigns own discounts, so this is a computed
+      // display value rather than an input. Not disabled - a disabled control
+      // is omitted from form.value, which would drop the field on every save.
+      salePrice: [{ value: item?.salePrice ?? 0, disabled: false }],
       isEBook: [item?.isEBook ?? false],
       isDigitalBook: [item?.isDigitalBook ?? false],
       digitalBookId: [item?.digitalBookId ?? null],

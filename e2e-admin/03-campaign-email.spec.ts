@@ -48,11 +48,25 @@ test.describe('[campaign-email] Campaign Email Authoring', () => {
   async function openNewEmail(page: Page): Promise<void> {
     await page.goto(newEmailUrl);
     await expect(page.locator('app-campaign-email-editor')).toBeVisible({ timeout: 30_000 });
+
+    // Since Campaign Manager v3 the picker only auto-opens when there is
+    // nothing to build a starter FROM. A campaign that spotlights a product or
+    // an event opens straight onto its starter instead, so this dismisses the
+    // dialog when it appears and simply carries on when it does not - the
+    // helper serves tests on both kinds of campaign.
+    // waitFor, not isVisible: isVisible() takes no timeout and answers
+    // immediately, so it would report "no picker" simply because the dialog
+    // had not rendered yet.
     const starter = page.getByRole('button', { name: 'Start Blank' });
-    await starter.waitFor({ timeout: 20_000 });
-    await starter.click();
-    // Backdrop must actually be gone before anything else is clickable.
-    await expect(page.locator('.cdk-overlay-backdrop')).toHaveCount(0, { timeout: 15_000 });
+    const pickerOpened = await starter
+      .waitFor({ state: 'visible', timeout: 8_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (pickerOpened) {
+      await starter.click();
+      await expect(page.locator('.cdk-overlay-backdrop')).toHaveCount(0, { timeout: 15_000 });
+    }
   }
 
   test('the editor route loads its lazy chunk and mounts the builder', async ({ page }) => {
@@ -68,12 +82,36 @@ test.describe('[campaign-email] Campaign Email Authoring', () => {
     expect(errors, `browser threw:\n${errors.join('\n')}`).toEqual([]);
   });
 
-  test('a new email opens on the starter picker', async ({ page }) => {
-    // The picker is the first thing an author sees, and it is the only
-    // route to the campaign-kind starters - if it stops opening, every new
-    // email silently begins blank.
+  test('a new email on a PRODUCT campaign opens on its item starter, not the picker', async ({ page }) => {
+    // Campaign Manager v3: a campaign that spotlights something opens on a
+    // starter built from that item - image, headline, price, blurb, button -
+    // as real editable blocks. The picker is deliberately NOT thrown over the
+    // top of it: content appearing and being immediately covered reads as a
+    // bug. The gallery stays one click away on the toolbar.
     await page.goto(newEmailUrl);
     await expect(page.locator('app-campaign-email-editor')).toBeVisible({ timeout: 30_000 });
+
+    // The whole starter, not just that something rendered: the product's own
+    // title, its price, and the call to action - each as its own block, which
+    // is what makes them editable rather than a lump of generated markup.
+    const canvas = page.locator('app-design-canvas');
+    await expect(canvas.getByText(FIXTURES.followUpProductTitle).first())
+      .toBeVisible({ timeout: 20_000 });
+    await expect(canvas.getByText('$25.00')).toBeVisible();
+    await expect(canvas.getByText('Shop Now')).toBeVisible();
+
+    // And the picker never appeared over it.
+    await expect(page.getByText('Start Your Email')).toHaveCount(0);
+    await expect(page.locator('.cdk-overlay-backdrop')).toHaveCount(0);
+  });
+
+  test('a new email on an OTHER campaign still opens on the starter picker', async ({ page }) => {
+    // The negative half. With nothing to build a starter from, the picker is
+    // still the first thing an author sees - if it stopped opening for these,
+    // every new email would silently begin blank.
+    await page.goto(`${ADMIN_URL}/campaigns-manager/email/${FIXTURES.pastCampaign}/new`);
+    await expect(page.locator('app-campaign-email-editor')).toBeVisible({ timeout: 30_000 });
+
     await expect(page.getByText('Start Your Email')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('button', { name: 'Start Blank' })).toBeVisible();
   });

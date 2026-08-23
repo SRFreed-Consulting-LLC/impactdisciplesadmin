@@ -27,13 +27,22 @@ const BOOK1_TITLE = 'Foundations of Disciple-Making';
 const BOOK2_TITLE = 'Advanced Multiplication';
 const BOOK2_ID = 'lib-book-0002';
 
-/** Opens the reader's My Books page and expands the (collapsed-by-default)
- *  series group so book titles are actually in the DOM. */
+/**
+ * Opens the reader's library and makes sure the series shelf is EXPANDED.
+ *
+ * Ensures rather than toggles: the shelf now opens expanded, so a blind
+ * click closed it and hid every book - which reads exactly like the books
+ * being missing. aria-expanded is the shelf's own answer, so ask it.
+ */
 async function openBooksList(page: Page): Promise<void> {
   await page.goto(`${READER_URL}/books`);
-  const seriesToggle = page.locator('button.section-toggle', { hasText: 'Foundations Series' });
+  const seriesToggle = page.locator('button.shelf-toggle', { hasText: 'Foundations Series' });
   await expect(seriesToggle).toBeVisible({ timeout: 20_000 });
-  await seriesToggle.click();
+
+  if ((await seriesToggle.getAttribute('aria-expanded')) !== 'true') {
+    await seriesToggle.click();
+  }
+  await expect(seriesToggle).toHaveAttribute('aria-expanded', 'true');
 }
 
 /** Admin: opens the patron's Library Users detail page. */
@@ -42,7 +51,11 @@ async function openPatronDetail(page: Page): Promise<void> {
   await page.goto(`${ADMIN_URL}/library-manager?tab=library-users`);
   const row = page.locator('tr', { hasText: PATRON });
   await expect(row).toBeVisible({ timeout: 30_000 });
-  await row.click();
+  // DOUBLE click: the Library Users grid navigates on (rowDoubleClick),
+  // like every other app-data-grid. A single click selects and goes
+  // nowhere, which is why this waited 30s for a detail page that was
+  // never coming.
+  await row.dblclick();
   await expect(page).toHaveURL(/library-users\/patron%40test\.local|library-users\/patron@test\.local/);
   // The Book licenses card is on the detail page - wait for it to load.
   await expect(page.getByRole('heading', { name: 'Book licenses' })).toBeVisible({ timeout: 20_000 });
@@ -67,7 +80,7 @@ test.describe('admin license grant/revoke reflected in the reader', () => {
     await expect(page.getByText(BOOK2_TITLE)).toHaveCount(0);
     // Count chip on the series header agrees: 1 licensed book.
     await expect(
-      page.locator('button.section-toggle', { hasText: 'Foundations Series' }),
+      page.locator('button.shelf-toggle', { hasText: 'Foundations Series' }),
     ).toContainText('(1)');
   });
 
@@ -106,7 +119,7 @@ test.describe('admin license grant/revoke reflected in the reader', () => {
     await openBooksList(page);
 
     await expect(
-      page.locator('button.section-toggle', { hasText: 'Foundations Series' }),
+      page.locator('button.shelf-toggle', { hasText: 'Foundations Series' }),
     ).toContainText('(2)');
     await page.getByText(BOOK2_TITLE).click();
 
@@ -143,7 +156,7 @@ test.describe('admin license grant/revoke reflected in the reader', () => {
     await expect(page.getByText(BOOK1_TITLE)).toBeVisible();
     await expect(page.getByText(BOOK2_TITLE)).toHaveCount(0);
     await expect(
-      page.locator('button.section-toggle', { hasText: 'Foundations Series' }),
+      page.locator('button.shelf-toggle', { hasText: 'Foundations Series' }),
     ).toContainText('(1)');
 
     // Directly-addressed content is blocked SERVER-side: book-detail's units

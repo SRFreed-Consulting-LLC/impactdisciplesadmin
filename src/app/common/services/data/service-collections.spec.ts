@@ -32,7 +32,6 @@ import { OrganizationService } from 'src/app/common/services/data/organization.s
 import { ProductCategoriesService } from 'src/app/common/services/data/product-categories.service';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { ProductTagsService } from 'src/app/common/services/data/product-tags.service';
-import { SalesService } from 'src/app/common/services/data/sales.service';
 import { SeriesService } from 'src/app/common/services/data/series.service';
 import { ShippingLabelBatchService } from 'src/app/common/services/data/shipping-label-batch.service';
 import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
@@ -95,7 +94,6 @@ const SERVICE_TABLES: ServiceRow[] = [
   { service: ProductCategoriesService, table: 'product_categories', name: 'ProductCategoriesService' },
   { service: ProductService, table: 'products', name: 'ProductService' },
   { service: ProductTagsService, table: 'product_tags', name: 'ProductTagsService' },
-  { service: SalesService, table: 'sales', name: 'SalesService' },
   { service: SeriesService, table: 'series', name: 'SeriesService' },
   { service: ShippingLabelBatchService, table: 'shipping-label-batches', name: 'ShippingLabelBatchService' },
   { service: ShippingLabelService, table: 'shipping-labels', name: 'ShippingLabelService' },

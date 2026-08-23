@@ -114,7 +114,6 @@ import { OrderWorkflowDialogComponent } from 'src/app/shared/order-workflow-dial
 import { OrganizationLocationDialogComponent } from 'src/app/contacts-manager/organizations/organization-location-dialog.component';
 import { PALETTE_PREFIX } from 'src/app/tools-manager/form-builder/field-drop.util';
 import { parseBookPath } from 'src/app/common/services/data/library/library-nested-path.util';
-import { parseSaleDate } from 'src/app/store-manager/sales/sale-date.util';
 import { parseVideoUrl } from 'src/app/tools-manager/email-designer/video-url.util';
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
 import { PhoneMaskDirective } from 'src/app/shared/phone-field/phone-mask.directive';
@@ -130,7 +129,6 @@ import { ReportsManagerRoutingModule } from 'src/app/reports-manager/reports-man
 import { RICH_TEXT_TOOLBAR } from 'src/app/shared/rich-text-editor/quill-toolbar.config';
 import { RoomDialogComponent } from 'src/app/events-manager/events/room/room-dialog.component';
 import { RouteRequestDialogComponent } from 'src/app/shared/route-request-dialog/route-request-dialog.component';
-import { SaleDialogComponent } from 'src/app/store-manager/sales/sale-dialog.component';
 import { SaveAsTemplateDialogComponent } from 'src/app/campaigns-manager/campaign-email-editor/save-as-template-dialog.component';
 import { ScreenPermissionsDialogComponent } from 'src/app/core/main-screen/screen-permissions-dialog/screen-permissions-dialog.component';
 import { ScreenService } from 'src/app/common/services/utils/screen.service';
@@ -307,7 +305,6 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'OrganizationLocationDialogComponent', value: OrganizationLocationDialogComponent },
   { name: 'PALETTE_PREFIX', value: PALETTE_PREFIX },
   { name: 'parseBookPath', value: parseBookPath },
-  { name: 'parseSaleDate', value: parseSaleDate },
   { name: 'parseVideoUrl', value: parseVideoUrl },
   { name: 'PhoneMaskDirective', value: PhoneMaskDirective },
   { name: 'PhoneNumberMaskPipe', value: PhoneNumberMaskPipe },
@@ -322,7 +319,6 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'RICH_TEXT_TOOLBAR', value: RICH_TEXT_TOOLBAR },
   { name: 'RoomDialogComponent', value: RoomDialogComponent },
   { name: 'RouteRequestDialogComponent', value: RouteRequestDialogComponent },
-  { name: 'SaleDialogComponent', value: SaleDialogComponent },
   { name: 'SaveAsTemplateDialogComponent', value: SaveAsTemplateDialogComponent },
   { name: 'ScreenPermissionsDialogComponent', value: ScreenPermissionsDialogComponent },
   { name: 'SendSubscriptionDialogComponent', value: SendSubscriptionDialogComponent },
