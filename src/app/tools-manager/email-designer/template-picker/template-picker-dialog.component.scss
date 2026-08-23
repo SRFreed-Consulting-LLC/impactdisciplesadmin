@@ -6,7 +6,7 @@
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: #8a93a0;
+  color: #5f6875;
   margin: 14px 0 10px;
 
   &:first-child {
@@ -125,7 +125,7 @@
   border-top: 1px solid #eef1f4;
   cursor: pointer;
   text-align: left;
-  color: #8a93a0;
+  color: #5f6875;
 
   mat-icon {
     font-size: 18px;
@@ -140,7 +140,7 @@
 
 .past-toggle__hint {
   font-size: 11.5px;
-  color: #a8b0bb;
+  color: #5f6875;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -162,7 +162,7 @@
 
 .past-filter__hint {
   font-size: 11.5px;
-  color: #a8b0bb;
+  color: #5f6875;
 }
 
 .tcard__loading {
@@ -179,7 +179,7 @@
 }
 
 .gallery-empty {
-  color: #8a93a0;
+  color: #5f6875;
   font-size: 13px;
   font-style: italic;
 }

@@ -31,15 +31,26 @@
   min-width: 0;
 }
 
-// Compact, borderless inline fields - the Mailchimp "click the name to edit
-// it" affordance without a full mat-form-field's chrome.
+// Compact inline fields - the Mailchimp "click the name to edit it"
+// affordance without a full mat-form-field's chrome.
+//
+// They used to rest on a TRANSPARENT border, which read as three headings
+// rather than three inputs: the first one shows "Untitled email", so the
+// screen appeared to be titled rather than waiting for input. A faint
+// resting border and fill keep the light touch while still saying "type
+// here" - and the border is dark enough to be seen (WCAG 1.4.11 wants 3:1
+// for a control boundary; the old #ccd3da managed 1.5:1).
 .label-input,
 .subject-input {
-  border: 1px solid transparent;
+  // #848f9e is 3.28:1 against the white bar. A lighter edge was tried first
+  // and measured 1.47:1 - which looks tasteful and still leaves you unable
+  // to tell a field from a heading, i.e. it does not fix the thing it was
+  // meant to fix.
+  border: 1px solid #848f9e;
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 14px;
-  background: transparent;
+  background: #ffffff;
   min-width: 0;
   // Explicit: the app-wide theme paints toolbar text white, which would be
   // invisible against this editor's white top bar (the same trap the System
@@ -47,16 +58,22 @@
   color: #22282f;
 
   &::placeholder {
-    color: #8a93a0;
+    color: #5f6875;
   }
 
+  // Hover DARKENS. It used to lighten - #dbe0e6 over a transparent rest - so
+  // pointing at a field changed almost nothing.
   &:hover {
-    border-color: #dbe0e6;
+    border-color: #5f6875;
   }
 
+  // A focus ring has to be unmistakable, so it is drawn rather than tinted:
+  // the old 1px #9ec4c1 sat at 1.9:1 against white, which is close to
+  // invisible for anyone working by keyboard.
   &:focus {
     outline: none;
-    border-color: #9ec4c1;
+    border-color: #4e8f8a;
+    box-shadow: 0 0 0 2px rgba(78, 143, 138, 0.35);
     background: #ffffff;
   }
 }
@@ -227,7 +244,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .09em;
-  color: #8a93a0;
+  color: #5f6875;
 }
 
 .schedule-modes {

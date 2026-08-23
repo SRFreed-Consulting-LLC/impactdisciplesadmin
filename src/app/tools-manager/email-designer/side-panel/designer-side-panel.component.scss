@@ -78,7 +78,7 @@
 
 .text-input {
   width: 100%;
-  border: 1px solid #ccd3da;
+  border: 1px solid #848f9e;
   border-radius: 7px;
   padding: 7px 9px;
   font: inherit;
@@ -102,7 +102,7 @@
   width: 44px;
   height: 30px;
   padding: 0;
-  border: 1px solid #ccd3da;
+  border: 1px solid #848f9e;
   border-radius: 6px;
   background: none;
   vertical-align: middle;
@@ -113,7 +113,7 @@
 }
 
 .hint {
-  color: #8a93a0;
+  color: #5f6875;
   font-size: 12.5px;
   line-height: 1.5;
   margin: 4px 0 0;
@@ -133,7 +133,7 @@
   .grow {
     flex: 1;
     min-width: 0;
-    border: 1px solid #ccd3da;
+    border: 1px solid #848f9e;
     border-radius: 7px;
     padding: 7px 6px;
     font: inherit;
@@ -164,7 +164,7 @@ textarea.code-input {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: #8a93a0;
+  color: #5f6875;
   margin: 4px 0 10px;
 }
 
@@ -194,7 +194,7 @@ textarea.code-input {
   }
 
   &:hover {
-    border-color: #9ec4c1;
+    border-color: #4e8f8a;
   }
 }
 
@@ -222,7 +222,7 @@ textarea.code-input {
   }
 
   &:hover {
-    border-color: #9ec4c1;
+    border-color: #4e8f8a;
   }
 }
 
