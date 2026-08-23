@@ -189,10 +189,15 @@ that boundary, which the money tests assert on.
 
 ## Branches
 
-`development` is the default and PR-base branch. `origin/main` no longer exists on GitHub — ignore
-any tooling default that assumes it. `master` is production: never merge or push to it without the
-user explicitly asking, each time — even a general "push to prod" instruction is not standing
-permission to touch `master`.
+`development` is the ONLY branch in this repo, and the GitHub default. As of 2026-08-23 every
+merged branch was deleted (14 local + 3 remote here), and neither `main` nor `master` exists any
+more — ignore any tooling default that assumes one. Production is deployed straight from
+`development`; there is no prod branch to merge to.
+
+That removes the old "never touch `master`" guard, so the caution now attaches to the deploy
+commands themselves: `build-deploy-prod` and `firebase deploy --project impactdisciples-a82a8`
+publish whatever is on `development` immediately. Confirm intent each time — a general "push to
+prod" is not standing permission.
 
 ## Firebase projects
 
@@ -545,6 +550,28 @@ Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
   submodule first, then index.ts, then the client apps (web env URLs, reader/admin
   `httpsCallable` names) all read the new name from the same place.
 
+- **Public Impact Group finder** (`library-groups-public.functions.ts`, 2026-08-23):
+  `search_impact_groups` is the ONLY anonymous read path onto `discussionGroups`. Every group read
+  in `firestore.rules` is behind `signedIn()` and the public web site has no Firebase Auth at all,
+  so the finder cannot query Firestore — this reads with the Admin SDK and returns a narrow
+  projection instead. `toPublicSummary()` is the security boundary and is pinned by tests: it must
+  never emit `onlineInfo` (free text that in practice holds meeting links and passwords), member
+  data, `creatorEmail`, an address whose `addressVisible` is false, or the legacy
+  `inPersonLocation` free text. Leader identity is reduced to "Matthew F.". Closed and
+  invite-only groups are excluded — note the reader only filters invite-only client-side, so this
+  is the first place it is a real boundary.
+- **Group deletion cleanup** (`library-group-cleanup.functions.ts`, 2026-08-23):
+  `onGroupDeletedCleanup` handles the top-level collections that reference a group by FIELD rather
+  than living under it. The admin app's `deleteGroup` cascade only ever walked the subcollections,
+  so `groupInvites` and `groupLicenses` were left stranded. It is a TRIGGER rather than part of
+  that cascade for two reasons: `firestore.rules` blocks all client writes to `groupInvites`
+  (`allow write: if false`), so the admin app physically cannot do it, and a trigger covers every
+  delete path instead of one screen. It deletes PENDING invites (the doc id is the bearer token in
+  the emailed link) and FLAGS assigned licenses `assignedGroupDeleted` — it deliberately does not
+  auto-revoke, because revoking strips the book from the recipient and staff deleting a group is
+  not the recipient's doing. `revokeGroupLicense` reads that flag path: a DELETED group is now a
+  separate branch from a CLOSED one, so a leader can reclaim a unit that moderation would
+  otherwise have burned permanently.
 - **Customer auto-upsert**: `customer-upsert.functions.ts` and
   `event-registration-customer-upsert.functions.ts` keep Customer records created/synced
   automatically from purchase and event-registration writes — Customer data is no longer only
