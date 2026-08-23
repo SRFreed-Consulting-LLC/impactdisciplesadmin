@@ -4,6 +4,7 @@ import {
   escapeHtml,
   queueGroupInviteEmail,
 } from "./transactional-emails";
+import {normalizeGroupLocation} from "./library-group-location";
 import {
   ApproveGroupMembershipRequest,
   ApproveGroupMembershipResult,
@@ -161,33 +162,7 @@ export const createGroup = onCall(async (request):
 
   // Structured location passes through with per-field narrowing; the
   // legacy free-text inPersonLocation shape is still accepted for parity.
-  let location: Record<string, unknown> | undefined;
-  if (typeof data.location === "object" && data.location !== null) {
-    const raw = data.location as unknown as Record<string, unknown>;
-    const country = cleanText(raw.country, 100);
-    const city = cleanText(raw.city, 100);
-    const locationType =
-      raw.locationType === "public-place" || raw.locationType === "home" ?
-        raw.locationType :
-        undefined;
-    if (country && city && locationType) {
-      location = {
-        country,
-        city,
-        locationType,
-        addressVisible: raw.addressVisible === true,
-        ...(cleanText(raw.state, 100) ?
-          {state: cleanText(raw.state, 100)} :
-          {}),
-        ...(cleanText(raw.address1, 200) ?
-          {address1: cleanText(raw.address1, 200)} :
-          {}),
-        ...(typeof raw.lat === "number" && typeof raw.lng === "number" ?
-          {lat: raw.lat, lng: raw.lng} :
-          {}),
-      };
-    }
-  }
+  const location = normalizeGroupLocation(data.location, cleanText);
 
   const now = Date.now();
   const groupRef = db.collection("discussionGroups").doc();
