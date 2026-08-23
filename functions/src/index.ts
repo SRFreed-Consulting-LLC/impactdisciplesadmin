@@ -169,6 +169,13 @@ exports.notifyConversationMessage =
   libraryGroupNotifications.notifyConversationMessage;
 exports.onGroupMembershipCountChanged =
   libraryGroupNotifications.onGroupMembershipCountChanged;
+
+// Cleans up the top-level collections that REFERENCE a deleted group but
+// do not live under it (groupInvites, groupLicenses). A trigger, not part of
+// the admin app cascade: rules block all client writes to groupInvites, and
+// this way every delete path is covered, not just the one screen.
+const libraryGroupCleanup = require("./library-group-cleanup.functions");
+exports.onGroupDeletedCleanup = libraryGroupCleanup.onGroupDeletedCleanup;
 exports.notifyJoinRequestActivity =
   libraryGroupNotifications.notifyJoinRequestActivity;
 exports.notifyPrayerRequestShared =

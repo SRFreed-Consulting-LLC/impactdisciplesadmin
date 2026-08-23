@@ -508,8 +508,31 @@ export const revokeGroupLicense = onCall(async (request):
       libraryDb.collection("discussionGroups").doc(license.assignedGroupId)
     );
     const group = groupSnap.exists ? groupSnap.data() : undefined;
+    // A DELETED group is deliberately not the same case as a closed one.
+    // Closing is the leader's own act, and locking the assignment is what
+    // makes it permanent - that is the rule. Deletion is staff moderation
+    // the leader had no say in, and treating it as "closed" silently burned
+    // a purchased unit forever: the leader could never reclaim it, while
+    // the recipient kept the book (their grant lives on libraryUsers, which
+    // the group cascade never touched). So a missing group lets the revoke
+    // proceed - see onGroupDeletedCleanup, which flags these rather than
+    // revoking automatically, leaving it the leader's deliberate choice.
+    if (!group) {
+      const recipientRef = libraryDb
+        .collection("libraryUsers")
+        .doc(license.assignedToEmail);
+      const recipientSnap = await transaction.get(recipientRef);
+      applyLicenseRevoke({
+        transaction,
+        licenseRef,
+        recipientRef,
+        recipientSnap,
+        licenseId,
+        bookId: license.bookId as string,
+      });
+      return;
+    }
     if (
-      !group ||
       group["status"] !== "open" ||
       group["bookId"] !== license.bookId
     ) {
@@ -864,6 +887,19 @@ export const acceptGroupInvite = onCall(async (request):
       .collection("discussionGroups")
       .doc(groupId)
       .get();
+    // The group must still EXIST. Without this the accept ran on regardless
+    // and wrote members/{email} under a group document that is gone -
+    // Firestore happily creates a subcollection beneath a missing parent, so
+    // the invitee ended up an approved member of a ghost group, visible in
+    // getMyMemberships (a collectionGroup query) and openable to nothing.
+    // The book-change guard below could not catch it either: a deleted group
+    // yields an undefined bookId, so its `groupBookId &&` test was skipped.
+    if (!groupBookSnap.exists) {
+      throw new HttpsError(
+        "failed-precondition",
+        "This Impact Group is no longer available."
+      );
+    }
     const groupBookId = groupBookSnap.data()?.bookId as string | undefined;
     if (groupBookId && groupBookId !== bookId) {
       throw new HttpsError(
