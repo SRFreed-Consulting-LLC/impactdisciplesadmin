@@ -361,16 +361,31 @@ export class CampaignDetailComponent implements OnInit {
     const next: CampaignStatus = startMs > Date.now() ? 'scheduled' : 'live';
 
     try {
-      await this.campaignService.updateFields(this.campaign.id!, { status: next });
-      this.campaign.status = next;
-
-      // The published offer carries its OWN active flag - the storefront cannot
-      // read a campaign to find out whether one is running. Only a genuinely
-      // live campaign discounts; a scheduled one waits.
+      // The published offer carries its OWN active flag - the storefront
+      // cannot read a campaign to find out whether one is running. Only a
+      // genuinely live campaign discounts; a scheduled one waits.
       const offer = await this.offerService.forCampaign(this.campaign.id!);
+
+      // ONE batch, so the campaign and its offer move together or not at
+      // all. These used to be two sequential awaits with the status chip
+      // flipping optimistically between them: navigating away in that window
+      // - or any failure on the second write - left the campaign live
+      // advertising a discount that had never started. Nothing recomputed it
+      // afterwards, so the only symptom was a shopper being charged full
+      // price on a campaign that said it was running.
+      const batch = this.campaignService.dao.batch();
+      this.campaignService.dao.batchUpdateFields(
+        batch, this.campaign.id!, 'campaigns', { status: next }
+      );
       if (offer) {
-        await this.offerService.updateFields(this.campaign.id!, { isActive: next === 'live' });
+        this.campaignService.dao.batchUpdateFields(
+          batch, this.campaign.id!, 'campaign_offers', { isActive: next === 'live' }
+        );
       }
+      await batch.commit();
+
+      // Only reflected locally once the write actually landed.
+      this.campaign.status = next;
 
       this.snackbar.success(next === 'live' ? 'Campaign is live' : 'Campaign scheduled');
     } catch (err) {

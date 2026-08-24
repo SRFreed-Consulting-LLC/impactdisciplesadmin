@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter, updateDoc, where } from '@angular/fire/firestore';
+import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, startAfter, updateDoc, where, writeBatch } from '@angular/fire/firestore';
 import { Firestore, collection } from '@angular/fire/firestore';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
+import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot, WriteBatch } from 'firebase/firestore';
 import { BaseModel } from '@impact-common/shared/models/base.model';
 import { Unsubscribe } from 'firebase/auth';
 
@@ -143,6 +143,32 @@ export class FirebaseDAO<T extends BaseModel> {
 
   public delete(id: string, table: string){
     return deleteDoc(doc(this.fs, '/' + table + '/' + id));
+  }
+
+  // ---- Atomic multi-document writes ----
+  //
+  // For the cases where two documents in DIFFERENT collections have to move
+  // together or not at all. Campaign activation is the first: it flips a
+  // campaign to live and its published offer to active, and a half-applied
+  // pair means a campaign advertising a discount that never started (or a
+  // live discount on a campaign that is still a draft).
+  //
+  // Deliberately thin - the caller composes the batch and commits it, the
+  // same shape as writeBatch itself, rather than this DAO growing a method
+  // per combination of collections.
+  public batch(): WriteBatch {
+    return writeBatch(this.fs);
+  }
+
+  // Stages the same write updateFields() performs, onto a caller's batch.
+  // Same rules apply: the doc must already exist, and no undefined values.
+  public batchUpdateFields(
+    batch: WriteBatch,
+    id: string,
+    table: string,
+    partial: Record<string, unknown>
+  ): void {
+    batch.update(doc(this.fs, '/' + table + '/' + id), partial);
   }
 
   // onError is optional and purely a side-channel signal - the returned

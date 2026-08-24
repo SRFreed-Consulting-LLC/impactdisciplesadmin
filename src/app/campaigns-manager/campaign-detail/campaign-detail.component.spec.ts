@@ -321,6 +321,51 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
     return Promise.resolve();
   };
 
+  // activate() writes the campaign and its offer in ONE batch, so they can
+  // never half-apply. The stub collects staged operations and only records
+  // them as writes on commit() - which is what makes "nothing was written"
+  // provable when the commit fails.
+  const commits: { table: string; fields: Record<string, unknown> }[][] = [];
+  const TABLE_TARGET: Record<string, string> = {
+    campaigns: 'campaign',
+    campaign_offers: 'offer',
+  };
+  interface StubBatch {
+    ops: { table: string; fields: Record<string, unknown> }[];
+    commit: () => Promise<void>;
+  }
+  const daoStub = {
+    batch: (): StubBatch => {
+      const ops: { table: string; fields: Record<string, unknown> }[] = [];
+      return {
+        ops,
+        commit: () => {
+          const failing = ops.find(
+            (op) => stubs.failOn === TABLE_TARGET[op.table]
+          );
+          if (failing) {
+            // A batch is all-or-nothing: nothing lands, so nothing is
+            // recorded.
+            return Promise.reject(new Error('boom'));
+          }
+          commits.push(ops);
+          for (const op of ops) {
+            writes.push({ target: TABLE_TARGET[op.table] ?? op.table, fields: op.fields });
+          }
+          return Promise.resolve();
+        },
+      };
+    },
+    batchUpdateFields: (
+      batch: StubBatch,
+      _id: string,
+      table: string,
+      fields: Record<string, unknown>
+    ) => {
+      batch.ops.push({ table, fields });
+    },
+  };
+
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -331,6 +376,7 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
         useValue: {
           updateFields: record('campaign'),
           getById: (id: string) => Promise.resolve({ id, name: 'Other Campaign' }),
+          dao: daoStub,
         },
       },
       { provide: CampaignPopupService, useValue: { getById: () => Promise.resolve(null), updateFields: record('popup') } },
@@ -380,7 +426,7 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
   component.popup = (stubs.popup ?? null) as never;
 
   const wrote = (target: string) => writes.filter((w) => w.target === target).map((w) => w.fields);
-  return { component, wrote, errors, successes, confirmed };
+  return { component, wrote, errors, successes, confirmed, commits };
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -414,6 +460,51 @@ describe('CampaignDetailComponent status lifecycle', () => {
       await component.activate();
 
       expect(wrote('offer')).toEqual([{ isActive: true }]);
+    });
+
+    it('writes the campaign and its offer in ONE atomic batch', async () => {
+      // The bug this replaced: two sequential awaits with the status chip
+      // flipping optimistically between them. Navigating away in that window
+      // - or any failure on the second write - left the campaign live
+      // advertising a discount that had never started, and nothing
+      // recomputed it afterwards.
+      const { component, commits } = lifecycleSetup({
+        offer: { campaignId: 'camp-1' },
+      });
+
+      await component.activate();
+
+      expect(commits.length).toBe(1);
+      expect(commits[0]).toEqual([
+        { table: 'campaigns', fields: { status: 'live' } },
+        { table: 'campaign_offers', fields: { isActive: true } },
+      ]);
+    });
+
+    it('activates a campaign with no offer in a single-write batch', async () => {
+      const { component, commits, wrote } = lifecycleSetup();
+
+      await component.activate();
+
+      expect(commits.length).toBe(1);
+      expect(commits[0].length).toBe(1);
+      expect(wrote('offer')).toEqual([]);
+    });
+
+    it('leaves the status untouched locally when the batch fails', async () => {
+      // All-or-nothing means the in-memory campaign must not claim a status
+      // the database never took.
+      const { component, wrote, errors } = lifecycleSetup({
+        offer: { campaignId: 'camp-1' },
+        failOn: 'offer',
+      });
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([]);
+      expect(wrote('offer')).toEqual([]);
+      expect(component.campaign.status).toBe('draft');
+      expect(errors.length).toBe(1);
     });
 
     it('leaves a scheduled campaign offer switched off', async () => {
