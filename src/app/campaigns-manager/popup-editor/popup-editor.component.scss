@@ -76,37 +76,6 @@
   padding: 4px 2px 18px;
 }
 
-.popup-preview__box {
-  border: 1px solid color-mix(in srgb, var(--app-card-ink) 14%, transparent);
-  border-radius: 12px;
-  max-width: 100%;
-  box-shadow: 0 8px 30px rgba(15, 23, 32, 0.18);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  // Popup content is authored for the light storefront - keep the preview
-  // honest regardless of the admin's navy theme.
-  color: #22282f;
-  color-scheme: light;
-}
-
-.popup-preview__content {
-  flex: 1;
-  padding: 10px 14px;
-  overflow-y: auto;
-
-  img {
-    max-width: 100%;
-  }
-}
-
-.popup-preview__dismiss {
-  text-align: center;
-  font-size: 12px;
-  color: #6a7280;
-  padding: 6px 0 10px;
-}
-
 .editor-quill {
   margin-bottom: 10px;
   // The navy theme's global quill styling targets the designer's layout -
@@ -178,46 +147,15 @@
   margin-bottom: 6px;
 }
 
-.popup-preview__form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0 18px;
-  margin-top: 4px;
-}
-
-.popup-preview__field {
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 12.5px;
-  background: #fff;
-  color: #1d2733;
-}
-
-.popup-preview__ctas {
+// The PREVIEW label and the LAUNCH POPUP button share a row.
+.editor-preview__head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 18px 4px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.popup-preview__primary {
-  border: 0;
-  border-radius: 8px;
-  padding: 9px 22px;
-  background: #0e7d8a;
-  color: #fff;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: default;
-}
-
-.popup-preview__secondary {
-  border: 0;
-  background: none;
-  color: rgba(0, 0, 0, 0.55);
-  font-size: 12.5px;
-  cursor: default;
+.editor-preview__launch {
+  flex: 0 0 auto;
+  font-size: 12px;
 }

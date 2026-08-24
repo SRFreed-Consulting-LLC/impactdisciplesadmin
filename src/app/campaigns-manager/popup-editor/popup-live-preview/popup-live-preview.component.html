@@ -1,0 +1,37 @@
+<!-- Copy of the web repo's campaign-popup.component.html - keep the class
+     names and structure identical so this renders exactly what a visitor
+     sees. Handlers are the inert previews of the real ones. -->
+<div class="cpopup__overlay" [class.cpopup__overlay--inline]="mode === 'inline'">
+  <div class="cpopup__box"
+    [style.width.px]="popup.width || 480"
+    [style.minHeight.px]="popup.height || 0"
+    [style.background]="popup.bgColor || '#ffffff'">
+    <button type="button" class="cpopup__close" aria-label="Close" (click)="dismiss()">&times;</button>
+    <div class="cpopup__content" [innerHTML]="popup.html"></div>
+
+    @if (popup.cta; as cta) {
+      @if (cta.type === 'form' && !submitDone) {
+        <div class="cpopup__form">
+          @for (field of ctaFields(); track field) {
+            <input class="cpopup__field" [type]="field === 'email' ? 'email' : 'text'"
+              [placeholder]="fieldLabel(field)" [attr.aria-label]="fieldLabel(field)" readonly>
+          }
+        </div>
+      }
+      @if (submitDone) {
+        <p class="cpopup__thanks">Thank you! You're all set. &#10003;</p>
+      } @else {
+        <div class="cpopup__ctas">
+          <button type="button" class="cpopup__primary" (click)="onPrimary()">{{ cta.primaryLabel }}</button>
+          @if (cta.type !== 'close' && cta.dismissLabel) {
+            <button type="button" class="cpopup__secondary" (click)="dismiss()">{{ cta.dismissLabel }}</button>
+          }
+        </div>
+      }
+    }
+
+    <label class="cpopup__dismiss">
+      <input type="checkbox" disabled> Don't show this again
+    </label>
+  </div>
+</div>

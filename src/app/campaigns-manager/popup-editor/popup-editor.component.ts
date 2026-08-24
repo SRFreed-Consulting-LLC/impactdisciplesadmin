@@ -17,6 +17,7 @@ import { registerQuillStyleAttributors } from '../../shared/rich-text-editor/qui
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { StarterItem, eventStarter, productStarter, starterPopupHtml } from '../campaign-starter';
+import { PopupPreviewData } from './popup-live-preview/popup-live-preview.component';
 
 // Popup editor (Campaign Manager v2, Phase 5; WYSIWYG rework 2026-08-19):
 // authors a campaign's web popup - shown to EVERY site visitor (no
@@ -54,6 +55,11 @@ export class PopupEditorComponent implements OnInit {
   spotlightId: string | null = null;
 
   previewHtml: SafeHtml | null = null;
+  // What BOTH previews render - the side panel and the launched overlay are
+  // the same component, so an author never sees two different popups.
+  previewData: PopupPreviewData | null = null;
+  livePreviewOpen = false;
+  private previewHtmlSource = '';
 
   constructor(
     private popupService: CampaignPopupService,
@@ -90,8 +96,10 @@ export class PopupEditorComponent implements OnInit {
       collectPhone: [false],
       formDestination: ['newsletter']
     });
-    this.form.get('html')?.valueChanges.subscribe(() => this.refreshPreview());
-    this.form.get('bgColor')?.valueChanges.subscribe(() => this.refreshPreview());
+    // One subscription rather than one per previewed control: width, height
+    // and the form-field checkboxes feed the preview too, and used to reach
+    // it only by accident of the template binding form.value directly.
+    this.form.valueChanges.subscribe(() => this.refreshPreview());
   }
 
   ngOnInit(): void {
@@ -125,8 +133,6 @@ export class PopupEditorComponent implements OnInit {
       this.form.patchValue({ ctaPrimaryLabel: this.defaultPrimaryLabel(type) }, { emitEvent: false });
       this.refreshPreview();
     });
-    this.form.get('ctaPrimaryLabel')?.valueChanges.subscribe(() => this.refreshPreview());
-    this.form.get('ctaDismissLabel')?.valueChanges.subscribe(() => this.refreshPreview());
 
     if (this.popup) {
       this.form.patchValue({
@@ -159,6 +165,17 @@ export class PopupEditorComponent implements OnInit {
       }
       this.refreshPreview();
     }
+  }
+
+  /** The CTA form fields the checkboxes select; email is never optional. */
+  private chosenFormFields(): PopupCtaField[] {
+    const value = this.form.value;
+    return [
+      'email',
+      ...(value.collectFirstName ? ['firstName' as const] : []),
+      ...(value.collectLastName ? ['lastName' as const] : []),
+      ...(value.collectPhone ? ['phone' as const] : [])
+    ];
   }
 
   private defaultPrimaryLabel(type: string): string {
@@ -235,9 +252,39 @@ export class PopupEditorComponent implements OnInit {
     return event ? eventStarter(event, environment.publicSiteUrl) : null;
   }
 
+  // Opens the LAUNCHED popup: the very same renderer the storefront uses,
+  // full-screen over the admin, driven by the unsaved form values.
+  launchPreview(): void {
+    this.refreshPreview();
+    this.livePreviewOpen = !!this.previewData;
+  }
+
+  // Rebuilds what the previews render. The SafeHtml is memoized on its
+  // source string: previewData is a fresh object every keystroke, and
+  // handing the child a NEW SafeHtml each time would re-render its
+  // [innerHTML] on every change-detection pass.
   private refreshPreview(): void {
-    const html = this.form?.value?.html ?? '';
-    this.previewHtml = html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
+    const value = this.form?.value ?? {};
+    const html = value.html ?? '';
+    if (html !== this.previewHtmlSource) {
+      this.previewHtmlSource = html;
+      this.previewHtml = html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
+    }
+    this.previewData = this.previewHtml
+      ? {
+          html: this.previewHtml,
+          width: value.width || 480,
+          height: value.height || 0,
+          bgColor: value.bgColor || '#ffffff',
+          cta: {
+            type: value.ctaType,
+            primaryLabel: (value.ctaPrimaryLabel ?? '').trim() || this.defaultPrimaryLabel(value.ctaType),
+            dismissLabel: value.ctaType === 'close' ? null : ((value.ctaDismissLabel ?? '').trim() || 'No Thanks'),
+            formFields: value.ctaType === 'form' ? this.chosenFormFields() : null,
+            formDestination: value.ctaType === 'form' ? value.formDestination : null
+          }
+        }
+      : null;
   }
 
   private stripAttribution(url: string): string {
@@ -272,18 +319,12 @@ export class PopupEditorComponent implements OnInit {
       this.snackbar.error('This campaign has no goal target - enter a Click-through URL for the button.');
       return;
     }
-    const formFields: PopupCtaField[] = [
-      'email',
-      ...(value.collectFirstName ? ['firstName' as const] : []),
-      ...(value.collectLastName ? ['lastName' as const] : []),
-      ...(value.collectPhone ? ['phone' as const] : [])
-    ];
     const cta: PopupCta = {
       type: value.ctaType,
       primaryLabel: (value.ctaPrimaryLabel ?? '').trim() || this.defaultPrimaryLabel(value.ctaType),
       dismissLabel: value.ctaType === 'close' ? null : ((value.ctaDismissLabel ?? '').trim() || 'No Thanks'),
       linkUrl: linkTarget,
-      formFields: value.ctaType === 'form' ? formFields : null,
+      formFields: value.ctaType === 'form' ? this.chosenFormFields() : null,
       formDestination: value.ctaType === 'form' ? value.formDestination : null
     };
     this.saving = true;

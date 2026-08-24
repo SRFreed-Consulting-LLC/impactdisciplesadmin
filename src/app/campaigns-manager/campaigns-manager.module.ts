@@ -22,6 +22,7 @@ import { PublishWebDialogComponent } from './campaign-detail/publish-web-dialog.
 import { WebNewslettersComponent } from './web-newsletters/web-newsletters.component';
 import { CampaignWizardComponent } from './campaign-wizard/campaign-wizard.component';
 import { PopupEditorComponent } from './popup-editor/popup-editor.component';
+import { PopupLivePreviewComponent } from './popup-editor/popup-live-preview/popup-live-preview.component';
 import { SocialComposerComponent } from './social-composer/social-composer.component';
 import { StatusBoardComponent } from './status-board/status-board.component';
 import { TagRulesComponent } from './tag-rules/tag-rules.component';
@@ -42,6 +43,7 @@ import { QuillModule } from 'ngx-quill';
     WebNewslettersComponent,
     CampaignWizardComponent,
     PopupEditorComponent,
+    PopupLivePreviewComponent,
     SocialComposerComponent,
     StatusBoardComponent,
     TagRulesComponent,

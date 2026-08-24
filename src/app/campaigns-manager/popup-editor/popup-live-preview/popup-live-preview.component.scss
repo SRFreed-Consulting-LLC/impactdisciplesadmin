@@ -1,0 +1,214 @@
+// Copy of the web repo's campaign-popup.component.scss. Three deliberate
+// deviations, all forced by the admin not being the storefront:
+//   1. The site's SCSS variables are inlined as literals - the admin has no
+//      copy of web/src/assets/styles/variables.scss ($blue #588AC7,
+//      $theme-color #ffcc00, $black #1c1c1c). Change them together.
+//   2. The ::after fills declare `transition: .3s` explicitly; on the web
+//      that comes free from the theme's global `button, *::after` rule
+//      (_common.scss), which the admin has no equivalent of.
+//   3. `color-scheme: light` + explicit light colors, so storefront content
+//      stays honest against the admin's navy theme.
+// Plus an --inline modifier that flattens the overlay for the side panel.
+
+.cpopup__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 28, 0.6);
+  z-index: 10600; // above the admin's own overlays (image-uploader is 10500)
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+// Side-panel mode: no dimming, no fixed positioning - just the box.
+.cpopup__overlay--inline {
+  position: static;
+  background: none;
+  padding: 0;
+  display: block;
+
+  .cpopup__box {
+    max-width: 100%;
+    max-height: none;
+  }
+}
+
+.cpopup__box {
+  position: relative;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  border-radius: 0;
+  border-top: 5px solid #ffcc00;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Lato', sans-serif;
+  color: #1c1c1c;
+  color-scheme: light;
+}
+
+.cpopup__close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  border: none;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #1c1c1c;
+  cursor: pointer;
+  z-index: 1;
+
+  &:hover {
+    color: #588AC7;
+  }
+}
+
+.cpopup__content {
+  overflow-y: auto;
+  flex: 0 1 auto;
+  padding: 26px 22px 4px;
+  color: #1c1c1c;
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.cpopup__dismiss {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(28, 28, 28, 0.55);
+  padding: 10px 0 12px;
+  margin: 0;
+
+  input {
+    margin: 0;
+  }
+}
+
+.cpopup__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 22px 0;
+}
+
+.cpopup__field {
+  border: 1px solid rgba(28, 28, 28, 0.25);
+  border-radius: 0;
+  padding: 11px 14px;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  background: #ffffff;
+  color: #1c1c1c;
+}
+
+.cpopup__thanks {
+  text-align: center;
+  font-weight: 700;
+  color: #588AC7;
+  padding: 14px 0 4px;
+  margin: 0;
+}
+
+.cpopup__ctas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 22px 2px;
+  flex-wrap: wrap;
+}
+
+.cpopup__primary {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  text-align: center;
+  border: 2px solid #588AC7;
+  border-radius: 0;
+  height: 44px;
+  line-height: 40px;
+  padding: 0 34px;
+  background: #588AC7;
+  color: #ffffff;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+
+  &::after {
+    position: absolute;
+    content: '';
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: #ffffff;
+    z-index: -1;
+    transition: 0.3s;
+  }
+
+  &:hover {
+    color: #1c1c1c;
+
+    &::after {
+      height: 100%;
+    }
+  }
+}
+
+.cpopup__secondary {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  text-align: center;
+  border: 2px solid #588AC7;
+  border-radius: 0;
+  height: 44px;
+  line-height: 40px;
+  padding: 0 26px;
+  background: #ffffff;
+  color: #1c1c1c;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+
+  &::after {
+    position: absolute;
+    content: '';
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: #588AC7;
+    z-index: -1;
+    transition: 0.3s;
+  }
+
+  &:hover {
+    color: #ffffff;
+
+    &::after {
+      height: 100%;
+    }
+  }
+}
