@@ -5,6 +5,7 @@ import {
   collection,
   deleteField,
   doc,
+  getDoc,
   getDocs,
   updateDoc,
   writeBatch,
@@ -13,6 +14,7 @@ import { Observable } from 'rxjs';
 import { DiscussionGroup, GroupMembership } from '@impact-common/models/discussion-group.model';
 import { GroupWizardResult } from '@impact-common/groups/group-wizard-dialog.component';
 import { getAllGroups, getGroupMembers } from '@impact-common/queries/discussion-group-queries';
+import { LibraryActivityLogService } from './library-activity-log.service';
 
 /**
  * Ported from impact-discipleship-library-manager-new's own
@@ -26,7 +28,10 @@ import { getAllGroups, getGroupMembers } from '@impact-common/queries/discussion
  */
 @Injectable({ providedIn: 'root' })
 export class LibraryDiscussionGroupService {
-  constructor(private firestore: Firestore) {}
+  constructor(
+    private firestore: Firestore,
+    private activityLog: LibraryActivityLogService
+  ) {}
 
   getAllGroups(): Observable<DiscussionGroup[]> {
     return getAllGroups(this.firestore);
@@ -61,6 +66,12 @@ export class LibraryDiscussionGroupService {
       maxMembers: input.maxMembers ?? deleteField(),
       updatedAt: Date.now(),
     });
+    // Logged HERE rather than in the Groups screen so every caller is
+    // covered, matching how library-book.service records its own edits.
+    await this.activityLog.log('group_updated', {
+      targetName: input.title,
+      detail: 'Edited Impact Group',
+    });
   }
 
   /** Real hard delete (group doc + every subcollection) - unlike the
@@ -71,6 +82,17 @@ export class LibraryDiscussionGroupService {
    *  be hundreds of documents. */
   async deleteGroup(groupId: string): Promise<void> {
     const firestore = this.firestore;
+    // Read the title BEFORE destroying it - an audit entry saying only
+    // "deleted <id>" is close to useless when someone asks months later
+    // which group went missing. Best-effort: a failure here must not stop
+    // the moderation action.
+    let title = groupId;
+    try {
+      const snap = await getDoc(doc(firestore, 'discussionGroups', groupId));
+      title = (snap.data()?.['title'] as string) || groupId;
+    } catch {
+      // Keep the id as the label.
+    }
     const refs: DocumentReference[] = [];
     for (const sub of ['members', 'chatMessages', 'prayerRequests']) {
       const snap = await getDocs(collection(firestore, 'discussionGroups', groupId, sub));
@@ -98,6 +120,14 @@ export class LibraryDiscussionGroupService {
     });
     refs.push(doc(firestore, 'discussionGroups', groupId));
     await this.commitDeletesInChunks(refs);
+    // The only destructive action in the library area, and it takes every
+    // message, prayer request and conversation with it - so the count goes
+    // in the entry too. It is the difference between "a group was removed"
+    // and "147 documents were removed".
+    await this.activityLog.log('group_deleted', {
+      targetName: title,
+      detail: `Deleted Impact Group and ${refs.length - 1} related document(s)`,
+    });
   }
 
   /** Firestore caps a single batch at 500 operations - chunk comfortably

@@ -26,7 +26,13 @@ export type LibraryActivityAction =
   | 'library_user_reinstated'
   | 'library_user_license_granted'
   | 'library_user_license_revoked'
-  | 'admin_message_sent';
+  | 'admin_message_sent'
+  // Impact Groups. Staff can EDIT any group (including its book and its
+  // visibility) and HARD-DELETE it along with every message, prayer request
+  // and conversation underneath - the only destructive action in the
+  // library area, and until 2026-08-24 it left no trace anywhere.
+  | 'group_updated'
+  | 'group_deleted';
 
 export interface LibraryActivityLogEntry {
   id?: string;
@@ -66,4 +72,6 @@ export const LIBRARY_ACTIVITY_ACTION_LABELS: Record<LibraryActivityAction, strin
   library_user_license_granted: 'Granted book license',
   library_user_license_revoked: 'Revoked book license',
   admin_message_sent: 'Sent message to library users',
+  group_updated: 'Edited Impact Group',
+  group_deleted: 'Deleted Impact Group',
 };

@@ -129,13 +129,28 @@ project id `demo-impact`):
 
 1. **Unit** — Karma/Jasmine in this repo and the web repo (`npm run test` in each; the web
    repo's suite was created by this program), plus `functions/`'s own node:test suite
-   (`cd functions && npm test`, runs against compiled `lib/`). House style: hand-constructed
-   classes with duck-typed deps, NEVER TestBed/DI (see `permission.service.spec.ts`'s comment).
-   `purchases.service.spec.ts` used to be the one exception, forced onto a minimal all-stub
-   TestBed by an `inject()` FIELD initializer; that moved into the constructor on 2026-08-21
-   and the spec is hand-constructed like the rest. If you ever need TestBed again, that is a
-   signal the class under test took a dependency through `inject()` — move it to the
-   constructor instead (`library-manager/**` is the remaining holdout, see below).
+   (`cd functions && npm test`, runs against compiled `lib/`).
+
+   **House style: hand-construct the class with duck-typed deps whenever you can** — it is
+   faster, it has no framework in the failure path, and most of this suite is written that way.
+
+   The old wording here said "NEVER TestBed/DI" and treated needing TestBed as a signal to move
+   a dependency out of `inject()` and into the constructor. That is **no longer the rule**, and
+   following it now would push new code away from the `inject()` direction all three apps are
+   moving in. Distinguish the two things TestBed can do:
+
+   - **TestBed as an injector** — `TestBed.configureTestingModule({ providers: [...] })` plus
+     `TestBed.inject(Thing)`. Cheap, no template compilation, and it works for BOTH DI styles.
+     Reach for it without hesitation when the class under test uses `inject()`, or when it
+     owns signals (which need an injection context). `campaign-detail.component.spec.ts` and
+     `library-groups-list.component.spec.ts` are the pattern.
+   - **TestBed with `compileComponents()` / `createComponent()`** — a real component
+     lifecycle and a rendered template. Slow, and it drags in every child component. Only do
+     this when the TEMPLATE itself is what you are testing; asserting on class behaviour does
+     not need it.
+
+   So: hand-construct by default, TestBed-as-injector when DI or signals require it, rendered
+   TestBed only for templates. A spec needing an injector is not a smell to refactor away.
 2. **Integration** (`integration/`, `npm run test:integration`, emulator must be up) — the REAL
    Cloud Functions running in the emulator, driven over HTTP/callables + Admin-SDK doc writes:
    registration flow, customer upserts, checkout money path, campaign send engine + tracking,
