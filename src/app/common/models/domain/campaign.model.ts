@@ -142,6 +142,11 @@ export class CampaignModel extends BaseModel {
   // Prayer Letter campaign) that future touches keep attaching to.
   startDate?: Timestamp | Date | string | null;
   endDate?: Timestamp | Date | string | null;
+  // When the campaign was MADE, which is not startDate (when it RUNS) - a
+  // campaign created today to start next month sorts wrong by startDate.
+  // Stamped by CampaignService.add(); absent on campaigns created before
+  // 2026-08-24, so every read must tolerate undefined.
+  createdAt?: Timestamp | Date | string | null;
 
   // Email-channel audience (see CampaignAudience). Absent on web-only
   // campaigns and on regrouped history (whose audience is unknowable).

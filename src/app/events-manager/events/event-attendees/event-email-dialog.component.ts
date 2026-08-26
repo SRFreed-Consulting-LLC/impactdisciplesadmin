@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import Quill from 'quill';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -13,6 +13,7 @@ import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../../shared/rich-text-editor/variable-inserter.component';
+import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 
 export interface EventEmailDialogData {
   eventId: string | undefined;
@@ -24,6 +25,9 @@ export interface EventEmailDialogData {
   recipients?: string[];
   subjectPrefill?: string;
 }
+
+/** Picker sentinel: file this send under a brand-new campaign. */
+export const NEW_CAMPAIGN = '__new__';
 
 // Email this event's registrants - since Campaign Manager v2's Phase 6
 // consolidation, a THIN FLOW over the unified send engine: creates a
@@ -42,7 +46,10 @@ export interface EventEmailDialogData {
     styleUrls: ['./event-email-dialog.component.scss'],
     standalone: false
 })
-export class EventEmailDialogComponent {
+export class EventEmailDialogComponent implements OnInit {
+  /** The event's own campaigns, live ones first (see ngOnInit). */
+  campaigns: CampaignModel[] = [];
+  readonly NEW_CAMPAIGN = NEW_CAMPAIGN;
   form: FormGroup;
   inProgress$ = new BehaviorSubject<boolean>(false);
   richTextModules = RICH_TEXT_TOOLBAR;
@@ -63,9 +70,35 @@ export class EventEmailDialogComponent {
     private snackbar: SnackbarService
   ) {
     this.form = this.fb.group({
+      campaignId: [NEW_CAMPAIGN],
       subject: [data.subjectPrefill ?? '', Validators.required],
       html: ['']
     });
+  }
+
+  // An event email belongs to the campaign the author already made for that
+  // event. Creating one per send (the pre-2026-08-24 behaviour) split a
+  // single effort's reporting across one row per button click, and left the
+  // popup's webShown/webClicks on one campaign and the email's opens on
+  // another. Live campaigns sort first, then newest by createdAt - falling
+  // back to startDate for campaigns made before createdAt existed.
+  async ngOnInit(): Promise<void> {
+    if (!this.data.eventId) {
+      return;
+    }
+    const found = await this.campaignService.getAllByValue('eventId', this.data.eventId);
+    const madeAt = (c: CampaignModel) => toMillis(c.createdAt as never) || toMillis(c.startDate as never) || 0;
+    this.campaigns = found.sort((a, b) =>
+      (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || madeAt(b) - madeAt(a));
+    this.form.patchValue({ campaignId: this.campaigns[0]?.id ?? NEW_CAMPAIGN });
+  }
+
+  /** The campaign this send will be filed under, for the confirm prompt. */
+  get targetCampaignName(): string {
+    const id = this.form.value.campaignId as string;
+    return id === NEW_CAMPAIGN
+      ? 'a new campaign'
+      : (this.campaigns.find((c) => c.id === id)?.name ?? 'this campaign');
   }
 
   onEditorCreated(quill: Quill): void {
@@ -78,6 +111,46 @@ export class EventEmailDialogComponent {
 
   onCancel(): void {
     this.dialogRef.close(false);
+  }
+
+  // Fallback for an event with NO campaign yet. The name used to be
+  // `${eventName} - ${subject}`, but the Command Center prefills the subject
+  // with the event name already, which produced titles carrying it twice.
+  private createCampaignFor(subject: string, emails: string[]): Promise<CampaignModel> {
+    const eventName = this.data.eventName || 'Event';
+    const name = subject.includes(eventName) ? subject : `${eventName} — ${subject}`;
+    return this.campaignService.add({
+      ...new CampaignModel(),
+      name,
+      goal: 'event',
+      otherKind: null,
+      eventId: this.data.eventId,
+      channels: ['email'],
+      status: 'live',
+      startDate: new Date(),
+      endDate: null,
+      // Explicit list + unsubType 'none' = operational info email (see the
+      // class comment). The touch carries the same list as an override, so
+      // a later send to a different audience does not have to fight this.
+      audience: { mode: 'list', emails, unsubType: 'none' },
+      couponId: null,
+      source: null,
+      stats: emptyCampaignStats(),
+      schemaVersion: 2
+    });
+  }
+
+  // A campaign gains the email channel the moment it carries an email -
+  // the same thing the popup editor does for 'web'. Nothing else on the
+  // campaign is written.
+  private async ensureEmailChannel(campaignId: string): Promise<void> {
+    const campaign = this.campaigns.find((c) => c.id === campaignId);
+    if (!campaign || (campaign.channels ?? []).includes('email')) {
+      return;
+    }
+    const channels = [...(campaign.channels ?? []), 'email'] as CampaignModel['channels'];
+    await this.campaignService.updateFields(campaignId, { channels });
+    campaign.channels = channels;
   }
 
   // Sender name is a per-SEND constant - baked in before the touch saves
@@ -119,40 +192,35 @@ export class EventEmailDialogComponent {
       }
 
       const confirmed = await this.confirmService.confirm(
-        `Send "${subject}" to <b>${emails.length}</b> registrant(s) of this event?`,
+        `Send "${subject}" to <b>${emails.length}</b> registrant(s) of this event?` +
+        `<br><br>It will be filed under <b>${this.targetCampaignName}</b>.`,
         'Confirm Attendee Email');
       if (!confirmed) {
         return;
       }
 
-      const campaign = await this.campaignService.add({
-        ...new CampaignModel(),
-        name: `${this.data.eventName || 'Event'} — ${subject}`,
-        goal: 'event',
-        otherKind: null,
-        eventId: this.data.eventId,
-        channels: ['email'],
-        status: 'live',
-        startDate: new Date(),
-        endDate: null,
-        // Explicit list + unsubType 'none' = operational info email (see
-        // the class comment).
-        audience: { mode: 'list', emails, unsubType: 'none' },
-        couponId: null,
-        source: null,
-        stats: emptyCampaignStats(),
-        schemaVersion: 2
-      });
+      const chosen = this.form.value.campaignId as string;
+      const campaignId = chosen === NEW_CAMPAIGN
+        ? (await this.createCampaignFor(subject, emails)).id!
+        : chosen;
+      if (chosen !== NEW_CAMPAIGN) {
+        await this.ensureEmailChannel(chosen);
+      }
 
       const touch = await this.emailService.add({
         ...new CampaignEmailModel(),
-        campaignId: campaign.id!,
+        campaignId,
+        // The recipient list rides on the TOUCH, never the campaign:
+        // enqueueTouch resolves `touch.audienceOverride ?? campaign.audience`
+        // (campaign-send.functions.ts), so an existing campaign's own
+        // audience - and its web/popup channel - is left exactly as authored.
+        // unsubType 'none' rides along, keeping this an operational send.
+        audienceOverride: { mode: 'list', emails, unsubType: 'none' },
         label: null,
         subject,
         html: this.bakeSenderTokens(this.form.value.html as string),
         status: 'draft',
         sendConfig: { mode: 'now', scheduledAt: null, tagTrigger: null },
-        audienceOverride: null,
         sentAt: null,
         recipientCount: null,
         stats: emptyEmailStats(),

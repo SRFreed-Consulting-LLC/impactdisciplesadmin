@@ -1,6 +1,19 @@
 <app-popup-header title="EMAIL REGISTERED USERS" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
+  <!-- Where this send is filed. Defaults to the event's live campaign so
+       one effort's popup, emails and revenue report together. -->
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>File this email under</mat-label>
+    <mat-select formControlName="campaignId">
+      @for (c of campaigns; track c.id) {
+        <mat-option [value]="c.id">{{ c.name }}{{ c.status === 'live' ? ' (live)' : '' }}</mat-option>
+      }
+      <mat-option [value]="NEW_CAMPAIGN">+ Create a new campaign</mat-option>
+    </mat-select>
+    <mat-hint>Opens, clicks and revenue from this send land on the campaign you choose.</mat-hint>
+  </mat-form-field>
+
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Subject</mat-label>
     <input matInput formControlName="subject" required>
