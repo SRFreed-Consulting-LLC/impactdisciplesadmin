@@ -15,6 +15,7 @@ import { LibraryBookService } from 'src/app/common/services/data/library/library
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { PermissionService } from 'src/app/common/services/permission.service';
+import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
@@ -180,6 +181,17 @@ export class ProductsComponent implements OnInit {
 
   private editingItem: ProductModel | null = null;
 
+  get canEditFollowUpEmail(): boolean {
+    return !!this.form.get('followUpEmailId')?.value && this.templateEditor.canEdit();
+  }
+
+  editFollowUpEmail(): void {
+    const id = this.form.get('followUpEmailId')?.value as string | null;
+    if (id) {
+      void this.templateEditor.openById(id, { from: 'product' });
+    }
+  }
+
   constructor(
     private service: ProductService,
     private productTagService: ProductTagsService,
@@ -191,7 +203,9 @@ export class ProductsComponent implements OnInit {
     private fb: FormBuilder,
     private dialog: MatDialog,
     private confirmService: ConfirmService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    // Last, so existing positional construction in the spec still lines up.
+    private templateEditor: EmailTemplateEditorService
   ) {
     this.paged = new PagedCollectionSource<ProductModel>(
       (pageSize, cursor) => this.service.getPage(pageSize, cursor, 'title', 'asc'),

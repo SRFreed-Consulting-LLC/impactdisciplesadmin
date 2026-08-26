@@ -24,6 +24,13 @@ import {
 // scripts/seed-amazon-confirmation-template.js; editable in the designer.
 export const AMAZON_CONFIRMATION_TEMPLATE_NAME = 'Amazon Shipping Confirmation';
 
+// The store receipt every completed checkout sends. NOT sent from this app at
+// all - functions/src/transactional-emails.ts looks it up by this literal
+// name server-side. Declared here anyway so the admin UI can offer to edit
+// it from a purchase, and so the name exists in one findable place on this
+// side; if the two ever disagree, the receipt silently stops going out.
+export const SALES_RECEIPT_TEMPLATE_NAME = 'Sales Receipt';
+
 // refundStorePurchase's response shape (functions/src/store-refund.functions.ts).
 /** Alias of the shared contract's RefundStorePurchaseResult (Stage 2e-ii). */
 export type RefundResult = RefundStorePurchaseResult;

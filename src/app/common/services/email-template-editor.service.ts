@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { EMailTemplatesService } from './data/email-templates.service';
+import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { EmailTemplateDialogComponent } from 'src/app/tools-manager/email-templates/email-template-dialog.component';
 import { PermissionService } from './permission.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
@@ -63,15 +64,36 @@ export class EmailTemplateEditorService {
       return;
     }
     const matches = await this.templates.getAllByValue('name', name);
-    const template = matches[0];
+    this.open(matches[0], `named "${name}"`, returnTo);
+  }
 
+  /**
+   * Same, for a template addressed by DOC ID - which is how a product's
+   * follow-up email is bound (`followUpEmailId`), and how the Cloud Function
+   * that sends it resolves it. Addressing it the way the binding does keeps
+   * the two from drifting: a product's follow-up survives a rename, an
+   * event's registration email does not.
+   */
+  async openById(id: string, returnTo?: TemplateEditorReturn): Promise<void> {
+    if (!this.canEdit()) {
+      return;
+    }
+    const template = await this.templates.getById(id);
+    this.open(template ?? undefined, `with id ${id}`, returnTo);
+  }
+
+  private open(
+    template: MailTemplateModel | undefined,
+    describedAs: string,
+    returnTo?: TemplateEditorReturn
+  ): void {
     if (!template) {
       // Not a silent no-op: a missing template means the process that sends
       // it is currently BROKEN, and saying so here is how anyone finds out.
       // Amazon Shipping Confirmation is missing in production right now for
       // exactly this reason.
       this.snackbar.error(
-        `No email template named "${name}" exists yet, so nothing will be sent. ` +
+        `No email template ${describedAs} exists yet, so nothing will be sent. ` +
         'Create it under Tools Manager > System Templates.'
       );
       return;

@@ -151,6 +151,17 @@
                     <mat-option [value]="email.id">{{ email.name }}</mat-option>
                   }
                 </mat-select>
+                <!-- Edit the follow-up without leaving the product. Bound by
+                     doc ID here, which is also how the sending function
+                     resolves it - so unlike an event's registration email,
+                     this binding survives a rename. -->
+                @if (canEditFollowUpEmail) {
+                  <button mat-icon-button matSuffix type="button"
+                    matTooltip="Edit this email template"
+                    (click)="editFollowUpEmail()">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                }
               </mat-form-field>
             }
           </div>

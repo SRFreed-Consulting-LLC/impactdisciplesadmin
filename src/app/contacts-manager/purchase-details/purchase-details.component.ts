@@ -3,7 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
-import { AMAZON_CONFIRMATION_TEMPLATE_NAME, PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { AMAZON_CONFIRMATION_TEMPLATE_NAME, SALES_RECEIPT_TEMPLATE_NAME, PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -357,6 +357,17 @@ export class PurchaseDetailsComponent {
 
   get canEditConfirmationEmail(): boolean {
     return this.templateEditor.canEdit();
+  }
+
+  /** The store receipt, sent by the checkout Cloud Function for every
+   *  order - not by anything on this screen, which is why it sits with the
+   *  order totals rather than in the fulfillment workflow. */
+  get canEditSalesReceipt(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  editSalesReceipt(): void {
+    void this.templateEditor.openByName(SALES_RECEIPT_TEMPLATE_NAME, { from: 'store' });
   }
 
   editConfirmationEmail(): void {
