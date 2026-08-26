@@ -31,15 +31,55 @@
 // Two columns of section cards so the reclaimed width is actually used
 // rather than leaving one narrow column against dead space. Capped: fields
 // stretched across an ultrawide monitor are harder to read, not easier.
+//
+// NOT align-items: start - the columns are meant to finish level, with the
+// rich-text editor growing to meet the three stacked cards beside it.
 .editor-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
   max-width: 1500px;
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
+  }
+}
+
+.editor-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+// The left column is one card, and it stretches: the section fills the
+// column and the Quill editor inside it takes whatever is left over after
+// the fixed fields above and the checkbox below. That is what makes the two
+// columns end at the same height instead of leaving a ragged gap.
+.editor-col--main {
+  .editor-section {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .editor-quill {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+
+    ::ng-deep quill-editor {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+    }
+
+    // The existing min-height on .ql-container stays a floor, so the editor
+    // never collapses when the right column happens to be short.
+    ::ng-deep .ql-container {
+      flex: 1 1 auto;
+    }
   }
 }
 

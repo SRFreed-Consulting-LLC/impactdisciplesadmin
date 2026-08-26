@@ -16,138 +16,147 @@
 
 <div class="editor-body">
   <form [formGroup]="form" class="editor-form">
-    <div class="editor-section">
-      <p class="editor-label">CONTENT</p>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Title (internal)</mat-label>
-        <input matInput formControlName="title">
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Start from a template</mat-label>
-        <mat-select formControlName="templateId" (selectionChange)="onTemplatePicked($event.value)">
-          @for (template of templates; track template.id) {
-            <mat-option [value]="template.id">{{ template.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-
-      <div class="editor-quill">
-        <quill-editor formControlName="html" [modules]="richTextModules"
-          placeholder="Write the popup content here - or start from a template or a spotlight below."></quill-editor>
-      </div>
-
-      <mat-checkbox class="editor-save-template" [(ngModel)]="saveAsTemplate" [ngModelOptions]="{standalone: true}">
-        Save this popup as a reusable template
-      </mat-checkbox>
-    </div>
-
-    <div class="editor-section">
-      <p class="editor-label">SPOTLIGHT A PRODUCT OR EVENT</p>
-      <p class="editor-hint">
-        Drops the item's image, name, and details into the content above (fully editable
-        afterward) and points the click-through at its page on the site.
-      </p>
-      <div class="editor-row">
-        <mat-form-field appearance="outline" class="editor-num">
-          <mat-label>Spotlight</mat-label>
-          <mat-select [(ngModel)]="spotlightType" [ngModelOptions]="{standalone: true}">
-            <mat-option value="product">Product</mat-option>
-            <mat-option value="event">Event</mat-option>
-          </mat-select>
+    <!-- Two explicit columns rather than letting four cards auto-flow: the
+         left is CONTENT alone and the right stacks the three short ones, so
+         the tall rich-text card sits beside them instead of forcing a
+         half-empty second row. BEHAVIOR leads the right column because it
+         is the shortest - the stack then reads roughly level with CONTENT. -->
+    <div class="editor-col editor-col--main">
+      <div class="editor-section">
+        <p class="editor-label">CONTENT</p>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Title (internal)</mat-label>
+          <input matInput formControlName="title">
         </mat-form-field>
-        <mat-form-field appearance="outline" class="editor-grow">
-          <mat-label>{{ spotlightType === 'product' ? 'Product' : 'Event' }}</mat-label>
-          <mat-select [(ngModel)]="spotlightId" [ngModelOptions]="{standalone: true}">
-            @for (item of spotlightItems; track item.id) {
-              <mat-option [value]="item.id">{{ item.label }}</mat-option>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Start from a template</mat-label>
+          <mat-select formControlName="templateId" (selectionChange)="onTemplatePicked($event.value)">
+            @for (template of templates; track template.id) {
+              <mat-option [value]="template.id">{{ template.name }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
-        <button mat-stroked-button type="button" class="editor-apply" (click)="applySpotlight()">
-          APPLY TO POPUP
-        </button>
+
+        <div class="editor-quill">
+          <quill-editor formControlName="html" [modules]="richTextModules"
+            placeholder="Write the popup content here - or start from a template or a spotlight below."></quill-editor>
+        </div>
+
+        <mat-checkbox class="editor-save-template" [(ngModel)]="saveAsTemplate" [ngModelOptions]="{standalone: true}">
+          Save this popup as a reusable template
+        </mat-checkbox>
       </div>
     </div>
 
-    <div class="editor-section">
-      <p class="editor-label">BEHAVIOR</p>
-      <div class="editor-row">
-        <app-date-time-field formControlName="fromDate" label="Shows from" [required]="true"></app-date-time-field>
-        <app-date-time-field formControlName="toDate" label="Until" [required]="true"></app-date-time-field>
+    <div class="editor-col editor-col--side">
+      <div class="editor-section">
+        <p class="editor-label">BEHAVIOR</p>
+        <div class="editor-row">
+          <app-date-time-field formControlName="fromDate" label="Shows from" [required]="true"></app-date-time-field>
+          <app-date-time-field formControlName="toDate" label="Until" [required]="true"></app-date-time-field>
+        </div>
+        <div class="editor-row">
+          <mat-form-field appearance="outline" class="editor-num">
+            <mat-label>Width (px)</mat-label>
+            <input matInput type="number" formControlName="width">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="editor-num">
+            <mat-label>Minimum height (px)</mat-label>
+            <input matInput type="number" formControlName="height">
+          </mat-form-field>
+          <div class="editor-color">
+            <span class="editor-color__label">Background</span>
+            <input type="color" formControlName="bgColor" class="editor-color__swatch"
+              matTooltip="Pick the popup background color">
+            <span class="editor-color__value">{{ form.value.bgColor }}</span>
+          </div>
+        </div>
+        <mat-slide-toggle formControlName="isActive">Popup is live during the window</mat-slide-toggle>
       </div>
-      <div class="editor-row">
-        <mat-form-field appearance="outline" class="editor-num">
-          <mat-label>Width (px)</mat-label>
-          <input matInput type="number" formControlName="width">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="editor-num">
-          <mat-label>Minimum height (px)</mat-label>
-          <input matInput type="number" formControlName="height">
-        </mat-form-field>
-        <div class="editor-color">
-          <span class="editor-color__label">Background</span>
-          <input type="color" formControlName="bgColor" class="editor-color__swatch"
-            matTooltip="Pick the popup background color">
-          <span class="editor-color__value">{{ form.value.bgColor }}</span>
+
+      <div class="editor-section">
+        <p class="editor-label">SPOTLIGHT A PRODUCT OR EVENT</p>
+        <p class="editor-hint">
+          Drops the item's image, name, and details into the content above (fully editable
+          afterward) and points the click-through at its page on the site.
+        </p>
+        <div class="editor-row">
+          <mat-form-field appearance="outline" class="editor-num">
+            <mat-label>Spotlight</mat-label>
+            <mat-select [(ngModel)]="spotlightType" [ngModelOptions]="{standalone: true}">
+              <mat-option value="product">Product</mat-option>
+              <mat-option value="event">Event</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="editor-grow">
+            <mat-label>{{ spotlightType === 'product' ? 'Product' : 'Event' }}</mat-label>
+            <mat-select [(ngModel)]="spotlightId" [ngModelOptions]="{standalone: true}">
+              @for (item of spotlightItems; track item.id) {
+                <mat-option [value]="item.id">{{ item.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-stroked-button type="button" class="editor-apply" (click)="applySpotlight()">
+            APPLY TO POPUP
+          </button>
         </div>
       </div>
-      <mat-slide-toggle formControlName="isActive">Popup is live during the window</mat-slide-toggle>
-    </div>
 
-    <div class="editor-section">
-      <p class="editor-label">CALL TO ACTION</p>
-      <mat-radio-group formControlName="ctaType" class="cta-types">
-        <mat-radio-button value="close">Announcement only — one button that closes the popup</mat-radio-button>
-        <mat-radio-button value="link">
-          Action button —
-          @if (goalLinkTarget()) {
-            takes them to <b>{{ campaign.goal === 'event' ? "this campaign's event registration page" : "this campaign's product in the store" }}</b> (from the campaign goal, nothing to type)
-          } @else {
-            takes them to a page you choose below
-          }
-        </mat-radio-button>
-        <mat-radio-button value="form">Collect info — fields + a Submit button, right in the popup</mat-radio-button>
-      </mat-radio-group>
+      <div class="editor-section">
+        <p class="editor-label">CALL TO ACTION</p>
+        <mat-radio-group formControlName="ctaType" class="cta-types">
+          <mat-radio-button value="close">Announcement only — one button that closes the popup</mat-radio-button>
+          <mat-radio-button value="link">
+            Action button —
+            @if (goalLinkTarget()) {
+              takes them to <b>{{ campaign.goal === 'event' ? "this campaign's event registration page" : "this campaign's product in the store" }}</b> (from the campaign goal, nothing to type)
+            } @else {
+              takes them to a page you choose below
+            }
+          </mat-radio-button>
+          <mat-radio-button value="form">Collect info — fields + a Submit button, right in the popup</mat-radio-button>
+        </mat-radio-group>
 
-      <div class="editor-row">
-        <mat-form-field appearance="outline" class="editor-grow">
-          <mat-label>Button text</mat-label>
-          <input matInput formControlName="ctaPrimaryLabel">
-        </mat-form-field>
-        @if (form.value.ctaType !== 'close') {
+        <div class="editor-row">
           <mat-form-field appearance="outline" class="editor-grow">
-            <mat-label>Dismiss text</mat-label>
-            <input matInput formControlName="ctaDismissLabel" placeholder="No Thanks">
+            <mat-label>Button text</mat-label>
+            <input matInput formControlName="ctaPrimaryLabel">
+          </mat-form-field>
+          @if (form.value.ctaType !== 'close') {
+            <mat-form-field appearance="outline" class="editor-grow">
+              <mat-label>Dismiss text</mat-label>
+              <input matInput formControlName="ctaDismissLabel" placeholder="No Thanks">
+            </mat-form-field>
+          }
+        </div>
+
+        @if (form.value.ctaType === 'link' && !goalLinkTarget()) {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Click-through URL</mat-label>
+            <input matInput formControlName="ctaUrl" placeholder="https://impactdisciples.com/store">
           </mat-form-field>
         }
+
+        @if (form.value.ctaType === 'form') {
+          <p class="editor-hint">Email is always collected. Add more fields and pick where submissions land:</p>
+          <div class="editor-row cta-fields">
+            <mat-checkbox checked disabled>Email</mat-checkbox>
+            <mat-checkbox formControlName="collectFirstName">First name</mat-checkbox>
+            <mat-checkbox formControlName="collectLastName">Last name</mat-checkbox>
+            <mat-checkbox formControlName="collectPhone">Phone</mat-checkbox>
+          </div>
+          <mat-radio-group formControlName="formDestination" class="cta-types">
+            <mat-radio-button value="newsletter">Newsletter list — they're subscribed (shows in the Subscribers report, credits this campaign)</mat-radio-button>
+            <mat-radio-button value="formSubmissions">Form Submissions — lands in Contacts&nbsp;›&nbsp;Form Submissions with the Create Contact action</mat-radio-button>
+          </mat-radio-group>
+        }
+
+        <p class="editor-hint">
+          Campaign attribution (?cid) is appended to action links automatically, so store
+          visits and purchases that follow a popup click credit this campaign. Every site
+          visitor sees the popup during the window unless they check "don't show again".
+        </p>
       </div>
-
-      @if (form.value.ctaType === 'link' && !goalLinkTarget()) {
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Click-through URL</mat-label>
-          <input matInput formControlName="ctaUrl" placeholder="https://impactdisciples.com/store">
-        </mat-form-field>
-      }
-
-      @if (form.value.ctaType === 'form') {
-        <p class="editor-hint">Email is always collected. Add more fields and pick where submissions land:</p>
-        <div class="editor-row cta-fields">
-          <mat-checkbox checked disabled>Email</mat-checkbox>
-          <mat-checkbox formControlName="collectFirstName">First name</mat-checkbox>
-          <mat-checkbox formControlName="collectLastName">Last name</mat-checkbox>
-          <mat-checkbox formControlName="collectPhone">Phone</mat-checkbox>
-        </div>
-        <mat-radio-group formControlName="formDestination" class="cta-types">
-          <mat-radio-button value="newsletter">Newsletter list — they're subscribed (shows in the Subscribers report, credits this campaign)</mat-radio-button>
-          <mat-radio-button value="formSubmissions">Form Submissions — lands in Contacts&nbsp;›&nbsp;Form Submissions with the Create Contact action</mat-radio-button>
-        </mat-radio-group>
-      }
-
-      <p class="editor-hint">
-        Campaign attribution (?cid) is appended to action links automatically, so store
-        visits and purchases that follow a popup click credit this campaign. Every site
-        visitor sees the popup during the window unless they check "don't show again".
-      </p>
     </div>
 
     <div class="editor-actions">
