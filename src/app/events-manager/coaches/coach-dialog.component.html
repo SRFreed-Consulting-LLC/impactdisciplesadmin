@@ -67,9 +67,10 @@
             {{ card.photoUrl?.name ? 'Change Picture' : 'Upload Picture' }}
           </button>
         </div>
-        @if (card.photoUrl?.url) {
-          <img class="image-preview" [src]="card.photoUrl.url" [alt]="card.photoUrl.name">
-        }
+        <!-- The inline thumbnail was removed 2026-08-26: the picture is
+             shown in the preview beside this form, where it appears the way
+             the public page actually renders it. Two copies of the same
+             photo just made the form taller. -->
 
         <div class="section-label">Shipping Address</div>
         <app-address-field [group]="$any(form.get('shippingAddress'))"></app-address-field>
