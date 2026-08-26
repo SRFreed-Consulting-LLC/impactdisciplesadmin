@@ -156,6 +156,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // The public site's docking bar (one doc, id `current`). PUBLIC-readable
+    // for the same reason campaign_popups is: the public site has no Firebase
+    // Auth at all, so anything it renders has to be world-readable. Nothing
+    // sensitive belongs on this document - see DockBarModel.
+    match /dock_bar/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();

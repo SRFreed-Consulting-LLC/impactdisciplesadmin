@@ -1,0 +1,107 @@
+@if (spinnerVisible) {
+  <div class="spinner-overlay">
+    <mat-spinner diameter="80"></mat-spinner>
+  </div>
+}
+
+<app-list-header [title]="itemType"></app-list-header>
+
+<div class="tab-content-wrap">
+  <div class="tab-content" [formGroup]="form">
+
+    <p class="hint">
+      The bar fixed to the bottom of every page on the public site. It is hidden
+      automatically on the cart and checkout pages, and on whichever page a
+      button below points at.
+    </p>
+
+    <mat-slide-toggle formControlName="isActive" class="active-toggle">
+      Show the bar on the site
+    </mat-slide-toggle>
+
+    <h3 class="section-title">Message</h3>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Label</mat-label>
+      <input matInput formControlName="label" maxlength="20">
+      <mat-hint>Small accent word above the message, e.g. "New". Optional.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Message</mat-label>
+      <input matInput formControlName="message" maxlength="80" required>
+      <mat-hint>The main line, e.g. "The Impact Discipleship Library".</mat-hint>
+      @if (form.get('message')?.hasError('required') && form.get('message')?.touched) {
+        <mat-error>A message is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Note</mat-label>
+      <input matInput formControlName="note" maxlength="40">
+      <mat-hint>Dimmer text after the message, e.g. "&middot; free to join". Optional.</mat-hint>
+    </mat-form-field>
+
+    <h3 class="section-title">Button 1</h3>
+
+    <div formGroupName="cta1">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Button Title</mat-label>
+        <input matInput formControlName="title" maxlength="30" required>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Button Destination</mat-label>
+        <mat-select formControlName="destination">
+          @for (destination of destinations; track destination.value) {
+            <mat-option [value]="destination.value">{{ destination.text }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (form.get('cta1.destination')?.value === externalValue) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Button External URL</mat-label>
+          <input matInput formControlName="url">
+        </mat-form-field>
+      }
+    </div>
+
+    <h3 class="section-title">Button 2</h3>
+    <p class="hint">Leave the title blank for a bar with a single button.</p>
+
+    <div formGroupName="cta2">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Button Title</mat-label>
+        <input matInput formControlName="title" maxlength="30">
+      </mat-form-field>
+
+      @if (hasSecondCta) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Button Destination</mat-label>
+          <mat-select formControlName="destination">
+            @for (destination of destinations; track destination.value) {
+              <mat-option [value]="destination.value">{{ destination.text }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        @if (form.get('cta2.destination')?.value === externalValue) {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Button External URL</mat-label>
+            <input matInput formControlName="url">
+          </mat-form-field>
+        }
+      }
+    </div>
+
+    <div class="actions">
+      <app-indicator-button
+        title="SAVE"
+        [isInProgress]="spinnerVisible"
+        [disabled]="!canEdit()"
+        (clicked)="save()"></app-indicator-button>
+    </div>
+
+  </div>
+</div>

@@ -800,5 +800,9 @@ action), and Impact Team members are administered via Content Manager > Team Pag
 `impactdisciples-web`'s own "My Team" page (`team.component.ts`/
 `team-details.component.ts`) was updated separately, same day, to read `impact_team` instead of
 `coaches` - see that repo's own commit and this file's Firestore collection naming note above for the
-full picture; both repos' `common/` are independent copies (no longer a shared submodule), so this
-kind of fix never propagates automatically and has to be made in each repo.
+full picture. NOTE: the parenthetical that used to sit here claimed both repos' `common/` were
+independent copies "no longer a shared submodule" - that is WRONG and was corrected 2026-08-26.
+`src/common` is a real git submodule (`impact-discipleship-library-common`) in this repo AND in the
+web and reader repos - see .gitmodules and `git submodule status`. A shared-code change is: commit
+and push the SUBMODULE first, then bump the pointer in each consumer. App-local code (this repo's
+own services, screens and DAO) still does not propagate and has to be changed per repo.

@@ -210,6 +210,10 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Web Config', slug: 'web-config' },
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Home Page Images', slug: 'home-page-images' },
+      // Content for the strip fixed to the bottom of every page on the
+      // public site - see the web repo's LibraryDockComponent. One
+      // settings record (dock_bar/current), not a list.
+      { label: 'Docking Bar', slug: 'docking-bar' },
       // 'Home Page Popups' retired 2026-08-19 (Campaign Manager v2 Phase
       // 6): the public site never had a renderer for home_page_popups (the
       // screen wrote docs nothing read); web-campaign popups (Campaigns

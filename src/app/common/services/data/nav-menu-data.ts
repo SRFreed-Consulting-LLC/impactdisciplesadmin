@@ -29,6 +29,13 @@ const menuData: MenuModel[] = [
       { link: '/disciple-making-minute', title: 'Disciple-Making Minute', visible: true, external: false, highlight: false },
       { link: '/monthly-newsletter', title: 'Monthly Newsletter', visible: true, external: false, highlight: false },
       { link: '/store?category=spanish-resources', title: 'Spanish Resources', visible: true, external: false, highlight: false },
+      // The two Impact Library pages. They are NOT on the public site's own
+      // navigation (that is the web repo's separate copy of this file) - they
+      // are here so staff can point a home-page slide or the docking bar at
+      // them, which the docking-bar editor needs in order to reproduce the
+      // bar's own two buttons.
+      { link: '/discipleship-library', title: 'Impact Library (about)', visible: true, external: false, highlight: false },
+      { link: '/impact-groups', title: 'Find an Impact Group', visible: true, external: false, highlight: false },
     ],
     visible: true,
     external: false,

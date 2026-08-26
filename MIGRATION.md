@@ -625,3 +625,33 @@ of the prod cutover):**
 
 **Rollback**: redeploy the previous web + rules builds; the function and the flags are inert
 extras (the flag is a plain boolean on touches; `newsletter_archive` serves nothing unless flagged).
+
+## Docking Bar becomes staff-editable (2026-08-26)
+
+The public site's bottom docking bar shipped with its copy HARDCODED in the web app's
+`LibraryDockComponent`. It is now content: Content Manager > Docking Bar writes
+`dock_bar/current`, and the web component renders whatever is there — **and nothing at all
+when that document is missing**. So the seed has to land BEFORE the web deploy, or the bar
+disappears from the live site in between.
+
+Shared model `DockBarModel` lives in the `src/common` submodule (commit `9f43da0`), so the
+pointer is bumped in BOTH this repo and the web repo.
+
+**Deploy order (per environment):**
+1. `node scripts/seed-dock-bar.js --project=<dev|prod>` (dry run — prints what it would write),
+   then `--execute`. Writes the exact copy the component used to hardcode, so the site looks
+   identical through the cutover. **Not an overwrite**: if the document already exists it is
+   left alone and reported, because by then it is staff's content — `--force` is the deliberate
+   "reset to the seed copy" escape hatch.
+2. Deploy **firestore rules** (adds the `dock_bar` block: public read, staff write). Must be
+   before the web deploy — without it every visitor's read is rejected and the bar never shows.
+   Note the seed in step 1 goes through the Admin SDK and bypasses rules, so its order relative
+   to this is free.
+3. Deploy **admin hosting** (the new Content Manager > Docking Bar screen).
+4. Deploy **web hosting** (the config-driven bar).
+
+**Verify**: the live site's bar is unchanged; switching the toggle off in admin and reloading a
+page removes the bar, its footer spacing and the home slider's dot offset together.
+
+**Rollback**: redeploy the previous web build — it ignores `dock_bar` entirely and goes back to
+the hardcoded copy. The document and the rules block are then inert extras, harmless to leave.
