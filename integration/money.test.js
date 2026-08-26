@@ -320,26 +320,69 @@ test("an offer that requires attribution is refused to a buyer who did " +
   }
 });
 
-test("an INACTIVE product is not rejected - it prices normally and a real " +
-  "PayPal order is created for it (no server-side isActive check)",
-async () => {
+test("an INACTIVE product is REFUSED - a delisted item cannot be bought " +
+  "with a stale cart or a kept link", async () => {
+  // History worth keeping, because the test told the opposite story twice.
+  // Originally this asserted a 400 and read as though something stopped the
+  // sale - but that 400 was only the emulator's PayPal boundary. Once the
+  // fake vendors removed that boundary the same request succeeded and the
+  // gap was plain: prod-inactive (isActive:false, cost 99) priced normally
+  // and got a payable PayPal order. The storefront filters isActive on its
+  // LISTING query, and a filter on a list is not a boundary - the cart
+  // addresses items by id.
+  //
+  // Now refused server-side (utils/sellable.ts), where money moves.
   const email = "inactive-buyer@money.test";
   const res = await callHttp("create_paypal_order", orderBody({
     email,
     cartItems: [{id: "prod-inactive", orderQuantity: 1}],
   }));
 
-  // prod-inactive (isActive:false, cost 99) is priced like any other product
-  // and a payable order is created for it. This is a REAL GAP, and it is
-  // sharper now than when the test was written: the assertion used to be a
-  // 400 from the vendor boundary, which read like something stopped it.
-  // Nothing stops it. A delisted product can still be bought by anyone who
-  // kept the id, at full price. Pinned as the current behaviour, not as
-  // desired behaviour - flagged in the suite report as worth a look.
-  assert.equal(res.status, 200, JSON.stringify(res.body));
-  assert.equal(res.body.free, false);
-  assert.equal(res.body.breakdown.total, 99);
+  assert.equal(res.status, 400);
+  assert.deepEqual(res.body, {code: 400, error: "Unable to start checkout"});
   assert.equal((await purchasesByEmail(email)).length, 0);
+  // Scoped to THIS buyer, not the whole collection: earlier tests in this
+  // file now legitimately reach PayPal and stage their own pending orders.
+  const staged = await db.collection("pending_orders")
+    .where("checkoutForm.email", "==", email).get();
+  assert.equal(staged.size, 0);
+});
+
+test("an inactive product poisons the WHOLE cart, active items included",
+  async () => {
+    // Partial fulfilment would be worse than refusal: charging for the good
+    // half of a cart and silently dropping the rest is how a customer ends up
+    // paying for something they did not receive a record of.
+    const email = "mixed-cart@money.test";
+    const res = await callHttp("create_paypal_order", orderBody({
+      email,
+      cartItems: [
+        {id: "prod-book-physical", orderQuantity: 1},
+        {id: "prod-inactive", orderQuantity: 1},
+      ],
+    }));
+
+    assert.equal(res.status, 400);
+    assert.equal((await purchasesByEmail(email)).length, 0);
+  });
+
+test("an ACTIVE event still sells - the event rule is deliberately not the " +
+  "product rule", async () => {
+  // Guards the other direction. Events use a permissive rule
+  // (isActive !== false, plus an earlyRegistration escape hatch) because a
+  // summit can legitimately take paid sign-ups before it is public. Applying
+  // the strict product rule here would have broken exactly the flow the
+  // early-bird campaign offer exists to serve, and it would have broken it
+  // silently, at the till.
+  const email = "active-event@money.test";
+  const res = await callHttp("create_paypal_order", orderBody({
+    email,
+    couponCode: "FREE100",
+    cartItems: [{id: "event-workshop", isEvent: true, orderQuantity: 1}],
+  }));
+
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.free, true);
 });
 
 test("input validation: empty cart, missing email/address, unknown " +

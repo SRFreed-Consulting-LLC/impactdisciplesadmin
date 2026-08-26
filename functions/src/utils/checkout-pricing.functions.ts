@@ -5,6 +5,7 @@ import {
   grantsFreeShipping,
 } from "./campaign-offers.functions";
 import {resolveVendorBase} from "./vendor-hosts";
+import {isEventRegistrationOpen, isProductSellable} from "./sellable";
 
 // Shared server-side recompute logic for store checkout, used by both
 // create_paypal_order and capture_paypal_order (../paypal.functions.ts).
@@ -254,6 +255,22 @@ export async function computeOrderPricing(
       throw new Error(`${collectionName} ${input.id} not found`);
     }
     const doc = docSnap.data() as DocumentData;
+
+    // A delisted product / closed event must not be sellable to someone
+    // holding a direct link or a stale cart. The public listings already
+    // filter on isActive, but a filter on a LIST is not a boundary - the cart
+    // addresses items by id. See utils/sellable.ts for why the product rule is
+    // strict and the event rule is not (early-bird registration depends on the
+    // latter). Thrown like the not-found case above, which the caller turns
+    // into a generic checkout failure.
+    const sellable = input.isEvent ?
+      isEventRegistrationOpen(doc) :
+      isProductSellable(doc);
+    if (!sellable) {
+      throw new Error(
+        `${collectionName} ${input.id} is not available for purchase`
+      );
+    }
 
     const basePrice = input.isEvent ?
       (doc.costInDollars ?? 0) : (doc.cost ?? 0);

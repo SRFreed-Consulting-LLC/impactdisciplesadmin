@@ -16,6 +16,7 @@ import {
   RegisterForEventRequest,
   UpdateMySessionsRequest,
 } from "./common/shared/contract/web-http.types";
+import {isEventRegistrationOpen} from "./utils/sellable";
 
 /**
  * Pre-prod checklist #2: the public event-registration flows, moved
@@ -192,13 +193,11 @@ export const registerForEventHttp = onRequest((request, response) => {
 
     const eventSnap = await db.collection("events").doc(eventId).get();
     const eventData = eventSnap.data();
-    // earlyRegistration (2026-08-20, user feature): a summit can accept
-    // sign-ups BEFORE it goes live on the public site - the summit page
-    // keeps its coming-soon placeholder and the events list still hides
-    // it; the only way in is the direct /event-details/{id} link an
-    // early-bird campaign carries. Live OR early-registration accepts.
-    const registrationOpen =
-      eventData?.isActive !== false || eventData?.earlyRegistration === true;
+    // Live OR early-registration accepts - see utils/sellable.ts, which now
+    // owns this rule because the PAID checkout path has to apply the very
+    // same one. It used to live only here, inline, while create_paypal_order
+    // applied no event check at all.
+    const registrationOpen = isEventRegistrationOpen(eventData);
     if (!eventSnap.exists || !eventData || !registrationOpen) {
       response.status(400).send({error: "Event not found or inactive."});
       return;
