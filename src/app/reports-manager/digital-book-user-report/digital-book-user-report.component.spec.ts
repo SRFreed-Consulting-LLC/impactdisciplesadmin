@@ -4,6 +4,7 @@ import { LibraryUser } from 'src/app/common/models/domain/library/library-user.m
 import { LibraryUserService } from 'src/app/common/services/data/library/library-user.service';
 import { LibraryDiscussionGroupService } from 'src/app/common/services/data/library/library-discussion-group.service';
 import { LibraryBookService } from 'src/app/common/services/data/library/library-book.service';
+import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { DiscussionGroup, GroupMembership } from '@impact-common/models/discussion-group.model';
 import { DigitalBookUserReportComponent } from './digital-book-user-report.component';
 
@@ -63,7 +64,9 @@ describe('DigitalBookUserReportComponent', () => {
     users: LibraryUser[],
     groups: DiscussionGroup[] = [],
     memberships: GroupMembership[] = [],
-    books: { id: string; title: string }[] = [{ id: 'b-1', title: 'Book One' }]
+    books: { id: string; title: string }[] = [{ id: 'b-1', title: 'Book One' }],
+    // purchaseId -> coupon code, as the real PurchasesService would answer.
+    coupons: Record<string, string> = {}
   ): void {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -77,13 +80,137 @@ describe('DigitalBookUserReportComponent', () => {
             getAllMemberships: () => Promise.resolve(memberships)
           }
         },
-        { provide: LibraryBookService, useValue: { getAll: () => Promise.resolve(books) } }
+        { provide: LibraryBookService, useValue: { getAll: () => Promise.resolve(books) } },
+        // Stubbed like every other service here: the real one reaches for
+        // Firestore, and this report only asks it for coupon codes.
+        {
+          provide: PurchasesService,
+          useValue: {
+            getById: (id: string) =>
+              Promise.resolve(coupons[id] ? { couponCode: coupons[id] } : null)
+          }
+        }
       ]
     });
     component = TestBed.inject(DigitalBookUserReportComponent);
   }
 
   const flush = () => new Promise<void>((resolve) => setTimeout(resolve));
+
+  describe('licensed via', () => {
+    // Provenance is recorded per LICENCE, so this column summarises rather
+    // than lists: a patron with nine books from one place is one fact.
+    it('names a single source without a redundant count', async () => {
+      configure([aUser({
+        licensedBookIds: ['b-1'],
+        bookLicenses: [{ bookId: 'b-1', source: 'store-purchase' }]
+      })]);
+      await flush();
+
+      expect(component.rows()[0].licensedVia).toBe('Purchased');
+    });
+
+    it('counts each source when a patron has several', async () => {
+      configure([aUser({
+        licensedBookIds: ['b-1', 'b-2', 'b-3'],
+        bookLicenses: [
+          { bookId: 'b-1', source: 'store-purchase' },
+          { bookId: 'b-2', source: 'store-purchase' },
+          { bookId: 'b-3', source: 'admin-grant' }
+        ]
+      })]);
+      await flush();
+
+      expect(component.rows()[0].licensedVia).toBe('Purchased (2) · Comped (1)');
+    });
+
+    it('reads LEGACY for an entry that predates provenance, rather than blank', async () => {
+      // The common case today: 157 of prod's 163 licence entries carry no
+      // source and nothing to infer one from. Saying so is the point - blank
+      // would be indistinguishable from having no licences at all.
+      configure([aUser({
+        licensedBookIds: ['b-1'],
+        bookLicenses: [{ bookId: 'b-1' }]
+      })]);
+      await flush();
+
+      expect(component.rows()[0].licensedVia).toBe('Legacy (1)');
+    });
+
+    it('sorts Legacy last, because it is the absence of an answer', async () => {
+      configure([aUser({
+        licensedBookIds: ['b-1', 'b-2'],
+        bookLicenses: [{ bookId: 'b-1' }, { bookId: 'b-2', source: 'store-purchase' }]
+      })]);
+      await flush();
+
+      expect(component.rows()[0].licensedVia).toBe('Purchased (1) · Legacy (1)');
+    });
+
+    it('is blank for a patron with no licences at all', async () => {
+      configure([aUser({ licensedBookIds: [], bookLicenses: [] })]);
+      await flush();
+      // Such a patron has access 'None', which the default toggle hides - so
+      // open the report up to reach the row at all.
+      component.onlyWithBookAccess.set(false);
+
+      expect(component.rows()[0].licensedVia).toBe('');
+    });
+  });
+
+  describe('coupon', () => {
+    it('reports the code from the purchase that granted the licence', async () => {
+      configure(
+        [aUser({
+          licensedBookIds: ['b-1'],
+          bookLicenses: [{ bookId: 'b-1', source: 'store-purchase', storePurchaseId: 'p-1' }]
+        })],
+        [], [], undefined,
+        { 'p-1': 'FREE' }
+      );
+      await flush();
+
+      expect(component.rows()[0].coupon).toBe('FREE');
+    });
+
+    it('shows one code once when a single discounted order granted several books', async () => {
+      configure(
+        [aUser({
+          licensedBookIds: ['b-1', 'b-2'],
+          bookLicenses: [
+            { bookId: 'b-1', source: 'store-purchase', storePurchaseId: 'p-1' },
+            { bookId: 'b-2', source: 'store-purchase', storePurchaseId: 'p-1' }
+          ]
+        })],
+        [], [], undefined,
+        { 'p-1': 'SAVE10' }
+      );
+      await flush();
+
+      expect(component.rows()[0].coupon).toBe('SAVE10');
+    });
+
+    it('is blank when the granting purchase used no coupon', async () => {
+      configure(
+        [aUser({
+          licensedBookIds: ['b-1'],
+          bookLicenses: [{ bookId: 'b-1', source: 'store-purchase', storePurchaseId: 'p-1' }]
+        })],
+        [], [], undefined,
+        {}
+      );
+      await flush();
+
+      expect(component.rows()[0].coupon).toBe('');
+    });
+
+    it('is blank for a legacy licence, which names no purchase', async () => {
+      configure([aUser({ licensedBookIds: ['b-1'], bookLicenses: [{ bookId: 'b-1' }] })]);
+      await flush();
+
+      expect(component.rows()[0].coupon).toBe('');
+    });
+  });
 
   describe('ordering', () => {
     it('lists newest signup first, with a missing createdAt at the bottom', async () => {
@@ -227,7 +354,8 @@ describe('DigitalBookUserReportComponent', () => {
               getAllMemberships: () => Promise.reject(new Error('permission-denied'))
             }
           },
-          { provide: LibraryBookService, useValue: { getAll: () => Promise.resolve([]) } }
+          { provide: LibraryBookService, useValue: { getAll: () => Promise.resolve([]) } },
+          { provide: PurchasesService, useValue: { getById: () => Promise.resolve(null) } }
         ]
       });
       component = TestBed.inject(DigitalBookUserReportComponent);
