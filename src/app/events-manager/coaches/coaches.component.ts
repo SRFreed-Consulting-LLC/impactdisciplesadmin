@@ -94,7 +94,7 @@ export class CoachesComponent implements OnInit, OnDestroy {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    this.dialog.open(CoachDialogComponent, { width: '900px', maxWidth: '95vw', data: { item } });
+    this.dialog.open(CoachDialogComponent, { width: '1150px', maxWidth: '95vw', data: { item } });
   }
 
   delete(item: CoachModel): void {

@@ -12,12 +12,12 @@
   flex: 1 1 0;
 }
 
-// Same "bound .tab-content directly, don't let mat-dialog-content grow to
-// fit it" fix as customer-dialog.component.scss - see its own comment for
-// the full double-scrollbar explanation.
+// The inner scroller is GONE (2026-08-26). This carried max-height: 60vh +
+// overflow-y: auto, from a fix meant to prevent a double scrollbar - but
+// mat-dialog-content scrolls too, so the result was two vertical bars side
+// by side, each moving a different amount of the same form. One scroller
+// only: the dialog's. The tab body just lays out.
 .tab-content {
-  max-height: 60vh;
-  overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 4px 4px;
   box-sizing: border-box;
@@ -44,4 +44,74 @@
 
 quill-editor {
   height: 300px;
+}
+
+.edit-with-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.edit-with-preview__form {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// The Biography tab holds a quill-editor, and styles.scss gives every
+// quill-editor `height: 100%` - which needs a definite height from its host
+// or .ql-container collapses and the text spills onto the dialog.
+.coach-tabs {
+  flex: 1 1 auto;
+  min-height: 420px;
+}
+
+// Ported from the web repo's summit FEATURED SPEAKERS card.
+.cop {
+  padding: 20px 18px;
+  text-align: center;
+}
+
+.cop__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+  opacity: 0.65;
+}
+
+.cop__photo {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 14px;
+  border-radius: 4px;
+}
+
+.cop__photo--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.cop__name {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.cop__title {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.cop__link {
+  margin-top: 10px;
+  font-size: 13px;
+  text-decoration: underline;
 }

@@ -3,6 +3,8 @@
 </app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
+ <div class="edit-with-preview">
+  <div class="edit-with-preview__form">
   <mat-tab-group class="coach-tabs">
     <mat-tab label="About">
       <div class="tab-content">
@@ -83,6 +85,29 @@
       </div>
     </mat-tab>
   </mat-tab-group>
+  </div>
+
+  <!-- Ported from the web repo's summit page FEATURED SPEAKERS card, which
+       is where a coach actually appears publicly: photo, name, title, and
+       the optional link. Coaches are NOT the My Team page - that is
+       impact_team, a different collection since the 2026-08-15 split - so
+       this previews the speaker card, not a bio page. -->
+  <app-preview-rail storageKey="coach" label="Summit page" [width]="360">
+    <div class="cop">
+      <div class="cop__label">FEATURED SPEAKERS</div>
+      @if (card.photoUrl?.url) {
+        <img class="cop__photo" [src]="card.photoUrl.url" [alt]="form.value.firstName || 'Speaker'">
+      } @else {
+        <div class="cop__photo cop__photo--empty">No picture yet</div>
+      }
+      <h4 class="cop__name">{{ form.value.firstName }} {{ form.value.lastName }}</h4>
+      <div class="cop__title">{{ form.value.title }}</div>
+      @if (form.value.url) {
+        <div class="cop__link">Link to page</div>
+      }
+    </div>
+  </app-preview-rail>
+ </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
