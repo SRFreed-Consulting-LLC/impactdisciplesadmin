@@ -222,4 +222,89 @@ describe('PagedCollectionSource', () => {
       expect(source.rows$.value).toEqual([row('1')]);
     });
   });
+
+  // The list -> edit -> list round trip. Screens swap the grid out with @if,
+  // which unmounts it, so the offset and the loaded pages both have to
+  // survive out here on the source or the admin lands back at the top.
+  describe('scrollTop', () => {
+    it('starts at the top', () => {
+      const source = new PagedCollectionSource<Row>(jasmine.createSpy('fetchPage'));
+
+      expect(source.scrollTop).toBe(0);
+    });
+
+    it('keeps whatever offset was written to it', () => {
+      const source = new PagedCollectionSource<Row>(jasmine.createSpy('fetchPage'));
+
+      source.scrollTop = 4200;
+
+      expect(source.scrollTop).toBe(4200);
+    });
+
+    it('resets on loadFirstPage - the rows that offset pointed into are gone', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      source.scrollTop = 4200;
+
+      await source.loadFirstPage();
+
+      expect(source.scrollTop).toBe(0);
+    });
+  });
+
+  describe('replaceRow', () => {
+    it('swaps the row in place, leaving position and every other row alone', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1'), row('2'), row('3')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      await source.loadFirstPage();
+
+      const updated: Row = { id: '2', name: 'renamed' };
+      expect(source.replaceRow(updated)).toBeTrue();
+
+      expect(source.rows$.value).toEqual([row('1'), updated, row('3')]);
+      expect(fetchPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('emits a new array so the grid re-renders', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      await source.loadFirstPage();
+      const before = source.rows$.value;
+
+      source.replaceRow({ id: '1', name: 'renamed' });
+
+      expect(source.rows$.value).not.toBe(before);
+    });
+
+    it('reports false for a row that is not loaded, and changes nothing', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      await source.loadFirstPage();
+
+      expect(source.replaceRow({ id: '999', name: 'nope' })).toBeFalse();
+      expect(source.rows$.value).toEqual([row('1')]);
+    });
+  });
+
+  describe('removeRow', () => {
+    it('drops the row without refetching', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1'), row('2')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      await source.loadFirstPage();
+
+      expect(source.removeRow('1')).toBeTrue();
+
+      expect(source.rows$.value).toEqual([row('2')]);
+      expect(fetchPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports false for an id that is not loaded', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      await source.loadFirstPage();
+
+      expect(source.removeRow('999')).toBeFalse();
+      expect(source.rows$.value).toEqual([row('1')]);
+    });
+  });
 });

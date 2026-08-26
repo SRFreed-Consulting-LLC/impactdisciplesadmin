@@ -27,7 +27,7 @@
   margin: 4px 0 12px;
 
   .file-name {
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--app-card-muted);
     font-size: 0.9rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -36,7 +36,7 @@
 }
 
 .hint-text {
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
   font-size: 0.85rem;
   margin-top: 8px;
 }
@@ -65,7 +65,7 @@
   }
 
   .muted {
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--app-card-muted);
     font-size: 0.9rem;
   }
 
@@ -76,7 +76,7 @@
     margin: 12px 0;
 
     .chip {
-      background: rgba(0, 0, 0, 0.06);
+      background: var(--app-field);
       border-radius: 12px;
       padding: 2px 10px;
       font-size: 0.8rem;
@@ -114,7 +114,7 @@
       font-size: 0.9rem;
 
       .lesson-icon {
-        color: rgba(0, 0, 0, 0.4);
+        color: var(--app-card-muted);
         font-size: 18px;
         width: 18px;
         height: 18px;
@@ -154,7 +154,7 @@
   }
 
   .muted {
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--app-card-muted);
     font-size: 0.85rem;
     margin-top: 6px;
   }
@@ -181,7 +181,7 @@
   }
 
   .muted {
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--app-card-muted);
     font-size: 0.9rem;
   }
 }

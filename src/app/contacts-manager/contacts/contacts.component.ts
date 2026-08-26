@@ -96,13 +96,33 @@ export class ContactsComponent implements OnInit {
   // Used for both "Back" (cancel, no save) and a successful Save -
   // ContactDetailsComponent already persisted anything it needed to
   // (pending-change resolutions/notes save immediately, same as the old
-  // dialog) before either fires, so returning to the list and reloading
-  // page 1 unconditionally is always correct, no "did anything change" flag
-  // to thread through any more.
-  onEditClosed(): void {
+  // dialog) before either fires, so BOTH paths can have changed this row and
+  // neither needs a "did anything change" flag threaded through.
+  //
+  // What they do NOT need is loadFirstPage(), which this used to call.
+  // That throws away every loaded page (its first act is rows$.next([])),
+  // so an admin who had scrolled deep into 5,700 contacts to find someone
+  // came back to a 50-row list at the top and had to scroll down all over
+  // again - reported as painful, and the reason this exists. Refetching the
+  // ONE record instead keeps every other row and the scroll offset with it,
+  // and is one Firestore read rather than fifty.
+  async onEditClosed(): Promise<void> {
+    const edited = this.editingItem;
     this.editingItem = null;
     this.mode = 'list';
-    this.paged.loadFirstPage();
+
+    if (!edited?.id) {
+      return;
+    }
+
+    // Deleted from under us (or by the row action while the editor was
+    // open): drop it rather than leaving a stale row behind.
+    const fresh = await this.service.getById(edited.id);
+    if (fresh) {
+      this.paged.replaceRow(fresh);
+    } else {
+      this.paged.removeRow(edited.id);
+    }
   }
 
   delete(item: ContactModel): void {
@@ -112,6 +132,11 @@ export class ContactsComponent implements OnInit {
     this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
+          // Drop it from what is loaded. Without this the deleted contact
+          // stayed on screen until something else refreshed the list, so the
+          // row action looked like it had silently failed - and a second
+          // click on it deleted a document that was already gone.
+          this.paged.removeRow(item.id!);
           this.snackbar.success(this.itemType + ' Deleted');
         });
       }

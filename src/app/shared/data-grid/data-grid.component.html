@@ -23,7 +23,7 @@
   </app-list-header>
 }
 
-<div class="table-scroll" appInfiniteScroll (scrolledToBottom)="loadMore()">
+<div class="table-scroll" #tableScroll appInfiniteScroll (scrolledToBottom)="loadMore()" (scroll)="rememberScroll()">
   <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
 
   <table mat-table [dataSource]="visibleRows" class="data-grid-table" [ngClass]="tableClass">

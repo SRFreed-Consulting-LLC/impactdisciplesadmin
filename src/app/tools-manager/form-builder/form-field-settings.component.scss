@@ -15,10 +15,10 @@
   padding: 12px 12px;
   font-weight: 600;
   font-size: 13px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--app-card-border);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: rgba(0, 0, 0, 0.7);
+  color: var(--app-card-ink);
 }
 
 .settings-panel__spacer {
@@ -39,7 +39,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   margin: 4px 0 8px;
 }
 
@@ -76,7 +76,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
   margin: 0 0 8px;
 }
 
@@ -145,7 +145,7 @@
 
 .settings-panel__control-unit {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
 }
 
 .settings-panel__upload-btn {
@@ -155,7 +155,7 @@
 
 .settings-panel__image-preview {
   margin-bottom: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--app-card-border);
   border-radius: 4px;
   padding: 8px;
   text-align: center;

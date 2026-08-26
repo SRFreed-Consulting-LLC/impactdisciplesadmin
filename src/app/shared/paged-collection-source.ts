@@ -27,6 +27,14 @@ export class PagedCollectionSource<T extends BaseModel> {
    *  collection's actual tail, not just "nothing loaded this call". */
   readonly hasMore$ = new BehaviorSubject<boolean>(true);
 
+  /** Scroll offset (px) of the grid rendering this source, remembered
+   *  across a list -> edit -> list round trip. Screens switch to an edit
+   *  view with @if, which UNMOUNTS the grid and takes its scroll position
+   *  with it; this source lives on the screen component, which survives
+   *  that, so it is the one place the offset can be kept. Written by
+   *  DataGridComponent on scroll, read back by it on re-mount. */
+  scrollTop = 0;
+
   private cursor: QueryDocumentSnapshot<DocumentData> | null = null;
   private loadingInFlight = false;
 
@@ -37,6 +45,9 @@ export class PagedCollectionSource<T extends BaseModel> {
 
   /** Discards whatever's loaded and starts over from the beginning. */
   async loadFirstPage(): Promise<void> {
+    // A real reload starts at the top - restoring an offset into rows that
+    // no longer exist would land somewhere arbitrary.
+    this.scrollTop = 0;
     this.cursor = null;
     this.rows$.next([]);
     this.hasMore$.next(true);
@@ -65,5 +76,47 @@ export class PagedCollectionSource<T extends BaseModel> {
       this.loading$.next(false);
       this.loadingMore$.next(false);
     }
+  }
+
+  /**
+   * Swaps one already-loaded row for a fresher copy, in place, leaving every
+   * other loaded page untouched.
+   *
+   * This is what a screen wants after editing a single record. The obvious
+   * alternative - loadFirstPage() - discards EVERY loaded row (its first act
+   * is rows$.next([])), so an admin who scrolled to row 400 to find someone
+   * came back to a 50-row list scrolled to the top. Refetching the one
+   * document is also a single read instead of fifty.
+   *
+   * Returns false when that id is not currently loaded - nothing on screen
+   * to update, and the caller can ignore it.
+   */
+  replaceRow(row: T): boolean {
+    const rows = this.rows$.value;
+    const index = rows.findIndex((r) => r.id === row.id);
+    if (index === -1) {
+      return false;
+    }
+    const next = [...rows];
+    next[index] = row;
+    this.rows$.next(next);
+    return true;
+  }
+
+  /**
+   * Drops one row from what is loaded - the deleted-while-editing case.
+   * Deliberately does NOT refetch to backfill the gap: the cursor still
+   * points where it did, so the next scroll-triggered page arrives normally
+   * and the list is one row short until then. Invisible in a list of
+   * thousands, and it costs nothing.
+   */
+  removeRow(id: string): boolean {
+    const rows = this.rows$.value;
+    const next = rows.filter((r) => r.id !== id);
+    if (next.length === rows.length) {
+      return false;
+    }
+    this.rows$.next(next);
+    return true;
   }
 }

@@ -38,7 +38,7 @@
 
 .editor__subtitle {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
 }
 
 .editor__spacer {
@@ -191,7 +191,7 @@
 // `expanded` isn't bound) - see this component's own comment on why.
 .address-panel {
   box-shadow: none !important;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--app-card-border);
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -202,7 +202,7 @@
 
 .subscription-item__date {
   font-size: 10px;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   margin-left: 30px; // roughly under the checkbox label, not the box itself
 }
 
@@ -211,7 +211,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
   margin: 8px 0 4px;
 }
 
@@ -227,10 +227,10 @@
 .stat-tile {
   flex: 1 1 0;
   min-width: 0;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--app-card-border);
   border-radius: 8px;
   padding: 10px 14px;
-  background: #fff;
+  background: var(--app-card);
 }
 
 .stat-tile__value {
@@ -244,16 +244,16 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--app-card-muted);
 }
 
 .stat-tile--warn {
-  border-color: #b7791f;
-  background: #fbf0dc;
+  border-color: var(--app-attention);
+  background: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
 }
 
 .stat-tile--warn .stat-tile__value {
-  color: #b7791f;
+  color: var(--app-attention);
 }
 
 // ---- Pending Updates strip ----
@@ -266,12 +266,13 @@
 
 .pending-strip__intro {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--app-card-muted);
   margin: 0 0 12px;
 }
 
 .pending-change {
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--app-card-border);
+  background: var(--app-card);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 12px;
@@ -282,7 +283,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--app-card-muted);
   margin-bottom: 8px;
 }
 
@@ -305,7 +306,7 @@
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--app-card-muted);
   margin-bottom: 2px;
 }
 

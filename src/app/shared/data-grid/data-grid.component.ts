@@ -1,4 +1,4 @@
-import { AfterContentInit, Component, ContentChildren, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, QueryList, SimpleChanges, TemplateRef } from '@angular/core';
+import { AfterContentInit, AfterViewInit, Component, ContentChildren, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, QueryList, SimpleChanges, TemplateRef, ViewChild } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { BehaviorSubject, Subject } from 'rxjs';
@@ -48,7 +48,7 @@ type SortDirection = 'asc' | 'desc' | null;
     styleUrls: ['./data-grid.component.scss'],
     standalone: false
 })
-export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit, OnDestroy {
+export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit, AfterViewInit, OnDestroy {
   /** False suppresses the internal app-list-header entirely (title,
    *  headerActions, and the Columns/Export buttons with it) - for
    *  dialog-hosted mini-tables that already have their own header
@@ -120,6 +120,8 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
 
   @ContentChildren(DataGridCellDirective) private cellTemplateDirectives!: QueryList<DataGridCellDirective<T>>;
 
+  @ViewChild('tableScroll') private tableScroll?: ElementRef<HTMLElement>;
+
   visibleRows: T[] = [];
   sortKey: string | null = null;
   sortDirection: SortDirection = null;
@@ -132,6 +134,12 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   private readonly destroy$ = new Subject<void>();
   private cellTemplateMap = new Map<string, TemplateRef<{ $implicit: T }>>();
   private filters: Record<string, ColumnFilterValue> = {};
+
+  /** How many animation frames restoreScroll() will re-assert the offset for
+   *  while the table finishes laying out. Ten is ~160ms at 60fps - long
+   *  enough for a 50-row page with images, short enough that a list which
+   *  genuinely cannot reach the offset gives up rather than spinning. */
+  private static readonly SCROLL_RESTORE_FRAMES = 10;
 
   constructor(private datePipe: DatePipe, private currencyPipe: CurrencyPipe) {}
 
@@ -164,9 +172,56 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
     this.sourceRows$.pipe(takeUntil(this.destroy$)).subscribe((rows) => this.recompute(rows));
   }
 
+  ngAfterViewInit(): void {
+    this.restoreScroll();
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Records where the list is scrolled to, so a screen that switches to an
+   * edit view (every one of them does it with @if, which unmounts this
+   * component) can come back to the same place instead of the top.
+   *
+   * Cheap enough to run on every scroll event: it reads one number and
+   * assigns it. Change detection is already running on this element anyway -
+   * InfiniteScrollDirective has had a @HostListener('scroll') on it since
+   * paging was introduced - so this adds no zone work that was not happening.
+   */
+  rememberScroll(): void {
+    const element = this.tableScroll?.nativeElement;
+    if (element && this.pagedSource) {
+      this.pagedSource.scrollTop = element.scrollTop;
+    }
+  }
+
+  /**
+   * Puts the offset back after a re-mount. No-ops on a first mount, where
+   * the remembered offset is still 0.
+   *
+   * The retry matters. Assigning scrollTop is clamped to the element's
+   * CURRENT scrollHeight, and on the frame this runs the table may not have
+   * laid out its rows yet - the assignment silently lands short, leaving the
+   * admin part-way up the list, which looks like the bug it is meant to fix.
+   * Re-asserting for a few frames costs nothing and stops once the offset
+   * sticks or the rows genuinely are not that tall any more (a page reload
+   * with fewer rows loaded, say), rather than looping forever.
+   */
+  private restoreScroll(attempt = 0): void {
+    const element = this.tableScroll?.nativeElement;
+    const target = this.pagedSource?.scrollTop ?? 0;
+    if (!element || target <= 0) {
+      return;
+    }
+
+    element.scrollTop = target;
+
+    if (Math.abs(element.scrollTop - target) > 1 && attempt < DataGridComponent.SCROLL_RESTORE_FRAMES) {
+      requestAnimationFrame(() => this.restoreScroll(attempt + 1));
+    }
   }
 
   get resolvedEmptyMessage(): string {
