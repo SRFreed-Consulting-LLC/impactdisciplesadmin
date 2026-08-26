@@ -4,13 +4,14 @@
 // Charter area: Store / money math - the server recomputes every price
 // from Firestore and ignores whatever the client claims.
 //
-// Emulator boundaries this suite leans on (deliberately):
-// - The fixture world has NO `config` document, so the paid path fails
-//   deterministically at getPaypalClientId() ("config.paypalClientId is
-//   not set") BEFORE any network call - the function's outer catch turns
-//   that into 400 "Unable to start checkout". Nothing is staged first
-//   (pending_orders is only written AFTER PayPal accepts the order), so
-//   paid-path tests can only pin the clean error + the absence of writes.
+// The paid path used to be UNOBSERVABLE here. The fixture world had no
+// `config` document, so create_paypal_order threw at getPaypalClientId()
+// before any network call and every paid test could assert only a generic
+// 400 - the real pricing was described in a comment and checked by nobody.
+// Since 2026-08-26 the fixtures seed `config` and PayPal is redirected at
+// scripts/fake-vendors.js, so those tests assert the actual total instead.
+// The paid path's own behaviour (capture, refusals, tax) has its own suite:
+// integration/vendor-money.test.js. This file stays focused on the MATH.
 // - Discounts come from CAMPAIGN OFFERS now (Campaign Manager v3); the
 //   sitewide `sales` collection is retired. So a product is only on sale
 //   while some campaign_offer names it, its series, or - for an event -
@@ -187,8 +188,8 @@ test("unknown and inactive coupon codes are silently ignored, not " +
     d.data().code !== "NO-SUCH-CODE" && d.data().code !== "OLDCODE"));
 });
 
-test("SAVE10 on a paid cart reaches the PayPal boundary and fails clean " +
-  "- nothing staged, no purchase, no pending_order, no affiliate row",
+test("SAVE10 discounts a paid cart server-side, and nothing is sold until " +
+  "the payment is actually captured",
 async () => {
   const email = "paid-buyer@money.test";
   const res = await callHttp("create_paypal_order", orderBody({
@@ -197,17 +198,26 @@ async () => {
     shippingRate: 8.5,
     cartItems: [{id: "prod-book-physical", orderQuantity: 2}],
   }));
-  // Server math it computed before the boundary (not observable in any
-  // doc, documented here): sale price 20 - 25% = 15/each; SAVE10 skipped
-  // because the sale wins; subtotal 30; total 30 + 8.50 shipping = 38.50.
-  // The paid path then dies at the vendor boundary (no config.
-  // paypalClientId in the emulator world) -> generic 400.
-  assert.equal(res.status, 400);
-  assert.deepEqual(res.body, {code: 400, error: "Unable to start checkout"});
 
+  // 2 x $20 = 40 subtotal; SAVE10 takes 10% off = 4; plus the 8.50
+  // client-quoted shipping rate = 44.50. This used to be a comment - the
+  // test could only see a 400 - and so the numbers went unchecked.
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.free, false);
+  assert.equal(res.body.breakdown.subtotal, 40);
+  assert.equal(res.body.breakdown.totalDiscount, 4);
+  assert.equal(res.body.breakdown.total, 44.5);
+
+  // The important half: creating a PayPal order sells nothing. No purchase,
+  // and no affiliate credit, until capture_paypal_order confirms the money
+  // (see vendor-money.test.js). What DOES exist now is the staged
+  // pending_order - which only appears once PayPal has accepted the order.
   assert.equal((await purchasesByEmail(email)).length, 0);
-  const pending = await db.collection("pending_orders").get();
-  assert.equal(pending.size, 0); // staged only AFTER PayPal accepts
+  const pending = await db.collection("pending_orders")
+    .doc(res.body.orderId).get();
+  assert.equal(pending.exists, true);
+  assert.equal(pending.data().status, "created");
+  assert.equal(pending.data().amount, "44.50");
   const aff = await db.collection("affilliate_sales")
     .where("code", "==", "SAVE10").get();
   assert.equal(aff.size, 0);
@@ -232,7 +242,7 @@ async () => {
 });
 
 test("a campaign offer beats a coupon: while an offer names the product, " +
-  "FREE100 CANNOT zero it - the order stays paid and hits the boundary",
+  "FREE100 CANNOT zero it - the order stays paid",
 async () => {
   // The precedence rule that outlived the sales collection: a coupon only
   // ever discounts an item that is not already discounted. computeOrderPricing
@@ -262,10 +272,15 @@ async () => {
     }));
 
     // NOT {free:true}: the offer puts the item on sale (20 -> 15) and the
-    // coupon is refused on an already-discounted line, so itemsTotal is 15,
-    // the paid path runs, and the emulator's vendor boundary 400s it.
-    assert.equal(res.status, 400);
-    assert.equal(res.body.error, "Unable to start checkout");
+    // coupon is refused on an already-discounted line, so the order is a
+    // real $15 charge. The 15 is the whole point of the test and used to be
+    // invisible - the assertion was only that SOMETHING went wrong at the
+    // vendor, which a mispriced order would have satisfied just as well.
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.free, false);
+    assert.equal(res.body.breakdown.subtotal, 15);
+    assert.equal(res.body.breakdown.total, 15);
+    assert.equal(res.body.breakdown.totalDiscount, 0);
     assert.equal((await purchasesByEmail(email)).length, 0);
   } finally {
     await offerRef.delete();
@@ -305,19 +320,25 @@ test("an offer that requires attribution is refused to a buyer who did " +
   }
 });
 
-test("an INACTIVE product is not rejected - it prices normally and " +
-  "proceeds to the paid path (no server-side isActive check)", async () => {
+test("an INACTIVE product is not rejected - it prices normally and a real " +
+  "PayPal order is created for it (no server-side isActive check)",
+async () => {
   const email = "inactive-buyer@money.test";
   const res = await callHttp("create_paypal_order", orderBody({
     email,
     cartItems: [{id: "prod-inactive", orderQuantity: 1}],
   }));
-  // prod-inactive (isActive:false, cost 99) is priced like any other
-  // product and heads for PayPal - the emulator boundary is what stops it,
-  // not an inactive-product guard. Pinned as-is; flagged in the suite report
-  // as a gap worth a look.
-  assert.equal(res.status, 400);
-  assert.equal(res.body.error, "Unable to start checkout");
+
+  // prod-inactive (isActive:false, cost 99) is priced like any other product
+  // and a payable order is created for it. This is a REAL GAP, and it is
+  // sharper now than when the test was written: the assertion used to be a
+  // 400 from the vendor boundary, which read like something stopped it.
+  // Nothing stops it. A delisted product can still be bought by anyone who
+  // kept the id, at full price. Pinned as the current behaviour, not as
+  // desired behaviour - flagged in the suite report as worth a look.
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.free, false);
+  assert.equal(res.body.breakdown.total, 99);
   assert.equal((await purchasesByEmail(email)).length, 0);
 });
 

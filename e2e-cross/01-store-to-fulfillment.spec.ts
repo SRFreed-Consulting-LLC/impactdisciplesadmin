@@ -10,14 +10,20 @@ import { ADMIN_URL, WEB_URL, loginAsAdmin } from './support/harness';
 //
 // The checkout itself is driven SERVER-SIDE (the same create_paypal_order
 // free-order contract integration/money.test.js proves) rather than through
-// the web checkout UI, for two reasons this suite can't change:
-//  - the paid path dies deterministically at the PayPal boundary (no
+// the web checkout UI. Two reasons, BOTH of them now historical:
+//  - the paid path died deterministically at the PayPal boundary (no
 //    config doc);
-//  - the web checkout page itself cannot reach the payment step in the
+//  - the web checkout page could not reach the payment step in the
 //    emulator world at all: checkout.component.ts's calculateShippingCost()
-//    reads `this.webConfig.freeShippingAmount`, and the fixture world has
-//    no `config` document, so webConfig is undefined and goToPayment()
-//    throws before startOrder() ever runs.
+//    reads `this.webConfig.freeShippingAmount`, the fixture world had no
+//    `config` document, so webConfig was undefined and goToPayment() threw
+//    before startOrder() ever ran.
+// NEITHER is true since 2026-08-26 - the fixtures seed `config` and the
+// vendors are redirected at scripts/fake-vendors.js - and the UI-driven PAID
+// checkout now has its own spec, 13-paid-checkout.spec.ts. This file stays
+// server-driven deliberately rather than duplicating it: its charter is what
+// happens to an order AFTER it exists, and driving the storefront again here
+// would only add minutes and a second place to break.
 // So: cart UX is verified on the web store page (test 1), and the order is
 // then created via the proven HTTP contract (test 2) and picked up in the
 // ADMIN UI end-to-end from there.

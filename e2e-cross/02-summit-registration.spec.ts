@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator } from './support/harness';
 
 // Charter area: Events / Summit - public registration through to the admin
@@ -18,6 +18,54 @@ const FN_BASE = 'http://127.0.0.1:5001/demo-impact/us-central1';
 const ATTENDEE = { firstName: 'Zara', lastName: 'Zztester', email: 'zztester@summit.test' };
 
 let registrationId: string;
+
+/**
+ * Fills the attendee form and does not return until the values have SURVIVED
+ * a settling period.
+ *
+ * This is working around a real product fragility, not just test timing.
+ * event-details.component.ts subscribes to eventService.streamById() - a LIVE
+ * Firestore listener - and rebuilds attendeesForm from scratch inside the
+ * subscribe callback (`this.attendeesForm = this.fb.array([...])`, ~line 87).
+ * So ANY later emission on that event document silently discards whatever the
+ * visitor has typed. In the emulator a second emission reliably lands a beat
+ * after the page settles; in production the same thing happens whenever staff
+ * touch the event while someone is filling the form in.
+ *
+ * The failure is invisible where it happens: fill() succeeds, the values are
+ * wiped, "Sign UP" then does nothing because the form is invalid, and the
+ * test dies 30s later waiting for a request that was never going to be sent.
+ * Diagnosed 2026-08-26 from the failure snapshot - all three fields empty,
+ * all three "is required" errors showing.
+ *
+ * Filling once and asserting once is not enough (that was the first attempt,
+ * and it still failed): the wipe can land AFTER the assertion. So fill, hold,
+ * and re-check - and refill if the hold failed.
+ */
+async function fillAttendeeAndSettle(
+  page: Page,
+  attendee: { firstName: string; lastName: string; email: string },
+): Promise<void> {
+  const fields: Array<[string, string]> = [
+    ['#attendee-firstName-0', attendee.firstName],
+    ['#attendee-lastName-0', attendee.lastName],
+    ['#attendee-email-0', attendee.email],
+  ];
+
+  await expect(page.locator(fields[0][0])).toBeVisible({ timeout: 20_000 });
+
+  await expect(async () => {
+    for (const [selector, value] of fields) {
+      await page.locator(selector).fill(value);
+    }
+    // Hold long enough for a pending rebuild to land, then verify all three
+    // are still there. If a rebuild wiped them, toPass re-runs the fill.
+    await page.waitForTimeout(1_500);
+    for (const [selector, value] of fields) {
+      await expect(page.locator(selector)).toHaveValue(value, { timeout: 1_000 });
+    }
+  }).toPass({ timeout: 45_000 });
+}
 
 async function fnPost(name: string, body: unknown): Promise<{ status: number; body: any }> {
   const res = await fetch(`${FN_BASE}/${name}`, {
@@ -55,9 +103,7 @@ test.describe('summit registration to command-center assignment', () => {
     // step - breakout signup lives behind the confirmation email's
     // schedule link, not the registration form - so no breakout is picked
     // web-side here; the admin assigns one in the next test (per charter).
-    await page.locator('#attendee-firstName-0').fill(ATTENDEE.firstName);
-    await page.locator('#attendee-lastName-0').fill(ATTENDEE.lastName);
-    await page.locator('#attendee-email-0').fill(ATTENDEE.email);
+    await fillAttendeeAndSettle(page, ATTENDEE);
 
     const responsePromise = page.waitForResponse((r) => r.url().includes('register_for_event'), { timeout: 30_000 });
     // Async validators (check_registration_exists + duplicate check) are
