@@ -19,7 +19,7 @@ export class DMMServiceComponent extends BaseListComponent<DMMModel> {
   readonly itemType = 'Disciple Making Minute';
   protected readonly screenKey = 'content-manager.disciple-making-minute';
   protected readonly dialogComponent = DMMDialogComponent;
-  protected override readonly dialogConfig: MatDialogConfig = { width: '900px', maxWidth: '95vw' };
+  protected override readonly dialogConfig: MatDialogConfig = { width: '1200px', maxWidth: '95vw' };
 
   readonly columns: DataGridColumn<DMMModel>[] = [
     // No filter for isActive (matches the original - filtering a computed

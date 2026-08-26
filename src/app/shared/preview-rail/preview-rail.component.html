@@ -2,7 +2,8 @@
      on the very first render (storageKey is an @Input and does not exist
      when the constructor runs). -->
 @if (state; as s) {
-  <aside class="prail" [class.prail--collapsed]="s.collapsed">
+  <aside class="prail" [class.prail--collapsed]="s.collapsed"
+    [style.width.px]="s.collapsed ? null : width">
     <div class="prail__head">
       @if (!s.collapsed) {
         <span class="prail__label">{{ label }}</span>

@@ -32,6 +32,9 @@ export class PreviewRailComponent {
   @Input() label = 'Preview';
   /** Hosts with nothing worth showing on a phone can hide the switch. */
   @Input() showDeviceSwitch = true;
+  /** Rail width in px when open. A full-page editor can afford the default;
+   *  inside a dialog it has to leave the form the larger share. */
+  @Input() width = 420;
 
   device: PreviewDevice = 'web';
   collapsed = false;

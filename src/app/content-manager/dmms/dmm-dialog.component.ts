@@ -7,6 +7,7 @@ import { DMMService } from 'src/app/common/services/data/dmm.service';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export interface DMMDialogData {
   item: DMMModel | null;
@@ -24,6 +25,16 @@ export class DMMDialogComponent {
   isEdit: boolean;
   richTextModules = RICH_TEXT_TOOLBAR;
 
+  /** The body as the public page renders it - [innerHTML], because the
+   *  editor stores markup. Trusted deliberately: this is the very HTML the
+   *  signed-in staff member is composing in the field above, and it is
+   *  already published to the public site verbatim. */
+  get previewText(): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(
+      (this.form?.value?.text as string) || '<p>Your Disciple Making Minute appears here.</p>'
+    );
+  }
+
   private itemType = 'Disciple Making Minute';
 
   constructor(
@@ -31,7 +42,8 @@ export class DMMDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: DMMDialogData,
     private fb: FormBuilder,
     private service: DMMService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private sanitizer: DomSanitizer
   ) {
     this.isEdit = !!data.item?.id;
     this.form = this.fb.group({

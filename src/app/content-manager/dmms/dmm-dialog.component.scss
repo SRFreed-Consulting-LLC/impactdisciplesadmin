@@ -26,3 +26,64 @@ mat-dialog-content {
   display: flex;
   flex-direction: column;
 }
+
+// Form beside the preview rail inside the dialog. The dialog is 900px, so
+// the rail is narrower here than on a full-page editor; it collapses to a
+// strip when the author wants the whole width for the editor.
+// stretch, not flex-start: the form column matches the rail's height so the
+// editor can grow into it instead of leaving a band of empty dialog below.
+.edit-with-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.edit-with-preview__form {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// Ported from the web repo's dmm-postbox-item (.blog__header / .blog__date /
+// .blog__text) rather than restyled, so the preview reads like the real card.
+.dmmp {
+  padding: 20px 18px;
+}
+
+.dmmp__title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 15px;
+}
+
+.dmmp__date {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-bottom: 15px;
+}
+
+.dmmp__text {
+  font-size: 14px;
+  line-height: 1.7;
+
+  :first-child { margin-top: 0; }
+  :last-child { margin-bottom: 0; }
+}
+
+// The editor claims whatever the row's height leaves after the date/title
+// row above it.
+//
+// It needs a DEFINITE height, not just a min-height: styles.scss gives every
+// quill-editor `height: 100%`, which resolves against its host - so an
+// auto-height host collapses .ql-container to nothing and the
+// absolutely-positioned .ql-editor spills out over the dialog as unreadable
+// dark text on the navy surface (exactly the failure styles.scss's own
+// comment describes). A stretched flex item in a stretched row gives it one;
+// the min-height is the floor for when the preview is collapsed and there is
+// no rail height to match.
+.editor-wrap {
+  flex: 1 1 auto;
+  min-height: 320px;
+}

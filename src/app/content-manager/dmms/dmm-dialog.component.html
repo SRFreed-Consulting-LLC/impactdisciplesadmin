@@ -3,6 +3,8 @@
 </app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
+ <div class="edit-with-preview">
+  <div class="edit-with-preview__form">
   <div class="field-row">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Date</mat-label>
@@ -26,6 +28,19 @@
   <div class="editor-wrap">
     <quill-editor formControlName="text" [modules]="richTextModules"></quill-editor>
   </div>
+  </div>
+
+  <!-- Ported from the web repo's dmm-postbox-item: title, then the date in
+       'MMMM d, y', then the body as rendered HTML. Same order and the same
+       three fields, so what shows here is what the DMM page shows. -->
+  <app-preview-rail storageKey="dmm" label="Public page" [width]="400">
+    <div class="dmmp">
+      <div class="dmmp__title">{{ form.value.title || 'Untitled' }}</div>
+      <div class="dmmp__date">{{ form.value.date ? (form.value.date | date: 'MMMM d, y') : '' }}</div>
+      <div class="dmmp__text" [innerHTML]="previewText"></div>
+    </div>
+  </app-preview-rail>
+ </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
