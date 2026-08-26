@@ -24,6 +24,7 @@ import { SubscriberDialogComponent } from './subscriber-report/subscriber-dialog
 import { SendSubscriptionDialogComponent } from './subscriber-report/send-subscription-dialog.component';
 import { ContactReportComponent } from './contact-report/contact-report.component';
 import { EventReportComponent } from './event-report/event-report.component';
+import { DigitalBookUserReportComponent } from './digital-book-user-report/digital-book-user-report.component';
 
 @NgModule({
   declarations: [
@@ -39,6 +40,10 @@ import { EventReportComponent } from './event-report/event-report.component';
     CommonModule,
     ReportsManagerRoutingModule,
     SharedModule,
+    // Standalone (unlike its four module-declared siblings) - matches the
+    // convention every screen added since the library-manager consolidation
+    // follows, so it belongs in imports, not declarations.
+    DigitalBookUserReportComponent,
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,

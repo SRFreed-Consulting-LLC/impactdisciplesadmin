@@ -307,7 +307,11 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Purchases', slug: 'purchases' },
       { label: 'Subscribers', slug: 'subscribers' },
       { label: 'Contacts', slug: 'contacts' },
-      { label: 'Events', slug: 'events' }
+      { label: 'Events', slug: 'events' },
+      // Reader-app patrons (`libraryUsers`), not this app's own staff
+      // `admin_users` - a report over the same population the Library
+      // Manager's Library Users roster lists, joined to Impact Groups.
+      { label: 'Digital Book Users', slug: 'digital-book-users' }
     ]
   },
   {

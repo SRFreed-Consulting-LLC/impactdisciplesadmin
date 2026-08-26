@@ -3,6 +3,7 @@ import {
   DocumentReference,
   Firestore,
   collection,
+  collectionGroup,
   deleteField,
   doc,
   getDoc,
@@ -39,6 +40,25 @@ export class LibraryDiscussionGroupService {
 
   getGroupMembers(groupId: string): Observable<GroupMembership[]> {
     return getGroupMembers(this.firestore, groupId);
+  }
+
+  /** EVERY membership doc across EVERY group, any status - one unfiltered
+   *  `collectionGroup('members')` read. Deliberately NOT in the shared
+   *  submodule alongside getMyMemberships/getGroupMembers: those are
+   *  email-scoped and group-scoped because that is all firestore.rules lets
+   *  a patron read, whereas the unfiltered form is admin-only (see that
+   *  rule file's `match /{path=**}/members/{memberEmail}` isAdminRole()
+   *  branch). Keeping it here keeps a query no patron app may run out of
+   *  the code all three apps share.
+   *
+   *  A one-shot getDocs rather than a live listener - its only caller (the
+   *  Digital Book Users report) joins it against three other one-shot
+   *  fetches, so a live feed on just this one would give a half-fresh join.
+   *  Membership docs carry their own `groupId`, so collection-group results
+   *  are joinable back to a group without walking each ref's path. */
+  async getAllMemberships(): Promise<GroupMembership[]> {
+    const snap = await getDocs(collectionGroup(this.firestore, 'members'));
+    return snap.docs.map((d) => d.data() as GroupMembership);
   }
 
   /** Full edit of any group's content - book, title, description, meeting

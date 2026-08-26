@@ -1,0 +1,41 @@
+<div class="report-content">
+  @if (error()) {
+    <div class="error-state">{{ error() }}</div>
+  }
+
+  <app-data-grid
+    title="Digital Book Users"
+    [columns]="columns"
+    [rows]="rows()"
+    [loading]="loading()"
+    [headerActions]="[]"
+    emptyMessage="No digital book users match this view."
+    tableClass="report-table"
+    exportFileName="digital-book-users.xlsx"
+    exportWorksheetName="Digital Book Users"
+    initialSortKey="signedUp"
+    initialSortDirection="desc"
+  >
+    <!-- Projected into the grid's own header (see data-grid.component.html's
+    [dataGridHeaderExtra] slot) rather than sitting in a criteria bar above
+    it, so the population switch reads as part of the same toolbar as the
+    Columns and Export buttons it changes the meaning of. -->
+    <mat-slide-toggle
+      dataGridHeaderExtra
+      class="access-toggle"
+      [checked]="onlyWithBookAccess()"
+      (change)="onlyWithBookAccess.set($event.checked)"
+    >
+      Has book access
+    </mat-slide-toggle>
+  </app-data-grid>
+
+  @if (!loading()) {
+    <div class="result-count">
+      Showing {{ rows().length | number }} of {{ totalCount() | number }} library users
+      @if (onlyWithBookAccess()) {
+        <span> &mdash; licensed and international patrons only</span>
+      }
+    </div>
+  }
+</div>

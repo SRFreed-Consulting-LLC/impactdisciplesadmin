@@ -1,0 +1,64 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.report-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.error-state {
+  color: var(--mat-sys-error);
+  background: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
+  border: 1px solid color-mix(in srgb, var(--mat-sys-error) 30%, transparent);
+  border-radius: 6px;
+  font-size: 14px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  max-width: 640px;
+}
+
+.result-count {
+  font-size: 12.5px;
+  color: var(--app-card-muted);
+  margin-top: 8px;
+}
+
+.access-toggle {
+  margin-right: 8px;
+}
+
+// Same override the Purchase report makes: app-data-grid defaults to
+// flex-filling its parent's height (right for a full-page list screen,
+// wrong here), and this report's table should grow naturally inside
+// .report-content, which is the real scroll region.
+app-data-grid {
+  display: block;
+  height: auto;
+}
+
+:host ::ng-deep .table-scroll {
+  flex: none;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.report-table {
+  width: 100%;
+}
+
+// Book Titles / Groups are open-ended comma-joined lists - let them use the
+// width they need rather than forcing an ellipsis, since the whole point of
+// those two columns is reading what's in them. The table scrolls
+// horizontally (above) when the full column set outgrows the viewport.
+:host ::ng-deep .report-table .wide-cell {
+  min-width: 260px;
+  max-width: 460px;
+  white-space: normal;
+}
