@@ -160,11 +160,15 @@ app-data-grid {
   white-space: nowrap;
 }
 
+// Fills the shared rail rather than keeping the fixed 286px it needed when
+// this screen had its own narrower chrome - at 420px that left the card
+// sitting against a band of dead white space. Padding matches the other
+// previews so the card is not flush against the rail edge.
 .store-preview__panel {
-  width: 286px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 14px;
 }
 
 .store-preview__title {
