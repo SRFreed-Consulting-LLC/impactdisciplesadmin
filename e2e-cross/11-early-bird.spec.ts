@@ -72,10 +72,32 @@ async function seedEarlyBird(): Promise<void> {
 async function eventPageText(page: Page, query = ''): Promise<string> {
   await page.goto(`${WEB_URL}/event-details/${EVENT_ID}${query}`);
   await expect(page.getByText(EVENT_NAME).first()).toBeVisible({ timeout: 30_000 });
-  // Totals only render once a price is resolved, so wait for the block itself
-  // rather than reading a page that has not finished pricing.
   await expect(page.locator('.cart-page-total')).toBeVisible({ timeout: 20_000 });
-  return page.locator('.cart-page-total').innerText();
+
+  // Wait for the total to STOP CHANGING before reading it.
+  //
+  // The totals block becoming visible is not the same as pricing being
+  // finished. event-details.component.ts renders the full price immediately
+  // and then applies any early-bird discount asynchronously
+  // (applyEarlyBird() awaits getActiveOffers(), and is fire-and-forget), so a
+  // single innerText() read races that second render and returns whichever
+  // value happened to win. That made these specs flaky in BOTH directions -
+  // a discount test reading $10 before the discount landed, and (worse) a
+  // full-price test that would read $10 and pass even if the page went on to
+  // show a discount it should never have shown.
+  //
+  // Polling for stability rather than for an EXPECTED value is what keeps the
+  // negative tests honest: an auto-retrying toContainText would let
+  // "pays the full price" pass on the pre-discount render every time.
+  let previous = '';
+  await expect(async () => {
+    const current = await page.locator('.cart-page-total').innerText();
+    const settled = current === previous && current.trim().length > 0;
+    previous = current;
+    expect(settled, `total still changing: "${current}"`).toBeTruthy();
+  }).toPass({ timeout: 20_000, intervals: [400] });
+
+  return previous;
 }
 
 async function waitForDone(page: Page, message: RegExp): Promise<void> {
