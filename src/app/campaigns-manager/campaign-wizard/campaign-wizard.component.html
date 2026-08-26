@@ -57,6 +57,18 @@
     </div>
   </div>
 
+  <!-- Second in the list deliberately (2026-08-26): the window is what makes
+       a campaign go live and stop, and an offer's own start/end are COPIED
+       from it on save - so it belongs next to what the campaign is, not
+       buried below the channel and audience choices. -->
+  <div class="wizard-section">
+    <p class="wizard-label">WINDOW (OPTIONAL)</p>
+    <div class="wizard-row">
+      <app-date-time-field formControlName="startDate" label="Start"></app-date-time-field>
+      <app-date-time-field formControlName="endDate" label="End"></app-date-time-field>
+    </div>
+  </div>
+
   <div class="wizard-section">
     <p class="wizard-label">CHANNELS (pick any)</p>
     <div class="wizard-channels">
@@ -139,14 +151,6 @@
     </div>
   </div>
   }
-
-  <div class="wizard-section">
-    <p class="wizard-label">WINDOW (OPTIONAL)</p>
-    <div class="wizard-row">
-      <app-date-time-field formControlName="startDate" label="Start"></app-date-time-field>
-      <app-date-time-field formControlName="endDate" label="End"></app-date-time-field>
-    </div>
-  </div>
 
   <!-- OFFER (Campaign Manager v3). Available on every campaign type: the type
        decides what the starter content looks like, the offer decides what a

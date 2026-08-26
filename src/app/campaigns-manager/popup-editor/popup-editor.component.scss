@@ -20,17 +20,34 @@
   font-size: 13px;
 }
 
+// Single column since the inline preview was removed (2026-08-26) - the
+// form now owns the whole width. Previewing moved to LAUNCH POPUP in the
+// header, which shows the real renderer full-screen rather than a cramped
+// side panel that could only ever approximate it.
 .editor-body {
+  display: block;
+}
+
+// Two columns of section cards so the reclaimed width is actually used
+// rather than leaving one narrow column against dead space. Capped: fields
+// stretched across an ultrawide monitor are harder to read, not easier.
+.editor-form {
   display: grid;
-  // The form column earns a little more room now its fields actually fill
-  // it; the preview still takes everything left over.
-  grid-template-columns: minmax(420px, 580px) 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   align-items: start;
+  max-width: 1500px;
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
   }
+}
+
+// CONTENT holds the rich-text editor, which wants every pixel - and the
+// action row must not sit in a column beside a card.
+.editor-section--wide,
+.editor-actions {
+  grid-column: 1 / -1;
 }
 
 .editor-section {
@@ -147,15 +164,10 @@
   margin-bottom: 6px;
 }
 
-// The PREVIEW label and the LAUNCH POPUP button share a row.
-.editor-preview__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.editor-preview__launch {
+.editor-header__launch {
+  // Far right of the header row, so it stays reachable without scrolling now
+  // that it is the only way to see the popup.
+  margin-left: auto;
   flex: 0 0 auto;
   font-size: 12px;
 }

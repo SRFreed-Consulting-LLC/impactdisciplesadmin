@@ -4,11 +4,19 @@
   </button>
   <h2 class="editor-header__title">{{ popup?.id ? 'Edit Popup' : 'New Popup' }}</h2>
   <span class="editor-header__campaign">{{ campaign.name }}</span>
+  <!-- The inline side-by-side preview was removed 2026-08-26 so the form can
+       use the full width; this is now the only way to see the popup, so it
+       lives in the header where it is always reachable without scrolling. -->
+  <button mat-stroked-button type="button" class="editor-header__launch"
+    [disabled]="!previewData" (click)="launchPreview()"
+    matTooltip="Open the popup full-screen, exactly as a site visitor sees it">
+    <mat-icon>open_in_full</mat-icon> LAUNCH POPUP
+  </button>
 </div>
 
 <div class="editor-body">
   <form [formGroup]="form" class="editor-form">
-    <div class="editor-section">
+    <div class="editor-section editor-section--wide">
       <p class="editor-label">CONTENT</p>
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Title (internal)</mat-label>
@@ -148,23 +156,6 @@
     </div>
   </form>
 
-  <div class="editor-preview">
-    <div class="editor-preview__head">
-      <p class="editor-label">PREVIEW</p>
-      <button mat-stroked-button type="button" class="editor-preview__launch"
-        [disabled]="!previewData" (click)="launchPreview()"
-        matTooltip="Open the popup full-screen, exactly as a site visitor sees it">
-        <mat-icon>open_in_full</mat-icon> LAUNCH POPUP
-      </button>
-    </div>
-    <!-- Same renderer as the launched overlay AND as the live site, so the
-         side panel can no longer disagree with either. -->
-    @if (previewData) {
-      <app-popup-live-preview [popup]="previewData" mode="inline"></app-popup-live-preview>
-    } @else {
-      <p class="editor-hint">Pick a template, apply a spotlight, or just start typing to see the popup here.</p>
-    }
-  </div>
 </div>
 
 <!-- The real thing: a full-screen popup over the admin, same component. -->
