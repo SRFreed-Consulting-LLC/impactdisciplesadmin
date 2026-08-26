@@ -31,7 +31,7 @@
       <span class="editor__spacer"></span>
       <mat-slide-toggle formControlName="isActive">Live</mat-slide-toggle>
     </mat-toolbar>
-    <div class="editor__body" [class.editor__body--preview-collapsed]="isPreviewCollapsed">
+    <div class="editor__body">
       <div class="editor__form">
       <mat-tab-group class="product-tabs">
         <mat-tab label="Dimensions">
@@ -214,23 +214,20 @@
            component: the two apps don't share view code, and the alternative -
            an iframe of the live store - can't show an unsaved product. Keep
            this in step if that card changes. -->
-      <aside class="store-preview" [class.store-preview--collapsed]="isPreviewCollapsed">
-        <button
-          mat-icon-button
-          type="button"
-          class="store-preview__toggle"
-          [attr.aria-expanded]="!isPreviewCollapsed"
-          [matTooltip]="isPreviewCollapsed ? 'Show Store preview' : 'Hide Store preview'"
-          (click)="togglePreview()">
-          <mat-icon>{{ isPreviewCollapsed ? 'chevron_left' : 'chevron_right' }}</mat-icon>
-        </button>
+      <!-- Store preview. The CARD below is deliberately a copy of the
+           storefront's own product card markup (web: store-postbox-item)
+           rather than a shared component: the two apps do not share view
+           code, and the alternative - an iframe of the live store - cannot
+           show an unsaved product. Keep it in step if that card changes.
 
-        @if (isPreviewCollapsed) {
-          <span class="store-preview__rail-label">STORE PREVIEW</span>
-        } @else {
-          <div class="store-preview__panel">
-            <h3 class="store-preview__title">Store preview</h3>
-
+           The CHROME around it is the shared rail (2026-08-26), which is
+           where the collapse toggle, the desktop/phone switch and the
+           remembered state now come from - this screen had its own copy of
+           all three before. -->
+      <app-preview-rail storageKey="product" label="Store preview" [width]="420">
+        <div class="store-preview__panel">
+            <!-- No heading here: the rail's own header already says
+                 "Store preview", and two of them read as a mistake. -->
             @if (previewHiddenReason; as reason) {
               <p class="store-preview__warning">
                 <mat-icon>visibility_off</mat-icon>
@@ -275,8 +272,7 @@
               digital books in its own layout.
             </p>
           </div>
-        }
-      </aside>
+      </app-preview-rail>
     </div>
     <div class="editor__actions">
       <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>

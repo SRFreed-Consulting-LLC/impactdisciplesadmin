@@ -3,6 +3,14 @@
 </app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
+ <div class="edit-with-preview">
+  <div class="edit-with-preview__form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Headline</mat-label>
+    <input matInput formControlName="quote">
+    <mat-hint>Optional. Shown in quotes above the testimonial.</mat-hint>
+  </mat-form-field>
+
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Author</mat-label>
     <input matInput formControlName="author" required>
@@ -35,6 +43,25 @@
       <mat-error>Text is required</mat-error>
     }
   </mat-form-field>
+  </div>
+
+  <!-- Ported from the web repo's customer-reviews page: a row of stars, the
+       headline in quotes, the body, then the author in bold with their
+       title beneath. Centred, as that page centres it. -->
+  <app-preview-rail storageKey="testimonial" label="Public page" [width]="380">
+    <div class="tsp">
+      <div class="tsp__stars">★★★★★</div>
+      @if (form.value.quote) {
+        <h4 class="tsp__quote">"{{ form.value.quote }}"</h4>
+      }
+      <p class="tsp__text">{{ form.value.text || 'The testimonial appears here.' }}</p>
+      <p class="tsp__author" [class.tsp__author--tight]="form.value.title"><strong>{{ form.value.author }}</strong></p>
+      @if (form.value.title) {
+        <p class="tsp__title">{{ form.value.title }}</p>
+      }
+    </div>
+  </app-preview-rail>
+ </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

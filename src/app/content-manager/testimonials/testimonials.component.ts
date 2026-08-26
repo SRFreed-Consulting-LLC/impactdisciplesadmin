@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -19,6 +19,9 @@ export class TestimonialsComponent extends BaseListComponent<TestimonialModel> {
   readonly itemType = 'Testimonial';
   protected readonly screenKey = 'content-manager.testimonials';
   protected readonly dialogComponent = TestimonialDialogComponent;
+  // Wider than the 600px base default: the editor now sits beside a live
+  // preview of the public testimonial.
+  protected override readonly dialogConfig: MatDialogConfig = { width: '1100px', maxWidth: '95vw' };
 
   readonly columns: DataGridColumn<TestimonialModel>[] = [
     { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },

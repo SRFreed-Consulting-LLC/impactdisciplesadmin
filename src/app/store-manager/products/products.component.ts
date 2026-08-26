@@ -97,29 +97,10 @@ export class ProductsComponent implements OnInit {
    * batch of products shouldn't have to re-collapse the panel every time.
    * A private window (or storage the browser blocks) just starts expanded.
    */
-  isPreviewCollapsed = ProductsComponent.readCollapsedPreference();
 
   private static readonly PREVIEW_COLLAPSED_KEY = 'products.previewCollapsed';
 
-  private static readCollapsedPreference(): boolean {
-    try {
-      return localStorage.getItem(ProductsComponent.PREVIEW_COLLAPSED_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  }
 
-  togglePreview(): void {
-    this.isPreviewCollapsed = !this.isPreviewCollapsed;
-    try {
-      localStorage.setItem(
-        ProductsComponent.PREVIEW_COLLAPSED_KEY,
-        String(this.isPreviewCollapsed)
-      );
-    } catch {
-      // A remembered panel is a convenience, never a requirement.
-    }
-  }
 
   /**
    * What the storefront would render for the product as currently edited.

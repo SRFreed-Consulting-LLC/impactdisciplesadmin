@@ -94,14 +94,14 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     if (!this.permissionService.canAdd(this.screenKey)) {
       return;
     }
-    this.dialog.open(TeamPageDialogComponent, { width: '900px', maxWidth: '95vw', data: { item: null } });
+    this.dialog.open(TeamPageDialogComponent, { width: '1200px', maxWidth: '95vw', data: { item: null } });
   }
 
   showEditModal(item: ImpactTeamMemberModel): void {
     if (!this.permissionService.canEdit(this.screenKey)) {
       return;
     }
-    this.dialog.open(TeamPageDialogComponent, { width: '900px', maxWidth: '95vw', data: { item } });
+    this.dialog.open(TeamPageDialogComponent, { width: '1200px', maxWidth: '95vw', data: { item } });
   }
 
   delete(item: ImpactTeamMemberModel): void {

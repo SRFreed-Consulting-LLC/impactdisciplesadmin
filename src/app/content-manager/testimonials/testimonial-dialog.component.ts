@@ -39,6 +39,13 @@ export class TestimonialDialogComponent {
       isActive: [data.item?.isActive ?? false],
       author: [data.item?.author ?? '', Validators.required],
       title: [data.item?.title ?? ''],
+      // The public page renders this as the <h4> headline above the body
+      // (customer-reviews.component.html). It was on the model and in the
+      // data - 3 of the 9 records carry one - but had no field here, so it
+      // could be seen on the site and not edited. Saving already preserved
+      // it (the payload spreads data.item first), so nothing was being
+      // lost; it simply could not be changed.
+      quote: [data.item?.quote ?? ''],
       text: [data.item?.text ?? '', Validators.required],
       type: [data.item?.type ?? null, Validators.required]
     });

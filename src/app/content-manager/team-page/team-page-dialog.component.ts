@@ -7,6 +7,7 @@ import { ImpactTeamService } from 'src/app/common/services/data/impact-team.serv
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface TeamPageDialogData {
@@ -32,6 +33,16 @@ export class TeamPageDialogComponent {
   isEdit: boolean;
   richTextModules = RICH_TEXT_TOOLBAR;
 
+  /** The bio as the public page renders it - that page uses [innerHTML] on
+   *  this same field, so the preview has to as well. Trusted for the same
+   *  reason: it is the markup the signed-in staff member is composing, and
+   *  it is already published verbatim. */
+  get previewBio(): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(
+      (this.form?.value?.bio as string) || '<p>The biography appears here.</p>'
+    );
+  }
+
   organizations$ = this.organizationService.streamAll();
 
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
@@ -48,7 +59,8 @@ export class TeamPageDialogComponent {
     private fb: FormBuilder,
     private service: ImpactTeamService,
     private organizationService: OrganizationService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private sanitizer: DomSanitizer
   ) {
     this.isEdit = !!data.item?.id;
     this.card.photoUrl = data.item?.photoUrl;

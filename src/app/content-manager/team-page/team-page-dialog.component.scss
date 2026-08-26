@@ -45,3 +45,81 @@
 quill-editor {
   height: 300px;
 }
+
+// Form beside the preview rail. align-items: stretch so the tab body and the
+// rail run the same height (see the DMM dialog for the same pairing).
+.edit-with-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.edit-with-preview__form {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// The Biography tab holds a quill-editor, and styles.scss gives every
+// quill-editor `height: 100%` - which needs a DEFINITE height from its host
+// or .ql-container collapses and the editor's text spills onto the dialog.
+// The tab body has to supply one.
+.member-tabs {
+  flex: 1 1 auto;
+  min-height: 420px;
+}
+
+// Ported from the web repo's team-details page - centred column, photo
+// above the name, a rule, then title and bio.
+.tmp {
+  padding: 20px 18px;
+  text-align: center;
+}
+
+.tmp__photo {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto 18px;
+  border-radius: 4px;
+}
+
+.tmp__photo--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.tmp__name {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.tmp__rule {
+  width: 60px;
+  margin: 0 auto 12px;
+  border: 0;
+  border-top: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.tmp__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 18px;
+  opacity: 0.8;
+}
+
+.tmp__bio {
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: left;
+
+  :first-child { margin-top: 0; }
+  :last-child { margin-bottom: 0; }
+}
