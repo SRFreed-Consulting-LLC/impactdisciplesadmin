@@ -454,6 +454,67 @@ const libraryUsers = {
   },
 };
 
+// The singleton `config` document. Its ABSENCE used to be load-bearing:
+// with no config there is no paypalClientId, so create_paypal_order died at
+// getPaypalClientId() before any vendor call and every paid-path test could
+// only assert a 400 - and the web checkout UI could not reach the payment
+// step at all, because checkout.component.ts reads
+// webConfig.freeShippingAmount and threw on undefined. Both of those are why
+// the paid branch had no coverage. Seeding it (together with the fake vendor
+// server; see scripts/fake-vendors.js) is what makes the paid path
+// reachable.
+//
+// paypalClientId is a PUBLIC client identifier - PayPal ships it to every
+// browser - so a fake one here is not a credential. The secret half comes
+// from functions/.secret.local, also fake. House rule (web-config.model.ts):
+// keys never go in Firestore.
+//
+// freeShippingAmount is 100 so the fixture products (20.00 and under) sit
+// well below the threshold: shipping-discount tests must OPT IN to free
+// shipping rather than getting it by accident.
+const config = {
+  "web-config": {
+    paypalClientId: "FAKE-EMULATOR-PAYPAL-CLIENT-ID",
+    freeShippingAmount: 100,
+    email: "info@emulator.test",
+    adminEmailAddress: "admin@emulator.test",
+    phone: "555-0100",
+    // The ship-FROM address. ShippingService.createRequest() dereferences
+    // config.address.address1/city/state/zip with no guard - inside a
+    // try/catch that swallows the throw and quietly ships a blank request,
+    // so omitting this does not fail loudly, it just makes every rate quote
+    // meaningless. Present and complete on purpose.
+    address: {
+      address1: "1 Test Way",
+      address2: "",
+      city: "Atlanta",
+      state: "Georgia",
+      zip: "30301",
+      country: "US",
+    },
+    policy: "Fixture privacy policy.",
+    tos: "Fixture terms of service.",
+    inpersonSeminarCost: 199,
+    onlineSeminarCost: 99,
+    equippingGroupTotalCost: 500,
+    equippingGroupPaymentCost: 100,
+    // Nullable fields on WebConfigModel, spelled out rather than omitted:
+    // a template binding to an absent field and to an explicitly null one
+    // behave the same, but a reader of this fixture should not have to
+    // check the model to know these were considered.
+    countdownEndDateTime: null,
+    images: null,
+    logo: "",
+    twitter: null,
+    facebook: null,
+    facebookLive: null,
+    applePodCast: null,
+    linkedIn: null,
+    youtube: null,
+    instagram: null,
+  },
+};
+
 const bulkDiscountTiers = {
   "5": {numberOfBooks: 5, percentOff: 10},
   "10": {numberOfBooks: 10, percentOff: 20},
@@ -471,6 +532,7 @@ module.exports = {
     coupons,
     organizations,
     locations,
+    config,
     customers,
     events,
     "event-registrations": eventRegistrations,

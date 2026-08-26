@@ -119,6 +119,68 @@ async function callCallable(name, data, idToken) {
   return {status: res.status, result: body.result, error: body.error};
 }
 
+// ---------------------------------------------------------------------------
+// Fake vendor server (scripts/fake-vendors.js)
+//
+// PayPal, the apilayer tax service and ShipEngine are redirected here by
+// functions/.env.local, so the suites below can drive the paid checkout
+// path, capture, refunds and label purchase - none of which could be run
+// against the real vendors at all. `npm run emu` starts it; a suite that
+// needs it calls preflightFakeVendors() so a missing server fails with a
+// sentence instead of a wall of ECONNREFUSED.
+// ---------------------------------------------------------------------------
+const FAKE_VENDORS_PORT = Number(process.env.FAKE_VENDORS_PORT || 5055);
+const FAKE_VENDORS_BASE = `http://127.0.0.1:${FAKE_VENDORS_PORT}`;
+
+const fakeVendors = {
+  /** Clears scenario overrides, remembered orders and the request log. */
+  async reset() {
+    const res = await fetch(`${FAKE_VENDORS_BASE}/__reset`, {method: "POST"});
+    if (!res.ok) throw new Error(`fake-vendors reset failed: ${res.status}`);
+  },
+  /** Sets scenario knobs (see DEFAULTS in scripts/fake-vendors.js). An
+   *  unknown key is rejected rather than silently ignored, so a typo fails
+   *  as a typo instead of as a product bug. */
+  async control(patch) {
+    const res = await fetch(`${FAKE_VENDORS_BASE}/__control`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(patch),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(`fake-vendors control rejected: ${JSON.stringify(body)}`);
+    }
+    return body.scenario;
+  },
+  /** Every vendor request served since the last reset - lets a test assert
+   *  on what we SENT, which is otherwise invisible from Firestore alone. */
+  async log(vendor) {
+    const res = await fetch(`${FAKE_VENDORS_BASE}/__log`);
+    const {requests} = await res.json();
+    return vendor ? requests.filter((r) => r.vendor === vendor) : requests;
+  },
+  /** The orders the fake PayPal currently knows about. */
+  async orders() {
+    const res = await fetch(`${FAKE_VENDORS_BASE}/__orders`);
+    return (await res.json()).orders;
+  },
+};
+
+/** Fails fast (with a how-to message) when the fake vendor server is down. */
+async function preflightFakeVendors() {
+  try {
+    const res = await fetch(`${FAKE_VENDORS_BASE}/__health`);
+    if (!res.ok) throw new Error(String(res.status));
+  } catch {
+    throw new Error(
+      `Fake vendor server is not running on port ${FAKE_VENDORS_PORT}. It ` +
+      "starts with the emulator (npm run emu); to run it alone: " +
+      "npm run fake-vendors."
+    );
+  }
+}
+
 /** Polls until fn() is truthy (for Firestore-trigger side effects). */
 async function waitFor(fn, {timeoutMs = 20000, intervalMs = 400, label = "condition"} = {}) {
   const deadline = Date.now() + timeoutMs;
@@ -136,4 +198,5 @@ module.exports = {
   PROJECT_ID, FN_BASE,
   getAuth, getApp, getDb,
   preflight, reseed, callHttp, callCallable, signIn, waitFor,
+  FAKE_VENDORS_BASE, fakeVendors, preflightFakeVendors,
 };

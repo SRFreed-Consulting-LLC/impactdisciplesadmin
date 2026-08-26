@@ -4,12 +4,15 @@
 // time rather than being committed - keeping the repo free of anything that
 // even looks like a secret.
 //
-// Every value here is deliberately fake. The emulator-backed test layers
-// never call a real vendor: the free-order checkout path returns before any
-// PayPal call, and Stripe/ShipEngine/YouTube endpoints aren't
-// exercised. Functions that DO reach their vendor with these values get a
-// 401 from the vendor - which is itself what the paid-path boundary tests
-// assert on.
+// Every value here is deliberately fake, and no emulator-backed test layer
+// ever reaches a real vendor. PayPal, the apilayer tax service and
+// ShipEngine are all REDIRECTED at scripts/fake-vendors.js by the
+// FAKE_VENDOR_*_BASE vars below, so the paid checkout path, capture,
+// refunds, the Georgia tax branch and even label purchase (which spends
+// real postage) now run end to end against a stand-in. Anything NOT
+// redirected (Stripe, YouTube) simply is not exercised; if one ever were,
+// these fake keys would earn a 401 from the real vendor rather than doing
+// anything.
 //
 // - functions/.env.local: plain process.env vars (loaded by the emulator
 //   for any project, never used by `firebase deploy`).
@@ -21,7 +24,19 @@ const path = require("path");
 
 const functionsDir = path.join(__dirname, "..", "functions");
 
+// The fake vendor server (scripts/fake-vendors.js) that PayPal, apilayer
+// and ShipEngine calls are redirected to. One port, routed by path - see
+// that file for why they cannot each have their own path prefix. The
+// redirect itself is refused by functions/src/utils/vendor-hosts.ts
+// anywhere that is not the emulator or a demo-* project, so these names
+// are inert in a real deployment.
+const FAKE_VENDORS_BASE =
+  "http://127.0.0.1:" + (process.env.FAKE_VENDORS_PORT || 5055);
+
 const ENV_VARS = {
+  FAKE_VENDOR_PAYPAL_BASE: FAKE_VENDORS_BASE,
+  FAKE_VENDOR_TAX_BASE: FAKE_VENDORS_BASE,
+  FAKE_VENDOR_SHIPENGINE_BASE: FAKE_VENDORS_BASE,
   PAYPAL_CLIENT_SECRET: "fake-paypal-secret-emulator",
   STRIPE_SECRET_KEY: "sk_test_fake_emulator",
   SHIP_ENGINE_API_KEY: "fake-shipengine-key",
