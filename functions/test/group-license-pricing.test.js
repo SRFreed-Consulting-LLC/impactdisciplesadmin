@@ -142,3 +142,75 @@ test("end to end: a sale-priced book at a discount tier", () => {
   // ...and the capture check's cent tolerance is satisfied by an exact match
   assert.ok(Math.abs(round2(pricing.total) - 159.92) <= 0.01);
 });
+
+// ------------------------------- coupon vs bulk (2026-08-26)
+
+const {chooseLicenseDiscount} =
+  require("../lib/common/models/bulk-discount.util");
+
+// A leader can now enter a coupon on a bulk purchase. The two discounts are
+// EXCLUSIVE and the better one wins, so the figure the PayPal capture is
+// checked against is whichever of them the server picked - the same rule the
+// dialog previews with. Getting this wrong either overcharges a leader who
+// had a better code, or hands out a bigger discount than either deal.
+
+test("the better of bulk and coupon is what gets charged", () => {
+  const unitPrice = 10;
+  const quantity = 10; // 20% bulk tier
+
+  // Coupon beats bulk: 25% off 100.00 = 75.00
+  const couponWins = chooseLicenseDiscount(
+    resolveBulkDiscountPercent(TIERS, quantity),
+    25
+  );
+  assert.equal(couponWins.source, "coupon");
+  assert.equal(
+    computeGroupLicensePricing(unitPrice, quantity, couponWins.percentOff)
+      .total,
+    75
+  );
+
+  // Bulk beats coupon: 20% off 100.00 = 80.00, coupon ignored.
+  const bulkWins = chooseLicenseDiscount(
+    resolveBulkDiscountPercent(TIERS, quantity),
+    5
+  );
+  assert.equal(bulkWins.source, "bulk");
+  assert.equal(bulkWins.bulkBeatsCoupon, true);
+  assert.equal(
+    computeGroupLicensePricing(unitPrice, quantity, bulkWins.percentOff).total,
+    80
+  );
+});
+
+test("bulk and coupon never stack", () => {
+  // 20% + 15% would be 35% (65.00). It must stay the better single one.
+  const choice = chooseLicenseDiscount(20, 15);
+  assert.equal(choice.percentOff, 20);
+  assert.equal(computeGroupLicensePricing(10, 10, choice.percentOff).total, 80);
+});
+
+test("an inapplicable coupon is not reported as beaten by bulk", () => {
+  // null = no coupon, or one whose tags do not cover this book. Telling the
+  // leader "your bulk deal beat that code" would be a message about a coupon
+  // that was never in the running.
+  assert.equal(chooseLicenseDiscount(20, null).bulkBeatsCoupon, false);
+  assert.equal(chooseLicenseDiscount(20, 0).bulkBeatsCoupon, true);
+});
+
+test("a 100% coupon prices to exactly zero, not a negative total", () => {
+  const choice = chooseLicenseDiscount(resolveBulkDiscountPercent(TIERS, 3), 100);
+  assert.equal(choice.source, "coupon");
+  const {total, discount} = computeGroupLicensePricing(10, 3, choice.percentOff);
+  assert.equal(total, 0);
+  assert.equal(discount, 30);
+});
+
+test("a malformed coupon percentage cannot pay the buyer", () => {
+  // The function refuses a non-numeric percentOff by treating it as 0, and
+  // anything over 100 clamps - either way the total stays >= 0.
+  assert.equal(chooseLicenseDiscount(0, 150).percentOff, 100);
+  assert.equal(chooseLicenseDiscount(0, -50).percentOff, 0);
+  assert.equal(computeGroupLicensePricing(10, 5, chooseLicenseDiscount(0, 150).percentOff).total, 0);
+  assert.equal(computeGroupLicensePricing(10, 5, chooseLicenseDiscount(0, -50).percentOff).total, 50);
+});

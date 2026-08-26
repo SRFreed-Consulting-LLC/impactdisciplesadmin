@@ -14,7 +14,10 @@ import {
   effectivePrice,
 } from "./library-store-pricing";
 import {BulkDiscountTier} from "./common/models/bulk-discount-tier.model";
-import {resolveBulkDiscountPercent} from "./common/models/bulk-discount.util";
+import {
+  chooseLicenseDiscount,
+  resolveBulkDiscountPercent,
+} from "./common/models/bulk-discount.util";
 import {queueInviteDeclineEmail} from "./transactional-emails";
 import {applyLicenseRevoke} from "./library-group-license-revoke";
 import {selectMembersToCopy} from "./library-group-members-copy";
@@ -61,6 +64,54 @@ import {
  * doc id, same pattern this app's own LibraryBookService.getById() uses.
  */
 const libraryDb = getFirestore();
+
+/** The public shape of a `coupons` doc this function needs. Mirrors
+ *  library-purchases.functions.ts's own local copy, plus `expiresAt`
+ *  (which that one does not read - see the expiry note at the call site). */
+interface CouponDoc {
+  code?: string;
+  isActive?: boolean;
+  percentOff?: number | null;
+  expiresAt?: unknown;
+  tags?: {id: string}[];
+}
+
+/**
+ * Whether a coupon's expiry has passed. Absent means it never expires,
+ * which every coupon written before Campaign Manager v3 was. Accepts the
+ * three shapes the field is stored in (Firestore Timestamp, Date, ISO
+ * string), same as checkout-support's own isExpired.
+ * @param {unknown} expiresAt The stored expiry.
+ * @return {boolean} True when it has passed.
+ */
+function isCouponExpired(expiresAt: unknown): boolean {
+  if (expiresAt === null || expiresAt === undefined) {
+    return false;
+  }
+  const value = expiresAt as {toMillis?: () => number};
+  const ms =
+    typeof value.toMillis === "function" ?
+      value.toMillis() :
+      new Date(expiresAt as string | number | Date).getTime();
+  return Number.isFinite(ms) && ms > 0 && ms < Date.now();
+}
+
+/**
+ * A coupon with no tags applies to every product; otherwise only to
+ * products whose doc id is tagged - mirrors the reader's couponAppliesTo
+ * and library-purchases' own copy.
+ * @param {CouponDoc} coupon The coupon doc's data.
+ * @param {string} productId The product's doc id.
+ * @return {boolean} Whether the coupon discounts this product.
+ */
+function couponAppliesToProduct(
+  coupon: CouponDoc,
+  productId: string
+): boolean {
+  return (
+    !coupon.tags?.length || coupon.tags.some((tag) => tag.id === productId)
+  );
+}
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
@@ -145,7 +196,7 @@ export const purchaseGroupLicenses = onCall(
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
 
-    const {groupId, quantity, payPalOrderId} =
+    const {groupId, quantity, payPalOrderId, couponCode} =
       (request.data ?? {}) as Partial<PurchaseGroupLicensesRequest>;
     if (
       !groupId ||
@@ -174,10 +225,15 @@ export const purchaseGroupLicenses = onCall(
       .collection("products")
       .where("digitalBookId", "==", bookId)
       .get();
-    const product = productsSnap.docs
-      .map((d) => d.data() as ProductDoc)
-      .find((p) => p.isDigitalBook === true && p.isActive !== false);
-    if (!product) {
+    // Keep the doc ID, not just the data: a coupon's `tags` reference
+    // product doc ids, so tag scoping cannot be evaluated without it.
+    const productMatch = productsSnap.docs
+      .map((d) => ({id: d.id, data: d.data() as ProductDoc}))
+      .find(
+        ({data}) => data.isDigitalBook === true && data.isActive !== false
+      );
+    const product = productMatch?.data;
+    if (!product || !productMatch) {
       throw new HttpsError(
         "invalid-argument",
         "No active digital-book product exists for this group's book."
@@ -193,8 +249,59 @@ export const purchaseGroupLicenses = onCall(
     // guards a malformed tier row whose percentOff isn't set.
     const resolvedPercentOff = resolveBulkDiscountPercent(tiers, quantity) ?? 0;
 
-    const {discount, total, unitDiscountPrice} =
-      computeGroupLicensePricing(unitPrice, quantity, resolvedPercentOff);
+    // COUPON, also server-side. The client sends a CODE, never a percentage
+    // - the same rule as the price - so a leader cannot invent a discount by
+    // editing the request. Resolved the way the Store's own
+    // verifyAndGrantReaderStorePurchase resolves it: a case-insensitive scan
+    // of the small `coupons` collection, since stored codes are not
+    // consistently cased.
+    //
+    // Expiry IS checked here. The Store's equivalent only checks isActive,
+    // so an expired code still discounts a purchase there - a real gap, and
+    // one worth not reproducing (see coupon.model.ts, which claims expiry
+    // "cannot be skipped client-side").
+    let couponPercentOff: number | null = null;
+    const trimmedCode = (couponCode ?? "").trim();
+    if (trimmedCode) {
+      const couponsSnap = await libraryDb.collection("coupons").get();
+      const coupon = couponsSnap.docs
+        .map((d) => d.data() as CouponDoc)
+        .find(
+          (c) =>
+            c.isActive === true &&
+            !isCouponExpired(c.expiresAt) &&
+            (c.code ?? "").toLowerCase() === trimmedCode.toLowerCase()
+        );
+      if (!coupon) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Invalid, inactive or expired coupon code."
+        );
+      }
+      // A tagged coupon only covers the products it names. An inapplicable
+      // one is IGNORED rather than rejected - matching the Store, where a
+      // coupon simply discounts nothing it does not cover - and stays null
+      // so chooseLicenseDiscount does not report that bulk "beat" a coupon
+      // that was never in the running. The dialog tells the leader at
+      // apply-time that the code does not cover this book.
+      if (couponAppliesToProduct(coupon, productMatch.id)) {
+        couponPercentOff =
+          typeof coupon.percentOff === "number" ? coupon.percentOff : 0;
+      }
+    }
+
+    // Bulk and coupon are EXCLUSIVE, better-of-the-two, tie to bulk - the
+    // shared helper the dialog previews with, so quoted and charged agree.
+    const discountChoice = chooseLicenseDiscount(
+      resolvedPercentOff,
+      couponPercentOff
+    );
+
+    const {discount, total, unitDiscountPrice} = computeGroupLicensePricing(
+      unitPrice,
+      quantity,
+      discountChoice.percentOff
+    );
 
     if (!payPalOrderId && total > 0) {
       throw new HttpsError(
@@ -302,6 +409,17 @@ export const purchaseGroupLicenses = onCall(
       ],
       discount: discount,
       total: total,
+      // What the discount actually WAS, so a purchase can be explained later
+      // without re-deriving it from tiers that may since have changed.
+      discountSource: discountChoice.source,
+      bulkPercentOff: discountChoice.bulkPercentOff,
+      ...(trimmedCode ?
+        {
+          couponCode: trimmedCode,
+          couponPercentOff: discountChoice.couponPercentOff,
+          couponApplied: discountChoice.source === "coupon",
+        } :
+        {}),
       receipt: payPalOrderId ?? "FREE ONLY",
       // A Firestore Timestamp, NOT the raw ms number - the admin Purchases
       // list orders by dateProcessed and Firestore sorts mixed types by
@@ -364,6 +482,10 @@ export const purchaseGroupLicenses = onCall(
       purchaseId: purchaseRef.id,
       licenseIds: licenseRefs.map((r) => r.id),
       ...(selfAssignedLicenseId ? {selfAssignedLicenseId} : {}),
+      // The SERVER's verdict, so the dialog confirms what was charged
+      // rather than trusting the preview it computed itself.
+      discountSource: discountChoice.source,
+      bulkBeatsCoupon: discountChoice.bulkBeatsCoupon,
     };
   }
 );
