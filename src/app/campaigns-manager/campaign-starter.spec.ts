@@ -68,9 +68,20 @@ describe('productStarter', () => {
     expect(starter.blurb).toBe('Hello there');
   });
 
-  it('trims a long blurb to a teaser', () => {
+  it('keeps a real-world description whole', () => {
+    // The cap was 160 until 2026-08-26, which truncated EVERY event
+    // description and most products - a generated popup read as a cut-off
+    // fragment. 400 is around the median product description.
     const starter = productStarter(product({ description: 'x'.repeat(400) }), SITE);
-    expect(starter.blurb.length).toBeLessThanOrEqual(160);
+    expect(starter.blurb.length).toBe(400);
+    expect(starter.blurb.endsWith('…')).toBeFalse();
+  });
+
+  it('still caps something pathological', () => {
+    // Raised, not removed: an unbounded description must not be able to
+    // produce an unbounded popup.
+    const starter = productStarter(product({ description: 'x'.repeat(5000) }), SITE);
+    expect(starter.blurb.length).toBeLessThanOrEqual(2000);
     expect(starter.blurb.endsWith('…')).toBeTrue();
   });
 });
@@ -141,7 +152,55 @@ describe('starterDesign', () => {
   });
 });
 
+describe('eventStarter with a campaign offer', () => {
+  // An event's early-bird price comes from a campaign offer, not the event
+  // doc - so the starter has to be TOLD it. Before 2026-08-26 the popup
+  // showed only date and venue, and a visitor could not see the discount at
+  // all.
+  it('carries both prices when the offer is cheaper', () => {
+    const starter = eventStarter(event({ costInDollars: 50 } as never), SITE, 25);
+    expect(starter.price).toEqual({ original: 50, discounted: 25 });
+  });
+
+  it('shows no price line when there is no offer', () => {
+    expect(eventStarter(event({ costInDollars: 50 } as never), SITE).price).toBeUndefined();
+  });
+
+  it('ignores an offer that is not actually cheaper', () => {
+    // Equal or higher is not a saving, and striking through an identical
+    // number reads as a mistake.
+    expect(eventStarter(event({ costInDollars: 50 } as never), SITE, 50).price).toBeUndefined();
+    expect(eventStarter(event({ costInDollars: 50 } as never), SITE, 60).price).toBeUndefined();
+  });
+
+  it('ignores a discount on a free event', () => {
+    expect(eventStarter(event({ costInDollars: 0 } as never), SITE, 0).price).toBeUndefined();
+  });
+
+  it('treats a fully discounted event as a real saving', () => {
+    expect(eventStarter(event({ costInDollars: 50 } as never), SITE, 0).price)
+      .toEqual({ original: 50, discounted: 0 });
+  });
+});
+
 describe('starterPopupHtml', () => {
+  it('strikes the original price through, on the date line', () => {
+    const html = starterPopupHtml(
+      eventStarter(event({ costInDollars: 50, venue: { name: 'Grace Chapel' } } as never), SITE, 25),
+    );
+    expect(html).toContain('line-through');
+    expect(html).toContain('$50.00');
+    expect(html).toContain('$25.00');
+    // One line, not a second paragraph.
+    expect(html).toContain('Grace Chapel');
+    expect(html.match(/<p style="text-align:center;"><strong>/g)?.length).toBe(1);
+  });
+
+  it('omits the price line entirely without an offer', () => {
+    const html = starterPopupHtml(eventStarter(event({ costInDollars: 50 } as never), SITE));
+    expect(html).not.toContain('line-through');
+  });
+
   it('inlines its styles, since the popup shares no stylesheet with anything', () => {
     const html = starterPopupHtml(productStarter(product(), SITE));
     expect(html).toContain('style="text-align:center;"');

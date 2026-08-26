@@ -17,6 +17,8 @@ import { registerQuillStyleAttributors } from '../../shared/rich-text-editor/qui
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { StarterItem, eventStarter, productStarter, starterPopupHtml } from '../campaign-starter';
+import { CampaignOfferService } from 'src/app/common/services/data/campaign-offer.service';
+import { CampaignOfferModel, offerPrice } from '@impact-common/shared/models/utils/campaign-offer.model';
 import { PopupPreviewData } from './popup-live-preview/popup-live-preview.component';
 
 // Popup editor (Campaign Manager v2, Phase 5; WYSIWYG rework 2026-08-19):
@@ -65,6 +67,7 @@ export class PopupEditorComponent implements OnInit {
     private popupService: CampaignPopupService,
     private templateService: PopupTemplateService,
     private campaignService: CampaignService,
+    private offerService: CampaignOfferService,
     private productService: ProductService,
     private eventService: EventService,
     private snackbar: SnackbarService,
@@ -103,6 +106,9 @@ export class PopupEditorComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fire-and-forget: the offer is only needed when Apply Spotlight is
+    // clicked, which cannot happen before this settles.
+    void this.loadOffer();
     this.templateService.getAll().then((templates) => this.templates = templates);
     this.productService.getAllByValue('isActive', true).then((products) => this.products = products);
     // All events, then the promotable subset: an event with early
@@ -242,6 +248,19 @@ export class PopupEditorComponent implements OnInit {
     this.snackbar.success('Spotlight applied - tweak the text and image like any rich text.');
   }
 
+  /** This campaign's published offer, loaded once so the spotlight can show
+   *  what a visitor actually pays. Null when the campaign carries no
+   *  discount - which is every campaign until someone ticks the box in the
+   *  wizard's OFFER step. */
+  private offer: CampaignOfferModel | null = null;
+
+  private async loadOffer(): Promise<void> {
+    if (!this.campaign?.id) {
+      return;
+    }
+    this.offer = await this.offerService.forCampaign(this.campaign.id);
+  }
+
   /** The chosen product or event, normalized for the shared starter. */
   private selectedStarterItem(): StarterItem | null {
     if (this.spotlightType === 'product') {
@@ -249,7 +268,17 @@ export class PopupEditorComponent implements OnInit {
       return product ? productStarter(product, environment.publicSiteUrl) : null;
     }
     const event = this.events.find((e) => e.id === this.spotlightId);
-    return event ? eventStarter(event, environment.publicSiteUrl) : null;
+    if (!event) {
+      return null;
+    }
+    // Only an offer that actually NAMES this event discounts it - a campaign
+    // can carry an offer targeting something else entirely.
+    const applies =
+      this.offer?.target?.kind === 'event' && this.offer.target.id === event.id;
+    const discounted = applies && this.offer?.discount
+      ? offerPrice(event.costInDollars ?? 0, this.offer.discount)
+      : null;
+    return eventStarter(event, environment.publicSiteUrl, discounted);
   }
 
   // Opens the LAUNCHED popup: the very same renderer the storefront uses,

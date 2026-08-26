@@ -35,17 +35,31 @@ export interface StarterItem {
   title: string;
   /** One line under the headline: a price, or a date. */
   subline: string;
-  /** Plain-text blurb, tags stripped, trimmed to a sensible length. */
+  /** Plain-text blurb, tags stripped, capped at BLURB_LIMIT. */
   blurb: string;
+  /** Set ONLY when a live campaign offer discounts this item, so a surface
+   *  can show what the visitor saves. Kept as numbers rather than a
+   *  formatted string because the three surfaces render it differently: the
+   *  popup strikes the original through, and email/social are plain text and
+   *  markup-free. `original` is the undiscounted price. */
+  price?: { original: number; discounted: number };
   imageUrl: string | null;
   /** Public-site destination, WITHOUT attribution - callers decorate. */
   url: string;
   ctaLabel: string;
 }
 
-const BLURB_LIMIT = 160;
+// Sized to the actual content, not to a round number. Measured 2026-08-26
+// across both projects: event descriptions run median ~700 characters, p90
+// ~1100, max 1873; products median ~432, max 1044. The old 160 truncated
+// EVERY event description and 47 of 55 products - which is what made a
+// generated popup read as a cut-off fragment. 600 would still have cut 18 of
+// 28 events, so this is set above the longest thing either project holds,
+// with headroom. It remains a cap rather than being removed so a pathological
+// description cannot produce an unbounded popup.
+const BLURB_LIMIT = 2000;
 
-/** Tags out, whitespace collapsed, trimmed to a length that reads as a teaser. */
+/** Tags out, whitespace collapsed, capped (see BLURB_LIMIT). */
 function toBlurb(description: string | undefined): string {
   const text = (description ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   return text.length > BLURB_LIMIT ? text.slice(0, BLURB_LIMIT - 3).trimEnd() + '…' : text;
@@ -72,9 +86,21 @@ export function productStarter(product: ProductModel, publicSiteUrl: string): St
   };
 }
 
-export function eventStarter(event: EventModel, publicSiteUrl: string): StarterItem {
+/**
+ * @param offerPrice The price a live campaign offer sets for this event, if
+ *   any. Passed IN rather than looked up here: this module is pure and knows
+ *   nothing about campaigns or Firestore, and the caller already has the
+ *   campaign in hand. Omit (or pass a price that is not lower than the
+ *   event's own) and no price line is produced at all.
+ */
+export function eventStarter(
+  event: EventModel,
+  publicSiteUrl: string,
+  offerPrice?: number | null
+): StarterItem {
   const date = dateFromTimestamp(event.startDate as never);
   const venue = event.venue?.name ?? '';
+  const basePrice = event.costInDollars ?? 0;
   const when = date
     ? date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : '';
@@ -85,6 +111,13 @@ export function eventStarter(event: EventModel, publicSiteUrl: string): StarterI
     title: event.eventName ?? '',
     // Date and place read as one line; either half may be missing.
     subline: [when, venue].filter(Boolean).join(' · '),
+    // An event's own registration price, which the offer discounts.
+    ...(basePrice > 0 &&
+      typeof offerPrice === 'number' &&
+      offerPrice >= 0 &&
+      offerPrice < basePrice ?
+      { price: { original: basePrice, discounted: offerPrice } } :
+      {}),
     blurb: toBlurb(event.description),
     imageUrl: event.imageUrl?.url ?? null,
     url: `${publicSiteUrl}/event-details/${event.id}`,
@@ -104,8 +137,17 @@ export function starterPopupHtml(item: StarterItem): string {
   const image = item.imageUrl
     ? `<p style="text-align:center;"><img src="${item.imageUrl}" style="max-width:60%;" alt="${item.title}"></p>`
     : '';
-  const subline = item.subline
-    ? `<p style="text-align:center;"><strong>${item.subline}</strong></p>`
+  // Price sits on the SAME line as the date/venue, with the original struck
+  // through so the saving is visible rather than implied. Inline-styled like
+  // everything else here - the editor, the preview and the storefront's
+  // [innerHTML] share no stylesheet, so a class would render in none of them.
+  const priceText = item.price
+    ? `<span style="text-decoration:line-through;opacity:0.6;">${money(item.price.original)}</span>` +
+      `&nbsp;${money(item.price.discounted)}`
+    : '';
+  const sublineParts = [item.subline, priceText].filter(Boolean).join(' · ');
+  const subline = sublineParts
+    ? `<p style="text-align:center;"><strong>${sublineParts}</strong></p>`
     : '';
   const blurb = item.blurb ? `<p style="text-align:center;">${item.blurb}</p>` : '';
 
