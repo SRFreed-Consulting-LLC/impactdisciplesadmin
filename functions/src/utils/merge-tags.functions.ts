@@ -73,6 +73,25 @@ function escapeRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Matches the single space in a legacy token against any spelling of a
+ *  space the editor might have produced. Quill 2's getSemanticHTML() encodes
+ *  EVERY space as `&nbsp;`, so a token inserted through the editor reaches
+ *  this renderer as `{{Recipient&nbsp;First&nbsp;Name}}` - which an exact
+ *  literal match misses, and the tag then renders verbatim in the email.
+ *  (Live bug, found 2026-08-24 on a real send.)
+ */
+const LEGACY_SPACE = String.raw`(?:\s|&nbsp;|&#160;|&#xa0;)+`;
+
+/**
+ * A legacy `{{Some Token}}` as a pattern that tolerates &nbsp; between its
+ * words. Single-word tokens are unaffected.
+ * @param {string} literal The legacy token, e.g. "{{Recipient First Name}}".
+ * @return {string} A RegExp source string.
+ */
+function legacyTokenPattern(literal) {
+  return literal.split(" ").map(escapeRegExp).join(LEGACY_SPACE);
+}
+
 /**
  * Replaces every occurrence of every registered tag (plain,
  * inline-fallback, and legacy forms). Unknown tags pass through.
@@ -96,7 +115,7 @@ export function renderMergeTags(html: string, data: MergeContext): string {
     );
     for (const legacy of def.legacyTokens ?? []) {
       result = result.replace(
-        new RegExp(escapeRegExp(legacy), "g"),
+        new RegExp(legacyTokenPattern(legacy), "g"),
         value ?? def.defaultValue
       );
     }

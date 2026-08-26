@@ -95,8 +95,36 @@ function escapeRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** Matches the single space in a legacy token against any spelling of a
+ *  space the editor might have produced. Quill 2's getSemanticHTML() encodes
+ *  EVERY space as `&nbsp;`, so a token inserted through the editor reaches
+ *  the sender as `{{Recipient&nbsp;First&nbsp;Name}}` - which an exact
+ *  literal match misses, and the tag then renders verbatim in the email.
+ *  (Live bug, found 2026-08-24 on a real send.) */
+const LEGACY_SPACE = String.raw`(?:\s|&nbsp;|&#160;|&#xa0;)+`;
+
+/** A legacy `{{Some Token}}` as a pattern that tolerates &nbsp; between
+ *  its words. Single-word tokens are unaffected. */
+function legacyTokenPattern(literal: string): string {
+  return literal.split(' ').map(escapeRegExp).join(LEGACY_SPACE);
+}
+
 export function mergeTagToken(def: MergeTagDef): string {
   return '*|' + def.tag + '|*';
+}
+
+
+/**
+ * The token to INSERT for a picker label. Prefers the modern `*|TAG|*`
+ * spelling, which has no spaces for the editor to turn into `&nbsp;` and
+ * so cannot be corrupted the way the legacy `{{Some Token}}` form was.
+ * Falls back to the legacy spelling for a label that is not a registered
+ * tag, which renderMergeTags now matches &nbsp;-tolerantly anyway.
+ */
+export function mergeTokenForLabel(variableName: string): string {
+  const legacy = '{{' + variableName + '}}';
+  const def = MERGE_TAGS.find((d) => (d.legacyTokens ?? []).includes(legacy));
+  return def ? mergeTagToken(def) : legacy;
 }
 
 // Replaces every occurrence of every registered tag (plain, inline-fallback,
@@ -117,7 +145,7 @@ export function renderMergeTags(html: string, data: MergeContext): string {
     result = result.replace(new RegExp('\\*\\|' + tag + '\\|\\*', 'g'), value ?? def.defaultValue);
 
     for (const legacy of def.legacyTokens ?? []) {
-      result = result.replace(new RegExp(escapeRegExp(legacy), 'g'), value ?? def.defaultValue);
+      result = result.replace(new RegExp(legacyTokenPattern(legacy), 'g'), value ?? def.defaultValue);
     }
   }
   return result;

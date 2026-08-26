@@ -1,3 +1,4 @@
+import { mergeTokenForLabel } from 'src/app/common/utils/email/merge-tags';
 import { Component, Input } from '@angular/core';
 import { EventEmitter, Output } from '@angular/core';
 import Quill from 'quill';
@@ -31,7 +32,12 @@ export function insertQuillVariable(quill: Quill | undefined, variableName: stri
   if (!quill) {
     return;
   }
-  const placeholder = '{{' + variableName + '}}';
+  // The modern *|TAG|* spelling, not the legacy {{Some Token}} one: the
+  // legacy form contains SPACES, and Quill 2 encodes every space in its
+  // output as &nbsp;, so a token inserted here used to reach the sender as
+  // {{Recipient&nbsp;First&nbsp;Name}} and render verbatim in the email.
+  // *|FNAME|* has no spaces and cannot be corrupted that way.
+  const placeholder = mergeTokenForLabel(variableName);
   const range = quill.getSelection(true);
   const index = range ? range.index : quill.getLength();
   quill.insertText(index, placeholder, 'user');

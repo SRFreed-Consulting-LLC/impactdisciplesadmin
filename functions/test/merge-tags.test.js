@@ -72,3 +72,25 @@ test("every registered tag has a tag and resolverKey", () => {
     assert.ok(def.resolverKey.length > 0);
   }
 });
+
+// Functions-side twin of the client's editor-mangled-spaces cases. Quill 2
+// encodes every space as &nbsp;, so a legacy token authored in the editor
+// arrives here as {{Recipient&nbsp;First&nbsp;Name}} and an exact literal
+// match misses it - which is how a real send went out with the tag showing.
+test("renderMergeTags substitutes a legacy token whose spaces became &nbsp;", () => {
+  const html = "<p>{{Recipient&nbsp;First&nbsp;Name}},</p>";
+
+  assert.equal(renderMergeTags(html, {firstName: "Shane"}), "<p>Shane,</p>");
+});
+
+test("renderMergeTags substitutes non-breaking space characters too", () => {
+  const html = "<p>{{Recipient First Name}}</p>";
+
+  assert.equal(renderMergeTags(html, {firstName: "Shane"}), "<p>Shane</p>");
+});
+
+test("renderMergeTags leaves an unregistered spaced token alone", () => {
+  const html = "<p>{{Not&nbsp;A&nbsp;Tag}}</p>";
+
+  assert.equal(renderMergeTags(html, {firstName: "Shane"}), html);
+});
