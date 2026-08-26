@@ -199,9 +199,13 @@ test("an inapplicable coupon is not reported as beaten by bulk", () => {
 });
 
 test("a 100% coupon prices to exactly zero, not a negative total", () => {
-  const choice = chooseLicenseDiscount(resolveBulkDiscountPercent(TIERS, 3), 100);
+  const choice = chooseLicenseDiscount(
+    resolveBulkDiscountPercent(TIERS, 3),
+    100
+  );
   assert.equal(choice.source, "coupon");
-  const {total, discount} = computeGroupLicensePricing(10, 3, choice.percentOff);
+  const {total, discount} =
+    computeGroupLicensePricing(10, 3, choice.percentOff);
   assert.equal(total, 0);
   assert.equal(discount, 30);
 });
@@ -211,6 +215,8 @@ test("a malformed coupon percentage cannot pay the buyer", () => {
   // anything over 100 clamps - either way the total stays >= 0.
   assert.equal(chooseLicenseDiscount(0, 150).percentOff, 100);
   assert.equal(chooseLicenseDiscount(0, -50).percentOff, 0);
-  assert.equal(computeGroupLicensePricing(10, 5, chooseLicenseDiscount(0, 150).percentOff).total, 0);
-  assert.equal(computeGroupLicensePricing(10, 5, chooseLicenseDiscount(0, -50).percentOff).total, 50);
+  const clampedHigh = chooseLicenseDiscount(0, 150).percentOff;
+  const clampedLow = chooseLicenseDiscount(0, -50).percentOff;
+  assert.equal(computeGroupLicensePricing(10, 5, clampedHigh).total, 0);
+  assert.equal(computeGroupLicensePricing(10, 5, clampedLow).total, 50);
 });
