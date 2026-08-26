@@ -1,3 +1,5 @@
+import {resolveVendorBase} from "./utils/vendor-hosts";
+
 export type PaypalEnvironment = "sandbox" | "live";
 
 // Public PayPal app client ids - not secrets (PayPal ships these to every
@@ -29,6 +31,20 @@ export const PAYPAL_API_HOST: Record<PaypalEnvironment, string> = {
   sandbox: "https://api-m.sandbox.paypal.com",
   live: "https://api-m.paypal.com",
 };
+
+/**
+ * The PayPal REST base URL to actually issue requests against: the real host
+ * for the environment, unless an emulator run has redirected PayPal at
+ * scripts/fake-vendors.js (see utils/vendor-hosts.ts, which refuses the
+ * redirect anywhere that could be a real deployment). Resolved per call
+ * rather than once at module load so a test can point it somewhere else
+ * without needing a cold start.
+ * @param {PaypalEnvironment} env Which PayPal environment to hit.
+ * @return {string} The base URL for PayPal REST calls.
+ */
+export function paypalApiBase(env: PaypalEnvironment): string {
+  return resolveVendorBase("paypal", PAYPAL_API_HOST[env]);
+}
 
 /**
  * The PayPal environment payments MUST be verified against, derived from the
@@ -124,7 +140,7 @@ export async function getAccessTokenWithCredentials(
     return cached.value;
   }
 
-  const host = PAYPAL_API_HOST[env];
+  const host = paypalApiBase(env);
   const response = await fetchWithRetry(`${host}/v1/oauth2/token`, {
     method: "POST",
     headers: {
@@ -197,7 +213,7 @@ export async function getCaptureId(
   orderId: string
 ): Promise<string> {
   const response = await fetchWithRetry(
-    `${PAYPAL_API_HOST[env]}/v2/checkout/orders/` +
+    `${paypalApiBase(env)}/v2/checkout/orders/` +
       `${encodeURIComponent(orderId)}`,
     {headers: {Authorization: `Bearer ${accessToken}`}}
   );
@@ -248,7 +264,7 @@ export async function getOrderCapture(
   orderId: string
 ): Promise<OrderCapture> {
   const response = await fetchWithRetry(
-    `${PAYPAL_API_HOST[env]}/v2/checkout/orders/` +
+    `${paypalApiBase(env)}/v2/checkout/orders/` +
       `${encodeURIComponent(orderId)}`,
     {headers: {Authorization: `Bearer ${accessToken}`}}
   );
@@ -304,7 +320,7 @@ export async function refundCapture(
   idempotencyKey: string
 ): Promise<{ id: string; status: string }> {
   const response = await fetchWithRetry(
-    `${PAYPAL_API_HOST[env]}/v2/payments/captures/` +
+    `${paypalApiBase(env)}/v2/payments/captures/` +
       `${encodeURIComponent(captureId)}/refund`,
     {
       method: "POST",

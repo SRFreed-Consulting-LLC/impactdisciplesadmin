@@ -4,6 +4,7 @@ import {
   getActiveOffers,
   grantsFreeShipping,
 } from "./campaign-offers.functions";
+import {resolveVendorBase} from "./vendor-hosts";
 
 // Shared server-side recompute logic for store checkout, used by both
 // create_paypal_order and capture_paypal_order (../paypal.functions.ts).
@@ -131,7 +132,8 @@ async function lookupGeorgiaTaxRate(
       () => controller.abort(), TAX_LOOKUP_TIMEOUT_MS
     );
     const response = await fetch(
-      "https://api.apilayer.com/tax_data/tax_rates?zip=" +
+      resolveVendorBase("tax", "https://api.apilayer.com") +
+        "/tax_data/tax_rates?zip=" +
         encodeURIComponent(zip) +
         "&use_client_ip=false&country=US",
       {

@@ -1,5 +1,6 @@
 import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
+import {resolveVendorBase} from "./utils/vendor-hosts";
 
 // Lazily required on first use rather than at module load: index.ts pulls
 // this file in unconditionally, so a top-level require would put the whole
@@ -18,7 +19,15 @@ function getShipEngineClient() {
   if (!CachedShipEngine) {
     CachedShipEngine = require("shipengine");
   }
-  return new CachedShipEngine(process.env.SHIP_ENGINE_API_KEY);
+  // baseURL is the SDK's own documented override (ShipEngineConfig). It is
+  // resolved through vendor-hosts.ts so an emulator run reaches the fake
+  // vendor server instead of ShipEngine - which matters more here than
+  // anywhere else, because get_shipping_label BUYS REAL POSTAGE, so no
+  // automated test could ever have exercised it against the real vendor.
+  return new CachedShipEngine({
+    apiKey: process.env.SHIP_ENGINE_API_KEY ?? "",
+    baseURL: resolveVendorBase("shipengine", "https://api.shipengine.com/"),
+  });
 }
 
 exports.get_shipping_rates = onRequest(

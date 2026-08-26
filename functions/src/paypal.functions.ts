@@ -17,8 +17,8 @@ import {
 } from "./common/shared/contract/web-http.types";
 import {PURCHASE_SOURCE_WEB} from "./purchase-source";
 import {
-  PAYPAL_API_HOST,
   getAccessTokenWithCredentials,
+  paypalApiBase,
   resolvePaypalEnvironment,
 } from "./library-paypal";
 
@@ -49,7 +49,12 @@ import {
 // id below is read from Firestore config instead of that module's
 // hardcoded map.
 const PAYPAL_ENV = resolvePaypalEnvironment();
-const PAYPAL_API_BASE = PAYPAL_API_HOST[PAYPAL_ENV];
+// A function, not a const: the base URL is resolved per request so an
+// emulator run can redirect PayPal at the fake vendor server without a cold
+// start (utils/vendor-hosts.ts). The environment itself still comes from
+// GCLOUD_PROJECT once, at load, exactly as before - that must never be
+// per-request, and never client-influenced.
+const paypalApiBaseUrl = () => paypalApiBase(PAYPAL_ENV);
 
 /**
  * Obtains (and short-term caches, per warm function instance) a PayPal
@@ -562,7 +567,7 @@ exports.create_paypal_order = onRequest(
         const discountValue = pricing.totalDiscount.toFixed(2);
 
         const orderResponse = await fetch(
-          `${PAYPAL_API_BASE}/v2/checkout/orders`,
+          `${paypalApiBaseUrl()}/v2/checkout/orders`,
           {
             method: "POST",
             headers: {
@@ -688,7 +693,7 @@ exports.capture_paypal_order = onRequest(
         const accessToken = await getPayPalAccessToken(clientId);
 
         const captureResponse = await fetch(
-          `${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`,
+          `${paypalApiBaseUrl()}/v2/checkout/orders/${orderId}/capture`,
           {
             method: "POST",
             headers: {
