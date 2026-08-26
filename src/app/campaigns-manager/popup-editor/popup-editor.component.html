@@ -165,6 +165,19 @@
     </div>
   </form>
 
+  <!-- The inline preview came back 2026-08-26, inside the shared rail. It
+       was removed earlier that day because the old side panel was a cramped
+       approximation of what LAUNCH POPUP already showed properly - but the
+       rail gives it a collapse toggle and a device switch, so it earns its
+       width now and folds away when it does not.
+
+       Same renderer as the launched overlay AND as the live storefront
+       (app-popup-live-preview), so the three cannot disagree. -->
+  @if (previewData) {
+    <app-preview-rail storageKey="popup" label="Popup" [width]="400">
+      <app-popup-live-preview [popup]="previewData" mode="inline"></app-popup-live-preview>
+    </app-preview-rail>
+  }
 </div>
 
 <!-- The real thing: a full-screen popup over the admin, same component. -->

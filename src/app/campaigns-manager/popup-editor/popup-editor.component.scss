@@ -24,8 +24,12 @@
 // form now owns the whole width. Previewing moved to LAUNCH POPUP in the
 // header, which shows the real renderer full-screen rather than a cramped
 // side panel that could only ever approximate it.
+// A row again now the preview is back - the form takes what is left after
+// the rail, and the rail collapses to a strip when the author wants it all.
 .editor-body {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
 }
 
 // Two columns of section cards so the reclaimed width is actually used
@@ -35,6 +39,8 @@
 // NOT align-items: start - the columns are meant to finish level, with the
 // rich-text editor growing to meet the three stacked cards beside it.
 .editor-form {
+  flex: 1 1 auto;
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;

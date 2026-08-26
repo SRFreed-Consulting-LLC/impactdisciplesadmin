@@ -169,17 +169,17 @@
                 <div class="info-form">
                   <div class="type-row">
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'inperson'" role="button" tabindex="0" (click)="setRegularAttendanceType('inperson')" (keydown.enter)="setRegularAttendanceType('inperson')">
-                      <span class="type-card__icon">ðŸ¢</span>
+                      <span class="type-card__icon">🏢</span>
                       <div class="type-card__title">In-Person</div>
                       <div class="type-card__sub">Has a venue, no online option</div>
                     </div>
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'online'" role="button" tabindex="0" (click)="setRegularAttendanceType('online')" (keydown.enter)="setRegularAttendanceType('online')">
-                      <span class="type-card__icon">ðŸ’»</span>
+                      <span class="type-card__icon">💻</span>
                       <div class="type-card__title">Online</div>
                       <div class="type-card__sub">Kajabi-hosted, no venue</div>
                     </div>
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'both'" role="button" tabindex="0" (click)="setRegularAttendanceType('both')" (keydown.enter)="setRegularAttendanceType('both')">
-                      <span class="type-card__icon">ðŸ”€</span>
+                      <span class="type-card__icon">🔀</span>
                       <div class="type-card__title">Both</div>
                       <div class="type-card__sub">In-person with a Kajabi option too</div>
                     </div>
@@ -318,7 +318,7 @@
                         @if (form.get('startDate')?.value) {
                           {{ form.get('startDate')?.value | date: 'MMM d, y' }}
                           @if (form.get('endDate')?.value) {
-                            â€“ {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                            – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
                           }
                         } @else {
                           No start date set
