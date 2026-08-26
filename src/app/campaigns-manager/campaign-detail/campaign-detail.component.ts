@@ -285,7 +285,13 @@ export class CampaignDetailComponent implements OnInit {
   }
 
   openInDesigner(touch: CampaignEmailModel): void {
-    this.router.navigate(['/tools-manager/email-designer/new'], { queryParams: { fromEmail: touch.id } });
+    // fromCampaign is what the designer's Back button uses to return HERE.
+    // Without it the designer falls back to System Templates - which is
+    // where it lives, but not where the person came from, so editing a
+    // campaign email used to strand you on an unrelated screen.
+    this.router.navigate(['/tools-manager/email-designer/new'], {
+      queryParams: { fromEmail: touch.id, fromCampaign: this.campaign.id }
+    });
   }
 
   // Public newsletter archive: a sent (or sending) touch can be shown on

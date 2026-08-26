@@ -190,6 +190,13 @@ export class EmailDesignerComponent implements OnInit {
     this.state.viewMode = mode;
   }
 
+  /** Names where Back actually goes, so the button does not promise
+   *  "System Templates" while returning to a campaign. */
+  get backTooltip(): string {
+    return this.route.snapshot.queryParamMap.get('fromCampaign') ?
+      'Back to the campaign' : 'Back to System Templates';
+  }
+
   onBack(): void {
     // Router navigation runs the CanDeactivate guard, which handles the
     // dirty prompt - no separate confirm here.
@@ -258,7 +265,30 @@ export class EmailDesignerComponent implements OnInit {
     });
   }
 
+  /**
+   * Back goes to whatever LAUNCHED the designer, not to where the designer
+   * happens to live.
+   *
+   * The designer is System Templates' editing surface and has no nav entry of
+   * its own, so Back used to be hard-coded to that screen. But a campaign's
+   * email opens the same designer (campaign-detail's openInDesigner), and
+   * landing on System Templates after editing a campaign email is simply the
+   * wrong place - a different manager, with no way back to the campaign but
+   * the browser's own history.
+   *
+   * `fromCampaign` is read as an id and fed to the campaigns list's existing
+   * ?campaignId= deep link, rather than the caller handing over a URL to
+   * navigate to - a return-URL parameter would let any link that reaches
+   * this screen redirect it anywhere.
+   */
   private backToList(): void {
+    const fromCampaign = this.route.snapshot.queryParamMap.get('fromCampaign');
+    if (fromCampaign) {
+      this.router.navigate(['/campaigns-manager'], {
+        queryParams: { tab: 'campaigns', campaignId: fromCampaign }
+      });
+      return;
+    }
     this.router.navigate(['/tools-manager'], { queryParams: { tab: 'system-templates' } });
   }
 }

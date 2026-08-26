@@ -43,9 +43,9 @@
   }
 }
 
-// CONTENT holds the rich-text editor, which wants every pixel - and the
-// action row must not sit in a column beside a card.
-.editor-section--wide,
+// Only the action row spans. CONTENT was given the full width first and
+// read as too wide - a rich-text field stretched across ~1500px is harder
+// to scan, not easier - so every section card now sits in one column.
 .editor-actions {
   grid-column: 1 / -1;
 }

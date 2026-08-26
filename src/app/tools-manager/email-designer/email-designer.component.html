@@ -1,6 +1,6 @@
 <div class="designer-shell">
   <mat-toolbar class="designer-topbar">
-    <button mat-icon-button matTooltip="Back to System Templates" (click)="onBack()">
+    <button mat-icon-button [matTooltip]="backTooltip" (click)="onBack()">
       <mat-icon>arrow_back</mat-icon>
     </button>
 

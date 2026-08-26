@@ -221,6 +221,19 @@ describe('CampaignDetailComponent', () => {
       expect(navigated[0][0]).toEqual(['/campaigns-manager/email', 'camp-1', 'new']);
     });
 
+    it('tells the designer which campaign launched it', () => {
+      // Without fromCampaign the designer's Back button falls through to
+      // System Templates - a different manager entirely - stranding whoever
+      // just edited a campaign email with no way back but browser history.
+      const { component, navigated } = setup();
+      component.campaign = campaign();
+      component.openInDesigner(touch({ id: 't4' } as Partial<CampaignEmailModel>));
+      expect(navigated[0][0]).toEqual(['/tools-manager/email-designer/new']);
+      expect(navigated[0][1]).toEqual({
+        queryParams: { fromEmail: 't4', fromCampaign: 'camp-1' }
+      });
+    });
+
     it('opens an existing draft by its own id', () => {
       const { component, navigated } = setup();
       component.campaign = campaign();
