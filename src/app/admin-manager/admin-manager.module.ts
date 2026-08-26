@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogMessagesComponent } from './log-messages/log-messages.component';
 import { AdminUsersComponent } from './admin-users/admin-users.component';
+import { E2eDashboardComponent } from './e2e-dashboard/e2e-dashboard.component';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { AdminManagerComponent } from './admin-manager.component';
 import { SharedModule } from '../shared/shared.module';
@@ -46,7 +47,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   declarations: [
     AdminManagerComponent,
     LogMessagesComponent,
-    AdminUsersComponent
+    AdminUsersComponent,
+    E2eDashboardComponent
   ]
 })
 export class AdminManagerModule { }

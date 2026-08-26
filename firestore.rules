@@ -347,6 +347,19 @@ service cloud.firestore {
       allow read: if isBusinessStaff();     // written by functions only
       allow write: if false;
     }
+    // Last-run status per e2e suite, keyed by the suite ids in the shared
+    // catalog (shared/testing/e2e-catalog.ts). Written ONLY by each repo's
+    // scripts/publish-e2e-run.js through the Admin SDK, which bypasses rules
+    // entirely - so no client write is ever legitimate here, and a test run
+    // never needs credentials beyond the ones a developer already has.
+    // Read is Admin/Root: the dashboard that renders it is Root-only in the
+    // UI, but there is nothing sensitive in a pass/fail count and keeping the
+    // rule at isAdminRole avoids a second, subtler place for Root to be
+    // defined.
+    match /e2e_runs/{suiteId} {
+      allow read: if isAdminRole();
+      allow write: if false;
+    }
     // `integration_settings` (only ever held the Mailchimp audience-sync
     // config) retired 2026-08-20 with the sync. No rule = no access.
     match /shipping-labels/{id} {

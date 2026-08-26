@@ -28,7 +28,9 @@
     "e2e:admin:dashboard": "node scripts/render-e2e-dashboard.js",
     "test:coverage": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
     "coverage:check": "node scripts/check-coverage.js",
-    "coverage:baseline": "node scripts/check-coverage.js --update"
+    "coverage:baseline": "node scripts/check-coverage.js --update",
+    "e2e:publish": "node scripts/publish-e2e-run.js",
+    "e2e:admin:publish": "node scripts/publish-e2e-run.js --suite=e2e-admin --project=dev --from-dashboard=e2e-admin/results/dashboard.json"
   },
   "private": true,
   "dependencies": {

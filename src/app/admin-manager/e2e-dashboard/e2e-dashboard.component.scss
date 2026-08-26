@@ -1,0 +1,207 @@
+// Status colour is semantic and intentionally NOT the app's accent - a
+// suite being green must not read as "selected", and vice versa.
+$passed: #2e7d54;
+$unreliable: #a8731a;
+$failed: #a93b32;
+$never: #7b8595;
+
+.e2e {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 40px;
+}
+
+.e2e__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.e2e__titles { display: flex; flex-direction: column; gap: 4px; }
+.e2e__title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.015em; }
+.e2e__standfirst { margin: 0; max-width: 68ch; opacity: .75; font-size: 14px; }
+
+.e2e__summary { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tally {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.tally--passed { color: $passed; }
+.tally--unreliable { color: $unreliable; }
+.tally--failed { color: $failed; }
+.tally--never { color: $never; }
+
+.e2e__loading { display: flex; justify-content: center; padding: 24px; }
+
+.suites { display: flex; flex-direction: column; gap: 12px; }
+
+.suite {
+  border: 1px solid rgba(128, 128, 128, .28);
+  border-left: 4px solid $never;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.suite--passed { border-left-color: $passed; }
+.suite--unreliable { border-left-color: $unreliable; }
+.suite--failed { border-left-color: $failed; }
+.suite--never { border-left-color: $never; }
+
+.suite__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover { background: rgba(128, 128, 128, .07); }
+  &:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+}
+
+.suite__chev { flex: 0 0 auto; opacity: .6; margin-top: 2px; }
+.suite__main { flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+.suite__titlerow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.suite__title { margin: 0; font-size: 16px; font-weight: 600; }
+.suite__desc { margin: 0; font-size: 13.5px; opacity: .8; max-width: 82ch; }
+
+.pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.pill--passed { color: $passed; }
+.pill--unreliable { color: $unreliable; }
+.pill--failed { color: $failed; }
+.pill--never { color: $never; }
+.pill--stale { color: $unreliable; opacity: .85; }
+
+.suite__facts { display: flex; flex-wrap: wrap; gap: 6px 28px; }
+.fact { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fact__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .55;
+}
+.fact__value { display: flex; flex-wrap: wrap; gap: 5px; }
+.fact__none { font-size: 12.5px; opacity: .55; }
+
+.chip {
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, .16);
+  white-space: nowrap;
+}
+// Apps read differently from areas on purpose - "who has to be working"
+// is a different question from "what part of the product".
+.chip--app { background: rgba(63, 95, 150, .2); font-weight: 600; }
+
+.suite__run {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+  min-width: 150px;
+}
+.run__when { font-size: 13px; font-weight: 600; }
+.run__counts { font-size: 12px; opacity: .75; font-variant-numeric: tabular-nums; }
+.run__counts--none { font-style: italic; opacity: .55; }
+.run__meta { font-size: 11.5px; opacity: .55; }
+
+.suite__body {
+  padding: 4px 18px 18px 42px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 1px solid rgba(128, 128, 128, .18);
+}
+
+.howto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+
+  code {
+    background: rgba(128, 128, 128, .16);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+}
+.howto__label {
+  display: inline-block;
+  min-width: 96px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .55;
+}
+
+.specs { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 14px; }
+.spec { font-size: 13px; }
+.spec__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.spec__title { font-weight: 600; }
+.spec__count { font-size: 11.5px; opacity: .55; font-variant-numeric: tabular-nums; }
+.spec__desc { margin: 3px 0 6px; opacity: .8; max-width: 84ch; }
+.spec__tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.specs__none { margin: 0; font-size: 13px; opacity: .7; }
+
+.rollup { display: flex; flex-direction: column; gap: 6px; }
+.rollup__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .55;
+}
+.rollup__items { display: flex; flex-wrap: wrap; gap: 6px; }
+.rollup__item {
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.rollup__item--green { color: $passed; }
+.rollup__item--yellow { color: $unreliable; }
+.rollup__item--red { color: $failed; }
+.rollup__item--unknown { color: $never; }
+.rollup__nums { opacity: .7; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+.e2e__foot {
+  border-top: 1px solid rgba(128, 128, 128, .18);
+  padding-top: 12px;
+  font-size: 12px;
+  opacity: .6;
+
+  code { background: rgba(128, 128, 128, .16); padding: 1px 5px; border-radius: 4px; }
+}
+
+@media (max-width: 900px) {
+  .suite__head { flex-wrap: wrap; }
+  .suite__run { align-items: flex-start; text-align: left; padding-left: 36px; }
+}

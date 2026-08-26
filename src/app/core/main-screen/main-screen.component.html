@@ -217,6 +217,14 @@
             <span>Admin Users</span>
           </a>
         }
+        <!-- Root only, unlike Logs and Admin Users above which are
+        Admin-or-Root. Same admin-manager ?tab= destination pattern. -->
+        @if (canViewE2eDashboard) {
+          <a mat-menu-item routerLink="/admin-manager" [queryParams]="{ tab: 'e2e-dashboard' }">
+            <mat-icon>science</mat-icon>
+            <span>E2E Dashboard</span>
+          </a>
+        }
         <a mat-menu-item routerLink="/settings">
           <mat-icon>palette</mat-icon>
           <span>Settings</span>

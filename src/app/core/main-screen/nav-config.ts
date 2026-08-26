@@ -329,7 +329,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // group has no other members, so it never renders as a left-nav row
       // at all (see MainScreenComponent.secureNav's own comment).
       { label: 'Logs', slug: 'logs', employeeGrantable: false, hideFromNav: true },
-      { label: 'Admin Users', slug: 'admin-users', employeeGrantable: false, hideFromNav: true }
+      { label: 'Admin Users', slug: 'admin-users', employeeGrantable: false, hideFromNav: true },
+      // ROOT-only, unlike the two above which are Admin-or-Root. Not a
+      // permission an Admin can be granted: the gate is the role itself,
+      // checked in MainScreenComponent.canViewE2eDashboard and again in the
+      // tab shell, so a direct ?tab= URL does not get in either.
+      { label: 'E2E Dashboard', slug: 'e2e-dashboard', employeeGrantable: false, hideFromNav: true }
     ]
   },
   {

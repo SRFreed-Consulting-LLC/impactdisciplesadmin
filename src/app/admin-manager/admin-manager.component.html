@@ -7,6 +7,10 @@
     <app-admin-users></app-admin-users>
   }
 
+  @if (selectedTab === 'E2E Dashboard') {
+    <app-e2e-dashboard></app-e2e-dashboard>
+  }
+
   <!-- selectedTab is '' when nothing here is actually granted to this user
   (see admin-manager.component.ts's own comment on why that's the
   default rather than a real screen name) - explain the blank content

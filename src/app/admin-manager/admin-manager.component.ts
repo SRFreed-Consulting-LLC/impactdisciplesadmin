@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject, combineLatest, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-config';
 
 @Component({
@@ -49,8 +50,16 @@ export class AdminManagerComponent implements OnInit, OnDestroy {
     // screen in this manager is individually grantable to an Employee.
     combineLatest([this.authService.dao.loggedInUser$, this.route.queryParamMap])
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(([, params]) => {
-        this.secureItems = this.items.filter((item) => this.permissionService.canViewNavItem(this.group, item));
+      .subscribe(([user, params]) => {
+        // The E2E Dashboard is ROOT-only, which no permission grant can
+        // express - canViewNavItem passes any Admin. Without this second
+        // check an Admin who typed ?tab=e2e-dashboard would be let in,
+        // which is exactly the direct-URL bypass this component's opening
+        // comment warns about.
+        const isRoot = user?.role === Role.ROOT;
+        this.secureItems = this.items.filter((item) =>
+          this.permissionService.canViewNavItem(this.group, item) &&
+          (item.slug !== 'e2e-dashboard' || isRoot));
         const requested = this.secureItems.find((item) => item.slug === params.get('tab'));
         this.selectedTab = requested?.label ?? this.secureItems[0]?.label ?? this.selectedTab;
       });

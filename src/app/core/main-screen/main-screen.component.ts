@@ -11,6 +11,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 // shell is where this belongs.
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
 import { ScreenPermissionsDialogComponent } from './screen-permissions-dialog/screen-permissions-dialog.component';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 import { NAV_CONFIG, NavGroup, NavLeaf } from './nav-config';
 
 interface PinnedNavItem {
@@ -166,6 +167,19 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   // for the same "unrelated UI, same rule today" reason.
   get canManageLogs(): boolean {
     return this.permissionService.isFullAccess();
+  }
+
+  // Gates the user-menu dropdown's "E2E Dashboard" link. ROOT ONLY, which
+  // is stricter than every other item in that menu - isFullAccess() is
+  // Admin-or-Root (Root inherits Admin), so an Admin sees Logs and Admin
+  // Users but must NOT see this. Asked for explicitly: it reports on the
+  // test estate, not on the business, and it is not an operational screen.
+  //
+  // Root is a single manually-assigned account and is deliberately not
+  // assignable from the UI (see roles.enum.ts), so this is an exact-role
+  // check rather than a permission grant.
+  get canViewE2eDashboard(): boolean {
+    return this.currentUser?.role === Role.ROOT;
   }
 
   // "Who has access to this screen" - the inverse view of Admin Users'

@@ -1,0 +1,141 @@
+<div class="e2e">
+  <header class="e2e__head">
+    <div class="e2e__titles">
+      <h2 class="e2e__title">End-to-End Tests</h2>
+      <p class="e2e__standfirst">
+        What each suite covers, which apps have to be working for it to pass, and how it
+        last went. A suite with no published run says so rather than reading green.
+      </p>
+    </div>
+
+    <div class="e2e__summary">
+      <span class="tally tally--passed">{{ summary.passing }} passing</span>
+      <span class="tally tally--unreliable">{{ summary.unreliable }} unreliable</span>
+      <span class="tally tally--failed">{{ summary.failing }} failing</span>
+      <span class="tally tally--never">{{ summary.never }} never run</span>
+    </div>
+  </header>
+
+  @if (loading) {
+    <div class="e2e__loading"><mat-spinner diameter="32"></mat-spinner></div>
+  }
+
+  <div class="suites">
+    @for (row of rows; track row.suite.id) {
+      <article class="suite" [class]="'suite--' + statusClass(row.run)">
+        <button type="button" class="suite__head" (click)="toggle(row.suite.id)"
+                [attr.aria-expanded]="isExpanded(row.suite.id)">
+          <mat-icon class="suite__chev">{{ isExpanded(row.suite.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+
+          <div class="suite__main">
+            <div class="suite__titlerow">
+              <h3 class="suite__title">{{ row.suite.title }}</h3>
+              <span class="pill" [class]="'pill--' + statusClass(row.run)">{{ statusLabel(row.run) }}</span>
+              @if (isStale(row.run)) {
+                <span class="pill pill--stale" matTooltip="Older than a week - the code may have moved since">stale</span>
+              }
+            </div>
+
+            <p class="suite__desc">{{ row.suite.description }}</p>
+
+            <!-- 2. the functional areas it covers, and the apps involved -->
+            <div class="suite__facts">
+              <div class="fact">
+                <span class="fact__label">Apps involved</span>
+                <span class="fact__value">
+                  @for (app of row.apps; track app) {
+                    <span class="chip chip--app">{{ appLabels[app] }}</span>
+                  }
+                  @if (!row.apps.length) { <span class="fact__none">—</span> }
+                </span>
+              </div>
+              <div class="fact">
+                <span class="fact__label">Functional areas</span>
+                <span class="fact__value">
+                  @for (area of row.areas; track area) {
+                    <span class="chip">{{ area }}</span>
+                  }
+                  @if (!row.areas.length) { <span class="fact__none">no specs catalogued yet</span> }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. last run time and status -->
+          <div class="suite__run" [matTooltip]="lastRunExact(row.run)">
+            <span class="run__when">{{ lastRunRelative(row.run) }}</span>
+            @if (row.run) {
+              <span class="run__counts">
+                {{ row.run.passed }} passed@if (row.run.failed) {<span>, {{ row.run.failed }} failed</span>}@if (row.run.flaky) {<span>, {{ row.run.flaky }} flaky</span>}@if (row.run.skipped) {<span>, {{ row.run.skipped }} skipped</span>}
+              </span>
+              @if (duration(row.run)) {
+                <span class="run__meta">{{ duration(row.run) }}@if (row.run.runner) {<span> · {{ row.run.runner }}</span>}</span>
+              }
+            } @else {
+              <span class="run__counts run__counts--none">no run published</span>
+            }
+          </div>
+        </button>
+
+        @if (isExpanded(row.suite.id)) {
+          <div class="suite__body">
+            <div class="howto">
+              <div><span class="howto__label">Run it</span><code>{{ row.suite.command }}</code></div>
+              <div><span class="howto__label">Needs first</span>{{ row.suite.prerequisite }}</div>
+            </div>
+
+            <!-- 1. what each test is actually testing -->
+            @if (row.suite.specs.length) {
+              <ol class="specs">
+                @for (spec of row.suite.specs; track spec.id) {
+                  <li class="spec">
+                    <div class="spec__head">
+                      <span class="spec__title">{{ spec.title }}</span>
+                      @if (spec.tests) { <span class="spec__count">{{ spec.tests }} tests</span> }
+                    </div>
+                    <p class="spec__desc">{{ spec.description }}</p>
+                    <div class="spec__tags">
+                      @for (app of spec.apps; track app) {
+                        <span class="chip chip--app">{{ appLabels[app] }}</span>
+                      }
+                      @for (area of spec.areas; track area) {
+                        <span class="chip">{{ area }}</span>
+                      }
+                    </div>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p class="specs__none">
+                No per-spec catalogue for this suite yet — it is run by hand and its
+                contents are not enumerated in
+                <code>shared/testing/e2e-catalog.ts</code>.
+              </p>
+            }
+
+            <!-- Per-area rollup, when the run published one. -->
+            @if (row.run?.areas?.length) {
+              <div class="rollup">
+                <span class="rollup__label">Last run, by area</span>
+                <div class="rollup__items">
+                  @for (area of row.run!.areas!; track area.id) {
+                    <span class="rollup__item" [class]="'rollup__item--' + area.status">
+                      {{ area.title }}
+                      <span class="rollup__nums">{{ area.passed }}p@if (area.failed) {<span>/{{ area.failed }}f</span>}@if (area.flaky) {<span>/{{ area.flaky }}fl</span>}</span>
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    }
+  </div>
+
+  <footer class="e2e__foot">
+    Coverage is described in <code>shared/testing/e2e-catalog.ts</code>; run status is
+    published to <code>e2e_runs</code> by each repo's
+    <code>scripts/publish-e2e-run.js</code>.
+  </footer>
+</div>

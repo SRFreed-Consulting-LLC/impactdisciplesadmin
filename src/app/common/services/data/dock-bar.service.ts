@@ -46,6 +46,10 @@ export class DockBarService extends BaseService<DockBarModel> {
    *  the ENTIRE write (see CLAUDE.md's write gotcha) - very much a live risk
    *  here, since label, note and the whole of cta2 are all optional. */
   async save(config: DockBarModel): Promise<void> {
+    // Destructured off deliberately: this is how `id` is kept OUT of the
+    // payload, so the binding being unused is the whole point rather than
+    // an oversight.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _ignored, ...payload } = config;
     await this.update(DOCK_BAR_DOC_ID, stripUndefinedDeep(payload) as DockBarModel);
   }
