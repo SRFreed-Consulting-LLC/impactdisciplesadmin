@@ -13,9 +13,9 @@
   z-index: 1000;
 }
 
-/* Same fixed-height flex column Web Config uses: a bounded scrolling region
-   for the fields, with the SAVE row a true layout sibling below it rather
-   than a sticky overlay that can land on top of the last field. See that
+/* Same fixed-height flex column Web Config uses: a bounded region for the
+   fields, with the SAVE row a true layout sibling below it rather than a
+   sticky overlay that can land on top of the last field. See that
    component's own css for the full history of why. */
 .tab-content-wrap {
   height: 70vh;
@@ -24,22 +24,40 @@
   padding: 0 16px;
 }
 
+/* overflow-y stays as a safety net for a short window, but the three-column
+   layout below is what actually keeps this from scrolling: the form is no
+   taller than its tallest single column now. No max-width - the whole point
+   is to spend the pane's width so the height fits. */
 .tab-content {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
   padding: 16px 4px 8px;
-  max-width: 620px;
+}
+
+/* Mirrors Web Config's Info tab. Wraps rather than squeezing: below roughly
+   900px three columns of form fields stop being readable, and a scroll is
+   the better trade at that point. */
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  min-width: 0;
+}
+
+.column {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* Stacked fields sat flush (2026-08-19 crowding audit). */
+  gap: 10px;
 }
 
 .section-title {
   font-size: 15px;
   font-weight: 600;
-  margin: 24px 0 12px;
-}
-
-.section-title:first-of-type {
-  margin-top: 16px;
+  margin: 0 0 4px;
 }
 
 .hint {
@@ -49,7 +67,7 @@
 }
 
 .active-toggle {
-  margin-bottom: 8px;
+  margin-bottom: 20px;
 }
 
 .full-width {
@@ -60,5 +78,4 @@
   display: flex;
   justify-content: flex-end;
   padding: 12px 4px;
-  max-width: 620px;
 }
