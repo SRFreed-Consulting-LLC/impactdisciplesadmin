@@ -1,4 +1,5 @@
 import { NgModule } from "@angular/core";
+import { PreviewRailComponent } from './preview-rail/preview-rail.component';
 import { IndicatorButtonComponent } from "./indicator-button/indicator-button.component";
 import { CommonModule, CurrencyPipe, DatePipe } from "@angular/common";
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
@@ -47,6 +48,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 
 @NgModule({
   declarations: [
+    PreviewRailComponent,
     IndicatorButtonComponent,
     ConfirmDialogComponent,
     ListHeaderComponent,
@@ -97,6 +99,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatNativeDateModule
   ],
   exports: [
+    PreviewRailComponent,
     IndicatorButtonComponent,
     ConfirmDialogComponent,
     ListHeaderComponent,

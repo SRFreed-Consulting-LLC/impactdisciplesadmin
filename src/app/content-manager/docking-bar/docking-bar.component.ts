@@ -101,6 +101,20 @@ export class DockingBarComponent implements OnInit {
     return this.permissionService.canEdit(this.screenKey);
   }
 
+  /** The buttons as the public dock would render them: in order, and the
+   *  second one only once it has a title - the same rule hasSecondCta
+   *  below encodes for saving. The LAST one is the solid button and any
+   *  before it are ghosts, which is the real component's rule, so a single
+   *  button always previews as the solid one. */
+  get previewCtas(): { title: string }[] {
+    const first = (this.form.get('cta1.title')?.value ?? '').trim();
+    const second = (this.form.get('cta2.title')?.value ?? '').trim();
+    return [
+      ...(first ? [{ title: first }] : []),
+      ...(second ? [{ title: second }] : [])
+    ];
+  }
+
   /** A second button exists only once it has been given a title. */
   get hasSecondCta(): boolean {
     return !!this.form.get('cta2.title')?.value?.trim();

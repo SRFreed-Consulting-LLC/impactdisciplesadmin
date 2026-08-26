@@ -1,0 +1,43 @@
+<!-- `state` is read first so the stored device/collapsed choice is applied
+     on the very first render (storageKey is an @Input and does not exist
+     when the constructor runs). -->
+@if (state; as s) {
+  <aside class="prail" [class.prail--collapsed]="s.collapsed">
+    <div class="prail__head">
+      @if (!s.collapsed) {
+        <span class="prail__label">{{ label }}</span>
+
+        @if (showDeviceSwitch) {
+          <div class="prail__devices" role="group" [attr.aria-label]="label + ' device'">
+            <button type="button" class="prail__device"
+              [class.prail__device--on]="s.device === 'web'"
+              (click)="setDevice('web')" matTooltip="Desktop width">
+              <mat-icon>desktop_windows</mat-icon>
+            </button>
+            <button type="button" class="prail__device"
+              [class.prail__device--on]="s.device === 'phone'"
+              (click)="setDevice('phone')" matTooltip="Phone width">
+              <mat-icon>smartphone</mat-icon>
+            </button>
+          </div>
+        }
+      }
+
+      <button type="button" class="prail__collapse" (click)="toggleCollapsed()"
+        [matTooltip]="s.collapsed ? 'Show ' + label.toLowerCase() : 'Hide ' + label.toLowerCase()"
+        [attr.aria-expanded]="!s.collapsed">
+        <mat-icon>{{ s.collapsed ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+      </button>
+    </div>
+
+    @if (!s.collapsed) {
+      <div class="prail__body" [class.prail__body--phone]="s.device === 'phone'">
+        <div class="prail__frame">
+          <!-- Whatever the host projects. This component knows nothing
+               about what it is showing. -->
+          <ng-content></ng-content>
+        </div>
+      </div>
+    }
+  </aside>
+}

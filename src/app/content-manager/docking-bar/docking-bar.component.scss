@@ -1,0 +1,101 @@
+
+// PREVIEW. Values ported from the web repo's library-dock component so this
+// shows the real thing rather than an impression of it: #1c1c1c bar, #ffcc00
+// top rule and eyebrow, white solid button, transparent ghost. Class names
+// are prefixed `dockp` rather than reusing `library-dock` so nothing here can
+// be mistaken for the real component or picked up by its styles.
+.dock-preview {
+  margin-top: 24px;
+}
+
+.dock-preview__off {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed color-mix(in srgb, var(--app-card-ink) 25%, transparent);
+  border-radius: 8px;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.dockp {
+  background: #1c1c1c;
+  border-top: 3px solid #ffcc00;
+  color: #ffffff;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.dockp__inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 60px;
+  padding: 10px 28px;
+}
+
+.dockp__message {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+
+.dockp__eyebrow {
+  color: #ffcc00;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+}
+
+// Ellipsis, exactly like the real bar - so an over-long message shows here
+// as the truncation the visitor would actually get, rather than wrapping and
+// looking fine.
+.dockp__headline {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dockp__muted {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 400;
+}
+
+.dockp__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.dockp__btn {
+  display: inline-block;
+  white-space: nowrap;
+  text-transform: uppercase;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+  height: 36px;
+  line-height: 32px;
+  padding: 0 20px;
+  border: 2px solid #ffffff;
+  background: #ffffff;
+  color: #1c1c1c;
+}
+
+.dockp__btn--ghost {
+  background: transparent;
+  color: #ffffff;
+}
+
+.dockp__close {
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.65);
+}

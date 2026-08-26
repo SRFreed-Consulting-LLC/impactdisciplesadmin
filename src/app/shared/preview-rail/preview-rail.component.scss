@@ -1,0 +1,107 @@
+// The rail itself: a fixed-width column beside the form, collapsing to a
+// thin strip that leaves the toggle reachable. Deliberately sticky - an
+// admin scrolling a long form should keep seeing what they are changing.
+.prail {
+  position: sticky;
+  top: 12px;
+  flex: 0 0 auto;
+  width: 420px;
+  max-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  background: var(--app-card);
+  border: 1px solid color-mix(in srgb, var(--app-card-ink) 10%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.prail--collapsed {
+  width: 44px;
+}
+
+.prail__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-card-ink) 10%, transparent);
+}
+
+.prail--collapsed .prail__head {
+  padding: 8px 4px;
+  justify-content: center;
+  border-bottom: none;
+}
+
+.prail__label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+.prail__devices {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.prail__device,
+.prail__collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-muted);
+  cursor: pointer;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--app-card-ink) 8%, transparent);
+  }
+}
+
+.prail__device--on {
+  background: color-mix(in srgb, var(--app-card-ink) 12%, transparent);
+  color: var(--app-card-ink);
+}
+
+.prail__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  // The public site is light; previewing it on the navy admy surface would
+  // misrepresent it, so the viewport is always white regardless of theme -
+  // the same reasoning as the rich-text editors' light surface.
+  background: #ffffff;
+  color: #22282f;
+  color-scheme: light;
+}
+
+// Phone view: a centred handset-width column with a frame, so the preview
+// reads as a device rather than as a narrow browser.
+.prail__body--phone {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  background: color-mix(in srgb, var(--app-card-ink) 6%, transparent);
+
+  .prail__frame {
+    width: 390px;
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 18px;
+    border: 8px solid #1f2430;
+    overflow: hidden;
+  }
+}
