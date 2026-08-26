@@ -14,7 +14,7 @@ import { Page, expect } from '@playwright/test';
 // scripts/fixtures/emulator-fixtures.js - never real credentials, never a
 // real Firebase project.
 
-export const ADMIN_URL = 'http://localhost:5200';
+export const ADMIN_URL = 'http://localhost:5201';
 export const ADMIN_EMAIL = 'admin@test.local';
 export const EMPLOYEE_EMAIL = 'employee@test.local';
 export const PASSWORD = 'test-password-1';

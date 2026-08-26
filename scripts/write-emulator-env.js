@@ -43,7 +43,12 @@ const ENV_VARS = {
   GOOGLE_SECRET_KEY: "fake-google-key",
   YOUTUBE_PLAYLIST_KEY: "fake-playlist",
   TAX_API_KEY: "fake-tax-key",
-  WEB_APP_DOMAIN: "http://localhost:4200",
+  // The EMULATOR-backed web server (port rule: thousands digit = app,
+  // last digit = backend, so web 4200 live-data / 4201 emulator). This
+  // said 4200 until 2026-08-26, which is the dev-data server - a function
+  // running under the emulator would have built links pointing a tester at
+  // an app talking to impactdisciplesdev.
+  WEB_APP_DOMAIN: "http://localhost:4201",
 };
 
 // Anything a function declares as a SECRET must appear here, even if the same

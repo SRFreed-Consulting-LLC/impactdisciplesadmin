@@ -7,10 +7,13 @@ import { loginAsAdmin } from './support/auth';
 // content-manager-routing.module.ts. Slugs here must match nav-config.ts's
 // 'content-manager' group. (The Home Page Popups screen and its round-trip
 // test were retired 2026-08-19 - web-campaign popups own that space now,
-// covered by campaigns.spec.ts.)
+// covered by campaigns.spec.ts. The Pod Casts screen and its test went the
+// same way on 2026-08-26 - podcasts moved to the public web app's own
+// component and the admin screen was removed, so this suite was asserting
+// on a table that no longer exists. Only an unrelated `applePodCast` URL
+// field remains, in Web Config.)
 const TAB_SLUGS: Record<string, string> = {
   'Disciple Making Minute': 'disciple-making-minute',
-  'Pod Casts': 'pod-casts',
   'Home Page Images': 'home-page-images'
 };
 
@@ -34,13 +37,6 @@ test.describe('Content Manager - read-only smoke checks', () => {
     await openContentManagerTab(page, 'Home Page Images');
 
     await expect(page.locator('table.images-table')).toBeVisible();
-    await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
-  });
-
-  test('Pod Casts list renders', async ({ page }) => {
-    await openContentManagerTab(page, 'Pod Casts');
-
-    await expect(page.locator('table.pod-casts-table')).toBeVisible();
     await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
   });
 });

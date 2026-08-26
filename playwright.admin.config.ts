@@ -31,7 +31,7 @@ export default defineConfig({
     ['./e2e-admin/support/dashboard-reporter.ts'],
   ],
   use: {
-    baseURL: 'http://localhost:5200',
+    baseURL: 'http://localhost:5201',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'off',
@@ -41,7 +41,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run start-emu',
-    url: 'http://localhost:5200',
+    url: 'http://localhost:5201',
     reuseExistingServer: true,
     timeout: 300_000,
   },

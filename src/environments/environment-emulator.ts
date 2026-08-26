@@ -1,4 +1,4 @@
-import { FIREBASE_PROJECTS, functionUrl } from '@impact-common/shared/config/firebase-projects';
+import { APP_URLS, FIREBASE_PROJECTS, functionUrl } from '@impact-common/shared/config/firebase-projects';
 
 // Firebase EMULATOR SUITE configuration - used only by the test program
 // (`npm run start-emu`, e2e-cross). Points every Firebase surface and every
@@ -17,13 +17,16 @@ export const environment = {
   production: false,
   useEmulators: true,
   firebaseConfig: FIREBASE_PROJECTS.emulator,
-  domain: 'http://localhost:5200',
+  // Ports come from APP_URLS, never a literal here - it is the one place
+  // the local port rule lives (web 4200/4201, admin 5200/5201, reader
+  // 6200/6201; the last digit picks live-data vs emulator).
+  domain: APP_URLS.admin.emulator,
   session_expires: 30,
   freeEbookUrl: "https://example.test/free-ebook.pdf",
   shippingUrl: functionUrl('emulator', 'get_shipping_rates'),
   shippingLabelUrl: functionUrl('emulator', 'get_shipping_label'),
   unsubscribeUrl: functionUrl('emulator', 'unsubscribe_from_email_list'),
-  publicSiteUrl: "http://localhost:4200",
+  publicSiteUrl: APP_URLS.web.emulator,
   youtubeVideosUrl: functionUrl('emulator', 'get_youtube_videos'),
   application: "admin",
   shippingCarriers: ["se-0000000"],

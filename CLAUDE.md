@@ -27,7 +27,16 @@ first (push it first), then bump the pointer in each consumer.
 ## Commands
 
 ```bash
-# Run (always port 5200, not Angular's default 4200 — some tooling/CORS config assumes this)
+# Run. LOCAL PORT RULE (2026-08-26): the thousands digit is the APP and the
+# last digit is the BACKEND —
+#     web 4200 | admin 5200 | reader 6200   → live data (impactdisciplesdev)
+#     web 4201 | admin 5201 | reader 6201   → Firebase emulator
+# Never Angular's default 4200 for this app. The backend digit matters: until
+# it existed, `start-emu` also bound 5200, so a Playwright suite with
+# `reuseExistingServer` could silently attach to whichever backend happened
+# to be serving. Ports live in APP_URLS / LOCAL_APP_URLS in the shared
+# submodule (src/common/src/shared/config/firebase-projects.ts) — import
+# those rather than writing a localhost literal.
 npm run start-local -- --port=5200      # local Firebase config, ng serve
 npm run start-dev                       # development Firebase config
 npm run start-prod                      # production Firebase config
@@ -56,7 +65,8 @@ npm run test:watch
 ng test --include='**/products.component.spec.ts'   # single spec
 
 # Legacy smoke E2E (Playwright vs the REAL dev project) — assumes the dev
-# server is ALREADY running on port 5200 (`npm run start-local -- --port=5200`);
+# server is ALREADY running on port 5200 (`npm run start-local`, which now
+# carries --port=5200 itself);
 # playwright.config.ts does not auto-start it.
 npm run e2e
 npx playwright test e2e/smoke.spec.ts    # single spec
@@ -166,7 +176,7 @@ project id `demo-impact`):
    it always read this repo's rules by a cross-repo relative path, so it now lives beside the
    file it tests. Emulator must be up (`npm run emu`) and Java installed.
 4. **Cross-app E2E** (`e2e-cross/`, `npm run e2e:cross`) — Playwright flows spanning the admin
-   (:5200), web (:4200), and reader (:4300) apps, each served with its `emulator` build
+   (:5201), web (:4201), and reader (:6201) apps, each served with its `emulator` build
    configuration (`npm run start-emu` in each repo; `playwright.cross.config.ts` starts/reuses
    them). The old `e2e/` suite remains as a live-dev smoke layer.
 5. **Admin E2E** (`e2e-admin/`, `npm run e2e:admin`, added 2026-08-21) — one app, one emulator,

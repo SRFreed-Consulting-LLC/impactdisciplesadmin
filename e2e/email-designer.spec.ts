@@ -165,27 +165,34 @@ test.describe('Email designer', () => {
     await expect(page).toHaveURL(/email-designer\/new/);
   });
 
-  test('legacy rich-text templates open in the designer with their content imported', async ({ page }) => {
+  // Asserts the 2026-08-21 decision, which this test previously asserted the
+  // OPPOSITE of. Between 2026-08-17 and that date every template opened in
+  // the full-screen designer, legacy Quill ones included - which imported
+  // them as one text block and silently converted them to builder templates
+  // on first save. On a SYSTEM template (a placeholder document a Cloud
+  // Function substitutes into) that one-way door is a real hazard, so Edit
+  // now opens the editor that MATCHES the template and converting became an
+  // explicit "Convert to Email Builder" action. See
+  // email-templates.component.ts' showEditModal/openInBuilder.
+  test('legacy rich-text templates open in the rich-text dialog, NOT the designer', async ({ page }) => {
     await page.goto('/tools-manager?tab=system-templates');
     // Every legacy row shows Rich Text in the Editor column.
     const legacyRow = page.locator('tr:has-text("Rich Text")').first();
     await legacyRow.waitFor();
     await legacyRow.dblclick();
 
-    // Lands in the full-screen designer, the legacy html imported as a
-    // text block on the canvas (NOT the old Quill dialog).
-    await expect(page).toHaveURL(/\/tools-manager\/email-designer\//);
-    await expect(page.locator('.designer-shell')).toBeVisible();
-    const imported = page.locator('.text-view').first();
-    await expect(imported).toBeVisible();
-    await expect
-      .poll(() => imported.evaluate((el) => (el.textContent ?? '').trim().length))
-      .toBeGreaterThan(0);
+    // The Quill dialog, in place, with the template loaded.
+    const dialog = page.locator('mat-dialog-container');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('EDIT EMAIL TEMPLATE');
+    await expect(dialog.locator('input[formcontrolname="name"]')).not.toHaveValue('');
 
-    // Merely opening an imported template is NOT dirty - leaving must not
-    // prompt, and nothing about the stored template changed.
-    await page.click('mat-toolbar button:has(mat-icon:text("arrow_back"))');
-    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
+    // The important half: it did NOT navigate into the designer, because
+    // that is the path that rewrites the template on save.
     await expect(page).toHaveURL(/tab=system-templates/);
+    await expect(page.locator('.designer-shell')).toHaveCount(0);
+
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
   });
 });

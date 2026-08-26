@@ -55,8 +55,16 @@ test.describe('Left nav - collapsible manager groups', () => {
     // fixed: clicking a sibling tab while already on this route is a
     // same-route, query-param-only navigation - a one-time snapshot read
     // (what this code used to do) would go stale here and never switch.
-    await page.getByText('Sales', { exact: true }).click();
-    await expect(page.locator('app-sales')).toBeVisible();
+    //
+    // The sibling used to be Sales; that screen was retired 2026-08-22
+    // (a discount now comes from a campaign offer naming a product/series/
+    // event, so a sitewide sale had nothing left to do). Its unit specs
+    // went with it in that commit but this one was missed, so it sat here
+    // clicking a nav item that no longer exists. Products is now Store
+    // Manager's only other leaf, and it is the heavier of the two, which
+    // makes it the better proof that the switch really re-reads.
+    await page.getByText('Products', { exact: true }).click();
+    await expect(page.locator('app-products')).toBeVisible({ timeout: 15000 });
   });
 });
 

@@ -6,9 +6,15 @@ import { Page, expect } from '@playwright/test';
 // the SEEDED EMULATOR accounts (scripts/fixtures/emulator-fixtures.js) -
 // never real credentials, never a real Firebase project.
 
-export const ADMIN_URL = 'http://localhost:5200';
-export const WEB_URL = 'http://localhost:4200';
-export const READER_URL = 'http://localhost:4300';
+// Emulator-backed servers, per the local port rule (2026-08-26): the
+// thousands digit is the app, the last digit is the backend, so x201 is
+// always the Firebase emulator and x200 is always live dev data. These
+// used to be 5200/4200/4300 - the same ports the dev-data servers bound -
+// which, with reuseExistingServer: true, let this suite silently attach to
+// a dev-backed app. See APP_URLS in the shared submodule.
+export const ADMIN_URL = 'http://localhost:5201';
+export const WEB_URL = 'http://localhost:4201';
+export const READER_URL = 'http://localhost:6201';
 export const ADMIN_EMAIL = 'admin@test.local';
 export const ADMIN_PASSWORD = 'test-password-1';
 export const PATRON_EMAIL = 'patron@test.local';

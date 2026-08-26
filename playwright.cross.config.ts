@@ -7,6 +7,16 @@ import { defineConfig } from '@playwright/test';
 // its `emulator` build configuration - nothing in these runs can touch
 // impactdisciplesdev or prod.
 //
+// That guarantee only became true on 2026-08-26. These webServer entries
+// use reuseExistingServer, and until then the emulator servers bound the
+// SAME ports as the dev-data ones (admin 5200, web 4200), so an already-
+// running `start-local` would simply be adopted here and the whole suite
+// would have run against impactdisciplesdev - the exact thing the sentence
+// above promises cannot happen. Ports now encode the backend: the
+// thousands digit is the app and the last digit is the backend, so x201 is
+// always emulator (web 4201, admin 5201, reader 6201) and x200 is always
+// live dev data. See APP_URLS in the shared submodule.
+//
 // Sequential on purpose (workers: 1, fullyParallel: false): the flows share
 // one seeded emulator world; spec files reseed in their beforeAll when they
 // need a pristine state (see e2e-cross/support/harness.ts), and a reseed
@@ -28,21 +38,21 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run start-emu',
-      url: 'http://localhost:5200',
+      url: 'http://localhost:5201',
       reuseExistingServer: true,
       timeout: 300_000,
     },
     {
       command: 'npm run start-emu',
       cwd: '../impactdisciples - web',
-      url: 'http://localhost:4200',
+      url: 'http://localhost:4201',
       reuseExistingServer: true,
       timeout: 300_000,
     },
     {
       command: 'npm run start-emu',
       cwd: '../impact-discipleship-library-new',
-      url: 'http://localhost:4300',
+      url: 'http://localhost:6201',
       reuseExistingServer: true,
       timeout: 300_000,
     },
