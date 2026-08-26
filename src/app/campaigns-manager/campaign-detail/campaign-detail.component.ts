@@ -349,6 +349,28 @@ export class CampaignDetailComponent implements OnInit {
       return;
     }
 
+    // One live campaign per product/event. This is the real gate: drafts do
+    // NOT reserve a target, so you can build several and are only stopped
+    // here, at the moment one would actually go live.
+    const targetId = this.campaign.goal === 'product'
+      ? this.campaign.productId
+      : this.campaign.eventId;
+    const holder = await this.campaignService.findLiveCampaignFor(
+      this.campaign.goal, targetId, this.campaign.id);
+    if (holder) {
+      const noun = this.campaign.goal === 'product' ? 'product' : 'event';
+      const open = await this.confirmService.confirm(
+        `<b>${holder.name}</b> is already live for this ${noun}, and only one ` +
+        'campaign can promote it at a time. End that one first.' +
+        '<br><br>Open it now?',
+        'Already promoted');
+      if (open) {
+        this.router.navigate(['/campaigns-manager'],
+          { queryParams: { tab: 'campaigns', campaignId: holder.id } });
+      }
+      return;
+    }
+
     const conflict = await this.describeConflicts();
     if (conflict) {
       const proceed = await this.confirmService.confirm(conflict, 'Overlapping discount');

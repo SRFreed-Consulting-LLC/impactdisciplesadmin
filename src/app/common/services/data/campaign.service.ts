@@ -46,6 +46,37 @@ export class CampaignService extends BaseService<CampaignModel>{
     this.fromFirestore = CampaignService.fromFirestore
   }
 
+  // Stamps when the campaign was MADE. Deliberately here and not in
+  // BaseService.add(): every collection in the app would inherit a new
+  // field otherwise, and only campaigns need one today. An explicit
+  // createdAt on the incoming value wins, so an import/migration can keep
+  // the original date.
+  // ONE live campaign per product, and one per event (2026-08-25, owner
+  // rule). Drafts and scheduled campaigns do NOT reserve a target - you can
+  // build several and only the one you activate holds it. goal 'other' has
+  // no target and is never constrained. A series is just whatever product
+  // was picked - deliberately NOT expanded to its members.
+  //
+  // CLIENT-SIDE ONLY, and advisory by design: a script, import, or any
+  // future writer can still create a second live campaign. This stops the
+  // mistake in the UI; it does not make the invariant guaranteed.
+  async findLiveCampaignFor(
+    goal: CampaignModel['goal'],
+    targetId: string | null | undefined,
+    excludeCampaignId?: string | null
+  ): Promise<CampaignModel | null> {
+    if (!targetId || (goal !== 'product' && goal !== 'event')) {
+      return null;
+    }
+    const field = goal === 'product' ? 'productId' : 'eventId';
+    const matches = await this.getAllByValue(field, targetId);
+    return matches.find((c) => c.status === 'live' && c.id !== excludeCampaignId) ?? null;
+  }
+
+  override add(value: CampaignModel): Promise<CampaignModel> {
+    return super.add({ ...value, createdAt: value.createdAt ?? new Date() });
+  }
+
   // Campaign delete (2026-08-20) - server-side via the deleteCampaign
   // callable (functions/src/campaign-admin.functions.ts): cascades the
   // campaign's emails (incl. website-published ones) and popup, then the

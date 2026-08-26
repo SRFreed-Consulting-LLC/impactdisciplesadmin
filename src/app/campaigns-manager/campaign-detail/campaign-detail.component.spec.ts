@@ -34,7 +34,7 @@ function setup(perms: Perms = { canAdd: true, canEdit: true, canDelete: true }) 
     providers: [
       CampaignDetailComponent,
       { provide: CampaignEmailService, useValue: { getPage: () => Promise.resolve({ items: [], cursor: null, hasMore: false }) } },
-      { provide: CampaignService, useValue: {} },
+      { provide: CampaignService, useValue: { findLiveCampaignFor: () => Promise.resolve(null) } },
       { provide: CampaignPopupService, useValue: { getById: () => Promise.resolve(null) } },
       // Lifecycle collaborators - inert here; the cascade has its own harness below.
       { provide: CampaignOfferService, useValue: { forCampaign: () => Promise.resolve(null) } },
@@ -304,6 +304,8 @@ interface LifecycleStubs {
   offer?: Record<string, unknown> | null;
   conflicts?: Record<string, unknown>[];
   confirmAnswer?: boolean;
+  /** Another LIVE campaign already holding this one's product/event. */
+  liveHolder?: { id: string; name: string } | null;
   failOn?: 'popup' | 'offer' | 'coupon' | 'campaign';
 }
 
@@ -376,6 +378,7 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
         useValue: {
           updateFields: record('campaign'),
           getById: (id: string) => Promise.resolve({ id, name: 'Other Campaign' }),
+          findLiveCampaignFor: () => Promise.resolve(stubs.liveHolder ?? null),
           dao: daoStub,
         },
       },
@@ -440,6 +443,41 @@ describe('CampaignDetailComponent status lifecycle', () => {
 
       expect(wrote('campaign')).toEqual([{ status: 'live' }]);
       expect(successes[0]).toBe('Campaign is live');
+    });
+
+    // One live campaign per product/event (2026-08-25). Drafts do NOT reserve
+    // a target, so activate() is where the rule actually bites.
+    it('refuses to activate over another live campaign for the same target', async () => {
+      const { component, wrote } = lifecycleSetup({
+        liveHolder: { id: 'other-1', name: 'Summit Early Bird Special' },
+        confirmAnswer: false,
+      });
+
+      await component.activate();
+
+      // Nothing written at all - not the campaign, not its offer.
+      expect(wrote('campaign')).toEqual([]);
+      expect(component.campaign.status).toBe('draft');
+    });
+
+    it('names the campaign already holding the target', async () => {
+      const { component, confirmed } = lifecycleSetup({
+        liveHolder: { id: 'other-1', name: 'Summit Early Bird Special' },
+        confirmAnswer: false,
+      });
+
+      await component.activate();
+
+      // The author has to be able to tell WHICH campaign is in the way.
+      expect(confirmed[0]).toContain('Summit Early Bird Special');
+    });
+
+    it('activates normally when no other campaign holds the target', async () => {
+      const { component, wrote } = lifecycleSetup({ liveHolder: null });
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([{ status: 'live' }]);
     });
 
     it('schedules rather than starts when the start date is still ahead', async () => {

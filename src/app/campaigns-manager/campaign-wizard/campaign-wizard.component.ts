@@ -64,6 +64,8 @@ export class CampaignWizardComponent implements OnInit {
     private couponService: CouponService,
     private permissionService: PermissionService,
     private snackbar: SnackbarService,
+    private confirmService: ConfirmService,
+    private router: Router,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -297,6 +299,24 @@ export class CampaignWizardComponent implements OnInit {
       this.snackbar.error('Pick the event this campaign promotes.');
       return;
     }
+    // One live campaign per product/event - see
+    // CampaignService.findLiveCampaignFor(). Checked on every save because a
+    // campaign's target is editable after creation, not just chosen once.
+    const targetId = value.goal === 'product' ? value.productId : value.eventId;
+    const holder = await this.service.findLiveCampaignFor(value.goal, targetId, this.campaign?.id);
+    if (holder) {
+      const noun = value.goal === 'product' ? 'product' : 'event';
+      const open = await this.confirmService.confirm(
+        `<b>${holder.name}</b> is already live for this ${noun}, and only one ` +
+        'campaign can promote it at a time. End that campaign first, or add ' +
+        'what you need to it instead.<br><br>Open it now?',
+        'Already promoted');
+      if (open) {
+        this.router.navigate(['/campaigns-manager'],
+          { queryParams: { tab: 'campaigns', campaignId: holder.id } });
+      }
+      return;
+    }
     const socialPicked = value.facebookChannel || value.twitterChannel || value.instagramChannel;
     if (!value.emailChannel && !value.webChannel && !socialPicked) {
       this.snackbar.error('Pick at least one channel - email, web popup, or social.');
@@ -528,4 +548,6 @@ export class CampaignWizardComponent implements OnInit {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
       `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
-}
+}import { Router } from '@angular/router';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+
