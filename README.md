@@ -8,7 +8,11 @@ used by all three apps.
 
 **Start here: [CLAUDE.md](CLAUDE.md)** — commands, architecture, conventions, the emulator-backed
 test program, and the shared-submodule / functions-contract rules. `MIGRATION.md` is the running
-log of data-shape gotchas and prod runbooks; `HANDOFF.md` is historical.
+log of data-shape gotchas and prod runbooks.
+
+Deeper reference lives beside the code so it is read only when it is needed:
+`docs/reports-manager.md`, `docs/email-builder.md`, `docs/email-taxonomy.md`,
+and `functions/CLAUDE.md`.
 
 Quick commands:
 

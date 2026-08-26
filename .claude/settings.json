@@ -1,8 +1,26 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cd \"/c/web/repo/impactdisciples - admin\" && cat /tmp/full.diff)",
-      "Read(//tmp/**)"
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git submodule status:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node --check:*)",
+      "Bash(npm test:*)",
+      "Bash(npx ng test:*)",
+      "Bash(npx ng build:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(curl -s -o /dev/null:*)",
+      "Read(//tmp/**)",
+      "Bash(npm run test:integration:*)",
+      "Bash(npm run e2e:admin:*)",
+      "Bash(npm run e2e:cross:*)",
+      "Bash(node scripts/publish-e2e-run.js:*)"
     ]
   }
 }
