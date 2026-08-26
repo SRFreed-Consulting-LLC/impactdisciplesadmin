@@ -83,6 +83,14 @@
                 <mat-icon>mark_email_read</mat-icon>
                 Send Confirmation Email to Contact
               </button>
+              <!-- See (and change) what that button is about to send. -->
+              @if (canEditConfirmationEmail) {
+                <button mat-button type="button" (click)="editConfirmationEmail()"
+                  matTooltip="Edit the email this sends">
+                  <mat-icon>edit</mat-icon>
+                  Edit this email
+                </button>
+              }
             }
             @case ('shipping_label_printed') {
               <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="markPackaged(item)">

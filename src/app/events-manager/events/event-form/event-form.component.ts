@@ -8,6 +8,7 @@ import { LocationModel } from '@impact-common/shared/models/domain/location.mode
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
+import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
@@ -57,6 +58,24 @@ export class EventFormComponent implements OnInit {
   @Input() organizations: OrganizationModel[] = [];
   @Input() locations: LocationModel[] = [];
   @Input() emailTemplates: string[] = [];
+
+  // Editing the registration email from HERE, rather than sending the admin
+  // to Tools Manager > System Templates to find it by name in a flat list.
+  // The template is bound to this event by NAME (the `emailTemplate`
+  // control below holds that name), which is also how the sender resolves
+  // it - so a rename made on the templates screen looks harmless there and
+  // silently detaches it from every event pointing at the old name.
+
+  get canEditEmailTemplate(): boolean {
+    return !!this.form.get('emailTemplate')?.value && this.templateEditor.canEdit();
+  }
+
+  editEmailTemplate(): void {
+    const name = this.form.get('emailTemplate')?.value as string | null;
+    if (name) {
+      void this.templateEditor.openByName(name, { from: 'event', id: this.item?.id });
+    }
+  }
   /** Event ids with at least one unseen registration - drives the Attendees
    *  tab badge. Owned by the parent, which keeps one standing query for the
    *  whole screen (it also feeds the list's "New" column) rather than a
@@ -98,6 +117,7 @@ export class EventFormComponent implements OnInit {
     private fb: FormBuilder,
     private dialog: MatDialog,
     private snackbar: SnackbarService
+    , private templateEditor: EmailTemplateEditorService
   ) {}
 
   ngOnInit(): void {

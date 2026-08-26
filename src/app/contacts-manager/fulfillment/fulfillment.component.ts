@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit} from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { AMAZON_CONFIRMATION_TEMPLATE_NAME, PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { MatDialog } from '@angular/material/dialog';
@@ -48,7 +49,7 @@ export class FulfillmentComponent implements OnInit {
 
   private readonly screenKey = 'contacts-manager.fulfillment';
 
-  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog) {}
+  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog, private templateEditor: EmailTemplateEditorService) {}
 
   // Path-aware per order (standard vs Amazon branch).
   stepsFor(item: CheckoutForm): FulfillmentStep[] {
@@ -194,6 +195,17 @@ export class FulfillmentComponent implements OnInit {
     this.service.markShippedViaAmazon(item)
       .then(() => this.snackbar.success('Marked as shipped via Amazon'))
       .catch((err) => this.reportTransitionError(err));
+  }
+
+  // The template this workflow step sends, editable from here. Named by the
+  // same constant PurchasesService looks it up by, so the two cannot drift.
+
+  get canEditConfirmationEmail(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  editConfirmationEmail(): void {
+    void this.templateEditor.openByName(AMAZON_CONFIRMATION_TEMPLATE_NAME, { from: 'fulfillment' });
   }
 
   sendAmazonConfirmation(item: CheckoutForm): void {

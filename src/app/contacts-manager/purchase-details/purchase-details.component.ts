@@ -1,9 +1,10 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input} from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
-import { PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { AMAZON_CONFIRMATION_TEMPLATE_NAME, PurchasesService } from 'src/app/common/services/data/purchases.service';
+import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -61,6 +62,7 @@ export class PurchaseDetailsComponent {
     private customerService: ContactService,
     private eventService: EventService,
     private dialog: MatDialog
+    , private templateEditor: EmailTemplateEditorService
   ) {
     this.authService.dao.loggedInUser$.subscribe((user) => {
       this.currentUserRole = user?.role;
@@ -348,6 +350,17 @@ export class PurchaseDetailsComponent {
       this.selectedItem.statusHistory = saved.statusHistory;
       this.snackbar.success('Marked as shipped via Amazon');
     });
+  }
+
+  // The template this workflow step sends, editable from here. Named by the
+  // same constant PurchasesService looks it up by, so the two cannot drift.
+
+  get canEditConfirmationEmail(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  editConfirmationEmail(): void {
+    void this.templateEditor.openByName(AMAZON_CONFIRMATION_TEMPLATE_NAME, { from: 'fulfillment' });
   }
 
   sendAmazonConfirmation(): void {

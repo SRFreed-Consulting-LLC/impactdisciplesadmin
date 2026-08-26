@@ -53,6 +53,17 @@
                       @if (form.get('emailTemplate')?.hasError('required')) {
                         <mat-error>Required for in-person events</mat-error>
                       }
+                      <!-- Edit the registration email without leaving the event.
+                           It is bound to this event BY NAME, and the same name is
+                           what the sender resolves - so this is also the place an
+                           admin can see what they are actually about to change. -->
+                      @if (canEditEmailTemplate) {
+                        <button mat-icon-button matSuffix type="button"
+                          matTooltip="Edit this email template"
+                          (click)="editEmailTemplate()">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
                     </mat-form-field>
                   </div>
                   <div class="field-row">
@@ -192,6 +203,17 @@
                       </mat-select>
                       @if (form.get('emailTemplate')?.hasError('required')) {
                         <mat-error>Required for in-person events</mat-error>
+                      }
+                      <!-- Edit the registration email without leaving the event.
+                           It is bound to this event BY NAME, and the same name is
+                           what the sender resolves - so this is also the place an
+                           admin can see what they are actually about to change. -->
+                      @if (canEditEmailTemplate) {
+                        <button mat-icon-button matSuffix type="button"
+                          matTooltip="Edit this email template"
+                          (click)="editEmailTemplate()">
+                          <mat-icon>edit</mat-icon>
+                        </button>
                       }
                     </mat-form-field>
                   </div>

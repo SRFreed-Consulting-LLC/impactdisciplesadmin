@@ -56,6 +56,9 @@ function makeComponent(
     deps.fb as never,
     deps.dialog as never,
     deps.snackbar as never,
+    // Editing the bound template is a separate, opt-in action; these
+    // specs assert workflow behaviour, so it stays unavailable here.
+    { canEdit: () => false, openByName: async () => undefined } as never,
   );
   component.summitMode = summitMode;
   component.screenKey = summitMode ? 'events-manager.summit' : 'events-manager.events';

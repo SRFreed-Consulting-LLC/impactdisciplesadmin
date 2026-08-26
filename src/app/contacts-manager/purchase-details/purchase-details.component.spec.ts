@@ -71,6 +71,9 @@ function makeComponent(purchase: CheckoutForm = aPurchase(), overrides: Record<s
     d.customerService as never,
     d.eventService as never,
     d.dialog as never,
+    // Editing the bound template is a separate, opt-in action; these
+    // specs assert workflow behaviour, so it stays unavailable here.
+    { canEdit: () => false, openByName: async () => undefined } as never,
   );
   component.selectedItem = purchase;
   return { component, deps: d };
