@@ -77,7 +77,7 @@ test("every registered tag has a tag and resolverKey", () => {
 // encodes every space as &nbsp;, so a legacy token authored in the editor
 // arrives here as {{Recipient&nbsp;First&nbsp;Name}} and an exact literal
 // match misses it - which is how a real send went out with the tag showing.
-test("renderMergeTags substitutes a legacy token whose spaces became &nbsp;", () => {
+test("renderMergeTags substitutes a token whose spaces became &nbsp;", () => {
   const html = "<p>{{Recipient&nbsp;First&nbsp;Name}},</p>";
 
   assert.equal(renderMergeTags(html, {firstName: "Shane"}), "<p>Shane,</p>");
