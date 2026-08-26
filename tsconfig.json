@@ -2,10 +2,17 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
+    // baseUrl was dropped 2026-08-26: TypeScript deprecated it, and 6.0+
+    // reports it as an error in the editor ("will stop functioning in
+    // TypeScript 7.0") even though the 5.8 pinned here still accepts it.
+    // It was doing real work - 1,022 imports in this app are written bare
+    // as 'src/app/...' rather than relatively - so it is replaced by an
+    // explicit path mapping rather than deleted. Since TS 4.4 `paths`
+    // resolve relative to this file, so no baseUrl is needed.
     "paths": {
-      "@impact-common/*": ["./src/common/src/*"]
+      "@impact-common/*": ["./src/common/src/*"],
+      "src/*": ["./src/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,

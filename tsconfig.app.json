@@ -3,12 +3,21 @@
   "compilerOptions": {
     "outDir": "./out-tsc/app",
     "types": [],
+    // NOTE: `paths` REPLACES the parent's rather than merging with it, so
+    // every mapping this app needs has to be repeated here - including
+    // 'src/*'. That one stood in for the baseUrl dropped from tsconfig.json
+    // on 2026-08-26 (TypeScript deprecated baseUrl; 6.0+ flags it in the
+    // editor). Omitting it here breaks all 1,022 bare 'src/app/...' imports
+    // even though the parent declares it.
     "paths": {
       "jszip": [
         "./node_modules/jszip/dist/jszip.min.js"
       ],
       "@impact-common/*": [
         "./src/common/src/*"
+      ],
+      "src/*": [
+        "./src/*"
       ]
     }
   },
