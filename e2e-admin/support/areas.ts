@@ -28,6 +28,12 @@ export interface FunctionalArea {
 
 export const AREAS: FunctionalArea[] = [
   {
+    id: 'admin-users',
+    title: 'Staff Administration',
+    owns: 'Adding staff and changing what they are allowed to see - the screen where access is granted in the first place.',
+    layer: 'ui',
+  },
+  {
     id: 'access',
     title: 'Access Control',
     owns: 'Staff signing in at all, and Employees being kept out of screens they were never granted.',

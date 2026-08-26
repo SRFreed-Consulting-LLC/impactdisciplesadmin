@@ -351,7 +351,7 @@ const html = `<title>Admin Suite Health</title>
     <div class="eyebrow">Impact Suite · Admin</div>
     <h1>Admin Suite Health</h1>
     <p class="standfirst">
-      Ten functional areas of the admin back office, each exercised in a real browser
+      ${areas.length} functional areas of the admin back office, each exercised in a real browser
       against the Firebase emulator. An area is red when a person cannot do the thing
       it names.
     </p>
