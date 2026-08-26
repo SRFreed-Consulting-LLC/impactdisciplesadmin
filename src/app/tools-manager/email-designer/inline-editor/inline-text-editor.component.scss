@@ -63,6 +63,14 @@
     border: none;
     font-size: inherit;
     font-family: inherit;
+    // styles.scss also forces a white surface and dark text on every
+    // quill-editor, so the app's form editors stay legible on the navy
+    // theme. Wrong here: this edits a block IN PLACE on the email canvas,
+    // and must keep showing that block's own background and colour while
+    // being edited - otherwise a dark-backgrounded block turns white the
+    // moment it is clicked.
+    background: transparent;
+    color: inherit;
   }
 
   quill-editor .ql-editor {

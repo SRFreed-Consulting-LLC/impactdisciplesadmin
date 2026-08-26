@@ -384,6 +384,38 @@ quill-editor .ql-editor {
   overflow-y: auto;
 }
 
+// LEGIBILITY. Quill's snow theme draws dark icons, dark text and a
+// transparent surface - it assumes it sits on white. Under this app's navy
+// theme it inherits the card behind it, so the toolbar came out dark blue
+// with near-black icons and the typing area dark-on-dark. The popup editor
+// had been fixing this for its own instance only; of the twelve
+// quill-editor instances in the app, ten had no correction at all (Web
+// Config, DMM, Team Page, Coaches, Event Application, the FAQ / event-email
+// / send-subscription dialogs, the Summit wizard and Products).
+//
+// Global rather than per-screen so a new rich-text field is legible by
+// default instead of inheriting the bug. color-scheme is set too, so the
+// native widgets Quill hosts (scrollbars, the colour inputs) render light
+// alongside it rather than staying dark.
+quill-editor {
+  color-scheme: light;
+}
+
+quill-editor .ql-toolbar.ql-snow {
+  background: #f6f7f9;
+  // Quill's own icons carry their own stroke/fill and its pickers their own
+  // colour, so they survive on this light bar regardless - but the toolbar
+  // otherwise INHERITS the navy theme's near-white text (measured
+  // rgb(230,235,244)). Anything added to the toolbar that inherits would be
+  // invisible on it. Set explicitly so that cannot happen.
+  color: #22282f;
+}
+
+quill-editor .ql-container.ql-snow {
+  background: #ffffff;
+  color: #22282f;
+}
+
 // Home Page Popups' live-preview dialog (see
 // home-page-popup-preview-dialog.component) needs an edge-to-edge surface
 // with no default MatDialog padding/chrome - the Material equivalent of the

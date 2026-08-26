@@ -135,19 +135,15 @@
 
 .editor-quill {
   margin-bottom: 10px;
-  // The navy theme's global quill styling targets the designer's layout -
-  // keep this instance a plain light editor.
-  color-scheme: light;
 
+  // The light surface, dark text and light toolbar this used to set for
+  // itself are global now (styles.scss) - every rich-text screen gets them,
+  // not just this one. What is left here is genuinely specific to the popup
+  // editor: a floor on the typing area, and a fixed body size so the
+  // author's text does not resize with the surrounding card.
   ::ng-deep .ql-container {
     min-height: 180px;
-    background: #ffffff;
-    color: #22282f;
     font-size: 14px;
-  }
-
-  ::ng-deep .ql-toolbar {
-    background: #f6f7f9;
   }
 }
 
