@@ -17,6 +17,8 @@ import { SeriesService } from 'src/app/common/services/data/series.service';
 import { CampaignOfferService } from 'src/app/common/services/data/campaign-offer.service';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
+import { Router } from '@angular/router';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 
 // Campaign wizard (Campaign Manager v2, Phase 2): creates/edits the
 // campaign SHELL - what's promoted (goal), through which channels, to
@@ -548,6 +550,5 @@ export class CampaignWizardComponent implements OnInit {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
       `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
-}import { Router } from '@angular/router';
-import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+}
 

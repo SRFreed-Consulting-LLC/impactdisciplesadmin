@@ -1,0 +1,38 @@
+# Line endings are a property of THIS REPO, not of each machine's
+# core.autocrlf. Added 2026-08-26 after mixed CRLF/LF inside single files
+# silently broke multi-line edits repeatedly.
+#
+# What was wrong: core.autocrlf=true with no attributes file. Git wrote CRLF
+# on checkout, every tool that edited a file afterwards wrote LF, and a file
+# edited in place but never re-checked-out ended up half and half. An audit
+# on 2026-08-26 found 992 tracked text files: the committed blobs were already
+# 991/992 pure LF, but the working tree was 545 CRLF / 439 LF / 8 MIXED.
+#
+# LF is the canonical form here because it is what is already committed and
+# what every tool in this stack writes. Do not "fix" this to crlf - that is
+# the arrangement that produced the drift.
+#
+# No .bat/.cmd/.ps1/.sh files are tracked in this repo, so there are no
+# endings-sensitive exceptions. ADD ONE HERE (e.g. `*.bat text eol=crlf`)
+# before committing any such file - a .bat with LF endings can fail to run.
+
+* text=auto eol=lf
+
+# Binary files: never touched, never diffed as text. `text=auto` already
+# detects most of these, but being explicit means a detection miss cannot
+# corrupt one by rewriting its bytes.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.mp4   binary
+*.zip   binary
+*.xlsx  binary
+*.keystore binary
