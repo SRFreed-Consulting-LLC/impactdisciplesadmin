@@ -98,18 +98,28 @@
        "own title" checkbox and the phone picture only show their effect below
        992px, so without this an editor is choosing blind on a desktop. -->
   <app-preview-rail storageKey="home-page-images" label="Home slider" [width]="360" #rail>
-    <div class="slide-preview"
-         [class.slide-preview--phone]="rail.device === 'phone'"
-         [class.slide-preview--clean]="rail.device === 'phone' && form.value.artworkHasText"
-         [style.backgroundImage]="previewImage(rail.device)">
-      <div class="slide-preview__overlay">
-        <div class="slide-preview__content">
-          <h2 class="slide-preview__title">{{ form.value.title }}</h2>
-          <hr class="slide-preview__rule">
-          <p class="slide-preview__text">{{ form.value.text }}</p>
-          @if (form.value.ctaTitle) {
-            <span class="slide-preview__btn">{{ form.value.ctaTitle }}</span>
-          }
+    <!-- The slide is drawn at the REAL size the site renders it (1440 wide on
+         desktop, 390 on a phone) and scaled down to fit the rail, rather than
+         drawn small with miniature type. Drawn small, the title was 15px on a
+         360px slide where the site puts 75px on a 1440px one - so the copy
+         block took a completely different share of the frame and the preview
+         did not resemble the live slider (owner report, 2026-08-27). -->
+    <div class="slide-preview-frame"
+         [class.slide-preview-frame--phone]="rail.device === 'phone'">
+      <div class="slide-preview"
+           [class.slide-preview--phone]="rail.device === 'phone'"
+           [class.slide-preview--has-mobile]="rail.device === 'phone' && !!card.mobileImage"
+           [class.slide-preview--clean]="rail.device === 'phone' && form.value.artworkHasText"
+           [style.backgroundImage]="previewImage(rail.device)">
+        <div class="slide-preview__overlay">
+          <div class="slide-preview__content">
+            <h2 class="slide-preview__title">{{ form.value.title }}</h2>
+            <hr class="slide-preview__rule">
+            <p class="slide-preview__text">{{ form.value.text }}</p>
+            @if (form.value.ctaTitle) {
+              <span class="slide-preview__btn">{{ form.value.ctaTitle }}</span>
+            }
+          </div>
         </div>
       </div>
     </div>

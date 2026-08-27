@@ -63,6 +63,40 @@
   padding-right: 4px;
 }
 
+// The preview is drawn at the size the SITE draws it, then scaled down -
+// rather than drawn small with miniature type.
+//
+// Drawn small it was proportionally wrong in both directions at once: the
+// title was 15px on a 360px slide where the site puts 75px on 1440px (4.2% of
+// the width against 5.2%), while the body copy was 11px against the site's
+// 20px - 3.0% against 1.4%, more than twice the share. The copy block also
+// spanned the full width where the site gives it half. The result read as
+// heavy and cramped, and did not resemble the slider it was previewing
+// (owner report, 2026-08-27).
+//
+// Every value below is taken from home-header-slider.component.scss and
+// styles.scss verbatim. Keep them in step; a number invented here is a
+// preview that lies.
+//
+// 360px is the rail's width - see [width]="360" in the template.
+.slide-preview-frame {
+  --preview-width: 1440px;
+  --preview-height: calc(var(--preview-width) * 15 / 32); // web aspect 32/15
+  --preview-scale: calc(360 / 1440);
+
+  width: 360px;
+  height: calc(var(--preview-height) * var(--preview-scale));
+  overflow: hidden;
+
+  // A 390px-wide phone falls in the site's $xs band (321-575px), whose slide
+  // is 380px tall - so this is the real frame, not an approximation.
+  &--phone {
+    --preview-width: 390px;
+    --preview-height: 380px;
+    --preview-scale: calc(360 / 390);
+  }
+}
+
 .slide-preview {
   position: relative;
   display: flex;
@@ -70,21 +104,33 @@
   background-color: #201f1f;
   background-repeat: no-repeat;
 
-  // Desktop: the frame is the artwork's own 32/15 and fills with cover, so
-  // nothing crops. Web aspect-ratio: 32 / 15.
-  aspect-ratio: 32 / 15;
+  width: var(--preview-width);
+  height: var(--preview-height);
+  transform: scale(var(--preview-scale));
+  transform-origin: top left;
+
+  // Desktop: cover on the artwork's own 32/15, so nothing crops.
   background-size: cover;
   background-position: center;
 
-  // Phone: a fixed 380px-tall frame that fits the whole picture in.
+  // Phone: the whole picture fits into the frame, pinned to the top so the
+  // leftover space gathers into one band underneath.
   &--phone {
-    aspect-ratio: 390 / 380;
     background-size: contain;
     background-position: top center;
   }
 
-  // ...and a slide whose artwork carries its own headline drops the tint and
-  // the copy, and centres, keeping only the button.
+  // ...UNLESS the slide has its own phone picture, which was cut for this
+  // frame - then it fills edge to edge, exactly as the site does. Without
+  // this the preview letterboxed a slide that renders full-bleed live, which
+  // is what made Summit 2027 and the Golf slide look wrong.
+  &--has-mobile {
+    background-size: cover;
+    background-position: center;
+  }
+
+  // Artwork carrying its own headline drops the tint and the copy, centres,
+  // and keeps only the button.
   &--clean {
     background-position: center center;
 
@@ -92,7 +138,7 @@
     .slide-preview__title,
     .slide-preview__rule,
     .slide-preview__text { display: none; }
-    .slide-preview__content { justify-content: flex-end; padding-bottom: 10px; }
+    .slide-preview__content { justify-content: flex-end; padding-bottom: 18px; }
   }
 }
 
@@ -103,43 +149,77 @@
   display: flex;
 }
 
+// height 100%, width 50%, padding 30px - the site's own values. The half
+// width is what keeps the copy off the middle of the artwork.
 .slide-preview__content {
+  height: 100%;
+  width: 50%;
+  padding: 30px;
+  text-align: left;
+  white-space: break-spaces;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  padding: 12px;
-  width: 100%;
   color: #fff;
+
+  // $xs: full width, same as the site.
+  .slide-preview--phone & { width: 100%; }
 }
 
 .slide-preview__title {
-  font: 900 15px/1.1 "Poppins", sans-serif;
+  font: 900 75px/1.1 "Poppins", sans-serif;
   margin: 0;
-  letter-spacing: .5px;
+  letter-spacing: 2px;
+  color: #fff;
+
+  // The site's $xxs/$xs size.
+  .slide-preview--phone & { font-size: 20px; }
 }
 
+// A gradient rule, not a solid one - .slider-hr in styles.scss.
 .slide-preview__rule {
-  width: 46px;
-  border: 0;
-  border-top: 2px solid var(--app-attention);
-  margin: 2px 0;
+  background-image: linear-gradient(to right, transparent, var(--app-attention));
+  height: 5px;
+  width: 100%;
+  border: none;
+  outline: none;
+  opacity: .8;
+  margin: 12px 0;
+
+  .slide-preview--phone & { height: 3px; margin: 6px 0; }
 }
 
 .slide-preview__text {
-  font-size: 11px;
+  font-size: 20px;
+  color: #fff;
   margin: 0;
-  opacity: .85;
+
+  // The site HIDES the body copy below 576px, so showing it on a phone
+  // preview would promise something the visitor never sees.
+  .slide-preview--phone & { display: none; }
 }
 
+// .impact-btn: 50px tall, 46px line-height, 0 42px padding, 2px white border.
 .slide-preview__btn {
   align-self: flex-start;
-  margin-top: 6px;
-  padding: 5px 12px;
+  margin-top: 18px;
+  height: 50px;
+  line-height: 46px;
+  padding: 0 42px;
+  border: 2px solid #fff;
   background: #fff;
   color: #201f1f;
-  font: 700 10px/1 "Poppins", sans-serif;
-  letter-spacing: .04em;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+
+  .slide-preview--phone & {
+    height: 34px;
+    line-height: 30px;
+    padding: 0 20px;
+    font-size: 12px;
+    margin-top: 10px;
+  }
 }
 
 .slide-preview__note {
