@@ -36,9 +36,24 @@
   margin-right: 8px;
 }
 
+// OPAQUE, and mixed toward the accent rather than neutral white.
+//
+// Two problems with the previous `color-mix(... var(--app-card-ink) 5%,
+// transparent)`. It produced a translucent white LAYER over the row, and a
+// translucent layer's edges round to different device pixels at different
+// zoom levels - which is why a faint box appeared and disappeared around cell
+// text as the page was zoomed (owner report, 2026-08-27). Mixing into
+// var(--app-card) instead yields the same colour with no alpha at all, so
+// there is no second layer to composite and nothing for zoom to round.
+//
+// And neutral white on a navy table lifts lightness without hue, which is the
+// same "grey slab on a blue field" that made the old .row--pending tint read
+// as yellow. A trace of the accent keeps the highlight in the table's own
+// hue, so it reads as "this row is under the cursor" instead of as a
+// discolouration.
 .data-grid-table .mat-mdc-row:hover {
   cursor: pointer;
-  background-color: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
+  background-color: color-mix(in srgb, var(--app-accent) 7%, var(--app-card));
 }
 
 th.sortable {
@@ -47,8 +62,10 @@ th.sortable {
   white-space: nowrap;
 }
 
+// Opaque for the same reason as the row hover above - a translucent layer
+// over the sticky header rounds inconsistently under zoom.
 th.sortable:hover {
-  background-color: color-mix(in srgb, var(--app-card-ink) 5%, transparent);
+  background-color: color-mix(in srgb, var(--app-accent) 7%, var(--app-card));
 }
 
 .sort-icon {
