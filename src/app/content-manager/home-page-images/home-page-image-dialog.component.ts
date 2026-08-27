@@ -93,6 +93,28 @@ export class HomePageImageDialogComponent {
     this.isMobileImageUploaderVisible$.next(false);
   }
 
+  /**
+   * The CSS background value the preview should paint for a device, following
+   * the same rule the web app applies (HomeHeaderSliderComponent
+   * .slideImageUrl): a phone uses this slide's own picture when it has one and
+   * otherwise falls back to the wide image; a desktop always uses the wide one.
+   */
+  previewImage(device: 'web' | 'phone'): string {
+    const url = (device === 'phone' && this.card.mobileImage?.url) || this.card.image?.url;
+    return url ? `url(${url})` : 'none';
+  }
+
+  /** Says in words what the frame is doing, so the preview is not a guess. */
+  previewNote(device: 'web' | 'phone'): string {
+    if (device !== 'phone') {
+      return 'Desktop fills the frame with the main image.';
+    }
+    if (this.card.mobileImage) {
+      return 'Showing this slide\x27s phone picture.';
+    }
+    return 'No phone picture - showing the main image fitted whole, which shrinks a wide banner.';
+  }
+
   /** Drops the phone picture so the slide falls back to the main image. */
   clearMobileImage(): void {
     this.card.mobileImage = undefined;

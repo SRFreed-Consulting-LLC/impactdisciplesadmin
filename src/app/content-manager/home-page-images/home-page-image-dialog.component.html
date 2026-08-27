@@ -3,6 +3,8 @@
 </app-popup-header>
 
 <mat-dialog-content [formGroup]="form">
+ <div class="edit-with-preview">
+  <div class="edit-with-preview__form">
   <div class="field-row">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Slide Background Image</mat-label>
@@ -90,6 +92,30 @@
       <input matInput formControlName="ctaUrl">
     </mat-form-field>
   }
+  </div>
+
+  <!-- Mirrors what home-header-slider.component.scss actually does. Both the
+       "own title" checkbox and the phone picture only show their effect below
+       992px, so without this an editor is choosing blind on a desktop. -->
+  <app-preview-rail storageKey="home-page-images" label="Home slider" [width]="360" #rail>
+    <div class="slide-preview"
+         [class.slide-preview--phone]="rail.device === 'phone'"
+         [class.slide-preview--clean]="rail.device === 'phone' && form.value.artworkHasText"
+         [style.backgroundImage]="previewImage(rail.device)">
+      <div class="slide-preview__overlay">
+        <div class="slide-preview__content">
+          <h2 class="slide-preview__title">{{ form.value.title }}</h2>
+          <hr class="slide-preview__rule">
+          <p class="slide-preview__text">{{ form.value.text }}</p>
+          @if (form.value.ctaTitle) {
+            <span class="slide-preview__btn">{{ form.value.ctaTitle }}</span>
+          }
+        </div>
+      </div>
+    </div>
+    <p class="slide-preview__note">{{ previewNote(rail.device) }}</p>
+  </app-preview-rail>
+ </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
