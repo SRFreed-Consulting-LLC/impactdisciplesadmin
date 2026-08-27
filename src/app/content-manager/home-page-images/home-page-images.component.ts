@@ -25,7 +25,9 @@ export class HomePageImagesComponent extends BaseListComponent<HomePageImageMode
   // raised, not removed - on a short laptop the form still scrolls rather
   // than running off the screen.
   protected override readonly dialogConfig: MatDialogConfig = {
-    width: '980px', maxWidth: '95vw', maxHeight: '94vh'
+    // 1120 = the 440px preview rail + the 16px gap + a form column wide
+    // enough for its paired fields, with the dialog's own padding on top.
+    width: '1120px', maxWidth: '95vw', maxHeight: '94vh'
   };
 
   readonly columns: DataGridColumn<HomePageImageModel>[] = [

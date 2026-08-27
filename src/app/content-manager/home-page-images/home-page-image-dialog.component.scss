@@ -87,22 +87,34 @@
 // styles.scss verbatim. Keep them in step; a number invented here is a
 // preview that lies.
 //
-// 360px is the rail's width - see [width]="360" in the template.
+// Widths are UNITLESS so the scale can be derived from them - CSS division
+// needs a plain number on the right, so calc(438px / 1440px) is invalid while
+// calc(438 / 1440) is fine.
+//
+// --frame-w must stay under the rail's inner width or the rail scrolls
+// SIDEWAYS: it is [width]="440" with a 1px border each side, so 438 is the
+// space actually available. It was hardcoded 360 against a 360px rail, which
+// overflowed by the borders and put a horizontal bar under the preview
+// (owner, 2026-08-27). max-width is the belt to that braces.
 .slide-preview-frame {
-  --preview-width: 1440px;
+  --frame-w: 438;
+  --preview-width: 1440;
   --preview-height: calc(var(--preview-width) * 15 / 32); // web aspect 32/15
-  --preview-scale: calc(360 / 1440);
+  --preview-scale: calc(var(--frame-w) / var(--preview-width));
 
-  width: 360px;
-  height: calc(var(--preview-height) * var(--preview-scale));
+  width: calc(var(--frame-w) * 1px);
+  max-width: 100%;
+  height: calc(var(--preview-height) * var(--preview-scale) * 1px);
   overflow: hidden;
 
   // A 390px-wide phone falls in the site's $xs band (321-575px), whose slide
-  // is 380px tall - so this is the real frame, not an approximation.
+  // is 380px tall - so this is the real frame, not an approximation. The rail
+  // draws its own 390px handset shell with an 8px bezel, so the usable width
+  // inside it is 374.
   &--phone {
-    --preview-width: 390px;
-    --preview-height: 380px;
-    --preview-scale: calc(360 / 390);
+    --frame-w: 374;
+    --preview-width: 390;
+    --preview-height: 380;
   }
 }
 
@@ -113,8 +125,8 @@
   background-color: #201f1f;
   background-repeat: no-repeat;
 
-  width: var(--preview-width);
-  height: var(--preview-height);
+  width: calc(var(--preview-width) * 1px);
+  height: calc(var(--preview-height) * 1px);
   transform: scale(var(--preview-scale));
   transform-origin: top left;
 
