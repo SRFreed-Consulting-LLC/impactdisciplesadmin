@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy } from '@angular/core';
 import Quill from 'quill';
 import { HeadingBlock, TextBlock } from 'src/app/common/models/admin/email-design.model';
-import { MERGE_TAGS, MergeTagDef, mergeTagToken } from 'src/app/common/utils/email/merge-tags';
+import { MergeTagDef, mergeTagToken, mergeTagsForKind } from 'src/app/common/utils/email/merge-tags';
 import { DesignerStateService } from '../designer-state.service';
 import { normalizeInlineHtml } from './inline-html.util';
 
@@ -30,7 +30,12 @@ import { QUILL_SIZE_WHITELIST, registerQuillStyleAttributors } from 'src/app/sha
 export class InlineTextEditorComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) block!: TextBlock | HeadingBlock;
 
-  mergeTags: MergeTagDef[] = MERGE_TAGS;
+  /** Only the variables this template's send path can actually resolve -
+   *  the menu used to offer all of them, so an event confirmation invited
+   *  *|TRACKING|* and a product follow-up invited *|UNSUB|*. */
+  get mergeTags(): MergeTagDef[] {
+    return mergeTagsForKind(this.state.templateKind);
+  }
 
   quillModules = {
     toolbar: [

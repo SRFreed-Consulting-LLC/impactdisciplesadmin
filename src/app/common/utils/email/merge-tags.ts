@@ -88,8 +88,88 @@ export const MERGE_TAGS: MergeTagDef[] = [
     sample: '#',
     resolverKey: 'unsubscribeUrl',
     defaultValue: '#'
+  },
+  // ------------------------------------------------- per-process variables
+  //
+  // These were always supplied by their send paths, but only in the legacy
+  // {{...}} spelling and never registered here - so the builder's tag menu
+  // did not offer them, an admin editing an event confirmation had no way to
+  // insert the event's own name, and the tags it DID offer (TRACKING, UNSUB)
+  // were the ones that path cannot resolve. Registering them gives each a
+  // *|TAG|* spelling and a sample for preview, while `legacyTokens` keeps
+  // every template already written against {{eventName}} working unchanged.
+  {
+    tag: 'EVENT_NAME',
+    label: 'Event name',
+    sample: 'Disciple-Making Summit',
+    resolverKey: 'eventName',
+    defaultValue: '',
+    legacyTokens: ['{{eventName}}']
+  },
+  {
+    tag: 'START_DATE',
+    label: 'Event start date',
+    sample: 'March 3, 2027 at 9:00 AM',
+    resolverKey: 'startDate',
+    defaultValue: '',
+    legacyTokens: ['{{startDate}}']
+  },
+  {
+    tag: 'EDIT_REGISTRATION',
+    label: 'Breakout registration link',
+    sample: '<a href="#">Register for Breakout</a>',
+    resolverKey: 'editRegistration',
+    defaultValue: '',
+    legacyTokens: ['{{editRegistration}}']
+  },
+  {
+    tag: 'ORDER_ITEMS',
+    label: 'Order items table',
+    sample: '<i>(the order table renders here)</i>',
+    resolverKey: 'product_list',
+    defaultValue: '',
+    legacyTokens: ['{{product_list}}']
   }
 ];
+
+/**
+ * Which variables each kind of template can actually resolve.
+ *
+ * The menu used to offer all of MERGE_TAGS everywhere, so an event
+ * confirmation invited *|TRACKING|* and a product follow-up invited
+ * *|UNSUB|* - tags those send paths supply no value for, which render as an
+ * empty string in a real customer's email and fail silently. A variable is
+ * listed here only where the sending code actually puts it in the model.
+ *
+ * Keep in step with the send paths:
+ *   event/summit  register_for_event (event-registration.functions.ts)
+ *   store         queueWebOrderEmails' receipt half
+ *   product       queueWebOrderEmails' follow-up half
+ *   fulfillment   PurchasesService.sendAmazonConfirmation
+ *   campaign      campaign-send.functions.ts
+ */
+export const TAGS_BY_TEMPLATE_KIND: Record<string, readonly string[]> = {
+  event: ['FNAME', 'LNAME', 'EMAIL', 'EVENT_NAME', 'START_DATE', 'EDIT_REGISTRATION'],
+  summit: ['FNAME', 'LNAME', 'EMAIL', 'EVENT_NAME', 'START_DATE', 'EDIT_REGISTRATION'],
+  store: ['FNAME', 'LNAME', 'EMAIL', 'ORDER_ITEMS'],
+  product: ['FNAME', 'LNAME', 'EMAIL'],
+  fulfillment: ['FNAME', 'LNAME', 'EMAIL', 'DATE', 'TRACKING'],
+  campaign: ['FNAME', 'LNAME', 'EMAIL', 'DATE', 'SENDER_FNAME', 'SENDER_LNAME', 'UNSUB'],
+  // A template with no kind yet (a brand new design) has no send path to
+  // read from, so it gets the safe universal three rather than everything.
+  system: ['FNAME', 'LNAME', 'EMAIL']
+};
+
+/**
+ * The tags an editor should offer for a template of this kind.
+ * An unknown kind falls back to the universal three rather than to
+ * everything - offering a tag that cannot resolve is the failure this exists
+ * to prevent.
+ */
+export function mergeTagsForKind(kind: string | undefined): MergeTagDef[] {
+  const allowed = TAGS_BY_TEMPLATE_KIND[kind ?? ''] ?? TAGS_BY_TEMPLATE_KIND['system'];
+  return MERGE_TAGS.filter((def) => allowed.includes(def.tag));
+}
 
 function escapeRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

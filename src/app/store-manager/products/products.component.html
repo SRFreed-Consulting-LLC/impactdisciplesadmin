@@ -48,9 +48,11 @@
                 {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
               </button>
             </div>
-            @if (card.imageUrl?.url) {
-              <img class="image-preview" [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-            }
+            <!-- No inline preview here (2026-08-27). The store-preview card
+                 beside this form already renders the image the way a shopper
+                 actually sees it; showing it twice pushed every field below
+                 it down for no extra information. The filename in the field
+                 above still says which image is attached. -->
             <div class="field-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Weight</mat-label>

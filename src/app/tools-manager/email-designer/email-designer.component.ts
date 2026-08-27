@@ -122,6 +122,10 @@ export class EmailDesignerComponent implements OnInit {
         return;
       }
 
+      // A NEW template already knows its kind from ?kind= (the screen that
+      // launched it), so the variable menu is right from the first keystroke
+      // rather than only after the first save.
+      this.state.templateKind = this.newTemplateKind();
       this.state.load(createDefaultDesign());
       this.loading$.next(false);
       // The template catalogue: card previews of starters + saved
@@ -156,6 +160,9 @@ export class EmailDesignerComponent implements OnInit {
       this.existing = template;
       this.templateName = template.name;
       this.templateSubject = template.subject ?? '';
+      // Drives which variables the inline editor offers - an event's
+      // confirmation must not be able to insert *|TRACKING|*.
+      this.state.templateKind = template.kind ?? 'system';
       // Builder templates load their design; legacy (Quill/html-only)
       // templates are imported as one full-width text block - content
       // preserved verbatim, converted to a builder template on first save.

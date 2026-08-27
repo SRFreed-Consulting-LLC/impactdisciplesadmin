@@ -9,12 +9,9 @@
              placeholder="Email name (shown on the timeline)" aria-label="Email name">
       <input class="subject-input" formControlName="subject"
              placeholder="Subject line" aria-label="Subject line">
-      <!-- The inbox snippet next to the subject - compiled as a hidden
-           preheader div. Lives on the design doc itself, not the touch. -->
-      <input class="subject-input preheader-input" [(ngModel)]="state.design.preheader"
-             [ngModelOptions]="{standalone: true}" (ngModelChange)="state.dirty = true"
-             placeholder="Preview text" aria-label="Preview text (preheader)"
-             matTooltip="The snippet shown next to the subject in the inbox">
+      <!-- The "Preview text" (preheader) input was removed 2026-08-27 - see
+           the same note in email-designer.component.html. Never used in
+           either project; the model and compiler still support it. -->
     </form>
 
     <span class="topbar-divider"></span>

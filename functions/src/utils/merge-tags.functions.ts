@@ -62,6 +62,35 @@ export const MERGE_TAGS: MergeTagDef[] = [
     resolverKey: "unsubscribeUrl",
     defaultValue: "#",
   },
+  // Per-process variables (2026-08-27). Always supplied by their send paths,
+  // but only in the legacy {{...}} spelling and never registered - so the
+  // builder's tag menu could not offer them. `legacyTokens` keeps every
+  // template already written against {{eventName}} working unchanged.
+  // Mirror of src/app/common/utils/email/merge-tags.ts - keep in step.
+  {
+    tag: "EVENT_NAME",
+    resolverKey: "eventName",
+    defaultValue: "",
+    legacyTokens: ["{{eventName}}"],
+  },
+  {
+    tag: "START_DATE",
+    resolverKey: "startDate",
+    defaultValue: "",
+    legacyTokens: ["{{startDate}}"],
+  },
+  {
+    tag: "EDIT_REGISTRATION",
+    resolverKey: "editRegistration",
+    defaultValue: "",
+    legacyTokens: ["{{editRegistration}}"],
+  },
+  {
+    tag: "ORDER_ITEMS",
+    resolverKey: "product_list",
+    defaultValue: "",
+    legacyTokens: ["{{product_list}}"],
+  },
 ];
 
 /**

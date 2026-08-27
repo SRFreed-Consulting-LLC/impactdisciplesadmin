@@ -114,6 +114,10 @@ export class CampaignEmailEditorComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Everything this editor authors is a campaign send, so the inline
+    // editor offers the campaign variables (including *|UNSUB|*, which no
+    // transactional path supplies) and nothing else.
+    this.state.templateKind = 'campaign';
     this.campaignId = this.route.snapshot.paramMap.get('campaignId') ?? '';
     const touchParam = this.route.snapshot.paramMap.get('touchId');
     this.touchId = touchParam && touchParam !== 'new' ? touchParam : null;

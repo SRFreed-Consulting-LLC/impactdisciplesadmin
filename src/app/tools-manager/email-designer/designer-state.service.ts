@@ -33,6 +33,17 @@ export class DesignerStateService {
   design: EmailDesign = createDefaultDesign();
   viewMode: DesignerViewMode = 'desktop';
   dirty = false;
+  /**
+   * What KIND of template is being edited, so the inline editor can offer
+   * only the variables this one's send path actually supplies.
+   *
+   * Set by whichever shell owns this service - the email designer from the
+   * template it loaded, the campaign email editor to 'campaign'. Left
+   * undefined it falls back to the universal FNAME/LNAME/EMAIL, which is the
+   * safe direction: offering a tag that cannot resolve puts an empty string
+   * in a real customer's email and fails silently.
+   */
+  templateKind: string | undefined;
   // True while an inline Quill editor owns the keyboard - the shell's
   // Ctrl+Z/Ctrl+Y handlers stand down so Quill's own history applies while
   // typing; our snapshot lands when the editor deactivates.

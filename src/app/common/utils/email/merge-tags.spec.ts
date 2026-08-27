@@ -1,4 +1,4 @@
-import { MERGE_TAGS, renderMergeTags, sampleMergeContext, mergeTokenForLabel } from './merge-tags';
+import { MERGE_TAGS, TAGS_BY_TEMPLATE_KIND, mergeTagsForKind, renderMergeTags, sampleMergeContext, mergeTokenForLabel } from './merge-tags';
 
 describe('renderMergeTags', () => {
   it('replaces every occurrence of a tag, not just the first', () => {
@@ -104,5 +104,80 @@ describe('mergeTokenForLabel', () => {
 
   it('falls back to the legacy spelling for an unregistered label', () => {
     expect(mergeTokenForLabel('Something Else')).toBe('{{Something Else}}');
+  });
+});
+
+// Which variables a template of each kind may offer. The menu used to show
+// all of MERGE_TAGS everywhere, so an event confirmation invited
+// *|TRACKING|* and a product follow-up invited *|UNSUB|* - tags those send
+// paths supply no value for, which reach a real customer as an empty string
+// with nothing erroring anywhere.
+describe('mergeTagsForKind', () => {
+  const tagsFor = (kind: string | undefined) =>
+    mergeTagsForKind(kind).map((def) => def.tag);
+
+  it('offers an event its own variables and NOT tracking or unsubscribe', () => {
+    const tags = tagsFor('event');
+    expect(tags).toContain('EVENT_NAME');
+    expect(tags).toContain('START_DATE');
+    expect(tags).toContain('EDIT_REGISTRATION');
+    expect(tags).not.toContain('TRACKING');
+    expect(tags).not.toContain('UNSUB');
+  });
+
+  it('gives a summit the same set as an event', () => {
+    expect(tagsFor('summit')).toEqual(tagsFor('event'));
+  });
+
+  it('offers the store its order table, and no event variables', () => {
+    const tags = tagsFor('store');
+    expect(tags).toContain('ORDER_ITEMS');
+    expect(tags).not.toContain('EVENT_NAME');
+    expect(tags).not.toContain('TRACKING');
+  });
+
+  it('offers fulfillment its tracking number', () => {
+    expect(tagsFor('fulfillment')).toContain('TRACKING');
+    expect(tagsFor('fulfillment')).not.toContain('ORDER_ITEMS');
+  });
+
+  it('offers *|UNSUB|* to campaigns ONLY', () => {
+    // Every transactional path builds its own model and none of them
+    // supplies an unsubscribe url.
+    expect(tagsFor('campaign')).toContain('UNSUB');
+    for (const kind of ['event', 'summit', 'store', 'product', 'fulfillment']) {
+      expect(tagsFor(kind)).not.toContain('UNSUB', `${kind} must not offer UNSUB`);
+    }
+  });
+
+  it('an unknown or absent kind falls back to the universal three', () => {
+    // Deliberately NOT "everything": offering a tag that cannot resolve is
+    // the failure this exists to prevent, so the fallback is the narrow set.
+    expect(tagsFor(undefined)).toEqual(['FNAME', 'LNAME', 'EMAIL']);
+    expect(tagsFor('not-a-real-kind')).toEqual(['FNAME', 'LNAME', 'EMAIL']);
+  });
+
+  it('every listed tag is a real registered tag', () => {
+    const known = new Set(MERGE_TAGS.map((def) => def.tag));
+    for (const kind of Object.keys(TAGS_BY_TEMPLATE_KIND)) {
+      for (const tag of TAGS_BY_TEMPLATE_KIND[kind]) {
+        expect(known.has(tag)).toBe(true, `${kind} lists unknown tag ${tag}`);
+      }
+    }
+  });
+});
+
+describe('the per-process variables', () => {
+  it('resolve from the send paths own model keys', () => {
+    const html = '*|EVENT_NAME|* / *|START_DATE|* / *|ORDER_ITEMS|*';
+    expect(renderMergeTags(html, {
+      eventName: 'Summit', startDate: 'March 3', product_list: '<table></table>'
+    })).toBe('Summit / March 3 / <table></table>');
+  });
+
+  it('still resolve their legacy {{...}} spellings, so old templates work', () => {
+    expect(renderMergeTags('{{eventName}} {{startDate}} {{product_list}}', {
+      eventName: 'Summit', startDate: 'March 3', product_list: 'X'
+    })).toBe('Summit March 3 X');
   });
 });
