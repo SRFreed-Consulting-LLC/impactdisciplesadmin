@@ -45,6 +45,15 @@
 // Slide preview. Mirrors home-header-slider.component.scss in the WEB repo -
 // if that changes, this has to follow, or the preview starts lying.
 // ---------------------------------------------------------------------------
+// Material caps mat-dialog-content at 65vh, which is what forced this form to
+// scroll - it fits in the window, just not in two thirds of it. Raised, not
+// removed: on a short laptop the inner scroller below still takes over rather
+// than the form running off the screen. :host ::ng-deep because the cap is set
+// on Material's own element, outside this component's emulated encapsulation.
+:host ::ng-deep .mat-mdc-dialog-content {
+  max-height: none;
+}
+
 .edit-with-preview {
   display: flex;
   align-items: stretch;

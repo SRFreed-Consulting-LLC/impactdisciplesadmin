@@ -19,7 +19,14 @@ export class HomePageImagesComponent extends BaseListComponent<HomePageImageMode
   readonly itemType = 'Home Page Image';
   protected readonly screenKey = 'content-manager.home-page-images';
   protected readonly dialogComponent = HomePageImageDialogComponent;
-  protected override readonly dialogConfig: MatDialogConfig = { width: '900px', maxWidth: '95vw' };
+  // maxHeight lifts Material's default 65vh cap on dialog CONTENT, which was
+  // what put a scrollbar on this form: the fields fit comfortably in the
+  // window, just not in two thirds of it (owner, 2026-08-27). The cap is
+  // raised, not removed - on a short laptop the form still scrolls rather
+  // than running off the screen.
+  protected override readonly dialogConfig: MatDialogConfig = {
+    width: '980px', maxWidth: '95vw', maxHeight: '94vh'
+  };
 
   readonly columns: DataGridColumn<HomePageImageModel>[] = [
     { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
