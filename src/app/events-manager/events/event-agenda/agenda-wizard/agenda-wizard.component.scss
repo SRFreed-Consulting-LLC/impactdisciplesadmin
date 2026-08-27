@@ -12,7 +12,10 @@ $pending: var(--app-field-border);
 $accent2: color-mix(in srgb, var(--app-accent) 45%, var(--app-muted));
 $accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
 $warn: var(--app-attention);
-$warn-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
+// No $warn-tint. --app-attention mixed into the navy card collapses to
+// chroma 2 (a neutral grey) and reads as a yellow smudge - see .row--pending
+// in styles.scss. $done-tint above is unaffected (success lands at chroma 37),
+// as are the accent tints; amber is the only near-complement of the navy.
 
 .empty-state {
   color: var(--app-muted);
@@ -252,8 +255,11 @@ $warn-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
   font-size: 12.5px;
   font-weight: 650;
 
+  // Outlined, not filled. inset box-shadow rather than a border so the block
+  // does not change size against its unmodified .reviewok sibling.
   &--warn {
-    background: $warn-tint;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #{$warn} 55%, transparent);
     color: $warn;
   }
 }

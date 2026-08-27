@@ -14,7 +14,13 @@ $new-tint: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
 // (already NEW/current/done elsewhere on this same page) so it doesn't get
 // misread as one of those.
 $live: var(--app-attention);
-$live-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
+// No $live-tint any more. Mixing --app-attention into a navy card collapses
+// its chroma to 2 (rgb(64, 63, 65) - a neutral grey), so the "tint" rendered
+// as a muddy band that reads yellow against the blue around it. The other
+// tints on this page are fine and stay: $new-tint (error) lands at chroma 18,
+// $done-tint (success) at 37, the accent tints at 50+. Amber is the only one
+// that collapses, because it is the near-complement of the navy. See the note
+// on .row--pending in styles.scss.
 
 :host {
   display: flex;
@@ -219,6 +225,9 @@ $live-tint: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
   gap: 3px;
 }
 
+// An amber edge instead of an amber wash - the wash was the thing that went
+// grey. The row already carries a "Happening now" badge in $live, so the
+// colour is not the only signal here.
 .event-row--live {
-  background: $live-tint;
+  box-shadow: inset 3px 0 0 $live;
 }

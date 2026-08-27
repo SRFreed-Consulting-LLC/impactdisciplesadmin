@@ -58,8 +58,13 @@ $campaign-event-hue: color-mix(in srgb, var(--app-accent) 40%, var(--app-muted))
     background: color-mix(in srgb, #{$campaign-event-hue} 18%, var(--app-card));
     color: $campaign-event-hue;
   }
+  // Outlined rather than filled: --app-attention mixed into the navy card
+  // collapses to chroma 2 (a neutral grey) and reads as a yellow smudge - see
+  // .row--pending in styles.scss. The sibling type chips above keep their
+  // fills; their hues are not the navy's near-complement and survive the mix.
   &.type-lead-capture {
-    background: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-attention) 55%, transparent);
     color: var(--app-attention);
   }
 

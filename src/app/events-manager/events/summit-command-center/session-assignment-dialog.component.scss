@@ -66,8 +66,12 @@
   color: var(--mat-sys-error);
   flex-shrink: 0;
 
+  // Outlined - a translucent amber over navy composites to a near-neutral
+  // grey (chroma 2) and reads as a smudge. The error-red fill above is
+  // unaffected. See .row--pending in styles.scss.
   &--queued {
-    background: color-mix(in srgb, var(--app-attention) 18%, transparent);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-attention) 55%, transparent);
     color: var(--app-attention);
   }
 }
