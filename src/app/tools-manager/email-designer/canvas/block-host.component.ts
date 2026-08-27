@@ -70,10 +70,18 @@ export class BlockHostComponent {
     return style;
   }
 
-  // Block html fragments are authored in our own inline editor and
-  // normalized through dompurify before they're stored, so re-trusting them
-  // here (to keep the inline color/style spans Angular's sanitizer would
-  // strip) does not open XSS surface to outside content.
+  // Re-trusting these fragments (to keep the inline color/style spans
+  // Angular's sanitizer would strip) is only safe because EVERY writer of
+  // props.html sanitizes before storing:
+  //   - the inline editor, via designer-side-panel's DOMPurify.sanitize
+  //   - imports of a whole sent email, via createDesignFromFullHtml
+  //
+  // That second one was NOT true until 2026-08-27: it stripped <script> with
+  // a regex and nothing else, so `<img src=x onerror=...>` reached this
+  // bypassSecurityTrustHtml and executed with the viewing admin's session.
+  // This comment previously claimed the invariant held; it did not. If a new
+  // writer of props.html appears, it sanitizes on the way in - do not "fix"
+  // it by sanitizing here, which would re-run on every change-detection pass.
   trustHtml(html: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }

@@ -7,6 +7,13 @@
 // Firestore rule: use `null` for "unset", NEVER `undefined` - the DAO
 // setDoc()s whole documents and Firestore rejects any nested undefined (see
 // CLAUDE.md's write gotcha and utils/strip-undefined.ts).
+//
+// Still Angular-free (scripts/convert-template-to-builder.js bundles this file
+// and the compiler for Node with esbuild, which is why that must stay true).
+// `dompurify` is the one runtime dependency, and it is DOM-optional - see
+// sanitizeEmbeddedHtml.
+
+import DOMPurify from 'dompurify';
 
 export const EMAIL_DESIGN_VERSION = 1;
 
@@ -516,6 +523,116 @@ export function createDesignFromLegacyHtml(html: string): EmailDesign {
   return design;
 }
 
+/**
+ * Outlook conditional comments, in both spellings the archive actually uses.
+ *
+ *   <!--[if mso]> ... <![endif]-->      one comment node; content is INERT
+ *                                       everywhere but Outlook, which runs no
+ *                                       script, so preserving it verbatim
+ *                                       adds no surface.
+ *   <!--[if !mso]><!-->  /  <!--<![endif]-->
+ *                                       downlevel-revealed: only the MARKERS
+ *                                       are comments. The live html between
+ *                                       them is not matched here and is
+ *                                       sanitized normally, which is the
+ *                                       point.
+ */
+const CONDITIONAL_COMMENT =
+  /<!--\[if[\s\S]*?<!\[endif\]-->|<!--\[if[^\]]*\]><!-->|<!--<!\[endif\]-->/gi;
+
+/** Token that cannot appear in real markup and survives sanitization intact. */
+const CONDITIONAL_TOKEN = (index: number) => `impact-cond-${index}-impact`;
+
+/**
+ * Lifts conditional comments out before sanitizing.
+ *
+ * Measured, not assumed: DOMPurify 3.4.13 strips comment nodes under every
+ * config tried, `ADD_TAGS: ['#comment']` included. Every mined archive shell
+ * is built on balanced <!--[if mso]> pairs, and an unbalanced conditional can
+ * make Outlook swallow the rest of the document - so losing them would break
+ * Outlook rendering of anything started from a past email.
+ * @param {string} html Raw extracted markup.
+ * @return {{masked: string, conditionals: string[]}} Masked markup and the
+ *   comments removed from it, in order.
+ */
+function maskConditionalComments(html: string): { masked: string; conditionals: string[] } {
+  const conditionals: string[] = [];
+  const masked = html.replace(CONDITIONAL_COMMENT, (match) => {
+    conditionals.push(match);
+    return CONDITIONAL_TOKEN(conditionals.length - 1);
+  });
+  return { masked, conditionals };
+}
+
+/**
+ * Puts them back, by INDEX into the array we built - never by pattern. An
+ * attacker who types the token literally gets nothing back, because only
+ * indices this call produced are restored.
+ * @param {string} html Sanitized markup.
+ * @param {string[]} conditionals The comments taken out by maskConditionalComments.
+ * @return {string} Markup with the conditionals restored.
+ */
+function restoreConditionalComments(html: string, conditionals: string[]): string {
+  let out = html;
+  for (let i = 0; i < conditionals.length; i++) {
+    out = out.split(CONDITIONAL_TOKEN(i)).join(conditionals[i]);
+  }
+  return out;
+}
+
+/**
+ * Sanitizes html that is about to be STORED as an html block's content.
+ *
+ * Sanitizing here rather than at the render sink is deliberate on two counts.
+ * The canvas renders these through `bypassSecurityTrustHtml` from a template
+ * method (block-host's `trustHtml`), so sanitizing there would re-run on every
+ * change-detection cycle for every html block on the page. And a payload that
+ * is merely rendered safely is still SAVED - it would go out in the compiled
+ * email and reach the next reader of the document. Cleaning on the way in
+ * means it is never persisted at all.
+ *
+ * This used to be a `<script>` regex, which is not a sanitizer: `<img src=x
+ * onerror=...>` and `<svg onload=...>` sail straight through it, and the
+ * canvas then executes them same-origin with the viewing admin's session.
+ *
+ * DOMPurify keeps the inline styles and table markup mined email chrome
+ * depends on, and drops event handlers, javascript: urls and script/iframe
+ * elements.
+ *
+ * The `isSupported` guard is not defensive noise: this file is bundled for
+ * NODE by scripts/convert-template-to-builder.js, and without a DOM DOMPurify
+ * reports isSupported false and `sanitize()` returns its input UNCHANGED
+ * rather than throwing - which would be a silent hole. The node path never
+ * imports untrusted html, but it says so out loud instead of relying on that.
+ * @param {string} html The extracted, embeddable markup.
+ * @return {string} The markup with executable content removed.
+ */
+function sanitizeEmbeddedHtml(html: string): string {
+  if (DOMPurify.isSupported) {
+    const { masked, conditionals } = maskConditionalComments(html);
+    // FORCE_BODY is what keeps <style>. Measured on DOMPurify 3.4.13: without
+    // it the element is parsed into <head> and discarded, and ADD_TAGS does
+    // NOT bring it back. Those head styles are the media queries a mined
+    // campaign renders its mobile layout with, and this function hoists them
+    // deliberately - dropping them silently would break every import.
+    // Its CSS is still sanitized (expression() is removed), so this widens
+    // markup, not script surface.
+    const clean = DOMPurify.sanitize(masked, {
+      ADD_TAGS: ['style'],
+      ALLOW_DATA_ATTR: true,
+      KEEP_CONTENT: true,
+      FORCE_BODY: true
+    });
+    return restoreConditionalComments(clean, conditionals);
+  }
+  console.warn(
+    'sanitizeEmbeddedHtml: DOMPurify has no DOM here, so it would pass input ' +
+    'through unchanged; fell back to script-stripping. Never import untrusted ' +
+    'html on this path.'
+  );
+  return html.replace(/<script[\s\S]*?<\/script>/gi, '');
+}
+
 // Imports a FULL email document (a past sent email from `campaign_emails`,
 // e.g. a Mailchimp-rendered campaign) as one full-width HTML block: head
 // <style> blocks + body content are extracted (nesting a second <html>
@@ -526,9 +643,9 @@ export function createDesignFromFullHtml(fullHtml: string): EmailDesign {
   const source = fullHtml ?? '';
   const styles = (source.match(/<style[\s\S]*?<\/style>/gi) ?? []).join('\n');
   const bodyMatch = source.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  const embeddable = (styles + '\n' + (bodyMatch ? bodyMatch[1] : source))
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .trim();
+  const embeddable = sanitizeEmbeddedHtml(
+    (styles + '\n' + (bodyMatch ? bodyMatch[1] : source)).trim()
+  );
 
   const design = createDefaultDesign();
   const row = createRow(1);
