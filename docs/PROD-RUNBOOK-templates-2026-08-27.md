@@ -150,16 +150,12 @@ Undo list: `scripts/output/event-template-reassign-impactdisciples-a82a8.json`.
 node scripts/rename-template.js --project=prod --from="Summit Registration Success Template" --to="Summit Registration 2026" --execute
 ```
 
-Repoints its event first, then renames — never the other way round. Then
-**rename its backup file** to match the new slug, or `--revert` later will
-look for a filename that no longer exists:
+Repoints its event first, then renames — never the other way round.
 
-```bash
-cd scripts/output
-mv template-backup-summit-registration-success-template-impactdisciples-a82a8.json \
-   template-backup-summit-registration-2026-impactdisciples-a82a8.json
-cd ../..
-```
+> **No backup file to rename here.** On dev this template was converted
+> *before* it was renamed, leaving a backup under the old slug that had to be
+> moved by hand. Prod renames first, so step 7 writes the backup under the new
+> slug already. Only rename a backup if you convert before renaming.
 
 ---
 
@@ -269,3 +265,48 @@ should not be cleared until you are satisfied.
   decision, not a conversion.
 - `renderPlaceholders` now has **no production callers**. Kept with its tests
   as the reference statement of the single-pass rule.
+
+---
+
+## Execution log — 2026-08-27
+
+Run top to bottom against `impactdisciples-a82a8`. All nine steps completed.
+
+| step | result |
+|---|---|
+| 0 backup | `scripts/backups/impactdisciples-a82a8-2026-08-27T09-10-04Z` |
+| 1 functions | deployed by the owner (the automated deploy was permission-blocked) |
+| 2 hosting | released, `impactdisciples-admin.web.app` answers 200 |
+| 3 pin ids | both copied, verified, originals deleted, 0 strays |
+| 4 move home | 5 templates moved |
+| 5 seed | created + **6 events reassigned**, exactly as the dry run predicted |
+| 6 rename | 1 event repointed, 0 dangling |
+| 7 convert | 6 converted, each backed up first |
+| 8 retire | 4 deleted, 11 events reassigned first |
+| 9 verify | see below |
+
+End state, matching dev exactly:
+
+```
+event        Disciple-Making Church Seminar Receipt   [BUILDER]
+event        Event Registration Confirmation          [BUILDER]
+fulfillment  Amazon Shipping Confirmation             [BUILDER]  tmpl-amazon-shipping-confirmation
+product      Healthy Marriage Videos                  [BUILDER]
+store        Sales Receipt                            [BUILDER]  tmpl-sales-receipt
+summit       Summit Registration 2026                 [BUILDER]
+summit       Summit Registration 2027                 [BUILDER]
+
+still system kind ........................ 0
+still legacy rich text .................. 0
+templates containing [object Object] .... 0
+events naming a missing template ........ 0
+active events with NO template .......... 0
+```
+
+Every active prod event now has a confirmation: 6 on Event Registration
+Confirmation, 2 on the Seminar Receipt.
+
+**Not yet done on prod:** the System Templates screen itself still exists (it
+is simply empty); removing it needs the new `tools-manager.email-designer`
+grant and a permission migration. Header/footer starters from campaign
+history, and the test sends, are also outstanding.
