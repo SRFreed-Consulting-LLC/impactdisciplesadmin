@@ -193,6 +193,21 @@ $collapsed-width: 64px;
   position: relative;
 }
 
+// A manager header is a HEADING, not a peer of the screens beneath it. It used
+// to take the same --app-muted as every child row, which is half of why an
+// all-expanded nav read as one flat list; the recessed well below is the other
+// half. Full ink and a heavier weight, so the two ranks differ in type as well
+// as in surface.
+//
+// Specificity: .impact-drawer__list prefix to match the (0,2,0) Material
+// list-item rule that sets an explicit colour on these rows - a bare
+// .impact-drawer__group-header .impact-drawer__link ties with it and loses on
+// source order.
+.impact-drawer__list .impact-drawer__group-header .impact-drawer__link {
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
 .impact-drawer__link {
   text-decoration: none;
   color: var(--app-muted);
@@ -391,12 +406,43 @@ $collapsed-width: 64px;
   padding-right: 40px;
 }
 
+// A RECESSED WELL WITH A GUIDE RAIL. With every group expanded the nav used
+// to read as one flat list rather than a set of foldable groups (owner
+// report, 2026-08-27), and the reason was here: the only thing separating a
+// child list from its parent was `color-mix(in srgb, black 12%, transparent)`
+// - a translucent black wash, which over the navy grounds is worth a couple
+// of RGB values and reads as nothing at all. Same failure as the amber
+// .row--pending tint: a partial mix into a dark surface that does not survive
+// the mix.
+//
+// Two real signals replace it, and the earlier comment here ("without a full
+// tree-indent guideline") is exactly what the second one adds:
+//
+//   1. an OPAQUE surface - var(--app-field), the theme's own recessed colour,
+//      which sits a genuine 13-22 from the drawer in every dark variant
+//      instead of 2;
+//   2. a 2px rail down the left edge, so a child is visibly tethered to the
+//      parent above it rather than merely indented under it.
+//
+// Both are tokens, so this holds on the light variants too, where --app-field
+// is a pale grey against a white drawer.
 .impact-drawer__sublist {
   display: flex;
   flex-direction: column;
-  // Slightly recessed so the group/sub-item hierarchy reads at a glance
-  // without a full tree-indent guideline.
-  background-color: color-mix(in srgb, black 12%, transparent);
+  background-color: var(--app-field);
+  border-left: 2px solid var(--app-divider);
+  border-radius: 0 var(--app-radius-control) var(--app-radius-control) 0;
+  margin: 2px 8px 8px 16px;
+  padding: 4px 0;
+}
+
+// The rail lights up for the branch you are actually in, so an expanded group
+// that merely happens to be open is quieter than the one holding the current
+// screen. :has() rather than a bound class: the state is already expressed on
+// the child (activeGroupId + activeSlug drive --active), and a browser without
+// :has() simply keeps the neutral rail - it degrades to option A on its own.
+.impact-drawer__sublist:has(.impact-drawer__sublink--active) {
+  border-left-color: var(--app-accent);
 }
 
 // .impact-drawer__list .mat-mdc-list-item's own padding rule above is
