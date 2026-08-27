@@ -5,6 +5,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+// The toolbar's own subject-line variable menu. EmailBuilderModule imports
+// MatMenuModule for the inline editor's menu, but does not re-export it -
+// this shell's template needs its own.
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -31,6 +35,7 @@ import { EmailDesignerComponent } from './email-designer.component';
     MatButtonToggleModule,
     MatDialogModule,
     MatIconModule,
+    MatMenuModule,
     MatProgressSpinnerModule,
     MatToolbarModule,
     MatTooltipModule
