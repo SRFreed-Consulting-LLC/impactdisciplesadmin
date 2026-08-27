@@ -150,11 +150,16 @@ describe('mergeTagsForKind', () => {
     }
   });
 
-  it('an unknown or absent kind falls back to the universal three', () => {
+  it('an unknown or absent kind falls back to the tags that always resolve', () => {
     // Deliberately NOT "everything": offering a tag that cannot resolve is
     // the failure this exists to prevent, so the fallback is the narrow set.
-    expect(tagsFor(undefined)).toEqual(['FNAME', 'LNAME', 'EMAIL']);
-    expect(tagsFor('not-a-real-kind')).toEqual(['FNAME', 'LNAME', 'EMAIL']);
+    //
+    // Was "the universal three" until CURRENT_YEAR joined them (2026-08-27).
+    // It belongs here for the SAME reason the other three do - it resolves
+    // with no send path supplying it, via dynamicDefault - so the rule is
+    // unchanged even though the count is.
+    expect(tagsFor(undefined)).toEqual(['FNAME', 'LNAME', 'EMAIL', 'CURRENT_YEAR']);
+    expect(tagsFor('not-a-real-kind')).toEqual(['FNAME', 'LNAME', 'EMAIL', 'CURRENT_YEAR']);
   });
 
   it('every listed tag is a real registered tag', () => {
@@ -231,5 +236,51 @@ describe('renderEmailBody (client twin)', () => {
     for (const tpl of ['*|FNAME|*', '{{firstName}}', 'x *|LNAME|* y']) {
       expect(renderEmailBody(tpl, ctx)).toBe(renderMergeTags(tpl, ctx), tpl);
     }
+  });
+});
+
+// CURRENT_YEAR is the first tag that resolves from nothing but the clock.
+// It reaches templates through the footer of every shell mined out of the
+// Mailchimp archive, where it used to be one of THEIR system tags - so it has
+// to resolve on send paths that supply no context for it at all, which is the
+// whole reason dynamicDefault exists.
+describe('CURRENT_YEAR / dynamicDefault', () => {
+  const thisYear = String(new Date().getFullYear());
+
+  it('resolves with an EMPTY context on both renderers', () => {
+    expect(renderMergeTags('(C) *|CURRENT_YEAR|*', {})).toBe(`(C) ${thisYear}`);
+    expect(renderEmailBody('(C) *|CURRENT_YEAR|*', {})).toBe(`(C) ${thisYear}`);
+  });
+
+  it('renders the real footer line the shells carry', () => {
+    const line = 'Copyright (C) *|CURRENT_YEAR|* Impact Discipleship Ministries.';
+    expect(renderMergeTags(line, {})).toBe(
+      `Copyright (C) ${thisYear} Impact Discipleship Ministries.`
+    );
+  });
+
+  it('lets an explicit context value win', () => {
+    expect(renderMergeTags('*|CURRENT_YEAR|*', { currentYear: '1999' })).toBe('1999');
+    expect(renderEmailBody('*|CURRENT_YEAR|*', { currentYear: '1999' })).toBe('1999');
+  });
+
+  it('beats an inline fallback, which would otherwise go stale', () => {
+    expect(renderMergeTags('*|CURRENT_YEAR|2025|*', {})).toBe(thisYear);
+    expect(renderEmailBody('*|CURRENT_YEAR|2025|*', {})).toBe(thisYear);
+  });
+
+  it('is offered by every template kind, because it always resolves', () => {
+    for (const kind of Object.keys(TAGS_BY_TEMPLATE_KIND)) {
+      expect(mergeTagsForKind(kind).map((d) => d.tag)).toContain('CURRENT_YEAR');
+    }
+  });
+
+  it('leaves tags WITHOUT a dynamicDefault behaving exactly as before', () => {
+    // The change touched the shared value lookup, so the ordinary
+    // per-recipient tags are the regression surface.
+    expect(renderMergeTags('*|FNAME|*', {})).toBe('');
+    expect(renderMergeTags('*|FNAME|there|*', {})).toBe('there');
+    expect(renderEmailBody('*|FNAME|there|*', {})).toBe('there');
+    expect(renderMergeTags('*|UNSUB|*', {})).toBe('#');
   });
 });

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
 import {
   BlockType,
@@ -19,18 +20,40 @@ import {
   SpacerBlock,
   TextBlock,
   VideoBlock,
+  createDefaultDesign,
   newDesignId
 } from 'src/app/common/models/admin/email-design.model';
 import DOMPurify from 'dompurify';
 import { parseVideoUrl, vimeoOembedUrl } from '../video-url.util';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
-import { BLOCK_PALETTE_ID, LAYOUT_PALETTE_ID, LAYOUT_PRESETS, LayoutPreset } from '../block-drop.util';
+import {
+  BLOCK_PALETTE_ID,
+  CHROME_PALETTE_ID,
+  LAYOUT_PALETTE_ID,
+  LAYOUT_PRESETS,
+  LayoutPreset
+} from '../block-drop.util';
 import { DesignerStateService } from '../designer-state.service';
+import { CHROME_PIECES, ChromeFamily, ChromePiece } from 'src/app/common/utils/email/chrome-pieces';
+import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
 
 interface PaletteEntry {
   type: BlockType;
   label: string;
   icon: string;
+}
+
+/** One chrome chip: the piece plus its preview, compiled ONCE. */
+interface ChromeTile {
+  piece: ChromePiece;
+  srcdoc: SafeHtml;
+}
+
+/** A labelled run of chrome chips. */
+interface ChromeGroup {
+  label: string;
+  hint: string;
+  tiles: ChromeTile[];
 }
 
 // The right-hand panel: Add (block + layout palettes) and Styles tabs, or
@@ -47,7 +70,30 @@ export class DesignerSidePanelComponent {
 
   readonly blockPaletteId = BLOCK_PALETTE_ID;
   readonly layoutPaletteId = LAYOUT_PALETTE_ID;
+  readonly chromePaletteId = CHROME_PALETTE_ID;
   readonly layoutPresets: LayoutPreset[] = LAYOUT_PRESETS;
+
+  // Declared before chromeGroups: field initializers run top-down, and
+  // buildChromeGroups needs the sanitizer.
+  private readonly sanitizer = inject(DomSanitizer);
+
+  /**
+   * Ready-made headers and footers, grouped so the two families read
+   * differently at a glance - a receipt should not get newsletter chrome by
+   * accident, but neither is blocked (see chrome-pieces.ts).
+   */
+  readonly chromeGroups: ChromeGroup[] = this.buildChromeGroups();
+
+  /**
+   * Drag data for the chrome palette: IDS, exactly as paletteTypes does for
+   * blocks - handleRowDrop reads the id out of this array BY INDEX.
+   *
+   * Derived from chromeGroups rather than from CHROME_PIECES so it cannot
+   * drift out of step with the chips actually rendered: one cdkDropList holds
+   * every chip across both groups, so its index space is the flattened order.
+   */
+  readonly chromePieceIds: string[] =
+    this.chromeGroups.flatMap((group) => group.tiles.map((tile) => tile.piece.id));
 
   readonly palette: PaletteEntry[] = [
     { type: 'heading', label: 'Heading', icon: 'title' },
@@ -78,6 +124,46 @@ export class DesignerSidePanelComponent {
   private videoThumbnailTarget: VideoBlock | null = null;
 
   constructor(public state: DesignerStateService, private http: HttpClient) {}
+
+  /**
+   * Builds the chrome chips and their previews.
+   *
+   * Compiled ONCE and trusted ONCE, at construction - NOT from a getter. A
+   * SafeHtml rebuilt per change-detection cycle makes the preview iframes
+   * reload in a loop; that is a live-diagnosed bug the preview dialog and the
+   * template picker both hit, and the picker's cards carry the same warning.
+   * @return {ChromeGroup[]} The groups, in the order they are rendered.
+   */
+  private buildChromeGroups(): ChromeGroup[] {
+    const groupsInOrder: { family: ChromeFamily; label: string; hint: string }[] = [
+      {
+        family: 'transactional',
+        label: 'RECEIPTS & CONFIRMATIONS',
+        hint: 'Plain chrome, matching the receipt and registration emails.'
+      },
+      {
+        family: 'newsletter',
+        label: 'NEWSLETTER',
+        hint: 'Mastheads and footers from real campaigns. Heavy for a receipt.'
+      }
+    ];
+
+    return groupsInOrder.map(({ family, label, hint }) => ({
+      label,
+      hint,
+      tiles: CHROME_PIECES
+        .filter((piece) => piece.family === family)
+        .map((piece) => ({ piece, srcdoc: this.compileChromePreview(piece) }))
+    }));
+  }
+
+  /** One piece, rendered in the section it belongs to, as a full email
+   *  document an iframe can host. */
+  private compileChromePreview(piece: ChromePiece): SafeHtml {
+    const design = createDefaultDesign();
+    design.sections[piece.kind === 'header' ? 0 : 2].rows = [piece.build()];
+    return this.sanitizer.bypassSecurityTrustHtml(compileEmailDesign(design));
+  }
 
   get selectedBlock(): EmailBlock | null {
     const selection = this.state.selection$.value;

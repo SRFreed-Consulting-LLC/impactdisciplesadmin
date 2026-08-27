@@ -30,6 +30,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
+const { cleanChromeFragment, unresolvableTags } = require("./lib/email-chrome-clean");
 
 const OUT_DIR = path.join(__dirname, "output");
 
@@ -265,9 +266,28 @@ async function main() {
       description: `Used ${p.count}x, last ${p.latest.toISOString().slice(0, 10)} - "${p.subject.slice(0, 48)}"`,
       uses: p.count,
       lastSent: p.latest.toISOString().slice(0, 10),
-      header: groups.header.get(p.headerKey).html,
-      footer: groups.footer.get(p.footerKey).html
+      // Mined markup is Mailchimp's, and it is not safe to drop into an
+      // arbitrary design as-is - see lib/email-chrome-clean.js. Cleaned HERE
+      // rather than in the app so the fragment that ships is the fragment
+      // that was reviewed in the diff.
+      header: cleanChromeFragment(groups.header.get(p.headerKey).html),
+      footer: cleanChromeFragment(groups.footer.get(p.footerKey).html)
     }));
+
+  // A tag nothing can resolve prints raw in a customer's inbox, so refuse to
+  // write rather than emit one. This catches a Mailchimp tag the archive
+  // starts carrying that the transform has never seen.
+  const offenders = shells.flatMap((s) => [
+    ...unresolvableTags(s.header).map((t) => `${s.id} header ${t}`),
+    ...unresolvableTags(s.footer).map((t) => `${s.id} footer ${t}`)
+  ]);
+  if (offenders.length) {
+    throw new Error(
+      "unresolvable merge tags survived the chrome cleanup:\n    " +
+      offenders.join("\n    ") +
+      "\n  Add a rule to scripts/lib/email-chrome-clean.js before writing."
+    );
+  }
 
   console.log("");
   console.log(`  SHELLS (header+footer that shipped together, used >1x): ${shells.length}`);
@@ -317,8 +337,15 @@ async function main() {
     `// more than once - pairing the most-used header with the most-used footer\n` +
     `// separately could combine two different eras' branding.\n` +
     `//\n` +
+    `// Every fragment has been through scripts/lib/email-chrome-clean.js: Mailchimp\n` +
+    `// system tags resolved or removed (nothing here resolves them, so they printed\n` +
+    `// raw in the inbox) and the loose <td> wrapped in a row. Read that file before\n` +
+    `// editing a fragment by hand.\n` +
+    `//\n` +
     `// Regenerate with:\n` +
     `//   node scripts/extract-email-chrome.js --project=prod --write\n` +
+    `// which re-mines PROD and may return five DIFFERENT shells - the archive has\n` +
+    `// moved on since these were picked.\n` +
     `\n` +
     `export interface ArchiveShell {\n` +
     `  id: string;\n` +

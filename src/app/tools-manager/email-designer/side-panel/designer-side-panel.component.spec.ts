@@ -1,5 +1,7 @@
+import { TestBed } from '@angular/core/testing';
 import { DesignerSidePanelComponent } from './designer-side-panel.component';
 import { EmailBlock, EmailRow } from 'src/app/common/models/admin/email-design.model';
+import { CHROME_PIECES } from 'src/app/common/utils/email/chrome-pieces';
 
 // CHARACTERIZATION tests, written 2026-08-21 immediately BEFORE splitting
 // this component (refactor sweep, bucket A item #5 - third god component).
@@ -17,9 +19,16 @@ import { EmailBlock, EmailRow } from 'src/app/common/models/admin/email-design.m
 // - the image picker's two-target branch
 // - value-to-null normalisation
 //
-// House style: hand-constructed class with duck-typed deps, no TestBed.
+// House style: hand-constructed class with duck-typed deps.
 // DesignerStateService is stubbed with a real commit() that RUNS the
 // mutator, because every assertion here is about what the mutator did.
+//
+// TestBed is used ONLY as an injection context (2026-08-27), not to build a
+// fixture - the deps above are still hand-rolled. The component acquired an
+// inject()ed DomSanitizer when the chrome palette landed, and a bare `new`
+// throws NG0203 the moment a class takes anything that way. Constructing
+// inside runInInjectionContext is what lets these tests keep their shape as
+// the rest of the panel's deps move to inject().
 
 function makeComponent(overrides: Record<string, unknown> = {}) {
   const commits: number[] = [];
@@ -36,7 +45,9 @@ function makeComponent(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
   const http = { get: () => ({ subscribe: () => undefined }) };
-  const component = new DesignerSidePanelComponent(state as never, http as never);
+  const component = TestBed.runInInjectionContext(
+    () => new DesignerSidePanelComponent(state as never, http as never)
+  );
   return { component, state, commits };
 }
 
@@ -336,6 +347,54 @@ describe('DesignerSidePanelComponent (characterization, pre-split)', () => {
       // handleBlockDrop reads the dragged type out of this array BY INDEX.
       const { component } = makeComponent();
       expect(component.paletteTypes).toEqual(component.palette.map((p) => p.type));
+    });
+  });
+
+  describe('chrome palette', () => {
+    it('chromePieceIds stays aligned with the FLATTENED group order', () => {
+      // The single most breakable thing here: one cdkDropList spans both
+      // groups, so handleRowDrop's index is into the flattened chip order.
+      // Group the chips differently without regrouping the ids and every
+      // drag silently inserts the wrong header.
+      const { component } = makeComponent();
+      const rendered = component.chromeGroups.flatMap((g) => g.tiles.map((t) => t.piece.id));
+      expect(component.chromePieceIds).toEqual(rendered);
+    });
+
+    it('offers every piece exactly once, across both groups', () => {
+      const { component } = makeComponent();
+      const rendered = component.chromeGroups.flatMap((g) => g.tiles.map((t) => t.piece.id));
+      expect(new Set(rendered).size).toBe(rendered.length);
+      expect(new Set(rendered)).toEqual(new Set(CHROME_PIECES.map((p) => p.id)));
+    });
+
+    it('groups every tile under its own family', () => {
+      const { component } = makeComponent();
+      for (const group of component.chromeGroups) {
+        const families = new Set(group.tiles.map((t) => t.piece.family));
+        expect(families.size).withContext(group.label).toBe(1);
+      }
+    });
+
+    it('labels and previews every tile', () => {
+      const { component } = makeComponent();
+      for (const group of component.chromeGroups) {
+        expect(group.label.length).toBeGreaterThan(0);
+        expect(group.hint.length).toBeGreaterThan(0);
+        for (const tile of group.tiles) {
+          expect(tile.srcdoc).withContext(tile.piece.id).toBeTruthy();
+        }
+      }
+    });
+
+    it('compiles each preview ONCE, not per read', () => {
+      // A SafeHtml rebuilt per change-detection cycle makes the preview
+      // iframes reload in a loop - the bug the template picker's cards carry
+      // a warning about. Same object identity on every read proves it is not
+      // coming from a getter.
+      const { component } = makeComponent();
+      const first = component.chromeGroups[0].tiles[0].srcdoc;
+      expect(component.chromeGroups[0].tiles[0].srcdoc).toBe(first);
     });
   });
 });

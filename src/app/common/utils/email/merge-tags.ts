@@ -21,6 +21,21 @@ export interface MergeTagDef {
   resolverKey: string; // key looked up in the MergeContext
   defaultValue: string; // used when the context has no value and no inline fallback
   legacyTokens?: string[]; // exact legacy spellings this tag absorbs
+  /**
+   * Computes the value when the context has none, for tags that depend on
+   * nothing but the moment they render.
+   *
+   * Every other tag is per-recipient, so a send path has to supply it and
+   * `defaultValue` is the "nobody supplied one" "fallback". CURRENT_YEAR is
+   * not: it is the same for everyone, it appears in the footer chrome of
+   * every mined shell, and requiring FOUR independent send paths to remember
+   * it would mean any one of them forgetting renders
+   * "Copyright (C)  Impact Discipleship Ministries" to a customer.
+   *
+   * A function rather than a constant because a Cloud Function instance or a
+   * long-lived browser tab can outlive a year boundary.
+   */
+  dynamicDefault?: () => string;
 }
 
 export type MergeContext = Record<string, string | undefined>;
@@ -89,6 +104,18 @@ export const MERGE_TAGS: MergeTagDef[] = [
     resolverKey: 'unsubscribeUrl',
     defaultValue: '#'
   },
+  {
+    // Carried by the footer of every shell mined out of the Mailchimp
+    // archive, where it was one of THEIR system tags - registered here so it
+    // keeps working now that the account is retired. See
+    // scripts/lib/email-chrome-clean.js.
+    tag: 'CURRENT_YEAR',
+    label: 'Current year',
+    sample: String(new Date().getFullYear()),
+    resolverKey: 'currentYear',
+    defaultValue: '',
+    dynamicDefault: () => String(new Date().getFullYear())
+  },
   // ------------------------------------------------- per-process variables
   //
   // These were always supplied by their send paths, but only in the legacy
@@ -148,16 +175,20 @@ export const MERGE_TAGS: MergeTagDef[] = [
  *   fulfillment   PurchasesService.sendAmazonConfirmation
  *   campaign      campaign-send.functions.ts
  */
+// CURRENT_YEAR is on EVERY line below, which looks like a violation of the
+// rule above and is not: the rule exists so the menu never offers a tag that
+// renders empty, and this one carries a dynamicDefault, so it resolves on
+// every path without any send path supplying it.
 export const TAGS_BY_TEMPLATE_KIND: Record<string, readonly string[]> = {
-  event: ['FNAME', 'LNAME', 'EMAIL', 'EVENT_NAME', 'START_DATE', 'EDIT_REGISTRATION'],
-  summit: ['FNAME', 'LNAME', 'EMAIL', 'EVENT_NAME', 'START_DATE', 'EDIT_REGISTRATION'],
-  store: ['FNAME', 'LNAME', 'EMAIL', 'ORDER_ITEMS'],
-  product: ['FNAME', 'LNAME', 'EMAIL'],
-  fulfillment: ['FNAME', 'LNAME', 'EMAIL', 'DATE', 'TRACKING'],
-  campaign: ['FNAME', 'LNAME', 'EMAIL', 'DATE', 'SENDER_FNAME', 'SENDER_LNAME', 'UNSUB'],
+  event: ['FNAME', 'LNAME', 'EMAIL', 'EVENT_NAME', 'START_DATE', 'EDIT_REGISTRATION', 'CURRENT_YEAR'],
+  summit: ['FNAME', 'LNAME', 'EMAIL', 'EVENT_NAME', 'START_DATE', 'EDIT_REGISTRATION', 'CURRENT_YEAR'],
+  store: ['FNAME', 'LNAME', 'EMAIL', 'ORDER_ITEMS', 'CURRENT_YEAR'],
+  product: ['FNAME', 'LNAME', 'EMAIL', 'CURRENT_YEAR'],
+  fulfillment: ['FNAME', 'LNAME', 'EMAIL', 'DATE', 'TRACKING', 'CURRENT_YEAR'],
+  campaign: ['FNAME', 'LNAME', 'EMAIL', 'DATE', 'SENDER_FNAME', 'SENDER_LNAME', 'UNSUB', 'CURRENT_YEAR'],
   // A template with no kind yet (a brand new design) has no send path to
   // read from, so it gets the safe universal three rather than everything.
-  system: ['FNAME', 'LNAME', 'EMAIL']
+  system: ['FNAME', 'LNAME', 'EMAIL', 'CURRENT_YEAR']
 };
 
 /**
@@ -212,7 +243,9 @@ export function mergeTokenForLabel(variableName: string): string {
 export function renderMergeTags(html: string, data: MergeContext): string {
   let result = html ?? '';
   for (const def of MERGE_TAGS) {
-    const value = data[def.resolverKey];
+    // A dynamicDefault stands in for a context value, so it beats an inline
+    // fallback too - *|CURRENT_YEAR|2025|* should still render this year.
+    const value = data[def.resolverKey] ?? def.dynamicDefault?.();
     const tag = escapeRegExp(def.tag);
 
     // *|TAG|inline fallback|* - context value wins, else the inline fallback.
@@ -296,7 +329,7 @@ export function renderEmailBody(html: string, model: MergeContext): string {
         if (!def) {
           return match;
         }
-        const value = model[def.resolverKey];
+        const value = model[def.resolverKey] ?? def.dynamicDefault?.();
         return value ?? (fallback !== undefined ? fallback : def.defaultValue);
       }
       // hasOwnProperty, not `in` - "{{constructor}}" must stay literal rather
@@ -306,7 +339,7 @@ export function renderEmailBody(html: string, model: MergeContext): string {
       }
       const def = LEGACY_BY_TOKEN.get(normalizeToken(braceInner));
       if (def) {
-        return model[def.resolverKey] ?? def.defaultValue;
+        return model[def.resolverKey] ?? def.dynamicDefault?.() ?? def.defaultValue;
       }
       return match;
     }

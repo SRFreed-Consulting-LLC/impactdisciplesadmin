@@ -229,3 +229,113 @@ textarea.code-input {
 .cdk-drag-preview.layout-tile {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
+
+/* ------------------------------------------------ headers & footers */
+
+.chrome-label {
+  margin-top: 24px;
+}
+
+.chrome-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #7b8494;
+  margin: 12px 0 2px;
+}
+
+.chrome-group-hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8a93a0;
+  margin: 0 0 10px;
+}
+
+.chrome-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.chrome-tile {
+  border: 1px solid #dbe0e6;
+  border-radius: 9px;
+  background: #ffffff;
+  overflow: hidden;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    border-color: #9aa5b4;
+  }
+}
+
+/* A fixed window onto a 600px-wide email, scaled down. The iframe is laid
+   out at full width and then transformed, because scaling the FRAME instead
+   would reflow the email at ~230px and show a mobile layout - which is not
+   what the piece looks like where it is being dropped. */
+.chrome-thumb {
+  position: relative;
+  height: 72px;
+  overflow: hidden;
+  background: #f4f6f8;
+  border-bottom: 1px solid #edf0f3;
+
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 600px;
+    height: 300px;
+    border: 0;
+    transform: scale(0.24);
+    transform-origin: top left;
+    /* The drag must reach the tile, not the document inside the frame. */
+    pointer-events: none;
+  }
+}
+
+.chrome-name {
+  padding: 6px 8px 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #39414c;
+  line-height: 1.25;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  em {
+    font-style: normal;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #97a0ad;
+  }
+}
+
+/* Dragging a scaled iframe around is both ugly and expensive, so the drag
+   preview is a plain chip. */
+.chrome-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #c7cfda;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  font-weight: 600;
+  color: #39414c;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #6a7280;
+  }
+}

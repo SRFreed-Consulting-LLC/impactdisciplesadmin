@@ -23,6 +23,7 @@ import {
   createRow
 } from '../../models/admin/email-design.model';
 import { ARCHIVE_SHELLS, ArchiveShell } from './archive-shells';
+import { chromePieceById } from './chrome-pieces';
 
 export interface StarterTemplate {
   id: string;
@@ -335,17 +336,27 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
 function buildArchiveShell(shell: ArchiveShell): EmailDesign {
   const design = createDefaultDesign();
 
-  const htmlRow = (html: string): EmailRow => {
+  // The header and footer rows come from CHROME_PIECES rather than being
+  // built again here: the designer's chrome palette drags the very same
+  // pieces onto an existing design, and two definitions of "the row for
+  // shell 3's footer" would drift the moment one of them was fixed.
+  const rowFor = (id: string, fallbackHtml: string): EmailRow => {
+    const piece = chromePieceById(id);
+    if (piece) {
+      return piece.build();
+    }
+    // Only reachable if a shell id stops matching its piece ids; a starter
+    // rendering blank is worse than one built the long way.
     const row = createRow(1);
     const block = createBlock('html');
     if (block.type === 'html') {
-      block.props.html = html;
+      block.props.html = fallbackHtml;
     }
     row.columns[0].blocks = [block];
     return row;
   };
 
-  design.sections[0].rows = [htmlRow(shell.header)];
+  design.sections[0].rows = [rowFor(`${shell.id}-header`, shell.header)];
 
   // One placeholder paragraph, not an empty body: an entirely empty middle
   // section gives nothing to click into, and the canvas would look broken.
@@ -358,7 +369,7 @@ function buildArchiveShell(shell: ArchiveShell): EmailDesign {
   bodyRow.columns[0].blocks = [body];
   design.sections[1].rows = [bodyRow];
 
-  design.sections[2].rows = [htmlRow(shell.footer)];
+  design.sections[2].rows = [rowFor(`${shell.id}-footer`, shell.footer)];
   return design;
 }
 

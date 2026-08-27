@@ -251,6 +251,41 @@
           </div>
         }
       </div>
+
+      <!-- ONE drop list spanning BOTH groups: handleRowDrop resolves the
+           piece by INDEX into chromePieceIds, which is derived from the same
+           flattened order these chips render in. Splitting this into a list
+           per group would give each its own index space and drop the wrong
+           piece. -->
+      <p class="palette-label chrome-label">HEADERS &amp; FOOTERS</p>
+      <div cdkDropList [id]="chromePaletteId" [cdkDropListData]="chromePieceIds"
+           [cdkDropListConnectedTo]="state.rowDropIds()" [cdkDropListSortingDisabled]="true">
+        @for (group of chromeGroups; track group.label) {
+          <p class="chrome-group-label">{{ group.label }}</p>
+          <p class="chrome-group-hint">{{ group.hint }}</p>
+          <div class="chrome-grid">
+            @for (tile of group.tiles; track tile.piece.id) {
+              <div class="chrome-tile" cdkDrag [cdkDragData]="tile.piece.id"
+                   [matTooltip]="tile.piece.description">
+                <div class="chrome-thumb">
+                  <!-- sandbox with no allow-scripts, and pointer-events off in
+                       the stylesheet so the iframe cannot swallow the drag. -->
+                  <iframe [srcdoc]="tile.srcdoc" sandbox tabindex="-1"
+                          [attr.aria-label]="tile.piece.name + ' preview'"></iframe>
+                </div>
+                <span class="chrome-name">
+                  {{ tile.piece.name }}
+                  <em>{{ tile.piece.kind }}</em>
+                </span>
+                <div class="chrome-drag-preview" *cdkDragPreview>
+                  <mat-icon>{{ tile.piece.kind === 'header' ? 'vertical_align_top' : 'vertical_align_bottom' }}</mat-icon>
+                  <span>{{ tile.piece.name }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
   } @else {
     <div class="panel-body">

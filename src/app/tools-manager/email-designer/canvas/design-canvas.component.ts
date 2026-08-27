@@ -67,7 +67,10 @@ export class DesignCanvasComponent implements OnInit {
 
   onRowDrop(event: BlockDropEvent): void {
     this.state.commit(() => {
-      handleRowDrop(event);
+      // The seed matters for chrome rows too: a mined footer carries
+      // *|BRAND_ADDRESS|* where Mailchimp put the postal address, and that
+      // token is substituted on the way in - it resolves nowhere later.
+      handleRowDrop(event, this.blockSeed);
     });
   }
 

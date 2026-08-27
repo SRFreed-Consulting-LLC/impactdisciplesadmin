@@ -7,15 +7,18 @@ import {
   createBlock,
   createRow
 } from 'src/app/common/models/admin/email-design.model';
+import { chromePieceById } from 'src/app/common/utils/email/chrome-pieces';
 
 // Drop-list id conventions (same prefix scheme as the form builder's
 // field-drop.util.ts, which this file is adapted from):
 //   palette-blocks        - the Add panel's block chips (drag to COPY)
 //   palette-layouts       - the Add panel's layout tiles (drag to COPY a row)
+//   palette-chrome        - the Add panel's header/footer pieces (COPY a row)
 //   col-<columnId>        - a column's block list
 //   rows-<sectionId>      - a section's row list
 export const BLOCK_PALETTE_ID = 'palette-blocks';
 export const LAYOUT_PALETTE_ID = 'palette-layouts';
+export const CHROME_PALETTE_ID = 'palette-chrome';
 export const COLUMN_PREFIX = 'col-';
 export const ROWS_PREFIX = 'rows-';
 
@@ -58,6 +61,39 @@ export interface BlockDropEvent {
 export interface BlockSeed {
   socialLinks?: SocialNetworkLink[];
   addressHtml?: string;
+}
+
+/**
+ * The internal placeholder the mined footer chrome carries where Mailchimp
+ * had *|HTML:LIST_ADDRESS_HTML|* (see scripts/lib/email-chrome-clean.js).
+ *
+ * NOT a registered merge tag, and deliberately so: merge-tags.ts is pure TS
+ * with no way to reach the config document, and a tag that only SOMETIMES
+ * resolves is exactly the failure that file exists to prevent. It is
+ * substituted here, at drop time, and must never survive into a saved design.
+ */
+export const BRAND_ADDRESS_TOKEN = '*|BRAND_ADDRESS|*';
+
+/**
+ * Substitutes BRAND_ADDRESS_TOKEN through every block of a freshly built
+ * chrome row.
+ *
+ * ALWAYS removes the token, even with no address to put there. Leaving it
+ * would put a literal "*|BRAND_ADDRESS|*" in a customer's inbox - nothing
+ * downstream resolves it - and an absent address is merely a gap the admin
+ * can see on the canvas and fix.
+ * @param {EmailRow} row A row from ChromePiece.build().
+ * @param {BlockSeed} seed The organisation's details, possibly not loaded yet.
+ */
+export function applyChromeSeed(row: EmailRow, seed?: BlockSeed): void {
+  const address = seed?.addressHtml ?? '';
+  for (const column of row.columns) {
+    for (const block of column.blocks) {
+      if (block.type === 'html' && block.props.html.includes(BRAND_ADDRESS_TOKEN)) {
+        block.props.html = block.props.html.split(BRAND_ADDRESS_TOKEN).join(address);
+      }
+    }
+  }
 }
 
 /** Fills a new block from BlockSeed. Only touches blocks that have somewhere
@@ -112,8 +148,9 @@ export function handleBlockDrop(event: BlockDropEvent, seed?: BlockSeed): boolea
 }
 
 // Shared handler for row drops: layout palette -> section (copy via
-// createRowFromLayout), section -> same/other section (reorder/transfer).
-export function handleRowDrop(event: BlockDropEvent): boolean {
+// createRowFromLayout), chrome palette -> section (copy a prebuilt
+// header/footer row), section -> same/other section (reorder/transfer).
+export function handleRowDrop(event: BlockDropEvent, seed?: BlockSeed): boolean {
   if (!event.container.id.startsWith(ROWS_PREFIX)) {
     return false;
   }
@@ -121,6 +158,21 @@ export function handleRowDrop(event: BlockDropEvent): boolean {
   if (event.previousContainer.id === LAYOUT_PALETTE_ID) {
     const preset = (event.previousContainer.data as LayoutPreset[])[event.previousIndex];
     (event.container.data as EmailRow[]).splice(event.currentIndex, 0, createRowFromLayout(preset));
+    return true;
+  }
+
+  // A ready-made header or footer. The palette drags IDS rather than pieces,
+  // matching how the block palette drags types - the row is built here so two
+  // drags of one chip can never share block objects.
+  if (event.previousContainer.id === CHROME_PALETTE_ID) {
+    const id = (event.previousContainer.data as string[])[event.previousIndex];
+    const piece = chromePieceById(id);
+    if (!piece) {
+      return false;
+    }
+    const row = piece.build();
+    applyChromeSeed(row, seed);
+    (event.container.data as EmailRow[]).splice(event.currentIndex, 0, row);
     return true;
   }
 

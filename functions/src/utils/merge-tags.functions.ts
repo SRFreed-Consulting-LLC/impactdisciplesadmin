@@ -10,6 +10,13 @@ export interface MergeTagDef {
   resolverKey: string;
   defaultValue: string;
   legacyTokens?: string[];
+  /**
+   * Computes the value when the context has none, for tags that depend on
+   * nothing but the moment they render - see the client twin's fuller note.
+   * A function rather than a constant because a warm Function instance can
+   * outlive a year boundary.
+   */
+  dynamicDefault?: () => string;
 }
 
 export type MergeContext = Record<string, string | undefined>;
@@ -91,6 +98,16 @@ export const MERGE_TAGS: MergeTagDef[] = [
     defaultValue: "",
     legacyTokens: ["{{product_list}}"],
   },
+  {
+    // Carried by the footer of every shell mined out of the Mailchimp
+    // archive, where it was one of THEIR system tags - registered here so it
+    // keeps working now that the account is retired. See
+    // scripts/lib/email-chrome-clean.js.
+    tag: "CURRENT_YEAR",
+    resolverKey: "currentYear",
+    defaultValue: "",
+    dynamicDefault: () => String(new Date().getFullYear()),
+  },
 ];
 
 /**
@@ -131,7 +148,9 @@ function legacyTokenPattern(literal) {
 export function renderMergeTags(html: string, data: MergeContext): string {
   let result = html ?? "";
   for (const def of MERGE_TAGS) {
-    const value = data[def.resolverKey];
+    // A dynamicDefault stands in for a context value, so it beats an inline
+    // fallback too - *|CURRENT_YEAR|2025|* should still render this year.
+    const value = data[def.resolverKey] ?? def.dynamicDefault?.();
     const tag = escapeRegExp(def.tag);
 
     result = result.replace(
@@ -227,7 +246,7 @@ export function renderEmailBody(html: string, model: MergeContext): string {
         if (!def) {
           return match;
         }
-        const value = model[def.resolverKey];
+        const value = model[def.resolverKey] ?? def.dynamicDefault?.();
         return value ?? (fallback !== undefined ? fallback : def.defaultValue);
       }
 
@@ -238,7 +257,7 @@ export function renderEmailBody(html: string, model: MergeContext): string {
       }
       const def = LEGACY_BY_TOKEN.get(normalizeToken(braceInner));
       if (def) {
-        return model[def.resolverKey] ?? def.defaultValue;
+        return model[def.resolverKey] ?? def.dynamicDefault?.() ?? def.defaultValue;
       }
       return match;
     }
