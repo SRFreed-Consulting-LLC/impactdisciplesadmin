@@ -84,6 +84,11 @@ export class EventAttendeeDialogComponent {
       // Case-insensitive sort key - keep in step with the lastName edit
       // (see registerForEventHttp, which stamps the same field).
       lastNameLower: (raw.lastName ?? '').toLowerCase(),
+      // Normalized for the same reason registerForEventHttp normalizes it:
+      // this address is the join key a contact's activity feed matches on
+      // exactly, so a staff-entered "Bob@Example.com" would leave the
+      // registration invisible under the contact "bob@example.com".
+      email: (raw.email ?? '').trim().toLowerCase(),
       eventId: this.data.eventId,
       // Registration Date isn't a required field - if left blank while
       // adding a brand-new attendee (no existing item to fall back to),

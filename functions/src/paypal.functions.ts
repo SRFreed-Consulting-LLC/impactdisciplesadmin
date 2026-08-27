@@ -220,7 +220,20 @@ function buildCheckoutForm(
   return {
     firstName: capString(body.firstName, 100),
     lastName: capString(body.lastName, 100),
-    email: capString(body.email, 200),
+    // NORMALIZED, not merely length-capped. This address is the join key
+    // between a purchase and its customer record, and every reader of it
+    // already lowercases before looking up: both customer-upsert triggers,
+    // and contact-details.component.ts, which streams a contact's activity
+    // feed with an exact where("email", "==", customer.email). Storing what
+    // the shopper typed meant a purchase from "Dgpark@hotmail.com" never
+    // appeared under the contact "dgpark@hotmail.com" - 355 customers had
+    // orders silently missing from their feed before this was fixed
+    // (2026-08-27). The public RSVP path (event-registration.functions.ts)
+    // and every reader path already normalize; this was the odd one out.
+    // One funnel covers three writes: both purchase creates, the affiliate
+    // sale (recordAffiliateSale reads checkoutForm.email), and the
+    // pending_orders staging doc.
+    email: capString(body.email, 200)?.toLowerCase(),
     phone: capString(body.phone, 100),
     isShippingSameAsBilling: body.isShippingSameAsBilling === true,
     billingAddress: capAddress(body.billingAddress),

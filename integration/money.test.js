@@ -20,7 +20,7 @@
 //   per test rather than being ambient in the fixture world.
 const {test, before} = require("node:test");
 const assert = require("node:assert/strict");
-const {getDb, preflight, reseed, callHttp} = require("./helpers/emulator");
+const {getDb, preflight, reseed, callHttp, waitFor} = require("./helpers/emulator");
 
 let db;
 
@@ -507,4 +507,33 @@ test("the product's own followUpEmailId is used even when the request omits " +
     `both *|FNAME|* and {{lastName}} must substitute; got: ${html}`);
   assert.doesNotMatch(html, /\*\|/, "no merge tag may reach the customer raw");
   assert.doesNotMatch(html, /\{\{/, "no legacy token may reach the customer raw");
+});
+
+test("the stored purchase email is NORMALIZED, not the casing typed", async () => {
+  // The join key between a purchase and its customer record. A contact's
+  // activity feed streams with an exact where("email", "==", customer.email)
+  // (contact-details.component.ts), and both customer-upsert triggers look
+  // up by trim().toLowerCase() - so a purchase stored as typed simply does
+  // not appear under the contact. 355 prod customers had orders missing
+  // from their feed this way before 2026-08-27.
+  const typed = "MixedCase.Buyer@Money.TEST";
+  const res = await callHttp("create_paypal_order", orderBody({
+    email: typed,
+    couponCode: "FREE100",
+    cartItems: [{ id: "event-workshop", isEvent: true, orderQuantity: 1 }],
+  }));
+
+  assert.equal(res.status, 200);
+  const form = (await db.collection("purchases")
+    .doc(res.body.checkoutForm.id).get()).data();
+  assert.equal(form.email, typed.toLowerCase(),
+    "purchases.email must be stored lowercased");
+
+  // And the customer the upsert trigger creates must be findable by it -
+  // the whole point of normalizing at the write.
+  await waitFor(async () => {
+    const snap = await db.collection("customers")
+      .where("email", "==", typed.toLowerCase()).get();
+    return !snap.empty;
+  }, {label: "customer created for the normalized address"});
 });
