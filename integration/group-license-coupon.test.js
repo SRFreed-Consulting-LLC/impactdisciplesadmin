@@ -128,10 +128,13 @@ test("an inactive coupon is refused outright, not silently ignored", async () =>
   assert.match(res.error.message, /Invalid, inactive or expired coupon code/);
 });
 
-test("an EXPIRED coupon is refused - the gap the Store path still has", async () => {
-  // The Store's own verifyAndGrantReaderStorePurchase checks isActive but
-  // never expiresAt, so an expired code still discounts a purchase there.
-  // This path checks both; that is what this case pins down.
+test("an EXPIRED coupon is refused", async () => {
+  // This used to be the case that documented a gap: the reader Store's
+  // verifyAndGrantReaderStorePurchase checked isActive but never expiresAt,
+  // so an expired code still discounted a purchase there. Closed 2026-08-27
+  // when all four coupon paths moved onto the shared pickActiveCoupon
+  // (utils/coupons.ts), which checks code (case-insensitively), isActive and
+  // expiry together. Kept because expiry is still worth pinning here.
   await db.collection("coupons").doc("coupon-past").set({
     isActive: true,
     code: "LASTYEAR",

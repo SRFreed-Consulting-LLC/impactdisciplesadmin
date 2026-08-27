@@ -8,6 +8,7 @@ import {
   resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
+import {pickActiveCoupon} from "./utils/coupons";
 import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
 import {queueReaderReceiptEmail} from "./transactional-emails";
 import {
@@ -150,25 +151,24 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     }
 
     // Coupon verification - now possible since Phase 4 moved `coupons`
-    // into this project's own database. Case-insensitive comparison
-    // against every coupon (small collection), same as the reader's own
-    // StoreService.findCoupon, since stored codes aren't consistently
-    // cased.
+    // into this project's own database. Resolution goes through the shared
+    // pickActiveCoupon (utils/coupons.ts) so all four coupon paths agree:
+    // case-insensitive against every coupon (small collection), isActive
+    // checked before selection, and EXPIRY honoured - the last of which
+    // this path silently skipped until 2026-08-27, so an expired code
+    // still discounted a reader Store purchase.
     let coupon: CouponDoc | undefined;
     const trimmedCode = (couponCode ?? "").trim();
     if (trimmedCode) {
       const couponsSnap = await libraryDb.collection("coupons").get();
-      coupon = couponsSnap.docs
-        .map((d) => d.data() as CouponDoc)
-        .find(
-          (c) =>
-            c.isActive === true &&
-            (c.code ?? "").toLowerCase() === trimmedCode.toLowerCase()
-        );
+      coupon = pickActiveCoupon(
+        couponsSnap.docs.map((d) => d.data()),
+        trimmedCode
+      ) as CouponDoc | undefined;
       if (!coupon) {
         throw new HttpsError(
           "invalid-argument",
-          "Invalid or inactive coupon code."
+          "Invalid, inactive or expired coupon code."
         );
       }
     }

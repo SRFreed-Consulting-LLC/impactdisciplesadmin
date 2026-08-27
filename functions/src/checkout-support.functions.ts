@@ -3,7 +3,7 @@ import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
 import {getFirestore} from "firebase-admin/firestore";
-import {toMillis} from "./utils/date-normalize.functions";
+import {isCouponExpired} from "./utils/coupons";
 import {
   LookupCouponResult,
 } from "./common/shared/contract/library-callables.types";
@@ -44,21 +44,6 @@ interface CouponPublicFields {
 }
 
 /**
-/**
- * Whether a coupon expiry has passed. Absent means it never expires, which
- * every coupon written before Campaign Manager v3 was.
- * @param {unknown} expiresAt The stored expiry, in any of the three shapes.
- * @return {boolean} True when it has passed.
- */
-function isExpired(expiresAt: unknown): boolean {
-  if (expiresAt === null || expiresAt === undefined) {
-    return false;
-  }
-  const ms = toMillis(expiresAt);
-  return ms > 0 && ms < Date.now();
-}
-
-/**
  * Resolves one coupon code, case-insensitively (stored codes aren't
  * consistently cased, so there's no canonical form to query by - the
  * whole small collection is scanned server-side, exactly what the
@@ -87,7 +72,7 @@ async function findCouponByCode(
     // An EXPIRED coupon is reported as inactive rather than as a separate
     // state: every storefront already refuses an inactive coupon, so expiry
     // is honoured by bundles that predate it and cannot be skipped client-side.
-    isActive: data.isActive === true && !isExpired(data.expiresAt),
+    isActive: data.isActive === true && !isCouponExpired(data.expiresAt),
     percentOff: typeof data.percentOff === "number" ? data.percentOff : null,
     tags: Array.isArray(data.tags) ?
       data.tags

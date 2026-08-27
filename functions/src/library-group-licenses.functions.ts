@@ -8,6 +8,7 @@ import {
   resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyLicenseGrant} from "./library-group-license-grant";
+import {pickActiveCoupon} from "./utils/coupons";
 import {
   ProductDoc,
   computeGroupLicensePricing,
@@ -74,26 +75,6 @@ interface CouponDoc {
   percentOff?: number | null;
   expiresAt?: unknown;
   tags?: {id: string}[];
-}
-
-/**
- * Whether a coupon's expiry has passed. Absent means it never expires,
- * which every coupon written before Campaign Manager v3 was. Accepts the
- * three shapes the field is stored in (Firestore Timestamp, Date, ISO
- * string), same as checkout-support's own isExpired.
- * @param {unknown} expiresAt The stored expiry.
- * @return {boolean} True when it has passed.
- */
-function isCouponExpired(expiresAt: unknown): boolean {
-  if (expiresAt === null || expiresAt === undefined) {
-    return false;
-  }
-  const value = expiresAt as {toMillis?: () => number};
-  const ms =
-    typeof value.toMillis === "function" ?
-      value.toMillis() :
-      new Date(expiresAt as string | number | Date).getTime();
-  return Number.isFinite(ms) && ms > 0 && ms < Date.now();
 }
 
 /**
@@ -264,14 +245,10 @@ export const purchaseGroupLicenses = onCall(
     const trimmedCode = (couponCode ?? "").trim();
     if (trimmedCode) {
       const couponsSnap = await libraryDb.collection("coupons").get();
-      const coupon = couponsSnap.docs
-        .map((d) => d.data() as CouponDoc)
-        .find(
-          (c) =>
-            c.isActive === true &&
-            !isCouponExpired(c.expiresAt) &&
-            (c.code ?? "").toLowerCase() === trimmedCode.toLowerCase()
-        );
+      const coupon = pickActiveCoupon(
+        couponsSnap.docs.map((d) => d.data()),
+        trimmedCode
+      ) as CouponDoc | undefined;
       if (!coupon) {
         throw new HttpsError(
           "invalid-argument",

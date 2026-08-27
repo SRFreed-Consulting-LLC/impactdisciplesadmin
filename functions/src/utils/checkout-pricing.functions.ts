@@ -6,6 +6,7 @@ import {
 } from "./campaign-offers.functions";
 import {resolveVendorBase} from "./vendor-hosts";
 import {isEventRegistrationOpen, isProductSellable} from "./sellable";
+import {pickActiveCoupon} from "./coupons";
 
 // Shared server-side recompute logic for store checkout, used by both
 // create_paypal_order and capture_paypal_order (../paypal.functions.ts).
@@ -231,10 +232,7 @@ export async function computeOrderPricing(
     db.collection("config").limit(1).get(),
     getActiveOffers(),
     request.couponCode ?
-      db.collection("coupons")
-        .where("code", "==", request.couponCode)
-        .limit(1)
-        .get() :
+      db.collection("coupons").get() :
       Promise.resolve(undefined),
     Promise.all(request.cartItems.map((input) =>
       db.collection(input.isEvent ? "events" : "products")
@@ -249,12 +247,17 @@ export async function computeOrderPricing(
   const now = Date.now();
   const attributedCampaignId = request.attributedCampaignId ?? null;
 
+  // The whole (small) collection is scanned rather than queried by code
+  // equality: stored codes aren't consistently cased, so there is no
+  // canonical form to query by, and `limit(1)` picked arbitrarily between
+  // duplicates. See pickActiveCoupon in ./coupons. The read still rides in
+  // the Promise.all above, so this is the same single round trip.
   let coupon: DocumentData | undefined;
   if (couponSnap) {
-    const candidate = couponSnap.docs[0]?.data();
-    if (candidate?.isActive) {
-      coupon = candidate;
-    }
+    coupon = pickActiveCoupon(
+      couponSnap.docs.map((d) => d.data()),
+      request.couponCode
+    );
   }
 
   const pricedItems: PricedCartItem[] = [];
