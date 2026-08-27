@@ -57,7 +57,6 @@ import { EmailBuilderModule } from 'src/app/tools-manager/email-designer/email-b
 import { emailDesignerCanDeactivateGuard } from 'src/app/tools-manager/email-designer/email-designer.guard';
 import { EmailDesignerModule } from 'src/app/tools-manager/email-designer/email-designer.module';
 import { EmailDesignerRoutingModule } from 'src/app/tools-manager/email-designer/email-designer-routing.module';
-import { EmailTemplateDialogComponent } from 'src/app/tools-manager/email-templates/email-template-dialog.component';
 import { ensureLibraryFormioComponentsRegistered } from 'src/app/common/services/data/library/library-formio-registration.util';
 import { ensureLibraryVendorStylesheet } from 'src/app/common/services/data/library/library-vendor-stylesheet.util';
 import { EventAttendeeDialogComponent } from 'src/app/events-manager/events/event-attendees/event-attendee-dialog.component';
@@ -261,7 +260,6 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'emailDesignerCanDeactivateGuard', value: emailDesignerCanDeactivateGuard },
   { name: 'EmailDesignerModule', value: EmailDesignerModule },
   { name: 'EmailDesignerRoutingModule', value: EmailDesignerRoutingModule },
-  { name: 'EmailTemplateDialogComponent', value: EmailTemplateDialogComponent },
   { name: 'ensureLibraryFormioComponentsRegistered', value: ensureLibraryFormioComponentsRegistered },
   { name: 'ensureLibraryVendorStylesheet', value: ensureLibraryVendorStylesheet },
   { name: 'EventAttendeeDialogComponent', value: EventAttendeeDialogComponent },

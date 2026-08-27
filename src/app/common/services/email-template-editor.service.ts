@@ -43,10 +43,13 @@ export class EmailTemplateEditorService {
   private readonly permissions = inject(PermissionService);
   private readonly snackbar = inject(SnackbarService);
 
-  /** Editing any of these rides System Templates' own grant, since that is
-   *  the screen they belong to today. Kept as one constant so it moves in
-   *  one place when that screen is retired. */
-  private readonly screenKey = 'tools-manager.system-templates';
+  /** The email builder's own grant. It used to ride System Templates', but
+   *  that screen was removed once every template gained a home (2026-08-27)
+   *  and the designer needed a permission of its own - it is reachable from
+   *  five managers, and a direct URL visit has no calling screen to borrow
+   *  from. Stored grants were migrated by
+   *  scripts/migrate-email-designer-grant.js. */
+  private readonly screenKey = 'tools-manager.email-designer';
 
   canEdit(): boolean {
     return this.permissions.canEdit(this.screenKey);
@@ -114,7 +117,7 @@ export class EmailTemplateEditorService {
       // exactly this reason.
       this.snackbar.error(
         `No email template ${describedAs} exists yet, so nothing will be sent. ` +
-        'Create it under Tools Manager > System Templates.'
+        'Create one from the screen that sends it.'
       );
       return;
     }

@@ -82,12 +82,30 @@ describe('NAV_CONFIG', () => {
     });
 
     it('never marks a screen hideFromNav without a reason to be unreachable', () => {
-      // Every hidden leaf today is reached from the user menu instead. This
-      // catches a screen accidentally orphaned by a hideFromNav flag.
+      // A hidden leaf still needs a grant, so it must be reachable some other
+      // way or it is simply orphaned. There are exactly two reasons today:
+      //
+      //   admin-manager        reached from the user menu
+      //   tools-manager.email-designer
+      //                        a full-screen editor launched from the screens
+      //                        that own each template (an event's Info tab, a
+      //                        product's follow-up list, Products' Order
+      //                        Receipt, a campaign touch). It has no list of
+      //                        its own to land on - System Templates, which
+      //                        used to be that, was removed 2026-08-27 - but
+      //                        it needs its own key because a direct URL visit
+      //                        has no calling screen to borrow permission from.
+      //
+      // Anything else hidden is a mistake until this list says otherwise.
+      const REACHABLE_ELSEWHERE = ['admin-manager', 'tools-manager.email-designer'];
       const hidden = leaves.filter(({ leaf }) => leaf.hideFromNav);
       expect(hidden.length).toBeGreaterThan(0);
-      for (const { group } of hidden) {
-        expect(group.id).toBe('admin-manager');
+      for (const { group, leaf } of hidden) {
+        const allowed = REACHABLE_ELSEWHERE.includes(group.id)
+          || REACHABLE_ELSEWHERE.includes(`${group.id}.${leaf.slug}`);
+        expect(allowed)
+          .withContext(`${group.id}.${leaf.slug} is hidden with no way in`)
+          .toBeTrue();
       }
     });
   });

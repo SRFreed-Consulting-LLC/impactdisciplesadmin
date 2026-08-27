@@ -20,7 +20,7 @@ import { TemplatePickerDialogComponent, TemplatePickerResult } from './template-
 // Full-screen Mailchimp-style email builder. Reached from Tools Manager >
 // System Templates ("New Email Design" / editing a builder template) at
 // /tools-manager/email-designer/new | /:id. No NavLeaf of its own - it
-// rides the tools-manager.system-templates grants (see nav-config.ts).
+// rides the tools-manager.email-designer grants (see nav-config.ts).
 //
 // This instance only ever authors SYSTEM templates - the campaign email
 // editor has its own gallery and its own "Save as template" (2026-08-21).
@@ -93,8 +93,8 @@ export class EmailDesignerComponent implements OnInit {
 
   private checkAccessAndLoad(): void {
     const allowed = this.templateId
-      ? this.permissionService.canEdit('tools-manager.system-templates')
-      : this.permissionService.canAdd('tools-manager.system-templates');
+      ? this.permissionService.canEdit('tools-manager.email-designer')
+      : this.permissionService.canAdd('tools-manager.email-designer');
     if (!allowed) {
       this.backToList();
       return;
@@ -231,7 +231,7 @@ export class EmailDesignerComponent implements OnInit {
       return 'Back to the campaign';
     }
     const target = EmailDesignerComponent.RETURN_TARGETS[params.get('from') ?? ''];
-    return target ? `Back to ${target.label}` : 'Back to System Templates';
+    return target ? `Back to ${target.label}` : 'Back to Tools Manager';
   }
 
   onBack(): void {
@@ -390,6 +390,11 @@ export class EmailDesignerComponent implements OnInit {
       return;
     }
 
-    this.router.navigate(['/tools-manager'], { queryParams: { tab: 'system-templates' } });
+    // No `from` and no `fromCampaign` - a direct URL, or a screen that has
+    // not been taught to say where it came from. System Templates used to be
+    // the fallback; it no longer exists, and there is no list of templates to
+    // return to by design. Tools Manager's first tab is the nearest honest
+    // destination.
+    this.router.navigate(['/tools-manager']);
   }
 }

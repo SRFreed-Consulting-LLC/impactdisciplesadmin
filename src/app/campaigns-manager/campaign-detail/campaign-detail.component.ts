@@ -148,7 +148,7 @@ export class CampaignDetailComponent implements OnInit {
 
   canOpenInDesigner(): boolean {
     // The designer rides System Templates' grants (see EmailDesignerComponent).
-    return this.permissionService.canAdd('tools-manager.system-templates');
+    return this.permissionService.canAdd('tools-manager.email-designer');
   }
 
   canEditCampaign(): boolean {

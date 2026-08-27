@@ -55,7 +55,6 @@ import { DMMDialogComponent } from 'src/app/content-manager/dmms/dmm-dialog.comp
 import { DMMServiceComponent } from 'src/app/content-manager/dmms/dmms.component';
 import { EditTierDialogComponent } from 'src/app/library-manager/dialogs/edit-tier-dialog.component';
 import { EmailDesignerComponent } from 'src/app/tools-manager/email-designer/email-designer.component';
-import { EmailTemplateDialogComponent } from 'src/app/tools-manager/email-templates/email-template-dialog.component';
 import { EventAgendaComponent } from 'src/app/events-manager/events/event-agenda/event-agenda.component';
 import { EventApplicationComponent } from 'src/app/events-manager/events/event-application/event-application.component';
 import { EventAttendeeDialogComponent } from 'src/app/events-manager/events/event-attendees/event-attendee-dialog.component';
@@ -260,7 +259,6 @@ const CONSTRUCTIBLE: ComponentRow[] = [
   { name: 'DMMDialogComponent', type: DMMDialogComponent },
   { name: 'DMMServiceComponent', type: DMMServiceComponent },
   { name: 'EditTierDialogComponent', type: EditTierDialogComponent },
-  { name: 'EmailTemplateDialogComponent', type: EmailTemplateDialogComponent },
   { name: 'EventAgendaComponent', type: EventAgendaComponent },
   { name: 'EventApplicationComponent', type: EventApplicationComponent },
   { name: 'EventAttendeeDialogComponent', type: EventAttendeeDialogComponent },

@@ -157,7 +157,7 @@ export class TemplatePickerDialogComponent {
    *  history. */
   get canDeleteCards(): boolean {
     return this.permissionService.canDelete(
-      this.mode === 'campaign' ? 'campaigns-manager.campaigns' : 'tools-manager.system-templates'
+      this.mode === 'campaign' ? 'campaigns-manager.campaigns' : 'tools-manager.email-designer'
     );
   }
 

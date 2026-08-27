@@ -248,12 +248,19 @@ export const NAV_CONFIG: NavGroup[] = [
       // email editor's own gallery and never appear here (see
       // MailTemplateModel's 'kind').
       //
-      // The full-screen email builder route (/tools-manager/email-designer/
-      // new | :id) deliberately has NO NavLeaf/screenKey of its own - it is
-      // System Templates' editing surface and rides this entry's grants
-      // (EmailDesignerComponent checks canAdd/canEdit on
-      // tools-manager.system-templates and bounces back here if denied).
-      { label: 'System Templates', slug: 'system-templates' },
+      // System Templates was REMOVED 2026-08-27. Every mail_template now
+      // carries a kind naming the screen that owns it and is edited from the
+      // process that sends it - an event's Info tab, a product's follow-up
+      // list, Products' Order Receipt - so the flat list had nothing left in
+      // it. See docs/email-taxonomy.md.
+      //
+      // The full-screen email builder outlived it and needs a grant of its
+      // own: it is reachable from five different managers, and a direct URL
+      // visit has no calling screen to borrow permission from. hideFromNav
+      // because there is nothing useful to land on without a template to
+      // edit. Stored grants were migrated off tools-manager.system-templates
+      // by scripts/migrate-email-designer-grant.js.
+      { label: 'Email Designer', slug: 'email-designer', hideFromNav: true },
       { label: 'Shipping Labels', slug: 'shipping-labels' },
       { label: 'Form Builder', slug: 'form-builder' }
     ]

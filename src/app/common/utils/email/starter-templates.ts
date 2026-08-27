@@ -22,6 +22,7 @@ import {
   createDefaultDesign,
   createRow
 } from '../../models/admin/email-design.model';
+import { ARCHIVE_SHELLS, ArchiveShell } from './archive-shells';
 
 export interface StarterTemplate {
   id: string;
@@ -312,3 +313,60 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     build: buildSimpleNewsletter
   }
 ];
+
+/**
+ * Shells mined from the real campaign archive (2025 onward), appended to the
+ * hand-built starters above.
+ *
+ * These are the branded chrome that actually shipped - a header and footer
+ * that went out together on more than one campaign - with an EMPTY body
+ * between them. That is the point: an admin starting a new email gets the
+ * masthead, the social row, the address and the unsubscribe already correct,
+ * and writes only the part that differs.
+ *
+ * Kept as raw HTML blocks rather than reconstructed builder blocks. Mailchimp
+ * chrome is deeply nested tables carrying its own inline styles, and taking it
+ * apart into image/social/footer blocks would change how it renders - the
+ * whole reason to reuse it is that it is known to survive real inboxes. The
+ * html block is the builder's own escape hatch for exactly this.
+ *
+ * Regenerate ARCHIVE_SHELLS with scripts/extract-email-chrome.js.
+ */
+function buildArchiveShell(shell: ArchiveShell): EmailDesign {
+  const design = createDefaultDesign();
+
+  const htmlRow = (html: string): EmailRow => {
+    const row = createRow(1);
+    const block = createBlock('html');
+    if (block.type === 'html') {
+      block.props.html = html;
+    }
+    row.columns[0].blocks = [block];
+    return row;
+  };
+
+  design.sections[0].rows = [htmlRow(shell.header)];
+
+  // One placeholder paragraph, not an empty body: an entirely empty middle
+  // section gives nothing to click into, and the canvas would look broken.
+  const body = createBlock('text');
+  if (body.type === 'text') {
+    body.props.html = '<p>Write your email here.</p>';
+  }
+  body.styles.align = 'left';
+  const bodyRow = createRow(1);
+  bodyRow.columns[0].blocks = [body];
+  design.sections[1].rows = [bodyRow];
+
+  design.sections[2].rows = [htmlRow(shell.footer)];
+  return design;
+}
+
+for (const shell of ARCHIVE_SHELLS) {
+  STARTER_TEMPLATES.push({
+    id: shell.id,
+    name: shell.name,
+    description: shell.description,
+    build: () => buildArchiveShell(shell)
+  });
+}

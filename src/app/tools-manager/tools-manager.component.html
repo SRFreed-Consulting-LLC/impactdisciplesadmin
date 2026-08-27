@@ -1,7 +1,9 @@
 <div class="manager-content">
-  @if (selectedTab === 'System Templates') {
-    <app-email-templates></app-email-templates>
-  }
+  <!-- System Templates removed 2026-08-27. Every mail_template now carries a
+       kind naming the screen that owns it and is edited from the process that
+       sends it, so the flat list had nothing left in it. The email designer
+       it used to launch outlived it and has its own grant now
+       (tools-manager.email-designer, hideFromNav). -->
 
   @if (selectedTab === 'Shipping Labels') {
     <app-shipping-labels></app-shipping-labels>

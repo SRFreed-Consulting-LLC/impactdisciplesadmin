@@ -5,8 +5,6 @@ import { SharedModule } from '../shared/shared.module';
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { ToolsManagerComponent } from './tools-manager.component';
 import { ToolsManagerRoutingModule } from './tools-manager-routing.module';
-import { EmailTemplatesComponent } from './email-templates/email-templates.component';
-import { EmailTemplateDialogComponent } from './email-templates/email-template-dialog.component';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
 import { ShippingLabelDialogComponent } from './shipping-labels/shipping-label-dialog.component';
 import { FormBuilderComponent } from './form-builder/form-builder.component';
@@ -64,8 +62,6 @@ import { QuillModule } from 'ngx-quill';
   ],
   declarations: [
     ToolsManagerComponent,
-    EmailTemplatesComponent,
-    EmailTemplateDialogComponent,
     ShippingLabelsComponent,
     ShippingLabelDialogComponent,
     FormBuilderComponent,
