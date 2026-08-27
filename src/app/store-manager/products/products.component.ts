@@ -156,7 +156,7 @@ export class ProductsComponent implements OnInit {
         : 'This product is not live, and is set not to show in the Store.';
     }
     if (!showInStore) {
-      return 'Live, but deliberately kept out of the Store - see Show In Store on the Organization tab.';
+      return 'Live, but deliberately kept out of the Store - see Show In Store in the Organization section.';
     }
     return null;
   }

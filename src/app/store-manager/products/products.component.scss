@@ -46,24 +46,22 @@ app-data-grid {
   flex: 1 1 auto;
 }
 
-// mat-tab-group's internal body-wrapper is Material's own structural
-// element, not a plain div in this template - web-config.component.css
-// already found (via live testing, see its own comment) that percentage/
-// flex sizing rules aimed at .mat-mdc-tab-body-wrapper never match through
-// view encapsulation. Rather than fight that, .editor__body is the single
-// scrolling region (like editor__fields/editor__editor-wrap in the Home
-// Page Popups precedent) and the tab content below just flows naturally -
-// whichever tab is open extends this container, no nested scrollbars.
+// .editor__body is the single scrolling region (like editor__fields/
+// editor__editor-wrap in the Home Page Popups precedent) and the form
+// inside just flows naturally - no nested scrollbars.
+//
+// This used to carry a long note about mat-tab-group's internal
+// body-wrapper being unreachable through view encapsulation (see
+// web-config.component.css, which hit the same wall and still has its
+// copy). The tab group is gone as of 2026-08-27, so that fight no longer
+// applies here - but the conclusion it produced, one scroll region at this
+// level, is still exactly what the two-column form wants.
 .editor__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-}
-
-.product-tabs {
-  width: 100%;
 }
 
 .editor__actions {
@@ -85,16 +83,36 @@ app-data-grid {
   min-width: 0;
 }
 
+// Category Order / Series Order. Each was a lone number input spanning the
+// whole form column before; they sit beside their own select now and only
+// ever hold a small integer, so they get a fixed width rather than an equal
+// share of the row.
+.field-row .narrow {
+  flex: 0 0 92px;
+  min-width: 0;
+}
+
 .full-width {
   width: 100%;
 }
 
-.tab-content {
-  padding: 16px 4px 4px;
-  box-sizing: border-box;
+// A column of the two-column form. Both are plain flex stacks; the grid on
+// .editor__form below is what puts them side by side.
+.form-col {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+// The right-hand column (Dimensions + Organization) carries the rule that
+// separates the two. It is a border rather than a gap so the columns still
+// read as one form; the media query at the bottom of this file drops both
+// the border and its padding when the grid collapses to one column, where a
+// left-hand rule on a full-width stack would look like a stray mark.
+.form-col--divided {
+  border-left: 1px solid var(--app-card-border);
+  padding-left: 24px;
 }
 
 .section-label {
@@ -131,46 +149,55 @@ app-data-grid {
   gap: 16px;
 }
 
+// The form is TWO columns (Details | Dimensions + Organization). Before
+// 2026-08-27 it was a single tabbed column with nothing capping its width,
+// so beside the preview rail a lone field stretched ~900-1000px on a wide
+// monitor. A second column spends that width instead of stretching into it.
+//
+// align-items: start matters - without it the two columns stretch to match
+// each other's height and the divider rule runs past the shorter one.
 .editor__form {
   flex: 1 1 auto;
-  // Without this a flex item refuses to shrink below its content width, and
+  // Without this a grid item refuses to shrink below its content width, and
   // the wide form pushes the preview off the edge instead of sharing the row.
   min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  align-items: start;
+}
+
+// One column on a narrow window. 1180px is where two columns plus the 340px
+// rail stop leaving either column usable - past that the form stacks and
+// reads as three plain sections, which is a fine second-best.
+@media (max-width: 1180px) {
+  .editor__form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-col--divided {
+    border-left: none;
+    padding-left: 0;
+  }
 }
 
 
-.store-preview__toggle {
-  flex: none;
-}
-
-// Collapsed: a slim rail that still says what it is.
-.store-preview__rail-label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: rgba(0, 0, 0, 0.54);
-  white-space: nowrap;
-}
+// (.store-preview__toggle, .store-preview__rail-label and
+// .store-preview__title were removed 2026-08-27 - they styled this screen's
+// own collapse toggle, vertical collapsed label and panel heading, all three
+// of which went away when it moved onto the shared rail in 2026-08-26. No
+// markup had matched them since.)
 
 // Fills the shared rail rather than keeping the fixed 286px it needed when
-// this screen had its own narrower chrome - at 420px that left the card
-// sitting against a band of dead white space. Padding matches the other
-// previews so the card is not flush against the rail edge.
+// this screen had its own narrower chrome, which left the card sitting
+// against a band of dead white space. Padding matches the other previews so
+// the card is not flush against the rail edge. (The rail itself is 340px
+// since 2026-08-27 - the two-column form beside it needs the width more.)
 .store-preview__panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-}
-
-.store-preview__title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(0, 0, 0, 0.6);
 }
 
 .store-preview__warning {

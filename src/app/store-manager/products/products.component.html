@@ -32,194 +32,205 @@
       <mat-slide-toggle formControlName="isActive">Live</mat-slide-toggle>
     </mat-toolbar>
     <div class="editor__body">
+      <!-- TWO COLUMNS, NO TABS (2026-08-27). This was a three-tab form
+           (Dimensions / Details / Organization) over ~20 controls, which is
+           not enough form to split: Dimensions read as bare because it was a
+           third of a form pretending to be a whole one, and with nothing
+           capping the form column every lone field stretched the full
+           ~900-1000px left over beside the preview rail. Both problems have
+           the same fix - drop the tab group and spend the surplus width on a
+           second column instead. Details on the left, the set-once fields on
+           the right, whole product on one screen. .form-col--divided's rule
+           collapses to a single column under 1180px, so this degrades to a
+           plain stacked form rather than crushing.  -->
       <div class="editor__form">
-      <mat-tab-group class="product-tabs">
-        <mat-tab label="Dimensions">
-          <div class="tab-content">
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Image</mat-label>
-                <input matInput [value]="card.imageUrl?.name ?? ''" readonly required>
-                @if (!card.imageUrl?.name) {
-                  <mat-error>Image is required</mat-error>
-                }
-              </mat-form-field>
-              <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
-                {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
-              </button>
-            </div>
-            <!-- No inline preview here (2026-08-27). The store-preview card
-                 beside this form already renders the image the way a shopper
-                 actually sees it; showing it twice pushed every field below
-                 it down for no extra information. The filename in the field
-                 above still says which image is attached. -->
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Weight</mat-label>
-                <input matInput type="number" formControlName="weight" required>
-                @if (form.get('weight')?.hasError('required')) {
-                  <mat-error>Required</mat-error>
-                }
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>UOM</mat-label>
-                <mat-select formControlName="uom" required>
-                  @for (uom of uoms; track uom) {
-                    <mat-option [value]="uom">{{ uom }}</mat-option>
-                  }
-                </mat-select>
-                @if (form.get('uom')?.hasError('required')) {
-                  <mat-error>Required</mat-error>
-                }
-              </mat-form-field>
-            </div>
-            <app-tag-chips formControlName="sizes" label="Sizes" placeholder="Enter Sizes..." (createTag)="onCreateSizeTag($event)"></app-tag-chips>
-            <app-tag-chips formControlName="colors" label="Colors" placeholder="Enter Colors..." (createTag)="onCreateColorTag($event)"></app-tag-chips>
-            <app-tag-chips formControlName="languages" label="Languages" placeholder="Enter Languages..." (createTag)="onCreateLanguageTag($event)"></app-tag-chips>
-          </div>
-        </mat-tab>
-        <mat-tab label="Details">
-          <div class="tab-content">
+        <div class="form-col">
+          <div class="section-label">Details</div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Product Name</mat-label>
+            <input matInput formControlName="title" required>
+            @if (form.get('title')?.hasError('required')) {
+              <mat-error>Product name is required</mat-error>
+            }
+          </mat-form-field>
+          <div class="field-row">
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Product Name</mat-label>
-              <input matInput formControlName="title" required>
-              @if (form.get('title')?.hasError('required')) {
-                <mat-error>Product name is required</mat-error>
+              <mat-label>Cost</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="cost" required>
+              @if (form.get('cost')?.hasError('required')) {
+                <mat-error>Required</mat-error>
               }
             </mat-form-field>
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Cost</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="cost" required>
-                @if (form.get('cost')?.hasError('required')) {
-                  <mat-error>Required</mat-error>
-                }
-              </mat-form-field>
-              <!-- Read-only since Campaign Manager v3: a sale price is set by
-                   running a campaign with an offer, not by typing here. Shown
-                   rather than hidden so staff can still see what a product is
-                   currently selling for. -->
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Sale Price</mat-label>
-                <span matTextPrefix>$&nbsp;</span>
-                <input matInput type="number" formControlName="salePrice" readonly>
-                <mat-hint>Set by a campaign offer, not edited here</mat-hint>
-              </mat-form-field>
-            </div>
-            <div class="field-row">
-              <mat-checkbox formControlName="isEBook">Is this an eBook?</mat-checkbox>
-            </div>
-            @if (form.get('isEBook')?.value) {
-              <div class="field-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>eBook File</mat-label>
-                  <input matInput [value]="card.eBookUrl?.name ?? ''" readonly>
-                </mat-form-field>
-                <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showEBookUploader()">Upload</button>
-              </div>
-            }
-            <div class="field-row">
-              <mat-checkbox formControlName="isDigitalBook">Is this a Digital Book?</mat-checkbox>
-            </div>
-            @if (form.get('isDigitalBook')?.value) {
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Select Book</mat-label>
-                <mat-select formControlName="digitalBookId">
-                  @for (book of books; track book) {
-                    <mat-option [value]="book.id">{{ book.title }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
-            <div class="section-label">Description</div>
-            <div class="editor-wrap">
-              <quill-editor formControlName="description" [modules]="richTextModules"></quill-editor>
-            </div>
-            @if (form.get('description')?.hasError('required') && form.get('description')?.touched) {
-              <mat-error class="description-error">
-                Description is required
-              </mat-error>
-            }
-            <div class="field-row">
-              <mat-checkbox formControlName="sendFollowUpEmail">Send Follow Up Email?</mat-checkbox>
-            </div>
-            @if (form.get('sendFollowUpEmail')?.value) {
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Select Email</mat-label>
-                <mat-select formControlName="followUpEmailId">
-                  <mat-option [value]="null">(None)</mat-option>
-                  @for (email of emails; track email) {
-                    <mat-option [value]="email.id">{{ email.name }}</mat-option>
-                  }
-                </mat-select>
-                <!-- These templates are hidden from System Templates, so this
-                     is the only way to make one - see createFollowUpEmail(). -->
-                @if (canCreateFollowUpEmail) {
-                  <mat-hint>
-                    <button mat-button type="button" class="follow-up-new"
-                      (click)="createFollowUpEmail()">
-                      <mat-icon>add</mat-icon>
-                      New follow-up email
-                    </button>
-                  </mat-hint>
-                }
-                <!-- Edit the follow-up without leaving the product. Bound by
-                     doc ID here, which is also how the sending function
-                     resolves it - so unlike an event's registration email,
-                     this binding survives a rename. -->
-                @if (canEditFollowUpEmail) {
-                  <button mat-icon-button matSuffix type="button"
-                    matTooltip="Edit this email template"
-                    (click)="editFollowUpEmail()">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                }
-              </mat-form-field>
-            }
-          </div>
-        </mat-tab>
-        <mat-tab label="Organization">
-          <div class="tab-content">
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Category</mat-label>
-                <mat-select formControlName="category" required>
-                  @for (category of categories; track category) {
-                    <mat-option [value]="category.id">{{ category.tag }}</mat-option>
-                  }
-                </mat-select>
-                @if (form.get('category')?.hasError('required')) {
-                  <mat-error>Category is required</mat-error>
-                }
-              </mat-form-field>
-              <button mat-stroked-button type="button" (click)="manageCategories()">Manage Categories</button>
-            </div>
+            <!-- Read-only since Campaign Manager v3: a sale price is set by
+                 running a campaign with an offer, not by typing here. Shown
+                 rather than hidden so staff can still see what a product is
+                 currently selling for. -->
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Category Order</mat-label>
+              <mat-label>Sale Price</mat-label>
+              <span matTextPrefix>$&nbsp;</span>
+              <input matInput type="number" formControlName="salePrice" readonly>
+              <mat-hint>Set by a campaign offer, not edited here</mat-hint>
+            </mat-form-field>
+          </div>
+          <div class="field-row">
+            <mat-checkbox formControlName="isEBook">Is this an eBook?</mat-checkbox>
+          </div>
+          @if (form.get('isEBook')?.value) {
+            <div class="field-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>eBook File</mat-label>
+                <input matInput [value]="card.eBookUrl?.name ?? ''" readonly>
+              </mat-form-field>
+              <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showEBookUploader()">Upload</button>
+            </div>
+          }
+          <div class="field-row">
+            <mat-checkbox formControlName="isDigitalBook">Is this a Digital Book?</mat-checkbox>
+          </div>
+          @if (form.get('isDigitalBook')?.value) {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Select Book</mat-label>
+              <mat-select formControlName="digitalBookId">
+                @for (book of books; track book) {
+                  <mat-option [value]="book.id">{{ book.title }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <div class="section-label">Description</div>
+          <div class="editor-wrap">
+            <quill-editor formControlName="description" [modules]="richTextModules"></quill-editor>
+          </div>
+          @if (form.get('description')?.hasError('required') && form.get('description')?.touched) {
+            <mat-error class="description-error">
+              Description is required
+            </mat-error>
+          }
+          <div class="field-row">
+            <mat-checkbox formControlName="sendFollowUpEmail">Send Follow Up Email?</mat-checkbox>
+          </div>
+          @if (form.get('sendFollowUpEmail')?.value) {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Select Email</mat-label>
+              <mat-select formControlName="followUpEmailId">
+                <mat-option [value]="null">(None)</mat-option>
+                @for (email of emails; track email) {
+                  <mat-option [value]="email.id">{{ email.name }}</mat-option>
+                }
+              </mat-select>
+              <!-- These templates are hidden from System Templates, so this
+                   is the only way to make one - see createFollowUpEmail(). -->
+              @if (canCreateFollowUpEmail) {
+                <mat-hint>
+                  <button mat-button type="button" class="follow-up-new"
+                    (click)="createFollowUpEmail()">
+                    <mat-icon>add</mat-icon>
+                    New follow-up email
+                  </button>
+                </mat-hint>
+              }
+              <!-- Edit the follow-up without leaving the product. Bound by
+                   doc ID here, which is also how the sending function
+                   resolves it - so unlike an event's registration email,
+                   this binding survives a rename. -->
+              @if (canEditFollowUpEmail) {
+                <button mat-icon-button matSuffix type="button"
+                  matTooltip="Edit this email template"
+                  (click)="editFollowUpEmail()">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+            </mat-form-field>
+          }
+        </div>
+
+        <div class="form-col form-col--divided">
+          <div class="section-label">Dimensions</div>
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Image</mat-label>
+              <input matInput [value]="card.imageUrl?.name ?? ''" readonly required>
+              @if (!card.imageUrl?.name) {
+                <mat-error>Image is required</mat-error>
+              }
+            </mat-form-field>
+            <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+              {{ card.imageUrl?.name ? 'Change' : 'Upload' }}
+            </button>
+          </div>
+          <!-- No inline preview here (2026-08-27). The store-preview card
+               beside this form already renders the image the way a shopper
+               actually sees it; showing it twice pushed every field below
+               it down for no extra information. The filename in the field
+               above still says which image is attached. -->
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Weight</mat-label>
+              <input matInput type="number" formControlName="weight" required>
+              @if (form.get('weight')?.hasError('required')) {
+                <mat-error>Required</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>UOM</mat-label>
+              <mat-select formControlName="uom" required>
+                @for (uom of uoms; track uom) {
+                  <mat-option [value]="uom">{{ uom }}</mat-option>
+                }
+              </mat-select>
+              @if (form.get('uom')?.hasError('required')) {
+                <mat-error>Required</mat-error>
+              }
+            </mat-form-field>
+          </div>
+          <app-tag-chips formControlName="sizes" label="Sizes" placeholder="Enter Sizes..." (createTag)="onCreateSizeTag($event)"></app-tag-chips>
+          <app-tag-chips formControlName="colors" label="Colors" placeholder="Enter Colors..." (createTag)="onCreateColorTag($event)"></app-tag-chips>
+          <app-tag-chips formControlName="languages" label="Languages" placeholder="Enter Languages..." (createTag)="onCreateLanguageTag($event)"></app-tag-chips>
+
+          <div class="section-label">Organization</div>
+          <!-- Category and its order share a row, as do Series and its own -
+               each order box was a lone number input spanning the whole form
+               column before. The buttons are "Manage" rather than "Manage
+               Categories"/"Manage Series" because the field beside each one
+               already says which; the tooltip carries the full label. -->
+          <div class="field-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Category</mat-label>
+              <mat-select formControlName="category" required>
+                @for (category of categories; track category) {
+                  <mat-option [value]="category.id">{{ category.tag }}</mat-option>
+                }
+              </mat-select>
+              @if (form.get('category')?.hasError('required')) {
+                <mat-error>Category is required</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="narrow">
+              <mat-label>Order</mat-label>
               <input matInput type="number" formControlName="categoryOrder">
             </mat-form-field>
-            <div class="field-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Series</mat-label>
-                <mat-select formControlName="series">
-                  <mat-option [value]="null">(None)</mat-option>
-                  @for (s of series; track s) {
-                    <mat-option [value]="s.id">{{ s.name }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-              <button mat-stroked-button type="button" (click)="manageSeries()">Manage Series</button>
-            </div>
+            <button mat-stroked-button type="button" matTooltip="Manage Categories" (click)="manageCategories()">Manage</button>
+          </div>
+          <div class="field-row">
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Series Order</mat-label>
+              <mat-label>Series</mat-label>
+              <mat-select formControlName="series">
+                <mat-option [value]="null">(None)</mat-option>
+                @for (s of series; track s) {
+                  <mat-option [value]="s.id">{{ s.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="narrow">
+              <mat-label>Order</mat-label>
               <input matInput type="number" formControlName="seriesOrder">
             </mat-form-field>
-            <mat-checkbox formControlName="showInStore">Show In Store?</mat-checkbox>
-            <app-tag-chips formControlName="tags" [options]="productTags" label="Tags" placeholder="Tag this Product..." (createTag)="onCreateProductTag($event)"></app-tag-chips>
+            <button mat-stroked-button type="button" matTooltip="Manage Series" (click)="manageSeries()">Manage</button>
           </div>
-        </mat-tab>
-      </mat-tab-group>
+          <mat-checkbox formControlName="showInStore">Show In Store?</mat-checkbox>
+          <app-tag-chips formControlName="tags" [options]="productTags" label="Tags" placeholder="Tag this Product..." (createTag)="onCreateProductTag($event)"></app-tag-chips>
+        </div>
       </div>
 
       <!-- Store preview. Deliberately a copy of the storefront's own product
@@ -236,8 +247,12 @@
            The CHROME around it is the shared rail (2026-08-26), which is
            where the collapse toggle, the desktop/phone switch and the
            remembered state now come from - this screen had its own copy of
-           all three before. -->
-      <app-preview-rail storageKey="product" label="Store preview" [width]="420">
+           all three before.
+
+           340 rather than the rail's 420 default (2026-08-27): the form
+           beside it is two columns now and needs the width more than the
+           preview does. The card still renders at its real proportions. -->
+      <app-preview-rail storageKey="product" label="Store preview" [width]="340">
         <div class="store-preview__panel">
             <!-- No heading here: the rail's own header already says
                  "Store preview", and two of them read as a mistake. -->

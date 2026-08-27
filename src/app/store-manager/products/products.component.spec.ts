@@ -85,7 +85,7 @@ describe('ProductsComponent Store preview', () => {
       expect(reason).toContain('Live toggle');
     });
 
-    it('points at the Organization tab when Show in Store is off', () => {
+    it('points at the Organization section when Show in Store is off', () => {
       const reason = componentWith({ isActive: true, showInStore: false }).previewHiddenReason;
       expect(reason).toContain('Organization');
       // A live product held back from the store is a deliberate setup, so it
