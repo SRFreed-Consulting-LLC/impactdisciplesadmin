@@ -45,13 +45,25 @@ function normalizedName(value) {
   return value.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }
 
+// An address counts as REAL DATA if any part of it is filled in - not just
+// address1. Plenty of customer records carry a partial address (city/state/
+// zip with no street line) because that is all a PayPal payer record gives
+// us. Requiring address1 made those score zero, which on 2026-08-27 would
+// have picked the empty 6-field duplicate as the survivor and deleted the
+// only record holding a real customer's city, state and zip.
+function hasAddressData(a) {
+  return !!a && Object.values(a).some((v) => v !== null && v !== undefined && v !== "");
+}
+
 function fmtAddr(a) {
-  if (!a || !a.address1) return "(none)";
+  if (!hasAddressData(a)) return "(none)";
   return [a.address1, [a.city, a.state, a.zip].filter(Boolean).join(", ")].filter(Boolean).join(", ");
 }
 
 function score(doc) {
-  return (doc.shippingAddress && doc.shippingAddress.address1 ? 1 : 0) + (doc.pendingChanges ? doc.pendingChanges.length : 0);
+  return (hasAddressData(doc.shippingAddress) ? 1 : 0) +
+    (hasAddressData(doc.billingAddress) ? 1 : 0) +
+    (doc.pendingChanges ? doc.pendingChanges.length : 0);
 }
 
 function mergePendingChanges(groups) {
@@ -134,16 +146,16 @@ async function main() {
         fieldsBackfilled++;
       }
     }
-    if (!survivor.shippingAddress || !survivor.shippingAddress.address1) {
-      const donor = losers.find((l) => l.shippingAddress && l.shippingAddress.address1);
+    if (!hasAddressData(survivor.shippingAddress)) {
+      const donor = losers.find((l) => hasAddressData(l.shippingAddress));
       if (donor) {
         survivor.shippingAddress = donor.shippingAddress;
         fills.push(`shippingAddress: "${fmtAddr(donor.shippingAddress)}"`);
         fieldsBackfilled++;
       }
     }
-    if (!survivor.billingAddress || !survivor.billingAddress.address1) {
-      const donor = losers.find((l) => l.billingAddress && l.billingAddress.address1);
+    if (!hasAddressData(survivor.billingAddress)) {
+      const donor = losers.find((l) => hasAddressData(l.billingAddress));
       if (donor) {
         survivor.billingAddress = donor.billingAddress;
         fills.push(`billingAddress: "${fmtAddr(donor.billingAddress)}"`);

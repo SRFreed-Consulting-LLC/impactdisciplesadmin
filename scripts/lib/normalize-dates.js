@@ -1,12 +1,29 @@
 // Normalizes the specific date fields MIGRATION.md documented as existing
 // in 3 inconsistent shapes in the same collection (real Timestamp /
-// malformed {seconds,nanoseconds} map / plain string). Scoped to exactly
-// the 2 fields that were actually confirmed affected - don't guess at
-// others; extend FIELDS_BY_COLLECTION deliberately if more turn up.
+// malformed {seconds,nanoseconds} map / plain string). Scoped to fields
+// actually confirmed affected - don't guess at others; extend
+// FIELDS_BY_COLLECTION deliberately if more turn up.
+//
+// 2026-08-27: swept every field of every collection for mixed types and
+// added the two that turned up. Only TOP-LEVEL fields belong here - the
+// walker doesn't descend into arrays, and the two nested offenders found in
+// that sweep (purchases.cartItems[].dateProcessed, 882 occurrences, and
+// customers.notes[].date, 2) are deliberately left alone: nothing reads the
+// first, and the second is read through dateFromTimestamp, which handles
+// the malformed map by design.
+//
+// CAUTION on events.endDate: 27 of 29 were naive ISO strings with no
+// timezone, so they parse as LOCAL time. Run this from the ministry's own
+// timezone (America/New_York) or the converted instant shifts. Converting
+// preserves whatever was displayed before - including on the 13 events
+// whose stored end time is 12 hours early (a lost PM marker: a 9-to-3
+// seminar written as T03:00:00). Those are a separate DATA correctness
+// problem, deliberately not touched here, and still outstanding.
 
 const FIELDS_BY_COLLECTION = {
   purchases: ["dateProcessed"],
-  events: ["startDate"],
+  events: ["startDate", "endDate"],
+  "event-registrations": ["registrationDate"],
 };
 
 /**
