@@ -252,6 +252,37 @@ table.mat-mdc-table {
   color: var(--app-card-ink);
 }
 
+// Full-page editors get the SAME card surface, for exactly the same reason -
+// and until 2026-08-27 not one of them had it. TEN components define
+// .editor__body (Contacts, Organizations, Purchases, Purchase Details,
+// Products, Events, Admin Users, Form Builder, Contact Timeline, and the
+// shared _editor-chrome) and every one left the app ground showing through.
+//
+// That mattered because everything INSIDE them is coloured for a card:
+// _components.scss paints outlined fields --app-field, whose own comment says
+// "so they read as controls on any card", and the editors' text uses
+// --app-card-ink / --app-card-muted. --app-field is mixed to contrast with
+// the CARD, not with the ground, and on the ground the two collide:
+//
+//   distance(field, ground)   steel-rail 0, slate-elevate 2, quarterdeck 4,
+//                             ensign 6, abyss-glow 7, indigo-soft 9
+//   distance(field, card)     13-22 across those same themes
+//
+// So every input rendered as a faint smudge a couple of RGB units off the
+// page, visible only by its outline - reported as "different square boxes"
+// (owner, 2026-08-27), and the same root cause behind the purchase screen's
+// washed-out panels.
+//
+// Global rather than repeated into ten components: it is one decision about
+// what an editor IS, and the class is already the shared convention. Anything
+// that needs to read as RECESSED inside one of these (stat tiles, the
+// purchase panels) uses --app-field, which is now finally the correct
+// relationship rather than a coincidence.
+.editor__body {
+  background: var(--app-card);
+  color: var(--app-card-ink);
+}
+
 // New-record alert highlight (see new-record-tracking.util.ts) - applied via
 // [class.row--new] on <tr mat-row> in every list screen the new-record-
 // alerts bell can link to (the 4 Requests Manager tables, Purchases, Event

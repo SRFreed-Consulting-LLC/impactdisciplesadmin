@@ -230,7 +230,12 @@
   border: 1px solid var(--app-card-border);
   border-radius: 8px;
   padding: 10px 14px;
-  background: var(--app-card);
+  // Recessed inside the editor's card (styles.scss, .editor__body), which is
+  // what --app-field means. It was briefly --app-card while the editor had no
+  // surface at all and a field-coloured tile would have vanished into the
+  // ground; the editor has its card now, so this is a real relationship
+  // rather than a workaround.
+  background: var(--app-field);
 }
 
 .stat-tile__value {
@@ -249,7 +254,7 @@
 
 .stat-tile--warn {
   border-color: var(--app-attention);
-  background: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
+  background: color-mix(in srgb, var(--app-attention) 16%, var(--app-field));
 }
 
 .stat-tile--warn .stat-tile__value {
@@ -272,7 +277,7 @@
 
 .pending-change {
   border: 1px solid var(--app-card-border);
-  background: var(--app-card);
+  background: var(--app-field);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 12px;

@@ -25,7 +25,11 @@
   padding: 5px 12px;
   border-radius: 100px;
   border: 1px solid var(--app-card-border);
-  background: var(--app-card);
+  // --app-field, not --app-card: this chip sits INSIDE the editor's card
+  // (styles.scss, .editor__body), so a card-coloured chip would be invisible
+  // against it. Field is the recessed-control colour, which is what an
+  // unselected filter chip is.
+  background: var(--app-field);
   color: var(--app-card-ink);
   cursor: pointer;
 }
