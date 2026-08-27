@@ -42,6 +42,20 @@
     <textarea matInput formControlName="text" rows="4"></textarea>
   </mat-form-field>
 
+  <!-- Slide images are meant to be TEXT-FREE, because the fields above are
+       drawn over the lower-left of the artwork. Some artwork has its headline
+       baked in anyway (Golf, Summit), and the two then compete. Ticking this
+       lets the phone/tablet layout show that artwork clean. -->
+  <div class="artwork-has-text">
+    <mat-checkbox formControlName="artworkHasText">
+      The image already has its own title on it
+    </mat-checkbox>
+    <p class="artwork-has-text__hint">
+      On phones and tablets this slide shows the full picture with no dark tint
+      and no title over it. The button still shows. Desktop is unchanged.
+    </p>
+  </div>
+
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Button Destination</mat-label>
     <mat-select formControlName="ctaDestination">

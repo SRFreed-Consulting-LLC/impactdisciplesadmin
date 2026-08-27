@@ -15,3 +15,18 @@
 .field-row .full-width {
   flex: 1 1 0;
 }
+
+// The "image already has its own title" opt-in. Sits between the copy fields
+// it overrides and the button fields it does not, with the consequence spelled
+// out underneath - the setting only shows its effect on a phone, so an editor
+// on a desktop cannot see what it did.
+.artwork-has-text {
+  margin: 4px 0 18px;
+}
+
+.artwork-has-text__hint {
+  margin: 6px 0 0 32px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-card-muted);
+}

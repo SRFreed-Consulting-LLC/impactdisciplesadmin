@@ -57,7 +57,10 @@ export class HomePageImageDialogComponent {
       text: [data.item?.text ?? ''],
       ctaTitle: [data.item?.ctaTitle ?? '', Validators.required],
       ctaDestination: [data.item?.ctaDestination ?? null],
-      ctaUrl: [data.item?.ctaUrl ?? '']
+      ctaUrl: [data.item?.ctaUrl ?? ''],
+      // Absent on every existing record, which reads as false - see the
+      // field's own comment in home-page-image.model.ts.
+      artworkHasText: [data.item?.artworkHasText ?? false]
     });
 
     menuData.forEach((menu) => {
