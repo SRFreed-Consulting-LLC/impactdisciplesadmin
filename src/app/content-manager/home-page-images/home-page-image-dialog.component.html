@@ -11,6 +11,25 @@
     <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">Upload Image</button>
   </div>
 
+  <!-- Optional phone/tablet artwork. A wide desktop banner squeezed onto a
+       390px phone leaves its wordmark too small to read; cut a near-square
+       version and put it here. Blank means the slide uses the image above at
+       every size, which is how every existing slide behaves. -->
+  <div class="field-row">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Phone / Tablet Image (optional)</mat-label>
+      <input matInput [value]="card.mobileImage?.name ?? 'Using the image above'" readonly>
+    </mat-form-field>
+    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showMobileImageUploader()">Upload</button>
+    @if (card.mobileImage) {
+      <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="clearMobileImage()">Clear</button>
+    }
+  </div>
+  <p class="mobile-image__hint">
+    Used on phones and tablets only. Around 5:4 (near square) fills the frame
+    best - a wide banner shrinks too far to read.
+  </p>
+
   <div class="field-row">
     <mat-form-field appearance="outline" class="half-width">
       <mat-label>Order To Show</mat-label>
@@ -91,5 +110,16 @@
     [selectionMode]="'single'"
     [imageSelectVisible]="isImageUploaderVisible$ | async"
     (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+}
+
+@if (isMobileImageUploaderVisible$ | async) {
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'mobileImage'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isMobileImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeMobileImageUploader()">
   </app-image-uploader>
 }

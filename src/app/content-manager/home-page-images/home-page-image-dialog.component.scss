@@ -30,3 +30,13 @@
   line-height: 1.45;
   color: var(--app-card-muted);
 }
+
+// Sits under the phone-image row. The setting has no visible effect for
+// whoever is setting it - they are on a desktop - so the shape guidance has
+// to be written down where they choose the file.
+.mobile-image__hint {
+  margin: -6px 0 16px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-card-muted);
+}

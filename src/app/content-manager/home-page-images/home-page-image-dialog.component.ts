@@ -29,12 +29,13 @@ export class HomePageImageDialogComponent {
   inProgress$ = new BehaviorSubject<boolean>(false);
   isEdit: boolean;
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
+  isMobileImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
   // Backs app-image-uploader's [card]/[field] inputs directly - the
   // uploader writes the picked file straight onto this object's `image`
   // property (see closeImageUploader()), same as the original's
   // [(formData)]="selectedItem" two-way binding into a DevExtreme dx-form.
-  card: { image?: ImageModel } = {};
+  card: { image?: ImageModel; mobileImage?: ImageModel } = {};
 
   destinations: Destination[] = [];
 
@@ -49,6 +50,7 @@ export class HomePageImageDialogComponent {
   ) {
     this.isEdit = !!data.item?.id;
     this.card.image = data.item?.image;
+    this.card.mobileImage = data.item?.mobileImage;
 
     this.form = this.fb.group({
       isActive: [data.item?.isActive ?? false],
@@ -83,6 +85,19 @@ export class HomePageImageDialogComponent {
     this.isImageUploaderVisible$.next(false);
   }
 
+  showMobileImageUploader(): void {
+    this.isMobileImageUploaderVisible$.next(true);
+  }
+
+  closeMobileImageUploader(): void {
+    this.isMobileImageUploaderVisible$.next(false);
+  }
+
+  /** Drops the phone picture so the slide falls back to the main image. */
+  clearMobileImage(): void {
+    this.card.mobileImage = undefined;
+  }
+
   onCancel(): void {
     this.dialogRef.close(false);
   }
@@ -97,7 +112,7 @@ export class HomePageImageDialogComponent {
     // Matches the original's onSave(), which unconditionally reset date to
     // "now" on every save (add AND edit) rather than treating it as an
     // editable field - there was no date input anywhere in the form.
-    const value: HomePageImageModel = { ...this.data.item, ...this.form.value, image: this.card.image, date: Timestamp.now() };
+    const value: HomePageImageModel = { ...this.data.item, ...this.form.value, image: this.card.image, mobileImage: this.card.mobileImage ?? null, date: Timestamp.now() };
 
     const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
 
