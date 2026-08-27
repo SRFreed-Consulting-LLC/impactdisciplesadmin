@@ -302,8 +302,24 @@ table.mat-mdc-table tr.mat-mdc-row.row--new {
 // "arrived recently", it's "needs a decision" (accept/reject a mismatch a
 // purchase flagged), a different semantic that deserves a different color,
 // same global-selector reasoning as row--new above.
+// NO background tint, deliberately - the amber edge carries this on its own.
+//
+// It used to also paint `color-mix(in srgb, var(--app-attention) 16%,
+// var(--app-card))`. Amber (#d79b2e) and the navy card are near-complementary,
+// so mixing them cancels the chroma instead of tinting: that expression
+// resolves to rgb(64, 63, 65) - a NEUTRAL GREY - while every surface around it
+// is strongly blue (the card is rgb(35, 46, 69), R-B of -34). A neutral grey
+// on a blue field reads as yellow by simultaneous contrast, so the row came out
+// as a muddy warm smudge rather than a subtle amber wash. Reported repeatedly
+// as "yellow looking discolorations ... very light in the background" and
+// initially mistaken by me for a stale deploy, then for the field surfaces
+// (2026-08-27). _theme-variants.scss claims this amber "reads acceptably on
+// every variant's card, dark or light" - on the navy variants it does not.
+//
+// The 4px inset edge uses the token NEAT, so it stays properly amber, and the
+// "N pending" cell is amber text. The signal survives; the smudge does not.
+// Do not reintroduce a partial mix of --app-attention into a navy surface.
 table.mat-mdc-table tr.mat-mdc-row.row--pending {
-  background-color: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
   box-shadow: inset 4px 0 0 var(--app-attention);
 }
 

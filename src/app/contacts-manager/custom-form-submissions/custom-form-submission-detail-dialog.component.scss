@@ -4,7 +4,12 @@
   letter-spacing: 0.04em;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--app-attention) 16%, var(--app-card));
+  // Outlined rather than filled - see the .row--pending note in styles.scss.
+  // A partial mix of --app-attention into a navy surface cancels its chroma
+  // and lands on grey, so the fill read as a smudge instead of amber. The
+  // border and text carry it at full strength.
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--app-attention) 55%, transparent);
   color: var(--app-attention);
   margin-right: 4px;
 }

@@ -252,9 +252,13 @@
   color: var(--app-card-muted);
 }
 
+// Amber border and value, no amber FILL - see the note on .row--pending in
+// styles.scss. Mixing --app-attention into a navy surface cancels its chroma
+// (that expression resolved to rgb(56, 55, 54), a warm grey) and reads as a
+// yellow smudge rather than a tint. The tile keeps --app-field like its
+// siblings and says "warn" with its border and its value colour.
 .stat-tile--warn {
   border-color: var(--app-attention);
-  background: color-mix(in srgb, var(--app-attention) 16%, var(--app-field));
 }
 
 .stat-tile--warn .stat-tile__value {
