@@ -257,7 +257,9 @@ export function renderEmailBody(html: string, model: MergeContext): string {
       }
       const def = LEGACY_BY_TOKEN.get(normalizeToken(braceInner));
       if (def) {
-        return model[def.resolverKey] ?? def.dynamicDefault?.() ?? def.defaultValue;
+        return model[def.resolverKey] ??
+          def.dynamicDefault?.() ??
+          def.defaultValue;
       }
       return match;
     }
