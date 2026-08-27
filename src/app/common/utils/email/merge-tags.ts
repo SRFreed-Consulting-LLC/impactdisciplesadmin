@@ -244,3 +244,71 @@ export function sampleMergeContext(): MergeContext {
   });
   return context;
 }
+
+// --------------------------------------------------------------- one pass
+//
+// Client twin of renderEmailBody in
+// functions/src/utils/merge-tags.functions.ts - the transactional renderer
+// that resolves BOTH tag syntaxes in a SINGLE scan of the template. Keep the
+// two in step; the npm projects share no modules.
+//
+// It exists because neither renderer above could serve a transactional
+// template that is editable in the builder: renderMergeTags knows the closed
+// *|TAG|* list but not an event's arbitrary {{eventName}}, and the functions'
+// renderPlaceholders knew the reverse. Whichever one a send path used, it
+// mailed the other syntax to a customer verbatim.
+//
+// SINGLE PASS is the security property, not an optimisation: renderMergeTags
+// above loops tag by tag over the ACCUMULATING result, so a value substituted
+// early is rescanned as if it were template - a registrant named
+// "{{editRegistration}}" gets that expanded into their own email. One
+// .replace() over the template means substituted text is output, never input.
+
+/** Normalises the inside of a `{{...}}` for legacy lookup: any run of
+ *  whitespace or an encoded nbsp collapses to one plain space. */
+function normalizeToken(inner: string): string {
+  return inner.replace(/(?:\s|&nbsp;|&#160;|&#xa0;)+/g, ' ').trim();
+}
+
+const LEGACY_BY_TOKEN = new Map<string, MergeTagDef>();
+for (const def of MERGE_TAGS) {
+  for (const legacy of def.legacyTokens ?? []) {
+    LEGACY_BY_TOKEN.set(normalizeToken(legacy.replace(/^\{\{|\}\}$/g, '')), def);
+  }
+}
+const TAG_BY_NAME = new Map(MERGE_TAGS.map((def) => [def.tag, def]));
+
+// *|TAG|*  |  *|TAG|inline fallback|*  |  {{anything}}
+const COMBINED = /\*\|([A-Za-z_][A-Za-z0-9_]*)\|(?:([^|*]*)\|)?\*|\{\{([^{}]*)\}\}/g;
+
+/**
+ * Renders a transactional email body, resolving *|TAG|* (with or without an
+ * inline fallback) and {{key}} in one pass. Unknown tags in either syntax are
+ * left EXACTLY as written - a literal tag in an inbox is a visible bug
+ * someone reports, where silently deleting it is not.
+ */
+export function renderEmailBody(html: string, model: MergeContext): string {
+  return (html ?? '').replace(
+    COMBINED,
+    (match, tagName: string, fallback: string, braceInner: string) => {
+      if (tagName !== undefined) {
+        const def = TAG_BY_NAME.get(tagName);
+        if (!def) {
+          return match;
+        }
+        const value = model[def.resolverKey];
+        return value ?? (fallback !== undefined ? fallback : def.defaultValue);
+      }
+      // hasOwnProperty, not `in` - "{{constructor}}" must stay literal rather
+      // than interpolating something off Object.prototype.
+      if (Object.prototype.hasOwnProperty.call(model, braceInner)) {
+        return model[braceInner] ?? '';
+      }
+      const def = LEGACY_BY_TOKEN.get(normalizeToken(braceInner));
+      if (def) {
+        return model[def.resolverKey] ?? def.defaultValue;
+      }
+      return match;
+    }
+  );
+}

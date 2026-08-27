@@ -7,6 +7,7 @@ import { MailTemplateModel, MailTemplateKind, TEMPLATE_HOME_KINDS } from 'src/ap
 import { createDefaultDesign, createDesignFromFullHtml, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
+import { MergeTagDef, mergeTagToken, mergeTagsForKind } from 'src/app/common/utils/email/merge-tags';
 import { stripUndefinedDeep } from 'src/app/common/utils/strip-undefined';
 import { EMailTemplatesService } from 'src/app/common/services/data/email-templates.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
@@ -258,6 +259,41 @@ export class EmailDesignerComponent implements OnInit {
         title: this.templateName,
         defaultTo: this.currentUserEmail
       }
+    });
+  }
+
+  /**
+   * Variables offerable in the SUBJECT line.
+   *
+   * The same per-kind list the body uses, minus any whose value is markup:
+   * ORDER_ITEMS is a <table> and EDIT_REGISTRATION an <a>, and a subject is
+   * plain text - putting either there would show raw HTML in an inbox. The
+   * send paths omit them from their subject models for the same reason, so
+   * offering them here would be offering something guaranteed to render
+   * empty.
+   */
+  get subjectTags(): MergeTagDef[] {
+    return mergeTagsForKind(this.state.templateKind)
+      .filter((def) => !EmailDesignerComponent.MARKUP_TAGS.includes(def.tag));
+  }
+
+  private static readonly MARKUP_TAGS = ['ORDER_ITEMS', 'EDIT_REGISTRATION'];
+
+  /** Inserts at the caret, not at the end - a subject is usually edited in
+   *  the middle ("Your {{eventName}} registration"), and appending would
+   *  make the menu useless for exactly that. */
+  insertSubjectTag(def: MergeTagDef, input: HTMLInputElement): void {
+    const token = mergeTagToken(def);
+    const start = input.selectionStart ?? this.templateSubject.length;
+    const end = input.selectionEnd ?? start;
+    this.templateSubject =
+      this.templateSubject.slice(0, start) + token + this.templateSubject.slice(end);
+    this.state.dirty = true;
+    // The caret lands after what was just inserted, so a second insert does
+    // not silently overwrite the first.
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(start + token.length, start + token.length);
     });
   }
 

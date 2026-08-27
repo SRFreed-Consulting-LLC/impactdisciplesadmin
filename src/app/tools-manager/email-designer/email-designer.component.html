@@ -6,8 +6,29 @@
 
     <input class="name-input" [(ngModel)]="templateName" (ngModelChange)="state.dirty = true"
            placeholder="Email name" aria-label="Email name">
-    <input class="subject-input" [(ngModel)]="templateSubject" (ngModelChange)="state.dirty = true"
+    <input #subjectInput class="subject-input" [(ngModel)]="templateSubject"
+           (ngModelChange)="state.dirty = true"
            placeholder="Subject line" aria-label="Subject line">
+    <!-- Variables work in the SUBJECT too, but there was no way to put one
+         there except typing it: the menu only ever existed inside text
+         blocks. Same per-kind list, minus the ones whose value is markup -
+         an <a> element in a subject line is nonsense. -->
+    @if (subjectTags.length) {
+      <button mat-icon-button class="subject-tag-button"
+              [matMenuTriggerFor]="subjectTagMenu"
+              matTooltip="Insert a variable into the subject"
+              aria-label="Insert a variable into the subject">
+        <mat-icon>data_object</mat-icon>
+      </button>
+      <mat-menu #subjectTagMenu="matMenu">
+        @for (tag of subjectTags; track tag.tag) {
+          <button mat-menu-item (click)="insertSubjectTag(tag, subjectInput)">
+            <span>{{ tag.label }}</span>
+            <code class="subject-tag-token">*|{{ tag.tag }}|*</code>
+          </button>
+        }
+      </mat-menu>
+    }
     <!-- The "Preview text" (preheader) input was removed 2026-08-27: not one
          design in either project had ever been given one, so it was a second
          always-empty box beside the subject on every edit. The MODEL and the

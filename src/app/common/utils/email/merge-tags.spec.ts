@@ -1,4 +1,4 @@
-import { MERGE_TAGS, TAGS_BY_TEMPLATE_KIND, mergeTagsForKind, renderMergeTags, sampleMergeContext, mergeTokenForLabel } from './merge-tags';
+import { MERGE_TAGS, TAGS_BY_TEMPLATE_KIND, mergeTagsForKind, renderMergeTags, sampleMergeContext, mergeTokenForLabel, renderEmailBody } from './merge-tags';
 
 describe('renderMergeTags', () => {
   it('replaces every occurrence of a tag, not just the first', () => {
@@ -179,5 +179,57 @@ describe('the per-process variables', () => {
     expect(renderMergeTags('{{eventName}} {{startDate}} {{product_list}}', {
       eventName: 'Summit', startDate: 'March 3', product_list: 'X'
     })).toBe('Summit March 3 X');
+  });
+});
+
+// Client twin of renderEmailBody in functions/src/utils/merge-tags.functions.ts.
+// It had no coverage on this side at all until 2026-08-27 - the function was
+// added to the functions copy only, in two files documented as mirrors, so the
+// designer's PREVIEW was still using the multi-pass renderMergeTags while the
+// real send used the single-pass one. The preview and the email could disagree.
+describe('renderEmailBody (client twin)', () => {
+  it('resolves both syntaxes in one body', () => {
+    expect(renderEmailBody('Hi *|FNAME|* {{lastName}} - {{eventName}}', {
+      firstName: 'Alex', lastName: 'Rivera', eventName: 'Summit'
+    })).toBe('Hi Alex Rivera - Summit');
+  });
+
+  it('uses an inline fallback only when the model has no value', () => {
+    const tpl = '*|TRACKING|No tracking yet.|*';
+    expect(renderEmailBody(tpl, { tracking: 'TRK-1' })).toBe('TRK-1');
+    expect(renderEmailBody(tpl, {})).toBe('No tracking yet.');
+  });
+
+  it('leaves unknown tags EXACTLY as written, in either syntax', () => {
+    // Visible beats silent: a literal tag in an inbox gets reported, a
+    // quietly deleted one does not.
+    expect(renderEmailBody('[*|NOPE|*] [{{nope}}]', {})).toBe('[*|NOPE|*] [{{nope}}]');
+  });
+
+  it('does not interpolate an inherited property name', () => {
+    expect(renderEmailBody('[{{constructor}}]', {})).toBe('[{{constructor}}]');
+  });
+
+  it('NEVER rescans a substituted value as template', () => {
+    // The documented exploit: registering under a name that is itself a
+    // token. escapeHtml touches none of { } | * so the single scan is the
+    // only thing standing between this and an expanded value.
+    expect(renderEmailBody('Hi {{firstName}}', {
+      firstName: '{{editRegistration}}',
+      editRegistration: '<a href="secret">link</a>'
+    })).toBe('Hi {{editRegistration}}');
+
+    expect(renderEmailBody('*|FNAME|* / *|UNSUB|*', {
+      firstName: '*|UNSUB|*', unsubscribeUrl: 'https://example.test/u'
+    })).toBe('*|UNSUB|* / https://example.test/u');
+  });
+
+  it('agrees with renderMergeTags on the simple cases they share', () => {
+    // The two coexist; where both apply they must not disagree, or the
+    // preview and the sent email diverge.
+    const ctx = { firstName: 'Alex', lastName: 'Rivera' };
+    for (const tpl of ['*|FNAME|*', '{{firstName}}', 'x *|LNAME|* y']) {
+      expect(renderEmailBody(tpl, ctx)).toBe(renderMergeTags(tpl, ctx), tpl);
+    }
   });
 });

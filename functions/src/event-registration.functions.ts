@@ -144,12 +144,26 @@ async function queueConfirmationEmail(
     // syntaxes - and the single scan is what keeps a registrant who names
     // themselves "{{editRegistration}}" from having it expanded.
     const html = renderEmailBody(template.html ?? "", model);
-    // Subject is plain text (not HTML), so use the raw event name here,
-    // not the HTML-escaped model value.
-    const subject = (template.subject ?? "").replace(
-      "{{eventName}}",
-      (event.eventName as string) ?? ""
-    );
+    // The SUBJECT gets the same renderer, with its own model.
+    //
+    // It used to be a single literal .replace() of "{{eventName}}", so that
+    // was the ONLY thing that worked in a subject - *|EVENT_NAME|* from the
+    // builder's own menu, or a second occurrence of the same token, mailed
+    // out verbatim. Now anything the body understands works here too.
+    //
+    // The model differs from the body's on purpose:
+    //  - values are RAW, not escapeHtml'd: a subject is plain text, so
+    //    "Smith &amp; Co" would be shown literally.
+    //  - editRegistration is omitted. It is an <a> element, and markup in a
+    //    subject line is nonsense; leaving it out renders it empty rather
+    //    than putting a tag in someone's inbox.
+    const subject = renderEmailBody(template.subject ?? "", {
+      firstName: who.firstName,
+      lastName: who.lastName,
+      email: who.email,
+      eventName: (event.eventName as string) ?? "",
+      startDate: startText,
+    });
 
     // Goes through queueMail rather than writing the `mail` document by
     // hand: this used to be a second, independently-maintained copy of the

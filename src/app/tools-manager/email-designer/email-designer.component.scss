@@ -57,6 +57,18 @@
     color: #555e69;
   }
 
+  // Sits tight against the subject field so it reads as part of it rather
+  // than as another toolbar action.
+  .subject-tag-button {
+    margin-left: -4px;
+    color: #6a7280;
+  }
+}
+
+.subject-tag-token {
+  margin-left: 12px;
+  font-size: 11px;
+  color: #6a7280;
 }
 
 .topbar-divider {
