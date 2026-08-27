@@ -453,6 +453,14 @@ $collapsed-width: 64px;
   text-decoration: none;
   color: var(--app-muted);
   margin: 1px 8px;
+  // The margin insets the row, but a Material list item is width:100% - so
+  // without this the row measures 16px WIDER than the well it sits in and its
+  // tinted --active background bleeds out past the rounded right edge.
+  // .impact-drawer__link has carried the same calc for the same reason all
+  // along; the sublink never needed it while the child list had no visible
+  // bounds to spill over (owner report, 2026-08-27, right after the well
+  // gave it one).
+  width: calc(100% - 16px);
   border-radius: var(--app-radius-control);
   font-size: 12.5px;
   padding: 7px 36px 7px 44px;
