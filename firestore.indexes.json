@@ -26,14 +26,6 @@
       ]
     },
     {
-      "collectionGroup": "pod_casts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "isActive", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "purchases",
       "queryScope": "COLLECTION",
       "fields": [
