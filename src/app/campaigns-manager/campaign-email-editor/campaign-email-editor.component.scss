@@ -189,6 +189,22 @@
   }
 }
 
+// THEMED, unlike the rest of this file.
+//
+// The editor around it is deliberately light because it renders EMAIL
+// content, and an email is light wherever it is opened. This panel is not
+// email content - it is app chrome about WHEN a send happens and WHO gets it,
+// and it is built from ordinary Material controls: mat-radio-button,
+// mat-select, matInput, app-date-time-field.
+//
+// Those controls take their colours from the app-wide (dark) theme in
+// styles/_components.scss - outlined field text is --app-card-ink, a near
+// WHITE. Painted onto the panel's hard-coded #ffffff, the radio labels and
+// the floating mat-labels were white-on-white and could not be read (owner
+// report, 2026-08-27). designer-side-panel.component.scss records hitting the
+// same thing and solved it by re-stating a light colour for every control;
+// this panel takes the other route and simply uses the theme, so there is
+// nothing to keep in sync as controls are added.
 .schedule-panel {
   position: absolute;
   top: 0;
@@ -196,20 +212,20 @@
   bottom: 0;
   width: 380px;
   max-width: 92vw;
-  background: #ffffff;
-  border-left: 1px solid #e2e5ea;
-  box-shadow: -8px 0 24px rgba(20, 26, 33, .12);
+  background: var(--app-card);
+  border-left: 1px solid var(--app-card-border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, .35);
   z-index: 6;
   display: flex;
   flex-direction: column;
-  color: #22282f;
+  color: var(--app-card-ink);
 
   &__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 8px 12px 20px;
-    border-bottom: 1px solid #e2e5ea;
+    border-bottom: 1px solid var(--app-card-border);
     flex: none;
   }
 
@@ -234,9 +250,16 @@
     justify-content: flex-end;
     gap: 8px;
     padding-top: 8px;
-    border-top: 1px solid #e2e5ea;
+    border-top: 1px solid var(--app-card-border);
     margin-top: 4px;
   }
+}
+
+// The section captions inside the panel ("WHEN DOES IT SEND?", "TEST"). They
+// were a fixed grey chosen for the white panel; on the themed panel they are
+// the theme's muted ink.
+.schedule-panel .schedule-label {
+  color: var(--app-card-muted);
 }
 
 .schedule-label {
