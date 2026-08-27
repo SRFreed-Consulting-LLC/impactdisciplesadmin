@@ -64,6 +64,18 @@
                           <mat-icon>edit</mat-icon>
                         </button>
                       }
+                      <!-- Kind 'event'/'summit' templates are hidden from
+                           System Templates, so this is the only way to make
+                           one. The kind follows the screen. -->
+                      @if (canCreateEmailTemplate) {
+                        <mat-hint>
+                          <button mat-button type="button" class="template-new"
+                            (click)="createEmailTemplate()">
+                            <mat-icon>add</mat-icon>
+                            New registration email
+                          </button>
+                        </mat-hint>
+                      }
                     </mat-form-field>
                   </div>
                   <div class="field-row">
@@ -214,6 +226,18 @@
                           (click)="editEmailTemplate()">
                           <mat-icon>edit</mat-icon>
                         </button>
+                      }
+                      <!-- Kind 'event'/'summit' templates are hidden from
+                           System Templates, so this is the only way to make
+                           one. The kind follows the screen. -->
+                      @if (canCreateEmailTemplate) {
+                        <mat-hint>
+                          <button mat-button type="button" class="template-new"
+                            (click)="createEmailTemplate()">
+                            <mat-icon>add</mat-icon>
+                            New registration email
+                          </button>
+                        </mat-hint>
                       }
                     </mat-form-field>
                   </div>

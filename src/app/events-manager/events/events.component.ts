@@ -75,6 +75,27 @@ export class EventsComponent implements OnInit, OnDestroy {
     return this.summitMode ? 'events-manager.summit' : 'events-manager.events';
   }
 
+  /**
+   * The event form's "Email Template" list.
+   *
+   * It used to be getAll() - every template in the collection - so the
+   * registration-confirmation dropdown offered campaign starting points, the
+   * Amazon shipping notice and a product's post-purchase follow-up as equally
+   * valid choices.
+   *
+   * Summit and Events get SEPARATE lists ('summit' vs 'event'). Both screens
+   * render this same component, so the split lives here rather than in the
+   * form. Reloadable so a template created from the form appears without a
+   * round trip through the list.
+   */
+  loadEmailTemplates(): void {
+    void this.emailTemplateService
+      .getAllOfKind(this.summitMode ? 'summit' : 'event')
+      .then((templates) => {
+        this.emailTemplates = templates.map((t) => t.name);
+      });
+  }
+
   headerActions: ListHeaderAction[] = [];
   // No DELETE action: deleting an event has no cascading cleanup of its
   // event-registrations - orphaning them (missing eventId, stuck "new"
@@ -159,9 +180,7 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.locationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((locations) => {
       this.locations = locations;
     });
-    this.emailTemplateService.getAll().then((templates) => {
-      this.emailTemplates = templates.map((t) => t.name);
-    });
+    this.loadEmailTemplates();
 
     // Both Summit and Events read the same collection/stream - filtered
     // client-side rather than a second scoped Firestore query, since the

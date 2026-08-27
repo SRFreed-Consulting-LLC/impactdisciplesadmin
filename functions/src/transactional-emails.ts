@@ -1,5 +1,9 @@
 import {Timestamp} from "firebase-admin/firestore";
-import {renderMergeTags} from "./utils/merge-tags.functions";
+import {renderEmailBody} from "./utils/merge-tags.functions";
+import {
+  MAIL_TEMPLATE_IDS,
+  resolveCodeTemplate,
+} from "./utils/mail-templates.functions";
 
 // Pre-prod hardening #1: every email the two public apps used to compose
 // and write into `mail` from the browser is queued server-side here
@@ -82,6 +86,13 @@ export function htmlToPlainText(html: string): string {
 
 /**
  * Substitutes {{key}} placeholders in a mail template body.
+ *
+ * NO PRODUCTION CALLERS as of 2026-08-27 - every send path moved to
+ * utils/merge-tags.functions.ts's renderEmailBody(), which resolves {{key}}
+ * AND *|TAG|* in the same single pass, because templates are now editable in
+ * the email builder and its tag menu writes the other syntax. Kept, with its
+ * tests, as the reference statement of the single-pass rule below; delete it
+ * only along with them.
  *
  * Deliberately ARBITRARY-key: the caller's model decides which placeholders
  * exist, because staff author these templates in the admin UI and can use
@@ -267,22 +278,43 @@ function effectiveUnitPrice(item: ReceiptCartItem): number {
  * Builds the product_list table for the web store's "Sales Receipt"
  * template - ported from CheckoutComponent.sendProductPurchaseSuccessEmail
  * (retired), same math as the web PricingService.
+ *
+ * Rebuilt 2026-08-27 for the email BUILDER. The original was a 7-column
+ * table at width:90% with 100px product images, and the template dropped it
+ * inside a <span> inside a <p> - a table nested in a paragraph, which every
+ * mail client hoists back out, taking the layout with it. Its rows were also
+ * ragged: the header had 7 cells, a plain item row 6, an eBook row 7, so
+ * columns never lined up with their own headings.
+ *
+ * Now FOUR columns, every row the same width, sized for the builder's 600px
+ * canvas: thumbnail | product (with per-unit price and any download link) |
+ * qty | line total. Table attributes as well as inline styles, because
+ * Outlook ignores CSS on <table>. The MATH is untouched.
  * @param {ReceiptCheckoutForm} form The saved checkout form.
  * @return {string} HTML table markup.
  */
-function buildWebProductListHtml(form: ReceiptCheckoutForm): string {
+export function buildWebProductListHtml(form: ReceiptCheckoutForm): string {
   const items = form.cartItems ?? [];
   let ebooksPurchased = false;
   let subtotal = 0;
   let discountTotal = 0;
 
-  let html = "<table style='width: 90%;'>";
-  html += "<tr><td></td><td style='text-align: left;'>PRODUCT</td>" +
-    "<td style='text-align: right;'>PRICE</td>" +
-    "<td style='text-align: right;'>DISCOUNT</td>" +
-    "<td style='text-align: center;'>QUANTITY</td>" +
-    "<td style='text-align: right;'>TOTAL</td>" +
-    "<td style='text-align: left;'></td></tr>";
+  const font = "font-family:Helvetica,Arial,sans-serif;";
+  const cell = "padding:10px 8px;border-bottom:1px solid #e5e7eb;" + font +
+    "font-size:14px;color:#333333;";
+  const head = "padding:8px;border-bottom:2px solid #d1d5db;" + font +
+    "font-size:11px;letter-spacing:.06em;color:#6a7280;";
+  const totalCell = "padding:6px 8px;" + font +
+    "font-size:14px;color:#333333;";
+
+  let html = "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" " +
+    "cellspacing=\"0\" border=\"0\" " +
+    "style=\"width:100%;border-collapse:collapse;\">";
+  html += "<tr>" +
+    "<th style=\"" + head + "text-align:left;\" colspan=\"2\">PRODUCT</th>" +
+    "<th style=\"" + head + "text-align:center;\">QTY</th>" +
+    "<th style=\"" + head + "text-align:right;\">TOTAL</th>" +
+    "</tr>";
 
   for (const item of items) {
     const unit = effectiveUnitPrice(item);
@@ -293,28 +325,39 @@ function buildWebProductListHtml(form: ReceiptCheckoutForm): string {
     subtotal += unit * qty;
     discountTotal += unitDiscount * qty;
 
-    html += "<tr>";
-    html += "<td><img src='" + (item.img?.url ?? "") + "' alt='" +
-      escapeHtml(item.img?.name ?? "") + "' height='100px'></img></td>";
-    html += "<td style='text-align: left;'>" +
-      escapeHtml(item.itemName ?? "") + "</td>";
-    html += "<td style='text-align: right;'>" + usd.format(unit) + "</td>";
-    html += unitDiscount > 0 ?
-      "<td style='text-align: right;'>" + usd.format(unitDiscount) +
-        "</td>" :
-      "<td></td>";
-    html += "<td style='text-align: center;'>" + qty + "</td>";
-    html += "<td style='text-align: right;'>" + usd.format(lineTotal) +
-      "</td>";
+    // Per-unit price sits UNDER the product name rather than in its own
+    // column - four columns fit 600px, six do not.
+    let detail = "<div style=\"font-size:12px;color:#6a7280;\">" +
+      usd.format(unit) + " each";
+    if (unitDiscount > 0) {
+      detail += " - less " + usd.format(unitDiscount) + " each";
+    }
+    detail += "</div>";
+
     if (item.isEBook) {
-      html += "<td style='text-align: left;'><a href='" +
-        (item.eBookUrl?.url ?? "") + "' download>DOWNLOAD</a></td>";
+      detail += "<div style=\"font-size:13px;\"><a href=\"" +
+        escapeHtml(item.eBookUrl?.url ?? "") +
+        "\" download>DOWNLOAD</a></div>";
     }
     if (item.isDigitalBook) {
       ebooksPurchased = true;
-      html += "<td style='text-align: left;'>See install instuctions " +
-        "below!</td>";
+      detail += "<div style=\"font-size:12px;color:#6a7280;\">" +
+        "See install instructions below!</div>";
     }
+
+    const img = item.img?.url ?
+      "<img src=\"" + escapeHtml(item.img.url) + "\" alt=\"" +
+        escapeHtml(item.img?.name ?? "") + "\" width=\"64\" " +
+        "style=\"display:block;width:64px;height:auto;\">" :
+      "";
+
+    html += "<tr>";
+    html += "<td style=\"" + cell + "width:72px;\">" + img + "</td>";
+    html += "<td style=\"" + cell + "text-align:left;\">" +
+      escapeHtml(item.itemName ?? "") + detail + "</td>";
+    html += "<td style=\"" + cell + "text-align:center;\">" + qty + "</td>";
+    html += "<td style=\"" + cell + "text-align:right;\">" +
+      usd.format(lineTotal) + "</td>";
     html += "</tr>";
   }
 
@@ -324,47 +367,46 @@ function buildWebProductListHtml(form: ReceiptCheckoutForm): string {
   const orderTotal =
     subtotal - discountTotal + taxes + shipping - shippingDiscount;
 
-  html += "<tr><td></td><td></td><td></td><td></td><td>SUBTOTAL</td>" +
-    "<td style='text-align: right;'><b>" + usd.format(subtotal) +
-    "</b></td><td></td></tr>";
+  // Every totals row is label + value across the same four columns, so they
+  // line up under TOTAL instead of drifting into the QUANTITY column the way
+  // the old markup did.
+  const totalsRow = (label: string, value: string, strong = false) =>
+    "<tr><td colspan=\"3\" style=\"" + totalCell + "text-align:right;\">" +
+    (strong ? "<b>" + label + "</b>" : label) + "</td>" +
+    "<td style=\"" + totalCell + "text-align:right;\">" +
+    (strong ? "<b>" + value + "</b>" : value) + "</td></tr>";
+
+  html += totalsRow("SUBTOTAL", usd.format(subtotal));
+  if (discountTotal > 0) {
+    html += totalsRow("DISCOUNT", "- " + usd.format(discountTotal));
+  }
   if (taxes > 0) {
-    html += "<tr><td></td><td></td><td></td><td></td><td>TAXES</td>" +
-      "<td style='text-align: right;'><b> + " + usd.format(taxes) +
-      "</b></td><td></td></tr>";
+    html += totalsRow("TAXES", "+ " + usd.format(taxes));
   }
   if (shipping > 0) {
-    html += "<tr><td></td><td></td><td></td><td></td><td>SHIPPING</td>" +
-      "<td style='text-align: right;'><b> + " + usd.format(shipping) +
-      "</b></td><td></td></tr>";
+    html += totalsRow("SHIPPING", "+ " + usd.format(shipping));
   }
   if (shippingDiscount > 0) {
-    html += "<tr><td></td><td></td><td></td><td></td>" +
-      "<td>SHIPPING DISCOUNT</td>" +
-      "<td style='text-align: right;'><b> - " +
-      usd.format(shippingDiscount) + "</b></td><td></td></tr>";
+    html += totalsRow("SHIPPING DISCOUNT", "- " + usd.format(shippingDiscount));
   }
-  if (discountTotal > 0) {
-    html += "<tr><td></td><td></td><td></td><td></td><td>DISCOUNT</td>" +
-      "<td style='text-align: right;'><b> - " + usd.format(discountTotal) +
-      "</b></td><td></td></tr>";
-  }
-  html += "<tr><td></td><td></td><td></td><td></td><td>TOTAL</td>" +
-    "<td style='text-align: right;'><b> = " + usd.format(orderTotal) +
-    "</b></td><td></td></tr>";
+  html += totalsRow("TOTAL", usd.format(orderTotal), true);
   html += "</table>";
 
   if (form.receipt) {
-    html += "<div>Confirmation Id: <b>" + escapeHtml(form.receipt) +
-      "</b></div>";
+    html += "<div style=\"margin-top:12px;" + font +
+      "font-size:13px;color:#6a7280;\">Confirmation Id: <b>" +
+      escapeHtml(form.receipt) + "</b></div>";
   }
   if (ebooksPurchased) {
-    html += "<br><div><b>If you purchased an item from our Digital " +
-      "Library, instuctions for setting up the Library on your preferred " +
-      "Device can be found <a href=\"" +
-      "https://library.impactdisciples.com/install-instructions\">here" +
-      "</a>!</b></div>";
-    html += "<br><div>(For easy installation, it is best to open this " +
-      "email on your preferred Device and click the link!)</div>";
+    html += "<div style=\"margin-top:16px;" + font +
+      "font-size:14px;color:#333333;\"><b>If you purchased an item from our " +
+      "Digital Library, instructions for setting up the Library on your " +
+      "preferred device can be found <a href=\"" +
+      "https://library.impactdisciples.com/install-instructions\">here</a>!" +
+      "</b></div>";
+    html += "<div style=\"margin-top:6px;" + font +
+      "font-size:13px;color:#6a7280;\">(For easy installation, it is best to " +
+      "open this email on your preferred device and click the link!)</div>";
   }
   return html;
 }
@@ -390,11 +432,28 @@ export async function queueWebOrderEmails(
     return;
   }
 
-  const templateSnap = await db.collection("mail_templates")
-    .where("name", "==", "Sales Receipt").limit(1).get();
-  if (!templateSnap.empty) {
-    const template =
-      templateSnap.docs[0].data() as {subject?: string; html?: string};
+  // By pinned ID, not by name - a name is an editable text field, and
+  // renaming this template used to stop every receipt with no error
+  // anywhere. resolveCodeTemplate still falls back to the name, loudly, so a
+  // project whose data has not been pinned yet keeps sending.
+  const resolved = await resolveCodeTemplate(
+    db, MAIL_TEMPLATE_IDS.salesReceipt, "Sales Receipt"
+  );
+
+  if (!resolved) {
+    // LOUD. This used to be `if (!templateSnap.empty)` with no else, so a
+    // missing template meant a paying customer silently received no receipt
+    // at all and nothing anywhere recorded it. The order is already captured
+    // by the time this runs, so throwing would be worse than useless - but
+    // saying so in the log is the difference between a reported bug and a
+    // mystery.
+    console.error(
+      "No Sales Receipt template could be resolved - order " +
+      `${form.receipt ?? "(no receipt id)"} was charged and NO receipt ` +
+      "was sent."
+    );
+  } else {
+    const template = resolved.data;
     // Buyer-supplied fields are HTML-escaped before substitution
     // (sweep 2026-08-17). product_list is builder-generated markup (its own
     // interpolations are already escaped), so it is inserted as-is.
@@ -404,8 +463,19 @@ export async function queueWebOrderEmails(
       email: escapeHtml(email),
       product_list: buildWebProductListHtml(form),
     };
-    const html = renderPlaceholders(template.html ?? "", model);
-    await queueMail(db, email, template.subject ?? "Sales Receipt", html);
+    const html = renderEmailBody(template.html ?? "", model);
+    // The SUBJECT gets its own model: unescaped (a subject is plain text, so
+    // "Smith &amp; Co" would be shown literally) and without product_list,
+    // which is a block of markup and has no business in a subject line.
+    // Rendered at all because an admin editing this in the builder can type a
+    // tag into the subject field and reasonably expect it to resolve - it
+    // used to be passed through raw.
+    const subject = renderEmailBody(template.subject || "Sales Receipt", {
+      firstName: form.firstName ?? "",
+      lastName: form.lastName ?? "",
+      email,
+    });
+    await queueMail(db, email, subject, html);
   }
 
   // Per-item follow-ups run CONCURRENTLY (they used to be a serial
@@ -418,30 +488,39 @@ export async function queueWebOrderEmails(
     const followUpSnap = await db.collection("mail_templates")
       .doc(item.followUpEmailId as string).get();
     if (!followUpSnap.exists) {
+      // Also loud, for the same reason as the receipt above: a product whose
+      // follow-up template has been deleted quietly stops delivering whatever
+      // the customer actually paid for - a video link, a download - and the
+      // order looks completely successful from every angle.
+      console.error(
+        `A purchased item names follow-up template ${item.followUpEmailId}, ` +
+        `which does not exist - nothing sent to ${email}.`
+      );
       return;
     }
     const followUp = followUpSnap.data() as {subject?: string;
       html?: string};
-    // renderMergeTags, NOT renderPlaceholders, and only on THIS path.
-    //
-    // A product's follow-up is admin-editable in the email BUILDER, whose tag
-    // menu inserts *|FNAME|* - which renderPlaceholders does not understand
-    // and would mail literally to a customer. renderMergeTags resolves those
-    // AND absorbs the legacy {{firstName}} spelling the Quill-authored
-    // templates already use, so both survive.
-    //
-    // Safe here specifically because this path's model is closed - exactly
-    // firstName/lastName/email, all three registered merge tags. The receipt
-    // path above keeps renderPlaceholders because it has an arbitrary
-    // caller-supplied key ({{product_list}}) that no closed tag list covers.
-    // The two renderers stay separate on purpose; this picks the right one
-    // per path rather than collapsing them.
-    const html = renderMergeTags(followUp.html ?? "", {
+    // renderEmailBody: one pass, both tag syntaxes. A product's follow-up is
+    // admin-editable in the email BUILDER, whose tag menu inserts *|FNAME|*,
+    // while the Quill-authored templates in the live data use {{firstName}} -
+    // and whichever renderer only knew one of those would mail the other to a
+    // customer verbatim, with nothing erroring anywhere.
+    const html = renderEmailBody(followUp.html ?? "", {
       firstName: escapeHtml(form.firstName ?? ""),
       lastName: escapeHtml(form.lastName ?? ""),
       email: escapeHtml(email.toLowerCase()),
     });
-    await queueMail(db, email, followUp.subject ?? "", html);
+    // `||`, not `??`: a template saved with an empty subject would otherwise
+    // mail with no subject line at all, which reads as spam.
+    const subject = renderEmailBody(
+      followUp.subject || "Thank you for your order",
+      {
+        firstName: form.firstName ?? "",
+        lastName: form.lastName ?? "",
+        email,
+      }
+    );
+    await queueMail(db, email, subject, html);
   }));
 }
 

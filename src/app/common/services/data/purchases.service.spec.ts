@@ -1,5 +1,5 @@
 import { CheckoutForm, FulfillmentStatus } from '@impact-common/shared/models/utils/cart.model';
-import { PurchasesService } from './purchases.service';
+import { AMAZON_CONFIRMATION_TEMPLATE_ID, PurchasesService } from './purchases.service';
 
 // Hand-constructed with duck-typed deps, matching the house convention (see
 // permission.service.spec.ts). This spec used to be the ONE exception,
@@ -13,12 +13,14 @@ describe('PurchasesService', () => {
   let updates: { id: string; value: CheckoutForm }[];
   let loggedInUser: { firstName?: string; lastName?: string; email?: string } | null;
   let templates: { html?: string; subject?: string }[];
+  let templatesById: Record<string, { html?: string; subject?: string } | null>;
   let sentEmails: { to: string; subject: string; html: string }[];
 
   beforeEach(() => {
     updates = [];
     loggedInUser = { firstName: 'Ada', lastName: 'Admin', email: 'ada@test.local' };
     templates = [];
+    templatesById = {};
     sentEmails = [];
 
     const dao = {
@@ -35,7 +37,14 @@ describe('PurchasesService', () => {
         return Promise.resolve();
       },
     };
-    const emailTemplatesService = { getAllByValue: () => Promise.resolve(templates) };
+    // Two lookups, because the service prefers the PINNED DOCUMENT ID and
+    // only falls back to the name. `templatesById` is what a pinned project
+    // has; `templates` is what an un-pinned one still answers by name. Tests
+    // set whichever they mean to exercise.
+    const emailTemplatesService = {
+      getById: (id: string) => Promise.resolve(templatesById[id] ?? null),
+      getAllByValue: () => Promise.resolve(templates),
+    };
     const functions = {};
 
     service = new PurchasesService(
@@ -136,6 +145,33 @@ describe('PurchasesService', () => {
       expect(sentEmails[0].html).toBe('No tracking available');
       expect(sentEmails[0].subject).toBe('Your order is on its way!');
       expect(updates[0].value.amazonTracking).toBeNull();
+    });
+
+    // The template is addressed by PINNED DOCUMENT ID (2026-08-27). A name is
+    // an editable text field, and renaming this template used to stop the
+    // shipping confirmation with no error anywhere.
+    it('prefers the template at the pinned id over any same-named document', async () => {
+      templatesById[AMAZON_CONFIRMATION_TEMPLATE_ID] = { html: 'PINNED' };
+      templates = [{ html: 'FOUND BY NAME' }];
+      await service.sendAmazonConfirmation(order());
+      expect(sentEmails[0].html).toBe('PINNED');
+    });
+
+    it('falls back to the name when the pinned id is absent', async () => {
+      // A project whose data has not been pinned yet must keep sending -
+      // otherwise the order of a deploy could stop confirmations.
+      templatesById = {};
+      templates = [{ html: 'FOUND BY NAME' }];
+      await service.sendAmazonConfirmation(order());
+      expect(sentEmails[0].html).toBe('FOUND BY NAME');
+    });
+
+    it('a renamed template is still found, because the id is what is used', async () => {
+      templatesById[AMAZON_CONFIRMATION_TEMPLATE_ID] = { html: 'STILL SENT' };
+      templates = []; // nothing answers to the old name any more
+      await service.sendAmazonConfirmation(order());
+      expect(sentEmails[0].html).toBe('STILL SENT');
+      expect(updates[0].value.fulfillmentStatus).toBe('closed');
     });
   });
 

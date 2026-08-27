@@ -104,17 +104,18 @@ const TEMPLATES = {
       "the contact link's href was the literal string \"[object Object]\" - " +
         "an object stringified into it - and is now mailto:info@impactdisciples.com",
       "Quill's inline background-color/font-size spans dropped in favour of " +
-        "the email-wide styles (same rendered size and colour)"
+        "the email-wide styles (same rendered size and colour)",
+      "\"Marriage!.  Click\" -> \"Marriage! Click\" - a stray period after the " +
+        "exclamation mark, and the doubled space with it (owner approved)"
     ],
     blocks: [
       { section: 1, type: "text", html: "<p>Hi *|FNAME|*,</p>" },
       {
         section: 1,
         type: "text",
-        // "!." is verbatim from the live template - reported, not fixed.
         html:
           "<p>Thank you for your recent order of <em>How to Have a Healthy " +
-          "Marriage</em>!.  Click the link below for the introductory videos.</p>"
+          "Marriage</em>! Click the link below for the introductory videos.</p>"
       },
       {
         section: 1,
@@ -151,6 +152,263 @@ const TEMPLATES = {
         html:
           "<p>With appreciation,</p>" +
           "<p><strong>The Impact Discipleship Ministries Team</strong></p>"
+      }
+    ]
+  },
+
+  "Sales Receipt": {
+    // Sent by queueWebOrderEmails for every web order, resolved by this
+    // literal name. Renders with renderEmailBody, so {{...}} and *|TAG|*
+    // both work - {{product_list}} is an arbitrary caller key, not a merge
+    // tag, and only the former covers it.
+    globalStyles: { headingFont: "Helvetica, Arial, sans-serif", paragraphColor: "#333333" },
+    requiredTags: ["{{firstName}}", "{{product_list}}"],
+    changes: [
+      "{{product_list}} moves into a real HTML BLOCK. It used to sit inside " +
+        "<span> inside <p> - a table nested in a paragraph, which every mail " +
+        "client hoists back out, taking the layout with it",
+      "the centred <img> masthead becomes a LOGO block",
+      "Quill's 14pt inline spans dropped in favour of the email-wide styles"
+    ],
+    notes: [
+      "the order table itself was rebuilt in transactional-emails.ts " +
+        "(buildWebProductListHtml): 4 even columns instead of 7 ragged ones, " +
+        "64px thumbnails instead of 100px, totals that line up under TOTAL. " +
+        "See functions/test/product-list.test.js."
+    ],
+    blocks: [
+      {
+        section: 0,
+        type: "logo",
+        align: "center",
+        props: {
+          src: "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8" +
+            ".appspot.com/o/Logos%2FImpact-Logo_Black.png?alt=media" +
+            "&token=2a2452b7-a337-476f-b268-d0a4b0fa5d42",
+          alt: "Impact Discipleship Ministries",
+          sizing: "original",
+          naturalWidth: 200
+        }
+      },
+      { section: 1, type: "text", html: "<p>Dear {{firstName}},</p>" },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p><strong>Thank you for your order from Impact Discipleship " +
+          "Ministries!</strong></p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>We typically ship orders on <strong>Tuesdays and Thursdays" +
+          "</strong> via <strong>UPS</strong>.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>Most orders are processed and shipped promptly. However, larger " +
+          "orders may require additional processing time because they are " +
+          "fulfilled directly by our publisher. Please allow <strong>up to two " +
+          "weeks</strong> for these orders to ship.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>If you have any questions about your order, please don't hesitate " +
+          "to contact us. Thank you for partnering with us as we inspire people " +
+          "and churches to <strong>Be and Build Disciples of Jesus Christ." +
+          "</strong></p>"
+      },
+      // An HTML block, not a text block: this is a <table>, and the builder's
+      // html block is the one that passes markup through untouched.
+      { section: 1, type: "html", html: "{{product_list}}" },
+      {
+        section: 2,
+        type: "text",
+        html:
+          "<p>Blessings,</p>" +
+          "<p><strong>The Impact Ministries Team</strong></p>"
+      }
+    ]
+  },
+
+  "Disciple-Making Church Seminar Receipt": {
+    // Shared by TEN events, two of them active and upcoming (Smiths Station
+    // 2026-02-22, Awaken 2026-03-07) - which is why it names no venue or
+    // date. Editing it from one event's form changes the confirmation for
+    // the other nine.
+    globalStyles: { headingFont: "Helvetica, Arial, sans-serif", paragraphColor: "#333333" },
+    requiredTags: [],
+    changes: [
+      "the contact link's href was the literal string \"[object Object]\" - an " +
+        "object stringified into it, live on both projects - and is now " +
+        "mailto:info@impactdisciples.com, which is what the link TEXT has " +
+        "always said"
+    ],
+    notes: [
+      "this template contains no merge tags at all, so it cannot greet the " +
+        "registrant by name or name their event. Left as-is - adding one is a " +
+        "copy decision, not a conversion."
+    ],
+    blocks: [
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>Thank you for registering for the <strong>Disciple-Making Church " +
+          "Seminar</strong>! We’re excited to have you join us as we grow " +
+          "together in becoming and building disciples of Jesus.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>If you have any questions before the event, feel free to reach " +
+          "out to us at <a href=\"mailto:info@impactdisciples.com\">" +
+          "info@impactdisciples.com</a>.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html: "<p>We look forward to seeing you there!</p>"
+      },
+      {
+        section: 2,
+        type: "text",
+        html:
+          "<p><strong>In Christ,</strong></p>" +
+          "<p>The Impact Discipleship Team</p>" +
+          "<p><a href=\"https://impactdisciples.com\" rel=\"noopener noreferrer\" " +
+          "target=\"_blank\">ImpactDisciples.com</a></p>"
+      }
+    ]
+  },
+
+  "Summit Registration 2027": {
+    // Sent by register_for_event, which renders with renderEmailBody - so
+    // both {{eventName}}/{{startDate}} and *|TAG|* resolve.
+    globalStyles: { headingFont: "Helvetica, Arial, sans-serif", paragraphColor: "#333333" },
+    requiredTags: ["{{firstName}}", "{{eventName}}", "{{startDate}}"],
+    changes: [
+      "the summit link pointed at /summit/2026 in a template named (and used " +
+        "by an event called) 2027 - now /summit/2027, which the web app's " +
+        "summit/:year route serves",
+      "Quill's 14pt inline spans dropped in favour of the email-wide styles",
+      "the duplicated confirmation sentence removed (owner approved): it said " +
+        "\"starting on {{startDate}}. Your registration for the Summit on " +
+        "{{startDate}} has been confirmed.\" - the same date, twice, in one " +
+        "breath"
+    ],
+    notes: [
+      "\"We look forward to seeing you in February!\" still hardcodes a month. " +
+        "Kept - it is a copy decision, and {{startDate}} already carries the " +
+        "real date immediately above it."
+    ],
+    blocks: [
+      { section: 1, type: "text", html: "<p>Dear {{firstName}},</p>" },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>You have successfully registered for <strong>" +
+          "<a href=\"https://impactdisciples.com/summit/2027\" " +
+          "rel=\"noopener noreferrer\" target=\"_blank\">{{eventName}}</a></strong>, " +
+          "starting on <strong>{{startDate}}</strong>.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>We're excited to have you join us for a weekend of encouragement, " +
+          "practical training, and inspiration as we learn together how to " +
+          "<strong>Be and Build Disciples</strong>.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p><strong>More details—including the speaker lineup, breakout " +
+          "sessions, and event schedule—will be announced in the coming " +
+          "months.</strong> We'll keep you updated as new information becomes " +
+          "available.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html: "<p>We look forward to seeing you in February!</p>"
+      },
+      {
+        section: 2,
+        type: "text",
+        html: "<p>Blessings,</p><p><strong>Impact Discipleship Ministries</strong></p>"
+      }
+    ]
+  },
+
+  // Renamed from "Summit Registration Success Template" on 2026-08-27
+  // (scripts/rename-template.js, which repointed its event in the same run).
+  // The new name settles what the old one could not: it is the 2026 summit's
+  // confirmation, so the /summit/2026 link below is correct rather than
+  // suspect.
+  "Summit Registration 2026": {
+    globalStyles: { headingFont: "Helvetica, Arial, sans-serif", paragraphColor: "#333333" },
+    requiredTags: [
+      "{{firstName}}", "{{eventName}}", "{{startDate}}", "{{editRegistration}}"
+    ],
+    changes: [
+      "the centred <img> masthead becomes a real LOGO block - same hosted " +
+        "image, but sized by the builder instead of a 149.6808510638299px " +
+        "width attribute",
+      "Quill's 14pt inline spans dropped in favour of the email-wide styles"
+    ],
+    blocks: [
+      {
+        section: 0,
+        type: "logo",
+        align: "center",
+        props: {
+          src: "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8" +
+            ".appspot.com/o/Logos%2FImpact-Logo_Black.png?alt=media" +
+            "&token=2a2452b7-a337-476f-b268-d0a4b0fa5d42",
+          alt: "Impact Discipleship Ministries",
+          sizing: "original",
+          naturalWidth: 150
+        }
+      },
+      { section: 1, type: "text", html: "<p>Dear {{firstName}},</p>" },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>You have successfully registered for <strong>" +
+          "<a href=\"https://impactdisciples.com/summit/2026\" " +
+          "rel=\"noopener noreferrer\" target=\"_blank\">{{eventName}}</a></strong> " +
+          "starting on {{startDate}}. We're looking forward to seeing you there!</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>To register for or update your breakout sessions, click the " +
+          "<strong>Register For Breakout</strong> link below. <strong>Be sure to " +
+          "keep this email</strong> - you can return to it any time to view your " +
+          "selected sessions or make changes to your breakout choices.</p>"
+      },
+      {
+        section: 1,
+        type: "text",
+        html:
+          "<p>Use the <strong>{{editRegistration}}</strong> link to choose your " +
+          "breakout sessions.</p>"
+      },
+      {
+        section: 2,
+        type: "text",
+        html: "<p>Blessings,</p><p><strong>Impact Discipleship Ministries</strong></p>"
       }
     ]
   }
@@ -228,10 +486,16 @@ function buildDesign(mod, spec) {
       section.rows = [mod.createRow(1)];
     }
     const block = mod.createBlock(blockSpec.type);
-    block.props.html = blockSpec.html;
-    if (blockSpec.level) block.props.level = blockSpec.level;
-    // Blocks default to centred; these are flowed left-aligned text.
-    block.styles.align = "left";
+    if (blockSpec.props) {
+      // Non-text blocks (a logo, an image) carry their own prop shape.
+      Object.assign(block.props, blockSpec.props);
+    } else {
+      block.props.html = blockSpec.html;
+      if (blockSpec.level) block.props.level = blockSpec.level;
+    }
+    // Blocks default to centred; flowed text is left-aligned unless the
+    // original centred it (a masthead logo, typically).
+    block.styles.align = blockSpec.align ?? "left";
     section.rows[0].columns[0].blocks.push(block);
   }
 
@@ -353,6 +617,15 @@ async function main() {
     spec.changes.forEach((c) => console.log(`    - ${c}`));
   }
 
+  // Things wrong with the CONTENT that a conversion deliberately does not
+  // touch. Printed every run so they stay visible rather than becoming
+  // folklore in a commit message nobody re-reads.
+  if (spec.notes?.length) {
+    console.log("");
+    console.log("  Left alone, but you should know:");
+    spec.notes.forEach((n) => console.log(`    - ${n}`));
+  }
+
   const preview = path.join(OUT_DIR, `template-preview-${slug(name)}-${projectId}.html`);
   fs.writeFileSync(preview, html, "utf8");
   console.log("");
@@ -366,18 +639,31 @@ async function main() {
   }
 
   // The backup goes down BEFORE the write, and is the undo.
+  //
+  // NEVER overwritten. Re-running this after a first conversion - to correct
+  // a typo in the authored blocks, say - would otherwise back up the BUILDER
+  // version and call it the original, quietly turning --revert into "restore
+  // the previous conversion" instead of "put the legacy template back". The
+  // first backup is the only one that holds the pre-conversion document.
   const file = backupPath(name, projectId);
-  fs.writeFileSync(file, JSON.stringify({
-    project: projectId,
-    id: doc.id,
-    name,
-    takenAt: new Date().toISOString(),
-    subject: current.subject ?? "",
-    html: current.html ?? "",
-    hadDesign: !!current.design,
-    design: current.design ?? null
-  }, null, 2), "utf8");
-  console.log(`\n  backed up to: ${file}`);
+  if (fs.existsSync(file)) {
+    const existing = JSON.parse(fs.readFileSync(file, "utf8"));
+    console.log(`\n  backup kept : ${file}`);
+    console.log(`                taken ${existing.takenAt}, before the first conversion`);
+    console.log("                (not overwritten - it is the only copy of the legacy template)");
+  } else {
+    fs.writeFileSync(file, JSON.stringify({
+      project: projectId,
+      id: doc.id,
+      name,
+      takenAt: new Date().toISOString(),
+      subject: current.subject ?? "",
+      html: current.html ?? "",
+      hadDesign: !!current.design,
+      design: current.design ?? null
+    }, null, 2), "utf8");
+    console.log(`\n  backed up to: ${file}`);
+  }
 
   await doc.ref.update({ design, html });
   const after = (await doc.ref.get()).data();

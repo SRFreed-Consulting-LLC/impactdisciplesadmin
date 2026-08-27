@@ -122,3 +122,96 @@ export function renderMergeTags(html: string, data: MergeContext): string {
   }
   return result;
 }
+
+// --------------------------------------------------------------- one pass
+//
+// The transactional renderer: resolves BOTH tag syntaxes in a SINGLE scan of
+// the template.
+//
+// It exists because neither of the two renderers before it could serve a
+// transactional template that is editable in the email builder:
+//
+//   renderPlaceholders  understands {{arbitraryKey}} from the caller's model
+//                       - {{eventName}}, {{startDate}}, {{editRegistration}}
+//                       - but not *|FNAME|*, which the builder's tag menu is
+//                       what writes. It mails those to the customer raw.
+//   renderMergeTags     understands *|TAG|* against a fixed list, but has no
+//                       idea what {{eventName}} is, so it mails THOSE raw.
+//
+// An event confirmation needs both at once, so the two had to become one.
+//
+// SINGLE PASS, and that is the whole point rather than an optimisation.
+// renderPlaceholders' own comment records why: it replaced loops that walked
+// the model key by key, so a value substituted early was rescanned by every
+// later iteration, and someone registering as "{{editRegistration}}" got that
+// link expanded into the name position of their own confirmation email.
+// escapeHtml does not escape braces, pipes or asterisks, and these fields
+// come straight off public endpoints. One .replace() over the TEMPLATE means
+// substituted text is output and never input - for either syntax, which is
+// strictly better than renderMergeTags, whose tag-by-tag loop still rescans.
+//
+// Resolution order for {{...}}: the caller's model first (so an explicit
+// eventName always wins), then the legacy spellings registered on MERGE_TAGS
+// (tolerating the &nbsp; Quill leaves between words). Unknown tags in either
+// syntax are left EXACTLY as written - a literal *|SOMETHING|* in an email is
+// a visible bug someone reports, where silently deleting it is not.
+
+/** Normalises the inside of a `{{...}}` for legacy-token lookup: any run of
+ *  whitespace or an encoded nbsp collapses to one plain space. */
+function normalizeToken(inner: string): string {
+  return inner.replace(/(?:\s|&nbsp;|&#160;|&#xa0;)+/g, " ").trim();
+}
+
+/** Legacy `{{Some Token}}` spelling (normalised, braces stripped) -> its tag
+ *  definition. Built once; MERGE_TAGS is a module constant. */
+const LEGACY_BY_TOKEN = new Map<string, MergeTagDef>();
+for (const def of MERGE_TAGS) {
+  for (const legacy of def.legacyTokens ?? []) {
+    const inner = legacy.replace(/^\{\{|\}\}$/g, "");
+    LEGACY_BY_TOKEN.set(normalizeToken(inner), def);
+  }
+}
+
+const TAG_BY_NAME = new Map(MERGE_TAGS.map((def) => [def.tag, def]));
+
+// *|TAG|*  |  *|TAG|inline fallback|*  |  {{anything}}
+const COMBINED = new RegExp(
+  "\\*\\|([A-Za-z_][A-Za-z0-9_]*)\\|(?:([^|*]*)\\|)?\\*" +
+  "|\\{\\{([^{}]*)\\}\\}",
+  "g"
+);
+
+/**
+ * Renders a transactional email body, resolving *|TAG|* (with or without an
+ * inline fallback) and {{key}} in one pass over the template.
+ * @param {string} html The template body.
+ * @param {MergeContext} model Values by resolverKey AND by arbitrary
+ * caller-supplied key; callers escape anything user-supplied first.
+ * @return {string} The rendered body.
+ */
+export function renderEmailBody(html: string, model: MergeContext): string {
+  return (html ?? "").replace(
+    COMBINED,
+    (match, tagName: string, fallback: string, braceInner: string) => {
+      if (tagName !== undefined) {
+        const def = TAG_BY_NAME.get(tagName);
+        if (!def) {
+          return match;
+        }
+        const value = model[def.resolverKey];
+        return value ?? (fallback !== undefined ? fallback : def.defaultValue);
+      }
+
+      // hasOwnProperty, not `in`: a template saying "{{constructor}}" must
+      // stay literal rather than interpolating off Object.prototype.
+      if (Object.prototype.hasOwnProperty.call(model, braceInner)) {
+        return model[braceInner] ?? "";
+      }
+      const def = LEGACY_BY_TOKEN.get(normalizeToken(braceInner));
+      if (def) {
+        return model[def.resolverKey] ?? def.defaultValue;
+      }
+      return match;
+    }
+  );
+}

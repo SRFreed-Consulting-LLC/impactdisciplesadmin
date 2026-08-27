@@ -41,6 +41,11 @@ export class EmailDesignerComponent implements OnInit {
   private existing: MailTemplateModel | null = null;
   private currentUserEmail = '';
 
+  /** Firestore's per-document ceiling is 1 MiB; this leaves room for the
+   *  name/subject/attachments and Firestore's own field-name overhead, so a
+   *  save that passes this check is not then rejected by the server. */
+  private static readonly MAX_TEMPLATE_BYTES = 900 * 1024;
+
   constructor(
     public state: DesignerStateService,
     private route: ActivatedRoute,
@@ -201,9 +206,13 @@ export class EmailDesignerComponent implements OnInit {
     { route: string; tab: string; label: string; idParam?: string }
   > = {
     fulfillment: { route: '/contacts-manager', tab: 'fulfillment', label: 'Fulfillment' },
-    store: { route: '/contacts-manager', tab: 'purchases', label: 'Purchases', idParam: 'purchaseId' },
+    // The Sales Receipt is edited from Store Manager > Products' "Order
+    // Receipt" action, not from a purchase - it is store-wide config, and by
+    // the time an order exists its receipt has already gone out.
+    store: { route: '/store-manager', tab: 'products', label: 'Products' },
     product: { route: '/store-manager', tab: 'products', label: 'Products' },
     event: { route: '/events-manager', tab: 'events', label: 'Events', idParam: 'eventId' },
+    summit: { route: '/events-manager', tab: 'summit', label: 'Summit', idParam: 'eventId' },
     campaign: { route: '/campaigns-manager', tab: 'campaigns', label: 'the campaign', idParam: 'campaignId' }
   };
 
@@ -268,8 +277,32 @@ export class EmailDesignerComponent implements OnInit {
       return;
     }
 
-    this.saving$.next(true);
     const design = stripUndefinedDeep(this.state.design);
+    const compiled = compileEmailDesign(design, { title: name });
+
+    // A builder template stores the design tree AND the html it compiles to,
+    // on one document, against Firestore's 1 MiB per-document limit. A legacy
+    // template that is already large converts to something roughly twice its
+    // size - "Elevate Workshops Registration Success" is 953 KB of mostly one
+    // base64-inlined image, and would not fit.
+    //
+    // This matters more since the editor stopped branching on `design`: every
+    // template now OPENS here, including ones too big to save. Without this
+    // the write is rejected by Firestore and surfaces as "Some Error
+    // Occured", which says nothing about what is wrong or what would fix it.
+    const size = new Blob([JSON.stringify(design), compiled]).size;
+    if (size > EmailDesignerComponent.MAX_TEMPLATE_BYTES) {
+      this.snackbar.error(
+        `This email is ${Math.round(size / 1024)} KB, over the ` +
+        `${Math.round(EmailDesignerComponent.MAX_TEMPLATE_BYTES / 1024)} KB a single ` +
+        'template can hold. It is almost always an image pasted into the body - ' +
+        'upload it as an image block instead, which stores a link rather than the ' +
+        'whole file.'
+      );
+      return;
+    }
+
+    this.saving$.next(true);
     const value: MailTemplateModel = {
       ...(this.existing ?? { attachments: [] as unknown[] }),
       name,
@@ -281,7 +314,7 @@ export class EmailDesignerComponent implements OnInit {
       // a screen that owns its own list makes something that lands in it.
       kind: this.existing?.kind ?? this.newTemplateKind(),
       design,
-      html: compileEmailDesign(design, { title: name })
+      html: compiled
     } as MailTemplateModel;
 
     const request = this.templateId ? this.service.update(this.templateId, value) : this.service.add(value);

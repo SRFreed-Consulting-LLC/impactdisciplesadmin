@@ -24,6 +24,20 @@ import {
 // scripts/seed-amazon-confirmation-template.js; editable in the designer.
 export const AMAZON_CONFIRMATION_TEMPLATE_NAME = 'Amazon Shipping Confirmation';
 
+/**
+ * The PINNED document id for that template - the handle that cannot be
+ * edited, unlike the name above.
+ *
+ * Mirror of MAIL_TEMPLATE_IDS in
+ * functions/src/utils/mail-templates.functions.ts; the two npm projects
+ * share no modules, so keep them in step. The documents are re-created under
+ * these ids by scripts/pin-template-ids.js, once per project - Firestore
+ * cannot rename a document, and the ids they were originally created with
+ * differ between dev and prod.
+ */
+export const AMAZON_CONFIRMATION_TEMPLATE_ID = 'tmpl-amazon-shipping-confirmation';
+export const SALES_RECEIPT_TEMPLATE_ID = 'tmpl-sales-receipt';
+
 // The store receipt every completed checkout sends. NOT sent from this app at
 // all - functions/src/transactional-emails.ts looks it up by this literal
 // name server-side. Declared here anyway so the admin UI can offer to edit
@@ -332,10 +346,22 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     if (!email.includes('@')) {
       throw new Error('This purchase has no contact email address.');
     }
-    const templates = await this.emailTemplatesService.getAllByValue('name', AMAZON_CONFIRMATION_TEMPLATE_NAME);
-    if (!templates.length) {
-      throw new Error(`Email template "${AMAZON_CONFIRMATION_TEMPLATE_NAME}" not found - create it under Tools Manager > System Templates.`);
+    // By pinned ID first: a name is an editable text field, and renaming this
+    // template used to stop the shipping confirmation with no error anywhere.
+    // The name lookup stays as a fallback so a project whose data has not
+    // been pinned yet still sends - unlike the receipt path this one THROWS
+    // when nothing resolves, because the admin is standing right there and
+    // the order must not close as "confirmation sent" when none was.
+    const byId = await this.emailTemplatesService.getById(AMAZON_CONFIRMATION_TEMPLATE_ID);
+    const template = byId
+      ?? (await this.emailTemplatesService.getAllByValue('name', AMAZON_CONFIRMATION_TEMPLATE_NAME))[0];
+    if (!template) {
+      throw new Error(
+        `Email template "${AMAZON_CONFIRMATION_TEMPLATE_NAME}" not found - ` +
+        'create it under Store Manager, or run scripts/pin-template-ids.js.'
+      );
     }
+    const templates = [template];
     const trimmedTracking = tracking?.trim() || '';
     const context = {
       firstName: item.firstName ?? '',

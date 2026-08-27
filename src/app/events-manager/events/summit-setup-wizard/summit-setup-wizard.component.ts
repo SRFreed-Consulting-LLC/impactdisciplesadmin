@@ -119,7 +119,10 @@ export class SummitSetupWizardComponent implements OnInit {
       this.locationService.getAllByValue('isSummitVenue', true),
       this.coachService.getAll(),
       this.impactTeamService.getAll(),
-      this.emailTemplateService.getAll()
+      // Summit confirmations only - the same list the Summit screen's own
+      // Email Template field offers, so the wizard cannot start a summit on
+      // a template that screen would never show.
+      this.emailTemplateService.getAllOfKind('summit')
     ]);
     this.venue = venues[0] ?? null;
     this.rooms = this.venue?.trainingrooms ?? [];

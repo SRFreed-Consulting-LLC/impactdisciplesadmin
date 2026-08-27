@@ -50,7 +50,7 @@ async function main() {
   const name = args.name;
   // Mirror of TEMPLATE_HOME_KINDS in
   // src/app/common/models/admin/mail.model.ts. Keep the two in step.
-  const HOME_KINDS = ["fulfillment", "product"];
+  const HOME_KINDS = ["fulfillment", "product", "event", "summit", "store"];
 
   if (!name) throw new Error('Pass --name="<template name>"');
   if (!revert && !args.kind) {

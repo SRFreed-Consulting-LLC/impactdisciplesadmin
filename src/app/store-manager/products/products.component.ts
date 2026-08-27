@@ -24,6 +24,7 @@ import { ProductSeriesComponent } from '../product-series/product-series.compone
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
+import { SALES_RECEIPT_TEMPLATE_NAME } from 'src/app/common/services/data/purchases.service';
 
 @Component({
     selector: 'app-products',
@@ -194,6 +195,17 @@ export class ProductsComponent implements OnInit {
     return this.templateEditor.canEdit();
   }
 
+  get canEditSalesReceipt(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  /** The receipt the checkout Cloud Function sends for every web order,
+   *  resolved by the literal name below - which is why it is addressed the
+   *  same way here rather than by id. */
+  editSalesReceipt(): void {
+    void this.templateEditor.openByName(SALES_RECEIPT_TEMPLATE_NAME, { from: 'store' });
+  }
+
   /**
    * Creating a follow-up email from the screen that uses them.
    *
@@ -255,7 +267,14 @@ export class ProductsComponent implements OnInit {
       // screen, not a separate registry entry - gated by edit rather than
       // add/view since it's mutating shared lookup data, not this list.
       ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Categories', icon: 'view_list', onClick: () => this.manageCategories() }] : []),
-      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Series', icon: 'collections_bookmark', onClick: () => this.manageSeries() }] : [])
+      ...(this.permissionService.canEdit(this.screenKey) ? [{ label: 'Series', icon: 'collections_bookmark', onClick: () => this.manageSeries() }] : []),
+      // The order receipt is STORE-WIDE configuration, so it belongs to the
+      // store rather than to any one product or order. It used to be edited
+      // from a purchase's details, which reads backwards: the receipt is
+      // queued in the same request that writes the purchase, so by the time
+      // an order exists to open, its receipt has already gone. Here it is
+      // reachable before there is anything to send.
+      ...(this.canEditSalesReceipt ? [{ label: 'Order Receipt', icon: 'mail', onClick: () => this.editSalesReceipt() }] : [])
     ];
   }
 

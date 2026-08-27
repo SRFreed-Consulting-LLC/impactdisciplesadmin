@@ -8,7 +8,7 @@ import { LocationModel } from '@impact-common/shared/models/domain/location.mode
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
+import { EmailTemplateEditorService, TemplateEditorReturn } from 'src/app/common/services/email-template-editor.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
@@ -70,11 +70,41 @@ export class EventFormComponent implements OnInit {
     return !!this.form.get('emailTemplate')?.value && this.templateEditor.canEdit();
   }
 
+  /** Where the designer's Back button should land: the screen this form is
+   *  actually being shown as. Summit and Events are separate tabs with
+   *  separate grants, so a summit's email must not return to Events. */
+  private get templateReturn(): TemplateEditorReturn {
+    return { from: this.summitMode ? 'summit' : 'event', id: this.item?.id };
+  }
+
   editEmailTemplate(): void {
     const name = this.form.get('emailTemplate')?.value as string | null;
     if (name) {
-      void this.templateEditor.openByName(name, { from: 'event', id: this.item?.id });
+      void this.templateEditor.openByName(name, this.templateReturn);
     }
+  }
+
+  get canCreateEmailTemplate(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  /**
+   * Creating a registration confirmation from the screen that uses one.
+   *
+   * Necessary rather than convenient, same as a product's follow-up:
+   * templates of kind 'event'/'summit' are hidden from Tools Manager > System
+   * Templates, which is where "New Email Design" lives - so without this the
+   * list could never gain another entry.
+   *
+   * The kind follows the screen, so a summit's new email lands in the summit
+   * list and an event's in the event list - matching whichever list the field
+   * above is offering.
+   */
+  createEmailTemplate(): void {
+    this.templateEditor.createNew(
+      this.summitMode ? 'summit' : 'event',
+      this.templateReturn
+    );
   }
   /** Event ids with at least one unseen registration - drives the Attendees
    *  tab badge. Owned by the parent, which keeps one standing query for the

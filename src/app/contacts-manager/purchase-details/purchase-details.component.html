@@ -72,22 +72,13 @@
   <hr class="rule">
 
   <!-- Order Totals -->
-  <p class="section-label">
-    Order Totals
-    <!-- The receipt this order sent. It is resolved BY NAME inside the
-         checkout Cloud Function, so it is the one template an admin can
-         break from the templates screen without any warning - reaching it
-         from a real order is the point. It is shared with several events,
-         which the editor itself has to make obvious. -->
-    @if (canEditSalesReceipt) {
-      <button mat-button type="button" class="section-label__action"
-        (click)="editSalesReceipt()"
-        matTooltip="Edit the sales receipt emailed for every store order">
-        <mat-icon>edit</mat-icon>
-        Edit sales receipt email
-      </button>
-    }
-  </p>
+  <!-- No "edit the sales receipt" action here any more (2026-08-27). The
+       receipt is queued in the SAME request that writes the purchase, so by
+       the time an order exists to open, its receipt has already been sent -
+       nothing edited from this screen could ever affect the order being
+       looked at. It now lives on Store Manager > Products as "Order
+       Receipt", where it is reachable before there is anything to send. -->
+  <p class="section-label">Order Totals</p>
   <div class="tiles">
     <div class="tile"><span class="tile__k">Subtotal</span><span class="tile__v">{{ service.getProductTotalDisplayAmount(selectedItem) | currency }}</span></div>
     <div class="tile"><span class="tile__k">Tax</span><span class="tile__v">{{ service.getTaxesDisplayAmount(selectedItem) | currency }}</span></div>

@@ -1,20 +1,19 @@
 import { Injectable, inject } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { EMailTemplatesService } from './data/email-templates.service';
 import { MailTemplateModel, MailTemplateKind } from 'src/app/common/models/admin/mail.model';
-import { EmailTemplateDialogComponent } from 'src/app/tools-manager/email-templates/email-template-dialog.component';
 import { PermissionService } from './permission.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 
-/** Where the editor was opened from, so the designer can come back there.
- *  Only used for BUILDER templates - a legacy rich-text one opens as a
- *  dialog over the current page and never navigates away. */
+/** Where the editor was opened from, so the designer can come back there. */
 export interface TemplateEditorReturn {
   /** A key the designer maps to a route - deliberately NOT a URL. A
    *  return-URL parameter would let any link that reaches the designer
    *  redirect it anywhere. */
-  from: 'event' | 'product' | 'fulfillment' | 'store' | 'campaign';
+  // 'summit' is its own key, not a flavour of 'event': Summit and Events are
+  // separate screens with separate permission grants, and coming back from a
+  // summit's email onto the Events tab loses the record you were editing.
+  from: 'event' | 'summit' | 'product' | 'fulfillment' | 'store' | 'campaign';
   /** The record to deep-link back to, where that screen supports it. */
   id?: string;
 }
@@ -40,7 +39,6 @@ export interface TemplateEditorReturn {
 @Injectable({ providedIn: 'root' })
 export class EmailTemplateEditorService {
   private readonly templates = inject(EMailTemplatesService);
-  private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly permissions = inject(PermissionService);
   private readonly snackbar = inject(SnackbarService);
@@ -57,7 +55,7 @@ export class EmailTemplateEditorService {
   /**
    * @param name The template's `name` field - the same string the sender
    *   looks it up by.
-   * @param returnTo Where to come back to, for builder templates only.
+   * @param returnTo Where the designer's Back button should return to.
    */
   async openByName(name: string, returnTo?: TemplateEditorReturn): Promise<void> {
     if (!this.canEdit()) {
@@ -121,22 +119,26 @@ export class EmailTemplateEditorService {
       return;
     }
 
-    if (template.design) {
-      // Builder template: full-screen designer, told how to get back.
-      this.router.navigate(['/tools-manager/email-designer', template.id], {
-        queryParams: returnTo
-          ? { from: returnTo.from, ...(returnTo.id ? { fromId: returnTo.id } : {}) }
-          : {}
-      });
-      return;
-    }
-
-    // Legacy rich text: a dialog over whatever screen called this, so there
-    // is no navigation and nothing to return from. Every transactional
-    // template is this kind today.
-    this.dialog.open(EmailTemplateDialogComponent, {
-      width: '800px',
-      data: { item: template }
+    // ALWAYS the designer, builder template or legacy (2026-08-27).
+    //
+    // This used to branch: a template with a `design` navigated here, and a
+    // legacy one opened EmailTemplateDialogComponent over the calling screen.
+    // That dialog never actually worked from here. It is standalone: false
+    // and declared in ToolsManagerModule, which is LAZY - so opening it from
+    // another feature chunk gives Angular no compilation scope for it unless
+    // the admin happened to visit Tools Manager first in the same session.
+    // The symptom is a pencil that does nothing at all, reported from an
+    // event's Email Template field once Fulfillment and Products had been
+    // converted and events were the last screen left on the dialog path.
+    //
+    // Navigating instead is also just the better answer: the designer imports
+    // a legacy template as blocks and converts it on first save, so the same
+    // editor serves both and the Quill dialog is left to the one screen that
+    // declares it.
+    this.router.navigate(['/tools-manager/email-designer', template.id], {
+      queryParams: returnTo
+        ? { from: returnTo.from, ...(returnTo.id ? { fromId: returnTo.id } : {}) }
+        : {}
     });
   }
 }

@@ -6,8 +6,8 @@ import {restrictedCors} from "./utils/security.functions";
 import {
   escapeHtml,
   queueMail,
-  renderPlaceholders,
 } from "./transactional-emails";
+import {renderEmailBody} from "./utils/merge-tags.functions";
 import {
   recordCampaignConversion,
   sanitizeAttribution,
@@ -136,7 +136,14 @@ async function queueConfirmationEmail(
         "'>Register for Breakout</a>",
     };
 
-    const html = renderPlaceholders(template.html ?? "", model);
+    // renderEmailBody, not renderPlaceholders: an event's confirmation is
+    // admin-editable in the email BUILDER, whose tag menu writes *|FNAME|*.
+    // renderPlaceholders would mail those to a registrant verbatim, while
+    // renderMergeTags alone cannot resolve this model's arbitrary keys
+    // ({{eventName}}, {{startDate}}, {{editRegistration}}). One pass, both
+    // syntaxes - and the single scan is what keeps a registrant who names
+    // themselves "{{editRegistration}}" from having it expanded.
+    const html = renderEmailBody(template.html ?? "", model);
     // Subject is plain text (not HTML), so use the raw event name here,
     // not the HTML-escaped model value.
     const subject = (template.subject ?? "").replace(
