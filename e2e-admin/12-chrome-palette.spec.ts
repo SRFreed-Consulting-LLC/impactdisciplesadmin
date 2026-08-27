@@ -50,7 +50,12 @@ async function dragOnto(
   await page.mouse.up();
 }
 
-test.describe('email designer chrome palette', () => {
+// The `[chrome-palette]` prefix is load-bearing: the dashboard reporter reads
+// the area id back out of this title (support/areas.ts areaOf). Without it
+// areaOf returns undefined and every test in this file is dropped from the
+// dashboard silently - the run reported 77 passed while the board published
+// 72, which is how this was noticed.
+test.describe('[chrome-palette] Email Chrome Palette', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     // A brand-new design opens the template picker over the canvas; Cancel

@@ -93,7 +93,13 @@ export const AREAS: FunctionalArea[] = [
   {
     id: 'tools',
     title: 'Tools & Reports',
-    owns: 'System email templates, the form builder, and the reports staff pull numbers from.',
+    owns: 'The form builder, shipping labels, and the reports staff pull numbers from.',
+    layer: 'ui',
+  },
+  {
+    id: 'chrome-palette',
+    title: 'Email Chrome Palette',
+    owns: 'Putting a masthead or a footer on an email that already exists - and the mined newsletter chrome arriving without the dead Mailchimp tags that would otherwise print raw in a customer inbox.',
     layer: 'ui',
   },
 ];
