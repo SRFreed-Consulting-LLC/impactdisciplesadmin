@@ -1,6 +1,7 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {
+  findOrCreateCustomer,
   isPlausibleEmail,
   normalizedName,
 } from "./utils/customer-match.functions";
@@ -61,35 +62,28 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
     // registrations are the app's own equivalent.)
 
     const db = getFirestore();
-    const existingSnap = await db.collection("customers")
-      .where("email", "==", email)
-      .limit(1)
-      .get();
 
     // Tag rules evaluate on EVERY registration, both branches - see
     // tag-rules.functions.ts (and the note there about the backfill-script
     // mirror contract: tagging is NOT mirrored into the scripts).
     const activity = activityFromRegistration(data, event.params.id, email);
 
-    if (existingSnap.empty) {
-      // Brand new customer - nothing to compare against yet, so nothing is
-      // ever queued as pending on creation. No phone/address to seed -
-      // registrations never carry either.
-      const newRef = await db.collection("customers").add({
+    // The lookup and the create share one transaction - a registration and
+    // a purchase from the same NEW address arriving together otherwise both
+    // see "no such customer" and both create one. See findOrCreateCustomer.
+    // No phone/address to seed - registrations never carry either.
+    const {ref: customerRef, created, data: customer} =
+      await findOrCreateCustomer(db, email, {
         firstName: data.firstName ?? "",
         lastName: data.lastName ?? "",
-        email,
-        role: "Customer",
-        notes: [],
-        pendingChanges: [],
-        tags: [],
       });
-      await applyTagRulesForActivity(db, activity, newRef);
+
+    if (created) {
+      // Brand new customer - nothing to compare against yet, so nothing is
+      // ever queued as pending on creation.
+      await applyTagRulesForActivity(db, activity, customerRef);
       return;
     }
-
-    const customerDoc = existingSnap.docs[0];
-    const customer = customerDoc.data();
     const existingPending = customer.pendingChanges;
     const pending: PendingCustomerChange[] =
       Array.isArray(existingPending) ? [...existingPending] : [];
@@ -136,9 +130,9 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
     resolveNameField("lastName", data.lastName);
 
     if (changed) {
-      await customerDoc.ref.update({...directUpdates, pendingChanges: pending});
+      await customerRef.update({...directUpdates, pendingChanges: pending});
     }
 
-    await applyTagRulesForActivity(db, activity, customerDoc.ref);
+    await applyTagRulesForActivity(db, activity, customerRef);
   }
 );

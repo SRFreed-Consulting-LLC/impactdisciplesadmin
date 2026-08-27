@@ -56,3 +56,63 @@ export function isPlausibleEmail(rawValue: unknown): boolean {
   const at = value.indexOf("@");
   return at > 0 && at < value.length - 1 && value.includes(".", at);
 }
+
+/**
+ * Finds the customer for an already-normalized email, creating one
+ * atomically when none exists.
+ *
+ * The lookup and the create MUST share a transaction. Both callers are
+ * onDocumentCreated triggers, so two records saved by the same NEW address
+ * in quick succession - two orders, or an order and a registration - each
+ * observe an empty result and each create their own customer. Confirmed in
+ * prod on 2026-08-27: a duplicate pair identical in every field except
+ * newsletterSubscribedDate, 183 milliseconds apart.
+ *
+ * The transaction body is deliberately pure - only tx.get and tx.create -
+ * because Firestore retries it on contention. Tag rules are applied by the
+ * CALLER, outside the transaction: applyTagRulesForActivity does its own
+ * writes, and tag_applications is keyed {email}__{tag}, so it is already
+ * idempotent if both racers reach it.
+ *
+ * `role`, `notes`, `pendingChanges` and `tags` are seeded here rather than
+ * by each caller so a new customer cannot be created in two different
+ * shapes depending on which trigger happened to win.
+ * @param {FirebaseFirestore.Firestore} db Firestore instance.
+ * @param {string} email Normalized (trimmed, lowercased) address.
+ * @param {Record<string, unknown>} seed Caller-specific fields for a
+ *   brand-new record; ignored when one already exists.
+ * @return {Promise<object>} The customer ref, its data, and whether THIS
+ *   call is the one that created it.
+ */
+export async function findOrCreateCustomer(
+  db: FirebaseFirestore.Firestore,
+  email: string,
+  seed: Record<string, unknown>
+): Promise<{
+  ref: FirebaseFirestore.DocumentReference;
+  created: boolean;
+  data: FirebaseFirestore.DocumentData;
+}> {
+  const matching = db.collection("customers")
+    .where("email", "==", email)
+    .limit(1);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matching);
+    if (!snap.empty) {
+      const doc = snap.docs[0];
+      return {ref: doc.ref, created: false, data: doc.data()};
+    }
+    const ref = db.collection("customers").doc();
+    const data = {
+      ...seed,
+      email,
+      role: "Customer",
+      notes: [],
+      pendingChanges: [],
+      tags: [],
+    };
+    tx.create(ref, data);
+    return {ref, created: true, data};
+  });
+}
