@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { MailTemplateModel, MailTemplateKind } from 'src/app/common/models/admin/mail.model';
+import { MailTemplateModel, MailTemplateKind, TEMPLATE_HOME_KINDS } from 'src/app/common/models/admin/mail.model';
 import { BaseService } from './base.service';
 
 // One collection, two lists (2026-08-21): `mail_templates` holds both the
@@ -41,6 +41,6 @@ export class EMailTemplatesService extends BaseService<MailTemplateModel> {
  */
 export function kindOf(template: MailTemplateModel): MailTemplateKind {
   if (template.kind === 'campaign') return 'campaign';
-  if (template.kind === 'contextual') return 'contextual';
+  if (TEMPLATE_HOME_KINDS.includes(template.kind as never)) return template.kind as MailTemplateKind;
   return 'system';
 }

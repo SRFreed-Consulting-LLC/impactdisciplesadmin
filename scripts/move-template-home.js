@@ -1,24 +1,32 @@
 #!/usr/bin/env node
-// Moves one mail_template out of the System Templates list by setting
-// kind: 'contextual' - for a template that now has a home on the screen that
-// actually sends it.
+// Moves one mail_template out of the System Templates list by setting its
+// kind to the SCREEN THAT OWNS IT - for a template that now has an editor
+// beside the button that sends it.
+//
+// The kind names the screen ("fulfillment") rather than merely recording that
+// the template moved: there will be several of these, and "which screen owns
+// this email" is the question someone actually asks.
 //
 // This is the migration step for emptying Tools Manager > System Templates:
-// each template moves as its contextual editor lands, and when the list is
-// empty the screen can go.
+// each template moves as its own editor lands, and when the list is empty the
+// screen can go.
 //
 // SAFE BY CONSTRUCTION: nothing sends by kind. Every send path resolves a
 // template by NAME (transactional-emails.ts's "Sales Receipt",
 // PurchasesService's "Amazon Shipping Confirmation", an event's
 // emailTemplate) or by DOC ID (a product's followUpEmailId). Changing kind
 // changes where an admin FINDS the template and nothing else - which is why
-// this refuses to run unless it can name the contextual editor that replaces
-// the list, so a template cannot be hidden without somewhere to edit it.
+// this refuses to run unless it can name the editor that replaces the list,
+// so a template cannot be hidden without somewhere to edit it.
 //
-//   node scripts/move-template-to-contextual.js --project=prod \
-//     --name="Amazon Shipping Confirmation" \
+//   node scripts/move-template-home.js --project=prod
+//     --name="Amazon Shipping Confirmation" --kind=fulfillment
 //     --editor="Contacts Manager > Fulfillment > Edit the email this sends"
-//   ... add --execute to write. Pass --revert to put it back to 'system'.
+//   ... add --execute to write. Pass --revert to put it back in the list.
+//
+// --kind must be one of TEMPLATE_HOME_KINDS in mail.model.ts. Keep the two in
+// step: a kind this script writes but the app does not know reads back as
+// 'system', and the template simply reappears in the list.
 "use strict";
 
 const { resolveProjectId, getFirestoreFor, firestore } = require("./lib/firestore-admin");
@@ -40,7 +48,21 @@ async function main() {
   const execute = args.execute === true;
   const revert = args.revert === true;
   const name = args.name;
+  // Mirror of TEMPLATE_HOME_KINDS in
+  // src/app/common/models/admin/mail.model.ts. Keep the two in step.
+  const HOME_KINDS = ["fulfillment"];
+
   if (!name) throw new Error('Pass --name="<template name>"');
+  if (!revert && !args.kind) {
+    throw new Error(`Pass --kind=<home>. Known: ${HOME_KINDS.join(", ")}`);
+  }
+  if (!revert && !HOME_KINDS.includes(args.kind)) {
+    throw new Error(
+      `Unknown --kind "${args.kind}". Add it to TEMPLATE_HOME_KINDS in ` +
+      `mail.model.ts first, or the app reads it back as 'system' and the ` +
+      `template reappears in the list. Known: ${HOME_KINDS.join(", ")}`
+    );
+  }
   if (!revert && !args.editor) {
     throw new Error('Pass --editor="<where an admin edits it now>". A template must not leave the list without somewhere else to be found.');
   }
@@ -52,7 +74,7 @@ async function main() {
 
   const doc = snap.docs[0];
   const current = doc.data().kind ?? "(absent, reads as system)";
-  const target = revert ? "system" : "contextual";
+  const target = revert ? "system" : args.kind;
 
   console.log(`${projectId}  (${execute ? "LIVE" : "dry run"})`);
   console.log(`  template : ${name}`);
@@ -60,7 +82,7 @@ async function main() {
   console.log(`  kind     : ${current}  ->  ${target}`);
   if (!revert) console.log(`  edited at: ${args.editor}`);
 
-  if (doc.data().kind === (revert ? undefined : "contextual")) {
+  if (doc.data().kind === (revert ? undefined : args.kind)) {
     return console.log("  already in that state - nothing to do.");
   }
   if (!execute) return console.log("  Dry run - nothing written. Re-run with --execute.");
@@ -68,7 +90,7 @@ async function main() {
   // Reverting DELETES the field rather than writing 'system', so the doc goes
   // back to exactly the shape it had - absent, which kindOf reads as system.
   await doc.ref.update({
-    kind: revert ? firestore.FieldValue.delete() : "contextual",
+    kind: revert ? firestore.FieldValue.delete() : args.kind,
   });
 
   const after = (await doc.ref.get()).data().kind;

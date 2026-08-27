@@ -9,19 +9,27 @@ import { EmailDesign } from './email-design.model';
 // marketing starting points, created only by the campaign email editor's
 // "Save as template" and offered only in that editor's gallery.
 //
-// CONTEXTUAL (2026-08-27) is the third: a template that has been given a home
-// on the screen that actually sends it, and so no longer belongs in a generic
-// list. The Amazon Shipping Confirmation is the first - Fulfillment shows an
-// "Edit the email this sends" action right beside the button that sends it,
-// which is a better place to find it than a catalogue where it sits between
-// nine unrelated things.
+// Every other kind NAMES THE SCREEN THAT OWNS THE TEMPLATE (2026-08-27) - the
+// one place an admin edits it, right beside the button that sends it. These
+// exist to be migrated into, one template at a time: as each gains an editor
+// in context it takes that screen's kind and leaves the System Templates list,
+// and when the list empties the screen goes with it.
 //
-// This exists to be MIGRATED INTO, one template at a time. Each time a
-// template gains a contextual editor, it moves to this kind and leaves the
-// System Templates list; when the list empties, the screen goes with it.
-// Nothing sends by kind - send paths resolve a template by name or by doc id -
-// so moving one changes where an admin FINDS it and nothing else.
-export type MailTemplateKind = 'system' | 'campaign' | 'contextual';
+// Named per screen rather than a single flat 'contextual' on purpose: there
+// will be several, and "which screen owns this email" is the question someone
+// actually asks. A flat marker would answer only "not in the list any more",
+// which is the least useful half of it.
+//
+//   'fulfillment' - Contacts Manager > Fulfillment. The Amazon Shipping
+//                   Confirmation, sent when an order ships via Amazon.
+//
+// Add a kind here as its screen grows an editor. Nothing sends by kind - send
+// paths resolve a template by NAME or by DOC ID - so a template's kind decides
+// where an admin FINDS it and nothing else.
+export type MailTemplateKind = 'system' | 'campaign' | 'fulfillment';
+
+/** The kinds that mean "owned by a screen", i.e. not in the generic list. */
+export const TEMPLATE_HOME_KINDS = ['fulfillment'] as const satisfies readonly MailTemplateKind[];
 
 export class MailTemplateModel extends BaseModel {
   name: string
