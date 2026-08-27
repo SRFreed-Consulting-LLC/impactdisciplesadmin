@@ -1,4 +1,5 @@
 import {Timestamp} from "firebase-admin/firestore";
+import {renderMergeTags} from "./utils/merge-tags.functions";
 
 // Pre-prod hardening #1: every email the two public apps used to compose
 // and write into `mail` from the browser is queued server-side here
@@ -421,12 +422,25 @@ export async function queueWebOrderEmails(
     }
     const followUp = followUpSnap.data() as {subject?: string;
       html?: string};
-    const model: Record<string, string> = {
+    // renderMergeTags, NOT renderPlaceholders, and only on THIS path.
+    //
+    // A product's follow-up is admin-editable in the email BUILDER, whose tag
+    // menu inserts *|FNAME|* - which renderPlaceholders does not understand
+    // and would mail literally to a customer. renderMergeTags resolves those
+    // AND absorbs the legacy {{firstName}} spelling the Quill-authored
+    // templates already use, so both survive.
+    //
+    // Safe here specifically because this path's model is closed - exactly
+    // firstName/lastName/email, all three registered merge tags. The receipt
+    // path above keeps renderPlaceholders because it has an arbitrary
+    // caller-supplied key ({{product_list}}) that no closed tag list covers.
+    // The two renderers stay separate on purpose; this picks the right one
+    // per path rather than collapsing them.
+    const html = renderMergeTags(followUp.html ?? "", {
       firstName: escapeHtml(form.firstName ?? ""),
       lastName: escapeHtml(form.lastName ?? ""),
       email: escapeHtml(email.toLowerCase()),
-    };
-    const html = renderPlaceholders(followUp.html ?? "", model);
+    });
     await queueMail(db, email, followUp.subject ?? "", html);
   }));
 }

@@ -173,6 +173,42 @@ export class ProductsComponent implements OnInit {
     }
   }
 
+  /**
+   * The "Select Email" list: templates of kind 'product' ONLY.
+   *
+   * It used to be getAll() - every template in the collection, campaign
+   * starting points and order receipts alike, none of which is a plausible
+   * post-purchase follow-up. Filtering by kind is what makes this a list of
+   * follow-up emails rather than a list of every email that exists.
+   */
+  private loadFollowUpEmails(select?: string): void {
+    void this.emailTemplatesService.getAllOfKind('product').then((templates) => {
+      this.emails = templates.map((t) => ({ id: t.id!, name: t.name }));
+      if (select) {
+        this.form.get('followUpEmailId')?.setValue(select);
+      }
+    });
+  }
+
+  get canCreateFollowUpEmail(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  /**
+   * Creating a follow-up email from the screen that uses them.
+   *
+   * Necessary rather than convenient: templates of kind 'product' are hidden
+   * from Tools Manager > System Templates, which is where "New Email Design"
+   * lives - so without this the list could never gain a second entry. The
+   * designer is told the kind up front so what it saves comes back here.
+   */
+  createFollowUpEmail(): void {
+    if (!this.canCreateFollowUpEmail) {
+      return;
+    }
+    this.templateEditor.createNew('product', { from: 'product' });
+  }
+
   constructor(
     private service: ProductService,
     private productTagService: ProductTagsService,
@@ -207,9 +243,7 @@ export class ProductsComponent implements OnInit {
     this.bookService.getAll().then((books) => {
       this.books = books;
     });
-    this.emailTemplatesService.getAll().then((templates) => {
-      this.emails = templates.map((t) => ({ id: t.id!, name: t.name }));
-    });
+    this.loadFollowUpEmails();
 
     // Each page already comes back ordered by title asc from Firestore, and
     // pages are appended in fetch order - no client-side re-sort needed.

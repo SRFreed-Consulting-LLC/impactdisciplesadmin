@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, filter, take } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
+import { MailTemplateModel, MailTemplateKind, TEMPLATE_HOME_KINDS } from 'src/app/common/models/admin/mail.model';
 import { createDefaultDesign, createDesignFromFullHtml, createDesignFromLegacyHtml } from 'src/app/common/models/admin/email-design.model';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { compileEmailDesign } from 'src/app/common/utils/email/email-design-compiler';
@@ -245,6 +245,22 @@ export class EmailDesignerComponent implements OnInit {
     });
   }
 
+  /**
+   * The kind a newly-saved template takes, from ?kind= on the URL.
+   *
+   * Allow-listed against TEMPLATE_HOME_KINDS rather than trusted: an
+   * unrecognised value would produce a template that reads back as 'system'
+   * (see kindOf) while the screen that created it filters on the kind it
+   * asked for - so the admin would save an email and watch it vanish. Falling
+   * back to 'system' puts it somewhere visible instead.
+   */
+  private newTemplateKind(): MailTemplateKind {
+    const requested = this.route.snapshot.queryParamMap.get('kind');
+    return TEMPLATE_HOME_KINDS.includes(requested as never)
+      ? (requested as MailTemplateKind)
+      : 'system';
+  }
+
   onSave(): void {
     const name = this.templateName.trim();
     if (!name) {
@@ -258,8 +274,12 @@ export class EmailDesignerComponent implements OnInit {
       ...(this.existing ?? { attachments: [] as unknown[] }),
       name,
       subject: this.templateSubject.trim(),
-      // Edits keep the doc's existing kind; anything new from here is system.
-      kind: this.existing?.kind ?? 'system',
+      // Edits keep the doc's existing kind. A NEW template takes the kind the
+      // launching screen asked for (?kind=product from a product's follow-up
+      // list) and falls back to 'system' - so the designer reached from
+      // System Templates still makes system templates, and one reached from
+      // a screen that owns its own list makes something that lands in it.
+      kind: this.existing?.kind ?? this.newTemplateKind(),
       design,
       html: compileEmailDesign(design, { title: name })
     } as MailTemplateModel;

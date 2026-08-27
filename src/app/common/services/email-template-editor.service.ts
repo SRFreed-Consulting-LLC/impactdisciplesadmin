@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { EMailTemplatesService } from './data/email-templates.service';
-import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
+import { MailTemplateModel, MailTemplateKind } from 'src/app/common/models/admin/mail.model';
 import { EmailTemplateDialogComponent } from 'src/app/tools-manager/email-templates/email-template-dialog.component';
 import { PermissionService } from './permission.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
@@ -80,6 +80,28 @@ export class EmailTemplateEditorService {
     }
     const template = await this.templates.getById(id);
     this.open(template ?? undefined, `with id ${id}`, returnTo);
+  }
+
+  /**
+   * Opens the designer on a NEW template of a given kind, from the screen
+   * that will own it.
+   *
+   * Templates carrying a TEMPLATE_HOME_KINDS kind are hidden from Tools
+   * Manager > System Templates - which is where "New Email Design" lives. So
+   * for those kinds this is not a shortcut, it is the only way to make one:
+   * without it a screen's list can never gain a second entry. The kind rides
+   * on the URL so the designer stamps it at save time.
+   */
+  createNew(kind: MailTemplateKind, returnTo?: TemplateEditorReturn): void {
+    if (!this.canEdit()) {
+      return;
+    }
+    void this.router.navigate(['/tools-manager/email-designer', 'new'], {
+      queryParams: {
+        kind,
+        ...(returnTo ? { from: returnTo.from, ...(returnTo.id ? { fromId: returnTo.id } : {}) } : {})
+      }
+    });
   }
 
   private open(

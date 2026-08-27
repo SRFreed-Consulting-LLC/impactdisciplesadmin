@@ -494,4 +494,17 @@ test("the product's own followUpEmailId is used even when the request omits " +
     "Getting the most from your workbook", // tmpl-followup
     "Your Impact Disciples receipt",
   ], "receipt + the product's own follow-up, and nothing else");
+
+  // Both tag syntaxes resolve. The follow-up path renders with
+  // renderMergeTags (not renderPlaceholders) exactly so a template edited in
+  // the email BUILDER - whose tag menu writes *|FNAME|* - does not mail the
+  // raw tag to a customer, while the legacy {{...}} spellings the existing
+  // Quill templates use keep working.
+  const followUp = mail.docs.find((d) =>
+    d.data().message.subject === "Getting the most from your workbook");
+  const html = followUp.data().message.html;
+  assert.match(html, /Hi Buyer Test - tips inside\./,
+    `both *|FNAME|* and {{lastName}} must substitute; got: ${html}`);
+  assert.doesNotMatch(html, /\*\|/, "no merge tag may reach the customer raw");
+  assert.doesNotMatch(html, /\{\{/, "no legacy token may reach the customer raw");
 });

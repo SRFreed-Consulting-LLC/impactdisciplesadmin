@@ -151,6 +151,17 @@
                     <mat-option [value]="email.id">{{ email.name }}</mat-option>
                   }
                 </mat-select>
+                <!-- These templates are hidden from System Templates, so this
+                     is the only way to make one - see createFollowUpEmail(). -->
+                @if (canCreateFollowUpEmail) {
+                  <mat-hint>
+                    <button mat-button type="button" class="follow-up-new"
+                      (click)="createFollowUpEmail()">
+                      <mat-icon>add</mat-icon>
+                      New follow-up email
+                    </button>
+                  </mat-hint>
+                }
                 <!-- Edit the follow-up without leaving the product. Bound by
                      doc ID here, which is also how the sending function
                      resolves it - so unlike an event's registration email,

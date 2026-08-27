@@ -22,14 +22,20 @@ import { EmailDesign } from './email-design.model';
 //
 //   'fulfillment' - Contacts Manager > Fulfillment. The Amazon Shipping
 //                   Confirmation, sent when an order ships via Amazon.
+//   'product'     - Store Manager > Products. The follow-up email a product
+//                   sends after purchase, picked from that screen's "Select
+//                   Email" list and created from it too. Unlike the others
+//                   this kind is also a FILTER: the picker offers exactly the
+//                   templates carrying it, so the kind decides what an admin
+//                   can choose, not only where they find it.
 //
 // Add a kind here as its screen grows an editor. Nothing sends by kind - send
 // paths resolve a template by NAME or by DOC ID - so a template's kind decides
 // where an admin FINDS it and nothing else.
-export type MailTemplateKind = 'system' | 'campaign' | 'fulfillment';
+export type MailTemplateKind = 'system' | 'campaign' | 'fulfillment' | 'product';
 
 /** The kinds that mean "owned by a screen", i.e. not in the generic list. */
-export const TEMPLATE_HOME_KINDS = ['fulfillment'] as const satisfies readonly MailTemplateKind[];
+export const TEMPLATE_HOME_KINDS = ['fulfillment', 'product'] as const satisfies readonly MailTemplateKind[];
 
 export class MailTemplateModel extends BaseModel {
   name: string

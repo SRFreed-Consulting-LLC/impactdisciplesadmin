@@ -330,10 +330,14 @@ const mail_templates = {
     subject: "Your order is on the way",
     html: "<p>{{Customer Name}}, your order shipped via Amazon.</p>",
   },
+  // Deliberately carries BOTH tag syntaxes: *|FNAME|* is what the email
+  // builder's tag menu inserts, {{lastName}} is what the Quill-authored
+  // templates in the real data still use. A product follow-up renders with
+  // renderMergeTags precisely so neither one reaches a customer literally.
   "tmpl-followup": {
     name: "Workbook Follow-Up",
     subject: "Getting the most from your workbook",
-    html: "<p>Hi {{Customer Name}} - tips inside.</p>",
+    html: "<p>Hi *|FNAME|* {{lastName}} - tips inside.</p>",
   },
   // Referenced by the summit fixture's emailTemplate (by NAME) - the
   // register_for_event flow renders + queues this as the confirmation.
