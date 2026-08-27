@@ -31,11 +31,13 @@
     ],
     "headers": [
       {
-        "source": "/index.html",
+        "//": "MUST be `**`, not `/index.html`. Hosting matches header rules against the REQUESTED path, not the rewrite destination - and nobody ever requests /index.html. The app is loaded at `/`, `/dashboard`, `/contacts-manager` and so on, all of which missed the old rule and fell through to Hosting's default max-age=3600. A browser therefore kept serving the PREVIOUS index.html for up to an hour after a deploy, and since that HTML names the old hashed chunks - which really are immutable - the whole stale app stayed pinned. Live symptom, 2026-08-27: a CSS fix verified present in the deployed bundle was still not visible in prod.",
+        "source": "**",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
-        "source": "**/*.@(js|css)",
+        "//": "Listed AFTER the catch-all deliberately: where two rules match the same request, the LAST one wins, so hashed assets keep their long cache. Verified against the dev site before this shipped to prod - do not reorder these two.",
+        "source": "**/*.@(js|css|woff|woff2|ttf|eot|otf|png|jpg|jpeg|gif|webp|svg|ico)",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
       }
     ]
@@ -55,11 +57,13 @@
     ],
     "headers": [
       {
-        "source": "/index.html",
+        "//": "MUST be `**`, not `/index.html`. Hosting matches header rules against the REQUESTED path, not the rewrite destination - and nobody ever requests /index.html. The app is loaded at `/`, `/dashboard`, `/contacts-manager` and so on, all of which missed the old rule and fell through to Hosting's default max-age=3600. A browser therefore kept serving the PREVIOUS index.html for up to an hour after a deploy, and since that HTML names the old hashed chunks - which really are immutable - the whole stale app stayed pinned. Live symptom, 2026-08-27: a CSS fix verified present in the deployed bundle was still not visible in prod.",
+        "source": "**",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
-        "source": "**/*.@(js|css)",
+        "//": "Listed AFTER the catch-all deliberately: where two rules match the same request, the LAST one wins, so hashed assets keep their long cache. Verified against the dev site before this shipped to prod - do not reorder these two.",
+        "source": "**/*.@(js|css|woff|woff2|ttf|eot|otf|png|jpg|jpeg|gif|webp|svg|ico)",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
       }
     ]
