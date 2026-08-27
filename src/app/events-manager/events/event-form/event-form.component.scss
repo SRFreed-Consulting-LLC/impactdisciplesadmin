@@ -194,7 +194,9 @@ $info-accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-bottom: 16px;
+  // No margin-bottom since 2026-08-27: the row sits inside .type-band, whose
+  // own gap spaces it. It had one when it was a loose row at the top of the
+  // Details tab.
 }
 
 @media (max-width: 640px) {
@@ -255,9 +257,86 @@ $info-accent2-tint: color-mix(in srgb, var(--app-accent) 10%, var(--app-card));
 // of the admin theme - so its internals keep the public site's literal light
 // palette (white card, #337ab7/#6a4e82 tag tints). Surrounding chrome
 // (.info-layout etc.) is tokened as usual.
-.info-preview {
-  position: sticky;
-  top: 0;
+//
+// (.info-preview was removed 2026-08-27 - it was the sticky 300px column
+// this card used to sit in on the Details tab. The shared preview rail owns
+// stickiness now, so the card only needs padding inside it.)
+.event-preview {
+  padding: 14px;
+}
+
+// ---- Regular event editor: one page, no tabs (2026-08-27) ----
+// The Details | Attendees strip is gone; attendees moved to the full-page
+// view off the list's row action. What is left is a single form, so it gets
+// the same two-column treatment as the product editor - with the attendance
+// -type band spanning both columns above them, because it decides whether
+// Venue or the Kajabi fields exist at all.
+.event-body {
+  padding: 16px 4px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.type-band {
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  background: color-mix(in srgb, var(--app-card-ink) 2%, transparent);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.type-band__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+// align-items: start matters - without it the columns stretch to match each
+// other and the divider runs past the shorter one.
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  align-items: start;
+}
+
+.event-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-col--divided {
+  border-left: 1px solid var(--app-card-border);
+  padding-left: 24px;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--app-card-muted);
+  margin: 6px 0 -2px;
+}
+
+// Same threshold as the product editor: past this, two columns plus the
+// 380px rail leave neither column usable, so the form stacks into one.
+@media (max-width: 1180px) {
+  .event-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-col--divided {
+    border-left: none;
+    padding-left: 0;
+  }
 }
 
 .preview-card {

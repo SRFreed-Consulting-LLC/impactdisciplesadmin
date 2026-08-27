@@ -152,6 +152,63 @@ describe('EventsComponent', () => {
       expect(component.mode).toBe('list');
       expect(component.attendeesItem).toBeNull();
     });
+
+    // ---- Regular events joined this mode on 2026-08-27 ----
+    // Their editor's Attendees TAB was removed (it is a report, not an
+    // editing concern - the same call made for summits on 2026-08-19), so
+    // the full-page view is now the ONLY way to see who registered for a
+    // regular event.
+
+    it('opens the full-page attendees view for a REGULAR event too', () => {
+      const { component } = makeComponent(false);
+      const item = anEvent();
+      component.showAttendees(item);
+      expect(component.mode).toBe('attendees');
+      expect(component.attendeesItem).toBe(item);
+    });
+
+    it('gates a regular event on the EVENTS attendees grant, not the summit one', () => {
+      const { component, deps } = makeComponent(false);
+      deps.permissions['events-manager.events.attendees'] = false;
+      component.showAttendees(anEvent());
+      expect(component.mode).toBe('list');
+      expect(component.attendeesItem).toBeNull();
+    });
+
+    // The new-record-alerts bell deep-links ?eventId=&eventTab=attendees.
+    // Until 2026-08-27 the routing guard was summitMode-only and a regular
+    // event fell through to the editor, which selected its Attendees tab.
+    // That tab is gone, so without dropping the guard the bell would open
+    // the editor and land on nothing. Reached through the private method
+    // deliberately: it is what the route subscription calls, and this suite
+    // stays synchronous by not running ngOnInit (see the file header).
+    it('routes an attendees deep link to the full-page view for a REGULAR event', async () => {
+      const { component, deps } = makeComponent(false);
+      const item = anEvent();
+      (deps.service.getById as jasmine.Spy).and.returnValue(Promise.resolve(item));
+
+      (component as unknown as {
+        openEventFromDeepLink(id: string, tabKey: string): void;
+      }).openEventFromDeepLink('evt-1', 'attendees');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(component.mode).toBe('attendees');
+      expect(component.attendeesItem).toBe(item);
+    });
+
+    it('still sends a non-attendees deep link into the editor on that tab', async () => {
+      const { component, deps } = makeComponent(false);
+      const item = anEvent();
+      (deps.service.getById as jasmine.Spy).and.returnValue(Promise.resolve(item));
+
+      (component as unknown as {
+        openEventFromDeepLink(id: string, tabKey: string): void;
+      }).openEventFromDeepLink('evt-1', 'info');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(component.mode).toBe('edit');
+      expect(component.pendingTabKey).toBe('info');
+    });
   });
 
   describe('showAddModal', () => {

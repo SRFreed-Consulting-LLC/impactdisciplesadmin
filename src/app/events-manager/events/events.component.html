@@ -64,20 +64,27 @@
   </app-summit-hub>
 }
 
-<!-- Summit attendee Command Center - full-page, opened from Mission
-     Control or the Summit list's row action (not an edit tab; see
-     events.component.ts's mode comment). -->
+<!-- Attendees - full-page, never an edit tab (see events.component.ts's
+     mode comment). A summit opens the Command Center, from Mission Control
+     or the Summit list's row action; a regular event opens the plain
+     attendee grid, from the Events list's row action or the new-record
+     bell's deep link. Regular events joined this on 2026-08-27, when their
+     editor's Attendees tab was removed. -->
 @if (mode === 'attendees' && attendeesItem; as reportItem) {
   <div class="editor">
     <mat-toolbar class="editor__header">
       <button mat-icon-button type="button" matTooltip="Back" (click)="closeAttendees()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <h2 class="editor__title">{{ reportItem.eventName }} — ATTENDEE COMMAND CENTER</h2>
+      <h2 class="editor__title">{{ reportItem.eventName }} — {{ summitMode ? 'ATTENDEE COMMAND CENTER' : 'ATTENDEES' }}</h2>
       <span class="editor__spacer"></span>
     </mat-toolbar>
     <div class="editor__body attendees-report">
-      <app-summit-command-center [event]="reportItem"></app-summit-command-center>
+      @if (summitMode) {
+        <app-summit-command-center [event]="reportItem"></app-summit-command-center>
+      } @else {
+        <app-event-attendees [event]="reportItem"></app-event-attendees>
+      }
     </div>
   </div>
 }

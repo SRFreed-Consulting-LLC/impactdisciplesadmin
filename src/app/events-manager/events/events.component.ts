@@ -169,9 +169,13 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.authService.dao.loggedInUser$.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
       const label = this.summitMode ? 'New Summit' : 'New Event';
       this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label, icon: 'add', onClick: () => this.showAddModal() }] : [];
+      // Regular events got their own row action on 2026-08-27, when the
+      // editor's Attendees TAB was removed: same destination, same
+      // permission, just reached from the list the way a summit's Command
+      // Center already was.
       this.rowActions = this.summitMode
         ? [{ icon: 'hub', tooltip: 'COMMAND CENTER', onClick: (item) => this.showAttendees(item), visible: () => this.permissionService.canView(`${this.screenKey}.attendees`) }]
-        : [];
+        : [{ icon: 'groups', tooltip: 'VIEW ATTENDEES', onClick: (item) => this.showAttendees(item), visible: () => this.permissionService.canView(`${this.screenKey}.attendees`) }];
     });
 
     this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
@@ -222,9 +226,13 @@ export class EventsComponent implements OnInit, OnDestroy {
       if (!item) {
         return;
       }
-      // On a summit, "attendees" is the full-page report, not an edit tab -
-      // the new-record-alerts bell's registration deep-link lands there.
-      if (this.summitMode && tabKey === 'attendees') {
+      // "attendees" is the full-page report, not an edit tab - the
+      // new-record-alerts bell's registration deep-link lands there. This
+      // was summit-only until 2026-08-27; regular events had an Attendees
+      // TAB for the fall-through below to select. That tab is gone, so
+      // without dropping the summitMode guard the bell would open a
+      // regular event's editor and land on nothing.
+      if (tabKey === 'attendees') {
         this.showAttendees(item);
         return;
       }

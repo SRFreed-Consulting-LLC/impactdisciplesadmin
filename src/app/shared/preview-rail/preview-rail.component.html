@@ -9,18 +9,31 @@
         <span class="prail__label">{{ label }}</span>
 
         @if (showDeviceSwitch) {
-          <div class="prail__devices" role="group" [attr.aria-label]="label + ' device'">
-            <button type="button" class="prail__device"
-              [class.prail__device--on]="s.device === 'web'"
-              (click)="setDevice('web')" matTooltip="Desktop width">
-              <mat-icon>desktop_windows</mat-icon>
-            </button>
-            <button type="button" class="prail__device"
-              [class.prail__device--on]="s.device === 'phone'"
-              (click)="setDevice('phone')" matTooltip="Phone width">
-              <mat-icon>smartphone</mat-icon>
-            </button>
-          </div>
+          @if (deviceStyle === 'segmented') {
+            <!-- The summit rail's control, in this rail's header row. See
+                 the deviceStyle @Input for why it is an opt-in. -->
+            <div class="prail__seg" role="group" [attr.aria-label]="label + ' device'">
+              <button type="button" class="prail__segbtn"
+                [class.prail__segbtn--on]="s.device === 'web'"
+                (click)="setDevice('web')" matTooltip="Desktop width">WEB</button>
+              <button type="button" class="prail__segbtn"
+                [class.prail__segbtn--on]="s.device === 'phone'"
+                (click)="setDevice('phone')" matTooltip="Phone width">PHONE</button>
+            </div>
+          } @else {
+            <div class="prail__devices" role="group" [attr.aria-label]="label + ' device'">
+              <button type="button" class="prail__device"
+                [class.prail__device--on]="s.device === 'web'"
+                (click)="setDevice('web')" matTooltip="Desktop width">
+                <mat-icon>desktop_windows</mat-icon>
+              </button>
+              <button type="button" class="prail__device"
+                [class.prail__device--on]="s.device === 'phone'"
+                (click)="setDevice('phone')" matTooltip="Phone width">
+                <mat-icon>smartphone</mat-icon>
+              </button>
+            </div>
+          }
         }
       }
 

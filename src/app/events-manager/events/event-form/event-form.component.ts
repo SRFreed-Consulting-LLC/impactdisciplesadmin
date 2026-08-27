@@ -136,10 +136,9 @@ export class EventFormComponent implements OnInit {
   // No 'attendees' - on a summit that's the full-page report off the list
   // row (see EventsComponent's `mode`), not an edit tab.
   private readonly tabOrderSummit = ['info', 'application', 'agenda'];
-  // Regular events only ever show Details (still keyed 'info' for
-  // permission/deep-link continuity - see nav-config.ts) and Attendees -
-  // Application/Agenda/Break Outs don't exist on this screen at all.
-  private readonly tabOrderRegular = ['info', 'attendees'];
+  // (tabOrderRegular removed 2026-08-27.) A regular event has no tab group
+  // at all now - one page, and Attendees is the full-page view off the
+  // list's row action. selectedTabIndex below is summit-only.
 
   constructor(
     private service: EventService,
@@ -169,9 +168,12 @@ export class EventFormComponent implements OnInit {
     return labels[visible[this.selectedTabIndex] ?? 'info'] ?? 'Info & Pricing';
   }
 
+  // Summit only - a regular event has no tab group to index into.
   private tabIndexFor(tabKey: string): number {
-    const tabOrder = this.summitMode ? this.tabOrderSummit : this.tabOrderRegular;
-    const visible = tabOrder.filter((key) => this.permissionService.canView(`${this.screenKey}.${key}`));
+    if (!this.summitMode) {
+      return 0;
+    }
+    const visible = this.tabOrderSummit.filter((key) => this.permissionService.canView(`${this.screenKey}.${key}`));
     const index = visible.indexOf(tabKey);
     return index >= 0 ? index : 0;
   }

@@ -32,6 +32,15 @@ export class PreviewRailComponent {
   @Input() label = 'Preview';
   /** Hosts with nothing worth showing on a phone can hide the switch. */
   @Input() showDeviceSwitch = true;
+  /**
+   * How the device switch is drawn. 'icons' (the default, and what the six
+   * existing hosts get) is the compact desktop/phone icon pair. 'segmented'
+   * is the bordered WEB | PHONE control the SUMMIT rail uses - asked for on
+   * the events editor (owner, 2026-08-27) so the two event surfaces carry
+   * the same switch. Deliberately an opt-in rather than a global change:
+   * nothing about the other six screens was in question.
+   */
+  @Input() deviceStyle: 'icons' | 'segmented' = 'icons';
   /** Rail width in px when open. A full-page editor can afford the default;
    *  inside a dialog it has to leave the form the larger share. */
   @Input() width = 420;

@@ -22,11 +22,15 @@
         <mat-slide-toggle [formControl]="$any(form.get('isActive'))">Live</mat-slide-toggle>
       }
     </mat-toolbar>
-    <div class="editor__body" [class.editor__body--railed]="summitMode">
+    <!-- Both modes are railed now. Summit always had its own preview rail;
+         the regular editor got the shared one on 2026-08-27, when its tab
+         strip went away and the preview card that used to sit in a bare
+         300px column moved into it. -->
+    <div class="editor__body editor__body--railed">
       <div class="editor__main">
-      <mat-tab-group class="event-tabs" [class.event-tabs--headless]="summitMode" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
-        @if (summitMode) {
-          <!-- ============================= SUMMIT: full 5-tab editor (unchanged) ============================= -->
+      @if (summitMode) {
+        <!-- ============================= SUMMIT: full editor, headless tabs (unchanged) ============================= -->
+        <mat-tab-group class="event-tabs event-tabs--headless" [formGroup]="form" [(selectedIndex)]="selectedTabIndex">
           @if (permissionService.canView(screenKey + '.info')) {
             <mat-tab label="Info">
               <!-- Single column - the live preview moved to the persistent
@@ -173,13 +177,24 @@
                REPORT, not an editing concern (user decision 2026-08-19):
                it's the VIEW ATTENDEES row action on the Summit list, which
                opens the full-page mode === 'attendees' view below. -->
-        } @else {
-          <!-- ============================= EVENTS (regular): quick-create, Details + Attendees ============================= -->
+        </mat-tab-group>
+      } @else {
+        <!-- ============================= EVENTS (regular): one page, no tabs (2026-08-27) =============================
+             The Details | Attendees strip is gone. Attendees is a REPORT
+             rather than an editing concern, so it moved to the full-page
+             view off the Events list's row action - the same call already
+             made for summits on 2026-08-19 (see the note in the summit
+             branch above).
+
+             Attendance type LEADS as a full-width band because it is a mode
+             switch, not a field: it decides whether Venue or the Kajabi URLs
+             exist at all. The fields it governs sit in the columns beneath
+             it, so that dependency is visible rather than inferred. -->
+        <div class="event-body" [formGroup]="form">
           @if (permissionService.canView(screenKey + '.info')) {
-            <mat-tab label="Details">
-              <div class="tab-content info-layout">
-                <div class="info-form">
-                  <div class="type-row">
+            <div class="type-band">
+              <div class="type-band__label">How people attend &mdash; decides which fields below apply</div>
+              <div class="type-row">
                     <div class="type-card" [class.is-active]="regularAttendanceType() === 'inperson'" role="button" tabindex="0" (click)="setRegularAttendanceType('inperson')" (keydown.enter)="setRegularAttendanceType('inperson')">
                       <span class="type-card__icon">🏢</span>
                       <div class="type-card__title">In-Person</div>
@@ -195,76 +210,86 @@
                       <div class="type-card__title">Both</div>
                       <div class="type-card__sub">In-person with a Kajabi option too</div>
                     </div>
-                  </div>
+              </div>
+            </div>
 
-                  <div class="field-row">
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Event Name</mat-label>
-                      <input matInput formControlName="eventName" required>
-                      @if (form.get('eventName')?.hasError('required')) {
-                        <mat-error>Event name is required</mat-error>
-                      }
-                    </mat-form-field>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Email Template</mat-label>
-                      <mat-select formControlName="emailTemplate">
-                        <mat-option [value]="null">(None)</mat-option>
-                        @for (template of emailTemplates; track template) {
-                          <mat-option [value]="template">{{ template }}</mat-option>
-                        }
-                      </mat-select>
-                      @if (form.get('emailTemplate')?.hasError('required')) {
-                        <mat-error>Required for in-person events</mat-error>
-                      }
-                      <!-- Edit the registration email without leaving the event.
-                           It is bound to this event BY NAME, and the same name is
-                           what the sender resolves - so this is also the place an
-                           admin can see what they are actually about to change. -->
-                      @if (canEditEmailTemplate) {
-                        <button mat-icon-button matSuffix type="button"
-                          matTooltip="Edit this email template"
-                          (click)="editEmailTemplate()">
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                      }
-                      <!-- Kind 'event'/'summit' templates are hidden from
-                           System Templates, so this is the only way to make
-                           one. The kind follows the screen. -->
-                      @if (canCreateEmailTemplate) {
-                        <mat-hint>
-                          <button mat-button type="button" class="template-new"
-                            (click)="createEmailTemplate()">
-                            <mat-icon>add</mat-icon>
-                            New registration email
-                          </button>
-                        </mat-hint>
-                      }
-                    </mat-form-field>
-                  </div>
-                  <div class="field-row">
-                    <app-date-time-field formControlName="startDate" label="Start Date" [required]="true"></app-date-time-field>
-                    <app-date-time-field formControlName="endDate" label="End Date"></app-date-time-field>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Check-In Time</mat-label>
-                      <input matInput type="time" formControlName="checkIn">
-                      @if (form.get('checkIn')?.hasError('required')) {
-                        <mat-error>Required for in-person events</mat-error>
-                      }
-                    </mat-form-field>
-                  </div>
-                  <mat-form-field appearance="outline" class="cost-field">
+            <div class="event-grid">
+              <div class="event-col">
+                <div class="section-label">Event</div>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Event Name</mat-label>
+                  <input matInput formControlName="eventName" required>
+                  @if (form.get('eventName')?.hasError('required')) {
+                    <mat-error>Event name is required</mat-error>
+                  }
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Email Template</mat-label>
+                  <mat-select formControlName="emailTemplate">
+                    <mat-option [value]="null">(None)</mat-option>
+                    @for (template of emailTemplates; track template) {
+                      <mat-option [value]="template">{{ template }}</mat-option>
+                    }
+                  </mat-select>
+                  @if (form.get('emailTemplate')?.hasError('required')) {
+                    <mat-error>Required for in-person events</mat-error>
+                  }
+                  <!-- Edit the registration email without leaving the event.
+                       It is bound to this event BY NAME, and the same name is
+                       what the sender resolves - so this is also the place an
+                       admin can see what they are actually about to change. -->
+                  @if (canEditEmailTemplate) {
+                    <button mat-icon-button matSuffix type="button"
+                      matTooltip="Edit this email template"
+                      (click)="editEmailTemplate()">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                  <!-- Kind 'event'/'summit' templates are hidden from
+                       System Templates, so this is the only way to make
+                       one. The kind follows the screen. -->
+                  @if (canCreateEmailTemplate) {
+                    <mat-hint>
+                      <button mat-button type="button" class="template-new"
+                        (click)="createEmailTemplate()">
+                        <mat-icon>add</mat-icon>
+                        New registration email
+                      </button>
+                    </mat-hint>
+                  }
+                </mat-form-field>
+                <div class="field-row">
+                  <app-date-time-field formControlName="startDate" label="Start Date" [required]="true"></app-date-time-field>
+                  <app-date-time-field formControlName="endDate" label="End Date"></app-date-time-field>
+                </div>
+                <!-- Check-In and Cost pair up rather than each taking a row
+                     of its own: both are small values and neither earns the
+                     full column width. -->
+                <div class="field-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Check-In Time</mat-label>
+                    <input matInput type="time" formControlName="checkIn">
+                    @if (form.get('checkIn')?.hasError('required')) {
+                      <mat-error>Required for in-person events</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Cost</mat-label>
                     <span matTextPrefix>$&nbsp;</span>
                     <input matInput type="number" formControlName="costInDollars">
                   </mat-form-field>
+                </div>
+              </div>
 
-                  @if (regularAttendanceType() !== 'online') {
-                    <!-- Venue = organization, optionally narrowed to one of
-                         its locations (2026-08 restructure). A single-site
-                         org has no locations - its mailing address IS the
-                         venue. Orgs are managed on Contacts Manager >
-                         Organizations. -->
-                    <div class="field-row">
+              <div class="event-col event-col--divided">
+                @if (regularAttendanceType() !== 'online') {
+                  <div class="section-label">Venue</div>
+                  <!-- Venue = organization, optionally narrowed to one of
+                       its locations (2026-08 restructure). A single-site
+                       org has no locations - its mailing address IS the
+                       venue. Orgs are managed on Contacts Manager >
+                       Organizations. -->
+                  <div class="field-row">
                       <mat-form-field appearance="outline" class="full-width">
                         <mat-label>Organization</mat-label>
                         <mat-select formControlName="organization">
@@ -290,107 +315,102 @@
                         </mat-form-field>
                       }
                     </div>
-                    @if (form.get('organization')?.value && orgLocations().length === 0) {
-                      <p class="venue-hint">Venue: the organization's mailing address.</p>
-                    }
+                  @if (form.get('organization')?.value && orgLocations().length === 0) {
+                    <p class="venue-hint">Venue: the organization's mailing address.</p>
                   }
-                  @if (regularAttendanceType() !== 'inperson') {
-                    <div class="field-row">
-                      <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Kajabi Purchase URL</mat-label>
-                        <input matInput formControlName="kajabiPurchaseURL">
-                        @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
-                          <mat-error>Required</mat-error>
-                        }
-                      </mat-form-field>
-                      <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Kajabi Subscribe URL</mat-label>
-                        <input matInput formControlName="kajabiSubscribeURL">
-                        @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
-                          <mat-error>Required</mat-error>
-                        }
-                      </mat-form-field>
-                    </div>
-                  }
+                }
+                @if (regularAttendanceType() !== 'inperson') {
+                  <div class="section-label">Online</div>
                   <div class="field-row">
                     <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Image</mat-label>
-                      <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+                      <mat-label>Kajabi Purchase URL</mat-label>
+                      <input matInput formControlName="kajabiPurchaseURL">
+                      @if (form.get('kajabiPurchaseURL')?.hasError('required')) {
+                        <mat-error>Required</mat-error>
+                      }
                     </mat-form-field>
-                    <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
-                      {{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}
-                    </button>
-                  </div>
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Web Description</mat-label>
-                    <textarea matInput formControlName="description" rows="6"></textarea>
-                  </mat-form-field>
-                </div>
-
-                <div class="info-preview">
-                  <div class="preview-card">
-                    <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
-                      @if (card.imageUrl?.url) {
-                        <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
-                      } @else {
-                        <span>No image yet</span>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Kajabi Subscribe URL</mat-label>
+                      <input matInput formControlName="kajabiSubscribeURL">
+                      @if (form.get('kajabiSubscribeURL')?.hasError('required')) {
+                        <mat-error>Required</mat-error>
                       }
-                    </div>
-                    <div class="preview-card__body">
-                      <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
-                      <div class="preview-card__meta">
-                        @if (form.get('startDate')?.value) {
-                          {{ form.get('startDate')?.value | date: 'MMM d, y' }}
-                          @if (form.get('endDate')?.value) {
-                            – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
-                          }
-                        } @else {
-                          No start date set
-                        }
-                      </div>
-                      @if (!form.get('isOnline')?.value) {
-                        <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
-                      }
-                      <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
-                      <div class="preview-card__tags">
-                        @if (regularAttendanceType() === 'inperson') {
-                          <span class="ptag">In-Person</span>
-                        }
-                        @if (regularAttendanceType() === 'online') {
-                          <span class="ptag ptag--online">Online</span>
-                        }
-                        @if (regularAttendanceType() === 'both') {
-                          <span class="ptag ptag--online">In-Person + Online</span>
-                        }
-                      </div>
-                    </div>
+                    </mat-form-field>
                   </div>
-                </div>
-              </div>
-            </mat-tab>
-          }
-          @if (permissionService.canView(screenKey + '.attendees')) {
-            <mat-tab>
-              <ng-template mat-tab-label>
-                Attendees
-                @if (newAttendeeEventIds.has(item.id)) {
-                  <span class="new-badge tab-badge">NEW</span>
                 }
-              </ng-template>
-              <ng-template matTabContent>
-                <div class="tab-content tab-content--flush">
-                  <app-event-attendees [event]="item"></app-event-attendees>
+                <div class="section-label">Media</div>
+                <div class="field-row">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Image</mat-label>
+                    <input matInput [value]="card.imageUrl?.name ?? ''" readonly>
+                  </mat-form-field>
+                  <button mat-stroked-button type="button" [disabled]="inProgress$ | async" (click)="showImageUploader()">
+                    {{ card.imageUrl?.name ? 'Change' : 'Upload' }}
+                  </button>
                 </div>
-              </ng-template>
-            </mat-tab>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Web Description</mat-label>
+                  <textarea matInput formControlName="description" rows="6"></textarea>
+                </mat-form-field>
+              </div>
+            </div>
+
           }
-        }
-      </mat-tab-group>
+        </div>
+      }
       </div>
       @if (summitMode) {
         <!-- The persistent live preview - identical on every summit editor
              section (and Mission Control / the wizard host their own). -->
         <app-summit-preview-rail [data]="summitPreviewData()"></app-summit-preview-rail>
+      } @else {
+        <!-- The regular event's preview card, which until 2026-08-27 sat in
+             a bare 300px column inside the Details tab. In the shared rail it
+             gains what every other preview in the app already had: a device
+             switch, a collapse toggle and remembered state. deviceStyle
+             "segmented" is the summit rail's WEB | PHONE control (owner
+             request) so the two event surfaces carry the same switch. -->
+        <app-preview-rail storageKey="event" label="Public page" [width]="380" deviceStyle="segmented">
+          <div class="event-preview">
+            <div class="preview-card">
+              <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
+                @if (card.imageUrl?.url) {
+                  <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+                } @else {
+                  <span>No image yet</span>
+                }
+              </div>
+              <div class="preview-card__body">
+                <div class="preview-card__name">{{ form.get('eventName')?.value || 'Untitled Event' }}</div>
+                <div class="preview-card__meta">
+                  @if (form.get('startDate')?.value) {
+                    {{ form.get('startDate')?.value | date: 'MMM d, y' }}
+                    @if (form.get('endDate')?.value) {
+                      – {{ form.get('endDate')?.value | date: 'MMM d, y' }}
+                    }
+                  } @else {
+                    No start date set
+                  }
+                </div>
+                @if (!form.get('isOnline')?.value) {
+                  <div class="preview-card__meta">{{ previewLocationName() || 'No location set' }}</div>
+                }
+                <div class="preview-card__meta">{{ form.get('costInDollars')?.value | currency }}</div>
+                <div class="preview-card__tags">
+                  @if (regularAttendanceType() === 'inperson') {
+                    <span class="ptag">In-Person</span>
+                  }
+                  @if (regularAttendanceType() === 'online') {
+                    <span class="ptag ptag--online">Online</span>
+                  }
+                  @if (regularAttendanceType() === 'both') {
+                    <span class="ptag ptag--online">In-Person + Online</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </app-preview-rail>
       }
     </div>
     <div class="editor__actions">
