@@ -9,11 +9,19 @@ import { EmailDesign } from './email-design.model';
 // marketing starting points, created only by the campaign email editor's
 // "Save as template" and offered only in that editor's gallery.
 //
-// Absent means 'system': every template that existed before the split was
-// a system one (verified against dev and prod), so readers default rather
-// than depend on the backfill having run - see
-// scripts/backfill-template-kind.js.
-export type MailTemplateKind = 'system' | 'campaign';
+// CONTEXTUAL (2026-08-27) is the third: a template that has been given a home
+// on the screen that actually sends it, and so no longer belongs in a generic
+// list. The Amazon Shipping Confirmation is the first - Fulfillment shows an
+// "Edit the email this sends" action right beside the button that sends it,
+// which is a better place to find it than a catalogue where it sits between
+// nine unrelated things.
+//
+// This exists to be MIGRATED INTO, one template at a time. Each time a
+// template gains a contextual editor, it moves to this kind and leaves the
+// System Templates list; when the list empties, the screen goes with it.
+// Nothing sends by kind - send paths resolve a template by name or by doc id -
+// so moving one changes where an admin FINDS it and nothing else.
+export type MailTemplateKind = 'system' | 'campaign' | 'contextual';
 
 export class MailTemplateModel extends BaseModel {
   name: string

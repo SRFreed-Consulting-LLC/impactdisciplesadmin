@@ -30,7 +30,17 @@ export class EMailTemplatesService extends BaseService<MailTemplateModel> {
   }
 }
 
-/** A template's list, defaulting an absent `kind` to 'system'. */
+/**
+ * A template's list, defaulting an absent `kind` to 'system'.
+ *
+ * Written as an allow-list rather than `template.kind ?? 'system'` on purpose:
+ * an unrecognised value in the data - a typo, or a kind added by a newer
+ * build - lands a template back in System Templates, where somebody will see
+ * it. The alternative fails the other way, hiding a template from every list
+ * at once with nothing to notice it by.
+ */
 export function kindOf(template: MailTemplateModel): MailTemplateKind {
-  return template.kind === 'campaign' ? 'campaign' : 'system';
+  if (template.kind === 'campaign') return 'campaign';
+  if (template.kind === 'contextual') return 'contextual';
+  return 'system';
 }
