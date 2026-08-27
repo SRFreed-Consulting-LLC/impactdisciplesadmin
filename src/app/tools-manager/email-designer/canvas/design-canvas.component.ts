@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import {
   EmailBlock,
   EmailRow,
@@ -8,8 +8,9 @@ import {
   resolveMobileGlobalStyles,
   resolveMobileStyles
 } from 'src/app/common/models/admin/email-design.model';
-import { BlockDropEvent, handleBlockDrop, handleRowDrop } from '../block-drop.util';
+import { BlockDropEvent, BlockSeed, handleBlockDrop, handleRowDrop } from '../block-drop.util';
 import { DesignerStateService } from '../designer-state.service';
+import { EmailBrandDefaultsService } from 'src/app/common/services/email-brand-defaults.service';
 
 // The center editing surface: the email "page" (600px desktop / 375px
 // mobile) with its header/body/footer sections, each a cdkDropList of rows.
@@ -20,10 +21,27 @@ import { DesignerStateService } from '../designer-state.service';
     styleUrls: ['./design-canvas.component.scss'],
     standalone: false
 })
-export class DesignCanvasComponent {
+export class DesignCanvasComponent implements OnInit {
   @Output() backgroundClick = new EventEmitter<void>();
 
-  constructor(public state: DesignerStateService) {}
+  /** Organisation details for newly dropped Social/Footer blocks. Loaded
+   *  once here rather than fetched per drop - WebConfigService caches the
+   *  read for the session anyway, and a drop must not wait on a promise. */
+  private blockSeed: BlockSeed = {};
+
+  constructor(
+    public state: DesignerStateService,
+    private brandDefaults: EmailBrandDefaultsService
+  ) {}
+
+  ngOnInit(): void {
+    void Promise.all([
+      this.brandDefaults.socialLinks(),
+      this.brandDefaults.addressHtml()
+    ]).then(([socialLinks, addressHtml]) => {
+      this.blockSeed = { socialLinks, addressHtml };
+    });
+  }
 
   get pageWidth(): number {
     return this.state.viewMode === 'mobile' ? 375 : this.state.design.contentWidth;
@@ -55,7 +73,11 @@ export class DesignCanvasComponent {
 
   onBlockDrop(event: BlockDropEvent): void {
     this.state.commit(() => {
-      handleBlockDrop(event);
+      // A Social block used to arrive with three networks and EMPTY urls, and
+      // a Footer with no address at all - so emails went out with dead icons
+      // and no postal address, which commercial mail is required to carry.
+      // The seed is whatever config has loaded by now; nothing waits on it.
+      handleBlockDrop(event, this.blockSeed);
     });
   }
 
