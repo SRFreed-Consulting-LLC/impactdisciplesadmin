@@ -7,7 +7,17 @@
   --sd-ink-muted: var(--app-card-muted);
   --sd-ink-faint: var(--app-faint);
   --sd-border: var(--app-card-border);
-  --sd-surface-2: var(--app-field);
+  // --app-CARD, not --app-field. The field token means "a recessed input
+  // INSIDE a card", and it is mixed to contrast with the card - not with the
+  // page. This screen has no card under it: .editor__body and .portal-content
+  // both leave the app ground showing, so a field-coloured panel lands
+  // essentially on top of the ground it is meant to sit above. Measured
+  // distance from ground, per dark variant: steel-rail 0 (identical),
+  // slate-elevate 2, quarterdeck 4, ensign 6, abyss-glow 7, indigo-soft 9.
+  // The panels therefore read as faint discoloured smudges, visible only by
+  // their 8%-white border (owner report, 2026-08-26). Card sits 13-22 away in
+  // every one of those themes, which is the separation this look assumed.
+  --sd-surface-2: var(--app-card);
   --sd-accent: var(--app-accent);
   --sd-accent-strong: var(--app-accent);
   --sd-accent-wash: color-mix(in srgb, var(--app-accent) 14%, var(--app-card));
@@ -203,13 +213,18 @@ td.amt { font-weight: 700; color: var(--sd-ink); white-space: nowrap; }
 
 .tl__item:last-child { border-bottom: none; }
 
+// The empty-thumbnail backstop, sitting INSIDE .tl__items. It has to be the
+// inverse of whatever that panel is: it was --app-card back when the panel
+// was field-coloured, so it flips to --app-field now that the panel is the
+// card. Same two colours, opposite roles - otherwise the placeholder is
+// invisible against the panel holding it.
 .tl__img {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
   border-radius: 6px;
   overflow: hidden;
-  background: var(--app-card);
+  background: var(--app-field);
 }
 
 .tl__img img { width: 100%; height: 100%; object-fit: cover; }
