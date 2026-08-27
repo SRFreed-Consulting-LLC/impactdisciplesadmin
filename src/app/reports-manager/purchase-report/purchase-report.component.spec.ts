@@ -207,10 +207,28 @@ describe('PurchaseReportComponent', () => {
 
       await component.generateReport();
 
-      expect(service.calls.length).toBe(2);
       const fields = service.calls.flat().map((p) => p.field);
       expect(fields).toContain('billingAddress.state');
       expect(fields).toContain('shippingAddress.state');
+    });
+
+    it('queries BOTH spellings of the state, code and full name', async () => {
+      // Two fields x two spellings = 4 queries. The spellings matter because
+      // the picker offers full names while the data is largely 2-letter
+      // codes - "Texas" alone used to miss every record stored as "TX".
+      const service = fakePurchasesService([]);
+      const component = makeComponent(service);
+      component.criteriaForm.patchValue({ stateEnabled: true, state: 'TX' });
+
+      await component.generateReport();
+
+      expect(service.calls.length).toBe(4);
+      const stateValues = service.calls
+        .flat()
+        .filter((p) => p.field.endsWith('.state'))
+        .map((p) => p.value);
+      expect(stateValues).toContain('TX');
+      expect(stateValues).toContain('Texas');
     });
 
     it('counts a purchase matching both addresses only once', async () => {

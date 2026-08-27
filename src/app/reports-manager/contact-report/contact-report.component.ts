@@ -4,6 +4,7 @@ import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
+import { stateVariants } from 'src/app/common/utils/state-variants';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
@@ -132,15 +133,23 @@ export class ContactReportComponent {
   // Same billing-OR-shipping merge as Purchase Report's own runQuery() -
   // one State value can't be expressed as a single query against two
   // different fields, so this runs both and dedupes by id.
+  //
+  // Crossed with stateVariants() because `customers` overwhelmingly stores
+  // the 2-letter CODE while this screen's picker offers full names: before
+  // this, filtering by "Georgia" returned 266 contacts out of 2,184, the
+  // rest being stored as "GA". Two fields x two spellings = 4 queries, all
+  // served by the automatic single-field indexes.
   private async runQuery(): Promise<ContactModel[]> {
-    const state = this.criteriaForm.value.state;
-    const [billingResults, shippingResults] = await Promise.all([
-      this.service.queryAllByMultiValue([new QueryParam('billingAddress.state', WhereFilterOperandKeys.equal, state)]),
-      this.service.queryAllByMultiValue([new QueryParam('shippingAddress.state', WhereFilterOperandKeys.equal, state)])
-    ]);
+    const variants = stateVariants(this.criteriaForm.value.state);
+    const results = await Promise.all(
+      variants.flatMap((value) => [
+        this.service.queryAllByMultiValue([new QueryParam('billingAddress.state', WhereFilterOperandKeys.equal, value)]),
+        this.service.queryAllByMultiValue([new QueryParam('shippingAddress.state', WhereFilterOperandKeys.equal, value)])
+      ])
+    );
 
     const byId = new Map<string, ContactModel>();
-    [...billingResults, ...shippingResults].forEach((item) => byId.set(item.id!, item));
+    results.flat().forEach((item) => byId.set(item.id!, item));
     return Array.from(byId.values());
   }
 

@@ -5,6 +5,7 @@ import { PurchasesService } from 'src/app/common/services/data/purchases.service
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
+import { stateVariants } from 'src/app/common/utils/state-variants';
 import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 import { FULFILLMENT_STEPS } from '../../contacts-manager/fulfillment/fulfillment-steps';
@@ -183,14 +184,22 @@ export class PurchaseReportComponent {
       return this.service.queryAllByMultiValue(dateParams);
     }
 
-    const state = this.criteriaForm.value.state;
-    const [billingResults, shippingResults] = await Promise.all([
-      this.service.queryAllByMultiValue([...dateParams, new QueryParam('billingAddress.state', WhereFilterOperandKeys.equal, state)]),
-      this.service.queryAllByMultiValue([...dateParams, new QueryParam('shippingAddress.state', WhereFilterOperandKeys.equal, state)])
-    ]);
+    // Crossed with stateVariants() so a picker offering "Georgia" also
+    // matches records stored as "GA". Purchases are 99.8% full names today,
+    // so this changes almost nothing HERE - but it keeps the two reports
+    // behaving identically, and the 4 records that do use codes stop being
+    // invisible. Same composite index serves every variant: the shape
+    // (state ==, dateProcessed range) is unchanged, only the value differs.
+    const variants = stateVariants(this.criteriaForm.value.state);
+    const results = await Promise.all(
+      variants.flatMap((value) => [
+        this.service.queryAllByMultiValue([...dateParams, new QueryParam('billingAddress.state', WhereFilterOperandKeys.equal, value)]),
+        this.service.queryAllByMultiValue([...dateParams, new QueryParam('shippingAddress.state', WhereFilterOperandKeys.equal, value)])
+      ])
+    );
 
     const byId = new Map<string, CheckoutForm>();
-    [...billingResults, ...shippingResults].forEach((item) => byId.set(item.id!, item));
+    results.flat().forEach((item) => byId.set(item.id!, item));
     return Array.from(byId.values());
   }
 
