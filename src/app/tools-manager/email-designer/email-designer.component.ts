@@ -190,11 +190,32 @@ export class EmailDesignerComponent implements OnInit {
     this.state.viewMode = mode;
   }
 
+  /** Where each `from` key sends Back, mirroring TemplateEditorReturn in
+   *  EmailTemplateEditorService. Keys rather than URLs, for the same reason
+   *  that service uses them: a return-URL parameter would let any link that
+   *  reaches this screen redirect it anywhere. `idParam` is set only where
+   *  the target screen actually reads a deep link - handing over one it
+   *  ignores would promise a return to the record and deliver the list. */
+  private static readonly RETURN_TARGETS: Record<
+    string,
+    { route: string; tab: string; label: string; idParam?: string }
+  > = {
+    fulfillment: { route: '/contacts-manager', tab: 'fulfillment', label: 'Fulfillment' },
+    store: { route: '/contacts-manager', tab: 'purchases', label: 'Purchases', idParam: 'purchaseId' },
+    product: { route: '/store-manager', tab: 'products', label: 'Products' },
+    event: { route: '/events-manager', tab: 'events', label: 'Events', idParam: 'eventId' },
+    campaign: { route: '/campaigns-manager', tab: 'campaigns', label: 'the campaign', idParam: 'campaignId' }
+  };
+
   /** Names where Back actually goes, so the button does not promise
-   *  "System Templates" while returning to a campaign. */
+   *  "System Templates" while returning to a campaign or a process screen. */
   get backTooltip(): string {
-    return this.route.snapshot.queryParamMap.get('fromCampaign') ?
-      'Back to the campaign' : 'Back to System Templates';
+    const params = this.route.snapshot.queryParamMap;
+    if (params.get('fromCampaign')) {
+      return 'Back to the campaign';
+    }
+    const target = EmailDesignerComponent.RETURN_TARGETS[params.get('from') ?? ''];
+    return target ? `Back to ${target.label}` : 'Back to System Templates';
   }
 
   onBack(): void {
@@ -282,13 +303,33 @@ export class EmailDesignerComponent implements OnInit {
    * this screen redirect it anywhere.
    */
   private backToList(): void {
-    const fromCampaign = this.route.snapshot.queryParamMap.get('fromCampaign');
+    const params = this.route.snapshot.queryParamMap;
+    const fromCampaign = params.get('fromCampaign');
     if (fromCampaign) {
       this.router.navigate(['/campaigns-manager'], {
         queryParams: { tab: 'campaigns', campaignId: fromCampaign }
       });
       return;
     }
+
+    // ?from=<screen>[&fromId=<record>], set by EmailTemplateEditorService
+    // when a transactional template is opened from the process that sends
+    // it. Written when that service landed but never reachable until the
+    // first transactional template became a builder template (Amazon
+    // Shipping Confirmation, 2026-08-27) - before that every one of them
+    // opened as a dialog over the calling screen and never navigated at all.
+    // Without this, Back drops the admin on System Templates: the screen
+    // these templates are LEAVING, where the one they just edited no longer
+    // appears.
+    const target = EmailDesignerComponent.RETURN_TARGETS[params.get('from') ?? ''];
+    if (target) {
+      const id = params.get('fromId');
+      this.router.navigate([target.route], {
+        queryParams: { tab: target.tab, ...(id && target.idParam ? { [target.idParam]: id } : {}) }
+      });
+      return;
+    }
+
     this.router.navigate(['/tools-manager'], { queryParams: { tab: 'system-templates' } });
   }
 }

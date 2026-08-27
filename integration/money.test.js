@@ -421,3 +421,77 @@ test("input validation: empty cart, missing email/address, unknown " +
   assert.equal((await purchasesByEmail("qty@money.test")).length, 0);
   assert.equal((await purchasesByEmail("ghost@money.test")).length, 0);
 });
+
+// ------------------------------------------ follow-up email: server-derived
+//
+// Which follow-up template a purchase sends is a property of the PRODUCT,
+// chosen by an admin - not a field the buyer gets a say in. Until 2026-08-27
+// `followUpEmailId` sat on PricingCartItemInput and rode through
+// computeOrderPricing's `...input` spread, so any checkout request could
+// name any mail_templates doc id and be mailed that template. Combined with
+// the $0 products in the real store (total <= 0 skips PayPal entirely) that
+// made gated content - a private video link, a download - free to anyone who
+// edited one request field. Both directions are pinned here: the client
+// cannot ADD a follow-up, and cannot SUPPRESS one either.
+
+test("a client-supplied followUpEmailId is ignored: buying a product whose " +
+  "sendFollowUpEmail is false queues no follow-up, however the request " +
+  "asks", async () => {
+  const email = "hostile-followup@money.test";
+  const res = await callHttp("create_paypal_order", orderBody({
+    email,
+    couponCode: "FREE100",
+    cartItems: [{
+      id: "prod-book-physical", // fixture: sendFollowUpEmail: false
+      orderQuantity: 1,
+      // The tamper: a real template id lifted from another product.
+      followUpEmailId: "tmpl-followup",
+    }],
+  }));
+
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.free, true);
+
+  const form = (await db.collection("purchases")
+    .doc(res.body.checkoutForm.id).get()).data();
+  assert.equal(form.cartItems[0].followUpEmailId, null,
+    "the client's template id must not reach the purchase doc");
+
+  // Exactly one mail: the receipt. No follow-up.
+  const mail = await db.collection("mail").where("to", "==", email).get();
+  assert.equal(mail.size, 1, "only the receipt should be queued");
+  assert.equal(mail.docs[0].data().message.subject,
+    "Your Impact Disciples receipt");
+});
+
+test("the product's own followUpEmailId is used even when the request omits " +
+  "it, and a wrong one cannot redirect it", async () => {
+  const email = "real-followup@money.test";
+  const res = await callHttp("create_paypal_order", orderBody({
+    email,
+    couponCode: "FREE100",
+    cartItems: [{
+      id: "prod-followup", // fixture: sendFollowUpEmail -> "tmpl-followup"
+      orderQuantity: 1,
+      // Neither omitting it nor naming a different template changes what
+      // is sent - the product record decides.
+      followUpEmailId: "tmpl-amazon-confirm",
+    }],
+  }));
+
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.free, true);
+
+  const form = (await db.collection("purchases")
+    .doc(res.body.checkoutForm.id).get()).data();
+  assert.equal(form.cartItems[0].followUpEmailId, "tmpl-followup",
+    "the product's template id, not the request's");
+
+  const mail = await db.collection("mail").where("to", "==", email).get();
+  const subjects = mail.docs
+    .map((d) => d.data().message.subject).sort();
+  assert.deepEqual(subjects, [
+    "Getting the most from your workbook", // tmpl-followup
+    "Your Impact Disciples receipt",
+  ], "receipt + the product's own follow-up, and nothing else");
+});

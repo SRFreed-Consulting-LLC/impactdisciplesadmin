@@ -155,12 +155,16 @@ function capAddress(value: unknown): Record<string, unknown> | undefined {
 /**
  * Sanitizes the client-supplied cart items before pricing: computeOrder-
  * Pricing spreads each input item into the PricedCartItem that lands on
- * the purchase doc, so the free-selection strings (size/color/language/
- * followUpEmailId + each attendee's fields) get the same trim+cap
- * treatment as the customer fields. Item `id` is additionally verified by
- * computeOrderPricing's own existence lookup; unknown extra keys are
- * dropped. Numbers/booleans pass through as-is - the pricing math already
- * ignores anything non-numeric.
+ * the purchase doc, so the free-selection strings (size/color/language +
+ * each attendee's fields) get the same trim+cap treatment as the customer
+ * fields. Item `id` is additionally verified by computeOrderPricing's own
+ * existence lookup; unknown extra keys are dropped. Numbers/booleans pass
+ * through as-is - the pricing math already ignores anything non-numeric.
+ *
+ * `followUpEmailId` is deliberately NOT forwarded (2026-08-27). It is not a
+ * buyer selection - it names the mail_template the purchase sends, so
+ * computeOrderPricing now reads it from the product doc instead. Forwarding
+ * it let any request be mailed any template, gated content included.
  * @param {unknown[]} rawItems The raw request body's cartItems array.
  * @return {Array<Record<string, unknown>>} The capped cart items.
  */
@@ -189,7 +193,6 @@ function capCartItems(rawItems: unknown[]): Array<Record<string, unknown>> {
       size: capString(item.size, 100),
       color: capString(item.color, 100),
       language: capString(item.language, 100),
-      followUpEmailId: capString(item.followUpEmailId, 200),
       attendees,
     };
   });

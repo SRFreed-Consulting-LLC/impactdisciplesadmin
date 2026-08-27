@@ -27,7 +27,6 @@ export interface PricingCartItemInput {
   color?: string;
   language?: string;
   attendees?: unknown[];
-  followUpEmailId?: string;
 }
 
 export interface PricedCartItem extends PricingCartItemInput {
@@ -45,6 +44,19 @@ export interface PricedCartItem extends PricingCartItemInput {
   eBookUrl?: unknown;
   weight?: number;
   digitalBookId?: string;
+  /**
+   * Read from the PRODUCT doc, never from the client - it names the
+   * mail_template a purchase sends after checkout, and the gated content
+   * those templates can carry (a private video link, a download) is exactly
+   * why the buyer must not get to choose which one arrives.
+   *
+   * Deliberately NOT on PricingCartItemInput: while it sat there, it rode
+   * through the `...input` spread below and any checkout request could name
+   * any mail_templates doc id and be sent that template. Keeping the two
+   * interfaces apart makes reading a client-supplied value a compile error
+   * rather than a review catch.
+   */
+  followUpEmailId?: string | null;
 }
 
 export interface PricingRequest {
@@ -334,6 +346,14 @@ export async function computeOrderPricing(
       weight: input.isEvent ? 0 : (doc.weight ?? 0),
       series: input.isEvent ? null : (doc.series ?? null),
       digitalBookId: doc.digitalBookId,
+      // The admin's choice on the PRODUCT record is the only source, and
+      // `sendFollowUpEmail` is honoured here rather than only in the web
+      // client - otherwise turning the toggle off in admin does not stop a
+      // request that names the template directly. Events never take this
+      // path: their confirmation is resolved by `emailTemplate` NAME in
+      // event-registration.functions.ts, not by a template doc id.
+      followUpEmailId: !input.isEvent && doc.sendFollowUpEmail &&
+        doc.followUpEmailId ? (doc.followUpEmailId as string) : null,
     });
   }
 
