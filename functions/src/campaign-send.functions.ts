@@ -636,6 +636,18 @@ export const campaignSendScheduler = onSchedule(
           effectiveCampaignStatus(campaign) !== "live") {
         continue;
       }
+      // Same resolution enqueueTouch does (audienceOverride ?? campaign
+      // audience), NOT a hardcoded "newsletter". sendLedgerDoc reads
+      // unsubType to decide which opt-out flag to honour, whether to suppress
+      // the unsubscribe footer entirely ('none' = operational), and the
+      // &type= on the unsubscribe URL - so hardcoding it here meant a
+      // tag-triggered touch on a prayer campaign checked the NEWSLETTER flag
+      // and mailed someone who had opted out of prayer, and a tag-triggered
+      // touch on an operational audience got a marketing unsubscribe footer
+      // whose link opted the recipient out of a list they never joined.
+      const unsubType = unsubTypeFor(
+        touch.audienceOverride ?? campaign.audience);
+
       const cutoff = Timestamp.fromMillis(
         Date.now() - trigger.afterDays * DAY_MS);
       for (const tag of trigger.tags) {
@@ -659,7 +671,7 @@ export const campaignSendScheduler = onSchedule(
                 email,
                 status: "queued",
                 token: newToken(),
-                unsubType: "newsletter",
+                unsubType,
                 tag,
                 anchorDate: app.data().anchorDate,
                 createdAt: Timestamp.now(),

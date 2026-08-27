@@ -4,6 +4,7 @@ import * as logger from "firebase-functions/logger";
 import {restrictedCors} from "./utils/security.functions";
 import {getFirestore} from "firebase-admin/firestore";
 import {isCouponExpired} from "./utils/coupons";
+import {toMillis} from "./utils/date-normalize.functions";
 import {
   LookupCouponResult,
 } from "./common/shared/contract/library-callables.types";
@@ -131,12 +132,21 @@ export const onPurchaseTaxSummary = onDocumentCreated(
     if (!zip || !data.taxRate || !taxes) {
       return;
     }
-    const processedMs =
-      typeof data.dateProcessed?.toMillis === "function" ?
-        data.dateProcessed.toMillis() :
-        typeof data.dateProcessed === "number" ?
-          data.dateProcessed :
-          Date.now();
+    // toMillis(), not a hand-rolled shape test. purchases.dateProcessed
+    // carries five shapes in this database - real Timestamp, Date, ISO
+    // string, "MM/dd/yyyy" string, and a malformed plain {seconds,
+    // nanoseconds} map (MIGRATION.md: 34 of 391 dev purchases). The ternary
+    // this replaces only understood two of them and fell through to
+    // Date.now() for the rest, filing that purchase's collected sales tax
+    // under the CURRENT year instead of the purchase's own.
+    //
+    // That write is one-shot - taxSummaryRecorded is stamped in the same
+    // transaction below - so a redelivery can never correct it. Tax
+    // remittance data; it has to be right the first time.
+    //
+    // 0 means "nothing parseable", which is the only case where falling back
+    // to now is defensible.
+    const processedMs = toMillis(data.dateProcessed) || Date.now();
     const year = new Date(processedMs).getFullYear().toString();
 
     await db.runTransaction(async (transaction) => {

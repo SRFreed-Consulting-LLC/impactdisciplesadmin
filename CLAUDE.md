@@ -382,10 +382,19 @@ Columns, Export, feature-specific actions) uniformly.
   only), which triggers a password-reset email; there's no path for a new Admin User to set their
   own first password from within this app.
 - Admin/staff identity for **Cloud Functions** is separate from the client guard: `requireStaffAuth()`
-  (`functions/src/utils/security.functions.ts`) verifies a Firebase Auth ID token and confirms the
-  caller's email exists in the `admin_users` collection. Every function that moves money or deletes
-  data must call it — CORS origin-checking (`restrictedCors`, same file) is a browser-side courtesy
-  only, not an auth boundary, since Origin headers are trivially spoofed outside a browser.
+  (`functions/src/utils/security.functions.ts`) verifies a Firebase Auth ID token, confirms the
+  caller's email exists in the `admin_users` collection, **and checks their `role` against an
+  allowed set** (default `BUSINESS_STAFF_ROLES` = Admin/Root/Employee, mirroring `firestore.rules`'
+  `isBusinessStaff()`; pass a narrower set for a tighter gate). Until 2026-08-27 it checked only
+  that the row existed, so an **Editor** — the library-content tier that rules, nav and
+  PermissionService all exclude from business screens — could take their ID token and buy real
+  postage via `get_shipping_label`. Every function that moves money or deletes data must call it.
+  CORS origin-checking (`restrictedCors`, same file) is still a browser-side courtesy, not an auth
+  boundary, since Origin headers are trivially spoofed outside a browser — but it does now actually
+  reject a disallowed origin with a 403. It previously FAILED OPEN: `cors` signals a rejected
+  origin by calling `next(err)`, and every call site passed an argument-less arrow that discarded
+  it, so the handler ran regardless. It is now a wrapper function with the same name and signature,
+  so no call site can reintroduce that.
 
 ### Module/routing structure
 

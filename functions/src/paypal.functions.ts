@@ -563,8 +563,18 @@ exports.create_paypal_order = onRequest(
           } catch (err) {
             console.error("Failed to record affiliate sale (free)", err);
           }
-          await recordPurchaseAttribution(
-            checkoutForm, checkoutForm.receipt as string, 0);
+          // Best-effort like its two siblings above. Without this catch a
+          // rejection here (recordCampaignConversion / campaignForCoupon both
+          // do real I/O) fell to the outer catch and answered
+          // 400 "Unable to start checkout" - after the purchase doc was
+          // written and the receipt queued. The shopper reads that as failure
+          // and orders again, so the visible symptom is duplicate free orders.
+          try {
+            await recordPurchaseAttribution(
+              checkoutForm, checkoutForm.receipt as string, 0);
+          } catch (err) {
+            console.error("Failed to record purchase attribution (free)", err);
+          }
 
           response.send({
             free: true,
@@ -793,8 +803,18 @@ exports.capture_paypal_order = onRequest(
               .catch((err) => console.error(
                 "Failed to record affiliate sale (captured)", err
               )),
+            // Same best-effort contract as the two above, and it matters most
+            // here: PayPal has already taken the money and the purchase doc
+            // is written. An unguarded rejection flipped pendingRef to
+            // captured_unrecorded and answered {recordingFailed: true},
+            // telling the customer and support the order was NOT recorded
+            // when it was - the one outcome the comment above says must never
+            // happen.
             recordPurchaseAttribution(
-              checkoutForm, orderId, Number(pending.amount) || 0),
+              checkoutForm, orderId, Number(pending.amount) || 0)
+              .catch((err) => console.error(
+                "Failed to record purchase attribution (captured)", err
+              )),
           ]);
 
           response.send({checkoutForm: {...checkoutForm, id: docRef.id}});
