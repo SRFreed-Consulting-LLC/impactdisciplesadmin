@@ -1,12 +1,10 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, OnChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { AgendaHostComponent } from '../agenda-host.component';
 import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
-import { AgendaItemDialogComponent, AgendaItemDialogResult } from '../agenda-item-dialog.component';
-import { BreakoutBlockDialogComponent, BreakoutBlockDialogResult } from '../breakout-block-dialog.component';
-import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, Instructor, itemTitle, SessionBlock } from '../session-block.util';
+import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDates, itemTitle, SessionBlock } from '../session-block.util';
 
 // Fine-tune view (option 2 of 2, see agenda-canvas.component.ts for the
 // other) - a conference-program-style grid, time down the side, rooms
@@ -22,15 +20,20 @@ import { buildDaySchedule, coachLabelFor, DayScheduleEntry, dayKey, eventDayDate
     styleUrls: ['./agenda-grid.component.scss'],
     standalone: false
 })
-export class AgendaGridComponent implements OnChanges {
-  @Input() event: EventModel;
-  @Input() coaches: Instructor[] = [];
-  @Input() rooms: TrainingRoomModel[] = [];
+export class AgendaGridComponent extends AgendaHostComponent implements OnChanges {
+  // Canvas and Grid both track a selected day; the base uses it as the
+  // default for a newly created item or block.
+  protected override hostDay(): Date | null {
+    return this.selectedDay ?? null;
+  }
+
 
   days: Date[] = [];
   selectedDayIndex = 0;
 
-  constructor(private dialog: MatDialog) {}
+  constructor(dialog: MatDialog) {
+    super(dialog);
+  }
 
   ngOnChanges(): void {
     this.days = eventDayDates(this.event?.startDate, this.event?.endDate);
@@ -74,52 +77,4 @@ export class AgendaGridComponent implements OnChanges {
     return coachLabelFor(option, this.coaches);
   }
 
-  openItemDialog(item: AgendaItem | null): void {
-    const day = this.selectedDay ?? new Date();
-    const defaultStart = item ? new Date(toMillis(item.startDate)) : new Date(day.getTime() + 9 * 60 * 60 * 1000);
-    const ref = this.dialog.open<AgendaItemDialogComponent, unknown, AgendaItemDialogResult>(AgendaItemDialogComponent, {
-      width: '600px',
-      maxWidth: '95vw',
-      data: { item, defaultStart, coaches: this.coaches, rooms: this.rooms }
-    });
-    ref.afterClosed().subscribe((result) => this.applyItemResult(result));
-  }
-
-  openBlockDialog(block: SessionBlock | null): void {
-    const day = this.selectedDay ?? new Date();
-    const defaultStart = block ? block.startDate : new Date(day.getTime() + 10 * 60 * 60 * 1000);
-    // Full-screen - see breakout-block-dialog.component.scss's own comment.
-    const ref = this.dialog.open<BreakoutBlockDialogComponent, unknown, BreakoutBlockDialogResult>(BreakoutBlockDialogComponent, {
-      width: '100vw',
-      maxWidth: '100vw',
-      height: '100vh',
-      maxHeight: '100vh',
-      panelClass: 'breakout-block-dialog-panel',
-      data: { block, defaultStart, coaches: this.coaches, rooms: this.rooms, existingBreakouts: (this.event.agendaItems ?? []).filter((i) => i.isCourse) }
-    });
-    ref.afterClosed().subscribe((result) => this.applyBlockResult(result));
-  }
-
-  private applyItemResult(result: AgendaItemDialogResult | undefined): void {
-    if (!result) return;
-    const items = this.event.agendaItems ?? (this.event.agendaItems = []);
-    const index = items.findIndex((i) => i.id === result.item.id);
-    if (result.action === 'delete') {
-      if (index >= 0) items.splice(index, 1);
-    } else if (index >= 0) {
-      items[index] = result.item;
-    } else {
-      items.push(result.item);
-    }
-  }
-
-  private applyBlockResult(result: BreakoutBlockDialogResult | undefined): void {
-    if (!result) return;
-    const items = this.event.agendaItems ?? (this.event.agendaItems = []);
-    result.originalIds.forEach((id) => {
-      const index = items.findIndex((i) => i.id === id);
-      if (index >= 0) items.splice(index, 1);
-    });
-    items.push(...result.items);
-  }
 }

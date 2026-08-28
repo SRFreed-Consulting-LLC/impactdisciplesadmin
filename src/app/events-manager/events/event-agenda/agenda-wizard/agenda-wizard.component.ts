@@ -1,12 +1,9 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { Component, EventEmitter, OnChanges, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { EventModel } from '@impact-common/shared/models/domain/event.model';
+import { AgendaHostComponent } from '../agenda-host.component';
 import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
-import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
-import { AgendaItemDialogComponent, AgendaItemDialogResult } from '../agenda-item-dialog.component';
-import { BreakoutBlockDialogComponent, BreakoutBlockDialogResult } from '../breakout-block-dialog.component';
-import { blockLabel, dayKey, eventDayDates, groupAgendaItemsIntoBlocks, Instructor, itemTitle, SessionBlock } from '../session-block.util';
+import { blockLabel, dayKey, eventDayDates, groupAgendaItemsIntoBlocks, itemTitle, SessionBlock } from '../session-block.util';
 
 // Step 1 of the redesigned Agenda tab (see event-agenda.component.ts) - a
 // once-a-year guided pass for building a Summit's skeleton: Days & Rooms
@@ -24,17 +21,16 @@ import { blockLabel, dayKey, eventDayDates, groupAgendaItemsIntoBlocks, Instruct
     styleUrls: ['./agenda-wizard.component.scss'],
     standalone: false
 })
-export class AgendaWizardComponent implements OnChanges {
-  @Input() event: EventModel;
-  @Input() coaches: Instructor[] = [];
-  @Input() rooms: TrainingRoomModel[] = [];
+export class AgendaWizardComponent extends AgendaHostComponent implements OnChanges {
   @Output() published = new EventEmitter<void>();
 
   step = 1;
   days: Date[] = [];
   blockLabel = blockLabel;
 
-  constructor(private dialog: MatDialog) {}
+  constructor(dialog: MatDialog) {
+    super(dialog);
+  }
 
   ngOnChanges(): void {
     this.days = eventDayDates(this.event?.startDate, this.event?.endDate);
@@ -94,50 +90,4 @@ export class AgendaWizardComponent implements OnChanges {
     return this.rooms.find((r) => r.id === roomId)?.name ?? '—';
   }
 
-  openItemDialog(item: AgendaItem | null, day: Date): void {
-    const defaultStart = item ? new Date(toMillis(item.startDate)) : new Date(day.getTime() + 9 * 60 * 60 * 1000);
-    const ref = this.dialog.open<AgendaItemDialogComponent, unknown, AgendaItemDialogResult>(AgendaItemDialogComponent, {
-      width: '600px',
-      maxWidth: '95vw',
-      data: { item, defaultStart, coaches: this.coaches, rooms: this.rooms }
-    });
-    ref.afterClosed().subscribe((result) => this.applyItemResult(result));
-  }
-
-  openBlockDialog(block: SessionBlock | null, day: Date): void {
-    const defaultStart = block ? block.startDate : new Date(day.getTime() + 10 * 60 * 60 * 1000);
-    // Full-screen - see breakout-block-dialog.component.scss's own comment.
-    const ref = this.dialog.open<BreakoutBlockDialogComponent, unknown, BreakoutBlockDialogResult>(BreakoutBlockDialogComponent, {
-      width: '100vw',
-      maxWidth: '100vw',
-      height: '100vh',
-      maxHeight: '100vh',
-      panelClass: 'breakout-block-dialog-panel',
-      data: { block, defaultStart, coaches: this.coaches, rooms: this.rooms, existingBreakouts: (this.event.agendaItems ?? []).filter((i) => i.isCourse) }
-    });
-    ref.afterClosed().subscribe((result) => this.applyBlockResult(result));
-  }
-
-  private applyItemResult(result: AgendaItemDialogResult | undefined): void {
-    if (!result) return;
-    const items = this.event.agendaItems ?? (this.event.agendaItems = []);
-    const index = items.findIndex((i) => i.id === result.item.id);
-    if (result.action === 'delete') {
-      if (index >= 0) items.splice(index, 1);
-    } else if (index >= 0) {
-      items[index] = result.item;
-    } else {
-      items.push(result.item);
-    }
-  }
-
-  private applyBlockResult(result: BreakoutBlockDialogResult | undefined): void {
-    if (!result) return;
-    const items = this.event.agendaItems ?? (this.event.agendaItems = []);
-    result.originalIds.forEach((id) => {
-      const index = items.findIndex((i) => i.id === id);
-      if (index >= 0) items.splice(index, 1);
-    });
-    items.push(...result.items);
-  }
 }
