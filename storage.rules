@@ -44,11 +44,25 @@ service firebase.storage {
     // library lesson images. Anonymous/public access stays fully denied -
     // the public site reads images via tokened download URLs, which don't
     // evaluate these rules.
+    // book-imports/ is EXCLUDED here. Storage grants on ANY matching allow,
+    // so without this exclusion the catch-all silently shadowed the stricter
+    // rule above and made all four of its constraints unreachable - the
+    // uid-scoping, the Admin/Root-only gate, the 32MB cap and the
+    // application/pdf content-type check. The reader believed four things
+    // were enforced and none were, and an Editor - the least-trusted tier -
+    // had write over every other admin's import staging.
+    //
+    // allPaths[0] is the first path segment. The uploader browses the bucket
+    // root and needs everything else, which is why this is an exclusion
+    // rather than an allow-list of prefixes: narrowing it to named prefixes
+    // is what broke every image picker on 2026-08-20 (storage/unauthorized,
+    // live-diagnosed from the Team Page dialog).
     match /{allPaths=**} {
       allow read: if request.auth != null
         && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor'];
       allow write: if request.auth != null
         && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor']
+        && allPaths[0] != 'book-imports'
         && (request.resource == null || request.resource.size < 100 * 1024 * 1024);
     }
   }

@@ -224,8 +224,29 @@ service cloud.firestore {
         request.resource.data.fieldSnapshot is list &&
         request.resource.data.values is map &&
         request.resource.data.submittedAt is timestamp &&
+        // 'new' ONLY, never 'seen'. onFormSubmissionCreated treats a
+        // newRecordStatus that is already present as proof the doc was
+        // counted (`if (... || data.newRecordStatus) return;`), so accepting
+        // 'seen' from an anonymous create let a submission POSTed with
+        // newRecordStatus:'seen' skip meta/newRecordCounts entirely - the
+        // staff bell never lights and the dashboard ranks it below genuinely
+        // new requests. The record still appears on screen, so this is
+        // notification suppression: exactly the primitive someone probing the
+        // public forms wants.
+        //
+        // The key stays ALLOWED because three live writers send it -
+        // web's dynamic-form.component.ts and campaign-popup.component.ts,
+        // and admin's form-test-submit-dialog. Removing it from hasOnly, as
+        // the sweep first suggested, would make rules reject every public
+        // form submission the moment these rules deployed.
+        //
+        // Still open (needs a coordinated change across two repos, not a
+        // rules edit): because the trigger skips any doc that ARRIVES with
+        // the field, those three writers' submissions are never counted
+        // either. The real fix is to stop all three sending it and let the
+        // trigger be the sole writer - web first, then rules.
         (!('newRecordStatus' in request.resource.data) ||
-          request.resource.data.newRecordStatus in ['new', 'seen']) &&
+          request.resource.data.newRecordStatus == 'new') &&
         (!('isTest' in request.resource.data) ||
           request.resource.data.isTest is bool);
       allow read, update, delete: if isBusinessStaff();
