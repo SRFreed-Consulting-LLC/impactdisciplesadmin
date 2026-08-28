@@ -15,7 +15,8 @@ const {
 
 // ---- computeLockedOut -----------------------------------------------------
 
-test("computeLockedOut: profiles without an Auth account are locked out", () => {
+test("computeLockedOut: profiles without an Auth account are locked out",
+    () => {
   const users = ["a@x.com", "b@x.com", "c@x.com"];
   const auth = ["b@x.com"];
   assert.deepEqual(computeLockedOut(users, auth), ["a@x.com", "c@x.com"]);
@@ -43,7 +44,8 @@ test("computeLockedOut: everyone signed-in yields empty", () => {
 
 const NOW = 1_800_000_000_000;
 
-test("first run establishes a silent baseline (never blasts the backlog)", () => {
+test("first run establishes a silent baseline (never blasts the backlog)",
+    () => {
   const d = decideLockoutAlert(["a@x.com", "b@x.com"], undefined, NOW);
   assert.equal(d.email, null);
   assert.deepEqual(d.nextState.known, ["a@x.com", "b@x.com"]);
@@ -86,10 +88,12 @@ test("no heartbeat when the backlog has cleared", () => {
 
 test("a resolved-then-relapsed email re-alerts as new", () => {
   // baseline had a@x.com; they signed up (gone), so known refreshed to []
-  const afterResolve = decideLockoutAlert([], {known: ["a@x.com"], lastAlertAt: NOW}, NOW);
+  const afterResolve = decideLockoutAlert(
+      [], {known: ["a@x.com"], lastAlertAt: NOW}, NOW);
   assert.deepEqual(afterResolve.nextState.known, []);
   // later they are locked out again -> counts as new
-  const relapse = decideLockoutAlert(["a@x.com"], afterResolve.nextState, NOW + 1);
+  const relapse = decideLockoutAlert(
+      ["a@x.com"], afterResolve.nextState, NOW + 1);
   assert.ok(relapse.email);
   assert.equal(relapse.email.kind, "new");
   assert.deepEqual(relapse.email.newlyLockedOut, ["a@x.com"]);
@@ -109,7 +113,8 @@ test("resolveRecipients: blank falls back to the default", () => {
   assert.deepEqual(resolveRecipients("   "), [DEFAULT_ALERT_EMAIL]);
 });
 
-test("resolveRecipients: splits comma/semicolon lists and drops invalids", () => {
+test("resolveRecipients: splits comma/semicolon lists and drops invalids",
+    () => {
   assert.deepEqual(
     resolveRecipients("a@x.com, b@y.com ; not-an-email"),
     ["a@x.com", "b@y.com"],
@@ -117,5 +122,7 @@ test("resolveRecipients: splits comma/semicolon lists and drops invalids", () =>
 });
 
 test("normalizeEmails: de-dupes, lowercases, sorts", () => {
-  assert.deepEqual(normalizeEmails(["B@x.com", "a@x.com", "b@x.com"]), ["a@x.com", "b@x.com"]);
+  assert.deepEqual(
+      normalizeEmails(["B@x.com", "a@x.com", "b@x.com"]),
+      ["a@x.com", "b@x.com"]);
 });
