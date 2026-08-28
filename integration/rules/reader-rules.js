@@ -143,6 +143,16 @@ async function main() {
     firestore: { rules: fs.readFileSync(RULES_FILE, 'utf8'), host, port },
   });
 
+  // Start empty, every run. Without this the seeded docs survive from the
+  // previous run, so a test's `create` is evaluated as an UPDATE - a
+  // different rule with different constraints - and it fails with a
+  // permission error that reads like a rules bug. It is not one: this
+  // suite scored 31/31 on a fresh emulator and 28/31 on every run after,
+  // and the three "known failures" that were carried as an open TODO from
+  // 2026-08-22 to 2026-08-28 were only ever this. firestore-rules.test.js
+  // already clears for the same reason - see its own comment.
+  await testEnv.clearFirestore();
+
   // ---- Book license paywall (canReadBook) -------------------------------
   describe('Library content - license paywall (canReadBook)');
   await seedLibrary();

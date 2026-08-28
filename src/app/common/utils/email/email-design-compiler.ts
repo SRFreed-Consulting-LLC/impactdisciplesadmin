@@ -42,6 +42,8 @@ import {
   TextBlock,
   VideoBlock,
   ZERO_SIDES,
+  BLOCK_BOUNDS,
+  clampToBounds,
   resolveMobileGlobalStyles,
   resolveMobileStyles
 } from '../../models/admin/email-design.model';
@@ -164,7 +166,8 @@ function renderHtml(block: HtmlBlock): string {
 
 function imageWidth(props: ImageProps, available: number): number {
   if (props.sizing === 'scale') {
-    return Math.round((available * Math.min(100, Math.max(10, props.scalePercent))) / 100);
+    const pct = clampToBounds(props.scalePercent, BLOCK_BOUNDS.imageScalePercent);
+    return Math.round((available * pct) / 100);
   }
   if (props.sizing === 'original' && props.naturalWidth) {
     return Math.min(props.naturalWidth, available);
@@ -216,13 +219,21 @@ function renderButton(block: ButtonBlock, ctx: RenderContext): string {
 function renderDivider(block: DividerBlock, ctx: RenderContext): string {
   const d = ctx.global.divider;
   const style = block.props.style ?? d.style;
-  const thickness = block.props.thickness ?? d.thickness;
+  // R4: clamped to the same range the side panel offers. An imported or
+  // migrated design can carry anything at all here - the editor is not the
+  // only way a design reaches this function.
+  const thickness = clampToBounds(
+    block.props.thickness ?? d.thickness,
+    BLOCK_BOUNDS.dividerThickness
+  );
   const color = block.props.color ?? d.color;
   return `<div style="border-top:${thickness}px ${style} ${color};font-size:0;line-height:0;">&nbsp;</div>`;
 }
 
 function renderSpacer(block: SpacerBlock): string {
-  const h = Math.max(1, block.props.height);
+  // R4: was Math.max(1, ...) with NO ceiling, while the panel allowed only
+  // 4-200 - so a design with height 5000 rendered a 5000px gap.
+  const h = clampToBounds(block.props.height, BLOCK_BOUNDS.spacerHeight);
   return `<div style="height:${h}px;line-height:${h}px;font-size:0;">&nbsp;</div>`;
 }
 
@@ -253,13 +264,21 @@ function renderSocial(block: SocialBlock): string {
       // Per-network explicit icon, else the shared hosted default set,
       // else a text link.
       const iconUrl = n.iconUrl || DEFAULT_SOCIAL_ICON_URLS[n.network] || '';
+      // R4: both were used raw here, so an imported design could render a
+      // 400px "icon" or push the row apart by any margin it liked.
+      const iconSize = clampToBounds(
+        block.props.iconSize, BLOCK_BOUNDS.socialIconSize
+      );
+      const spacing = clampToBounds(
+        block.props.spacing, BLOCK_BOUNDS.socialSpacing
+      );
       const inner = iconUrl
         ? `<img src="${escapeEmailHtml(iconUrl)}" alt="${escapeEmailHtml(n.label)}" ` +
-          `width="${block.props.iconSize}" height="${block.props.iconSize}" ` +
+          `width="${iconSize}" height="${iconSize}" ` +
           `style="display:inline-block;border:0;border-radius:6px;">`
         : escapeEmailHtml(n.label);
       return (
-        `<a href="${href}" target="_blank" style="display:inline-block;margin:0 ${Math.round(block.props.spacing / 2)}px;` +
+        `<a href="${href}" target="_blank" style="display:inline-block;margin:0 ${Math.round(spacing / 2)}px;` +
         `font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:bold;color:#1f2430;text-decoration:none;">` +
         inner +
         `</a>`

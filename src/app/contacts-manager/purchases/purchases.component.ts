@@ -9,6 +9,7 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
 import { NewRecordTracker } from '../../shared/new-record-tracking.util';
 import { PagedCollectionSource } from '../../shared/paged-collection-source';
+import { WithShippingCostDrift } from '../../common/models/domain/shipping-cost-drift.model';
 
 // Full-page in-place edit view (mode: 'list' | 'edit', no popup - see
 // products.component.ts for the established precedent this mirrors) rather
@@ -60,7 +61,16 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     { key: 'estimatedTaxes', label: 'Taxes', type: 'currency', value: (item) => this.service.getTaxesDisplayAmount(item) },
     { key: 'shippingRate', label: 'Shipping', type: 'currency', value: (item) => this.service.getShippingDisplayAmount(item) },
     { key: 'charged', label: 'Charged', type: 'currency', value: (item) => this.service.getChargedDisplayAmount(item) },
-    { key: 'refundAmount', label: 'Refunded', type: 'currency' }
+    { key: 'refundAmount', label: 'Refunded', type: 'currency' },
+    // What the label actually cost, and the gap against what the customer
+    // was charged. Both default HIDDEN - they are only populated once a
+    // label has been bought, and this grid is read day-to-day for
+    // fulfillment, not for cost analysis. Turn them on from the Columns
+    // menu (and Export carries whatever is visible) when reviewing what
+    // buying at label time rather than honouring the checkout quote is
+    // actually costing. See ShippingCostDrift and sweep finding S3.
+    { key: 'labelCost', label: 'Label Cost', type: 'currency', visible: false, value: (item) => this.getLabelCost(item) },
+    { key: 'shippingDrift', label: 'Shipping +/-', type: 'currency', visible: false, value: (item) => this.getShippingDrift(item) }
   ];
 
   // No delete action: firestore.rules deliberately denies client-side
@@ -191,6 +201,18 @@ export class PurchasesComponent implements OnInit, OnDestroy {
 
   isShippingButtonVisible(item: CheckoutForm): boolean {
     return (item.shippingRate ?? 0) > 0;
+  }
+
+  // Undefined (not 0) until a label has actually been bought, so the cell
+  // stays blank on unshipped orders rather than claiming a real $0.00.
+  getLabelCost(item: CheckoutForm): number | undefined {
+    return (item as WithShippingCostDrift<CheckoutForm>).shippingCostDrift?.actual;
+  }
+
+  // Positive = the label cost more than the customer paid, i.e. the org
+  // absorbed the difference.
+  getShippingDrift(item: CheckoutForm): number | undefined {
+    return (item as WithShippingCostDrift<CheckoutForm>).shippingCostDrift?.drift;
   }
 
   // Moved into PurchasesService (getShippingLabel/downloadShippingLabel) so

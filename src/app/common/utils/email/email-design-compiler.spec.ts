@@ -1,11 +1,15 @@
 import {
   ButtonBlock,
+  DividerBlock,
   EmailDesign,
   HeadingBlock,
   ImageBlock,
+  SocialBlock,
   SpacerBlock,
   TextBlock,
   VideoBlock,
+  BLOCK_BOUNDS,
+  clampToBounds,
   createBlock,
   createDefaultDesign,
   createRow
@@ -235,6 +239,79 @@ describe('compileEmailDesign', () => {
     text.props.fontFamily = 'Courier New, Courier, monospace';
     const html = compileEmailDesign(bodyRowWithBlocks(text));
     expect(html).toContain('font-family:Courier New, Courier, monospace');
+  });
+});
+
+// Sweep finding R4. The editor's controls are not the only way a design
+// reaches the compiler - imports and migrations write the JSON directly -
+// so the compiler has to hold the same bounds the panel offers. It used to
+// hold looser ones (spacer) or none at all (thickness, icon size,
+// spacing), which is only visible once a design arrives from outside.
+describe('block bounds are enforced at compile time', () => {
+  it('clamps a spacer taller than the editor would ever allow', () => {
+    const spacer = createBlock('spacer') as SpacerBlock;
+    spacer.props.height = 5000;
+    const html = compileEmailDesign(bodyRowWithBlocks(spacer));
+    expect(html).toContain(`height:${BLOCK_BOUNDS.spacerHeight.max}px`);
+    expect(html).not.toContain('5000px');
+  });
+
+  it('raises a spacer below the editor minimum', () => {
+    const spacer = createBlock('spacer') as SpacerBlock;
+    spacer.props.height = 1;
+    const html = compileEmailDesign(bodyRowWithBlocks(spacer));
+    expect(html).toContain(`height:${BLOCK_BOUNDS.spacerHeight.min}px`);
+  });
+
+  it('falls back rather than collapsing when height is not a number', () => {
+    const spacer = createBlock('spacer') as SpacerBlock;
+    spacer.props.height = undefined as unknown as number;
+    const html = compileEmailDesign(bodyRowWithBlocks(spacer));
+    // A 0-height spacer is a silently broken block, not a small one.
+    expect(html).toContain(`height:${BLOCK_BOUNDS.spacerHeight.fallback}px`);
+  });
+
+  it('clamps divider thickness, which had no ceiling at all', () => {
+    const divider = createBlock('divider') as DividerBlock;
+    divider.props.thickness = 400;
+    const html = compileEmailDesign(bodyRowWithBlocks(divider));
+    expect(html).toContain(
+      `border-top:${BLOCK_BOUNDS.dividerThickness.max}px`
+    );
+  });
+
+  it('clamps social icon size and spacing, which were used raw', () => {
+    const social = createBlock('social') as SocialBlock;
+    social.props.iconSize = 400;
+    social.props.spacing = 400;
+    const html = compileEmailDesign(bodyRowWithBlocks(social));
+    expect(html).not.toContain('width="400"');
+    expect(html).toContain(`width="${BLOCK_BOUNDS.socialIconSize.max}"`);
+    const maxMargin = Math.round(BLOCK_BOUNDS.socialSpacing.max / 2);
+    expect(html).toContain(`margin:0 ${maxMargin}px`);
+  });
+});
+
+describe('clampToBounds', () => {
+  const bound = { min: 4, max: 200, fallback: 24 };
+
+  it('passes an in-range value through untouched', () => {
+    expect(clampToBounds(50, bound)).toBe(50);
+  });
+
+  it('clamps to each edge', () => {
+    expect(clampToBounds(1, bound)).toBe(4);
+    expect(clampToBounds(9999, bound)).toBe(200);
+  });
+
+  it('accepts a numeric string, as an imported design may carry', () => {
+    expect(clampToBounds('50', bound)).toBe(50);
+  });
+
+  it('uses the fallback for anything that is not a real number', () => {
+    for (const junk of [undefined, null, NaN, 'tall', {}, []]) {
+      expect(clampToBounds(junk, bound)).toBe(24);
+    }
   });
 });
 

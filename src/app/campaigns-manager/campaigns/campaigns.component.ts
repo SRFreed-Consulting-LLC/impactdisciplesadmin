@@ -9,7 +9,7 @@ import { PagedCollectionSource } from '../../shared/paged-collection-source';
 import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { describeCampaignDelete, describeCampaignDeleteResult } from './campaign-delete-text';
+import { runCampaignDelete } from '../campaign-lifecycle';
 
 // The Campaigns landing screen (Campaign Manager v2): "Live Now" hub cards
 // above the paged list of EVERY campaign - including the regrouped
@@ -226,26 +226,24 @@ export class CampaignsComponent implements OnInit, OnDestroy {
     if (!this.canDelete) {
       return;
     }
-    try {
-      const plan = await this.service.planDelete(item.id!);
-      if (plan.inFlight.length > 0) {
-        this.snackbar.error(`Cannot delete while emails are sending or scheduled: ${plan.inFlight.join(', ')}`);
-        return;
-      }
-      const confirmed = await this.confirmService.confirm(describeCampaignDelete(item, plan), 'Delete Campaign');
-      if (!confirmed) {
-        return;
-      }
-      const result = await this.service.deleteCascade(item.id!);
-      this.snackbar.success(describeCampaignDeleteResult(result));
-      if (this.selectedCampaign?.id === item.id) {
-        this.onDetailClosed();
-      }
-      this.paged.loadFirstPage();
-      this.loadHub();
-    } catch (err) {
-      this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));
+    // R1: shared with the detail screen's own delete button - this was two
+    // verbatim copies. Only what happens AFTER a successful delete differs.
+    const deleted = await runCampaignDelete(
+      {
+        campaignService: this.service,
+        confirmService: this.confirmService,
+        snackbar: this.snackbar
+      },
+      item
+    );
+    if (!deleted) {
+      return;
     }
+    if (this.selectedCampaign?.id === item.id) {
+      this.onDetailClosed();
+    }
+    this.paged.loadFirstPage();
+    this.loadHub();
   }
 
   onDetailDeleted(): void {

@@ -191,6 +191,64 @@ export interface ButtonBlock extends EmailBlockBase {
   };
 }
 
+/**
+ * The numeric bounds every block dimension is held to, in ONE place.
+ *
+ * Sweep finding R4. These used to be unnamed literals written inline at
+ * each editing control, and the compiler applied a DIFFERENT set - or, for
+ * thickness, icon size and spacing, none at all. A spacer was floored at 4
+ * by the side panel and at 1 by the compiler, with no ceiling anywhere, so
+ * a design that arrived by IMPORT or MIGRATION rather than through the
+ * editor could carry `height: 5000` and render a 5000px gap the editor
+ * would never have allowed.
+ *
+ * The editor's range is the product decision, so it is the one that wins:
+ * the compiler now clamps to exactly what the panel permits. One
+ * consequence worth knowing - a legacy design holding a 1-3px spacer now
+ * renders at 4px. That is the same clamp that turns 5000 into 200.
+ *
+ * Adding a block with a numeric prop? Add its bounds here and clamp with
+ * clampToBounds() on both sides. A new block type getting its own private
+ * literal is how this drifted in the first place.
+ */
+export const BLOCK_BOUNDS = {
+  spacerHeight: { min: 4, max: 200, fallback: 24 },
+  imageScalePercent: { min: 10, max: 100, fallback: 100 },
+  dividerThickness: { min: 1, max: 12, fallback: 1 },
+  socialIconSize: { min: 16, max: 64, fallback: 32 },
+  socialSpacing: { min: 0, max: 40, fallback: 14 }
+} as const;
+
+export interface NumericBound {
+  readonly min: number;
+  readonly max: number;
+  readonly fallback: number;
+}
+
+/**
+ * Coerces an untrusted numeric prop into its allowed range. Anything that
+ * is not a real number (undefined, null, NaN, a string from an imported
+ * design) becomes the fallback rather than 0 - a 0-height spacer or a
+ * 0-size icon is a silently broken block, not a small one.
+ */
+export function clampToBounds(value: unknown, bound: NumericBound): number {
+  // Deliberately NOT a bare Number(value): Number(null), Number([]) and
+  // Number('') are all 0, which is finite, so a missing prop would silently
+  // clamp to the minimum instead of taking the fallback. Numeric strings
+  // are accepted because that is what an <input> hands back and what some
+  // imported designs store.
+  const n =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim() !== ''
+        ? Number(value)
+        : NaN;
+  if (!Number.isFinite(n)) {
+    return bound.fallback;
+  }
+  return Math.min(bound.max, Math.max(bound.min, n));
+}
+
 export interface DividerBlock extends EmailBlockBase {
   type: 'divider';
   // null = inherit globalStyles.divider

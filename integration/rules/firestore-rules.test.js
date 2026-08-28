@@ -66,6 +66,13 @@ before(async () => {
     await setDoc(doc(db, "products/p1"), {title: "Book", isActive: true});
     await setDoc(doc(db, "customers/c1"), {email: "c1@x.test"});
     await setDoc(doc(db, "coupons/FREE"), {code: "FREE", percentOff: 100});
+    // An already-sent mail doc, so the resend path (clear `delivery` and
+    // write it back) can be exercised as an UPDATE rather than a create.
+    await setDoc(doc(db, "mail/m-sent"), {
+      to: "someone@x.test", date: Timestamp.now(),
+      message: {subject: "receipt", html: "<p>hi</p>", text: "hi"},
+      delivery: {state: "SUCCESS"},
+    });
     await setDoc(doc(db, "purchases/o1"), {total: 10});
     await setDoc(doc(db, "admin_users/a1"), {email: "admin@test.local"});
     await setDoc(doc(db, "eventSessionCounts/e1"), {counts: {}});
@@ -122,15 +129,16 @@ test("anon: customers, purchases, event-registrations all closed", async () => {
   }));
 });
 
+const validSubmission = () => ({
+  formId: "form-1",
+  formName: "Contact Us",
+  fieldSnapshot: [],
+  values: {message: "hi"},
+  submittedAt: Timestamp.now(),
+});
+
 test("anon: form_submissions create allowed ONLY in the exact shape", async () => {
-  const valid = {
-    formId: "form-1",
-    formName: "Contact Us",
-    fieldSnapshot: [],
-    values: {message: "hi"},
-    submittedAt: Timestamp.now(),
-    newRecordStatus: "new",
-  };
+  const valid = validSubmission();
   await assertSucceeds(setDoc(doc(anon(), "form_submissions/ok"), valid));
   // One extra key sinks the whole write (hasOnly shape lock).
   await assertFails(setDoc(doc(anon(), "form_submissions/extra"), {
@@ -142,6 +150,37 @@ test("anon: form_submissions create allowed ONLY in the exact shape", async () =
   }));
   // Anonymous can never read back.
   await assertFails(getDoc(doc(anon(), "form_submissions/ok")));
+});
+
+// Finding S7, second half (2026-08-28). onFormSubmissionCreated skips any
+// doc that ARRIVES carrying newRecordStatus, so a client able to send it
+// could silence the staff alert bell - and the three writers that sent
+// 'new' legitimately meant no public submission was ever counted at all.
+// The trigger is the field's only writer now, so the key is refused.
+test("anon: form_submissions cannot set newRecordStatus at all", async () => {
+  const valid = validSubmission();
+  // 'seen' was the suppression primitive...
+  await assertFails(setDoc(doc(anon(), "form_submissions/seen"), {
+    ...valid, newRecordStatus: "seen",
+  }));
+  // ...and 'new' is refused too: it is not the client's field to set, and
+  // sending it is what made the trigger skip the doc.
+  await assertFails(setDoc(doc(anon(), "form_submissions/new"), {
+    ...valid, newRecordStatus: "new",
+  }));
+});
+
+test("anon: a test-flagged submission is still a valid shape", async () => {
+  // The admin builder's test submit keeps isTest; the bell is now kept
+  // quiet by the trigger reading THAT, not by pre-setting the field it
+  // owns. Staff create it, but creates are not role-gated here, so the
+  // shape has to stay legal.
+  await assertSucceeds(setDoc(doc(anon(), "form_submissions/t1"), {
+    ...validSubmission(), isTest: true,
+  }));
+  await assertFails(setDoc(doc(anon(), "form_submissions/t2"), {
+    ...validSubmission(), isTest: "yes",
+  }));
 });
 
 test("anon: mail create is closed (no open email relay)", async () => {
@@ -188,6 +227,39 @@ test("Employee claim: business staff yes, admin-only collections no", async () =
   await assertSucceeds(getDoc(doc(employee(), "customers/c1")));
   await assertSucceeds(getDoc(doc(employee(), "coupons/FREE")));
   await assertFails(updateDoc(doc(employee(), "admin_users/a1"), {role: "Admin"}));
+});
+
+// Sweep finding S2 (2026-08-28). Per-screen Employee grants are advisory -
+// rules cannot see them - so the two collections that carry real money and
+// real outbound email sit one tier higher than the rest of business staff.
+// Reads stay open: the Coupons screen and Email History still list.
+test("Employee claim: coupons are readable but not writable", async () => {
+  await assertSucceeds(getDoc(doc(employee(), "coupons/FREE")));
+  await assertFails(setDoc(doc(employee(), "coupons/NEW"), {code: "NEW", percentOff: 100}));
+  await assertFails(updateDoc(doc(employee(), "coupons/FREE"), {percentOff: 100}));
+  await assertFails(deleteDoc(doc(employee(), "coupons/FREE")));
+});
+
+test("Employee claim: cannot send mail, and cannot resend one either", async () => {
+  await assertSucceeds(getDoc(doc(employee(), "mail/m-sent")));
+  // Creating a mail doc IS sending it - the Trigger Email extension
+  // dispatches whatever lands in this collection.
+  await assertFails(setDoc(doc(employee(), "mail/m-emp"), {
+    to: "victim@x.test", date: Timestamp.now(),
+    message: {subject: "spam", html: "<p>spam</p>", text: "spam"},
+  }));
+  // And clearing `delivery` on an existing doc re-dispatches it, so an
+  // update is a send too. This is the half the original finding missed.
+  await assertFails(updateDoc(doc(employee(), "mail/m-sent"), {delivery: null}));
+});
+
+test("Admin claim: may still write coupons and send/resend mail", async () => {
+  await assertSucceeds(setDoc(doc(admin(), "coupons/NEW"), {code: "NEW", percentOff: 10}));
+  await assertSucceeds(setDoc(doc(admin(), "mail/m-admin"), {
+    to: "ok@x.test", date: Timestamp.now(),
+    message: {subject: "hi", html: "<p>hi</p>", text: "hi"},
+  }));
+  await assertSucceeds(updateDoc(doc(admin(), "mail/m-sent"), {delivery: null}));
 });
 
 test("Editor claim: library authoring yes, business world no", async () => {

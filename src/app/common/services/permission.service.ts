@@ -35,6 +35,23 @@ export interface PermissionNode {
 // 'events-manager.events.attendees'). Every call site in the app builds
 // these the same mechanical way rather than hardcoding literal strings,
 // except where a component already has its own group/item objects in hand.
+//
+// THESE GRANTS ARE ADVISORY. THEY ARE NOT A SECURITY BOUNDARY.
+// Everything this service answers shapes the UI only: nav filtering,
+// button visibility, and same-object re-checks inside a screen.
+// firestore.rules cannot see a ScreenPermission at all - a grant lives in
+// an admin_users doc, and rules can only read the four-tier `role` custom
+// claim - so an Employee with NO grants whatsoever can still write
+// anything the Employee tier is allowed to write, straight from devtools,
+// no matter what this service returns. Confirmed and accepted 2026-08-28
+// (sweep finding S2): the role tiers are the real model.
+//
+// So: anything too dangerous for the whole Employee tier belongs at
+// Admin/Root in firestore.rules, NOT behind a grant here. `coupons` write
+// and `mail` create+update were moved there for exactly this reason
+// (`mail` because writing to it IS sending - the Trigger Email extension
+// dispatches whatever lands there). Denying a screen here does not stop
+// the write; it only stops the button being drawn.
 @Injectable({
   providedIn: 'root'
 })

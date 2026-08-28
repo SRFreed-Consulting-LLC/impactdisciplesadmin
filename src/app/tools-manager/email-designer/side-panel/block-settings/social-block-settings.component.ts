@@ -1,5 +1,10 @@
 import { Component, Input } from '@angular/core';
-import { SocialBlock, SocialNetwork } from 'src/app/common/models/admin/email-design.model';
+import {
+  SocialBlock,
+  SocialNetwork,
+  BLOCK_BOUNDS,
+  clampToBounds
+} from 'src/app/common/models/admin/email-design.model';
 import { DesignerStateService } from '../../designer-state.service';
 
 // Settings editor for a social block - extracted from
@@ -71,13 +76,15 @@ export class SocialBlockSettingsComponent {
 
   setIconSize(value: string | number): () => void {
     return () => {
-      this.block.props.iconSize = Math.min(64, Math.max(16, Number(value) || 32));
+      // R4: shared with the compiler via BLOCK_BOUNDS - it used to apply
+      // no bound at all to either of these.
+      this.block.props.iconSize = clampToBounds(value, BLOCK_BOUNDS.socialIconSize);
     };
   }
 
   setSpacing(value: string | number): () => void {
     return () => {
-      this.block.props.spacing = Math.min(40, Math.max(0, Number(value) || 14));
+      this.block.props.spacing = clampToBounds(value, BLOCK_BOUNDS.socialSpacing);
     };
   }
 }

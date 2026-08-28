@@ -1,8 +1,16 @@
 import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { CampaignAudience, CampaignModel, emptyCampaignStats } from 'src/app/common/models/domain/campaign.model';
+import {
+  CampaignAudience,
+  CampaignModel,
+  CampaignStatus,
+  emptyCampaignStats
+} from 'src/app/common/models/domain/campaign.model';
 import { BaseService } from './base.service';
+import { CampaignPopupService } from './campaign-popup.service';
+import { CampaignOfferService } from './campaign-offer.service';
+import { CouponService } from './coupon.service';
 import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 import {
   CampaignDeletePlan,
@@ -39,11 +47,106 @@ export class CampaignService extends BaseService<CampaignModel>{
   // Same field-inject pattern TagRuleService/PurchasesService use.
   constructor(
     public override dao: FirebaseDAO<CampaignModel>,
-    private functions: Functions
+    private functions: Functions,
+    private popupService: CampaignPopupService,
+    private offerService: CampaignOfferService,
+    private couponService: CouponService
   ) {
     super(dao)
     this.table="campaigns"
     this.fromFirestore = CampaignService.fromFirestore
+  }
+
+  // ---------------------------------------------------------------------
+  // Lifecycle (sweep finding R1)
+  // ---------------------------------------------------------------------
+  //
+  // Activating and ending a campaign are not one write each - they are the
+  // campaign's write-side invariants, and they used to live inside
+  // CampaignDetailComponent. That meant they could not be reused by a
+  // script or a bulk action, and could not be tested without standing up
+  // the component. They live here now; the component keeps the parts that
+  // are genuinely UI (permission checks, confirms, snackbars, navigation).
+
+  /**
+   * Moves a campaign to `next` and brings its published offer with it, in
+   * ONE batch.
+   *
+   * THE BATCH IS THE POINT, not an optimisation. These used to be two
+   * sequential awaits with the status chip flipping optimistically between
+   * them: navigating away in that window - or any failure on the second
+   * write - left the campaign LIVE advertising a discount that had never
+   * started. Nothing recomputed it afterwards, so the only symptom was a
+   * shopper being charged full price on a campaign that said it was
+   * running. Do not split this back into two writes.
+   *
+   * The offer carries its own active flag because the storefront cannot
+   * read a campaign to find out whether one is running. Only a genuinely
+   * live campaign discounts; a scheduled one waits.
+   */
+  async activateTo(campaignId: string, next: CampaignStatus): Promise<void> {
+    const offer = await this.offerService.forCampaign(campaignId);
+
+    const batch = this.dao.batch();
+    this.dao.batchUpdateFields(batch, campaignId, 'campaigns', { status: next });
+    if (offer) {
+      this.dao.batchUpdateFields(
+        batch, campaignId, 'campaign_offers', { isActive: next === 'live' }
+      );
+    }
+    await batch.commit();
+  }
+
+  /**
+   * Ends the campaign and everything it is still doing, returning the
+   * names of anything it could not stop.
+   *
+   * The cascade is the whole point: a campaign marked ended whose popup
+   * keeps showing and whose discount keeps applying is worse than no
+   * button at all. The status write comes first and THROWS on failure -
+   * if that does not land the campaign is not ended and the caller must
+   * say so. Everything after it is best-effort and reported by name, so a
+   * single failure cannot leave the campaign ended with its discount live
+   * and nobody told.
+   */
+  async endCascade(campaign: CampaignModel, endedAt: Date): Promise<string[]> {
+    await this.updateFields(campaign.id!, {
+      status: 'ended',
+      endDate: endedAt
+    });
+
+    const failures: string[] = [];
+
+    // Read rather than trusting a caller to have loaded it: the popup doc
+    // is keyed by the campaign id, and a caller that had not loaded it
+    // used to leave the popup running.
+    try {
+      const popup = await this.popupService.getById(campaign.id!);
+      if (popup) {
+        await this.popupService.updateFields(campaign.id!, { isActive: false });
+      }
+    } catch {
+      failures.push('popup');
+    }
+
+    try {
+      const offer = await this.offerService.forCampaign(campaign.id!);
+      if (offer) {
+        await this.offerService.deactivate(campaign.id!);
+      }
+    } catch {
+      failures.push('discount');
+    }
+
+    if (campaign.couponId) {
+      try {
+        await this.couponService.updateFields(campaign.couponId, { isActive: false });
+      } catch {
+        failures.push('coupon');
+      }
+    }
+
+    return failures;
   }
 
   // Stamps when the campaign was MADE. Deliberately here and not in

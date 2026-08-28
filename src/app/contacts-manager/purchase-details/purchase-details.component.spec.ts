@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { PurchaseDetailsComponent } from './purchase-details.component';
@@ -38,7 +39,11 @@ function makeDeps(overrides: Record<string, unknown> = {}) {
       revertStatus: jasmine.createSpy('revertStatus').and.returnValue(saved('received')),
       getShippingLabel: () => Promise.resolve(),
     },
-    authService: { dao: { loggedInUser$: { subscribe: (fn: (u: unknown) => void) => fn({ role: 'Admin' }) } } },
+    // A REAL observable, not a hand-rolled { subscribe } - the component
+    // pipes this stream (filter + take(1), sweep finding A2) and a stub
+    // with only .subscribe throws "pipe is not a function". of() also
+    // survives the next operator someone adds.
+    authService: { dao: { loggedInUser$: of({ role: 'Admin' }) } },
     confirmService: { confirm: jasmine.createSpy('confirm').and.returnValue(Promise.resolve(true)) },
     snackbar: { success: jasmine.createSpy('success'), error: jasmine.createSpy('error') },
     customerService: { getAllByValue: () => Promise.resolve([]) },
@@ -158,7 +163,7 @@ describe('PurchaseDetailsComponent (characterization, pre-split)', () => {
 
     it('refuses a non-Admin', () => {
       const { component } = makeComponent(aPurchase(), {
-        authService: { dao: { loggedInUser$: { subscribe: (fn: (u: unknown) => void) => fn({ role: 'Editor' }) } } },
+        authService: { dao: { loggedInUser$: of({ role: 'Editor' }) } },
         service: { ...makeDeps().service, getRemainingRefundable: () => 25 },
       });
       expect(component.canRefund()).toBeFalse();

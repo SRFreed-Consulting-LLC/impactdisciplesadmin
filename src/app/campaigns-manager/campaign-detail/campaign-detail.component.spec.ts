@@ -14,6 +14,8 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { CampaignDetailComponent } from './campaign-detail.component';
+import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
+import { Functions } from '@angular/fire/functions';
 
 // TestBed as an INJECTOR only - nothing renders, so this resolves
 // constructor params and `inject()` fields alike and survives the file's
@@ -379,6 +381,19 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
     ) => {
       batch.ops.push({ table, fields });
     },
+    // R1 moved activate/end onto the REAL CampaignService, so this harness
+    // now provides that service for real (see below) rather than stubbing
+    // it. These three are what BaseService delegates to underneath.
+    updateFields: (_id: string, table: string, fields: Record<string, unknown>) => {
+      if (stubs.failOn === TABLE_TARGET[table]) {
+        return Promise.reject(new Error('boom'));
+      }
+      writes.push({ target: TABLE_TARGET[table] ?? table, fields });
+      return Promise.resolve();
+    },
+    getAllByValue: () =>
+      Promise.resolve(stubs.liveHolder ? [{ ...stubs.liveHolder, status: 'live' }] : []),
+    getById: (id: string) => Promise.resolve({ id, name: 'Other Campaign' }),
   };
 
   TestBed.resetTestingModule();
@@ -386,16 +401,21 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
     providers: [
       CampaignDetailComponent,
       { provide: CampaignEmailService, useValue: { getPage: () => Promise.resolve({ items: [], cursor: null, hasMore: false }) } },
+      // The REAL CampaignService, not a stub: R1 moved the activate batch
+      // and the end cascade onto it, so stubbing it here would leave the
+      // lifecycle tests below asserting nothing. Its dependencies are
+      // stubbed instead, which keeps every assertion in this file pointed
+      // at real behaviour.
+      CampaignService,
+      { provide: FirebaseDAO, useValue: daoStub },
+      { provide: Functions, useValue: {} },
       {
-        provide: CampaignService,
+        provide: CampaignPopupService,
         useValue: {
-          updateFields: record('campaign'),
-          getById: (id: string) => Promise.resolve({ id, name: 'Other Campaign' }),
-          findLiveCampaignFor: () => Promise.resolve(stubs.liveHolder ?? null),
-          dao: daoStub,
+          getById: () => Promise.resolve(stubs.popup ?? null),
+          updateFields: record('popup'),
         },
       },
-      { provide: CampaignPopupService, useValue: { getById: () => Promise.resolve(null), updateFields: record('popup') } },
       {
         provide: CampaignOfferService,
         useValue: {
@@ -434,7 +454,13 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
   });
 
   const component = TestBed.inject(CampaignDetailComponent);
+  // A campaign that PROMOTES something, so the one-live-campaign gate has
+  // a target to ask about. It used to be targetless and still hit the gate
+  // because the CampaignService stub ignored its arguments; against the
+  // real service a goal-less campaign is correctly never gated at all.
   component.campaign = campaign({
+    goal: 'product',
+    productId: 'prod-1',
     status: stubs.status ?? 'draft',
     startDate: stubs.startDate ?? null,
     couponId: stubs.couponId ?? null,

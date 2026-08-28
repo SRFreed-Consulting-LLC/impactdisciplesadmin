@@ -8,6 +8,7 @@ import { catchError, from, map, Observable, of, switchMap, take } from 'rxjs';
 import { notify } from 'src/app/common/utils/notify.util';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
+import { describeLoginFailure } from './login-failure';
 
 const defaultPath = '/';
 
@@ -23,6 +24,15 @@ export interface ResetPasswordResult {
   isOk: boolean;
   message?: string;
 }
+
+// R2: this literal appeared six times in logIn() alone. Every failure the
+// method can produce is indistinguishable to the caller by design - the
+// login screen must not tell an attacker which half of the pair was wrong.
+const AUTHENTICATION_FAILED: LoginResult = {
+  isOk: false,
+  data: null,
+  message: 'Authentication failed'
+};
 
 @Injectable({
   providedIn: 'root'
@@ -51,124 +61,95 @@ export class AdminAuthService {
 
     return from(this.dao.signIn(email.toLowerCase(), password)).pipe(
       switchMap((result: UserCredential) => {
-        if(result.user){
-          const user$ = this.userService.getAllByValue('email', email);
-
-          return from(user$).pipe(
-            switchMap(user => {
-              if(user && user.length == 1) {
-                return from(result.user.getIdTokenResult()).pipe(
-                  map(token => {
-                    this.user = user[0];
-                    this.user['cookie_expiration_time'] = Date.parse(token.expirationTime);
-                    console.log('Expiration:' + new Date(this.user['cookie_expiration_time']));
-
-                    // Was a three-branch switch on environment.application.
-                    // That key is the literal "admin" in all five env files,
-                    // so branches two and three were copy-paste residue from
-                    // the library/reader app - and the final else navigated
-                    // to 'profile', which is not a registered route here.
-                    // Removed 2026-08-28 (sweep D2) along with the env key,
-                    // which had no other consumer.
-                    this.router.navigate([this._lastAuthenticatedPath]);
-
-                    this.cookieService.set(COOKIE_NAME, JSON.stringify(this.user), { expires: this.user['cookie_expiration_time'] });
-
-                    return {
-                      isOk: true,
-                      data: this.user,
-                      message: "Authentication success"
-                    };
-                  })
-                );
-
-              } else {
-                return of({
-                  isOk: false,
-                  data: null,
-                  message: "Authentication failed"
-                });
-              }
-            })
-          );
-        } else {
-          return of({
-            isOk: false,
-            data: null,
-            message: "Authentication failed"
-          });
+        // R2: guard clauses instead of the old five-deep nest. Firebase
+        // resolving without a user, and an email that does not resolve to
+        // exactly one admin_users row, are both "not signed in" - there is
+        // nothing to distinguish for the caller.
+        if (!result.user) {
+          return of(AUTHENTICATION_FAILED);
         }
+
+        return from(this.userService.getAllByValue('email', email)).pipe(
+          switchMap((users) => {
+            // Exactly one: a duplicate admin_users row for one address is
+            // ambiguous about which profile the session should carry, so
+            // it is refused rather than guessed at.
+            if (users?.length !== 1) {
+              return of(AUTHENTICATION_FAILED);
+            }
+            return from(result.user.getIdTokenResult()).pipe(
+              map((token) => this.startSession(users[0], token.expirationTime))
+            );
+          })
+        );
       }),
-      catchError((err) => {
-        if (err.code == 'auth/wrong-password') {
-          return this.loggerService.logMessage('LOGIN', email, 'You have entered an incorrect password for this email address.', [
-            { ...err }
-          ]).pipe(
-            switchMap((ec: string | boolean) => {
-              notify({
-                message: 'You have entered an incorrect password for this email address. If you have forgotten your password, enter your Email Address ' +
-                'and press the "Forgot Password" button. If the problem continues, please contact Alliance Group for assistance with this code: ' + ec,
-                position: 'top',
-                type: 'error'
-              });
-              return of({
-                isOk: false,
-                data: null,
-                message: "Authentication failed"
-              });
-            })
-          );
-        } else if (err.code == 'auth/user-not-found') {
-          return this.loggerService.logMessage('LOGIN', email, 'The email address (' + email + ') is not recognized.', [{ ...err }]).pipe(
-            switchMap((ec: string | boolean) => {
-              notify({
-                message: 'The email address (' +  email + ') is not recognized. Correct the Email Address and Try again. If the problem continues, please contact your Admin for assistance with this code: ' + ec,
-                type: 'error'
-              });
-
-              return of({
-                isOk: false,
-                data: null,
-                message: "Authentication failed"
-              });
-            })
-          );
-        } else if (err.code == 'auth/too-many-requests') {
-          return this.loggerService.logMessage('LOGIN', email, 'Too many failed attempts. The account is temporarily locked.', [
-            { ...err }
-          ]).pipe(
-            switchMap((ec: string | boolean) => {
-              notify({
-                message: 'There have been too many failed logins to this account. Please reset your password by going to the login screen, entering your password, and pressing the "Forgot Password" button. If the problem continues, please contact your Admin for assistance with this code: ' + ec,
-                type: 'error'
-              });
-
-              return of({
-                isOk: false,
-                data: null,
-                message: "Authentication failed"
-              });
-            })
-          );
-        } else {
-          return this.loggerService.logMessage('LOGIN', email, 'The email address (' + email + ') is not recognized.', [{ ...err }]).pipe(
-            switchMap((ec: string | boolean) => {
-              notify({
-                message: 'There was an Error accessing your account. Please contact your Admin for Assistance with this code: ' + ec,
-                type: 'error'
-              });
-
-              return of({
-                isOk: false,
-                data: null,
-                message: "Authentication failed"
-              });
-            })
-          );
-        }
-      })
+      // R2: one failure path, not four copy-pasted ones. Which message
+      // belongs to which auth error code lives in login-failure.ts, where
+      // it is a pure function and actually testable - see that file for
+      // the three drifts this consolidation corrected.
+      catchError((err: { code?: string }) => this.reportLoginFailure(email, err))
     );
 
+  }
+
+  /**
+   * Adopts the signed-in admin as the current session: caches the profile,
+   * writes the display cookie, and navigates on.
+   *
+   * The cookie is display/profile caching ONLY and is not proof of
+   * authentication - authGuard checks Firebase's own session state. See its
+   * SECURITY comment.
+   */
+  private startSession(user: AdminUser, expirationTime: string): LoginResult {
+    this.user = user;
+    this.user['cookie_expiration_time'] = Date.parse(expirationTime);
+
+    // Was a three-branch switch on environment.application. That key is the
+    // literal "admin" in all five env files, so branches two and three were
+    // copy-paste residue from the library/reader app - and the final else
+    // navigated to 'profile', which is not a registered route here. Removed
+    // 2026-08-28 (sweep D2) along with the env key, which had no other
+    // consumer.
+    this.router.navigate([this._lastAuthenticatedPath]);
+
+    this.cookieService.set(
+      COOKIE_NAME,
+      JSON.stringify(this.user),
+      { expires: this.user['cookie_expiration_time'] }
+    );
+
+    return {
+      isOk: true,
+      data: this.user,
+      message: 'Authentication success'
+    };
+  }
+
+  /**
+   * Records a failed sign-in and tells the user what happened.
+   *
+   * errorLogs is the ground truth for who is struggling to sign in, so the
+   * log line describes the FAULT while the on-screen message describes the
+   * remedy - they are deliberately different strings.
+   */
+  private reportLoginFailure(
+    email: string,
+    err: { code?: string }
+  ): Observable<LoginResult> {
+    const failure = describeLoginFailure(err?.code, email);
+
+    return this.loggerService
+      .logMessage('LOGIN', email, failure.log, [{ ...err }])
+      .pipe(
+        switchMap((reference: string | boolean) => {
+          notify({
+            message: failure.message(reference),
+            position: 'top',
+            type: 'error'
+          });
+          return of(AUTHENTICATION_FAILED);
+        })
+      );
   }
 
   setUser(user: AdminUser): Observable<AdminUser> {

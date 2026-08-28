@@ -18,7 +18,7 @@ import { SentEmailPreviewDialogComponent } from '../sent-emails/sent-email-previ
 import { PublishWebDialogComponent } from './publish-web-dialog.component';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { describeCampaignDelete, describeCampaignDeleteResult } from '../campaigns/campaign-delete-text';
+import { liveTargetConflict, runCampaignDelete } from '../campaign-lifecycle';
 
 // A single funnel-stage tile on the detail header.
 interface FunnelTile {
@@ -357,23 +357,17 @@ export class CampaignDetailComponent implements OnInit {
 
     // One live campaign per product/event. This is the real gate: drafts do
     // NOT reserve a target, so you can build several and are only stopped
-    // here, at the moment one would actually go live.
-    const targetId = this.campaign.goal === 'product'
-      ? this.campaign.productId
-      : this.campaign.eventId;
-    const holder = await this.campaignService.findLiveCampaignFor(
-      this.campaign.goal, targetId, this.campaign.id);
-    if (holder) {
-      const noun = this.campaign.goal === 'product' ? 'product' : 'event';
-      const open = await this.confirmService.confirm(
-        `<b>${holder.name}</b> is already live for this ${noun}, and only one ` +
-        'campaign can promote it at a time. End that one first.' +
-        '<br><br>Open it now?',
-        'Already promoted');
-      if (open) {
-        this.router.navigate(['/campaigns-manager'],
-          { queryParams: { tab: 'campaigns', campaignId: holder.id } });
-      }
+    // here, at the moment one would actually go live. (R1: shared with the
+    // wizard's save - the two wordings had already drifted apart.)
+    const blocked = await liveTargetConflict(
+      {
+        campaignService: this.campaignService,
+        confirmService: this.confirmService,
+        router: this.router
+      },
+      this.campaign
+    );
+    if (blocked) {
       return;
     }
 
@@ -389,28 +383,10 @@ export class CampaignDetailComponent implements OnInit {
     const next: CampaignStatus = startMs > Date.now() ? 'scheduled' : 'live';
 
     try {
-      // The published offer carries its OWN active flag - the storefront
-      // cannot read a campaign to find out whether one is running. Only a
-      // genuinely live campaign discounts; a scheduled one waits.
-      const offer = await this.offerService.forCampaign(this.campaign.id!);
-
-      // ONE batch, so the campaign and its offer move together or not at
-      // all. These used to be two sequential awaits with the status chip
-      // flipping optimistically between them: navigating away in that window
-      // - or any failure on the second write - left the campaign live
-      // advertising a discount that had never started. Nothing recomputed it
-      // afterwards, so the only symptom was a shopper being charged full
-      // price on a campaign that said it was running.
-      const batch = this.campaignService.dao.batch();
-      this.campaignService.dao.batchUpdateFields(
-        batch, this.campaign.id!, 'campaigns', { status: next }
-      );
-      if (offer) {
-        this.campaignService.dao.batchUpdateFields(
-          batch, this.campaign.id!, 'campaign_offers', { isActive: next === 'live' }
-        );
-      }
-      await batch.commit();
+      // R1: the campaign-and-its-offer batch lives on CampaignService now -
+      // see activateTo(), which carries the reasoning for why it must stay
+      // ONE batch. This screen keeps only what is UI.
+      await this.campaignService.activateTo(this.campaign.id!, next);
 
       // Only reflected locally once the write actually landed.
       this.campaign.status = next;
@@ -444,44 +420,21 @@ export class CampaignDetailComponent implements OnInit {
     }
 
     const endedAt = new Date();
+
+    // R1: the four-collection cascade lives on CampaignService now - see
+    // endCascade(), which throws if the status write fails and otherwise
+    // returns the names of anything it could not stop.
+    let failures: string[];
     try {
-      await this.campaignService.updateFields(this.campaign.id!, {
-        status: 'ended',
-        endDate: endedAt
-      });
+      failures = await this.campaignService.endCascade(this.campaign, endedAt);
       this.campaign.status = 'ended';
       this.campaign.endDate = endedAt;
+      if (this.popup) {
+        this.popup.isActive = false;
+      }
     } catch (err) {
       this.snackbar.error('Could not end the campaign: ' + ((err as Error)?.message ?? err));
       return;
-    }
-
-    const failures: string[] = [];
-
-    if (this.popup) {
-      try {
-        await this.popupService.updateFields(this.campaign.id!, { isActive: false });
-        this.popup.isActive = false;
-      } catch {
-        failures.push('popup');
-      }
-    }
-
-    try {
-      const offer = await this.offerService.forCampaign(this.campaign.id!);
-      if (offer) {
-        await this.offerService.deactivate(this.campaign.id!);
-      }
-    } catch {
-      failures.push('discount');
-    }
-
-    if (this.campaign.couponId) {
-      try {
-        await this.couponService.updateFields(this.campaign.couponId, { isActive: false });
-      } catch {
-        failures.push('coupon');
-      }
     }
 
     if (failures.length) {
@@ -538,21 +491,18 @@ export class CampaignDetailComponent implements OnInit {
     if (!this.canDeleteCampaign()) {
       return;
     }
-    try {
-      const plan = await this.campaignService.planDelete(this.campaign.id!);
-      if (plan.inFlight.length > 0) {
-        this.snackbar.error(`Cannot delete while emails are sending or scheduled: ${plan.inFlight.join(', ')}`);
-        return;
-      }
-      const confirmed = await this.confirmService.confirm(describeCampaignDelete(this.campaign, plan), 'Delete Campaign');
-      if (!confirmed) {
-        return;
-      }
-      const result = await this.campaignService.deleteCascade(this.campaign.id!);
-      this.snackbar.success(describeCampaignDeleteResult(result));
+    // R1: the plan/confirm/delete flow is shared with the list screen (it
+    // was two verbatim copies). Only what happens AFTER differs.
+    const deleted = await runCampaignDelete(
+      {
+        campaignService: this.campaignService,
+        confirmService: this.confirmService,
+        snackbar: this.snackbar
+      },
+      this.campaign
+    );
+    if (deleted) {
       this.deleted.emit();
-    } catch (err) {
-      this.snackbar.error('Delete failed: ' + ((err as Error)?.message ?? err));
     }
   }
 }

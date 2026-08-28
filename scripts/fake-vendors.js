@@ -82,6 +82,12 @@ const DEFAULTS = {
   captureAmountOverride: null,
   // Fixed shipping rate (USD) the fake ShipEngine quotes as its cheapest.
   shippingRate: "9.42",
+  // HTTP status for rate lookups. Set non-200 to make the vendor FAIL
+  // rather than merely quote badly - the branch get_shipping_rates takes
+  // when ShipEngine is down or rejects us, which had no coverage before
+  // 2026-08-28 and is where a raw vendor error used to be echoed to an
+  // anonymous caller (finding S4).
+  shippingRatesStatus: 200,
   // HTTP status for refunds.
   refundStatus: 200,
 };
@@ -432,6 +438,23 @@ function shipEngineRates(req, res, body) {
   );
   log("shipengine", { op: "rates", weight, packages: packages.length });
 
+  // A vendor-side failure. The body deliberately carries account-scoped
+  // detail, because the assertion worth making is that NONE of it reaches
+  // the caller of get_shipping_rates.
+  if (Number(scenario.shippingRatesStatus) !== 200) {
+    return send(res, Number(scenario.shippingRatesStatus), {
+      request_id: "se-req-00000000",
+      errors: [
+        {
+          error_source: "shipengine",
+          error_type: "system",
+          error_code: "unspecified",
+          message: "Carrier se-123456 rejected account se-acct-778899",
+        },
+      ],
+    });
+  }
+
   const cheap = Number(scenario.shippingRate);
   // Two rates, deliberately out of order: ShippingService sorts ascending
   // and takes [0], so an unsorted answer is what proves the sort is real.
@@ -557,6 +580,31 @@ function shipEngineLabel(req, res, rateId, body) {
   });
 }
 
+// POST /v1/labels - buy a label from SHIPMENT DETAILS rather than from a
+// rate id. This is the route finding S3 moved the purchase path onto: the
+// address is sent by us at buy time, so a rate id minted by an anonymous
+// caller can no longer decide where the org's postage goes.
+//
+// Logged separately from the buy-from-rate route so a test can assert on
+// the address we actually sent. The SDK snake_cases the wire shape.
+function shipEngineLabelFromShipment(req, res, body) {
+  const shipment = (body && body.shipment) || {};
+  const shipTo = shipment.ship_to || {};
+  const packages = shipment.packages || [];
+  const weight = packages.reduce(
+    (sum, p) => sum + Number((p && p.weight && p.weight.value) || 0),
+    0
+  );
+  log("shipengine", {
+    op: "label-from-shipment",
+    postalCode: shipTo.postal_code,
+    addressLine1: shipTo.address_line1,
+    name: shipTo.name,
+    weight,
+  });
+  return shipEngineLabel(req, res, "(from-shipment-details)", body);
+}
+
 // ---------------------------------------------------------------------------
 // Server
 // ---------------------------------------------------------------------------
@@ -622,6 +670,9 @@ const server = http.createServer(async (req, res) => {
     }
     m = p.match(/^\/v1\/labels\/rates\/([^/]+)$/);
     if (m) return shipEngineLabel(req, res, decodeURIComponent(m[1]), body);
+    if (p === "/v1/labels" && req.method === "POST") {
+      return shipEngineLabelFromShipment(req, res, body);
+    }
 
     log("unknown", { op: "unrouted", method: req.method, path: p });
     send(res, 404, {
@@ -638,7 +689,7 @@ server.listen(PORT, "127.0.0.1", () => {
   console.log(
     "[fake-vendors] paypal /v1/oauth2/token /v2/checkout/orders " +
       "/v2/payments/captures | tax /tax_data/tax_rates | " +
-      "shipengine /v1/rates /v1/labels/rates"
+      "shipengine /v1/rates /v1/labels/rates /v1/labels"
   );
 });
 

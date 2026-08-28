@@ -45,8 +45,13 @@ export class FormTestSubmitDialogComponent {
       fieldSnapshot: dataFields.map((f) => ({ id: f.id, label: f.label, type: f.type })),
       values,
       submittedAt: new Date(),
-      isTest: true,
-      newRecordStatus: 'new'
+      isTest: true
+      // newRecordStatus is deliberately NOT set - see
+      // dynamic-form.component.ts in the web repo. A test submit still
+      // must not light the staff bell, but that is now guaranteed by
+      // isTest, which onFormSubmissionCreated skips explicitly, rather
+      // than as a side effect of pre-setting a field the trigger owns.
+      // Sweep finding S7, 2026-08-28.
     };
 
     this.submissionService

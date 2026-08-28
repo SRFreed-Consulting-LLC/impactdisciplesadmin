@@ -21,7 +21,9 @@ import {
   TextBlock,
   VideoBlock,
   createDefaultDesign,
-  newDesignId
+  newDesignId,
+  BLOCK_BOUNDS,
+  clampToBounds
 } from 'src/app/common/models/admin/email-design.model';
 import DOMPurify from 'dompurify';
 import { parseVideoUrl, vimeoOembedUrl } from '../video-url.util';
@@ -246,7 +248,9 @@ export class DesignerSidePanelComponent {
 
   setSpacerHeight(block: EmailBlock, height: string | number): () => void {
     return () => {
-      (block as SpacerBlock).props.height = Math.min(200, Math.max(4, Number(height) || 24));
+      // R4: bounds live in BLOCK_BOUNDS so the compiler holds a design to
+      // exactly what this control allows. They used to disagree.
+      (block as SpacerBlock).props.height = clampToBounds(height, BLOCK_BOUNDS.spacerHeight);
     };
   }
 
@@ -258,7 +262,8 @@ export class DesignerSidePanelComponent {
 
   setImageScale(block: EmailBlock, percent: string | number): () => void {
     return () => {
-      (block as ImageBlock).props.scalePercent = Math.min(100, Math.max(10, Number(percent) || 100));
+      (block as ImageBlock).props.scalePercent =
+        clampToBounds(percent, BLOCK_BOUNDS.imageScalePercent);
     };
   }
 
@@ -363,7 +368,11 @@ export class DesignerSidePanelComponent {
     return () => {
       const divider = block as DividerBlock;
       if (key === 'thickness') {
-        divider.props.thickness = value === null ? null : Math.min(12, Math.max(1, Number(value) || 1));
+        // null is meaningful here - it means "inherit globalStyles.divider"
+        // - so it is preserved rather than clamped to the minimum.
+        divider.props.thickness = value === null ?
+          null :
+          clampToBounds(value, BLOCK_BOUNDS.dividerThickness);
       } else if (key === 'style') {
         divider.props.style = (value as DividerBlock['props']['style']) ?? null;
       } else {

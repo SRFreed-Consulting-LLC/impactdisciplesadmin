@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, filter, take, tap } from 'rxjs';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { ScreenPermission } from 'src/app/common/models/admin/screen-permission.model';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
@@ -100,9 +100,16 @@ export class AdminUsersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.dao.loggedInUser$.subscribe((user) => {
-      this.currentUserFirebaseUID = user?.firebaseUID;
-    });
+    // Sweep finding A2 - see purchase-details.component.ts for the full
+    // reasoning. loggedInUser$ is session-scoped and shared with
+    // resetOnRefCountZero: false, so a bare subscribe here leaks this
+    // component for the rest of the session. Only the first real user is
+    // needed, so take(1) removes the need for an ngOnDestroy.
+    this.authService.dao.loggedInUser$
+      .pipe(filter((user) => !!user), take(1))
+      .subscribe((user) => {
+        this.currentUserFirebaseUID = user?.firebaseUID;
+      });
 
     this.users$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
   }

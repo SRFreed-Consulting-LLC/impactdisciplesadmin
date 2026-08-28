@@ -53,6 +53,22 @@ import {isEventRegistrationOpen} from "./utils/sellable";
  */
 const db = getFirestore();
 
+// Shared options for the anonymous WRITE endpoints in this file (finding
+// S9). None of them can require auth - attendees have no accounts - so an
+// instance cap is the only thing bounding what an unthrottled caller can
+// make the project spend.
+//
+// Applied to the two endpoints that CHANGE something: register_for_event
+// (which also sends mail, the actual amplifier) and update_my_sessions.
+// The three read-only lookups are deliberately left uncapped: they send
+// nothing, write nothing, and their names are long enough that adding it
+// would force the onRequest line past 80 columns, and wrapping that line
+// re-indents every line of the handler for no safety gain. Revisit if a
+// read ever starts costing real money.
+//
+// Hoisted to a const for that same 80-column reason.
+const PUB_FN = {maxInstances: 20};
+
 // Server-pinned domain for the breakout-registration link in the
 // confirmation email. Env override wins; otherwise the production project
 // uses the real web domain and every other project the dev origin (same
@@ -181,8 +197,18 @@ async function queueConfirmationEmail(
 }
 
 /** Creates a registration + confirmation email. POST {eventId, firstName,
- *  lastName, email, receipt?}. Returns {registrationId, receiptEmailId?}. */
-export const registerForEventHttp = onRequest((request, response) => {
+ *  lastName, email, receipt?}. Returns {registrationId, receiptEmailId?}.
+ *
+ *  Sweep finding S9. This is anonymous by design - attendees have no
+ *  accounts - which made it an outbound-email amplifier: each POST queued
+ *  a branded email to a caller-chosen address from the org's authenticated
+ *  sending domain, with no dedupe and no cap. It also fanned out into the
+ *  staff alert counter and the customer-upsert trigger, so a loop polluted
+ *  the roster and the CRM at the same rate.
+ *
+ *  Now idempotent per (eventId, email) - see the dedupe below - and capped
+ *  by maxInstances. */
+export const registerForEventHttp = onRequest(PUB_FN, (request, response) => {
   return restrictedCors(request, response, async () => {
     if (request.method !== "POST") {
       response.status(405).send({error: "POST required."});
@@ -221,6 +247,30 @@ export const registerForEventHttp = onRequest((request, response) => {
     const registrationOpen = isEventRegistrationOpen(eventData);
     if (!eventSnap.exists || !eventData || !registrationOpen) {
       response.status(400).send({error: "Event not found or inactive."});
+      return;
+    }
+
+    // S9 dedupe. The same query check_registration_exists already runs for
+    // the signup form's validator - it was in the repo and never called
+    // from here, so a client that skipped the validator (or a script that
+    // never loaded it) went straight to add().
+    //
+    // The reply deliberately does NOT carry the existing registrationId.
+    // get_event_registration is unauthenticated and returns that
+    // attendee's name, email and receipt for any id, and the web client
+    // calls that id "unguessable" - so handing it back for a GUESSED
+    // email would turn this endpoint into a PII lookup. Both callers
+    // ignore the body and only await the promise, so answering without an
+    // id costs them nothing.
+    const existing = await db
+      .collection("event-registrations")
+      .where("eventId", "==", eventId)
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+    if (!existing.empty) {
+      logger.info("Duplicate event registration ignored", {eventId});
+      response.send({registrationId: null, alreadyRegistered: true});
       return;
     }
 
@@ -316,7 +366,7 @@ export const getEventRegistrationHttp = onRequest((request, response) => {
 
 /** Narrow breakout-session mutation, credentialed by registration id.
  *  POST {registrationId, sessionId, action: 'add'|'remove'}. */
-export const updateMySessionsHttp = onRequest((request, response) => {
+export const updateMySessionsHttp = onRequest(PUB_FN, (request, response) => {
   return restrictedCors(request, response, async () => {
     if (request.method !== "POST") {
       response.status(405).send({error: "POST required."});

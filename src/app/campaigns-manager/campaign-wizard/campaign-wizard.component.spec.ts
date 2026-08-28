@@ -14,6 +14,11 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { CampaignModel } from 'src/app/common/models/domain/campaign.model';
 
+// Mirrors the component's own private sentinel (campaign-wizard.component.ts).
+// creatingCoupon is a getter comparing couponId to this, so a test that wants
+// the inline-create branch has to put this in the form.
+const NEW_COUPON = '__new__';
+
 // ONE LIVE CAMPAIGN PER PRODUCT/EVENT (2026-08-25, owner rule).
 //
 // The wizard is the creation AND edit path for a campaign's target, so it is
@@ -34,6 +39,7 @@ function setup(stubs: Stubs = {}) {
   const saved: CampaignModel[] = [];
   const navigated: unknown[][] = [];
   const confirmed: string[] = [];
+  const errors: string[] = [];
 
   TestBed.configureTestingModule({
     providers: [
@@ -64,7 +70,13 @@ function setup(stubs: Stubs = {}) {
       { provide: CampaignOfferService, useValue: { forCampaign: () => Promise.resolve(null) } },
       { provide: CouponService, useValue: { getAll: () => Promise.resolve([]) } },
       { provide: PermissionService, useValue: { canAdd: () => true, canEdit: () => true } },
-      { provide: SnackbarService, useValue: { error: () => undefined, success: () => undefined } },
+      {
+        provide: SnackbarService,
+        useValue: {
+          error: (m: string) => { errors.push(m); },
+          success: () => undefined,
+        },
+      },
     ],
   });
 
@@ -78,7 +90,7 @@ function setup(stubs: Stubs = {}) {
     audienceMode: 'all',
   });
 
-  return { component, saved, navigated, confirmed };
+  return { component, saved, navigated, confirmed, errors };
 }
 
 describe('CampaignWizardComponent one-live-campaign-per-target', () => {
@@ -147,4 +159,199 @@ describe('CampaignWizardComponent one-live-campaign-per-target', () => {
     expect(saved.length).toBe(1);
     expect(saved[0].goal).toBe('other');
   });
+});
+
+// CHARACTERIZATION tests, written 2026-08-28 immediately BEFORE extracting
+// save()'s validation cascade into pure functions (sweep finding R3 - the
+// method is 132 lines, ~78 of them these eleven rules, and none of them
+// were exercised by anything).
+//
+// They assert the CURRENT behaviour, message text included, so the
+// extraction can be proved to have changed nothing. The message strings are
+// the contract here: they are what the author actually sees.
+describe('CampaignWizardComponent save() validation (characterization)', () => {
+  it('demands a product when the goal is product', async () => {
+    const { component, saved, errors } = setup();
+    component.form.patchValue({ goal: 'product', productId: null });
+
+    await component.save();
+
+    expect(errors).toEqual(['Pick the product this campaign promotes.']);
+    expect(saved.length).toBe(0);
+  });
+
+  it('demands an event when the goal is event', async () => {
+    const { component, saved, errors } = setup();
+    component.form.patchValue({ goal: 'event', eventId: null });
+
+    await component.save();
+
+    expect(errors).toEqual(['Pick the event this campaign promotes.']);
+    expect(saved.length).toBe(0);
+  });
+
+  it('demands at least one channel', async () => {
+    const { component, saved, errors } = setup();
+    component.form.patchValue({ emailChannel: false, webChannel: false });
+
+    await component.save();
+
+    expect(errors).toEqual([
+      'Pick at least one channel - email, web popup, or social.',
+    ]);
+    expect(saved.length).toBe(0);
+  });
+
+  it('accepts a social-only campaign as having a channel', async () => {
+    const { component, saved } = setup();
+    component.form.patchValue({
+      emailChannel: false, webChannel: false, instagramChannel: true,
+    });
+
+    await component.save();
+
+    expect(saved.length).toBe(1);
+  });
+
+  it('demands a target for an enabled offer', async () => {
+    const { component, errors } = setup();
+    component.form.patchValue({ offerEnabled: true, offerTargetId: null });
+
+    await component.save();
+
+    expect(errors).toEqual(['Pick what the offer applies to.']);
+  });
+
+  it('demands a positive offer amount, worded for the discount type',
+    async () => {
+      const { component, errors } = setup();
+      component.form.patchValue({
+        offerEnabled: true,
+        offerTargetId: 'prod-1',
+        offerDiscountType: 'percentOff',
+        offerDiscountValue: 0,
+      });
+
+      await component.save();
+
+      expect(errors).toEqual(['Enter a percentage off.']);
+    });
+
+  it('words the same failure differently for a fixed early-bird price',
+    async () => {
+      const { component, errors } = setup();
+      component.form.patchValue({
+        offerEnabled: true,
+        offerTargetId: 'prod-1',
+        offerDiscountType: 'fixedPrice',
+        offerDiscountValue: null,
+      });
+
+      await component.save();
+
+      expect(errors).toEqual(['Enter the early-bird price.']);
+    });
+
+  it('refuses a percentage over 100', async () => {
+    const { component, errors } = setup();
+    component.form.patchValue({
+      offerEnabled: true,
+      offerTargetId: 'prod-1',
+      offerDiscountType: 'percentOff',
+      offerDiscountValue: 101,
+    });
+
+    await component.save();
+
+    expect(errors).toEqual(['A percentage off cannot exceed 100.']);
+  });
+
+  it('demands a coupon when the coupon step is enabled', async () => {
+    const { component, errors } = setup();
+    component.form.patchValue({ couponEnabled: true, couponId: null });
+
+    await component.save();
+
+    expect(errors).toEqual([
+      'Pick a coupon to give subscribers, or create one.',
+    ]);
+  });
+
+  it('demands a code and a valid percent when creating a coupon inline',
+    async () => {
+      const { component, errors } = setup();
+      // creatingCoupon is a getter off couponId, not a settable field.
+      component.form.patchValue({
+        couponEnabled: true, couponId: NEW_COUPON, couponCode: '  ',
+      });
+
+      await component.save();
+
+      expect(errors).toEqual([
+        'Enter the coupon code subscribers will type.',
+      ]);
+    });
+
+  it('bounds an inline coupon percentage to 1-100', async () => {
+    const { component, errors } = setup();
+    component.form.patchValue({
+      couponEnabled: true,
+      couponId: NEW_COUPON,
+      couponCode: 'SPRING',
+      couponPercentOff: 0,
+    });
+
+    await component.save();
+
+    expect(errors).toEqual([
+      'Enter a coupon percentage between 1 and 100.',
+    ]);
+  });
+
+  it('demands a coupon expiry when the campaign is open-ended', async () => {
+    const { component, errors } = setup();
+    // couponNeedsExpiry is couponEnabled && no endDate - drive it that way.
+    component.form.patchValue({
+      couponEnabled: true,
+      couponId: 'existing-1',
+      endDate: null,
+      couponExpiresAt: null,
+    });
+
+    await component.save();
+
+    expect(errors).toEqual([
+      'This campaign has no end date, so give the coupon its own expiry.',
+    ]);
+  });
+
+  // ORDER IS BEHAVIOUR. The one-live-campaign check is asynchronous and sits
+  // BETWEEN the target rules and the rest, so a campaign that fails a target
+  // rule never reaches it. Any extraction that hoists all eleven rules into
+  // one call ahead of that check would change which failure the author sees.
+  it('reports a missing target before consulting the live-campaign guard',
+    async () => {
+      const { component, errors, confirmed } = setup({
+        liveHolder: { id: 'c-9', name: 'Existing Push' },
+      });
+      component.form.patchValue({ goal: 'product', productId: null });
+
+      await component.save();
+
+      expect(errors).toEqual(['Pick the product this campaign promotes.']);
+      expect(confirmed.length).toBe(0);
+    });
+
+  it('consults the live-campaign guard before the channel rule',
+    async () => {
+      const { component, errors, confirmed } = setup({
+        liveHolder: { id: 'c-9', name: 'Existing Push' },
+      });
+      component.form.patchValue({ emailChannel: false, webChannel: false });
+
+      await component.save();
+
+      expect(confirmed.length).toBe(1);
+      expect(errors).toEqual([]);
+    });
 });

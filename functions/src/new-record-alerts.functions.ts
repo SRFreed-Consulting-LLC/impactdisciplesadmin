@@ -48,11 +48,26 @@ function registerNewRecordTriggers(
   const onCreate = onDocumentCreated(docPath, async (event) => {
     const snap = event.data;
     const data = snap?.data();
-    // Defensive - shouldn't happen on a create event, but a doc already
-    // carrying newRecordStatus (e.g. written directly by this admin app,
-    // which sets other fields but not this one today) shouldn't be
+    // Defensive - a doc that already carries newRecordStatus must not be
     // double-counted if this trigger is ever re-run.
+    //
+    // Sweep finding S7 (2026-08-28): this used to be load-bearing rather
+    // than defensive. Three writers - the public form renderer, the
+    // campaign popup, and the admin's own test-submit dialog - all set
+    // newRecordStatus:'new' on create, so EVERY submission they made hit
+    // this branch and was never counted. The bell did not light for real
+    // public submissions at all. All three stopped sending it, and the
+    // rules `hasOnly` no longer accepts it, so this trigger is the field's
+    // sole writer and the check is back to being what its comment claims.
     if (!snap || !data || data.newRecordStatus) {
+      return;
+    }
+    // A staff member testing their own form in the builder should not
+    // light the alert bell. That used to happen only as a side effect of
+    // the dialog pre-setting newRecordStatus; now it is stated. Harmless
+    // for the other collections registered here - none of them have the
+    // field.
+    if (data.isTest === true) {
       return;
     }
 

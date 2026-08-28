@@ -19,7 +19,7 @@
 const {test, before, beforeEach} = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  preflight, reseed, callHttp, signIn,
+  preflight, reseed, callHttp, signIn, getDb,
   fakeVendors, preflightFakeVendors,
 } = require("./helpers/emulator");
 
@@ -100,18 +100,61 @@ test("the package weight the client computed is what reaches the carrier",
     assert.equal(call.packages, 1);
   });
 
-test("a carrier failure comes back as a 400-shaped body, not a 500",
+test("an unusable rate VALUE still answers 200 - the vendor did not fail",
   async () => {
-    // The handler catches and answers 200-with-an-error-body (its own
-    // pre-existing shape). Pinned as-is rather than "fixed" here: the web
-    // client's calculateShipping() reads result.rateResponse and falls back
-    // to zero shipping when it is absent, so this shape is load-bearing.
+    // Not a vendor failure: ShipEngine answers normally, the number is
+    // just junk. The handler's success path runs, so this stays 200.
+    // (Renamed 2026-08-28 - it used to be called a "carrier failure",
+    // which it never was; the real failure branch is the test below.)
     await fakeVendors.control({shippingRate: "not-a-number"});
     const res = await callHttp("get_shipping_rates", rateRequest(16));
     assert.equal(res.status, 200);
     // NaN.toFixed(2) is "NaN" - the SDK passes it through, so the rate is
     // present but unusable. What matters is that the function did not throw.
     assert.ok(res.body.rateResponse || res.body.error);
+    await fakeVendors.control({shippingRate: "9.42"});
+  });
+
+// Finding S4. This branch had no coverage at all, and it was the one that
+// leaked: the old handler answered with the raw vendor error object AND
+// the caller's own body, to an anonymous caller.
+test("a real vendor failure is a 502 that leaks nothing", async () => {
+  await fakeVendors.control({shippingRatesStatus: 500});
+  try {
+    const res = await callHttp("get_shipping_rates", rateRequest(16));
+
+    assert.equal(res.status, 502);
+    assert.deepEqual(res.body, {
+      error: "Unable to retrieve shipping rates",
+    });
+
+    // The fake's error body carries account-scoped detail on purpose.
+    // None of it, and none of the request we sent, may come back.
+    const raw = JSON.stringify(res.body);
+    assert.ok(!raw.includes("se-acct-778899"), "leaked account id");
+    assert.ok(!raw.includes("se-req-00000000"), "leaked vendor request id");
+    assert.ok(!raw.includes("shipengine"), "leaked vendor identity");
+    assert.ok(!raw.includes("30301"), "echoed the caller's own body");
+  } finally {
+    await fakeVendors.control({shippingRatesStatus: 200});
+  }
+});
+
+// The allowlist (utils/shipping-request.ts) is unit-tested in
+// functions/test/shipping-request.test.js. This is the end-to-end half:
+// a body that cannot describe a quote must be refused HERE, without the
+// vendor being contacted at all.
+test("a malformed body is refused without touching the vendor",
+  async () => {
+    await fakeVendors.reset();
+    const res = await callHttp("get_shipping_rates", {garbage: true});
+
+    assert.equal(res.status, 400);
+    assert.deepEqual(res.body, {error: "Invalid shipping rate request"});
+
+    const calls = await fakeVendors.log("shipengine");
+    const rateCalls = calls.filter((c) => c.op === "rates");
+    assert.equal(rateCalls.length, 0, "vendor was contacted anyway");
   });
 
 // ---------------------------------------------------------------------------
@@ -166,6 +209,145 @@ test("get_shipping_label buys a label for a staff caller and returns the " +
   assert.equal(res.body.trackingNumber, "FAKETRACK0001");
   assert.equal(res.body.labelId, "se-fake-label-0001");
   assert.match(res.body.labelDownload.pdf, /\.pdf$/);
+});
+
+// ---------------------------------------------------------------------------
+// Finding S3 - the label is bought from OUR stored shipment, not a rate id
+// ---------------------------------------------------------------------------
+//
+// The attack: get_shipping_rates is anonymous, so anyone could mint a rate
+// id describing a heavy shipment to their own address, attach it to a small
+// real order, and have staff buy their postage by clicking Print Label.
+// The purchase path no longer uses the stored rate id at all.
+
+// A purchase carrying a rate id an attacker could have planted, and a
+// shipping address that is unmistakably the CUSTOMER's.
+const VICTIM_PURCHASE = "purchase-s3-guard";
+const ATTACKER_ZIP = "99501"; // Anchorage - nowhere near the seeded org
+const CUSTOMER_ZIP = "30263";
+
+const seedShippablePurchase = async (db, overrides = {}) => {
+  await db.collection("products").doc("product-s3").set({
+    title: "Heavy Book", isActive: true, weight: 12,
+  });
+  await db.collection("purchases").doc(VICTIM_PURCHASE).set({
+    firstName: "Pat", lastName: "Buyer", email: "pat@buyer.test",
+    phone: {number: "555-0199"},
+    shippingAddress: {
+      address1: "1 Peachtree St", city: "Newnan", state: "GA",
+      zip: CUSTOMER_ZIP, country: "US",
+    },
+    cartItems: [{id: "product-s3", orderQuantity: 2, isEvent: false}],
+    // What the shopper was charged at checkout.
+    shippingRate: 4.25,
+    // The planted rate id. It must never be used.
+    shippingRateId: {rateId: "se-rate-attacker", shippingAmount: {amount: 1}},
+    ...overrides,
+  });
+};
+
+test("a label is bought from the PURCHASE's address, never the stored " +
+  "rate id", async () => {
+  const db = getDb();
+  await seedShippablePurchase(db);
+
+  const res = await callHttp(
+    "get_shipping_label",
+    {purchaseId: VICTIM_PURCHASE, shipId: "se-rate-attacker"},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+
+  const calls = await fakeVendors.log("shipengine");
+  const fromRate = calls.filter((c) => c.op === "label");
+  const fromShipment = calls.filter((c) => c.op === "label-from-shipment");
+
+  // The whole finding in one assertion.
+  assert.equal(fromShipment.length, 1, "did not buy from shipment details");
+  assert.equal(fromRate[0].rateId, "(from-shipment-details)",
+    "a caller-supplied rate id reached the vendor");
+
+  // The address we sent is the customer's, off the purchase doc.
+  assert.equal(fromShipment[0].postalCode, CUSTOMER_ZIP);
+  assert.equal(fromShipment[0].addressLine1, "1 Peachtree St");
+  assert.equal(fromShipment[0].name, "Pat Buyer");
+
+  // Weight is recomputed from the PRODUCT (12oz x 2), not from the cart
+  // line, which carried no weight at all here.
+  assert.equal(fromShipment[0].weight, 24);
+});
+
+test("an attacker's destination on the purchase cannot redirect postage",
+  async () => {
+    const db = getDb();
+    await seedShippablePurchase(db);
+    // Even if the planted rate claims Anchorage, we ship where the
+    // purchase says. The rate id is never dereferenced.
+    await db.collection("purchases").doc(VICTIM_PURCHASE).set({
+      shippingRateId: {
+        rateId: "se-rate-attacker",
+        shipTo: {postalCode: ATTACKER_ZIP},
+      },
+    }, {merge: true});
+
+    const res = await callHttp(
+      "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+      {Authorization: `Bearer ${staffToken}`}
+    );
+    assert.equal(res.status, 200);
+
+    const sent = (await fakeVendors.log("shipengine"))
+      .find((c) => c.op === "label-from-shipment");
+    assert.equal(sent.postalCode, CUSTOMER_ZIP);
+    assert.notEqual(sent.postalCode, ATTACKER_ZIP);
+  });
+
+test("the shipping cost drift is recorded on the purchase", async () => {
+  const db = getDb();
+  await seedShippablePurchase(db);
+  // Customer was charged 4.25 at checkout; the label costs 9.42.
+  await fakeVendors.control({shippingRate: "9.42"});
+
+  const res = await callHttp(
+    "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  assert.equal(res.status, 200);
+
+  const saved = (await db.collection("purchases")
+    .doc(VICTIM_PURCHASE).get()).data();
+  assert.ok(saved.shippingCostDrift, "drift was not recorded");
+  assert.equal(saved.shippingCostDrift.quoted, 4.25);
+  assert.equal(saved.shippingCostDrift.actual, 9.42);
+  // Positive = the org absorbed the difference.
+  assert.equal(saved.shippingCostDrift.drift, 5.17);
+  assert.ok(saved.shippingCostDrift.at, "no timestamp on the drift record");
+
+  // ...and it comes back on the response so the screen can show it at once.
+  assert.equal(res.body.shippingCostDrift.drift, 5.17);
+});
+
+test("an unshippable purchase is refused before the vendor is called",
+  async () => {
+    const db = getDb();
+    await seedShippablePurchase(db, {shippingAddress: {city: "Newnan"}});
+
+    const res = await callHttp(
+      "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+      {Authorization: `Bearer ${staffToken}`}
+    );
+    assert.equal(res.status, 400);
+    assert.equal((await fakeVendors.log("shipengine")).length, 0,
+      "postage was spent on an undeliverable order");
+  });
+
+test("an unknown purchase id buys nothing", async () => {
+  const res = await callHttp(
+    "get_shipping_label", {purchaseId: "no-such-purchase"},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  assert.equal(res.status, 400);
+  assert.equal((await fakeVendors.log("shipengine")).length, 0);
 });
 
 test("the label is bought against the RATE the caller chose, with the " +

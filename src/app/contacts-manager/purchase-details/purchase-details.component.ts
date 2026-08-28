@@ -1,7 +1,7 @@
 import { Component, Input} from '@angular/core';
 import { customerName as customerNameOf } from 'src/app/contacts-manager/fulfillment/order-display.util';
 import { MatDialog } from '@angular/material/dialog';
-import { firstValueFrom } from 'rxjs';
+import { filter, firstValueFrom, take } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
 import { CartItem, CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { AMAZON_CONFIRMATION_TEMPLATE_NAME, PurchasesService } from 'src/app/common/services/data/purchases.service';
@@ -65,9 +65,22 @@ export class PurchaseDetailsComponent {
     private dialog: MatDialog
     , private templateEditor: EmailTemplateEditorService
   ) {
-    this.authService.dao.loggedInUser$.subscribe((user) => {
-      this.currentUserRole = user?.role;
-    });
+    // Sweep finding A2. loggedInUser$ is shared with
+    // resetOnRefCountZero: false on a root service, so its connector keeps
+    // its observer list for the whole session - nothing evicts a
+    // subscriber that never unsubscribes. Without take(1) every
+    // PurchaseDetailsComponent opened this session stayed reachable, with
+    // its state and template refs, re-running this callback on every auth
+    // re-emit. (Untorn-down ActivatedRoute subscriptions elsewhere are
+    // fine for the opposite reason: the router completes those with the
+    // route. This subject is deliberately session-scoped.)
+    //
+    // Only the first real user is needed, so no ngOnDestroy is required.
+    this.authService.dao.loggedInUser$
+      .pipe(filter((user) => !!user), take(1))
+      .subscribe((user) => {
+        this.currentUserRole = user?.role;
+      });
   }
 
   isVisible(roles: string[]): boolean {

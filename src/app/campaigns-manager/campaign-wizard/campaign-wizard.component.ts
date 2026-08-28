@@ -19,6 +19,11 @@ import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
 import { Router } from '@angular/router';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import {
+  validateCampaignTarget,
+  validateCampaignDetails
+} from './campaign-wizard-validation';
+import { liveTargetConflict } from '../campaign-lifecycle';
 
 // Campaign wizard (Campaign Manager v2, Phase 2): creates/edits the
 // campaign SHELL - what's promoted (goal), through which channels, to
@@ -293,79 +298,36 @@ export class CampaignWizardComponent implements OnInit {
       return;
     }
     const value = this.form.value;
-    if (value.goal === 'product' && !value.productId) {
-      this.snackbar.error('Pick the product this campaign promotes.');
+    // R3: the eleven save-time rules live in campaign-wizard-validation.ts
+    // as pure functions. They are split in two because the live-campaign
+    // guard below is async and sits between them - see that file's header.
+    const targetError = validateCampaignTarget(value);
+    if (targetError) {
+      this.snackbar.error(targetError);
       return;
     }
-    if (value.goal === 'event' && !value.eventId) {
-      this.snackbar.error('Pick the event this campaign promotes.');
+    // One live campaign per product/event (R1: shared with activate() on
+    // the detail screen - the two wordings had already drifted apart).
+    // Checked on every save because a campaign's target is editable after
+    // creation, not just chosen once.
+    const blocked = await liveTargetConflict(
+      {
+        campaignService: this.service,
+        confirmService: this.confirmService,
+        router: this.router
+      },
+      { ...value, id: this.campaign?.id }
+    );
+    if (blocked) {
       return;
     }
-    // One live campaign per product/event - see
-    // CampaignService.findLiveCampaignFor(). Checked on every save because a
-    // campaign's target is editable after creation, not just chosen once.
-    const targetId = value.goal === 'product' ? value.productId : value.eventId;
-    const holder = await this.service.findLiveCampaignFor(value.goal, targetId, this.campaign?.id);
-    if (holder) {
-      const noun = value.goal === 'product' ? 'product' : 'event';
-      const open = await this.confirmService.confirm(
-        `<b>${holder.name}</b> is already live for this ${noun}, and only one ` +
-        'campaign can promote it at a time. End that campaign first, or add ' +
-        'what you need to it instead.<br><br>Open it now?',
-        'Already promoted');
-      if (open) {
-        this.router.navigate(['/campaigns-manager'],
-          { queryParams: { tab: 'campaigns', campaignId: holder.id } });
-      }
+    const detailError = validateCampaignDetails(value, {
+      creatingCoupon: this.creatingCoupon,
+      couponNeedsExpiry: this.couponNeedsExpiry
+    });
+    if (detailError) {
+      this.snackbar.error(detailError);
       return;
-    }
-    const socialPicked = value.facebookChannel || value.twitterChannel || value.instagramChannel;
-    if (!value.emailChannel && !value.webChannel && !socialPicked) {
-      this.snackbar.error('Pick at least one channel - email, web popup, or social.');
-      return;
-    }
-    if (value.offerEnabled) {
-      if (!value.offerTargetId) {
-        this.snackbar.error('Pick what the offer applies to.');
-        return;
-      }
-      const amount = Number(value.offerDiscountValue);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        this.snackbar.error(
-          value.offerDiscountType === 'fixedPrice'
-            ? 'Enter the early-bird price.'
-            : 'Enter a percentage off.'
-        );
-        return;
-      }
-      if (value.offerDiscountType === 'percentOff' && amount > 100) {
-        this.snackbar.error('A percentage off cannot exceed 100.');
-        return;
-      }
-    }
-    if (value.couponEnabled) {
-      if (!value.couponId) {
-        this.snackbar.error('Pick a coupon to give subscribers, or create one.');
-        return;
-      }
-      if (this.creatingCoupon) {
-        const code = (value.couponCode ?? '').trim();
-        const percent = Number(value.couponPercentOff);
-        if (!code) {
-          this.snackbar.error('Enter the coupon code subscribers will type.');
-          return;
-        }
-        if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
-          this.snackbar.error('Enter a coupon percentage between 1 and 100.');
-          return;
-        }
-      }
-      // An open-ended campaign has no end date to inherit, so the expiry
-      // has to be chosen - otherwise the code stays live for years.
-      if (this.couponNeedsExpiry && !value.couponExpiresAt) {
-        this.snackbar.error('This campaign has no end date, so give the coupon its own expiry.');
-        return;
-      }
     }
 
     this.saving = true;

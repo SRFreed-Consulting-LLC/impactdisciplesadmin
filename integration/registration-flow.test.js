@@ -79,6 +79,71 @@ test("register_for_event validates input and event state", async () => {
   assert.equal(noEvent.status, 400);
 });
 
+// Finding S9. register_for_event has to stay anonymous - attendees have no
+// accounts - which made it an outbound-email amplifier: N POSTs naming a
+// public eventId queued N branded confirmations to any address the caller
+// chose, from the org's own authenticated sending domain, and fanned each
+// one out into the staff alert counter and the customer-upsert trigger.
+test("register_for_event is idempotent and cannot amplify email at a " +
+  "victim address", async () => {
+  const victim = "victim@amplifier.test";
+  const payload = {
+    eventId: SUMMIT, firstName: "Vic", lastName: "Tim", email: victim,
+  };
+
+  const first = await callHttp("register_for_event", payload);
+  assert.equal(first.status, 200);
+  assert.ok(first.body.registrationId);
+
+  for (let i = 0; i < 4; i++) {
+    const again = await callHttp("register_for_event", payload);
+    // A repeat is a no-op, not an error - a shopper double-clicking must
+    // not see a failure for something that already succeeded.
+    assert.equal(again.status, 200);
+    assert.equal(again.body.alreadyRegistered, true);
+  }
+
+  // The dedupe key is (eventId, email) ALONE - owner's decision
+  // 2026-08-28. Varying the name must not buy another send, because that
+  // is exactly how an attacker would defeat a name-aware key.
+  const renamed = await callHttp("register_for_event", {
+    ...payload, firstName: "Someone", lastName: "Else",
+  });
+  assert.equal(renamed.body.alreadyRegistered, true);
+
+  const regs = await db.collection("event-registrations")
+    .where("eventId", "==", SUMMIT).where("email", "==", victim).get();
+  assert.equal(regs.size, 1, "duplicate roster rows were created");
+
+  const mail = await db.collection("mail").where("to", "==", victim).get();
+  assert.equal(mail.size, 1, "the victim was emailed more than once");
+});
+
+// The naive dedupe - answer with the registration you found - would have
+// opened a PII hole: get_event_registration is unauthenticated and returns
+// that attendee's name, email and receipt for any id it is given.
+test("a repeat registration never hands back the existing id", async () => {
+  const email = "known@amplifier.test";
+  const payload = {
+    eventId: SUMMIT, firstName: "Known", lastName: "Person", email,
+  };
+
+  const created = await callHttp("register_for_event", payload);
+  const realId = created.body.registrationId;
+  assert.ok(realId);
+
+  // An attacker who merely GUESSES the address must learn nothing usable.
+  const probe = await callHttp("register_for_event", payload);
+  assert.equal(probe.body.registrationId, null);
+  assert.ok(!JSON.stringify(probe.body).includes(realId),
+    "the response leaked the registration id");
+
+  // Proof the id would have been worth stealing.
+  const lookup = await callHttp("get_event_registration",
+    {registrationId: realId});
+  assert.equal(lookup.body.registration.email, email);
+});
+
 test("check_registration_exists answers boolean-only", async () => {
   const yes = await callHttp("check_registration_exists", {
     eventId: SUMMIT, email: "attendee01@summit.test",

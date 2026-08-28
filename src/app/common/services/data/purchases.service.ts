@@ -14,6 +14,10 @@ import { EMailService } from './email.service';
 import { EMailTemplatesService } from './email-templates.service';
 import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 import {
+  ShippingCostDrift,
+  WithShippingCostDrift
+} from 'src/app/common/models/domain/shipping-cost-drift.model';
+import {
   RefundStorePurchaseRequest,
   RefundStorePurchaseResult,
 } from '@impact-common/shared/contract/admin-callables.types';
@@ -267,16 +271,35 @@ export class PurchasesService extends BaseService<CheckoutForm>{
       const request = await fetch(environment.shippingLabelUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
-        body: JSON.stringify({ shipId: item.shippingRateId.rateId })
+        // Sweep finding S3: the purchase ID, NOT the rate id quoted at
+        // checkout. The function builds the shipment from this purchase's
+        // own stored address and its products' weights, so a rate id an
+        // anonymous caller planted at checkout can no longer decide where
+        // the org's postage goes. item.shippingRateId is still stored on
+        // the purchase (its amount is what the customer was charged) but
+        // is no longer used to buy anything.
+        body: JSON.stringify({ purchaseId: item.id })
       });
 
       const response = await request.json();
 
-      if (response.code === 400) {
-        this.snackbar.error(response.error.message);
+      // Any error code, not just 400 - the function answers 502 when the
+      // vendor itself fails, and treating that as success used to send an
+      // error payload down the download path and blow up on an undefined
+      // labelDownload.
+      if (!request.ok || response.code >= 400) {
+        this.snackbar.error(response.error?.message ?? 'Failed to buy a shipping label.');
         item.shippingLabel = response;
       } else {
         item.shippingLabel = response;
+        // The function has already written the drift to the purchase.
+        // Carry it onto the in-memory copy BEFORE the update below, which
+        // is a whole-document setDoc - without this it would immediately
+        // overwrite the record the server just made.
+        const drift = (response as { shippingCostDrift?: ShippingCostDrift }).shippingCostDrift;
+        if (drift) {
+          (item as WithShippingCostDrift<CheckoutForm>).shippingCostDrift = drift;
+        }
         if (item.fulfillmentStatus === 'received') {
           item.fulfillmentStatus = 'shipping_label_printed';
           item.statusHistory = this.withStatusHistory(item, 'shipping_label_printed');
