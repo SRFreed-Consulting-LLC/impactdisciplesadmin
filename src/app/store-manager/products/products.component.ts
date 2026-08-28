@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { randomHexId } from 'src/app/common/utils/random-hex-id';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -409,7 +410,7 @@ export class ProductsComponent implements OnInit {
   // collection) - the tag-creation pattern the removed Pod Casts dialog
   // also used.
   onCreateProductTag(text: string): void {
-    const tag: TagModel = { ...new TagModel(), tag: text, id: this.generateRandomId() };
+    const tag: TagModel = { ...new TagModel(), tag: text, id: randomHexId(20) };
     // The write is deliberately NOT awaited - the tag is added to the form
     // immediately so the picker stays responsive. But it was previously
     // un-awaited AND un-caught, so a failed write was completely invisible:
@@ -496,11 +497,4 @@ export class ProductsComponent implements OnInit {
     this.form.patchValue({ [field]: [...current, { tag: text } as TagModel] });
   }
 
-  private generateRandomId(): string {
-    return 'xxxxxxxxxxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
 }

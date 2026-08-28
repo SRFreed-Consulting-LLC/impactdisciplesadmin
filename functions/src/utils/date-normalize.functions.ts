@@ -1,7 +1,23 @@
 import {Timestamp} from "firebase-admin/firestore";
 
 // Functions-side twin of the client's defensive date normalization
-// (src/app/common/utils/date-from-timestamp.ts) - keep the two in sync.
+// (src/common/src/shared/utils/date-from-timestamp.ts) - keep the two in
+// sync. NOTE the path: the twin moved into the SHARED SUBMODULE in the
+// 2026-08-20 move, so a change there reaches web and reader as well as this
+// app, and needs the submodule pushed first plus a pointer bump in each
+// consumer. This pointer named the old pre-move path until 2026-08-28 - the
+// cross-reference IS the entire safety mechanism for a manual mirror, so it
+// rotting was the real defect, not the duplication.
+//
+// Better fix, deliberately not taken today: the shared file is already
+// dependency-free and its own header says "and eventually functions", so it
+// could be added to functions/scripts/sync-shared.js's EXTRA_FILES and this
+// mirror deleted outright. That was left alone because this is the date
+// normalization the sales-tax trigger depends on (a bug fixed here on
+// 2026-08-28 filed tax under the wrong year), and swapping the
+// implementation on that path deserves its own change with its own
+// verification rather than riding along inside a comment fix. The two are
+// behaviourally aligned today.
 // The purchases/event-registrations collections carry dates in several
 // shapes (real Timestamp, Date, ISO string, "MM/dd/yyyy" string, and a
 // malformed plain {seconds, nanoseconds} map - see MIGRATION.md), and any

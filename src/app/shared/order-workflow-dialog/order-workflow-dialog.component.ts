@@ -1,4 +1,8 @@
 import { Component, Inject } from '@angular/core';
+import {
+  customerName as customerNameOf,
+  itemSummary as itemSummaryOf,
+} from 'src/app/contacts-manager/fulfillment/order-display.util';
 import { Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
@@ -80,11 +84,11 @@ export class OrderWorkflowDialogComponent {
   }
 
   itemSummary(): string {
-    return (this.item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', ') || '—';
+    return itemSummaryOf(this.item);
   }
 
   customerName(): string {
-    return [this.item.firstName, this.item.lastName].filter(Boolean).join(' ') || this.item.email || 'Unknown';
+    return customerNameOf(this.item);
   }
 
   acknowledgeOrder(): void {

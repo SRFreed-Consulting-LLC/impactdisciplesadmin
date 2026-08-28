@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { AgendaItem } from '@impact-common/shared/models/domain/utils/agenda-item.model';
 import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
 import { CoachQuickCreateDialogComponent } from './coach-quick-create-dialog.component';
-import { Instructor } from './session-block.util';
+import { Instructor, generateAgendaItemId } from './session-block.util';
 
 export interface AgendaItemDialogData {
   item: AgendaItem | null;
@@ -144,7 +144,7 @@ export class AgendaItemDialogComponent {
     // document by events.component.ts's own onSave().
     const item: AgendaItem = {
       ...this.data.item,
-      id: this.data.item?.id ?? this.generateId(),
+      id: this.data.item?.id ?? generateAgendaItemId(),
       startDate: new Date(raw.startDate),
       endDate: new Date(raw.endDate),
       isCourse: type === 'course',
@@ -160,13 +160,5 @@ export class AgendaItemDialogComponent {
     };
 
     this.dialogRef.close({ action: 'save', item });
-  }
-
-  private generateId(): string {
-    return 'xxxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
   }
 }

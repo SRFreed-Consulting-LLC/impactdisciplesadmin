@@ -63,7 +63,8 @@ real data, or checking prod directly if that's ever appropriate.)
   again if a bad write ever lands there.
 
 **Fix applied in this app** (defensive, not a data fix): `toMillis()`
-(`src/app/common/utils/date-from-timestamp.ts`) is now the one canonical
+(`src/common/src/shared/utils/date-from-timestamp.ts` - the shared submodule
+since the 2026-08-20 move) is now the one canonical
 helper for "give me a sortable number from whatever this field turns out to
 be" - handles all three shapes above plus a genuine JS `Date`. Every
 component that used to hand-roll its own (inconsistent, some silently

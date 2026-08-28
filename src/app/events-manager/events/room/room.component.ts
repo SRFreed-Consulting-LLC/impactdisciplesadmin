@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { randomHexId } from 'src/app/common/utils/random-hex-id';
 import { MatDialog } from '@angular/material/dialog';
 import { TrainingRoomModel } from '@impact-common/shared/models/domain/training-room.model';
 import { ConfirmService } from '../../../shared/confirm-dialog/confirm.service';
@@ -57,7 +58,7 @@ export class RoomComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result: TrainingRoomModel | false) => {
       if (result) {
-        result.id = this.generateRandomId();
+        result.id = randomHexId(20);
         this.trainingRooms.push(result);
         this.rows = [...this.trainingRooms];
         this.snackbar.success(this.itemType + ' Added');
@@ -96,11 +97,4 @@ export class RoomComponent implements OnInit {
     });
   }
 
-  private generateRandomId() {
-    return 'xxxxxxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      const r = (Math.random() * 16) | 0,
-        v = c == 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
 }

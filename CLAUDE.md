@@ -520,7 +520,10 @@ changing a report.
 Repo-root running list of known Firestore data-integrity issues and their defensive fixes — most
 notably inconsistent date-field shapes (real `Timestamp` vs. a malformed `{seconds,nanoseconds}` map
 vs. an ISO string) that can break sort order or silently exclude documents from range queries; the
-defensive fix is the `toMillis()` helper in `src/app/common/utils/date-from-timestamp.ts`. Check it
+defensive fix is the `toMillis()` helper in `src/common/src/shared/utils/date-from-timestamp.ts`
+(the SHARED SUBMODULE since 2026-08-20 - a change there reaches web and reader too, so push the
+submodule first and bump each consumer's pointer; `functions/` keeps its own deliberate mirror in
+`utils/date-normalize.functions.ts`). Check it
 before writing any new query or sort against a date field, and add to it when you find a new
 data-shape gotcha rather than working around it silently in one screen.
 

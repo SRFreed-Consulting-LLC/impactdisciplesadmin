@@ -1,4 +1,5 @@
 import { Component, Input} from '@angular/core';
+import { customerName as customerNameOf } from 'src/app/contacts-manager/fulfillment/order-display.util';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
@@ -158,7 +159,7 @@ export class PurchaseDetailsComponent {
   // ---- Addresses ----
 
   customerName(): string {
-    return [this.selectedItem.firstName, this.selectedItem.lastName].filter(Boolean).join(' ') || this.selectedItem.email || 'Unknown';
+    return customerNameOf(this.selectedItem);
   }
 
   phoneDisplay(): string {

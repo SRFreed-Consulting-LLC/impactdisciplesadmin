@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { randomHexId } from 'src/app/common/utils/random-hex-id';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { OrganizationModel } from '@impact-common/shared/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
@@ -502,7 +503,7 @@ export class ContactDetailsComponent implements OnInit {
         addedBy: `${this.user.firstName} ${this.user.lastName}`,
         private: result.private,
         note: result.note,
-        id: this.generateRandomId()
+        id: randomHexId(8)
       };
       this.notes = [...this.notes, note];
       this.notesSubject.next(this.notes);
@@ -541,11 +542,4 @@ export class ContactDetailsComponent implements OnInit {
     });
   }
 
-  private generateRandomId(): string {
-    return 'xxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
 }

@@ -1,4 +1,9 @@
 import { Component, OnInit} from '@angular/core';
+import {
+  customerName as customerNameOf,
+  isNewOrder,
+  itemSummary as itemSummaryOf,
+} from './order-display.util';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
@@ -113,8 +118,10 @@ export class FulfillmentComponent implements OnInit {
     this.loadOrders();
   }
 
+  // Delegates to order-display.util.ts for the same reason segmentState
+  // delegates to fulfillment-steps.ts - four surfaces show this order.
   isNew(item: CheckoutForm): boolean {
-    return item.fulfillmentStatus === 'new';
+    return isNewOrder(item);
   }
 
   acknowledgeOrder(item: CheckoutForm): void {
@@ -138,11 +145,11 @@ export class FulfillmentComponent implements OnInit {
   }
 
   itemSummary(item: CheckoutForm): string {
-    return (item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', ') || '—';
+    return itemSummaryOf(item);
   }
 
   customerName(item: CheckoutForm): string {
-    return [item.firstName, item.lastName].filter(Boolean).join(' ') || item.email || 'Unknown';
+    return customerNameOf(item);
   }
 
   async printShippingLabel(item: CheckoutForm): Promise<void> {

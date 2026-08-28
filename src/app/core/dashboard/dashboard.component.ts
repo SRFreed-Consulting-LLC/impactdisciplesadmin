@@ -1,4 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  customerName as customerNameOf,
+  isNewOrder,
+  itemSummary as itemSummaryOf,
+} from 'src/app/contacts-manager/fulfillment/order-display.util';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, takeUntil } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
@@ -160,15 +165,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   isNew(item: CheckoutForm): boolean {
-    return item.fulfillmentStatus === 'new';
+    return isNewOrder(item);
   }
 
   itemSummary(item: CheckoutForm): string {
-    return (item.cartItems ?? []).map((c) => c.itemName).filter(Boolean).join(', ') || '—';
+    return itemSummaryOf(item);
   }
 
   customerName(item: CheckoutForm): string {
-    return [item.firstName, item.lastName].filter(Boolean).join(' ') || item.email || 'Unknown';
+    return customerNameOf(item);
   }
 
   private newRank(item: CheckoutForm): number {
