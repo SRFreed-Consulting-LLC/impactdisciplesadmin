@@ -24,6 +24,5 @@ export const environment = {
   // the local port rule lives (web 4200/4201, admin 5200/5201, reader
   // 6200/6201; the last digit picks live-data vs emulator).
   publicSiteUrl: APP_URLS.web.emulator,
-  application: "admin",
   shippingCarriers: ["se-0000000"],
 };

@@ -47,7 +47,8 @@ leave `__datatype__` fields alone.
 ## Convention for the scripts that write (import.js, promote.js, fix-date-shapes.js)
 
 They exist (see the files above, plus the one-off backfill/migration scripts
-alongside them and the executed one-offs under `scripts/archive/`) and follow
+alongside them; `scripts/archive/` was deleted 2026-08-21 — recover an
+executed one-off from git history if you need it) and follow
 the same dry-run-by-default convention as the reader repo's `scripts/`: default to a
 dry run that reports what *would* change, require an explicit flag
 (`--execute`) to actually write, and tag every doc they touch so

@@ -85,23 +85,6 @@ function entryStart(entry: DayScheduleEntry): number {
   return entry.kind === 'item' ? toMillis(entry.item.startDate) : toMillis(entry.block.startDate);
 }
 
-// Splits an event's full agendaItems into per-day buckets (by calendar
-// day, local time) so Wizard/Canvas/Grid can each render a Day 1 / Day 2
-// (or however many days the event actually spans) toggle over the same
-// underlying array - keyed by dayKey() below.
-export function splitByDay(items: AgendaItem[]): Map<string, AgendaItem[]> {
-  const byDay = new Map<string, AgendaItem[]>();
-  items.forEach((item) => {
-    const ms = toMillis(item.startDate);
-    if (!ms) return;
-    const key = dayKey(new Date(ms));
-    const list = byDay.get(key) ?? [];
-    list.push(item);
-    byDay.set(key, list);
-  });
-  return byDay;
-}
-
 export function dayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

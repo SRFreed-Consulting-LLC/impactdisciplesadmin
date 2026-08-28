@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject } from 'rxjs';
 
@@ -59,7 +59,7 @@ class ConstructorSubscriberComponent {
 }
 
 @Component({ template: '', standalone: false })
-class NgOnInitSubscriberComponent {
+class NgOnInitSubscriberComponent implements OnInit {
   received: number[] = [];
   // Captured as a field on purpose: ngOnInit is not an injection context, so
   // takeUntilDestroyed() with no argument throws NG0203 there.

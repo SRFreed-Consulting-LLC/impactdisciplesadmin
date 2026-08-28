@@ -5,7 +5,6 @@ import { FireAuthDao } from '../../dao/fireauth.dao';
 import { AdminUser } from '../../models/admin/admin-user.model';
 import { CookieService } from 'ngx-cookie-service';
 import { catchError, from, map, Observable, of, switchMap, take } from 'rxjs';
-import { environment } from 'src/environments/environment';
 import { notify } from 'src/app/common/utils/notify.util';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
@@ -64,13 +63,14 @@ export class AdminAuthService {
                     this.user['cookie_expiration_time'] = Date.parse(token.expirationTime);
                     console.log('Expiration:' + new Date(this.user['cookie_expiration_time']));
 
-                    if(environment.application == 'admin'){
-                      this.router.navigate([this._lastAuthenticatedPath]);
-                    } else if(environment.application == 'book' || environment.application == 'impactdisciples-library'){
-                      this.router.navigate(['/home']);
-                    } else {
-                      this.router.navigate(['profile']);
-                    }
+                    // Was a three-branch switch on environment.application.
+                    // That key is the literal "admin" in all five env files,
+                    // so branches two and three were copy-paste residue from
+                    // the library/reader app - and the final else navigated
+                    // to 'profile', which is not a registered route here.
+                    // Removed 2026-08-28 (sweep D2) along with the env key,
+                    // which had no other consumer.
+                    this.router.navigate([this._lastAuthenticatedPath]);
 
                     this.cookieService.set(COOKIE_NAME, JSON.stringify(this.user), { expires: this.user['cookie_expiration_time'] });
 

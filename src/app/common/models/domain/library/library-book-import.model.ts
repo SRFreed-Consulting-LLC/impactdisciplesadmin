@@ -7,22 +7,16 @@
 // into these shapes; this client assembles them into Form.io schemas
 // (library-book-schema-assembler.util.ts) and writes the library content.
 import type {
-  BlockSection,
   BookPlan,
   ImportBlock,
   ImportDailyReading,
   LessonContent,
-  PlannedLesson,
-  PlannedUnit,
 } from '@impact-common/shared/contract/book-import.types';
 
 export type { BookImportRequest, BookImportResponse } from '@impact-common/shared/contract/book-import.types';
 
-export type LibraryBlockSection = BlockSection;
 export type LibraryImportBlock = ImportBlock;
 export type LibraryImportDailyReading = ImportDailyReading;
-export type LibraryPlannedLesson = PlannedLesson;
-export type LibraryPlannedUnit = PlannedUnit;
 export type LibraryBookPlan = BookPlan;
 export type LibraryLessonContent = LessonContent;
 

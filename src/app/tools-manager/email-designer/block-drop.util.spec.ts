@@ -11,7 +11,7 @@ import {
   handleBlockDrop,
   handleRowDrop
 } from './block-drop.util';
-import { CHROME_FOOTERS, CHROME_PIECES, chromePieceById } from 'src/app/common/utils/email/chrome-pieces';
+import { CHROME_PIECES, chromePieceById } from 'src/app/common/utils/email/chrome-pieces';
 import {
   BlockType,
   EmailBlock,
@@ -322,7 +322,7 @@ describe('handleRowDrop from the chrome palette', () => {
   });
 
   it('substitutes the brand address token on the way in', () => {
-    const piece = CHROME_FOOTERS.find((p) =>
+    const piece = CHROME_PIECES.filter((p) => p.kind === 'footer').find((p) =>
       p.build().columns[0].blocks.some((b) => b.type === 'html' && b.props.html.includes(BRAND_ADDRESS_TOKEN)));
     expect(piece).withContext('expected a mined footer carrying the token').toBeTruthy();
 

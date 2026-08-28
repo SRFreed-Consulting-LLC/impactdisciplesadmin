@@ -1,6 +1,4 @@
 import {
-  CHROME_FOOTERS,
-  CHROME_HEADERS,
   CHROME_PIECES,
   chromePieceById
 } from './chrome-pieces';
@@ -32,12 +30,15 @@ describe('CHROME_PIECES', () => {
   it('offers a transactional option in BOTH positions', () => {
     // The reason this file exists: the Amazon shipping confirmation needed a
     // masthead, and newsletter chrome is the wrong answer for a receipt.
-    expect(CHROME_HEADERS.some((p) => p.family === 'transactional')).toBe(true);
-    expect(CHROME_FOOTERS.some((p) => p.family === 'transactional')).toBe(true);
+    const headers = CHROME_PIECES.filter((p) => p.kind === 'header');
+    const footers = CHROME_PIECES.filter((p) => p.kind === 'footer');
+    expect(headers.some((p) => p.family === 'transactional')).toBe(true);
+    expect(footers.some((p) => p.family === 'transactional')).toBe(true);
   });
 
   it('partitions cleanly into headers and footers', () => {
-    expect(CHROME_HEADERS.length + CHROME_FOOTERS.length).toBe(CHROME_PIECES.length);
+    const kinds = CHROME_PIECES.filter((p) => p.kind === 'header' || p.kind === 'footer');
+    expect(kinds.length).toBe(CHROME_PIECES.length);
   });
 
   it('names and describes every piece', () => {

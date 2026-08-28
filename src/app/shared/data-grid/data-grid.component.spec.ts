@@ -283,12 +283,10 @@ describe('DataGridComponent', () => {
       expect(makeGrid(COLUMNS, ROWS).visibleRows.length).toBe(3);
     });
 
-    it('re-emits visible rows when the source changes', () => {
+    it('recomputes visible rows when the source changes', () => {
       const grid = makeGrid(COLUMNS, ROWS);
-      const seen: Row[][] = [];
-      grid.visibleRowsChange.subscribe((rows) => seen.push(rows));
       pushRows(grid, [ROWS[0]]);
-      expect(seen[seen.length - 1].length).toBe(1);
+      expect(grid.visibleRows.length).toBe(1);
     });
 
     it('treats a null rows input as empty rather than throwing', () => {
@@ -376,13 +374,16 @@ describe('DataGridComponent', () => {
   });
 
   describe('teardown', () => {
-    it('stops emitting after destroy', () => {
+    it('stops processing source updates after destroy', () => {
+      // Was asserted through the visibleRowsChange output, removed 2026-08-28
+      // as dead API (no binding across 176 templates). The BEHAVIOUR it
+      // covered is real - a destroyed grid must not keep recomputing off a
+      // still-live source - so it is asserted directly instead.
       const grid = makeGrid(COLUMNS, ROWS);
+      const before = grid.visibleRows.length;
       grid.ngOnDestroy();
-      let emitted = 0;
-      grid.visibleRowsChange.subscribe(() => emitted++);
       pushRows(grid, [ROWS[0]]);
-      expect(emitted).toBe(0);
+      expect(grid.visibleRows.length).toBe(before);
     });
   });
 });

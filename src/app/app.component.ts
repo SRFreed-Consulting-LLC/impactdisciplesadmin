@@ -12,7 +12,6 @@ const STALE_CHUNK_RELOAD_KEY = 'id-admin-stale-chunk-reload';
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
-    styleUrls: ['./app.component.scss'],
     standalone: false
 })
 export class AppComponent {

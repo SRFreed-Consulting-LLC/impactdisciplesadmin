@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PhoneNumberMaskPipe } from 'src/app/common/pipes/phone-number.pipe';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { DMMServiceComponent } from './dmms/dmms.component';
 import { DMMDialogComponent } from './dmms/dmm-dialog.component';
@@ -84,7 +83,6 @@ import { QuillModule } from 'ngx-quill';
     DockingBarComponent
   ],
   providers:[
-    PhoneNumberMaskPipe,
     provideHttpClient()
   ]
 })

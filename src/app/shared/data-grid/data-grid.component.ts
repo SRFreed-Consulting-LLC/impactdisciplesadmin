@@ -111,7 +111,6 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
    *  rowDoubleClick above. Row action buttons stopPropagation, so clicking
    *  an icon never also counts as a row click. */
   @Output() rowClick = new EventEmitter<T>();
-  @Output() visibleRowsChange = new EventEmitter<T[]>();
   /** Fires after every master-toggle/row-toggle on [selection] - for
    *  callers that need a side effect on change (e.g. FAQComponent syncing
    *  event.faqList = selection.selected), since the grid owns the
@@ -396,7 +395,6 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
       : filtered;
 
     this.visibleRows = sorted;
-    this.visibleRowsChange.emit(sorted);
   }
 
   private defaultCompare(a: unknown, b: unknown, type?: DataGridColumn<T>['type']): number {

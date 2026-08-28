@@ -151,9 +151,6 @@ const ARCHIVE_PIECES: ChromePiece[] = ARCHIVE_SHELLS.flatMap((shell, index) => {
 // read top-down by someone who most often wants a masthead.
 export const CHROME_PIECES: ChromePiece[] = [...TRANSACTIONAL_PIECES, ...ARCHIVE_PIECES];
 
-export const CHROME_HEADERS = CHROME_PIECES.filter((piece) => piece.kind === 'header');
-export const CHROME_FOOTERS = CHROME_PIECES.filter((piece) => piece.kind === 'footer');
-
 /** Looks a piece up by id - the palette drags an id, not an object. */
 export function chromePieceById(id: string): ChromePiece | undefined {
   return CHROME_PIECES.find((piece) => piece.id === id);

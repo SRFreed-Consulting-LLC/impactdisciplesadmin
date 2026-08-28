@@ -8,7 +8,6 @@ export const environment = {
   shippingLabelUrl: functionUrl('prod', 'get_shipping_label'),
   unsubscribeUrl: functionUrl('prod', 'unsubscribe_from_email_list'),
   publicSiteUrl: "https://impactdisciples.com",
-  application: "admin",
   shippingCarriers: ["se-1047625"],
 };
 

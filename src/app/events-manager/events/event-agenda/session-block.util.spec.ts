@@ -9,7 +9,6 @@ import {
   groupAgendaItemsIntoBlocks,
   Instructor,
   itemTitle,
-  splitByDay
 } from './session-block.util';
 
 // Fixture times are all in August (no DST transition inside any tested
@@ -135,36 +134,6 @@ describe('buildDaySchedule', () => {
     expect(schedule[1].kind === 'block' && schedule[1].block.options.length).toBe(2);
     expect(schedule[2].kind === 'item' && schedule[2].item.id).toBe('lunch');
     expect(schedule[3].kind === 'block' && schedule[3].block.options[0].id).toBe('bk2-a');
-  });
-});
-
-describe('splitByDay', () => {
-  it('splits a 2-day event\'s items into per-calendar-day buckets', () => {
-    const items = [
-      course({ id: 'd1-a' }),
-      course({ id: 'd2-a', startDate: new Date(2026, 7, 11, 9, 0), endDate: new Date(2026, 7, 11, 10, 0) }),
-      course({ id: 'd1-b', startDate: new Date(2026, 7, 10, 23, 59), endDate: new Date(2026, 7, 11, 0, 30) })
-    ];
-
-    const byDay = splitByDay(items);
-
-    expect([...byDay.keys()]).toEqual(jasmine.arrayWithExactContents(['2026-08-10', '2026-08-11']));
-    // A late-night item belongs to its START date's day.
-    expect(byDay.get('2026-08-10')!.map((i) => i.id)).toEqual(['d1-a', 'd1-b']);
-    expect(byDay.get('2026-08-11')!.map((i) => i.id)).toEqual(['d2-a']);
-  });
-
-  it('drops items with a missing or unparseable startDate rather than inventing a day', () => {
-    const items = [
-      course({ id: 'good' }),
-      course({ id: 'no-date', startDate: undefined }),
-      course({ id: 'garbage', startDate: 'not-a-date' as unknown as Date })
-    ];
-
-    const byDay = splitByDay(items);
-
-    expect(byDay.size).toBe(1);
-    expect(byDay.get('2026-08-10')!.map((i) => i.id)).toEqual(['good']);
   });
 });
 
