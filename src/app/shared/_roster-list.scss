@@ -1,0 +1,33 @@
+// The layout every "roster" list screen needs: a full-height flex host so
+// the data grid can resolve a real height.
+//
+// Coaches and Team Page carried byte-identical copies of this (same md5,
+// 2026-08-27 sweep P4). Shared because it is incidental styling, not
+// something either screen owns - the two screens differ in their DATA
+// (coaches vs impact_team) and in whether they offer a New action, never in
+// how their grid is laid out.
+
+.active-template {
+  padding: 5px 15px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #fff;
+}
+
+/* See shared/data-grid/data-grid.component.scss's own comment - the grid
+   needs a resolved (non-auto) height from its host for CDK Table's sticky
+   header to actually stay stuck. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+app-data-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ImpactTeamMemberModel } from '@impact-common/shared/models/domain/impact-team-member.model';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
@@ -8,33 +8,35 @@ import { OrganizationService } from 'src/app/common/services/data/organization.s
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
+import { BaseListComponent } from '../../shared/base-list.component';
+import { organizationNameOf } from '../../shared/organization-name.util';
 import { TeamPageDialogComponent } from './team-page-dialog.component';
 
-// Split off Coaches (2026-08) - this collection (`impact_team`) is the
-// public-facing half of what used to be one shared `coaches` collection:
-// whoever appears on the site's own "My Team" page, administered here
-// under Web Manager since that's who owns public site content, rather than
-// Events Manager where breakout-only instructors stay (see
-// coaches.component.ts's own updated header comment). An Impact Team
-// member can still be picked as a breakout instructor - see
-// course-dialog.component.ts's combined Coaches + Impact Team picker -
-// this split only changes who maintains the record, not where it can be
-// used. See MIGRATION.md for the one-time move out of `coaches` (anyone
-// who had teamPageSortOrder set) and the follow-up needed in
-// impactdisciples-web (a separate repo, not editable from here) to read
-// this collection instead.
+// The public "My Team" page's roster, split out of `coaches` in 2026-08 when
+// one record was found to be serving two unrelated purposes: breakout
+// instructor AND public team member. This half owns the public-facing one
+// and lives in Content Manager because that area owns public site content;
+// the `impact_team` collection is its own.
+//
+// Structurally a twin of Events Manager > Coaches, and both extend
+// BaseListComponent (2026-08-28, sweep P4) - but SEPARATELY, not as one
+// shared component. Different collections, and Coaches is deliberately
+// edit-only while this screen has a normal New.
 @Component({
     selector: 'app-team-page',
     templateUrl: './team-page.component.html',
     styleUrls: ['./team-page.component.scss'],
     standalone: false
 })
-export class TeamPageComponent implements OnInit, OnDestroy {
-  members$: Observable<ImpactTeamMemberModel[]>;
+export class TeamPageComponent extends BaseListComponent<ImpactTeamMemberModel>
+  implements OnInit, OnDestroy {
+  readonly itemType = 'Team Member';
+  protected readonly screenKey = 'content-manager.team-page';
+  protected readonly dialogComponent = TeamPageDialogComponent;
+  protected override readonly dialogConfig = { width: '1150px', maxWidth: '95vw' };
 
-  columns: DataGridColumn<ImpactTeamMemberModel>[] = [
+  readonly columns: DataGridColumn<ImpactTeamMemberModel>[] = [
     { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
     { key: 'photoUrl', label: 'Photo', filterable: false, sortable: false, value: (item) => item.photoUrl?.name ?? '' },
     { key: 'sortOrder', label: 'Sort Order', type: 'number', filterable: false },
@@ -44,40 +46,33 @@ export class TeamPageComponent implements OnInit, OnDestroy {
     { key: 'organization', label: 'Organization', value: (item) => this.organizationName(item) }
   ];
 
-  itemType = 'Team Member';
-
-  private readonly screenKey = 'content-manager.team-page';
-
-  headerActions: ListHeaderAction[] = [];
-  rowActions: DataGridRowAction<ImpactTeamMemberModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
-
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
-
-  // Kept live for organization name lookups in the list - same pattern as
-  // coaches.component.ts's own organizations array.
   organizations: OrganizationModel[] = [];
+
+  /** The template still binds `members$`; the base owns it as `items$`. */
+  get members$() {
+    return this.items$;
+  }
 
   private ngUnsubscribe = new Subject<void>();
 
   constructor(
-    private service: ImpactTeamService,
+    service: ImpactTeamService,
     private organizationService: OrganizationService,
-    private permissionService: PermissionService,
-    private dialog: MatDialog,
-    private confirmService: ConfirmService,
-    private snackbar: SnackbarService
-  ) {}
+    permissionService: PermissionService,
+    dialog: MatDialog,
+    confirmService: ConfirmService,
+    snackbar: SnackbarService
+  ) {
+    super(service, permissionService, dialog, confirmService, snackbar);
+  }
 
-  ngOnInit(): void {
-    this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
-      this.organizations = organizations;
-    });
-
-    this.members$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
-
-    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+  override ngOnInit(): void {
+    super.ngOnInit();
+    this.organizationService.streamAll()
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((organizations) => {
+        this.organizations = organizations;
+      });
   }
 
   ngOnDestroy(): void {
@@ -86,34 +81,6 @@ export class TeamPageComponent implements OnInit, OnDestroy {
   }
 
   organizationName(item: ImpactTeamMemberModel): string {
-    const orgId = typeof item.organization === 'string' ? item.organization : item.organization?.id;
-    return this.organizations.find((o) => o.id === orgId)?.name ?? '';
-  }
-
-  showAddModal(): void {
-    if (!this.permissionService.canAdd(this.screenKey)) {
-      return;
-    }
-    this.dialog.open(TeamPageDialogComponent, { width: '1200px', maxWidth: '95vw', data: { item: null } });
-  }
-
-  showEditModal(item: ImpactTeamMemberModel): void {
-    if (!this.permissionService.canEdit(this.screenKey)) {
-      return;
-    }
-    this.dialog.open(TeamPageDialogComponent, { width: '1200px', maxWidth: '95vw', data: { item } });
-  }
-
-  delete(item: ImpactTeamMemberModel): void {
-    if (!this.permissionService.canDelete(this.screenKey)) {
-      return;
-    }
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
+    return organizationNameOf(item, this.organizations);
   }
 }

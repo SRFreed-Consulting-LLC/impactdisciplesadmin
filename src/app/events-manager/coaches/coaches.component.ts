@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { CoachModel } from '@impact-common/shared/models/domain/coach.model';
 import { CoachService } from 'src/app/common/services/data/coach.service';
@@ -9,27 +9,39 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
+import { BaseListComponent } from '../../shared/base-list.component';
+import { organizationNameOf } from '../../shared/organization-name.util';
 import { CoachDialogComponent } from './coach-dialog.component';
 
 // Breakout-instructor-only since the Impact Team split (2026-08) - this
 // screen used to also manage who appears on the public "My Team" page
 // (teamPageSortOrder); that half moved to its own collection/screen
-// (Web Manager > Team Page, team-page.component.ts) since Web Manager owns
+// (Content Manager > Team Page, team-page.component.ts) since that area owns
 // public site content. A former team-page coach can still be selected as a
-// breakout instructor here after the split - see course-dialog.component.ts's
-// combined Coaches + Impact Team picker - this only changed who
-// administers the record and where.
+// breakout instructor here after the split - see the combined Coaches +
+// Impact Team picker - this only changed who administers the record and
+// where.
+//
+// Extends BaseListComponent (2026-08-28, sweep P4) like every other small
+// CRUD list screen. Team Page is its structural twin but a DIFFERENT screen
+// over a DIFFERENT collection (coaches vs impact_team) - they extend the base
+// separately rather than sharing a component, because the datasets and the
+// add behaviour genuinely differ.
 @Component({
     selector: 'app-coaches',
     templateUrl: './coaches.component.html',
     styleUrls: ['./coaches.component.scss'],
     standalone: false
 })
-export class CoachesComponent implements OnInit, OnDestroy {
-  coaches$: Observable<CoachModel[]>;
+export class CoachesComponent extends BaseListComponent<CoachModel>
+  implements OnInit, OnDestroy {
+  readonly itemType = 'Coach';
+  protected readonly screenKey = 'events-manager.coaches';
+  protected readonly dialogComponent = CoachDialogComponent;
+  protected override readonly dialogConfig = { width: '1150px', maxWidth: '95vw' };
 
-  columns: DataGridColumn<CoachModel>[] = [
+  readonly columns: DataGridColumn<CoachModel>[] = [
     { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
     { key: 'photoUrl', label: 'Photo', filterable: false, sortable: false, value: (item) => item.photoUrl?.name ?? '' },
     { key: 'sortOrder', label: 'Sort Order', type: 'number', filterable: false },
@@ -39,45 +51,49 @@ export class CoachesComponent implements OnInit, OnDestroy {
     { key: 'organization', label: 'Organization', value: (item) => this.organizationName(item) }
   ];
 
-  itemType = 'Coach';
-
-  private readonly screenKey = 'events-manager.coaches';
-
-  headerActions: ListHeaderAction[] = [];
-  rowActions: DataGridRowAction<CoachModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
-
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
-
-  // Kept live for organization name lookups in the list - same pattern as
-  // Products' categories/series arrays.
+  /** Kept live for organization name lookups in the list - same pattern as
+   *  Products' categories/series arrays. */
   organizations: OrganizationModel[] = [];
+
+  /** The template still binds `coaches$`; the base owns it as `items$`. */
+  get coaches$() {
+    return this.items$;
+  }
 
   private ngUnsubscribe = new Subject<void>();
 
   constructor(
-    private service: CoachService,
+    service: CoachService,
     private organizationService: OrganizationService,
-    private permissionService: PermissionService,
-    private dialog: MatDialog,
-    private confirmService: ConfirmService,
-    private snackbar: SnackbarService
-  ) {}
+    permissionService: PermissionService,
+    dialog: MatDialog,
+    confirmService: ConfirmService,
+    snackbar: SnackbarService
+  ) {
+    super(service, permissionService, dialog, confirmService, snackbar);
+  }
 
-  ngOnInit(): void {
-    this.organizationService.streamAll().pipe(takeUntil(this.ngUnsubscribe)).subscribe((organizations) => {
-      this.organizations = organizations;
-    });
+  override ngOnInit(): void {
+    super.ngOnInit();
+    this.organizationService.streamAll()
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((organizations) => {
+        this.organizations = organizations;
+      });
+  }
 
-    this.coaches$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
-
-    // EDIT-ONLY since the 2026-08 restructure (user decision): new coaches
-    // are created exclusively from the Summit screen's agenda dialogs
-    // ("+ Add new coach to this event" - coach-quick-create-dialog); this
-    // roster exists to maintain the fuller profile (photo/bio/organization)
-    // afterward, so it deliberately has no New action.
-    this.headerActions = [];
+  /**
+   * EDIT-ONLY since the 2026-08-19 restructure (user decision): new coaches
+   * are created exclusively from the Summit screen's agenda dialogs
+   * ("+ Add new coach to this event" - coach-quick-create-dialog); this
+   * roster exists to maintain the fuller profile (photo/bio/organization)
+   * afterward, so it deliberately has no New action EVEN FOR someone holding
+   * the add grant. That is why this overrides rather than relying on the
+   * base's permission-gated default.
+   * @return {ListHeaderAction[]} Always empty.
+   */
+  protected override buildHeaderActions(): ListHeaderAction[] {
+    return [];
   }
 
   ngOnDestroy(): void {
@@ -86,27 +102,6 @@ export class CoachesComponent implements OnInit, OnDestroy {
   }
 
   organizationName(item: CoachModel): string {
-    const orgId = typeof item.organization === 'string' ? item.organization : item.organization?.id;
-    return this.organizations.find((o) => o.id === orgId)?.name ?? '';
-  }
-
-  showEditModal(item: CoachModel): void {
-    if (!this.permissionService.canEdit(this.screenKey)) {
-      return;
-    }
-    this.dialog.open(CoachDialogComponent, { width: '1150px', maxWidth: '95vw', data: { item } });
-  }
-
-  delete(item: CoachModel): void {
-    if (!this.permissionService.canDelete(this.screenKey)) {
-      return;
-    }
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
+    return organizationNameOf(item, this.organizations);
   }
 }

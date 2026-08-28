@@ -98,7 +98,21 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
 
   ngOnInit(): void {
     this.items$ = this.loadItems();
-    this.headerActions = this.canAddHere()
+    this.headerActions = this.buildHeaderActions();
+  }
+
+  /**
+   * The header actions for this screen. By default, a permission-gated New.
+   *
+   * Override for a screen that is deliberately EDIT-ONLY - one whose records
+   * are created somewhere else entirely, so a New button here would be wrong
+   * even for someone holding the add grant. Coaches is the case this exists
+   * for: coaches are created from the Summit agenda's quick-create dialog,
+   * and the roster only maintains the fuller profile afterwards.
+   * @return {ListHeaderAction[]} The actions to show in the list header.
+   */
+  protected buildHeaderActions(): ListHeaderAction[] {
+    return this.canAddHere()
       ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }]
       : [];
   }
