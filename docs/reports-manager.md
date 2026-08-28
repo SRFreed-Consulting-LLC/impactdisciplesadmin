@@ -64,10 +64,24 @@ Common conventions established by Purchase Report and followed by the others:
   supports it, not a full-collection client-side filter. Where Firestore can't OR across two fields
   in one query (e.g. matching a State against both billing and shipping address), the report queries
   twice and merges/dedupes by id client-side.
-- Reuses list-screen infra: `ColumnDef[]` visibility toggles, `DataGridColumn`/`app-data-grid`
-  (rendered with `[showHeader]="false" [showFilterRow]="false"` — Columns/Export/criteria stay this
-  component's own hand-rolled `app-list-header`, not the grid's built-in versions), `exportToExcel`/
-  `ExcelColumn` (`shared/table-export.util.ts`) — same conventions as the List-screen section above.
+- Column visibility, grid columns and Excel export come from
+  **`reports-manager/report-column-set.ts`** — construct a
+  `ReportColumnSet<TRow>` with your `ReportColumn[]` and expose thin delegates
+  (`columns`, `displayedColumns`, `toggleColumn`, `columnLabel`, `gridColumns`,
+  `exportExcel`) so the shared template markup binds unchanged. Put a column's
+  `type`/`dateFormat` **on the column definition**; do not reintroduce a
+  per-report `toGridColumn()` if-chain, which is what this replaced.
+
+  Until 2026-08-28 this line read "reuses list-screen infra: `ColumnDef[]`
+  visibility toggles…", which described an abstraction that did not exist —
+  each report carried its own `interface ColumnDef` plus six byte-identical
+  methods, so a fourth report meant copying ~90 lines of TypeScript before
+  writing a query. The doc is what made that invisible; it is accurate now.
+- Still rendered with `DataGridColumn`/`app-data-grid` at
+  `[showHeader]="false" [showFilterRow]="false"` — Columns/Export/criteria stay
+  each component's own hand-rolled `app-list-header`, not the grid's built-in
+  versions — over `exportToExcel`/`ExcelColumn` (`shared/table-export.util.ts`),
+  same conventions as the List-screen section above.
 - Known limitation on Purchase Report specifically, documented inline and in `MIGRATION.md`:
   malformed date fields (see next section) can silently drop matching rows from a date-range report
   query. A "specific product(s)" filter was deliberately dropped as infeasible without a schema

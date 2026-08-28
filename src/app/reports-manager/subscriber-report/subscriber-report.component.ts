@@ -8,17 +8,11 @@ import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timesta
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { ReportColumn, ReportColumnSet } from '../report-column-set';
 import { ReportRow, SubscriberQueryRow } from './subscriber-report-row.model';
 import { SubscriberDialogComponent } from './subscriber-dialog.component';
 import { SendSubscriptionDialogComponent } from './send-subscription-dialog.component';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 type DateMode = 'after' | 'between' | 'lastMonths';
 
@@ -53,13 +47,13 @@ type DateMode = 'after' | 'between' | 'lastMonths';
 export class SubscriberReportComponent {
   criteriaForm: FormGroup;
 
-  columns: ColumnDef[] = [
+  readonly columnSet = new ReportColumnSet<ReportRow>([
     { key: 'firstName', label: 'First Name', visible: true },
     { key: 'lastName', label: 'Last Name', visible: true },
     { key: 'email', label: 'Email', visible: true },
     { key: 'typeLabel', label: 'Type', visible: true },
-    { key: 'date', label: 'Date Subscribed', visible: true }
-  ];
+    { key: 'date', label: 'Date Subscribed', visible: true, type: 'date', dateFormat: 'short' }
+  ]);
 
   results: ReportRow[] = [];
   loading = false;
@@ -106,28 +100,31 @@ export class SubscriberReportComponent {
     return this.permissionService.canEdit(this.screenKey);
   }
 
-  get displayedColumns(): string[] {
-    return this.columns.filter((c) => c.visible).map((c) => c.key);
+// Column visibility, grid columns and Excel export all live in
+  // ReportColumnSet (sweep P1) - these stay as members so the template
+  // bindings are unchanged.
+  get columns(): ReportColumn[] {
+    return this.columnSet.all;
   }
 
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
+  get displayedColumns(): string[] {
+    return this.columnSet.displayedColumns;
+  }
+
+  toggleColumn(column: ReportColumn): void {
+    this.columnSet.toggleColumn(column);
   }
 
   columnLabel(key: string): string {
-    return this.columns.find((c) => c.key === key)?.label ?? key;
+    return this.columnSet.columnLabel(key);
   }
 
   get gridColumns(): DataGridColumn<ReportRow>[] {
-    return this.displayedColumns.map((key) => this.toGridColumn(key));
+    return this.columnSet.gridColumns;
   }
 
-  private toGridColumn(key: string): DataGridColumn<ReportRow> {
-    const label = this.columnLabel(key);
-    if (key === 'date') {
-      return { key, label, type: 'date', dateFormat: 'short', sortable: false };
-    }
-    return { key, label, sortable: false };
+  exportExcel(): void {
+    void this.columnSet.exportExcel(this.results, 'subscriber-report.xlsx');
   }
 
   typeLabel(type: SubscriptionType): string {
@@ -270,22 +267,4 @@ export class SubscriberReportComponent {
 
   // ---- Export ----
 
-  private fieldValue(row: ReportRow, key: string): unknown {
-    return (row as unknown as Record<string, unknown>)[key];
-  }
-
-  exportExcel(): void {
-    const visibleKeys = this.displayedColumns;
-    const excelColumns: ExcelColumn<ReportRow>[] = visibleKeys.map((key) => ({
-      header: this.columnLabel(key),
-      value: (row): string | number | Date => {
-        const value = this.fieldValue(row, key);
-        if (value instanceof Date || typeof value === 'string' || typeof value === 'number') {
-          return value;
-        }
-        return value == null ? '' : String(value);
-      }
-    }));
-    exportToExcel(this.results, excelColumns, 'subscriber-report.xlsx');
-  }
 }

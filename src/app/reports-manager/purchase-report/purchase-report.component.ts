@@ -6,15 +6,9 @@ import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { stateVariants } from 'src/app/common/utils/state-variants';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
+import { ReportColumn, ReportColumnSet } from '../report-column-set';
 import { FULFILLMENT_STEPS } from '../../contacts-manager/fulfillment/fulfillment-steps';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
 
 // Flat, report-specific row shape - not CheckoutForm itself.
 interface ReportRow {
@@ -76,7 +70,7 @@ export class PurchaseReportComponent {
 
   criteriaForm: FormGroup;
 
-  columns: ColumnDef[] = [
+  readonly columnSet = new ReportColumnSet<ReportRow>([
     { key: 'firstName', label: 'First Name', visible: true },
     { key: 'lastName', label: 'Last Name', visible: true },
     { key: 'email', label: 'Email', visible: true },
@@ -91,12 +85,12 @@ export class PurchaseReportComponent {
     { key: 'shippingCity', label: 'Shipping City', visible: false },
     { key: 'shippingState', label: 'Shipping State', visible: false },
     { key: 'shippingZip', label: 'Shipping Zip', visible: false },
-    { key: 'dateProcessed', label: 'Purchase Date', visible: true },
+    { key: 'dateProcessed', label: 'Purchase Date', visible: true, type: 'date', dateFormat: 'short' },
     { key: 'itemsPurchased', label: 'Items Purchased', visible: true },
-    { key: 'total', label: 'Total', visible: true },
+    { key: 'total', label: 'Total', visible: true, type: 'currency' },
     { key: 'fulfillmentStatusLabel', label: 'Status', visible: false },
     { key: 'receipt', label: 'Receipt', visible: false }
-  ];
+  ]);
 
   results: ReportRow[] = [];
   loading = false;
@@ -120,33 +114,31 @@ export class PurchaseReportComponent {
     return this.criteriaForm.value.dateEnabled || this.criteriaForm.value.stateEnabled;
   }
 
-  get displayedColumns(): string[] {
-    return this.columns.filter((c) => c.visible).map((c) => c.key);
+// Column visibility, grid columns and Excel export all live in
+  // ReportColumnSet (sweep P1) - these stay as members so the template
+  // bindings are unchanged.
+  get columns(): ReportColumn[] {
+    return this.columnSet.all;
   }
 
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
+  get displayedColumns(): string[] {
+    return this.columnSet.displayedColumns;
+  }
+
+  toggleColumn(column: ReportColumn): void {
+    this.columnSet.toggleColumn(column);
   }
 
   columnLabel(key: string): string {
-    return this.columns.find((c) => c.key === key)?.label ?? key;
+    return this.columnSet.columnLabel(key);
   }
 
-  // Feeds app-data-grid (rendering only - Columns/Export/the criteria form
-  // stay this component's own hand-rolled app-list-header above).
   get gridColumns(): DataGridColumn<ReportRow>[] {
-    return this.displayedColumns.map((key) => this.toGridColumn(key));
+    return this.columnSet.gridColumns;
   }
 
-  private toGridColumn(key: string): DataGridColumn<ReportRow> {
-    const label = this.columnLabel(key);
-    if (key === 'dateProcessed') {
-      return { key, label, type: 'date', dateFormat: 'short', sortable: false };
-    }
-    if (key === 'total') {
-      return { key, label, type: 'currency', sortable: false };
-    }
-    return { key, label, sortable: false };
+  exportExcel(): void {
+    void this.columnSet.exportExcel(this.results, 'purchase-report.xlsx');
   }
 
   async generateReport(): Promise<void> {
@@ -252,22 +244,4 @@ export class PurchaseReportComponent {
     };
   }
 
-  private fieldValue(row: ReportRow, key: string): unknown {
-    return (row as unknown as unknown as Record<string, unknown>)[key];
-  }
-
-  exportExcel(): void {
-    const visibleKeys = this.displayedColumns;
-    const excelColumns: ExcelColumn<ReportRow>[] = visibleKeys.map((key) => ({
-      header: this.columnLabel(key),
-      value: (row): string | number | Date => {
-        const value = this.fieldValue(row, key);
-        if (value instanceof Date || typeof value === 'string' || typeof value === 'number') {
-          return value;
-        }
-        return value == null ? '' : String(value);
-      }
-    }));
-    exportToExcel(this.results, excelColumns, 'purchase-report.xlsx');
-  }
 }

@@ -5,14 +5,8 @@ import { ContactService } from 'src/app/common/services/data/contact.service';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { stateVariants } from 'src/app/common/utils/state-variants';
-import { ExcelColumn, exportToExcel } from '../../shared/table-export.util';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
-
-interface ColumnDef {
-  key: string;
-  label: string;
-  visible: boolean;
-}
+import { ReportColumn, ReportColumnSet } from '../report-column-set';
 
 interface ReportRow {
   id: string;
@@ -54,7 +48,7 @@ export class ContactReportComponent {
 
   criteriaForm: FormGroup;
 
-  columns: ColumnDef[] = [
+  readonly columnSet = new ReportColumnSet<ReportRow>([
     { key: 'lastName', label: 'Last Name', visible: true },
     { key: 'firstName', label: 'First Name', visible: true },
     { key: 'email', label: 'Email', visible: true },
@@ -67,8 +61,8 @@ export class ContactReportComponent {
     { key: 'shippingCity', label: 'Shipping City', visible: false },
     { key: 'shippingState', label: 'Shipping State', visible: false },
     { key: 'shippingZip', label: 'Shipping Zip', visible: false },
-    { key: 'pendingChangesCount', label: 'Pending Review', visible: true }
-  ];
+    { key: 'pendingChangesCount', label: 'Pending Review', visible: true, type: 'number' }
+  ]);
 
   results: ReportRow[] = [];
   loading = false;
@@ -86,28 +80,31 @@ export class ContactReportComponent {
     return this.criteriaForm.value.stateEnabled;
   }
 
-  get displayedColumns(): string[] {
-    return this.columns.filter((c) => c.visible).map((c) => c.key);
+// Column visibility, grid columns and Excel export all live in
+  // ReportColumnSet (sweep P1) - these stay as members so the template
+  // bindings are unchanged.
+  get columns(): ReportColumn[] {
+    return this.columnSet.all;
   }
 
-  toggleColumn(column: ColumnDef): void {
-    column.visible = !column.visible;
+  get displayedColumns(): string[] {
+    return this.columnSet.displayedColumns;
+  }
+
+  toggleColumn(column: ReportColumn): void {
+    this.columnSet.toggleColumn(column);
   }
 
   columnLabel(key: string): string {
-    return this.columns.find((c) => c.key === key)?.label ?? key;
+    return this.columnSet.columnLabel(key);
   }
 
   get gridColumns(): DataGridColumn<ReportRow>[] {
-    return this.displayedColumns.map((key) => this.toGridColumn(key));
+    return this.columnSet.gridColumns;
   }
 
-  private toGridColumn(key: string): DataGridColumn<ReportRow> {
-    const label = this.columnLabel(key);
-    if (key === 'pendingChangesCount') {
-      return { key, label, type: 'number', sortable: false };
-    }
-    return { key, label, sortable: false };
+  exportExcel(): void {
+    void this.columnSet.exportExcel(this.results, 'contact-report.xlsx');
   }
 
   async generateReport(): Promise<void> {
@@ -172,22 +169,4 @@ export class ContactReportComponent {
     };
   }
 
-  private fieldValue(row: ReportRow, key: string): unknown {
-    return (row as unknown as Record<string, unknown>)[key];
-  }
-
-  exportExcel(): void {
-    const visibleKeys = this.displayedColumns;
-    const excelColumns: ExcelColumn<ReportRow>[] = visibleKeys.map((key) => ({
-      header: this.columnLabel(key),
-      value: (row): string | number | Date => {
-        const value = this.fieldValue(row, key);
-        if (value instanceof Date || typeof value === 'string' || typeof value === 'number') {
-          return value;
-        }
-        return value == null ? '' : String(value);
-      }
-    }));
-    exportToExcel(this.results, excelColumns, 'contact-report.xlsx');
-  }
 }
