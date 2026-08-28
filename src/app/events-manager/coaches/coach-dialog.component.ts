@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { CoachModel } from '@impact-common/shared/models/domain/coach.model';
@@ -8,6 +8,7 @@ import { OrganizationService } from 'src/app/common/services/data/organization.s
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 
 export interface CoachDialogData {
   item: CoachModel | null;
@@ -19,10 +20,7 @@ export interface CoachDialogData {
     styleUrls: ['./coach-dialog.component.scss'],
     standalone: false
 })
-export class CoachDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
+export class CoachDialogComponent extends BaseEntityDialogComponent<CoachModel> {
   richTextModules = RICH_TEXT_TOOLBAR;
 
   organizations$ = this.organizationService.streamAll();
@@ -34,17 +32,22 @@ export class CoachDialogComponent {
   // explanation of this pattern.
   card: { photoUrl?: ImageModel } = {};
 
-  private itemType = 'Coach';
+  readonly itemType = 'Coach';
 
+  // Closes with a boolean like every other entity dialog. It used to close
+  // with the saved CoachModel, which read as a deliberate contract but was
+  // never consumed: BaseListComponent opens this and never subscribes to
+  // afterClosed() at all, because the list behind it is a live stream that
+  // refreshes itself. Unified 2026-08-28 (C4).
   constructor(
-    private dialogRef: MatDialogRef<CoachDialogComponent, CoachModel>,
-    @Inject(MAT_DIALOG_DATA) public data: CoachDialogData,
+    protected readonly dialogRef: MatDialogRef<CoachDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: CoachDialogData,
     private fb: FormBuilder,
-    private service: CoachService,
+    protected readonly service: CoachService,
     private organizationService: OrganizationService,
-    private snackbar: SnackbarService
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.card.photoUrl = data.item?.photoUrl;
 
     const orgId = typeof data.item?.organization === 'string' ? data.item?.organization : data.item?.organization?.id;
@@ -82,55 +85,20 @@ export class CoachDialogComponent {
     this.isImageUploaderVisible$.next(false);
   }
 
-  onCancel(): void {
-    this.dialogRef.close(undefined);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    // this.card.photoUrl is undefined (not just falsy) for a brand new
-    // coach with no picture uploaded yet (card starts as {}, no photoUrl
-    // key at all) - assigning it unconditionally put an explicit
-    // `photoUrl: undefined` key on the object, which Firestore's addDoc()
-    // rejects outright ("Unsupported field value: undefined"). Live-
-    // diagnosed 2026-08-15 while wiring the "+ New Coach" quick-create
-    // (course-dialog.component.ts) - same class of bug as
-    // PurchasesService.withStatusHistory()/events.component.ts's own
-    // imageUrl fix (see those files' comments): build the key
-    // conditionally so it's omitted rather than present-with-undefined.
-    // Pre-existing on the plain Coaches "New" button too, not just the new
-    // quick-create path - this dialog is shared by both.
-    const value: CoachModel = { ...this.data.item, ...this.form.value, ...(this.card.photoUrl ? { photoUrl: this.card.photoUrl } : {}) };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    // Closes with the saved entity (not just a boolean) - callers that need
-    // the newly-created record back (e.g. course-dialog.component.ts's
-    // "+ New Coach" quick-create) can select it immediately without a
-    // second round-trip; existing callers (coaches.component.ts) already
-    // refresh their own list off a live streamAll() and never read this
-    // result at all, so widening it is a no-op for them.
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(result);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Without this, a rejected write (e.g. the undefined-field case
-      // above, before this fix) left inProgress$ stuck true forever and
-      // the dialog never closed - no error surfaced beyond the browser
-      // console, indistinguishable from a hang.
-      console.error('Coach save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
+  // this.card.photoUrl is undefined (not just falsy) for a brand new coach
+  // with no picture uploaded yet (card starts as {}, no photoUrl key at
+  // all) - assigning it unconditionally put an explicit `photoUrl:
+  // undefined` key on the object, which Firestore's addDoc() rejects
+  // outright ("Unsupported field value: undefined"). Live-diagnosed
+  // 2026-08-15 - same class of bug as PurchasesService.withStatusHistory()
+  // and events.component.ts's imageUrl fix (see those files' comments):
+  // build the key conditionally so it is OMITTED rather than
+  // present-with-undefined. Applies to the plain Coaches "New" button too,
+  // not just the quick-create path - this dialog is shared by both.
+  protected override buildValue(): CoachModel {
+    return {
+      ...super.buildValue(),
+      ...(this.card.photoUrl ? { photoUrl: this.card.photoUrl } : {})
+    };
   }
 }

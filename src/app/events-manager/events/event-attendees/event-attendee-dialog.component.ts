@@ -1,11 +1,11 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject } from 'rxjs';
 import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { EMailService } from 'src/app/common/services/data/email.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../../shared/base-entity-dialog.component';
 
 export interface EventAttendeeDialogData {
   item: EventRegistrationModel | null;
@@ -18,22 +18,18 @@ export interface EventAttendeeDialogData {
     styleUrls: ['./event-attendee-dialog.component.scss'],
     standalone: false
 })
-export class EventAttendeeDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
-
-  private itemType = 'Registered User';
+export class EventAttendeeDialogComponent extends BaseEntityDialogComponent<EventRegistrationModel> {
+  readonly itemType = 'Registered User';
 
   constructor(
-    private dialogRef: MatDialogRef<EventAttendeeDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: EventAttendeeDialogData,
+    protected readonly dialogRef: MatDialogRef<EventAttendeeDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: EventAttendeeDialogData,
     private fb: FormBuilder,
-    private service: EventRegistrationService,
+    protected readonly service: EventRegistrationService,
     private emailService: EMailService,
-    private snackbar: SnackbarService
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
 
     this.form = this.fb.group({
       firstName: [data.item?.firstName ?? '', Validators.required],
@@ -52,9 +48,6 @@ export class EventAttendeeDialogComponent {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
 
   resendEmail(): void {
     if (!this.data.item?.receiptEmailId) {
@@ -70,15 +63,12 @@ export class EventAttendeeDialogComponent {
     });
   }
 
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
+  // Uses getRawValue(), not form.value, because this form has disabled
+  // controls whose values still have to be written. Also derives three
+  // fields the form does not hold - see the comments on each.
+  protected override buildValue(): EventRegistrationModel {
     const raw = this.form.getRawValue();
-    const value: EventRegistrationModel = {
+    return {
       ...this.data.item,
       ...raw,
       // Case-insensitive sort key - keep in step with the lastName edit
@@ -98,26 +88,5 @@ export class EventAttendeeDialogComponent {
       // defined, matching what a real self-service signup would get.
       registrationDate: raw.registrationDate ? new Date(raw.registrationDate) : (this.data.item?.registrationDate ?? new Date())
     };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // The other half of this fix: addDoc() rejecting (the undefined-date
-      // case above, or any other write failure - offline, permissions,
-      // etc.) used to leave inProgress$ stuck true forever with no
-      // feedback - the Save button just spun indefinitely and the dialog
-      // never closed, since nothing here handled a rejected promise.
-      console.error('EventAttendeeDialogComponent: save failed:', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
   }
 }

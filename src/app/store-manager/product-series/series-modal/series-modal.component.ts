@@ -1,11 +1,12 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { SeriesModel } from '@impact-common/shared/models/utils/series.model';
 import { SeriesService } from 'src/app/common/services/data/series.service';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { SnackbarService } from '../../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../../shared/base-entity-dialog.component';
 
 export interface SeriesModalData {
   item: SeriesModel | null;
@@ -17,10 +18,7 @@ export interface SeriesModalData {
     styleUrls: ['./series-modal.component.css'],
     standalone: false
 })
-export class SeriesModalComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
+export class SeriesModalComponent extends BaseEntityDialogComponent<SeriesModel> {
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
   // Backs app-image-uploader's [card]/[field] inputs directly - see
@@ -28,16 +26,16 @@ export class SeriesModalComponent {
   // explanation of this pattern.
   card: { imageUrl?: ImageModel } = {};
 
-  private itemType = 'Series';
+  readonly itemType = 'Series';
 
   constructor(
-    private dialogRef: MatDialogRef<SeriesModalComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: SeriesModalData,
+    protected readonly dialogRef: MatDialogRef<SeriesModalComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: SeriesModalData,
     private fb: FormBuilder,
-    private service: SeriesService,
-    private snackbar: SnackbarService
+    protected readonly service: SeriesService,
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.card.imageUrl = data.item?.imageUrl;
 
     this.form = this.fb.group({
@@ -55,39 +53,12 @@ export class SeriesModalComponent {
     this.isImageUploaderVisible$.next(false);
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
+  // The image lives on the uploader card, not in the form. Unlike the
+  // coach/team-page photoUrl, this one IS assigned unconditionally, which
+  // matches the original - SeriesModel.imageUrl is optional and the write
+  // path here has never hit the undefined-field rejection those two did.
+  protected override buildValue(): SeriesModel {
+    return { ...super.buildValue(), imageUrl: this.card.imageUrl };
   }
 
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    const value: SeriesModel = { ...this.data.item, ...this.form.value, imageUrl: this.card.imageUrl };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('Series save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
-  }
 }

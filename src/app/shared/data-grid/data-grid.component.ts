@@ -290,13 +290,57 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
     }
     if (column.type === 'date') {
       const date = this.toDate(value);
-      return date ? (this.datePipe.transform(date, column.dateFormat) ?? '') : String(value);
+      if (!date) {
+        return String(value);
+      }
+      // Keyed on the parsed TIME, never on the raw value: a Firestore
+      // Timestamp stringifies to "[object Object]", so a key built with
+      // String(value) would collide across every timestamp in the table
+      // and render one date in every cell. See A3 note below.
+      return this.formatted(
+        `d|${column.dateFormat ?? ''}|${date.getTime()}`,
+        () => this.datePipe.transform(date, column.dateFormat) ?? ''
+      );
     }
     if (column.type === 'currency') {
       const num = typeof value === 'number' ? value : Number(value);
-      return isNaN(num) ? '' : (this.currencyPipe.transform(num) ?? '');
+      return isNaN(num) ? '' : this.formatted(
+        `c|${num}`,
+        () => this.currencyPipe.transform(num) ?? ''
+      );
     }
     return String(value);
+  }
+
+  /**
+   * Memoized pipe formatting (sweep finding A3).
+   *
+   * Nothing in this app opts out of default change detection, and CD runs
+   * on essentially every scroll frame, so displayValue() is called for
+   * every visible cell on every pass. Paged grids append pages, so the row
+   * count is unbounded: four pages of Purchases is ~200 rows, which meant
+   * ~1,200 uncached pipe .transform() calls per CD pass competing with the
+   * 16.6ms frame budget exactly while the user is scrolling. Calling
+   * .transform() directly bypasses the memoization that lives inside the
+   * pipe, so there was none.
+   *
+   * THE KEY IS THE WHOLE CORRECTNESS ARGUMENT. It is derived from the
+   * VALUE, never from the row. Rows in this grid are genuinely mutated in
+   * place (the fulfillment screens write status onto the row object), so a
+   * memo keyed on row identity would freeze that cell at its old text and
+   * the bug would look like "the grid doesn't refresh".
+   *
+   * Cleared in recompute(), which runs whenever the row set, sort or
+   * filters change - that bounds the map to the distinct values on screen.
+   */
+  private formatted(key: string, format: () => string): string {
+    const hit = this.formatCache.get(key);
+    if (hit !== undefined) {
+      return hit;
+    }
+    const result = format();
+    this.formatCache.set(key, result);
+    return result;
   }
 
   operatorsFor(column: DataGridColumn<T>): FilterOperatorOption[] {
@@ -372,7 +416,13 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
     this.cellTemplateDirectives.forEach((directive) => this.cellTemplateMap.set(directive.columnKey, directive.templateRef));
   }
 
+  // A3: distinct formatted values currently on screen. Cleared whenever the
+  // rows, sort or filters change, which is what keeps it bounded.
+  private formatCache = new Map<string, string>();
+
   private recompute(rows: T[]): void {
+    this.formatCache.clear();
+
     const filtered = rows.filter((row) =>
       this.visibleColumns.every((column) => {
         if (column.filterable === false) {

@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
@@ -8,6 +8,7 @@ import { HomePageImageService } from 'src/app/common/services/data/home-page-ima
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import menuData from 'src/app/common/services/data/nav-menu-data';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 
 export interface HomePageImageDialogData {
   item: HomePageImageModel | null;
@@ -24,10 +25,7 @@ export interface Destination {
     styleUrls: ['./home-page-image-dialog.component.scss'],
     standalone: false
 })
-export class HomePageImageDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
+export class HomePageImageDialogComponent extends BaseEntityDialogComponent<HomePageImageModel> {
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
   isMobileImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
 
@@ -39,16 +37,16 @@ export class HomePageImageDialogComponent {
 
   destinations: Destination[] = [];
 
-  private itemType = 'Home Page Image';
+  readonly itemType = 'Home Page Image';
 
   constructor(
-    private dialogRef: MatDialogRef<HomePageImageDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: HomePageImageDialogData,
+    protected readonly dialogRef: MatDialogRef<HomePageImageDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: HomePageImageDialogData,
     private fb: FormBuilder,
-    private service: HomePageImageService,
-    private snackbar: SnackbarService
+    protected readonly service: HomePageImageService,
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.card.image = data.item?.image;
     this.card.mobileImage = data.item?.mobileImage;
 
@@ -120,42 +118,15 @@ export class HomePageImageDialogComponent {
     this.card.mobileImage = undefined;
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    // Matches the original's onSave(), which unconditionally reset date to
-    // "now" on every save (add AND edit) rather than treating it as an
-    // editable field - there was no date input anywhere in the form.
-    const value: HomePageImageModel = { ...this.data.item, ...this.form.value, image: this.card.image, mobileImage: this.card.mobileImage ?? null, date: Timestamp.now() };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('Home page image save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
+  // The images live on the uploader card, not in the form, and the date is
+  // reset to "now" on every save (add AND edit) rather than being editable
+  // - there is no date input anywhere in this form. Matches the original.
+  protected override buildValue(): HomePageImageModel {
+    return {
+      ...super.buildValue(),
+      image: this.card.image,
+      mobileImage: this.card.mobileImage ?? null,
+      date: Timestamp.now()
+    };
   }
 }

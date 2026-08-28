@@ -373,6 +373,126 @@ describe('DataGridComponent', () => {
     });
   });
 
+  // Sweep finding A3. The measurement the report asked for, expressed as a
+  // COUNT of pipe calls rather than a wall clock: deterministic, runs in
+  // CI, and it is the quantity that actually mattered (uncached
+  // .transform() competing with the frame budget during scroll).
+  describe('formatting is memoized', () => {
+    /** Counts real pipe invocations while keeping real formatting. */
+    function countingGrid(rows: Row[]) {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [DataGridComponent, DatePipe, CurrencyPipe],
+      });
+      const grid = TestBed.inject(DataGridComponent) as DataGridComponent<Row>;
+      const datePipe = TestBed.inject(DatePipe);
+      const currencyPipe = TestBed.inject(CurrencyPipe);
+      const calls = { date: 0, currency: 0 };
+      const realDate = datePipe.transform.bind(datePipe);
+      const realCurrency = currencyPipe.transform.bind(currencyPipe);
+      spyOn(datePipe, 'transform').and.callFake(((v: never, f: never) => {
+        calls.date++;
+        return realDate(v, f);
+      }) as never);
+      spyOn(currencyPipe, 'transform').and.callFake(((v: never) => {
+        calls.currency++;
+        return realCurrency(v);
+      }) as never);
+
+      grid.columns = COLUMNS;
+      grid.rows = rows;
+      withFakeContentChildren(grid);
+      grid.ngOnInit();
+      grid.ngAfterContentInit();
+      pushRows(grid, rows);
+      return { grid, calls };
+    }
+
+    /** One change-detection pass over every visible cell. */
+    function renderPass(grid: DataGridComponent<Row>, rows: Row[]): void {
+      for (const row of rows) {
+        for (const column of COLUMNS) {
+          grid.displayValue(column, row);
+        }
+      }
+    }
+
+    it('formats each distinct value once, however many passes run', () => {
+      const rows = ROWS;
+      const { grid, calls } = countingGrid(rows);
+
+      renderPass(grid, rows);
+      const afterFirst = { ...calls };
+
+      // Nine more passes - what scrolling actually costs.
+      for (let i = 0; i < 9; i++) {
+        renderPass(grid, rows);
+      }
+
+      // BEFORE this fix these numbers were afterFirst x 10.
+      expect(calls.date).toBe(afterFirst.date);
+      expect(calls.currency).toBe(afterFirst.currency);
+    });
+
+    it('formats a repeated value once across rows, not once per row', () => {
+      const when = new Date('2026-02-01T00:00:00Z');
+      const rows: Row[] = Array.from({ length: 50 }, (_, i) => ({
+        id: String(i), name: `Row ${i}`, amount: 20, when
+      }));
+      const { grid, calls } = countingGrid(rows);
+
+      renderPass(grid, rows);
+
+      // 50 rows, one distinct amount and one distinct date between them.
+      expect(calls.currency).toBe(1);
+      expect(calls.date).toBe(1);
+    });
+
+    // THE CORRECTNESS CONSTRAINT. Rows in this grid are mutated in place -
+    // the fulfillment screens write onto the row object - so a memo keyed
+    // on row identity would freeze the cell at its old text and look like
+    // "the grid stopped refreshing". The key is derived from the VALUE.
+    it('reflects a row mutated in place', () => {
+      const rows: Row[] = [
+        { id: '1', name: 'A', amount: 20, when: new Date('2026-02-01T00:00:00Z') }
+      ];
+      const { grid } = countingGrid(rows);
+
+      expect(grid.displayValue(COLUMNS[1], rows[0])).toContain('20');
+      rows[0].amount = 999;
+      expect(grid.displayValue(COLUMNS[1], rows[0])).toContain('999');
+    });
+
+    // A Firestore Timestamp stringifies to "[object Object]", so a cache
+    // key built from the RAW value would collide across every timestamp
+    // and render one date in every cell.
+    it('does not collide across values that stringify identically', () => {
+      const rows: Row[] = [
+        { id: '1', name: 'A', amount: 1, when: new Date('2026-02-01T00:00:00Z') },
+        { id: '2', name: 'B', amount: 2, when: new Date('2027-09-15T00:00:00Z') }
+      ];
+      const { grid } = countingGrid(rows);
+
+      const first = grid.displayValue(COLUMNS[2], rows[0]);
+      const second = grid.displayValue(COLUMNS[2], rows[1]);
+      expect(first).not.toBe(second);
+      expect(first).toBeTruthy();
+      expect(second).toBeTruthy();
+    });
+
+    it('is cleared when the row set changes, so it cannot grow unbounded', () => {
+      const rows = ROWS;
+      const { grid, calls } = countingGrid(rows);
+      renderPass(grid, rows);
+      const afterFirst = calls.currency;
+
+      pushRows(grid, rows);
+      renderPass(grid, rows);
+
+      expect(calls.currency).toBeGreaterThan(afterFirst);
+    });
+  });
+
   describe('teardown', () => {
     it('stops processing source updates after destroy', () => {
       // Was asserted through the visibleRowsChange output, removed 2026-08-28

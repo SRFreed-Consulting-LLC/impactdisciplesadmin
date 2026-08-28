@@ -1,13 +1,14 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject, Subject, merge, takeUntil } from 'rxjs';
+import { Subject, merge, takeUntil } from 'rxjs';
 import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { ProductService } from 'src/app/common/services/data/product.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 
 export interface CouponDialogData {
   item: CouponModel | null;
@@ -19,11 +20,8 @@ export interface CouponDialogData {
     styleUrls: ['./coupon-dialog.component.scss'],
     standalone: false
 })
-export class CouponDialogComponent implements OnInit, OnDestroy {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
-
+export class CouponDialogComponent extends BaseEntityDialogComponent<CouponModel>
+  implements OnInit, OnDestroy {
   // Picker-only tag source (Events + Products merged) - app-tag-chips is
   // used here with no (createTag) handler wired up, so typing something
   // that doesn't match an existing option simply doesn't add a chip. That
@@ -31,20 +29,20 @@ export class CouponDialogComponent implements OnInit, OnDestroy {
   // onCustomItemCreating, unlike Products' own Tags field.
   couponTags: TagModel[] = [];
 
-  private itemType = 'Coupon';
+  readonly itemType = 'Coupon';
 
   private ngUnsubscribe = new Subject<void>();
 
   constructor(
-    private dialogRef: MatDialogRef<CouponDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: CouponDialogData,
+    protected readonly dialogRef: MatDialogRef<CouponDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: CouponDialogData,
     private fb: FormBuilder,
-    private service: CouponService,
+    protected readonly service: CouponService,
     private eventService: EventService,
     private productService: ProductService,
-    private snackbar: SnackbarService
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
 
     this.form = this.fb.group({
       isActive: [data.item?.isActive ?? false],
@@ -76,39 +74,4 @@ export class CouponDialogComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    const value: CouponModel = { ...this.data.item, ...this.form.value };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('Coupon save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
-  }
 }

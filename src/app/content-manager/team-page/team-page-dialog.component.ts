@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { ImpactTeamMemberModel } from '@impact-common/shared/models/domain/impact-team-member.model';
@@ -9,6 +9,7 @@ import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 
 export interface TeamPageDialogData {
   item: ImpactTeamMemberModel | null;
@@ -27,10 +28,7 @@ export interface TeamPageDialogData {
     styleUrls: ['./team-page-dialog.component.scss'],
     standalone: false
 })
-export class TeamPageDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
+export class TeamPageDialogComponent extends BaseEntityDialogComponent<ImpactTeamMemberModel> {
   richTextModules = RICH_TEXT_TOOLBAR;
 
   /** The bio as the public page renders it - that page uses [innerHTML] on
@@ -51,18 +49,22 @@ export class TeamPageDialogComponent {
   // coach-dialog.component.ts for the established explanation.
   card: { photoUrl?: ImageModel } = {};
 
-  private itemType = 'Team Member';
+  readonly itemType = 'Team Member';
 
+  // Closes with a boolean now, like every other entity dialog. It used to
+  // close with the saved record, but nothing consumed it: BaseListComponent
+  // opens this and never subscribes to afterClosed(), because the list
+  // behind it is a live stream. Unified 2026-08-28 (C4).
   constructor(
-    private dialogRef: MatDialogRef<TeamPageDialogComponent, ImpactTeamMemberModel>,
-    @Inject(MAT_DIALOG_DATA) public data: TeamPageDialogData,
+    protected readonly dialogRef: MatDialogRef<TeamPageDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: TeamPageDialogData,
     private fb: FormBuilder,
-    private service: ImpactTeamService,
+    protected readonly service: ImpactTeamService,
     private organizationService: OrganizationService,
-    private snackbar: SnackbarService,
+    protected readonly snackbar: SnackbarService,
     private sanitizer: DomSanitizer
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.card.photoUrl = data.item?.photoUrl;
 
     const orgId = typeof data.item?.organization === 'string' ? data.item?.organization : data.item?.organization?.id;
@@ -100,36 +102,13 @@ export class TeamPageDialogComponent {
     this.isImageUploaderVisible$.next(false);
   }
 
-  onCancel(): void {
-    this.dialogRef.close(undefined);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    // See coach-dialog.component.ts's identical comment - photoUrl must be
-    // built conditionally, never assigned undefined outright, or
-    // Firestore's addDoc()/setDoc() rejects the whole write.
-    const value: ImpactTeamMemberModel = { ...this.data.item, ...this.form.value, ...(this.card.photoUrl ? { photoUrl: this.card.photoUrl } : {}) };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(result);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      console.error('Team member save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
+  // See coach-dialog.component.ts's identical comment - photoUrl must be
+  // built conditionally, never assigned undefined outright, or Firestore's
+  // addDoc()/setDoc() rejects the whole write.
+  protected override buildValue(): ImpactTeamMemberModel {
+    return {
+      ...super.buildValue(),
+      ...(this.card.photoUrl ? { photoUrl: this.card.photoUrl } : {})
+    };
   }
 }

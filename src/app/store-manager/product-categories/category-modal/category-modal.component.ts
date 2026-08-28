@@ -1,10 +1,10 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject } from 'rxjs';
 import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { ProductCategoriesService } from 'src/app/common/services/data/product-categories.service';
 import { SnackbarService } from '../../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../../shared/base-entity-dialog.component';
 
 export interface CategoryModalData {
   item: TagModel | null;
@@ -16,60 +16,21 @@ export interface CategoryModalData {
     styleUrls: ['./category-modal.component.css'],
     standalone: false
 })
-export class CategoryModalComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
-
-  private itemType = 'Category';
+export class CategoryModalComponent extends BaseEntityDialogComponent<TagModel> {
+  readonly itemType = 'Category';
 
   constructor(
-    private dialogRef: MatDialogRef<CategoryModalComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: CategoryModalData,
+    protected readonly dialogRef: MatDialogRef<CategoryModalComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: CategoryModalData,
     private fb: FormBuilder,
-    private service: ProductCategoriesService,
-    private snackbar: SnackbarService
+    protected readonly service: ProductCategoriesService,
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.form = this.fb.group({
       tag: [data.item?.tag ?? '', Validators.required],
       showInStore: [data.item?.showInStore ?? false]
     });
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    const value: TagModel = { ...this.data.item, ...this.form.value };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('Category save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
-  }
 }

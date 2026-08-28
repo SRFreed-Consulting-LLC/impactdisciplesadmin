@@ -1,8 +1,8 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject } from 'rxjs';
 import { DMMModel } from '@impact-common/shared/models/domain/dmm.model';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SnackbarService } from '../../shared/snackbar.service';
@@ -19,10 +19,7 @@ export interface DMMDialogData {
     styleUrls: ['./dmm-dialog.component.scss'],
     standalone: false
 })
-export class DMMDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
+export class DMMDialogComponent extends BaseEntityDialogComponent<DMMModel> {
   richTextModules = RICH_TEXT_TOOLBAR;
 
   /** The body as the public page renders it - [innerHTML], because the
@@ -35,17 +32,17 @@ export class DMMDialogComponent {
     );
   }
 
-  private itemType = 'Disciple Making Minute';
+  readonly itemType = 'Disciple Making Minute';
 
   constructor(
-    private dialogRef: MatDialogRef<DMMDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: DMMDialogData,
+    protected readonly dialogRef: MatDialogRef<DMMDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: DMMDialogData,
     private fb: FormBuilder,
-    private service: DMMService,
-    private snackbar: SnackbarService,
+    protected readonly service: DMMService,
+    protected readonly snackbar: SnackbarService,
     private sanitizer: DomSanitizer
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.form = this.fb.group({
       isActive: [data.item?.isActive ?? false],
       date: [dateFromTimestamp(data.item?.date) ?? new Date(), Validators.required],
@@ -54,39 +51,4 @@ export class DMMDialogComponent {
     });
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    const value: DMMModel = { ...this.data.item, ...this.form.value };
-
-    const request = this.isEdit ? this.service.update(value.id!, value) : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('DMM save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
-  }
 }

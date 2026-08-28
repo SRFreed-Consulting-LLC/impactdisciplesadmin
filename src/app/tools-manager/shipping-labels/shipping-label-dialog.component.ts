@@ -1,12 +1,12 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject } from 'rxjs';
 import { ShippingLabelRequest } from '@impact-common/shared/models/domain/shipment-label-batch-request.model';
 import { ShippingModel, ShippingRequest, ShippingToAddress } from '@impact-common/shared/models/domain/shipment.model';
 import { ShippingLabelService } from 'src/app/common/services/data/shipping-label.service';
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
 import { SnackbarService } from '../../shared/snackbar.service';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 
 export interface ShippingLabelDialogData {
   item: ShippingLabelRequest | null;
@@ -19,27 +19,23 @@ export interface ShippingLabelDialogData {
     styleUrls: ['./shipping-label-dialog.component.scss'],
     standalone: false
 })
-export class ShippingLabelDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
-
+export class ShippingLabelDialogComponent extends BaseEntityDialogComponent<ShippingLabelRequest> {
   // 2-letter codes (this screen posts directly to a real shipping carrier
   // API, which requires 2-letter state/country codes) - a different array
   // shape than the rest of the app's state/country dropdowns.
   states: { key: string; value: string }[] = EnumHelper.getState2LetterTypesAsArray().map((entry: [string, string]) => ({ key: entry[0], value: entry[1] }));
   countries: { key: string; value: string }[] = EnumHelper.getCountry2LetterTypesAsArray().map((entry: [string, string]) => ({ key: entry[0], value: entry[1] }));
 
-  private itemType = 'Shipping Label';
+  readonly itemType = 'Shipping Label';
 
   constructor(
-    private dialogRef: MatDialogRef<ShippingLabelDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: ShippingLabelDialogData,
+    protected readonly dialogRef: MatDialogRef<ShippingLabelDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: ShippingLabelDialogData,
     private fb: FormBuilder,
-    private service: ShippingLabelService,
-    private snackbar: SnackbarService
+    protected readonly service: ShippingLabelService,
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     const shipTo = data.item?.request?.shipment?.shipTo;
 
     this.form = this.fb.group({
@@ -53,17 +49,10 @@ export class ShippingLabelDialogComponent {
     });
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
+  // Replaces the base entirely rather than extending it: this record is
+  // NOT the form spread over the item - the form's flat address fields are
+  // reshaped into a nested ShippingToAddress the carrier API expects.
+  protected override buildValue(): ShippingLabelRequest {
     const value = this.form.value;
 
     const shipTo: ShippingToAddress = {
@@ -96,26 +85,6 @@ export class ShippingLabelDialogComponent {
           }
         };
 
-    const request = this.isEdit ? this.service.update(item.id!, item) : this.service.add(item);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success(this.itemType + (this.isEdit ? ' Updated' : ' Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('Shipping label save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
+    return item;
   }
 }
