@@ -1,9 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { Subject, combineLatest, takeUntil } from 'rxjs';
-import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { PermissionService } from 'src/app/common/services/permission.service';
-import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-config';
+import { Component } from '@angular/core';
+import { TabShellComponent } from '../core/main-screen/tab-shell.component';
 
 @Component({
     selector: 'app-campaigns-manager',
@@ -11,42 +7,6 @@ import { NAV_CONFIG, NavGroup, NavLeaf } from 'src/app/core/main-screen/nav-conf
     styleUrls: ['./campaigns-manager.component.css'],
     standalone: false
 })
-export class CampaignsManagerComponent implements OnInit, OnDestroy {
-  // Starts EMPTY (admin-manager's pattern), not pre-seeded with the default
-  // tab: a synchronous default renders that tab's component before the
-  // first loggedInUser$ emission on a cold page load, so anything the child
-  // computes once from PermissionService in ngOnInit (e.g. the New
-  // Campaign header action) silently comes up missing (live-diagnosed
-  // 2026-08-18 on this very shell). Empty means no child renders until the
-  // combineLatest below has real permissions - exactly how every
-  // NON-default tab already behaves.
-  selectedTab = '';
-
-  // Sourced from nav-config.ts (the left nav's own data) rather than a
-  // second, locally-duplicated list - same shell pattern as ReportsManager.
-  private group: NavGroup = NAV_CONFIG.find((g) => g.id === 'campaigns-manager')!;
-  items: NavLeaf[] = this.group.items!;
-  secureItems: NavLeaf[] = [];
-
-  private ngUnsubscribe = new Subject<void>();
-
-  constructor(private authService: AdminAuthService, private permissionService: PermissionService, private route: ActivatedRoute) {}
-
-  ngOnInit(): void {
-    // Combines both live sources (permissions -> which tabs are even
-    // visible, and ?tab= -> which one the left nav wants open) - see
-    // events-manager.component.ts's own comment for the full explanation.
-    combineLatest([this.authService.dao.loggedInUser$, this.route.queryParamMap])
-      .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(([, params]) => {
-        this.secureItems = this.items.filter((item) => this.permissionService.canViewNavItem(this.group, item));
-        const requested = this.secureItems.find((item) => item.slug === params.get('tab'));
-        this.selectedTab = requested?.label ?? this.secureItems[0]?.label ?? this.selectedTab;
-      });
-  }
-
-  ngOnDestroy(): void {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
-  }
+export class CampaignsManagerComponent extends TabShellComponent {
+  protected readonly groupId = 'campaigns-manager';
 }
