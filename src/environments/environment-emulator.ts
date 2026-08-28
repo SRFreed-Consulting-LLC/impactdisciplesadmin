@@ -17,17 +17,13 @@ export const environment = {
   production: false,
   useEmulators: true,
   firebaseConfig: FIREBASE_PROJECTS.emulator,
-  // Ports come from APP_URLS, never a literal here - it is the one place
-  // the local port rule lives (web 4200/4201, admin 5200/5201, reader
-  // 6200/6201; the last digit picks live-data vs emulator).
-  domain: APP_URLS.admin.emulator,
-  session_expires: 30,
-  freeEbookUrl: "https://example.test/free-ebook.pdf",
   shippingUrl: functionUrl('emulator', 'get_shipping_rates'),
   shippingLabelUrl: functionUrl('emulator', 'get_shipping_label'),
   unsubscribeUrl: functionUrl('emulator', 'unsubscribe_from_email_list'),
+  // Ports come from APP_URLS, never a literal here - it is the one place
+  // the local port rule lives (web 4200/4201, admin 5200/5201, reader
+  // 6200/6201; the last digit picks live-data vs emulator).
   publicSiteUrl: APP_URLS.web.emulator,
-  youtubeVideosUrl: functionUrl('emulator', 'get_youtube_videos'),
   application: "admin",
   shippingCarriers: ["se-0000000"],
 };

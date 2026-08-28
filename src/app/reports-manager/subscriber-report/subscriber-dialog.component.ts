@@ -66,6 +66,15 @@ export class SubscriberDialogComponent {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
       }
+    }).catch((err) => {
+      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
+      // write left inProgress$ stuck true: the spinner span forever, the
+      // dialog never closed, and nothing surfaced beyond the console.
+      // coach-dialog.component.ts fixed and documented exactly this on
+      // 2026-08-15; it was never propagated to the other copies.
+      console.error('Subscriber save failed', err);
+      this.inProgress$.next(false);
+      this.snackbar.error('Some Error Occured');
     });
   }
 

@@ -245,6 +245,15 @@ export class PurchasesComponent implements OnInit, OnDestroy {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
       }
+    }).catch((err) => {
+      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
+      // write left inProgress$ stuck true: the spinner span forever, the
+      // screen never returned to the list, and nothing surfaced beyond the
+      // console. coach-dialog.component.ts fixed and documented exactly this
+      // on 2026-08-15; it was never propagated to the other copies.
+      console.error('Purchase save failed', err);
+      this.inProgress$.next(false);
+      this.snackbar.error('Some Error Occured');
     });
   }
 

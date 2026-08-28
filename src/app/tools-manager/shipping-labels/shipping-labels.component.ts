@@ -219,6 +219,15 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
       } else {
         this.snackbar.error('Some Error Occured');
       }
+    }).catch((err) => {
+      // Stop-gap (sweep finding C4, 2026-08-27). The next(false) above runs
+      // only on RESOLVE, so a rejected write left inProgress$ stuck true: the
+      // spinner span forever on step 1 and the wizard never advanced, with
+      // nothing beyond the console. coach-dialog.component.ts fixed and
+      // documented exactly this on 2026-08-15.
+      console.error('Return address save failed', err);
+      this.inProgress$.next(false);
+      this.snackbar.error('Some Error Occured');
     });
   }
 

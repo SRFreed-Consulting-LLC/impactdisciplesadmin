@@ -12,12 +12,18 @@
   flex: 1 1 0;
 }
 
-// Same "bound .tab-content directly, don't let mat-dialog-content grow to
-// fit it" fix as coach-dialog.component.scss - see its own comment for the
-// full double-scrollbar explanation.
+// The inner scroller is GONE (2026-08-28), matching coach-dialog.component.scss.
+// This carried max-height: 60vh + overflow-y: auto, from a fix meant to
+// prevent a double scrollbar - but mat-dialog-content scrolls too, so the
+// result was two vertical bars side by side, each moving a different amount
+// of the same form. One scroller only: the dialog's. The tab body just
+// lays out.
+//
+// The coach dialog was fixed on 2026-08-26 and this copy was missed; worse,
+// the comment here still pointed the reader at that file "for the full
+// double-scrollbar explanation", which by then explained why the rule had
+// been REMOVED. These were the only two `max-height: 60vh` rules in the app.
 .tab-content {
-  max-height: 60vh;
-  overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 4px 4px;
   box-sizing: border-box;

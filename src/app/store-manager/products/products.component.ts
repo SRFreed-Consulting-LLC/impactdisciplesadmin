@@ -410,7 +410,16 @@ export class ProductsComponent implements OnInit {
   // also used.
   onCreateProductTag(text: string): void {
     const tag: TagModel = { ...new TagModel(), tag: text, id: this.generateRandomId() };
-    this.productTagService.update(tag.id!, tag);
+    // The write is deliberately NOT awaited - the tag is added to the form
+    // immediately so the picker stays responsive. But it was previously
+    // un-awaited AND un-caught, so a failed write was completely invisible:
+    // the tag appeared selected on the product, the product saved
+    // referencing a tag id that does not exist, and nothing surfaced
+    // anywhere (sweep finding C6, 2026-08-27).
+    void this.productTagService.update(tag.id!, tag).catch((err) => {
+      console.error('Product tag creation failed', err);
+      this.snackbar.error('That tag could not be saved - remove it and try again.');
+    });
     this.productTags = [...this.productTags, tag];
 
     const current: TagModel[] = this.form.value.tags ?? [];
@@ -451,6 +460,16 @@ export class ProductsComponent implements OnInit {
         this.inProgress$.next(false);
         this.snackbar.error('Some Error Occured');
       }
+    }).catch((err) => {
+      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
+      // write left inProgress$ stuck true: the spinner span forever, the
+      // dialog never closed, and nothing surfaced beyond the console -
+      // indistinguishable from a hang. coach-dialog.component.ts fixed and
+      // documented exactly this on 2026-08-15; it was never propagated to
+      // the other copies of this block.
+      console.error('Product save failed', err);
+      this.inProgress$.next(false);
+      this.snackbar.error('Some Error Occured');
     });
   }
 
