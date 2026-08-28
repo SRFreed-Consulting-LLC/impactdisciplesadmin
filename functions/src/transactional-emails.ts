@@ -26,10 +26,48 @@ export const UNSUBSCRIBE_URL =
       "unsubscribe_from_email_list" :
     "https://us-central1-impactdisciplesdev.cloudfunctions.net/" +
       "unsubscribe_from_email_list";
-const FREE_EBOOK_URL =
-  "https://firebasestorage.googleapis.com/v0/b/" +
-  "impactdisciples-a82a8.appspot.com/o/EBooks%2FM-7-Journal.pdf" +
-  "?alt=media&token=50e3282f-6fa1-46aa-ad3a-a486e4024af1";
+/**
+ * The free-ebook download link offered in the newsletter confirmation, read
+ * from the `config` singleton rather than hardcoded.
+ *
+ * It used to be a literal tokened Storage URL here, and the SAME token also
+ * shipped in the Angular bundle as environment.freeEbookUrl (a dead key,
+ * deleted 2026-08-28). Rotating a leaked Storage token therefore meant a
+ * source edit plus a functions deploy - which is exactly why it had not been
+ * done. On config it is a data edit and nothing else.
+ *
+ * Returns null when unset, and the caller then OMITS the offer rather than
+ * emitting a dead link: ~400 people a year receive this email, and a link
+ * that 403s is worse than no link. The warning is there because a silently
+ * missing offer is the failure mode this shape introduces.
+ *
+ * Same singleton rule getPaypalClientId uses - read the collection and refuse
+ * to guess rather than limit(1) onto an arbitrary document.
+ * @param {FirebaseFirestore.Firestore} db Firestore handle.
+ * @return {Promise<string | null>} The URL, or null when not configured.
+ */
+async function freeEbookUrl(
+  db: FirebaseFirestore.Firestore
+): Promise<string | null> {
+  const snap = await db.collection("config").get();
+  if (snap.empty || snap.size > 1) {
+    console.error(
+      `freeEbookUrl: expected one config document, found ${snap.size} - ` +
+      "omitting the free ebook offer from this confirmation."
+    );
+    return null;
+  }
+  const url = snap.docs[0].data()?.freeEbookUrl;
+  if (typeof url !== "string" || !url.startsWith("https://")) {
+    console.warn(
+      "freeEbookUrl is not set on the config document, so the newsletter " +
+      "confirmation is going out WITHOUT its free ebook offer. Set it with " +
+      "scripts/seed-free-ebook-url.js."
+    );
+    return null;
+  }
+  return url;
+}
 // Environment-aware (same switch as library-push-notifications.ts and the
 // PayPal base URL): production project -> real reader domain, else dev.
 const READER_APP_ORIGIN =
@@ -224,15 +262,21 @@ export async function queueSubscriptionConfirmation(
     return;
   }
 
+  // Resolved before the html is built so a missing/misconfigured URL drops
+  // the offer cleanly instead of rendering href="null".
+  const ebookUrl = await freeEbookUrl(db);
+  const ebookBlock = ebookUrl ?
+    "<div>Please accept this free <a href=\"" + ebookUrl +
+      "\" download>EBook</a> as a small token of our appreciation.</div>" :
+    "";
+
   const subject =
     "Thank you for Subscribing to the Impact Disciples Newletter!";
   const html =
     "<div>Dear " + escapeHtml(firstName) + ".</div><br><br>" +
     "<div>Your email address was successfully added to our Newletter " +
     "Subsciption List! (" + escapeHtml(email) + ")</div><br><br>" +
-    "<div>Please accept this free <a href=\"" + FREE_EBOOK_URL +
-    "\" download>EBook</a> as a small token of our appreciation." +
-    "</div>" +
+    ebookBlock +
     rewardBlock(reward) +
     "<br><br><div>God Bless! - Impact Disciples Ministry</div>" + unsubscribe;
   await queueMail(db, email, subject, html);
