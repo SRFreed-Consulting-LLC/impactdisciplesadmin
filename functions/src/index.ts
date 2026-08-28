@@ -130,6 +130,13 @@ const libraryLicenseGrant = require("./library-license-grant.functions");
 exports.onPurchaseGrantLibraryLicenses =
   libraryLicenseGrant.onPurchaseGrantLibraryLicenses;
 
+// Daily alert (2026-08-28): emails web-config's lockedOutAlertEmail when a
+// reader has a libraryUsers profile but no Firebase Auth account (cannot sign
+// in). Fills the visibility gap that let a locked-out patron go unnoticed
+// until he phoned in - see library-lockout-alert.functions.ts.
+const libraryLockoutAlert = require("./library-lockout-alert.functions");
+exports.lockedOutPatronAlert = libraryLockoutAlert.lockedOutPatronAlert;
+
 const bookImport = require("./book-import.functions");
 exports.importBookFromPdf = bookImport.importBookFromPdf;
 

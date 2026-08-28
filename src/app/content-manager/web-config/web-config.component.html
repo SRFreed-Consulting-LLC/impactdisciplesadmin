@@ -69,6 +69,11 @@
               <input matInput formControlName="adminEmailAddress">
             </mat-form-field>
             <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Locked-out patron alert email</mat-label>
+              <input matInput formControlName="lockedOutAlertEmail" placeholder="shane.freed@gmail.com">
+              <mat-hint>Daily alert when a library reader has a profile but no sign-in account. Comma-separated for more than one; blank uses the default.</mat-hint>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
               <mat-label>Email</mat-label>
               <input matInput formControlName="email">
             </mat-form-field>

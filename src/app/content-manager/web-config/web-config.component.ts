@@ -55,6 +55,10 @@ export class WebConfigComponent implements OnInit {
       equippingGroupPaymentCost: [null],
       freeShippingAmount: [null],
       adminEmailAddress: [''],
+      // Recipient(s) for the daily locked-out-patron alert (see
+      // functions/src/library-lockout-alert.functions.ts). Comma-separated
+      // for multiple; blank falls back to the function's default.
+      lockedOutAlertEmail: [''],
       email: [''],
       phone: [''],
       address: this.fb.group({
