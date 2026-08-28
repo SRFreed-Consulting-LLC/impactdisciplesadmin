@@ -43,10 +43,20 @@ module.exports = defineConfig([
           style: "kebab-case",
         },
       ],
-      // This codebase is 100% NgModule-based with constructor injection
-      // throughout (a deliberate, still-fully-supported style -- adopting
-      // standalone components/inject() is a separate, large migration, not
-      // something a starter lint config should hard-error on in every file).
+      // Both OFF on purpose, and for two different reasons (corrected
+      // 2026-08-28 - this comment used to claim the codebase was "100%
+      // NgModule-based with constructor injection throughout", which stopped
+      // being true and was being read as a prohibition).
+      //
+      // prefer-inject: inject() IS the direction for new and refactored code
+      // (see CLAUDE.md). It is off because most of the codebase has not been
+      // converted yet, so erroring would flag hundreds of files nobody is
+      // touching - not because constructor DI is preferred. Do not read this
+      // as licence to keep writing constructor DI in new code.
+      //
+      // prefer-standalone: standalone components genuinely are a separate,
+      // large migration that has not been decided on. This one IS a "not
+      // now".
       "@angular-eslint/prefer-standalone": "off",
       "@angular-eslint/prefer-inject": "off",
     },

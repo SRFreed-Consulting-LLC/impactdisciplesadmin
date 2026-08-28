@@ -459,17 +459,35 @@ editing; derived stats live in `summit-stats.util.ts`. All mode switching stays 
 `EventsComponent`; child surfaces emit navigation upward. `src/app/core/main-screen/` is the shell (top bar + nav) wrapping the
 `dashboard` home route and all feature module outlets. `src/app/shared/` holds cross-feature
 UI (list header, column filter, dialogs, image uploader, table export/loading, paged-table
-infrastructure) and is imported by every feature module. This codebase is deliberately
-NgModule-based with constructor injection throughout, not standalone components/`inject()` — see the
-`prefer-standalone`/`prefer-inject` overrides in `eslint.config.js`; don't convert files one at a
-time, that migration is out of scope for incidental changes.
-**Where the second idiom still lives (2026-08-21):** `inject()` and signals are now confined to
-`library-manager/**` (17 of the 23 `inject()` files, 13 of the 15 signal files) — the module folded
-in from the decommissioned standalone Library Manager, which had its own house style. Converting it
-belongs to the Library Manager fold, NOT to incidental work; it will be restructured wholesale.
-The only other legitimate `inject()` uses are the two FUNCTIONAL route guards (`authGuard` in
-`admin-auth.service.ts`, `libraryUnsavedChangesGuard`) — a `CanActivateFn`/`CanDeactivateFn` has no
-constructor, so `inject()` is the only option there and those must stay as they are. (The `*ngIf`/`*ngFor` → `@if`/`@for`
+infrastructure) and is imported by every feature module. This codebase is NgModule-based, and most of it
+still uses constructor injection — but **`inject()` is the direction, and it is what new or
+refactored code should use** (owner decision; corrected here 2026-08-28, when this section still
+read "constructor injection throughout, not `inject()`" and was being quoted to argue against the
+direction all three apps are actually moving in).
+
+What that means in practice:
+
+- **New code, and code you are already rewriting: use `inject()`.** Do not convert untouched files
+  one at a time — a wholesale conversion is its own piece of work, not something to smuggle into an
+  incidental change. Both styles compile and neither lints as an error
+  (`@angular-eslint/prefer-standalone` and `prefer-inject` are both `off` in `eslint.config.js`),
+  so this is a convention, not a guardrail.
+- **Write specs TestBed-as-injector** (`TestBed.runInInjectionContext`, or
+  `configureTestingModule` + `TestBed.inject`) rather than `new`-ing the class with duck-typed
+  deps, so they survive a class moving to `inject()`. See the Test program section.
+- **MIXING THE TWO IN ONE CLASS HAS A REAL TRAP, and it has already bitten.** `inject()` runs in
+  FIELD INITIALIZER order, so a field that calls `inject()` must be declared *before* any field
+  whose initializer depends on it. And a spec that constructs the class with `new` throws
+  **NG0203** the moment that class takes anything via `inject()` — which is exactly what happened
+  to `designer-side-panel.component.spec.ts` on 2026-08-27 when the panel gained
+  `inject(DomSanitizer)`. The fix was to construct inside `TestBed.runInInjectionContext`, not to
+  move the dependency back to the constructor.
+
+`library-manager/**` remains the largest `inject()`+signals island (it came in from the
+decommissioned standalone Library Manager with its own house style) and is slated for a wholesale
+restructure. The two FUNCTIONAL route guards (`authGuard` in `admin-auth.service.ts`,
+`libraryUnsavedChangesGuard`) MUST stay on `inject()` — a `CanActivateFn`/`CanDeactivateFn` has no
+constructor, so there is no alternative there. (The `*ngIf`/`*ngFor` → `@if`/`@for`
 control-flow migration was a separate, smaller lift and was completed codebase-wide on
 2026-08-12 via `ng generate @angular/core:control-flow-migration`; `@angular-eslint/template/prefer-control-flow`
 is back on at `error` in `eslint.config.js` now that it's done — don't reintroduce `*ngIf`/`*ngFor`/`*ngSwitch`
