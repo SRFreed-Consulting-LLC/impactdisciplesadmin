@@ -1,12 +1,14 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
-import {Timestamp, getFirestore} from "firebase-admin/firestore";
+import {getFirestore} from "firebase-admin/firestore";
 import {hasPhysicalItem} from "./utils/cart-items.functions";
 import {
   findOrCreateCustomer,
   isPlausibleEmail,
-  normalizedName,
-  normalizedPhoneDigits,
 } from "./utils/customer-match.functions";
+import {
+  AddressLike,
+  CustomerReconciler,
+} from "./utils/customer-reconcile";
 import {
   activityFromPurchase,
   applyTagRulesForActivity,
@@ -52,61 +54,6 @@ import {
 // replaces that field's pending entry with the newer proposed value rather
 // than accumulating duplicates - see resolvePendingChange() in
 // customer-dialog.component.ts for the admin-side resolution flow.
-
-interface AddressLike {
-  address1?: string;
-  address2?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-}
-
-interface PhoneLike {
-  countryCode?: string;
-  number?: string;
-  extension?: string;
-  type?: string;
-}
-
-type PendingField =
-  | "firstName"
-  | "lastName"
-  | "phone"
-  | "shippingAddress"
-  | "billingAddress";
-
-interface PendingCustomerChange {
-  field: PendingField;
-  currentValue: unknown;
-  proposedValue: unknown;
-  source: "purchase" | "eventRegistration";
-  sourceId: string;
-  detectedDate: Timestamp;
-}
-
-/**
- * Field-by-field address comparison, each field trimmed + lowercased first
- * (same reasoning as normalizedName) - a plain `!==` on the objects would
- * always be true (different object identities).
- * @param {AddressLike | null | undefined} a First address.
- * @param {AddressLike | null | undefined} b Second address.
- * @return {boolean} Whether any comparable field differs.
- */
-function addressesDiffer(
-  a?: AddressLike | null,
-  b?: AddressLike | null
-): boolean {
-  if (!a && !b) {
-    return false;
-  }
-  if (!a || !b) {
-    return true;
-  }
-  const fields: (keyof AddressLike)[] =
-    ["address1", "address2", "city", "state", "zip", "country"];
-  return fields.some((f) => normalizedName(a[f]) !== normalizedName(b[f]));
-}
 
 export const onPurchaseCustomerUpsert = onDocumentCreated(
   "purchases/{id}",
@@ -158,108 +105,20 @@ export const onPurchaseCustomerUpsert = onDocumentCreated(
       await applyTagRulesForActivity(db, activity, customerRef);
       return;
     }
-    const existingPending = customer.pendingChanges;
-    const pending: PendingCustomerChange[] =
-      Array.isArray(existingPending) ? [...existingPending] : [];
-    const now = Timestamp.now();
-    const directUpdates: Record<string, unknown> = {};
-    let changed = false;
+    // One reconciler, shared with the event-registration trigger (P6).
+    const reconciler = new CustomerReconciler(
+      customer as Record<string, unknown>, "purchase", event.params.id
+    );
 
-    const flagChange = (
-      field: PendingField,
-      currentValue: unknown,
-      proposedValue: unknown
-    ) => {
-      const entry: PendingCustomerChange = {
-        field,
-        currentValue: currentValue ?? null,
-        proposedValue,
-        source: "purchase",
-        sourceId: event.params.id,
-        detectedDate: now,
-      };
-      const idx = pending.findIndex((p) => p.field === field);
-      if (idx >= 0) {
-        pending[idx] = entry;
-      } else {
-        pending.push(entry);
-      }
-      changed = true;
-    };
+    reconciler.name("firstName", data.firstName);
+    reconciler.name("lastName", data.lastName);
+    reconciler.phone(data.phone);
+    reconciler.address("shippingAddress", proposedShipping);
+    reconciler.address("billingAddress", proposedBilling);
 
-    const resolveNameField = (
-      field: "firstName" | "lastName",
-      proposedRaw: unknown
-    ) => {
-      const proposed =
-        typeof proposedRaw === "string" ? proposedRaw.trim() : "";
-      if (!proposed) {
-        return;
-      }
-      const currentValue = customer[field];
-      if (!normalizedName(currentValue)) {
-        directUpdates[field] = proposed;
-        changed = true;
-        return;
-      }
-      if (normalizedName(currentValue) === normalizedName(proposed)) {
-        return;
-      }
-      flagChange(field, currentValue, proposed);
-    };
-
-    const resolvePhoneField = (proposed?: PhoneLike) => {
-      const proposedDigits = normalizedPhoneDigits(proposed?.number);
-      if (!proposedDigits) {
-        // Not real phone data (missing, or garbage like "x"/"Y" that
-        // strips to zero digits) - nothing worth filling or flagging with.
-        // Without this check, a junk value that also normalizes to ""
-        // looks identical to "nothing on file", so a blank field would get
-        // "filled" with the same junk on every future purchase, forever
-        // (live-diagnosed: two 2026-08-13 backfill runs never converged
-        // because of exactly this).
-        return;
-      }
-      const currentValue: PhoneLike | undefined = customer.phone;
-      const currentDigits = normalizedPhoneDigits(currentValue?.number);
-      if (!currentDigits) {
-        directUpdates.phone = proposed;
-        changed = true;
-        return;
-      }
-      if (currentDigits === proposedDigits) {
-        return;
-      }
-      flagChange("phone", currentValue, proposed);
-    };
-
-    const resolveAddressField = (
-      field: "shippingAddress" | "billingAddress",
-      proposed?: AddressLike
-    ) => {
-      if (!proposed?.address1) {
-        return;
-      }
-      const currentValue: AddressLike | undefined = customer[field];
-      if (!currentValue?.address1) {
-        directUpdates[field] = proposed;
-        changed = true;
-        return;
-      }
-      if (!addressesDiffer(currentValue, proposed)) {
-        return;
-      }
-      flagChange(field, currentValue, proposed);
-    };
-
-    resolveNameField("firstName", data.firstName);
-    resolveNameField("lastName", data.lastName);
-    resolvePhoneField(data.phone);
-    resolveAddressField("shippingAddress", proposedShipping);
-    resolveAddressField("billingAddress", proposedBilling);
-
+    const {directUpdates, pendingChanges, changed} = reconciler.result();
     if (changed) {
-      await customerRef.update({...directUpdates, pendingChanges: pending});
+      await customerRef.update({...directUpdates, pendingChanges});
     }
 
     await applyTagRulesForActivity(db, activity, customerRef);

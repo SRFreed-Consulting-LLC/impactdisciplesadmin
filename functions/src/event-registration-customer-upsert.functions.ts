@@ -1,10 +1,10 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
-import {Timestamp, getFirestore} from "firebase-admin/firestore";
+import {getFirestore} from "firebase-admin/firestore";
 import {
   findOrCreateCustomer,
   isPlausibleEmail,
-  normalizedName,
 } from "./utils/customer-match.functions";
+import {CustomerReconciler} from "./utils/customer-reconcile";
 import {
   activityFromRegistration,
   applyTagRulesForActivity,
@@ -34,17 +34,6 @@ import {
 // exact logic (separate plain-JS implementation, same reasoning as
 // customer-upsert.functions.ts's own comment on why) to backfill customers
 // from registrations that predate this trigger.
-
-type PendingField = "firstName" | "lastName";
-
-interface PendingCustomerChange {
-  field: PendingField;
-  currentValue: unknown;
-  proposedValue: unknown;
-  source: "purchase" | "eventRegistration";
-  sourceId: string;
-  detectedDate: Timestamp;
-}
 
 export const onEventRegistrationCustomerUpsert = onDocumentCreated(
   "event-registrations/{id}",
@@ -84,53 +73,22 @@ export const onEventRegistrationCustomerUpsert = onDocumentCreated(
       await applyTagRulesForActivity(db, activity, customerRef);
       return;
     }
-    const existingPending = customer.pendingChanges;
-    const pending: PendingCustomerChange[] =
-      Array.isArray(existingPending) ? [...existingPending] : [];
-    const now = Timestamp.now();
-    const directUpdates: Record<string, unknown> = {};
-    let changed = false;
+    // Same reconciler the purchase trigger uses (P6) - this file's own
+    // header already conceded "Otherwise identical rules"; now they are
+    // identical because there is one implementation, not two that match.
+    const reconciler = new CustomerReconciler(
+      customer as Record<string, unknown>,
+      "eventRegistration",
+      event.params.id
+    );
 
-    const resolveNameField = (
-      field: PendingField,
-      proposedRaw: unknown
-    ) => {
-      const proposed =
-        typeof proposedRaw === "string" ? proposedRaw.trim() : "";
-      if (!proposed) {
-        return;
-      }
-      const currentValue = customer[field];
-      if (!normalizedName(currentValue)) {
-        directUpdates[field] = proposed;
-        changed = true;
-        return;
-      }
-      if (normalizedName(currentValue) === normalizedName(proposed)) {
-        return;
-      }
-      const entry: PendingCustomerChange = {
-        field,
-        currentValue: currentValue ?? null,
-        proposedValue: proposed,
-        source: "eventRegistration",
-        sourceId: event.params.id,
-        detectedDate: now,
-      };
-      const idx = pending.findIndex((p) => p.field === field);
-      if (idx >= 0) {
-        pending[idx] = entry;
-      } else {
-        pending.push(entry);
-      }
-      changed = true;
-    };
+    reconciler.name("firstName", data.firstName);
+    reconciler.name("lastName", data.lastName);
 
-    resolveNameField("firstName", data.firstName);
-    resolveNameField("lastName", data.lastName);
+    const {directUpdates, pendingChanges, changed} = reconciler.result();
 
     if (changed) {
-      await customerRef.update({...directUpdates, pendingChanges: pending});
+      await customerRef.update({...directUpdates, pendingChanges});
     }
 
     await applyTagRulesForActivity(db, activity, customerRef);
