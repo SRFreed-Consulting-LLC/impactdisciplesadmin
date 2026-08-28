@@ -1,4 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -84,6 +85,8 @@ export class LibraryActivityLogListComponent {
     });
   });
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private activityLog: LibraryActivityLogService,
     private adminUserService: AdminUserService,
@@ -93,7 +96,24 @@ export class LibraryActivityLogListComponent {
       this.usersByUid.set(new Map(users.map((u) => [u.firebaseUID, u])));
     });
 
-    this.activityLog.getAllActivity().subscribe((events) => {
+    // takeUntilDestroyed is NOT optional here, and this is the most expensive
+    // of the five sites the 2026-08-27 sweep found. getAllActivity() is a
+    // collectionData() with limit(500): subscribing registers an onSnapshot
+    // listener that detaches ONLY on unsubscribe, and this component mounts
+    // behind an @if in library-manager.component.html, so it is destroyed and
+    // re-created on every tab switch.
+    //
+    // Without teardown each visit left a live 500-document listener behind,
+    // holding the destroyed component through this callback's closure and
+    // re-reading - and re-BILLING - all 500 docs on every write to
+    // activityLog, forever, to update a DOM that no longer exists. Ten tab
+    // switches meant ten of them.
+    //
+    // The liveness itself is deliberate; do not "fix" this by converting to a
+    // one-shot read. Only the teardown was missing.
+    this.activityLog.getAllActivity().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((events) => {
       this.events.set(events);
       this.loading.set(false);
       const liveIds = new Set(events.map((e) => e.id));

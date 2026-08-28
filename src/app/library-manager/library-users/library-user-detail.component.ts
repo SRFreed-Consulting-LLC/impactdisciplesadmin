@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -169,8 +170,21 @@ export class LibraryUserDetailComponent {
     internationalUser: [false],
   });
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor() {
-    this.libraryUserService.getLibraryUser(this.email).subscribe((user) => {
+    // getLibraryUser() is a docData() - a live onSnapshot that detaches only
+    // on unsubscribe. This screen is opened once per patron being triaged, so
+    // without teardown, working through 30 users left 30 live listeners and
+    // 30 dead component instances reachable through this closure.
+    // (2026-08-27 sweep, finding A1.)
+    //
+    // The liveness is deliberate and the callback below depends on it - it
+    // re-patches the form on re-emits caused by our own saves. Do not convert
+    // this to a one-shot read; only the teardown was missing.
+    this.libraryUserService.getLibraryUser(this.email).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((user) => {
       this.profile.set(user);
       this.loading.set(false);
       // Don't clobber unsaved edits on live re-emits triggered by our own

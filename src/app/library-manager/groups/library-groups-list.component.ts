@@ -1,4 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -122,6 +123,8 @@ export class LibraryGroupsListComponent {
    *  simply every row - kept as a name the template and specs already use. */
   readonly visibleRows = this.rows;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private groupsService: LibraryDiscussionGroupService,
     private bookService: LibraryBookService,
@@ -135,7 +138,15 @@ export class LibraryGroupsListComponent {
     // benefits from staying current without a manual refresh); books are a
     // one-shot fetch feeding the wizard's picker, same as every other
     // Library screen's book lookups in this app.
-    this.groupsService.getAllGroups().subscribe((groups) => {
+    // getAllGroups() is a live collectionData(); the comment above explains
+    // why that liveness is wanted. What was missing is the teardown - this
+    // list mounts behind an @if in library-manager.component.html, so every
+    // tab switch destroyed it and left the onSnapshot listener running,
+    // re-reading discussionGroups on every write to update a discarded DOM.
+    // (2026-08-27 sweep, finding A1.)
+    this.groupsService.getAllGroups().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((groups) => {
       this.groups.set(groups);
       this.loading.set(false);
     });

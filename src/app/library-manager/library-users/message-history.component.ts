@@ -1,4 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -41,8 +42,18 @@ export class MessageHistoryComponent {
   readonly messages = signal<AdminMessage[]>([]);
   readonly loading = signal(true);
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor() {
-    this.libraryUserService.getAdminMessages().subscribe((messages) => {
+    // getAdminMessages() is a collectionData() with limit(500) - a live
+    // onSnapshot listener that detaches only on unsubscribe. Without this
+    // pipe every visit to the tab left one behind, re-reading 500 documents
+    // on every adminMessages write to update a destroyed component.
+    // (2026-08-27 sweep, finding A1. The liveness is deliberate - do not
+    // convert this to a one-shot read.)
+    this.libraryUserService.getAdminMessages().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((messages) => {
       this.messages.set(messages);
       this.loading.set(false);
     });

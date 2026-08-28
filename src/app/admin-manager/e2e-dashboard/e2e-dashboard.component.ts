@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   E2E_CATALOG,
   E2eSuite,
@@ -38,6 +39,11 @@ interface SuiteRow {
 })
 export class E2eDashboardComponent implements OnInit {
   private readonly runService = inject(E2eRunService);
+  // Captured as a field because the subscribe below happens in ngOnInit,
+  // which is NOT an injection context - takeUntilDestroyed() with no argument
+  // would throw NG0203 there. The other four sites the sweep found subscribe
+  // in constructors and could omit it; this one cannot.
+  private readonly destroyRef = inject(DestroyRef);
 
   rows: SuiteRow[] = [];
   loading = true;
@@ -48,7 +54,14 @@ export class E2eDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.rows = E2E_CATALOG.map((suite) => this.toRow(suite, null));
 
-    this.runService.runsBySuite().subscribe((bySuite) => {
+    // runsBySuite() is a live collectionData() over e2e_runs. Without
+    // teardown, every visit to this Root-only screen left an onSnapshot
+    // listener running against a destroyed component - and this is the one
+    // screen whose whole job is to be re-opened after each test run.
+    // (2026-08-27 sweep, finding A1.)
+    this.runService.runsBySuite().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((bySuite) => {
       this.rows = E2E_CATALOG.map((suite) => this.toRow(suite, bySuite.get(suite.id) ?? null));
       this.loading = false;
     });
