@@ -3,6 +3,38 @@
 > Split out of the admin repo's CLAUDE.md on 2026-08-26 to keep the
 > always-loaded file small. This file is picked up when working inside `functions/`.
 
+## HARD 80-COLUMN LIMIT — write to it, don't discover it
+
+**Every line in `functions/` must be ≤ 80 characters.** `eslint`'s `max-len`
+enforces it as an ERROR, and `firebase deploy` runs lint as a predeploy hook,
+so an over-length line **blocks the deploy**.
+
+This trips people (and agents) constantly because the two halves of this repo
+disagree and nothing warns you at the moment you type:
+
+| | limit | enforced by |
+|---|---|---|
+| the Angular app (`src/`) | **120** | prettier, `printWidth: 120` in `.prettierrc.json` |
+| `functions/` | **80** | eslint `max-len` — **there is no prettier here** |
+
+So code that is perfectly formatted in `src/` fails lint the moment it is
+written in `functions/`. There is no formatter to rescue you: `max-len` is
+NOT auto-fixable, `eslint --fix` will not touch it, and `npm run format` does
+not cover this project.
+
+Two practical rules:
+
+- **Run `npm run lint` in `functions/` BEFORE deploying, always.** During a
+  deploy the failure surfaces as
+  `spawn npm --prefix "%RESOURCE_DIR%" run lint ENOENT`, which masks the real
+  error - the actual `max-len` line is printed ABOVE it.
+- **When a line is too long, SHORTEN it - do not reflexively wrap it.**
+  Wrapping a `test("...", () => {` or a call's arguments changes the expected
+  indentation of everything inside, and the Google style rules then error on
+  every one of those lines. That has already happened here: one fix traded 6
+  `max-len` errors for 20 `indent` errors. Prefer a shorter identifier, a
+  shorter string, or hoisting a value to a `const`.
+
 ### Cloud Functions (`functions/src/`)
 
 Plain Node/Express-style `onRequest` HTTP functions (not callable functions), one file per concern

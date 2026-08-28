@@ -8,7 +8,16 @@ import {
   resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
-import {pickActiveCoupon} from "./utils/coupons";
+import {
+  CouponDoc,
+  couponAppliesToProduct,
+  pickActiveCoupon,
+} from "./utils/coupons";
+import {
+  assertCaptureMatchesTotal,
+  findPriorPurchaseByReceipt,
+  isEffectivelyFree,
+} from "./utils/capture-verify";
 import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
 import {queueReaderReceiptEmail} from "./transactional-emails";
 import {
@@ -48,25 +57,6 @@ const libraryDb = getFirestore();
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
-
-interface CouponDoc {
-  code?: string;
-  isActive?: boolean;
-  percentOff?: number | null;
-  tags?: {id: string}[];
-}
-
-/**
- * A coupon with no tags applies to every product; otherwise only to
- * products whose id is tagged - mirrors the reader's couponAppliesTo.
- * @param {CouponDoc} coupon The coupon doc's data.
- * @param {string} productId The product's doc id.
- * @return {boolean} Whether the coupon discounts this product.
- */
-function couponAppliesTo(coupon: CouponDoc, productId: string): boolean {
-  return !coupon.tags?.length ||
-    coupon.tags.some((tag) => tag.id === productId);
-}
 
 export const verifyAndGrantReaderStorePurchase = onCall(
   {secrets: [paypalSandboxSecret, paypalLiveSecret], timeoutSeconds: 120},
@@ -178,7 +168,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     const lineItems = products.map(({id, data}) => {
       const price = effectivePrice(data);
       const discount =
-        coupon && couponAppliesTo(coupon, id) ?
+        coupon && couponAppliesToProduct(coupon as CouponDoc, id) ?
           round2((price * (coupon.percentOff ?? 0)) / 100) :
           0;
       return {
@@ -206,23 +196,12 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       ).value();
       const accessToken = await getAccessToken(env, clientSecret);
       const capture = await getOrderCapture(env, accessToken, payPalOrderId);
-      if (capture.status !== "COMPLETED") {
-        throw new HttpsError(
-          "failed-precondition",
-          `PayPal order is not completed (status: ${capture.status}).`
-        );
-      }
-      if (
-        capture.currencyCode !== "USD" ||
-        Math.abs(capture.amount - total) > 0.01
-      ) {
-        throw new HttpsError(
-          "failed-precondition",
-          `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
-            `does not match the computed total ($${total.toFixed(2)}).`
-        );
-      }
-    } else if (total > 0.005) {
+      assertCaptureMatchesTotal(
+        capture,
+        total,
+        `the computed total ($${total.toFixed(2)})`
+      );
+    } else if (!isEffectivelyFree(total)) {
       // No PayPal order and the verified pricing isn't free - a forged
       // "free" claim, or a client bug. Either way, no grant.
       throw new HttpsError(
@@ -237,12 +216,11 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     // is detectable; return it unchanged. (The grant itself is already
     // idempotent on purchaseId, but the purchase doc + email are not.)
     if (payPalOrderId) {
-      const prior = await libraryDb.collection("purchases")
-        .where("receipt", "==", payPalOrderId).limit(1).get();
-      if (!prior.empty) {
+      const prior = await findPriorPurchaseByReceipt(libraryDb, payPalOrderId);
+      if (prior) {
         return {
           granted: true,
-          purchaseId: prior.docs[0].id,
+          purchaseId: prior.id,
           grantedBookIds: [],
           skippedBookIds: lineItems.map((item) => item.digitalBookId),
           alreadyProcessed: true,

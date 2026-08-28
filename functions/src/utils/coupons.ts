@@ -68,3 +68,40 @@ export function pickActiveCoupon(
       String(c.code ?? "").trim().toLowerCase() === code
   );
 }
+
+/**
+ * The shape the two reader money paths read a coupon document as.
+ *
+ * Declared here rather than privately in each caller because it had already
+ * DRIFTED: library-group-licenses' copy carried `expiresAt`, and
+ * library-purchases' did not - so the two disagreed about whether expiry was
+ * even part of a coupon, on the paths that decide what a customer is charged.
+ */
+export interface CouponDoc {
+  code?: string;
+  isActive?: boolean;
+  percentOff?: number | null;
+  expiresAt?: unknown;
+  tags?: {id: string}[];
+}
+
+/**
+ * Whether a coupon discounts a given product.
+ *
+ * A coupon with no tags applies to everything; a tagged one applies only to
+ * products whose doc id is in its tag list.
+ *
+ * Tag scoping was the last coupon rule still resolved by two private copies
+ * after pickActiveCoupon was extracted (2026-08-27) - which is exactly why it
+ * was next to drift the way that extraction existed to stop.
+ * @param {CouponDoc} coupon The coupon document's data.
+ * @param {string} productId The product's document id.
+ * @return {boolean} Whether the coupon discounts this product.
+ */
+export function couponAppliesToProduct(
+  coupon: CouponDoc,
+  productId: string
+): boolean {
+  return !coupon.tags?.length ||
+    coupon.tags.some((tag) => tag.id === productId);
+}

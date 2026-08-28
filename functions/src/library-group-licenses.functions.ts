@@ -8,7 +8,16 @@ import {
   resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyLicenseGrant} from "./library-group-license-grant";
-import {pickActiveCoupon} from "./utils/coupons";
+import {
+  CouponDoc,
+  couponAppliesToProduct,
+  pickActiveCoupon,
+} from "./utils/coupons";
+import {
+  assertCaptureMatchesTotal,
+  findPriorPurchaseByReceipt,
+  isEffectivelyFree,
+} from "./utils/capture-verify";
 import {
   ProductDoc,
   computeGroupLicensePricing,
@@ -65,34 +74,6 @@ import {
  * doc id, same pattern this app's own LibraryBookService.getById() uses.
  */
 const libraryDb = getFirestore();
-
-/** The public shape of a `coupons` doc this function needs. Mirrors
- *  library-purchases.functions.ts's own local copy, plus `expiresAt`
- *  (which that one does not read - see the expiry note at the call site). */
-interface CouponDoc {
-  code?: string;
-  isActive?: boolean;
-  percentOff?: number | null;
-  expiresAt?: unknown;
-  tags?: {id: string}[];
-}
-
-/**
- * A coupon with no tags applies to every product; otherwise only to
- * products whose doc id is tagged - mirrors the reader's couponAppliesTo
- * and library-purchases' own copy.
- * @param {CouponDoc} coupon The coupon doc's data.
- * @param {string} productId The product's doc id.
- * @return {boolean} Whether the coupon discounts this product.
- */
-function couponAppliesToProduct(
-  coupon: CouponDoc,
-  productId: string
-): boolean {
-  return (
-    !coupon.tags?.length || coupon.tags.some((tag) => tag.id === productId)
-  );
-}
 
 const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
 const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
@@ -237,10 +218,12 @@ export const purchaseGroupLicenses = onCall(
     // of the small `coupons` collection, since stored codes are not
     // consistently cased.
     //
-    // Expiry IS checked here. The Store's equivalent only checks isActive,
-    // so an expired code still discounts a purchase there - a real gap, and
-    // one worth not reproducing (see coupon.model.ts, which claims expiry
-    // "cannot be skipped client-side").
+    // Expiry is checked, and so is the Store's equivalent - both go through
+    // pickActiveCoupon now. This note previously warned that the Store path
+    // checked only isActive, so an expired code still discounted there. That
+    // was true until the shared resolver landed (2026-08-27) and closed it;
+    // the warning outlived the gap and is corrected here rather than left to
+    // send the next reader looking for a bug that is fixed.
     let couponPercentOff: number | null = null;
     const trimmedCode = (couponCode ?? "").trim();
     if (trimmedCode) {
@@ -280,7 +263,10 @@ export const purchaseGroupLicenses = onCall(
       discountChoice.percentOff
     );
 
-    if (!payPalOrderId && total > 0) {
+    // isEffectivelyFree, not `total > 0`: this used to differ from
+    // library-purchases' own threshold (0.005), so the two money paths
+    // disagreed about what counts as free. One definition now (P5).
+    if (!payPalOrderId && !isEffectivelyFree(total)) {
       throw new HttpsError(
         "invalid-argument",
         "payPalOrderId is required for a non-zero total."
@@ -295,25 +281,15 @@ export const purchaseGroupLicenses = onCall(
       ).value();
       const accessToken = await getAccessToken(env, clientSecret);
       const capture = await getOrderCapture(env, accessToken, payPalOrderId);
-      if (capture.status !== "COMPLETED") {
-        throw new HttpsError(
-          "failed-precondition",
-          `PayPal order is not completed (status: ${capture.status}).`
-        );
-      }
       // Verify against the SERVER-computed total, cent-level tolerance for
-      // rounding only.
-      if (
-        capture.currencyCode !== "USD" ||
-        Math.abs(capture.amount - total) > 0.01
-      ) {
-        throw new HttpsError(
-          "failed-precondition",
-          `PayPal payment (${capture.currencyCode} ${capture.amount}) ` +
-            `does not match the price for ${quantity} license` +
-            `${quantity === 1 ? "" : "s"} ($${total.toFixed(2)}).`
-        );
-      }
+      // rounding only. Shared with library-purchases so a hardening change
+      // cannot land on one money path and miss the other (P5).
+      assertCaptureMatchesTotal(
+        capture,
+        total,
+        `the price for ${quantity} license` +
+          `${quantity === 1 ? "" : "s"} ($${total.toFixed(2)})`
+      );
       verifiedCaptureId = capture.captureId;
 
       // Idempotency (sweep 2026-08-17): a client retry with the SAME
@@ -323,10 +299,9 @@ export const purchaseGroupLicenses = onCall(
       // creating duplicates. (PayPal itself only captures an order once,
       // but the license/purchase writes happen after that and can be
       // replayed by a retried callable.)
-      const prior = await libraryDb.collection("purchases")
-        .where("receipt", "==", payPalOrderId).limit(1).get();
-      if (!prior.empty) {
-        const priorId = prior.docs[0].id;
+      const prior = await findPriorPurchaseByReceipt(libraryDb, payPalOrderId);
+      if (prior) {
+        const priorId = prior.id;
         const priorLicenses = await libraryDb.collection("groupLicenses")
           .where("purchaseId", "==", priorId).get();
         return {
