@@ -11,7 +11,7 @@ import { HomeSectionService } from 'src/app/common/services/data/home-sections.s
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { PreviewDevice } from './home-live-preview.component';
+import { PreviewDevice } from '../pages/page-live-preview.component';
 import { HOME_SECTION_KINDS, HomeSectionKind, kindFor } from './home-section-catalogue';
 import { HomeSectionDialogComponent } from './home-section-dialog.component';
 import { HomeSlidesDialogComponent } from './home-slides-dialog.component';
@@ -70,6 +70,16 @@ export class HomeComponent implements OnInit {
   device: PreviewDevice = 'desktop';
 
   /**
+   * Bumped after every successful write, which reloads the previewer.
+   *
+   * The preview is the REAL home page in a frame, so it shows what is saved -
+   * and this screen writes the moment anything changes, so a reload per write
+   * is the whole synchronisation story. A cross-origin frame cannot be told
+   * to refresh itself; changing its src is the only way.
+   */
+  previewRevision = 0;
+
+  /**
    * What the PUBLIC slider would show: active slides only, in order.
    *
    * Read here rather than handed up from the grid section. The grid streams
@@ -116,6 +126,10 @@ export class HomeComponent implements OnInit {
 
   private async load(): Promise<void> {
     this.loading = true;
+    // Also refreshes the previewer, which is how the two paths that re-read
+    // rather than write in place - closing a section dialog, and deleting -
+    // get their reload without each having to remember.
+    this.previewRevision++;
     try {
       const rows = await this.service.getAll();
       this.sections = rows.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -159,6 +173,7 @@ export class HomeComponent implements OnInit {
         section.order = index;
         return this.service.update(section.id, section);
       }));
+      this.previewRevision++;
       this.snackbar.success('Order saved');
     } catch (err) {
       console.error('Home: could not save the new order', err);
@@ -184,6 +199,7 @@ export class HomeComponent implements OnInit {
 
     try {
       await this.service.update(section.id, section);
+      this.previewRevision++;
       this.snackbar.success(next ? 'Showing on the page' : 'Taken off the page');
     } catch (err) {
       console.error('Home: could not change Live', err);
@@ -216,6 +232,7 @@ export class HomeComponent implements OnInit {
 
     const saved = await this.service.add(section);
     this.sections = [...this.sections, saved];
+    this.previewRevision++;
     this.snackbar.success(`${kind.label} added - switch it on when it is ready`);
 
     // Straight into the editor: an empty section on a live page is not

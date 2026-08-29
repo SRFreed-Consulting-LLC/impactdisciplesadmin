@@ -131,15 +131,17 @@
       </div>
     </header>
 
-    <app-home-live-preview
-      [sections]="sections"
-      [slides]="(liveSlides$ | async) ?? []"
-      [device]="device"></app-home-live-preview>
+    <!-- '/' - the home page IS the site's root. Same component the other
+         eleven screens use: the real page in a scaled frame. -->
+    <app-page-live-preview
+      [path]="'/'"
+      [label]="'the home page'"
+      [device]="device"
+      [revision]="previewRevision"></app-page-live-preview>
 
     <p class="home__preview-note">
-      The whole page as a visitor gets it, from saved content &mdash;
-      switched-off sections and slides are left out. Reordering shows at once;
-      edits show once saved.
+      The real page, scaled &mdash; not a drawing of it, so it cannot drift.
+      It reloads after every change you make here.
     </p>
   </aside>
 </div>

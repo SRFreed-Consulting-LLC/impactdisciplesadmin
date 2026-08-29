@@ -9,7 +9,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { EditablePage, PageSectionKind, kindFor, pluralise } from './page-section-catalogue';
 import { PageSectionDialogComponent } from './page-section-dialog.component';
-import { PreviewDevice } from '../home/home-live-preview.component';
+import { PreviewDevice } from './page-live-preview.component';
 
 /**
  * ONE public page as an ordered stack of sections, with a live preview of the

@@ -10,7 +10,6 @@ import { provideHttpClient } from '@angular/common/http';
 // The Home SCREEN (the section stack); HomePageImagesComponent is the slider
 // SECTION inside it - see home.component.ts.
 import { HomeComponent } from './home/home.component';
-import { HomeLivePreviewComponent } from './home/home-live-preview.component';
 import { HomeSectionDialogComponent } from './home/home-section-dialog.component';
 import { HomeSlidesDialogComponent } from './home/home-slides-dialog.component';
 // EVERY public page is one screen: an ordered stack of sections, a pop-up
@@ -98,7 +97,6 @@ import { QuillModule } from 'ngx-quill';
     TestimonialDialogComponent,
     CoachingPageComponent,
     HomeComponent,
-    HomeLivePreviewComponent,
     HomeSectionDialogComponent,
     HomeSlidesDialogComponent,
     PageStackComponent,

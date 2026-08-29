@@ -4,8 +4,10 @@ import {
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { environment } from 'src/environments/environment';
-import { EditablePage } from './page-section-catalogue';
-import { PreviewDevice } from '../home/home-live-preview.component';
+
+/** Which width the framed site is told it is. Lives here rather than in a
+ *  screen, because this is the component the toggle drives. */
+export type PreviewDevice = 'desktop' | 'mobile';
 
 /** How wide the framed site is told it is, per device. The phone width is a
  *  real one (iPhone 14 / Pixel 7 class), so the site's own breakpoints fire
@@ -58,7 +60,19 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly zone = inject(NgZone);
 
-  @Input({ required: true }) page!: EditablePage;
+  /**
+   * The public route to frame - '/about-us', or '/' for the home page.
+   *
+   * A path and a name rather than an EditablePage, so the HOME screen can use
+   * this too: home is not in EDITABLE_PAGES (its sections are their own
+   * collection with their own catalogue) but it is the same public site and
+   * deserves the same preview.
+   */
+  @Input({ required: true }) path!: string;
+
+  /** What to call it while it loads. */
+  @Input() label = 'the page';
+
   @Input() device: PreviewDevice = 'desktop';
 
   /**
@@ -117,17 +131,25 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
     this.loaded = false;
     this.contentHeight = ASSUMED_HEIGHT;
     // A cache-buster rather than a reload call: re-assigning src is the only
-    // navigation a parent can force on a cross-origin frame. The web app
-    // ignores an unknown query parameter.
-    const url = `${environment.previewSiteUrl.replace(/\/+$/, '')}${this.page.path}` +
-      `?adminPreview=${this.revision}`;
-    this.src = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    // navigation a parent can force on a cross-origin frame.
+    //
+    // `adminPreview` is NOT just a cache-buster, though - the web app reads
+    // it and suppresses interruptions, because a full-screen campaign popup
+    // over the preview covers the very sections being arranged AND fires a
+    // real impression beacon from a staff browser. See the web repo's
+    // shared/utils/admin-preview.ts.
+    this.src = this.sanitizer.bypassSecurityTrustResourceUrl(
+      `${this.shownUrl}?adminPreview=${this.revision}`
+    );
   }
 
   /** The address being framed, shown under it so nobody debugs a stale
    *  deployed build thinking it is their own work. */
   get shownUrl(): string {
-    return `${environment.previewSiteUrl.replace(/\/+$/, '')}${this.page.path}`;
+    const base = environment.previewSiteUrl.replace(/\/+$/, '');
+    // '/' would otherwise produce a trailing slash the other paths do not
+    // have, and show as `…web.app/` in the source line.
+    return this.path === '/' ? base : `${base}${this.path}`;
   }
 
   get frameWidth(): number {

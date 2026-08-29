@@ -15,14 +15,14 @@
       [style.width.px]="frameWidth"
       [style.height.px]="frameHeight"
       [style.transform]="'scale(' + scale + ')'"
-      [title]="page.label + ' as a visitor sees it'"
+      [title]="label + ' as a visitor sees it'"
       loading="lazy"
       referrerpolicy="no-referrer"
       (load)="onLoad()"
     ></iframe>
 
     @if (!loaded) {
-      <p class="apv-loading">Loading {{ page.label }}&hellip;</p>
+      <p class="apv-loading">Loading {{ label }}&hellip;</p>
     }
   </div>
 

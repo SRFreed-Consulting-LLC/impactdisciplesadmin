@@ -17,7 +17,7 @@ describe('PageLivePreviewComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [PageLivePreviewComponent] });
     component = TestBed.inject(PageLivePreviewComponent);
-    component.page = pageFor('seminars')!;
+    component.path = pageFor('seminars')!.path;
   });
 
   it('frames the page it was given, on the site this admin is paired with', () => {
@@ -88,5 +88,14 @@ describe('PageLivePreviewComponent', () => {
     // So nobody debugs a stale deployed build thinking it is their own work.
     expect(component.shownUrl).toBe(`${environment.previewSiteUrl}/seminars`);
     expect(component.shownUrl).not.toContain('adminPreview');
+  });
+
+  it('frames the site root for the home page, with no trailing slash', () => {
+    // The Home screen passes '/' - it is the same public site and gets the
+    // same previewer, but naively joining would show `…web.app/` where every
+    // other page shows a clean path.
+    component.path = '/';
+
+    expect(component.shownUrl).toBe(environment.previewSiteUrl);
   });
 });
