@@ -1,0 +1,277 @@
+{
+  "about-us": [
+    {
+      "key": "story-1",
+      "isActive": true,
+      "heading": "OUR STORY BEGAN WITH A <strong>NEED</strong>",
+      "ctaTitle": "READ MORE",
+      "ctaUrl": "#history",
+      "image": {
+        "name": "Home/story-1",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-1.PNG?alt=media&token=c1daf9a0-35db-4a1e-b502-71d23c701762"
+      },
+      "body": "<p>When Ken Adams began pastoring Crossroads Church in 1989, he envisioned that church becoming a part of the mission and movement of Jesus by making and multiplying disciples. The church needed a curriculum that would drive the goals and strategy its leadership had established, but there was a problem…</p>"
+    },
+    {
+      "key": "story-2",
+      "isActive": true,
+      "heading": "MORE ABOUT <strong>OUR MINISTRY</strong>",
+      "ctaTitle": "READ MORE",
+      "ctaUrl": "#history",
+      "image": {
+        "name": "Home/story-2",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-2.jpg?alt=media&token=35028e2e-f4fe-40ca-8d92-042b2cda016d"
+      },
+      "body": "<p>Did you know that we have Disciple-Making Churches and pastors all over the world in our disciple making network? We’d love to connect you to other ministry partners pursuing the same goals with the same passion and dedication as you.</p>"
+    },
+    {
+      "key": "story-3",
+      "isActive": true,
+      "heading": "WHY CHOOSE <strong>US</strong>",
+      "ctaTitle": "READ MORE",
+      "ctaUrl": "#history",
+      "image": {
+        "name": "Home/story-3",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-3.jpg?alt=media&token=4a367383-4b7e-4a9a-a696-934086475cd0"
+      },
+      "body": "<p>Jesus spent time one-on-one with His disciples, but then He took them out into the wide world to apply what they had learned with Him in a small group setting. Our director began his ministry based on Jesus’ strategy using Jesus’ methods in the early 1990s and has continued refining those efforts to the present day.</p>"
+    },
+    {
+      "key": "history",
+      "isActive": true,
+      "heading": "OUR HISTORY"
+    },
+    {
+      "key": "mission",
+      "isActive": true,
+      "heading": "OUR <strong> MISSION</strong>",
+      "body": "<p><strong>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples of Jesus Christ.</strong></p>\n<p>We provide disciple making resources, training, and consultations. We help people explore the concepts of disciple making, we educate people and churches in the principles of disciple making, we assist people and churches to establish disciple-making movements, and engage individuals and churches in developing movements of multiplication.</p>"
+    },
+    {
+      "key": "countries-count",
+      "isActive": true,
+      "heading": "<strong>15</strong>",
+      "body": "<h3>Countries with <br> Disciple-Making <br> Churches</h3>"
+    },
+    {
+      "key": "countries-copy",
+      "isActive": true,
+      "body": "<h3><strong>Impact works with churches, pastors, and individuals all over the world to be and build disciples of Jesus.</strong></h3>\n<h5>We currently have Disciple-Making Church partners in the <strong>United States, Montenegro, Brazil, Dominican Republic, Haiti, the Philippines, Zambia, India, Thailand, Kosovo, Albania, Serbia, Italy, Cambodia</strong>, and closed countries that will not be listed here for safety purposes.</h5>"
+    }
+  ],
+  "equipping-groups": [
+    {
+      "key": "overview",
+      "isActive": true,
+      "heading": "OUR APPROACH TO <strong>EQUIPPING</strong>",
+      "body": "<div>\n  <p>\n    <b>Impact Discipleship Equipping Groups</b> are designed to help pastors and church leaders rediscover and live out Jesus’ original vision for the church—a movement of multiplying disciples.\n  </p>\n  <p>\n    Drawing from over 30 years of real-life ministry experience, these small-group learning environments invite leaders to study the life and methods of Jesus alongside other like-minded pastors and leaders.\n  </p>\n  <p>\n    Through short videos, focused articles, and live Zoom discussions, each equipping group provides practical, biblical insight you can immediately apply in your local church.\n  </p>\n  <p>\n    It’s a simple investment that produces lasting impact—helping you lead, build, and multiply disciples the way Jesus intended.\n  </p>\n</div>"
+    },
+    {
+      "key": "courses",
+      "isActive": true,
+      "heading": "Impact Discipleship offers three Equipping Group courses.",
+      "items": [
+        {
+          "title": "Disciple-Making Church",
+          "description": "Designed for churches ready to move from good intentions to intentional disciple-making. This equipping group helps pastors and key leaders align their church around a shared mission, model, and practical pathway to build a sustainable disciple-making culture—together.",
+          "link": "/equipping-groups-churches",
+          "isActive": true
+        },
+        {
+          "title": "Disciple-Making Pastor",
+          "description": "Created specifically for pastors who want to lead with greater clarity, confidence, and multiplication. Rooted in 30+ years of real-world experience, this equipping group focuses on the six priorities every Disciple-Making Pastor must embrace to lead their congregation toward a movement of disciples who make disciples.",
+          "link": "/equipping-groups-pastors",
+          "isActive": true
+        },
+        {
+          "title": "Disciple-Making Leader",
+          "description": "Built for everyday leaders who want to live out and lead the mission of making disciples in their ministry context. This equipping group focuses on personal spiritual growth, practical disciple-making tools, and faithfulness over the long haul—no formal ministry role required.",
+          "link": "/equipping-groups-leaders",
+          "isActive": true
+        }
+      ]
+    }
+  ],
+  "equipping-groups-pastors": [
+    {
+      "key": "overview",
+      "isActive": true,
+      "heading": "OUR APPROACH TO <strong>EQUIPPING PASTORS</strong>",
+      "body": "<div>\n  <p>\n    Many pastors today have not been personally discipled and lack disciple-making training in their theological education. Our course seeks to address this gap by providing pastors with the tools to become influential disciple-making leaders in their churches.\n  </p>\n  <p>\n    Drawing on over 30 years of “on-the-job” disciple-making experience, we offer a strategic and intentional process for pastors seeking to lead their congregations toward becoming movements of multiplication. The course covers six crucial priorities of Disciple-Making Pastors, modeled after Jesus’ approach to disciple-making.\n  </p>\n  <p>\n    The course consists of seven online sessions where pastors meet with a group of twelve peers to discuss the strategic content developed by our team. Pastors will receive personalized coaching and accountability throughout the course to help them develop the necessary skills to fulfill Jesus’ mission of making disciples.\n  </p>\n  <p>\n    As a pastor, the course creator, Ken Adams, knows firsthand the challenges of leading a church to become a Disciple-Making Movement. He is committed to sharing the most important things he has learned about this ministry to help pastors progress as Disciple-Making Pastors.\n  </p>\n  <p>\n    Join us in “The Making of a Disciple-Making Pastor” group and take the first step towards leading your congregation to fulfill the mission of making disciples.\n  </p>\n</div>"
+    },
+    {
+      "key": "basics",
+      "isActive": true,
+      "heading": "EQUIPPING BASICS",
+      "body": "<p>Our online pastor’s equipping groups consist of bi-weekly content developed over 30 years of “on-the-job” discipleship work. It consists of reading, video training, tailored projects, and online meetings with your trainer and peer group.</p>"
+    },
+    {
+      "key": "cost",
+      "isActive": true,
+      "heading": "COST",
+      "ctaTitle": "Get Started",
+      "ctaUrl": "/events",
+      "body": "<p>We offer 2 options to pay for this service:</p>"
+    },
+    {
+      "key": "pitch",
+      "isActive": true,
+      "heading": "Pastors, are you ready to lead with greater purpose and clarity?",
+      "body": "<div>\n  Enrolling in <b>The Making of a Disciple‑Making Pastor</b> equipping group could be one of the most transformative steps in your ministry. Rooted in 30 years of real‑life disciple‑making experience, this seven‑week online Zoom training will equip you with a practical, Christ‑centered strategy to align your leadership and ministry with the mission of making disciples.\n</div>\n<div class=\"mt-10\">\n  It all begins with you—deepening your personal and spiritual growth to build a ministry that truly impacts your church and community. If you want to make and multiply disciples in your ministry, deciding to enroll in this group could be life‑changing.\n</div>"
+    },
+    {
+      "key": "experience",
+      "isActive": true,
+      "heading": "What You’ll Experiences",
+      "body": "<ul>\n  <li class=\"mb-5\">* <b>Seven live weekly Zoom sessions</b> led by veteran pastors</li>\n  <li class=\"mb-5\">* <b>Personalized coaching</b> to develop your disciple‑making skills</li>\n  <li class=\"mb-5\">* <b>Six crucial priorities</b> every Disciple‑Making Pastor must master</li>\n  <li class=\"mb-5\">* <b>Practical tools and resources</b> grounded in decades of experience</li>\n  <li class=\"mb-5\">* <b>Join us today</b> and take the first step toward leading your congregation into a movement of multiplying disciples!</li>\n</ul>"
+    }
+  ],
+  "equipping-groups-leaders": [
+    {
+      "key": "overview",
+      "isActive": true,
+      "heading": "OUR APPROACH TO <strong>EQUIPPING LEADERS</strong>",
+      "body": "<div>\n  <p>\n    <b>The Disciple-Making Leader Equipping Group</b> is a new online training experience designed to equip everyday church leaders to live out and lead the mission of making disciples. This group focuses on personal spiritual growth and practical, real-life disciple-making—helping leaders know, model, and multiply the mission in their everyday ministry.\n  </p>\n  <p>\n    Designed to be accessible, relational, and actionable, this experience is for small group leaders, ministry and team leaders, volunteers, emerging leaders, and churches seeking to develop disciple-making leaders at every level. No formal ministry role required—just a desire to grow and faithfully lead others.\n  </p>\n  <p>\n    Launching soon. More details coming.\n  </p>\n</div>"
+    },
+    {
+      "key": "basics",
+      "isActive": true,
+      "heading": "EQUIPPING BASICS"
+    },
+    {
+      "key": "cost",
+      "isActive": true,
+      "heading": "COST"
+    },
+    {
+      "key": "pitch",
+      "isActive": true,
+      "heading": "Leaders, are you ready to lead with greater purpose and clarity?"
+    },
+    {
+      "key": "priorities",
+      "isActive": true,
+      "heading": "Six Priorities of a Disciple-Making Leader"
+    },
+    {
+      "key": "includes",
+      "isActive": true,
+      "heading": "What This Equipping Group Will Include"
+    },
+    {
+      "key": "audience",
+      "isActive": true,
+      "heading": "Who This Is For"
+    }
+  ],
+  "equipping-groups-churches": [
+    {
+      "key": "overview",
+      "isActive": true,
+      "heading": "OUR APPROACH TO <strong>EQUIPPING CHURCHES</strong>",
+      "body": "<div>\n  <p>\n    <b>The Disciple-Making Church Equipping Group</b> is an online training experience designed to help churches move from intention to implementation in building a disciple-making culture.\n  </p>\n  <p>\n    For the first time ever, Impact Discipleship Ministries’ Disciple-Making Church Seminar—previously offered only as an onsite, half-day training—is now available in a seven-week live Zoom equipping group. Built on more than 30 years of real-world disciple-making experience, this proven content equips pastors and ministry leaders with the mission, model, and methods needed to multiply disciples together.\n  </p>\n  <p>\n    Through live weekly sessions, guided discussion, practical ministry projects, and proven tools, churches will gain clarity, alignment, and momentum toward a sustainable disciple-making culture. This experience is designed for pastors, ministry staff, key leaders, and churches ready to move beyond programs and toward multiplication.\n  </p>\n</div>"
+    },
+    {
+      "key": "getstarted",
+      "isActive": true,
+      "heading": "GET STARTED"
+    },
+    {
+      "key": "cost",
+      "isActive": true,
+      "heading": "COST"
+    },
+    {
+      "key": "pitch",
+      "isActive": true,
+      "heading": "An Online Equipping Experience for Church Leaders & Teams"
+    },
+    {
+      "key": "includes",
+      "isActive": true,
+      "heading": "What This Equipping Group Includes"
+    },
+    {
+      "key": "audience",
+      "isActive": true,
+      "heading": "Who This Is For"
+    }
+  ],
+  "seminars": [
+    {
+      "key": "overview",
+      "isActive": true,
+      "heading": "OVERVIEW",
+      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training seminars to churches that need help implementing a proven strategy to grow their ministry. Our team comes to you and facilitates a half-day training seminar where you will learn the mission, model, and methods you need to multiply disciples. Read more about how our seminars can help you below. Read more details below on our Disciple-Making Church Seminar below. Before you begin, you might consider one of our <a>free consultations</a> from our Impact team to introduce our ministry and assess if our Seminar is right for you.</p>"
+    },
+    {
+      "key": "whatyouget",
+      "isActive": true,
+      "heading": "WHAT YOU <strong> GET</strong>"
+    }
+  ],
+  "lunch-and-learns": [
+    {
+      "key": "overview",
+      "isActive": true,
+      "heading": "OVERVIEW",
+      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training and resources for churches who need help implementing a proven strategy to grow their ministries.\nLet us join you for lunch and give you more information on how we can come alongside you to help your church multiply disciples.</p>"
+    },
+    {
+      "key": "whatyouget",
+      "isActive": true,
+      "heading": "WHAT YOU <strong> GET</strong>"
+    }
+  ],
+  "give": [
+    {
+      "key": "onetime",
+      "isActive": true,
+      "heading": "One-Time"
+    },
+    {
+      "key": "monthly",
+      "isActive": true,
+      "heading": "Monthly"
+    },
+    {
+      "key": "partners",
+      "isActive": true,
+      "heading": "Psalms 78:6 Impact Partners",
+      "body": "<p>Would you be willing to invest in the next generation of disciples?<br>\n\"Become an Impact Partner”<br>\nPsalm 78:6 - “So the next generation would know… and they would tell their children.”<br>\nYour support multiplies the mission of Jesus!</p>"
+    }
+  ],
+  "contact": [
+    {
+      "key": "intro",
+      "isActive": true,
+      "heading": "Find us here."
+    },
+    {
+      "key": "form",
+      "isActive": true,
+      "heading": "Contact Us."
+    }
+  ],
+  "discipleship-library": [
+    {
+      "key": "hero",
+      "isActive": true,
+      "heading": "Your discipleship library,<br>in your pocket.",
+      "body": "<p>\n  Read every title, work through the lessons at your own pace, and walk through\n  them together with your Impact Group — on any phone, with nothing to install.\n</p>"
+    },
+    {
+      "key": "closing",
+      "isActive": true,
+      "heading": "Start reading today.",
+      "body": "<p>\n  Anyone can sign up. Open it in your browser, sign in, and your shelf is waiting.\n</p>"
+    }
+  ],
+  "prayer-team": [
+    {
+      "key": "hero",
+      "isActive": true,
+      "heading": "GROW AS DISCIPLES TOGETHER"
+    }
+  ]
+}
