@@ -127,8 +127,26 @@
   width: 100%;
 }
 
+/* styles.scss gives EVERY quill-editor `height: 100%`, so its host must
+   supply a DEFINITE height or .ql-container collapses to 1px and the
+   absolutely-positioned .ql-editor spills out over whatever is below it.
+   Measured here before the fix: container 1px, editor 24px, overflowing
+   onto the Picture block. Web Config, the DMM dialog, the Team Page dialog
+   and the coach dialog all carry the same fix and say so - this is the
+   fifth copy, and the reason each one comments it.
+
+   220px is about eight lines: enough that a paragraph is editable without
+   scrolling, short enough that a page of six slots is still scannable.
+   .ql-editor keeps its own internal scroll for longer passages. */
 .pe__rich {
   margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pe__rich quill-editor {
+  height: 220px;
+  min-height: 0;
 }
 
 .pe__rich-label {
