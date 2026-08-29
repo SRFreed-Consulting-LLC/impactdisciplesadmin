@@ -1,7 +1,7 @@
-<h2 mat-dialog-title>{{ itemType }}</h2>
-
-<mat-dialog-content class="hsd">
-  <p class="hsd__blurb">{{ data.kind.blurb }}</p>
+<!-- No dialog scaffolding: hosted full-width by the Home screen, not floated
+     over it. See the component for what changed and why. -->
+<div class="hsd">
+  <p class="hsd__blurb">{{ kind.blurb }}</p>
 
   <form [formGroup]="form" class="hsd__form">
 
@@ -122,7 +122,7 @@
               </div>
 
               <div class="hsd__card-side">
-                <mat-slide-toggle [(ngModel)]="item.isActive" [ngModelOptions]="{standalone: true}"
+                <mat-slide-toggle (change)="touched()" [(ngModel)]="item.isActive" [ngModelOptions]="{standalone: true}"
                                   [matTooltip]="item.isActive ? 'Showing' : 'Hidden'">
                 </mat-slide-toggle>
                 <button type="button" class="hsd__icon-btn hsd__icon-btn--danger"
@@ -136,17 +136,7 @@
       </div>
     }
   </form>
-</mat-dialog-content>
-
-<mat-dialog-actions align="end">
-  <button mat-button type="button" [disabled]="inProgress$ | async" (click)="onCancel()">CANCEL</button>
-  <app-indicator-button
-    title="SAVE"
-    [isInProgress]="inProgress$ | async"
-    [disabled]="inProgress$ | async"
-    (clicked)="onSave()">
-  </app-indicator-button>
-</mat-dialog-actions>
+</div>
 
 @if (isImageUploaderVisible$ | async) {
   <app-image-uploader

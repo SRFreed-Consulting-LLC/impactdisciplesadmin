@@ -1,3 +1,83 @@
+<!-- EDITING ONE SECTION, full width, with that section alone in the rail -
+     the same shape the eleven page screens use. The stack is not destroyed
+     underneath: same component, same in-memory sections, so cancelling is
+     instant and nothing is re-read. -->
+@if (editing && editingKind) {
+  <div class="home home--editing">
+    <div class="home__editor">
+      <header class="home__head home__head--editing">
+        <button type="button" class="home__back" (click)="closeEditor()">
+          <mat-icon>arrow_back</mat-icon>
+          <span>Home page</span>
+        </button>
+        <div class="home__editing-title">
+          <mat-icon class="home__type-icon">{{ editingKind.icon }}</mat-icon>
+          <h2 class="home__title">{{ editingKind.label }}</h2>
+        </div>
+        <div class="home__editing-actions">
+          <button mat-button type="button" (click)="closeEditor()">CANCEL</button>
+          @if (editingKind.fields.slides) {
+            <!-- The slides save themselves as they are edited, so there is
+                 nothing here to commit - only a way back. -->
+            <button mat-flat-button color="primary" type="button"
+                    (click)="closeEditor()">DONE</button>
+          } @else {
+            <!-- Via the component, not a template ref: the editor lives
+                 inside an @else branch and a reference declared in a
+                 control-flow block is not visible out here. -->
+            <button mat-flat-button color="primary" type="button"
+                    [disabled]="busy" (click)="saveFromHeader()">SAVE</button>
+          }
+        </div>
+      </header>
+
+      @if (editingKind.fields.slides) {
+        <!-- A HOST, not an editor: the Home Page Images grid already owns
+             adding, editing, deleting, the drag-reordering and the
+             order-clash warning. Nothing about a slide is edited here. -->
+        <app-home-page-images></app-home-page-images>
+      } @else {
+        <app-home-section-editor
+          [item]="editing"
+          [kind]="editingKind"
+          (dirty)="onEditing($event)"
+          (save)="saveEditor($event)"
+          (cancelled)="closeEditor()"></app-home-section-editor>
+      }
+    </div>
+
+    <aside class="home__preview">
+      <header class="home__preview-head">
+        <h2 class="home__preview-title">This section</h2>
+        <div class="home__device" role="group" aria-label="Preview width">
+          <button type="button" class="home__device-btn"
+                  [class.home__device-btn--on]="device === 'desktop'"
+                  [attr.aria-pressed]="device === 'desktop'"
+                  (click)="setDevice('desktop')">Desktop</button>
+          <button type="button" class="home__device-btn"
+                  [class.home__device-btn--on]="device === 'mobile'"
+                  [attr.aria-pressed]="device === 'mobile'"
+                  (click)="setDevice('mobile')">Mobile</button>
+        </div>
+      </header>
+
+      <app-page-live-preview
+        [path]="'/'"
+        [label]="editingKind.label"
+        [device]="device"
+        [revision]="previewRevision"
+        [sectionKey]="editing.id"
+        [liveSection]="editingLive ?? undefined"></app-page-live-preview>
+
+      <p class="home__preview-note">
+        This section on its own, as you type &mdash; the rest of the page and
+        the site&rsquo;s header and footer are left out. A switched-off
+        section still draws here, because you are working on it.
+      </p>
+    </aside>
+  </div>
+} @else {
+
 <div class="home">
   <!-- EDITOR COLUMN -->
   <div class="home__editor">
@@ -145,3 +225,5 @@
     </p>
   </aside>
 </div>
+
+}

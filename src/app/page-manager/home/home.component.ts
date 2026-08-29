@@ -1,7 +1,6 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { MatDialog } from '@angular/material/dialog';
 import { Observable, map, shareReplay } from 'rxjs';
 import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
 import { HomeSectionModel } from '@impact-common/shared/models/domain/home-section.model';
@@ -13,8 +12,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PreviewDevice } from '../pages/page-live-preview.component';
 import { HOME_SECTION_KINDS, HomeSectionKind, kindFor } from './home-section-catalogue';
-import { HomeSectionDialogComponent } from './home-section-dialog.component';
-import { HomeSlidesDialogComponent } from './home-slides-dialog.component';
+import { HomeSectionEditorComponent } from './home-section-editor.component';
 
 /**
  * HOME - every section the public home page renders, on one screen, in the
@@ -35,7 +33,9 @@ import { HomeSlidesDialogComponent } from './home-slides-dialog.component';
  *   - REORDER and the LIVE toggle write immediately. They are single facts
  *     about a section, and a screen-level Save that quietly rewrote six
  *     records would be a surprise.
- *   - CONTENT is edited in a dialog, which saves that one section.
+ *   - CONTENT is edited FULL SCREEN, and saved from there. It was a pop-up
+ *     until 2026-08-29; a window small enough to float over the screen left
+ *     no room beside it to show what the section looks like.
  *
  * NOT here, deliberately: the docking bar. It looks like home-page content
  * because that is where staff notice it, but the web app mounts it in
@@ -80,6 +80,36 @@ export class HomeComponent implements OnInit {
   previewRevision = 0;
 
   /**
+   * The section being edited full-screen, or null for the stack.
+   *
+   * A WORKING COPY, not the row: cancelling has to cost nothing, and the
+   * preview beside it shows this rather than what is stored.
+   */
+  editing: HomeSectionModel | null = null;
+  editingKind: HomeSectionKind | null = null;
+
+  /**
+   * The same section, re-referenced on every keystroke.
+   *
+   * The previewer takes it as an @Input, and Angular only notices an input
+   * change when the REFERENCE changes - mutating in place would post nothing
+   * after the first letter.
+   */
+  editingLive: HomeSectionModel | null = null;
+
+  /** True while a save is in flight, so SAVE cannot be pressed twice. */
+  busy = false;
+
+  /**
+   * The open editor, so the header's SAVE can reach it.
+   *
+   * A ViewChild rather than a template reference, because the editor sits
+   * inside an @else branch and a reference declared in a control-flow block
+   * is not visible to the header outside it.
+   */
+  @ViewChild(HomeSectionEditorComponent) sectionEditor?: HomeSectionEditorComponent;
+
+  /**
    * What the PUBLIC slider would show: active slides only, in order.
    *
    * Read here rather than handed up from the grid section. The grid streams
@@ -94,7 +124,6 @@ export class HomeComponent implements OnInit {
     private service: HomeSectionService,
     private slideService: HomePageImageService,
     private permissionService: PermissionService,
-    private dialog: MatDialog,
     private confirmService: ConfirmService,
     private snackbar: SnackbarService
   ) {}
@@ -126,8 +155,8 @@ export class HomeComponent implements OnInit {
 
   private async load(): Promise<void> {
     this.loading = true;
-    // Also refreshes the previewer, which is how the two paths that re-read
-    // rather than write in place - closing a section dialog, and deleting -
+    // Also refreshes the previewer, which is how the paths that re-read
+    // rather than write in place - leaving the slides grid, and deleting -
     // get their reload without each having to remember.
     this.previewRevision++;
     try {
@@ -238,30 +267,75 @@ export class HomeComponent implements OnInit {
     // Straight into the editor: an empty section on a live page is not
     // useful, and it is switched off until staff say otherwise.
     if (Object.keys(kind.fields).length) {
-      await this.edit(saved);
+      this.edit(saved);
     }
   }
 
-  async edit(section: HomeSectionModel): Promise<void> {
+  /**
+   * Opens the section FULL SCREEN rather than in a pop-up.
+   *
+   * It was a dialog until 2026-08-29, and stopped being one for the reason
+   * the eleven page screens did: a pop-up has to be small enough to float
+   * over the screen, which leaves no room beside it to show what the section
+   * actually looks like.
+   *
+   * The SLIDER is still the odd one - its content is a separate collection
+   * with its own grid - so the same full screen hosts that grid instead of
+   * the field editor. The difference is now which component fills the space
+   * rather than which kind of window opens.
+   */
+  edit(section: HomeSectionModel): void {
     const kind = kindFor(section.type);
-    if (!kind || !this.hasEditor(kind)) {
+    if (!kind || !this.hasEditor(kind) || !this.canEdit() || this.loadFailed) {
       return;
     }
+    this.editingKind = kind;
+    this.editing = structuredClone(section);
+    this.editingLive = { ...this.editing };
+  }
 
-    // The slider's content is its SLIDES, a separate collection with its own
-    // grid - so it gets its own dialog rather than the field editor.
-    const ref = kind.fields.slides
-      ? this.dialog.open(HomeSlidesDialogComponent, {
-          width: '1180px', maxWidth: '96vw', maxHeight: '94vh'
-        })
-      : this.dialog.open(HomeSectionDialogComponent, {
-          width: '900px', maxWidth: '95vw', maxHeight: '94vh',
-          data: { item: structuredClone(section), kind }
-        });
+  /** Every keystroke, debounced by the editor. A new REFERENCE each time, or
+   *  the previewer would not see an input change - see editingLive. */
+  onEditing(section: HomeSectionModel): void {
+    this.editingLive = { ...section };
+  }
 
-    const saved = await ref.afterClosed().toPromise();
-    if (saved) {
+  /** SAVE lives in the screen's header, the editor holds the form. */
+  saveFromHeader(): void {
+    this.sectionEditor?.onSave();
+  }
+
+  closeEditor(): void {
+    const wasSlides = !!this.editingKind?.fields.slides;
+    this.editing = null;
+    this.editingKind = null;
+    this.editingLive = null;
+    if (wasSlides) {
+      // The slides save themselves as they are edited, so leaving the grid is
+      // the only moment the stack learns its slide count changed.
+      this.load();
+    }
+  }
+
+  /**
+   * Writes the edited section. THIS screen owns the write now - the editor
+   * used to do it through the service itself, which meant two writers for
+   * one collection when order and Live are already written here.
+   */
+  async saveEditor(section: HomeSectionModel): Promise<void> {
+    const label = this.editingKind?.label ?? 'Section';
+    this.busy = true;
+    try {
+      await this.service.update(section.id, section);
+      this.previewRevision++;
+      this.snackbar.success(`${label} saved`);
+      this.closeEditor();
       await this.load();
+    } catch (err) {
+      console.error('Home: could not save the section', err);
+      this.snackbar.error('Could not save that - try again');
+    } finally {
+      this.busy = false;
     }
   }
 

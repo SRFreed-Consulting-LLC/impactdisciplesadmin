@@ -10,13 +10,13 @@ import { provideHttpClient } from '@angular/common/http';
 // The Home SCREEN (the section stack); HomePageImagesComponent is the slider
 // SECTION inside it - see home.component.ts.
 import { HomeComponent } from './home/home.component';
-import { HomeSectionDialogComponent } from './home/home-section-dialog.component';
-import { HomeSlidesDialogComponent } from './home/home-slides-dialog.component';
-// EVERY public page is one screen: an ordered stack of sections, a pop-up
-// editor per section, and a preview of the whole page. Which sections a page
-// can have is declared in pages/page-section-catalogue.ts, so adding a page
-// needs no change here. Replaced the slot editor and the three About Us-only
-// components on 2026-08-29.
+import { HomeSectionEditorComponent } from './home/home-section-editor.component';
+// EVERY public page is one screen: an ordered stack of sections, a FULL-SCREEN
+// editor per section, and the real page in a frame beside it. Which sections a
+// page can have is declared in pages/page-section-catalogue.ts, so adding a
+// page needs no change here. Replaced the slot editor and the three About
+// Us-only components on 2026-08-29; the pop-ups went the same day, along with
+// Home's two.
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
 import { PageLivePreviewComponent } from './pages/page-live-preview.component';
@@ -97,8 +97,7 @@ import { QuillModule } from 'ngx-quill';
     TestimonialDialogComponent,
     CoachingPageComponent,
     HomeComponent,
-    HomeSectionDialogComponent,
-    HomeSlidesDialogComponent,
+    HomeSectionEditorComponent,
     PageStackComponent,
     PageSectionEditorComponent,
     PageLivePreviewComponent,

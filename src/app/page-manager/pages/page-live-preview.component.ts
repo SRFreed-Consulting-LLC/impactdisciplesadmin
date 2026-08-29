@@ -4,11 +4,22 @@ import {
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PageContentBlock } from '@impact-common/shared/models/domain/page-content.model';
+import { HomeSectionModel } from '@impact-common/shared/models/domain/home-section.model';
 import { environment } from 'src/environments/environment';
 
 /** Which width the framed site is told it is. Lives here rather than in a
  *  screen, because this is the component the toggle drives. */
 export type PreviewDevice = 'desktop' | 'mobile';
+
+/**
+ * Either shape of section this previewer can be handed.
+ *
+ * The eleven page screens edit a PageContentBlock, identified by `key`; the
+ * Home screen edits a HomeSectionModel, identified by `id`. This component
+ * never reads either - it posts the whole thing across and the site decides -
+ * so the union is honest rather than a cast at two call sites.
+ */
+export type PreviewSection = PageContentBlock | HomeSectionModel;
 
 /** How wide the framed site is told it is, per device. The phone width is a
  *  real one (iPhone 14 / Pixel 7 class), so the site's own breakpoints fire
@@ -100,7 +111,7 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
    * is the one thing that cannot, because the whole point of it is to be
    * ahead of the save.
    */
-  @Input() liveSection?: PageContentBlock;
+  @Input() liveSection?: PreviewSection;
 
   @ViewChild('rail') railRef?: ElementRef<HTMLElement>;
   @ViewChild('frame') frameRef?: ElementRef<HTMLIFrameElement>;
