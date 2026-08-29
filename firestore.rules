@@ -194,6 +194,25 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // The home page's section stack - one doc per section, carrying its
+    // type, its position and its editable content. Same reasoning as
+    // dock_bar and coaching_page: the public site has no Firebase Auth, so
+    // anything it renders has to be world-readable, and nothing sensitive
+    // belongs on these documents. See HomeSectionModel.
+    //
+    // Not here, on purpose: the slider's SLIDES (home_page_images, already
+    // public above - a `slider` section only says where the carousel sits)
+    // and the quotes a `testimonials` section points at (`testimonials`,
+    // also already public above).
+    //
+    // DEPLOY NOTE: this is an ADDED permissive rule, so unlike a tightening
+    // it must ship BEFORE the web build that reads the collection. Web
+    // degrades to a hardcoded fallback stack if the read is denied, so the
+    // wrong order is a silently stale home page rather than a broken one.
+    match /home_sections/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();
