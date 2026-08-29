@@ -265,13 +265,62 @@ describe('handleRowDrop', () => {
     expect(rows.length).toBe(0);
   });
 
-  // The block palette is wired to COLUMN lists and the layout palette to ROW
-  // lists, so neither handler should ever act on the other's drop.
-  it('ignores a block-palette drag that lands on a section', () => {
+  // CHANGED 2026-08-28. This used to assert the opposite - that a block
+  // landing on a section was ignored - which was a faithful description of
+  // the wiring and of a real bug: the block palette connected to COLUMN
+  // lists only, and a blank design has no columns, so dragging a Heading
+  // onto an empty email did nothing however accurately it was aimed, while
+  // the section's own hint invited exactly that drop. The wiring was wrong,
+  // not this handler's silence, so the block palette now also connects to
+  // row lists (DesignerStateService.blockDropIds) and the block arrives
+  // wrapped in its own full-width row.
+  it('wraps a block dropped straight onto a section in a single full-width row', () => {
+    const rows: EmailRow[] = [];
+
+    const changed = handleRowDrop(
+      dropEvent({ id: BLOCK_PALETTE_ID, data: ['text'] as BlockType[] }, { id: 'rows-sec', data: rows }, 0, 0)
+    );
+
+    expect(changed).toBe(true);
+    expect(rows.length).toBe(1);
+    expect(rows[0].columns.length).toBe(1);
+    expect(rows[0].columns[0].widthPercent).toBe(100);
+    expect(rows[0].columns[0].blocks.length).toBe(1);
+    expect(rows[0].columns[0].blocks[0].type).toBe('text');
+  });
+
+  it('inserts that row at the drop index rather than appending', () => {
+    const rows: EmailRow[] = [createRow(1), createRow(1)];
+
+    handleRowDrop(
+      dropEvent({ id: BLOCK_PALETTE_ID, data: ['image'] as BlockType[] }, { id: 'rows-sec', data: rows }, 0, 1)
+    );
+
+    expect(rows.length).toBe(3);
+    expect(rows[1].columns[0].blocks[0].type).toBe('image');
+  });
+
+  it('seeds a block dropped on a section the same way a column drop does', () => {
+    const rows: EmailRow[] = [];
+    const links: SocialNetworkLink[] = [
+      { network: 'facebook', url: 'https://facebook.com/impact', label: 'Facebook', iconUrl: null }
+    ];
+
+    handleRowDrop(
+      dropEvent({ id: BLOCK_PALETTE_ID, data: ['social'] as BlockType[] }, { id: 'rows-sec', data: rows }, 0, 0),
+      { socialLinks: links }
+    );
+
+    const block = rows[0].columns[0].blocks[0] as SocialBlock;
+    expect(block.props.networks.length).toBe(1);
+    expect(block.props.networks[0].url).toBe('https://facebook.com/impact');
+  });
+
+  it('still refuses a block-palette drag that lands somewhere other than a section', () => {
     const rows: EmailRow[] = [];
 
     expect(
-      handleRowDrop(dropEvent({ id: BLOCK_PALETTE_ID, data: ['text'] }, { id: 'rows-sec', data: rows }, 0, 0))
+      handleRowDrop(dropEvent({ id: BLOCK_PALETTE_ID, data: ['text'] }, { id: 'col-abc', data: rows }, 0, 0))
     ).toBe(false);
     expect(rows.length).toBe(0);
   });

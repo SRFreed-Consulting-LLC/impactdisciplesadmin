@@ -231,7 +231,7 @@
     <div class="panel-body">
       <p class="palette-label">CONTENT BLOCKS</p>
       <div class="chip-grid" cdkDropList [id]="blockPaletteId" [cdkDropListData]="paletteTypes"
-           [cdkDropListConnectedTo]="state.columnDropIds()" [cdkDropListSortingDisabled]="true">
+           [cdkDropListConnectedTo]="state.blockDropIds()" [cdkDropListSortingDisabled]="true">
         @for (entry of palette; track entry.type) {
           <div class="chip" cdkDrag [cdkDragData]="entry.type">
             <mat-icon>{{ entry.icon }}</mat-icon>

@@ -182,6 +182,15 @@ export class DesignerStateService {
     return this.design.sections.map((section) => 'rows-' + section.id);
   }
 
+  // Where a BLOCK may be dropped: any column, plus any section's row list.
+  // The row ids are load-bearing on a BLANK design - it has no columns at
+  // all, so connecting the block palette to columns alone left it wired to
+  // nothing and every drop silently did nothing. handleRowDrop() wraps a
+  // block dropped on a section in a single full-width row.
+  blockDropIds(): string[] {
+    return [...this.columnDropIds(), ...this.rowDropIds()];
+  }
+
   private bump(): void {
     this.revision$.next(this.revision$.value + 1);
   }

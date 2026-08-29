@@ -176,6 +176,21 @@ export function handleRowDrop(event: BlockDropEvent, seed?: BlockSeed): boolean 
     return true;
   }
 
+  // A block dropped straight onto a SECTION, wrapped in a single full-width
+  // row. Blocks otherwise only connect to columns, and a blank design has
+  // none - so before this, dragging a Heading onto an empty email was a
+  // silent no-op no matter how accurately it was aimed, while the section's
+  // own hint invited exactly that drop (found 2026-08-28).
+  if (event.previousContainer.id === BLOCK_PALETTE_ID) {
+    const type = (event.previousContainer.data as BlockType[])[event.previousIndex];
+    const block = createBlock(type);
+    applyBlockSeed(block, seed);
+    const row = createRow(1, [100]);
+    row.columns[0].blocks.push(block);
+    (event.container.data as EmailRow[]).splice(event.currentIndex, 0, row);
+    return true;
+  }
+
   if (!event.previousContainer.id.startsWith(ROWS_PREFIX)) {
     return false;
   }

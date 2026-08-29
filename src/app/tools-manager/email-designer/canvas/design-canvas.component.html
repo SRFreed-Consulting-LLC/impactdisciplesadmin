@@ -47,11 +47,12 @@
         </div>
 
         <div class="section-rows" cdkDropList [id]="'rows-' + section.id"
+             [class.is-empty]="section.rows.length === 0"
              [cdkDropListData]="section.rows" [cdkDropListConnectedTo]="state.rowDropIds()"
              (cdkDropListDropped)="onRowDrop($any($event))">
 
           @if (section.rows.length === 0) {
-            <div class="empty-hint">Drag a layout or block here</div>
+            <div class="empty-hint">Drag a layout or a block here to start</div>
           }
 
           @for (row of section.rows; track row.id) {

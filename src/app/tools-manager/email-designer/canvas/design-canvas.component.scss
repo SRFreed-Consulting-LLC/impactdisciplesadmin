@@ -144,6 +144,25 @@
 
 .section-rows {
   min-height: 34px;
+
+  // An EMPTY section is the only drop target a blank email has, and it used
+  // to be a 59px strip at the top of an ~888px canvas: a drag aimed at the
+  // middle of the visible page landed on .canvas-scroll, which is not a drop
+  // list, so the drop silently did nothing (reported 2026-08-28). Gated on
+  // .is-empty, so a section that already has rows is untouched.
+  &.is-empty {
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+
+    .empty-hint {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 6px;
+    }
+  }
 }
 
 // ------------------------------------------------------------ rows
