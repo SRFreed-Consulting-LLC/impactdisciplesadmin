@@ -24,4 +24,14 @@
   @if (selectedTab === 'Team Page') {
     <app-team-page></app-team-page>
   }
+
+  <!-- Every other public page, driven by ONE catalogue rather than a tab
+       block each: which slots a page has is declared in EDITABLE_PAGES, so
+       adding a page is an entry there plus a nav-config leaf, and no change
+       here. See page-editor.component.ts. -->
+  @for (page of editablePages; track page.slug) {
+    @if (selectedTab === page.label) {
+      <app-page-editor [page]="page"></app-page-editor>
+    }
+  }
 </div>

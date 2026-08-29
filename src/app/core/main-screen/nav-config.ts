@@ -241,7 +241,31 @@ export const NAV_CONFIG: NavGroup[] = [
       // breakout instructor (see course-dialog.component.ts's combined
       // Coaches + Impact Team picker) - see impact-team.service.ts's own
       // header comment.
-      { label: 'Team Page', slug: 'team-page' }
+      { label: 'Team Page', slug: 'team-page' },
+      // Every remaining public page, added 2026-08-29. One generic editor
+      // (page-editor.component) serves them all; which slots each page has
+      // is declared once in page-manager/pages/editable-pages.ts, and the
+      // slug here must match that entry's `label` because TabShell selects
+      // by label. Their content lives in `page_content`, one doc per page.
+      //
+      // Pages NOT listed here are already editable somewhere else and would
+      // be a second source of truth if they were: Store/E-Books (Products),
+      // Events and Summit (Events Manager), Impact Groups (the reader's
+      // groups), Monthly Newsletter (Campaigns), Customer Reviews
+      // (Testimonials), Privacy/Terms (Web Config), Disciple-Making Minute
+      // (its own screen above), and the cart/checkout flow, which is
+      // behaviour rather than content.
+      { label: 'About Us', slug: 'about-us' },
+      { label: 'Equipping Groups', slug: 'equipping-groups' },
+      { label: 'Equipping - Pastors', slug: 'equipping-groups-pastors' },
+      { label: 'Equipping - Leaders', slug: 'equipping-groups-leaders' },
+      { label: 'Equipping - Churches', slug: 'equipping-groups-churches' },
+      { label: 'Seminars', slug: 'seminars' },
+      { label: 'Lunch and Learns', slug: 'lunch-and-learns' },
+      { label: 'Give', slug: 'give' },
+      { label: 'Contact', slug: 'contact' },
+      { label: 'Discipleship Library', slug: 'discipleship-library' },
+      { label: 'Prayer Team', slug: 'prayer-team' },
     ]
   },
   {

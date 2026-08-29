@@ -213,6 +213,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // The editable content of the other public pages - one doc per page,
+    // id = the page's route slug ('about-us', 'give', ...). Same reasoning
+    // as home_sections and coaching_page: the public site has no Firebase
+    // Auth, so anything it renders has to be world-readable, and nothing
+    // sensitive belongs on these documents. See PageContentModel.
+    //
+    // Its `body` fields are HTML written by staff and rendered through
+    // Angular's [innerHTML], which sanitises. Write is staff-only, so this
+    // is not a public injection surface - but it IS why write must stay
+    // staff-only rather than being widened for any future public form.
+    match /page_content/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();
