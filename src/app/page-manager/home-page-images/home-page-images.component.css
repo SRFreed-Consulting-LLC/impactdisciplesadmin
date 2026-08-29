@@ -1,0 +1,64 @@
+.active-template {
+  padding: 5px 15px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #fff;
+}
+
+/* Order-clash warning. --app-attention is the theme's amber; it reads as
+   "look at this" without the alarm of an error colour, which is right - the
+   slides still render, they just render in an order nobody chose. */
+.order-conflict {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-attention) 45%, transparent);
+  background: color-mix(in srgb, var(--app-attention) 11%, transparent);
+  border-radius: var(--app-radius-card);
+  color: var(--app-card-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.order-conflict__icon {
+  color: var(--app-attention);
+  flex: 0 0 auto;
+}
+
+.order-conflict__text strong {
+  color: var(--app-attention);
+}
+
+.order-clash {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--app-attention);
+  font-weight: 600;
+}
+
+.order-clash__icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* See shared/data-grid/data-grid.component.scss's own comment - the grid
+   needs a resolved (non-auto) height from its host for CDK Table's sticky
+   header to actually stay stuck. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+app-data-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

@@ -1,0 +1,215 @@
+@if (spinnerVisible) {
+  <div class="spinner-overlay">
+    <mat-spinner diameter="80"></mat-spinner>
+  </div>
+}
+
+<app-list-header [title]="itemType"></app-list-header>
+
+<div class="cwi">
+  @if (loadError) {
+    <div class="cwi__load-error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <div>
+        {{ loadError }} Saving is disabled &mdash; the fields below are empty because nothing loaded,
+        not because nothing is set.
+      </div>
+    </div>
+  }
+
+  <p class="cwi__intro">
+    The parts of the public Coaching with Impact page that change. Everything else on
+    that page &mdash; the hero, the book covers, the group photo and its links &mdash; stays in the site itself.
+  </p>
+
+  <!-- ------------------------------------------------------------- video -->
+  <section class="cwi__section">
+    <header class="cwi__head">
+      <span class="cwi__rule" aria-hidden="true"></span>
+      <h2 class="cwi__title">Progress Report video</h2>
+    </header>
+
+    <div class="cwi__row cwi__row--video">
+      <div class="cwi__video-fields">
+        <mat-form-field appearance="outline" class="cwi__url" subscriptSizing="dynamic">
+          <mat-label>YouTube link</mat-label>
+          <input matInput [(ngModel)]="videoUrl" [disabled]="!canEdit()"
+                 (ngModelChange)="onVideoUrlChange()"
+                 placeholder="https://www.youtube.com/watch?v=...">
+        </mat-form-field>
+
+        @if (videoError) {
+          <p class="cwi__error">{{ videoError }}</p>
+        }
+        <p class="cwi__hint">
+          A watch, youtu.be or shorts link. The page plays YouTube only.
+          @if (previewVideoId) {
+            <br>Video <code>{{ previewVideoId }}</code>
+            &middot; <a [href]="watchOnYouTube()" target="_blank" rel="noopener">open on YouTube</a>
+          }
+        </p>
+      </div>
+
+      <!-- Thumbnail until asked to play: an autoplaying iframe on a settings
+           screen is a nuisance, and the still is usually enough to recognise
+           the video. -->
+      <div class="cwi__video-preview">
+        @if (!previewVideoId) {
+          <div class="cwi__video-empty">
+            <mat-icon>smart_display</mat-icon>
+            <span>Paste a YouTube link to see it here</span>
+          </div>
+        } @else if (videoPlaying) {
+          <iframe
+            class="cwi__video-frame"
+            [src]="embedUrl()"
+            title="Video preview"
+            allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"
+            allowfullscreen></iframe>
+        } @else {
+          <button type="button" class="cwi__video-thumb" (click)="playPreview()"
+                  [attr.aria-label]="'Play ' + previewVideoId">
+            <img [src]="previewThumbnail" alt="Video thumbnail">
+            <span class="cwi__video-play"><mat-icon>play_arrow</mat-icon></span>
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ testimonials -->
+  <section class="cwi__section">
+    <header class="cwi__head">
+      <span class="cwi__rule" aria-hidden="true"></span>
+      <h2 class="cwi__title">Coach testimonials</h2>
+      <span class="cwi__count">{{ liveCount }} of {{ testimonials.length }} showing</span>
+      <button type="button" class="cwi__add" [disabled]="!canEdit()" (click)="addNew()">
+        <mat-icon>add</mat-icon> New testimonial
+      </button>
+    </header>
+    <p class="cwi__hint">
+      Drag to set the order the page shows them in. <strong>Live</strong> decides whether a quote appears
+      at all, and saves as soon as you switch it. Editing opens the full editor with a preview.
+    </p>
+
+    @if (!testimonials.length) {
+      <p class="cwi__empty">
+        No coach testimonials yet. <strong>New testimonial</strong> adds one.
+      </p>
+    }
+
+    <div cdkDropList class="cwi__list" (cdkDropListDropped)="reorder($event)">
+      @for (t of testimonials; track t.id) {
+        <div class="cwi__item" cdkDrag [class.cwi__item--off]="!t.isActive">
+          <mat-icon class="cwi__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+
+          <div class="cwi__item-body">
+            <div class="cwi__item-head">
+              <span class="cwi__item-name">{{ t.author }}</span>
+              @if (paragraphCount(t) > 1) {
+                <span class="cwi__para-badge">{{ paragraphCount(t) }} paragraphs</span>
+              }
+            </div>
+            @if (t.title) {
+              <div class="cwi__item-role">{{ t.title }}</div>
+            }
+            <div class="cwi__item-quote">{{ preview(t) }}</div>
+          </div>
+
+          <button type="button" class="cwi__icon-btn" matTooltip="Edit, with a preview"
+                  [disabled]="!canEdit()" (click)="edit(t)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button type="button" class="cwi__icon-btn cwi__icon-btn--danger"
+                  matTooltip="Delete this testimonial for good"
+                  [disabled]="!canDelete()" (click)="remove(t)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+
+          <mat-slide-toggle
+            class="cwi__live"
+            [checked]="t.isActive"
+            [disabled]="!canEdit()"
+            (change)="toggleLive(t)"
+            matTooltip="Show this quote on the page">Live</mat-slide-toggle>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- screenshots -->
+  <section class="cwi__section">
+    <header class="cwi__head">
+      <span class="cwi__rule" aria-hidden="true"></span>
+      <h2 class="cwi__title">A movement of multiplication</h2>
+      <span class="cwi__count">{{ config.screenshots.length }} screenshots</span>
+      <button type="button" class="cwi__add" [disabled]="!canEdit()" (click)="addScreenshot()">
+        <mat-icon>add</mat-icon> Add screenshot
+      </button>
+    </header>
+    <p class="cwi__hint">
+      Drag to set the order. <strong>Live</strong> decides whether a screenshot appears;
+      unlike the testimonials above, these save with the page.
+    </p>
+
+    @if (!config.screenshots.length) {
+      <p class="cwi__empty">No screenshots &mdash; that section will be empty on the page.</p>
+    }
+
+    <div cdkDropList class="cwi__shots" (cdkDropListDropped)="reorderScreenshots($event)">
+      @for (shot of config.screenshots; track $index) {
+        <div class="cwi__shot" cdkDrag [class.cwi__shot--off]="!shot.isActive">
+          <mat-icon class="cwi__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+
+          <button type="button" class="cwi__thumb" [disabled]="!canEdit()" (click)="openUploader($index)">
+            @if (shot.image?.url) {
+              <img [src]="shot.image?.url" [alt]="shot.image?.name ?? 'Screenshot'">
+            } @else {
+              <span class="cwi__thumb-empty"><mat-icon>add_photo_alternate</mat-icon> Choose</span>
+            }
+          </button>
+
+          <!-- Same row shape as a testimonial: body flexes, actions then the
+               Live switch pinned to the right, so the two lists scan alike. -->
+          <div class="cwi__item-body">
+            <div class="cwi__item-head">
+              <span class="cwi__item-name">{{ shot.image?.name ?? 'No image chosen' }}</span>
+            </div>
+            <div class="cwi__item-role">Screenshot {{ $index + 1 }} of {{ config.screenshots.length }}</div>
+          </div>
+
+          <button type="button" class="cwi__icon-btn cwi__icon-btn--danger" matTooltip="Remove this screenshot"
+                  [disabled]="!canEdit()" (click)="removeScreenshot($index)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+
+          <mat-slide-toggle
+            class="cwi__live"
+            [(ngModel)]="shot.isActive"
+            [disabled]="!canEdit()"
+            matTooltip="Show this screenshot on the page">Live</mat-slide-toggle>
+        </div>
+      }
+    </div>
+  </section>
+
+  <div class="cwi__save">
+    <app-indicator-button
+      title="SAVE"
+      [isInProgress]="spinnerVisible"
+      [disabled]="!canEdit() || !!loadError"
+      (clicked)="save()">
+    </app-indicator-button>
+  </div>
+</div>
+
+@if (uploaderVisibleFor !== null) {
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="uploaderVisibleFor !== null"
+    (imageSelectClosed)="closeUploader()">
+  </app-image-uploader>
+}

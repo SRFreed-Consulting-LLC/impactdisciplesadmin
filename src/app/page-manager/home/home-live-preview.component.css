@@ -1,0 +1,229 @@
+/* Mirrors the web repo's home-header-slider.component.scss. The public site's
+   own colours are LITERAL here, not theme tokens: this block is a picture of
+   another application, and it must not drift when the admin theme changes. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.preview-empty {
+  border: 1px dashed var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.preview-frame {
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  /* The public hero is a wide banner; 16:9 is close enough to read as one
+     without pretending to be pixel-exact about the real viewport. */
+  aspect-ratio: 16 / 9;
+  /* WIDTH drives the frame, height follows from the ratio. Without a
+     definite width and flex-basis auto, this is a shrinkable item in a flex
+     column: the rail's height squeezed it and aspect-ratio then derived the
+     WIDTH from that, collapsing the phone frame to 128px (measured). */
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+/* A phone frame, centred, so the narrow rules (mobileImage, artworkHasText,
+   hidden body copy) are seen at something like their real proportion. No fake
+   status bar - on a real phone the OS draws its own over the top. */
+.preview-frame--mobile {
+  aspect-ratio: 10 / 16;
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.site-header {
+  background: #1c1c1c;
+  color: #ffffff;
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.site-header__mark {
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.site-header__nav,
+.site-header__burger {
+  color: #cfcfcf;
+}
+
+.gallery__slide {
+  flex: 1 1 auto;
+  min-height: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.gallery__slide-overlay {
+  position: absolute;
+  inset: 0;
+  /* The site's own 60% black - it is what keeps the copy readable over a
+     photograph, and it is why a slide with its headline baked in looks dimmed
+     until artworkHasText is ticked. */
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+}
+
+.gallery__slide-content {
+  padding: 0 7%;
+  text-align: left;
+  font-family: 'Lato', system-ui, sans-serif;
+  max-width: 78%;
+}
+
+.title {
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.slider-hr {
+  border: 0;
+  border-top: 2px solid #ffcc00;
+  width: 54px;
+  margin: 10px 0;
+}
+
+.text {
+  color: #e4e4e4;
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.impact-btn {
+  display: inline-block;
+  background: #ffcc00;
+  color: #1c1c1c;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 9px 17px;
+  border-radius: 3px;
+}
+
+/* Phones and tablets, and only when the artwork carries its own headline:
+   the overlay and the site's copy step aside, and the whole picture is shown
+   rather than cropped to fill. Mirrors the web slider's own rule. */
+.gallery__slide--artwork-text {
+  background-size: contain;
+  background-color: #1c1c1c;
+}
+
+.gallery__slide--artwork-text .gallery__slide-overlay {
+  background: transparent;
+  align-items: flex-end;
+}
+
+.gallery__slide--artwork-text .title,
+.gallery__slide--artwork-text .slider-hr,
+.gallery__slide--artwork-text .text {
+  display: none;
+}
+
+.gallery__slide--artwork-text .gallery__slide-content {
+  padding-bottom: 18px;
+}
+
+.preview-dots {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  display: flex;
+  gap: 5px;
+}
+
+.preview-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.preview-dot--on {
+  background: #ffcc00;
+}
+
+/* Admin chrome below the frame - theme tokens, because this part IS the
+   admin. */
+.preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.preview-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--app-radius-control);
+  border: 1px solid var(--app-field-border);
+  background: var(--app-field);
+  color: var(--app-muted);
+  cursor: pointer;
+}
+
+.preview-step:hover {
+  color: var(--app-accent);
+}
+
+.preview-count {
+  font-size: 12px;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-flags {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* A flag is drawn muted until the device toggle actually puts it in effect -
+   both only apply at or below 991px, and saying so beats a footnote. */
+.preview-flag {
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--app-field);
+  color: var(--app-faint);
+  border: 1px solid var(--app-field-border);
+}
+
+.preview-flag--on {
+  color: var(--app-accent);
+  border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+}

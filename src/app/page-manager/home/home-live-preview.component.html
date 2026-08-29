@@ -1,0 +1,70 @@
+@if (!slides.length) {
+  <div class="preview-empty">
+    No live slides. A slide appears here once it is switched on.
+  </div>
+} @else {
+  <div class="preview-frame" [class.preview-frame--mobile]="isMobile">
+    <!-- The public site's own header, drawn flat: it is what the slider sits
+         under, and without it the slide reads as a floating rectangle. -->
+    <div class="site-header">
+      <span class="site-header__mark">IMPACT DISCIPLES</span>
+      @if (!isMobile) {
+        <span class="site-header__nav">About &nbsp; Events &nbsp; Store</span>
+      } @else {
+        <span class="site-header__burger" aria-hidden="true">&#9776;</span>
+      }
+    </div>
+
+    <!-- gallery__slide--artwork-text: the artwork already has its own
+         headline, so on phones and tablets the overlay and copy step aside.
+         Mirrors the web slider's own class of the same name. -->
+    <div
+      class="gallery__slide"
+      [class.gallery__slide--artwork-text]="artworkSpeaksForItself(current)"
+      [style.backgroundImage]="'url(' + imageUrl(current) + ')'">
+      <div class="gallery__slide-overlay">
+        <div class="gallery__slide-content">
+          <h2 class="title">{{ current?.title }}</h2>
+          <hr class="slider-hr">
+          <!-- The real slider hides body copy at narrow widths too. -->
+          @if (!isMobile) {
+            <p class="text">{{ current?.text }}</p>
+          }
+          @if (current?.ctaTitle) {
+            <span class="impact-btn">{{ current?.ctaTitle }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-dots">
+      @for (slide of slides; track slide.id; let i = $index) {
+        <button
+          type="button"
+          class="preview-dot"
+          [class.preview-dot--on]="i === index"
+          [attr.aria-label]="'Show slide ' + (i + 1)"
+          (click)="select(i)"></button>
+      }
+    </div>
+  </div>
+
+  <div class="preview-bar">
+    <button type="button" class="preview-step" aria-label="Previous slide" (click)="step(-1)">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span class="preview-count">{{ index + 1 }} of {{ slides.length }}</span>
+    <button type="button" class="preview-step" aria-label="Next slide" (click)="step(1)">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+
+    <span class="preview-flags">
+      @if (current?.mobileImage) {
+        <span class="preview-flag" [class.preview-flag--on]="isMobile">phone artwork</span>
+      }
+      @if (current?.artworkHasText) {
+        <span class="preview-flag" [class.preview-flag--on]="isMobile">headline in artwork</span>
+      }
+    </span>
+  </div>
+}

@@ -50,7 +50,12 @@ export class DockingBarComponent implements OnInit {
   destinations: Destination[] = [];
   readonly externalValue = EXTERNAL;
 
-  private readonly screenKey = 'content-manager.docking-bar';
+  // The docking bar has no screen of its own since 2026-08-29 - it is a
+  // section of Web Config, so it is gated by Web Config's key rather than a
+  // key nothing in nav-config declares any more. It is site furniture (the
+  // web app mounts it in app.component.html, on every page), which is why it
+  // sits with the rest of the site-wide configuration rather than on Home.
+  private readonly screenKey = 'page-manager.web-config';
 
   constructor(
     private service: DockBarService,

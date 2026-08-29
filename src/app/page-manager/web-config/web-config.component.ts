@@ -26,7 +26,7 @@ export class WebConfigComponent implements OnInit {
   // Moved from Tools Manager 2026-08-19 (Web Manager -> Content Manager
   // rename); stored grants on the old tools-manager.web-config key are
   // migrated by scripts/migrate-screenkey-renames.js.
-  private readonly screenKey = 'content-manager.web-config';
+  private readonly screenKey = 'page-manager.web-config';
 
   private selectedItem: WebConfigModel;
 

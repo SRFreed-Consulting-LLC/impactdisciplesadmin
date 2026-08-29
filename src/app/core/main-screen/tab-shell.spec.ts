@@ -1,5 +1,5 @@
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { ContentManagerComponent } from 'src/app/content-manager/content-manager.component';
+import { PageManagerComponent } from 'src/app/page-manager/page-manager.component';
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
 
 // CHARACTERIZATION tests, written BEFORE the nine *-manager tab shells are
@@ -68,10 +68,10 @@ function harness(allowed: string[], role = 'Admin') {
 }
 
 describe('tab shells (characterization, pre-extraction)', () => {
-  describe('ContentManagerComponent', () => {
+  describe('PageManagerComponent', () => {
     it('starts with NO selected tab - the direct-URL bypass guard', () => {
       const h = harness([]);
-      const shell = new ContentManagerComponent(
+      const shell = new PageManagerComponent(
         h.authService as never, h.permissions as never, h.route as never
       ) as unknown as ShellLike;
 
@@ -82,7 +82,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
 
     it('shows nothing when the user has no grants for this group', () => {
       const h = harness([]);
-      const shell = new ContentManagerComponent(
+      const shell = new PageManagerComponent(
         h.authService as never, h.permissions as never, h.route as never
       ) as unknown as ShellLike;
 
@@ -96,7 +96,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
       // Live-diagnosed 2026-08-18: permissions arrive AFTER first render, so
       // reading them once leaves the tab list empty forever.
       const h = harness([]);
-      const shell = new ContentManagerComponent(
+      const shell = new PageManagerComponent(
         h.authService as never, h.permissions as never, h.route as never
       ) as unknown as ShellLike;
 
@@ -113,13 +113,13 @@ describe('tab shells (characterization, pre-extraction)', () => {
     });
 
     it('opens the tab named by ?tab= when it is permitted', () => {
-      const probe = new ContentManagerComponent(
+      const probe = new PageManagerComponent(
         null as never, null as never, null as never
       ) as unknown as ShellLike;
       const target = probe.items[1] ?? probe.items[0];
 
       const h = harness(probe.items.map((i) => i.slug));
-      const shell = new ContentManagerComponent(
+      const shell = new PageManagerComponent(
         h.authService as never, h.permissions as never, h.route as never
       ) as unknown as ShellLike;
 
@@ -131,7 +131,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
     });
 
     it('IGNORES ?tab= for a screen the user may not see', () => {
-      const probe = new ContentManagerComponent(
+      const probe = new PageManagerComponent(
         null as never, null as never, null as never
       ) as unknown as ShellLike;
       const forbidden = probe.items[probe.items.length - 1];
@@ -139,7 +139,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
       const h = harness(
         probe.items.filter((i) => i.slug !== forbidden.slug).map((i) => i.slug)
       );
-      const shell = new ContentManagerComponent(
+      const shell = new PageManagerComponent(
         h.authService as never, h.permissions as never, h.route as never
       ) as unknown as ShellLike;
 
@@ -154,7 +154,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
 
     it('stops filtering after destroy', () => {
       const h = harness([]);
-      const shell = new ContentManagerComponent(
+      const shell = new PageManagerComponent(
         h.authService as never, h.permissions as never, h.route as never
       ) as unknown as ShellLike;
 

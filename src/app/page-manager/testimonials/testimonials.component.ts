@@ -17,7 +17,7 @@ import { TestimonialDialogComponent } from './testimonial-dialog.component';
 })
 export class TestimonialsComponent extends BaseListComponent<TestimonialModel> {
   readonly itemType = 'Testimonial';
-  protected readonly screenKey = 'content-manager.testimonials';
+  protected readonly screenKey = 'page-manager.testimonials';
   protected readonly dialogComponent = TestimonialDialogComponent;
   // Wider than the 600px base default: the editor now sits beside a live
   // preview of the public testimonial.

@@ -44,16 +44,22 @@ const routes: Routes = [
         canActivate: [ authGuard ]
       },
       {
-        path: 'content-manager',
-        loadChildren: () => import('./content-manager/content-manager.module').then(m => m.ContentManagerModule),
+        path: 'page-manager',
+        loadChildren: () => import('./page-manager/page-manager.module').then(m => m.PageManagerModule),
         canActivate: [ authGuard ]
       },
       // 2026-08-19 renames (Customers Manager -> Contacts Manager, Web
-      // Manager -> Content Manager): old paths redirect so pre-rename
-      // bookmarks and stale deep links keep working. redirectTo preserves
-      // query params (?tab=, ?purchaseId=) by default.
+      // Manager -> Content Manager) and 2026-08-29 (Content Manager -> Page
+      // Manager): old paths redirect so pre-rename bookmarks and stale deep
+      // links keep working. redirectTo preserves query params (?tab=,
+      // ?purchaseId=) by default.
+      //
+      // web-manager points straight at page-manager rather than hopping
+      // through content-manager - a redirect chain re-runs route matching
+      // and would work, but one hop is one thing to reason about.
       { path: 'customers-manager', redirectTo: 'contacts-manager' },
-      { path: 'web-manager', redirectTo: 'content-manager' },
+      { path: 'web-manager', redirectTo: 'page-manager' },
+      { path: 'content-manager', redirectTo: 'page-manager' },
       {
         path: 'store-manager',
         loadChildren: () => import('./store-manager/store-manager.module').then(m => m.StoreManagerModule),

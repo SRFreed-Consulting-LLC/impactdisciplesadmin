@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Observable, map } from 'rxjs';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
 import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
@@ -16,8 +17,10 @@ import { HomePageImageDialogComponent } from './home-page-image-dialog.component
     standalone: false
 })
 export class HomePageImagesComponent extends BaseListComponent<HomePageImageModel> {
-  readonly itemType = 'Home Page Image';
-  protected readonly screenKey = 'content-manager.home-page-images';
+  readonly itemType = 'Slide';
+  // The slider is a SECTION of the Home screen since 2026-08-29 (it was the
+  // standalone 'Home Page Images' screen), so it is gated by Home's key.
+  protected readonly screenKey = 'page-manager.home';
   protected readonly dialogComponent = HomePageImageDialogComponent;
   // maxHeight lifts Material's default 65vh cap on dialog CONTENT, which was
   // what put a scrollbar on this form: the fields fit comfortably in the
@@ -41,6 +44,20 @@ export class HomePageImagesComponent extends BaseListComponent<HomePageImageMode
     { key: 'ctaUrl', label: 'Button External URL' }
   ];
 
+  /**
+   * The order numbers used by more than one slide.
+   *
+   * `order` is what the public slider sorts on, and nothing has ever stopped
+   * two slides sharing a number - prod currently has three such pairs (1, 3
+   * and 4). Firestore then returns them in whatever order it likes, so the
+   * sequence a visitor sees is not the sequence staff think they set, and
+   * the old screen gave no hint of it at all.
+   *
+   * Counts INACTIVE slides too: an off slide holding a number is exactly
+   * what makes the next one someone activates land in a surprising place.
+   */
+  duplicateOrders$!: Observable<number[]>;
+
   constructor(
     service: HomePageImageService,
     permissionService: PermissionService,
@@ -50,4 +67,28 @@ export class HomePageImagesComponent extends BaseListComponent<HomePageImageMode
   ) {
     super(service, permissionService, dialog, confirmService, snackbar);
   }
+
+  override ngOnInit(): void {
+    super.ngOnInit();
+    // Derived here rather than in a field initializer: items$ is assigned by
+    // BaseListComponent.ngOnInit(), so an initializer would capture undefined.
+    this.duplicateOrders$ = this.items$.pipe(map((rows) => duplicateOrdersIn(rows)));
+  }
+
+  /** True when a row's own order is one of the clashing ones. */
+  isConflicted(row: HomePageImageModel, duplicates: number[] | null): boolean {
+    return !!duplicates && duplicates.includes(row.order);
+  }
+}
+
+/** Pure, so it can be tested without a component or a service. */
+export function duplicateOrdersIn(rows: readonly HomePageImageModel[]): number[] {
+  const seen = new Map<number, number>();
+  for (const row of rows) {
+    if (typeof row.order !== 'number') {
+      continue;
+    }
+    seen.set(row.order, (seen.get(row.order) ?? 0) + 1);
+  }
+  return [...seen.entries()].filter(([, count]) => count > 1).map(([order]) => order).sort((a, b) => a - b);
 }

@@ -4,9 +4,14 @@ import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.comm
 import { DMMServiceComponent } from './dmms/dmms.component';
 import { DMMDialogComponent } from './dmms/dmm-dialog.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
-import { ContentManagerComponent } from './content-manager.component';
+import { PageManagerComponent } from './page-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { provideHttpClient } from '@angular/common/http';
+// The Home SCREEN (the section stack); HomePageImagesComponent is the slider
+// SECTION inside it - see home.component.ts.
+import { HomeComponent } from './home/home.component';
+import { HomeLivePreviewComponent } from './home/home-live-preview.component';
+import { CoachingPageComponent } from './coaching-page/coaching-page.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
 import { TeamPageComponent } from './team-page/team-page.component';
@@ -20,9 +25,13 @@ import { DockingBarComponent } from './docking-bar/docking-bar.component';
 // see src/app/shared/image-uploader/ for the full rationale. Web Manager
 // is now fully DevExtreme-free.
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
-import { ContentManagerRoutingModule } from './content-manager-routing.module';
+import { PageManagerRoutingModule } from './page-manager-routing.module';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
-import { ReactiveFormsModule } from '@angular/forms';
+// FormsModule for the Coaching screen's [(ngModel)] fields - the rest of this
+// module is reactive forms, so it was not needed until 2026-08-29.
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+// The Coaching screen and the Home slider list both reorder by dragging.
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -45,11 +54,13 @@ import { QuillModule } from 'ngx-quill';
 @NgModule({
   imports: [
     CommonModule,
-    ContentManagerRoutingModule,
+    PageManagerRoutingModule,
     ImpactDisciplesCommonModule,
     SharedModule,
     ImageUploaderModule,
+    FormsModule,
     ReactiveFormsModule,
+    DragDropModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
@@ -70,11 +81,14 @@ import { QuillModule } from 'ngx-quill';
     QuillModule
   ],
   declarations: [
-    ContentManagerComponent,
+    PageManagerComponent,
     DMMServiceComponent,
     DMMDialogComponent,
     TestimonialsComponent,
     TestimonialDialogComponent,
+    CoachingPageComponent,
+    HomeComponent,
+    HomeLivePreviewComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
     TeamPageComponent,
@@ -86,4 +100,4 @@ import { QuillModule } from 'ngx-quill';
     provideHttpClient()
   ]
 })
-export class ContentManagerModule { }
+export class PageManagerModule { }

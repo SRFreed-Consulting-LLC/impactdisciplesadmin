@@ -1,0 +1,63 @@
+<div class="home">
+  <!-- EDITOR COLUMN -->
+  <div class="home__editor">
+    <!-- Section 1: the slider. Owns its own grid, header actions and the
+         order-clash warning - this shell only frames it. -->
+    <section class="home__section home__section--fill">
+      <header class="home__section-head">
+        <span class="home__rule" aria-hidden="true"></span>
+        <h2 class="home__section-title">Home Slider</h2>
+        <span class="home__section-note">the first thing a visitor sees</span>
+      </header>
+      <div class="home__section-body">
+        <app-home-page-images></app-home-page-images>
+      </div>
+    </section>
+
+    <!-- Sections that have not moved here yet. Placeholders rather than
+         nothing, so the screen reads as the whole page. -->
+    <div class="home__planned">
+      @for (section of plannedSections; track section) {
+        <div class="home__planned-item">
+          <span class="home__rule home__rule--muted" aria-hidden="true"></span>
+          {{ section }}
+          <span class="home__planned-note">&mdash; moves here next</span>
+        </div>
+      }
+      <div class="home__planned-item home__planned-item--elsewhere">
+        <span class="home__rule home__rule--dock" aria-hidden="true"></span>
+        Docking Bar
+        <span class="home__planned-note">&mdash; shows on every page, edit it in Web Config</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW RAIL -->
+  <aside class="home__preview">
+    <header class="home__preview-head">
+      <h2 class="home__preview-title">Live preview</h2>
+      <div class="home__device" role="group" aria-label="Preview width">
+        <button
+          type="button"
+          class="home__device-btn"
+          [class.home__device-btn--on]="device === 'desktop'"
+          [attr.aria-pressed]="device === 'desktop'"
+          (click)="setDevice('desktop')">Desktop</button>
+        <button
+          type="button"
+          class="home__device-btn"
+          [class.home__device-btn--on]="device === 'mobile'"
+          [attr.aria-pressed]="device === 'mobile'"
+          (click)="setDevice('mobile')">Mobile</button>
+      </div>
+    </header>
+
+    <app-home-live-preview
+      [slides]="(liveSlides$ | async) ?? []"
+      [device]="device"></app-home-live-preview>
+
+    <p class="home__preview-note">
+      Shows what a visitor sees, from saved slides. Switched-off slides are left out.
+    </p>
+  </aside>
+</div>

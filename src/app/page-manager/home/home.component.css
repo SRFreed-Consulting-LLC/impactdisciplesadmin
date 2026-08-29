@@ -1,0 +1,185 @@
+/* The slider grid needs a resolved (non-auto) height all the way down for
+   CDK Table's sticky header - see data-grid.component.scss. So every wrapper
+   between :host and app-home-page-images is a flex column with an explicit
+   min-height: 0, and the slider section is the one that flexes. */
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.home {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.home__editor {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home__section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.home__section--fill {
+  flex: 1 1 auto;
+}
+
+.home__section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px 8px;
+}
+
+.home__section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-content-ink, var(--app-ink));
+}
+
+.home__section-note,
+.home__planned-note {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.home__section-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A short colour rule rather than an icon: it ties a section here to the
+   same band in the preview, and costs no icon font. */
+.home__rule {
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--app-accent);
+  flex: 0 0 auto;
+}
+
+.home__rule--muted {
+  background: var(--app-field-border);
+  height: 13px;
+}
+
+/* The public site's own yellow, so the docking bar reads as the thing it is
+   on the site rather than as another admin section. */
+.home__rule--dock {
+  background: #ffcc00;
+  height: 13px;
+}
+
+.home__planned {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.home__planned-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+  padding: 10px 14px;
+  border: 1px dashed var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+/* Not a placeholder - a real screen, just not this one. Solid border so it
+   does not read as "coming soon". */
+.home__planned-item--elsewhere {
+  border-style: solid;
+  border-color: var(--app-card-border);
+}
+
+/* ------------------------------------------------------------ preview rail */
+
+.home__preview {
+  flex: 0 0 430px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.home__preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.home__preview-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.home__device {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-control);
+}
+
+.home__device-btn {
+  border: 0;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.home__device-btn--on {
+  background: var(--app-accent);
+  color: var(--app-on-accent);
+  font-weight: 600;
+}
+
+.home__preview-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--app-faint);
+  flex: 0 0 auto;
+}
+
+/* Under about 1400px the rail costs the grid too many columns to be worth
+   it; the preview drops below the editor instead of squeezing it. */
+@media (max-width: 1400px) {
+  .home {
+    flex-direction: column;
+  }
+
+  .home__preview {
+    flex: 0 0 auto;
+  }
+}

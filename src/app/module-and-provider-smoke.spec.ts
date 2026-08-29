@@ -39,8 +39,8 @@ import { ContactDetailsDialogComponent } from 'src/app/contacts-manager/contacts
 import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactsManagerModule } from 'src/app/contacts-manager/contacts-manager.module';
 import { ContactsManagerRoutingModule } from 'src/app/contacts-manager/contacts-manager-routing.module';
-import { ContentManagerModule } from 'src/app/content-manager/content-manager.module';
-import { ContentManagerRoutingModule } from 'src/app/content-manager/content-manager-routing.module';
+import { PageManagerModule } from 'src/app/page-manager/page-manager.module';
+import { PageManagerRoutingModule } from 'src/app/page-manager/page-manager-routing.module';
 import { CoreModule } from 'src/app/core/core.module';
 import { CouponDialogComponent } from 'src/app/store-manager/coupons/coupon-dialog.component';
 import { CreateItemDialogComponent } from 'src/app/library-manager/dialogs/create-item-dialog.component';
@@ -51,7 +51,7 @@ import { DataGridCellDirective } from 'src/app/shared/data-grid/data-grid-cell.d
 import { DEFAULT_COLOR_THEME } from 'src/app/common/services/utils/theme.service';
 import { describeCampaignDelete } from 'src/app/campaigns-manager/campaigns/campaign-delete-text';
 import { DesignerStateService } from 'src/app/tools-manager/email-designer/designer-state.service';
-import { DMMDialogComponent } from 'src/app/content-manager/dmms/dmm-dialog.component';
+import { DMMDialogComponent } from 'src/app/page-manager/dmms/dmm-dialog.component';
 import { EditTierDialogComponent } from 'src/app/library-manager/dialogs/edit-tier-dialog.component';
 import { EmailBuilderModule } from 'src/app/tools-manager/email-designer/email-builder.module';
 import { emailDesignerCanDeactivateGuard } from 'src/app/tools-manager/email-designer/email-designer.guard';
@@ -69,7 +69,7 @@ import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { FolderPickerDialogComponent } from 'src/app/shared/image-uploader/folder-picker-dialog.component';
 import { FormTestSubmitDialogComponent } from 'src/app/tools-manager/form-builder/form-test-submit-dialog.component';
 import { getLibraryLanguageOptions } from 'src/app/common/services/data/library/library-language-options.util';
-import { HomePageImageDialogComponent } from 'src/app/content-manager/home-page-images/home-page-image-dialog.component';
+import { HomePageImageDialogComponent } from 'src/app/page-manager/home-page-images/home-page-image-dialog.component';
 import { ImageUploaderModule } from 'src/app/shared/image-uploader/image-uploader.module';
 import { IMPACT_APPLICATIONS } from 'src/app/common/lists/impact_applications.enum';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
@@ -147,9 +147,9 @@ import { SummitPreviewComponent } from 'src/app/events-manager/events/summit-pre
 import { TagApplicationModel } from 'src/app/common/services/data/tag-application.service';
 import { TagRuleModel } from 'src/app/common/models/domain/tag-rule.model';
 import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
-import { TeamPageDialogComponent } from 'src/app/content-manager/team-page/team-page-dialog.component';
+import { TeamPageDialogComponent } from 'src/app/page-manager/team-page/team-page-dialog.component';
 import { TemplatePickerDialogComponent } from 'src/app/tools-manager/email-designer/template-picker/template-picker-dialog.component';
-import { TestimonialDialogComponent } from 'src/app/content-manager/testimonials/testimonial-dialog.component';
+import { TestimonialDialogComponent } from 'src/app/page-manager/testimonials/testimonial-dialog.component';
 import { ToolsManagerModule } from 'src/app/tools-manager/tools-manager.module';
 import { ToolsManagerRoutingModule } from 'src/app/tools-manager/tools-manager-routing.module';
 
@@ -243,8 +243,8 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'ContactModel', value: ContactModel },
   { name: 'ContactsManagerModule', value: ContactsManagerModule },
   { name: 'ContactsManagerRoutingModule', value: ContactsManagerRoutingModule },
-  { name: 'ContentManagerModule', value: ContentManagerModule },
-  { name: 'ContentManagerRoutingModule', value: ContentManagerRoutingModule },
+  { name: 'PageManagerModule', value: PageManagerModule },
+  { name: 'PageManagerRoutingModule', value: PageManagerRoutingModule },
   { name: 'CoreModule', value: CoreModule },
   { name: 'CouponDialogComponent', value: CouponDialogComponent },
   { name: 'CreateItemDialogComponent', value: CreateItemDialogComponent },

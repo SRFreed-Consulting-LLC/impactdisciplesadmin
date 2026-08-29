@@ -157,4 +157,18 @@
       </div>
     </div>
   </mat-tab>
+
+  <!-- DOCKING BAR, moved here from its own screen 2026-08-29. It is site
+       furniture - the web app mounts it in app.component.html and it renders
+       on every page - so it belongs with the site-wide settings rather than
+       on Home, where it looks like home-page content. It brings its OWN form
+       and its OWN save button; the surrounding [formGroup] is this screen's
+       and does not reach into a child component's template. -->
+  <mat-tab label="Docking Bar">
+    <div class="tab-content-wrap">
+      <div class="tab-content">
+        <app-docking-bar></app-docking-bar>
+      </div>
+    </div>
+  </mat-tab>
 </mat-tab-group>

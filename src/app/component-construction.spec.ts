@@ -40,7 +40,7 @@ import { ContactDetailsDialogComponent } from 'src/app/contacts-manager/contacts
 import { ContactReportComponent } from 'src/app/reports-manager/contact-report/contact-report.component';
 import { ContactsComponent } from 'src/app/contacts-manager/contacts/contacts.component';
 import { ContactsManagerComponent } from 'src/app/contacts-manager/contacts-manager.component';
-import { ContentManagerComponent } from 'src/app/content-manager/content-manager.component';
+import { PageManagerComponent } from 'src/app/page-manager/page-manager.component';
 import { CouponDialogComponent } from 'src/app/store-manager/coupons/coupon-dialog.component';
 import { CouponsComponent } from 'src/app/store-manager/coupons/coupons.component';
 import { CreateItemDialogComponent } from 'src/app/library-manager/dialogs/create-item-dialog.component';
@@ -51,8 +51,8 @@ import { DailyReadingDialogComponent } from 'src/app/library-manager/lesson-edit
 import { DashboardComponent } from 'src/app/core/dashboard/dashboard.component';
 import { DateTimeFieldComponent } from 'src/app/shared/date-time-field/date-time-field.component';
 import { DesignCanvasComponent } from 'src/app/tools-manager/email-designer/canvas/design-canvas.component';
-import { DMMDialogComponent } from 'src/app/content-manager/dmms/dmm-dialog.component';
-import { DMMServiceComponent } from 'src/app/content-manager/dmms/dmms.component';
+import { DMMDialogComponent } from 'src/app/page-manager/dmms/dmm-dialog.component';
+import { DMMServiceComponent } from 'src/app/page-manager/dmms/dmms.component';
 import { EditTierDialogComponent } from 'src/app/library-manager/dialogs/edit-tier-dialog.component';
 import { EmailDesignerComponent } from 'src/app/tools-manager/email-designer/email-designer.component';
 import { EventAgendaComponent } from 'src/app/events-manager/events/event-agenda/event-agenda.component';
@@ -73,8 +73,8 @@ import { FormRendererFieldComponent } from 'src/app/shared/form-renderer/form-re
 import { FormTestSubmitDialogComponent } from 'src/app/tools-manager/form-builder/form-test-submit-dialog.component';
 import { FulfillmentComponent } from 'src/app/contacts-manager/fulfillment/fulfillment.component';
 import { GlobalStylesPanelComponent } from 'src/app/tools-manager/email-designer/side-panel/global-styles-panel.component';
-import { HomePageImageDialogComponent } from 'src/app/content-manager/home-page-images/home-page-image-dialog.component';
-import { HomePageImagesComponent } from 'src/app/content-manager/home-page-images/home-page-images.component';
+import { HomePageImageDialogComponent } from 'src/app/page-manager/home-page-images/home-page-image-dialog.component';
+import { HomePageImagesComponent } from 'src/app/page-manager/home-page-images/home-page-images.component';
 import { ImportBookDialogComponent } from 'src/app/library-manager/dialogs/import-book-dialog.component';
 import { IndicatorButtonComponent } from 'src/app/shared/indicator-button/indicator-button.component';
 import { InlineTextEditorComponent } from 'src/app/tools-manager/email-designer/inline-editor/inline-text-editor.component';
@@ -138,16 +138,16 @@ import { SummitSetupWizardComponent } from 'src/app/events-manager/events/summit
 import { TableLoadingOverlayComponent } from 'src/app/shared/data-grid/table-loading-overlay/table-loading-overlay.component';
 import { TagChipsComponent } from 'src/app/shared/tag-chips/tag-chips.component';
 import { TagRulesComponent } from 'src/app/campaigns-manager/tag-rules/tag-rules.component';
-import { TeamPageComponent } from 'src/app/content-manager/team-page/team-page.component';
-import { TeamPageDialogComponent } from 'src/app/content-manager/team-page/team-page-dialog.component';
+import { TeamPageComponent } from 'src/app/page-manager/team-page/team-page.component';
+import { TeamPageDialogComponent } from 'src/app/page-manager/team-page/team-page-dialog.component';
 import { TemplatePickerDialogComponent } from 'src/app/tools-manager/email-designer/template-picker/template-picker-dialog.component';
-import { TestimonialDialogComponent } from 'src/app/content-manager/testimonials/testimonial-dialog.component';
-import { TestimonialsComponent } from 'src/app/content-manager/testimonials/testimonials.component';
+import { TestimonialDialogComponent } from 'src/app/page-manager/testimonials/testimonial-dialog.component';
+import { TestimonialsComponent } from 'src/app/page-manager/testimonials/testimonials.component';
 import { ThemesComponent } from 'src/app/core/settings/themes.component';
 import { ToolsManagerComponent } from 'src/app/tools-manager/tools-manager.component';
 import { VariableInserterComponent } from 'src/app/shared/rich-text-editor/variable-inserter.component';
 import { VenueRoomsDialogComponent } from 'src/app/events-manager/events/venue-rooms-dialog.component';
-import { WebConfigComponent } from 'src/app/content-manager/web-config/web-config.component';
+import { WebConfigComponent } from 'src/app/page-manager/web-config/web-config.component';
 import { WebNewslettersComponent } from 'src/app/campaigns-manager/web-newsletters/web-newsletters.component';
 import { WorldMapComponent } from 'src/app/library-manager/world-map/world-map.component';
 
@@ -249,7 +249,7 @@ const CONSTRUCTIBLE: ComponentRow[] = [
   { name: 'ContactReportComponent', type: ContactReportComponent },
   { name: 'ContactsComponent', type: ContactsComponent },
   { name: 'ContactsManagerComponent', type: ContactsManagerComponent },
-  { name: 'ContentManagerComponent', type: ContentManagerComponent },
+  { name: 'PageManagerComponent', type: PageManagerComponent },
   { name: 'CouponDialogComponent', type: CouponDialogComponent },
   { name: 'CouponsComponent', type: CouponsComponent },
   { name: 'CreateItemDialogComponent', type: CreateItemDialogComponent },

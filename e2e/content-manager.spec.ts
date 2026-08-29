@@ -1,42 +1,57 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// Content Manager (nee Web Manager, renamed 2026-08-19) is a single route (ContentManagerComponent) that switches between
-// screens client-side via the left nav's ?tab= query param (see
-// nav-config.ts), not a per-screen route or a tab bar - see
-// content-manager-routing.module.ts. Slugs here must match nav-config.ts's
-// 'content-manager' group. (The Home Page Popups screen and its round-trip
-// test were retired 2026-08-19 - web-campaign popups own that space now,
-// covered by campaigns.spec.ts. The Pod Casts screen and its test went the
-// same way on 2026-08-26 - podcasts moved to the public web app's own
-// component and the admin screen was removed, so this suite was asserting
-// on a table that no longer exists. Only an unrelated `applePodCast` URL
-// field remains, in Web Config.)
+// Page Manager (nee Web Manager -> Content Manager -> Page Manager, renamed
+// 2026-08-19 and again 2026-08-29) is a single route (PageManagerComponent)
+// that switches between screens client-side via the left nav's ?tab= query
+// param (see nav-config.ts), not a per-screen route or a tab bar - see
+// page-manager-routing.module.ts. Slugs here must match nav-config.ts's
+// 'page-manager' group.
+//
+// Retired screens, kept as a record of why this file is shorter than the
+// group: Home Page Popups (2026-08-19, web-campaign popups own that space -
+// see campaigns.spec.ts); Pod Casts (2026-08-26, moved to the public web
+// app's own component, only an `applePodCast` URL field remains in Web
+// Config); and 'Home Page Images' (2026-08-29), which is no longer a screen
+// of its own - it is the slider section of HOME.
 const TAB_SLUGS: Record<string, string> = {
   'Disciple Making Minute': 'disciple-making-minute',
-  'Home Page Images': 'home-page-images'
+  'Home': 'home',
+  'Web Config': 'web-config'
 };
 
-async function openContentManagerTab(page: import('@playwright/test').Page, tabName: string) {
-  await page.goto(`/content-manager?tab=${TAB_SLUGS[tabName]}`);
+async function openPageManagerTab(page: import('@playwright/test').Page, tabName: string) {
+  await page.goto(`/page-manager?tab=${TAB_SLUGS[tabName]}`);
 }
 
-test.describe('Content Manager - read-only smoke checks', () => {
+test.describe('Page Manager - read-only smoke checks', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
   test('Disciple Making Minute list renders', async ({ page }) => {
-    await openContentManagerTab(page, 'Disciple Making Minute');
+    await openPageManagerTab(page, 'Disciple Making Minute');
 
     await expect(page.locator('table.dmms-table')).toBeVisible();
     await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
   });
 
-  test('Home Page Images list renders', async ({ page }) => {
-    await openContentManagerTab(page, 'Home Page Images');
+  test('Home renders the slider section', async ({ page }) => {
+    await openPageManagerTab(page, 'Home');
 
+    await expect(page.locator('app-page-home')).toBeVisible();
     await expect(page.locator('table.images-table')).toBeVisible();
     await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
+  });
+
+  // The docking bar moved off its own screen onto Web Config on 2026-08-29 -
+  // it renders on every page of the public site, so it is site furniture
+  // rather than home-page content. Pinned here because an editor that still
+  // exists but has moved is the kind of change that goes missing quietly.
+  test('the Docking Bar editor lives on Web Config', async ({ page }) => {
+    await openPageManagerTab(page, 'Web Config');
+
+    await page.getByRole('tab', { name: 'Docking Bar' }).click();
+    await expect(page.locator('app-docking-bar')).toBeVisible();
   });
 });

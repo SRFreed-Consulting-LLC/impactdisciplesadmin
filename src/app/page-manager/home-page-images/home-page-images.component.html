@@ -1,0 +1,52 @@
+<!-- The order clash is stated before the grid because it is not visible IN
+     the grid: two rows both reading "3" look ordinary until you notice they
+     are the same. See duplicateOrdersIn(). -->
+@if ((duplicateOrders$ | async); as duplicates) {
+  @if (duplicates.length) {
+    <div class="order-conflict" role="status">
+      <mat-icon class="order-conflict__icon">warning_amber</mat-icon>
+      <div class="order-conflict__text">
+        <strong>{{ duplicates.length }}</strong>
+        order {{ duplicates.length === 1 ? 'number is' : 'numbers are' }} used by more than one slide
+        ({{ duplicates.join(', ') }}).
+        The running order between them is whatever the database returns first, not what you set here.
+      </div>
+    </div>
+  }
+}
+
+<app-data-grid
+  [showColumnsButton]="false"
+  [showExportButton]="false"
+  [title]="itemType + 's'"
+  [headerActions]="headerActions"
+  [columns]="columns"
+  [rowActions]="rowActions"
+  [rows]="(items$ | async) ?? []"
+  [loading]="(loading$ | async) ?? false"
+  tableClass="images-table"
+  initialSortKey="order"
+  initialSortDirection="asc"
+  exportFileName="home_page_images.xlsx"
+  (rowDoubleClick)="showEditModal($event)">
+  <ng-template appDataGridCell="isActive" let-row>
+    <span class="active-template" [style.background-color]="row.isActive ? '#1d8a46' : '#c62828'">
+      {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
+    </span>
+  </ng-template>
+  <ng-template appDataGridCell="order" let-row>
+    @if (isConflicted(row, (duplicateOrders$ | async))) {
+      <span class="order-clash" matTooltip="Another slide has this order number">
+        {{ row.order }}
+        <mat-icon class="order-clash__icon">warning_amber</mat-icon>
+      </span>
+    } @else {
+      {{ row.order }}
+    }
+  </ng-template>
+  <ng-template appDataGridCell="image" let-row>
+    @if (row.image) {
+      <img width="100" [src]="row.image.url" [alt]="row.image.name">
+    }
+  </ng-template>
+</app-data-grid>

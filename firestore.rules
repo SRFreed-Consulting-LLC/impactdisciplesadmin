@@ -181,6 +181,19 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // The Coaching with Impact page's editable content (one doc, id
+    // `current`): its video, which coach testimonials it shows and in what
+    // order, and the "A movement of multiplication" screenshots. Same
+    // reasoning as dock_bar - the public site has no Firebase Auth, so
+    // anything it renders has to be world-readable, and nothing sensitive
+    // belongs on this document. See CoachingPageModel.
+    //
+    // The quotes themselves are NOT here: testimonialIds points into
+    // `testimonials`, which is already public-readable above.
+    match /coaching_page/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();

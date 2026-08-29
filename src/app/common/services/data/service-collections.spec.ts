@@ -14,6 +14,7 @@ import { CampaignEmailService } from 'src/app/common/services/data/campaign-emai
 import { CampaignPopupService } from 'src/app/common/services/data/campaign-popup.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CoachService } from 'src/app/common/services/data/coach.service';
+import { CoachingPageService } from 'src/app/common/services/data/coaching-page.service';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
@@ -75,6 +76,7 @@ const SERVICE_TABLES: ServiceRow[] = [
   { service: CampaignPopupService, table: 'campaign_popups', name: 'CampaignPopupService' },
   { service: CampaignService, table: 'campaigns', name: 'CampaignService' },
   { service: CoachService, table: 'coaches', name: 'CoachService' },
+  { service: CoachingPageService, table: 'coaching_page', name: 'CoachingPageService' },
   { service: ContactService, table: 'customers', name: 'ContactService' },
   { service: CouponService, table: 'coupons', name: 'CouponService' },
   { service: DMMService, table: 'dmms', name: 'DMMService' },

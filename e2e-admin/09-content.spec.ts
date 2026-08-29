@@ -15,24 +15,51 @@ test.describe('[content] Website Content', () => {
     await loginAsAdmin(page);
   });
 
+  // Content Manager became PAGE MANAGER on 2026-08-29, and 'Home Page
+  // Images' became the slider SECTION of a new 'Home' screen. The group id
+  // is the route, so these slugs move with it - see nav-config.ts.
   const screens: Array<[string, string, string]> = [
     ['Disciple Making Minute', 'disciple-making-minute', 'dmms-table'],
     ['Testimonials', 'testimonials', 'testimonials-table'],
-    ['Home Page Images', 'home-page-images', 'images-table'],
+    ['Home', 'home', 'images-table'],
     ['Team Page', 'team-page', 'team-page-table'],
   ];
 
   for (const [label, slug, tableClass] of screens) {
     test(`${label} loads its editor grid`, async ({ page }) => {
-      await gotoTab(page, 'content-manager', slug);
+      await gotoTab(page, 'page-manager', slug);
       await waitForGrid(page, tableClass);
       await expect(page.locator(`.${tableClass}`)).toBeVisible();
     });
   }
 
   test('Web Config loads', async ({ page }) => {
-    await gotoTab(page, 'content-manager', 'web-config');
+    await gotoTab(page, 'page-manager', 'web-config');
     await expect(page.locator('app-web-config')).toBeVisible({ timeout: 30_000 });
+  });
+
+  // The docking bar had its own screen until 2026-08-29. It is site
+  // furniture - the web app mounts it in app.component.html and it renders on
+  // every page - so it moved onto Web Config rather than onto Home. Pinned
+  // because "the editor still exists, just somewhere else" is exactly the
+  // move that goes missing silently.
+  test('the Docking Bar editor is reachable, on Web Config', async ({ page }) => {
+    await gotoTab(page, 'page-manager', 'web-config');
+    await page.getByRole('tab', { name: 'Docking Bar' }).click();
+    await expect(page.locator('app-docking-bar')).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('Home frames the slider and points at where the docking bar went', async ({ page }) => {
+    await gotoTab(page, 'page-manager', 'home');
+    await waitForGrid(page, 'images-table');
+    await expect(page.locator('app-page-home')).toBeVisible();
+    await expect(page.locator('app-page-home')).toContainText('Web Config');
+  });
+
+  test('the old content-manager route still resolves', async ({ page }) => {
+    // Pre-rename bookmarks and any stale deep link.
+    await page.goto('/content-manager?tab=web-config');
+    await expect(page).toHaveURL(/page-manager/, { timeout: 30_000 });
   });
 
   test('the shared list screens run without throwing', async ({ page }) => {
@@ -40,7 +67,7 @@ test.describe('[content] Website Content', () => {
     // class shows up as a thrown error rather than a missing element.
     const errors = collectConsoleErrors(page);
     for (const [, slug, tableClass] of screens.slice(0, 3)) {
-      await gotoTab(page, 'content-manager', slug);
+      await gotoTab(page, 'page-manager', slug);
       await waitForGrid(page, tableClass);
     }
     expect(errors, `browser threw:\n${errors.join('\n')}`).toEqual([]);

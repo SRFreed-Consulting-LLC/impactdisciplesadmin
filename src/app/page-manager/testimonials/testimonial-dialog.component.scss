@@ -1,0 +1,119 @@
+.full-width {
+  width: 100%;
+}
+
+.edit-with-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.edit-with-preview__form {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Ported from the web repo's coaching-with-impact page (.cwi-quote). Literal
+// colours on purpose: this block is a picture of ANOTHER application and must
+// not shift when the admin theme changes. Lato is already loaded in
+// index.html for the popup preview.
+.cwq {
+  padding: 20px 18px 16px;
+  font-family: 'Lato', system-ui, sans-serif;
+  color: #1c1c1c;
+  text-align: left;
+}
+
+.cwq__mark {
+  display: block;
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffcc00;
+  margin-bottom: 4px;
+}
+
+.cwq__body {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.cwq__body p {
+  margin: 0 0 11px;
+}
+
+.cwq__body p:last-child {
+  margin-bottom: 0;
+}
+
+.cwq__placeholder {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.cwq__attribution {
+  margin-top: 14px;
+  padding-top: 11px;
+  border-top: 1px solid #ebebeb;
+  display: flex;
+  flex-direction: column;
+}
+
+.cwq__name {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.cwq__role {
+  font-size: 11.5px;
+  color: #6b6b6b;
+}
+
+// Admin chrome, not the page - so this one DOES use a theme token.
+.cwq__note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--app-card-muted);
+  text-align: center;
+}
+
+// Ported from the web repo's customer-reviews page.
+.tsp {
+  padding: 22px 18px;
+  text-align: center;
+}
+
+.tsp__stars {
+  color: #ffcc00;
+  letter-spacing: 3px;
+  margin-bottom: 18px;
+}
+
+.tsp__quote {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 14px;
+}
+
+.tsp__text {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+.tsp__author {
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+// The real page drops the author's bottom margin when a title follows it.
+.tsp__author--tight {
+  margin-bottom: 0;
+}
+
+.tsp__title {
+  font-size: 13px;
+  opacity: 0.75;
+  margin: 0;
+}

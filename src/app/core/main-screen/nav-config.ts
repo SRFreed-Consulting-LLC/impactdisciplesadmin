@@ -198,22 +198,32 @@ export const NAV_CONFIG: NavGroup[] = [
     ]
   },
   {
-    id: 'content-manager',
-    label: 'CONTENT MANAGER',
+    id: 'page-manager',
+    label: 'PAGE MANAGER',
     icon: 'handyman',
     roles: [Role.ADMIN],
     items: [
+      // HOME (2026-08-29): the home page's own sections, gathered onto one
+      // screen in the order a visitor meets them. Today that is the slider
+      // (formerly the standalone 'Home Page Images' screen); the services
+      // strip and testimonials are expected to follow, which is why this is
+      // a section stack rather than a renamed list.
+      { label: 'Home', slug: 'home' },
+      // The public Coaching with Impact page's editable content (2026-08-29):
+      // its video, which coach testimonials it shows and in what order, and
+      // the "A movement of multiplication" screenshots. The rest of that page
+      // - hero, book covers, group photo, outbound links - stays in the web
+      // repo's own component.
+      { label: 'Coaching with Impact', slug: 'coaching-with-impact' },
       { label: 'Disciple Making Minute', slug: 'disciple-making-minute' },
       // Moved from Tools Manager 2026-08-19 alongside the Web Manager ->
       // Content Manager rename: the public site's configuration belongs
-      // with the rest of the public-site content.
+      // with the rest of the public-site content. It also owns the DOCKING
+      // BAR since 2026-08-29 - that strip is mounted in the web app's
+      // app.component.html and renders on every page, so it is site
+      // furniture rather than home-page content and never belonged on Home.
       { label: 'Web Config', slug: 'web-config' },
       { label: 'Testimonials', slug: 'testimonials' },
-      { label: 'Home Page Images', slug: 'home-page-images' },
-      // Content for the strip fixed to the bottom of every page on the
-      // public site - see the web repo's LibraryDockComponent. One
-      // settings record (dock_bar/current), not a list.
-      { label: 'Docking Bar', slug: 'docking-bar' },
       // 'Home Page Popups' retired 2026-08-19 (Campaign Manager v2 Phase
       // 6): the public site never had a renderer for home_page_popups (the
       // screen wrote docs nothing read); web-campaign popups (Campaigns

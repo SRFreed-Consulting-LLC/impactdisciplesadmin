@@ -1,8 +1,18 @@
 <div class="manager-content">
+  @if (selectedTab === 'Home') {
+    <app-page-home></app-page-home>
+  }
+
+  @if (selectedTab === 'Coaching with Impact') {
+    <app-coaching-page></app-coaching-page>
+  }
+
   @if (selectedTab === 'Disciple Making Minute') {
     <app-dmms></app-dmms>
   }
 
+  <!-- Web Config also hosts the DOCKING BAR since 2026-08-29 - see
+       home.component.ts for why it is not on Home. -->
   @if (selectedTab === 'Web Config') {
     <app-web-config></app-web-config>
   }
@@ -11,12 +21,6 @@
     <app-testimonials></app-testimonials>
   }
 
-  @if (selectedTab === 'Home Page Images') {
-    <app-home-page-images></app-home-page-images>
-  }
-  @if (selectedTab === 'Docking Bar') {
-    <app-docking-bar></app-docking-bar>
-  }
   @if (selectedTab === 'Team Page') {
     <app-team-page></app-team-page>
   }

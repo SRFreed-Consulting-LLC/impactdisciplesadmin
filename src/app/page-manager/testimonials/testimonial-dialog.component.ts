@@ -25,6 +25,31 @@ export class TestimonialDialogComponent {
   isEdit: boolean;
   testimonialTypes: TESTIMONIAL_TYPES[] = EnumHelper.getTestimonialTypesAsArray();
 
+  /**
+   * Which page's look the preview draws.
+   *
+   * Follows the TYPE field live, so switching the dropdown switches the
+   * preview - which is the honest thing: retyping a quote changes where it
+   * appears and therefore how it will look.
+   */
+  get isCoaching(): boolean {
+    return this.form?.value?.type === TESTIMONIAL_TYPES.COACHING;
+  }
+
+  /**
+   * The body split the way the COACHING page splits it - on a blank line (see
+   * the web repo's toCoachTestimonial). The customer-reviews block renders the
+   * text as one run, so this only matters for the coaching preview, and it is
+   * the single thing that preview exists to show.
+   */
+  get previewParagraphs(): string[] {
+    const text = (this.form?.value?.text ?? '').trim();
+    if (!text) {
+      return [];
+    }
+    return text.split(/\n\s*\n/).map((p: string) => p.trim()).filter((p: string) => p.length > 0);
+  }
+
   private itemType = 'Testimonial';
 
   constructor(
