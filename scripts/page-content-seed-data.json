@@ -807,5 +807,148 @@
       "body": "<p>Join our prayer team and you will receive an exclusive monthly email newsletter detailing specific prayer needs for Impact and Impact partners.</p>",
       "ctaTitle": "JOIN THE PRAYER TEAM"
     }
+  ],
+  "coaching-with-impact": [
+    {
+      "key": "hero",
+      "type": "pageHeader",
+      "isActive": true,
+      "subheading": "IMPACT DISCIPLESHIP MINISTRIES",
+      "heading": "Coaching With Impact",
+      "image": {
+        "name": "Coaching-With-Impact/Untitled-design-1",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FUntitled-design-1.png?alt=media&token=9a0407b8-074e-4cac-b3e9-c5ab1e1ced18"
+      }
+    },
+    {
+      "key": "intro",
+      "type": "prose",
+      "isActive": true,
+      "heading": "Step onto your <strong>&ldquo;field&rdquo;</strong> of influence with <strong>purpose</strong> and <strong>impact</strong>.",
+      "body": "<p>Through a clear biblical framework, <b>Coaching With Impact</b> empowers coaches to embrace their role as disciple-makers, guiding them to develop both personally and professionally. Join us on this transformative journey as we equip coaches to lead with authenticity, intentionality, and lasting impact.</p>\n<p>Drawing from his experiences as a former Professional Baseball player and Major League Baseball scout, <a href=\"/team-details/AP4yP449P3iI7L0PsOVp\"><b>Kevin Burrell</b></a> has partnered with <b>Ken Adams</b>, Impact Discipleship Ministries&rsquo; founder and director, in inviting coaches of all levels to rediscover the essence of Jesus Christ&rsquo;s final command &ndash; the &lsquo;Great Commission.&rsquo;</p>",
+      "ctaTitle": "BUY THE BOOK",
+      "ctaUrl": "/product-details/rySK3NIIjWwWuBLTpxPc",
+      "ctaTitle2": "REQUEST A COACHING CONSULTATION",
+      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/pl/2148229316"
+    },
+    {
+      "key": "quotes",
+      "type": "testimonials",
+      "isActive": true,
+      "subheading": "OUR RESOURCE",
+      "heading": "Check out how coaches are using our resource",
+      "image": {
+        "name": "Coaching-With-Impact/grid-bg-1",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2Fgrid-bg-1.png?alt=media&token=cd20c7ce-deaa-471b-aa05-5a2aee9e2b90"
+      },
+      "testimonialIds": []
+    },
+    {
+      "key": "report",
+      "type": "mission",
+      "isActive": true,
+      "subheading": "2023",
+      "heading": "Progress Report",
+      "body": "<p>Hear from Kevin Burrell, Major League Baseball Scout, as he discusses the ways he shares Jesus Christ with scouts, coaches, and more. From Bible studies to baptisms, learn how the Lord is making disciples and working in Kevin and the Sport Industry.</p>",
+      "image": {
+        "name": "Coaching-With-Impact/IMG_1707",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FIMG_1707.JPG?alt=media&token=3f98f870-7d49-425a-9640-880defd337eb"
+      },
+      "videoId": "krHPH7SoQwU",
+      "videoUrl": "https://www.youtube.com/watch?v=krHPH7SoQwU",
+      "ctaTitle": "CONNECT WITH KEVIN",
+      "ctaUrl": "/team-details/AP4yP449P3iI7L0PsOVp"
+    },
+    {
+      "key": "resources",
+      "type": "cards",
+      "isActive": true,
+      "items": [
+        {
+          "title": "Coaching With Impact Resource",
+          "isActive": true,
+          "image": {
+            "name": "Coaching With Impact book",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FEbook-1-scaled.jpg?alt=media&token=453408af-2bc9-40ac-aaeb-482c97b18f8f"
+          },
+          "body": "<p>Every coach has a certain level of influence both on and off the field. How a coach leverages this influence is critical. <b>Coaching with Impact</b> is designed for coaches to come alongside each other in the context of a small group and maximize the influence God has given them to multiply disciples in the world of sports.</p>\n<p>Coaching with Impact will teach coaches how to coach and lead with the Character and Conduct of Christ, so they can in turn reproduce those same principles in the lives of other coaches.</p>",
+          "ctaTitle": "PURCHASE BOOK",
+          "ctaUrl": "/product-details/rySK3NIIjWwWuBLTpxPc"
+        },
+        {
+          "title": "Competing With Impact Resource",
+          "isActive": true,
+          "image": {
+            "name": "Competing With Impact book",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Store%2FCompeting%20With%20Impact.png?alt=media&token=58b815ef-1c81-4f1a-9a24-92149ede5182"
+          },
+          "body": "<p>Athletes of all ages have a tremendous opportunity to influence others around them for the sake of Christ. In this ten-week course, you will discover how to leverage your influence to make a difference on and off the field for Christ.</p>",
+          "ctaTitle": "PURCHASE BOOK",
+          "ctaUrl": "/product-details/Th0IrFrIUElnj5urBzl6"
+        }
+      ]
+    },
+    {
+      "key": "online",
+      "type": "gallery",
+      "isActive": true,
+      "subheading": "COACHING WITH IMPACT ONLINE",
+      "heading": "A movement of multiplication",
+      "body": "<p>Over 90 baseball coaches and pro scouts came together to participate in our 2025 Zoom online discipleship group. We are praying for a movement of multiplication to take place in the lives of coaches and athletes all across America.</p>",
+      "items": [
+        {
+          "title": "Coaching With Impact online discipleship group",
+          "isActive": true,
+          "image": {
+            "name": "Coaching-With-Impact/online group",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FScreenshot%202025-01-06%20at%208.27.18%20AM.PNG?alt=media&token=db721517-b361-4509-bb6f-b88d51d51cd0"
+          }
+        },
+        {
+          "title": "Coaching With Impact online discipleship group",
+          "isActive": true,
+          "image": {
+            "name": "Coaching-With-Impact/online group",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FScreenshot%202025-01-06%20at%208.31.57%20AM.PNG?alt=media&token=819ea4e6-4911-40e8-bc41-84f59aa71073"
+          }
+        },
+        {
+          "title": "Coaching With Impact online discipleship group",
+          "isActive": true,
+          "image": {
+            "name": "Coaching-With-Impact/online group",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FScreenshot%202025-01-06%20at%208.32.05%20AM.PNG?alt=media&token=f4d7a657-e466-4834-8b2d-b949345916f4"
+          }
+        },
+        {
+          "title": "Coaching With Impact online discipleship group",
+          "isActive": true,
+          "image": {
+            "name": "Coaching-With-Impact/online group",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FScreenshot%202025-01-06%20at%208.32.14%20AM.PNG?alt=media&token=aa7ba169-93da-48c3-9a88-111993d0a2a3"
+          }
+        }
+      ]
+    },
+    {
+      "key": "echs",
+      "type": "story",
+      "isActive": true,
+      "heading": "First &ldquo;Competing with Impact&rdquo; High School Discipleship Group at ECHS",
+      "image": {
+        "name": "The first Competing with Impact high school discipleship group at East Coweta High School",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FIMG_1707.JPG?alt=media&token=3f98f870-7d49-425a-9640-880defd337eb"
+      },
+      "body": "<p>What an incredible moment to witness. We celebrated the very first Competing with Impact high school discipleship group at East Coweta High School, led by none other than Coach Mark Bowles.</p>\n<p>Coach Mark, who was discipled by Kevin Burrell, is now stepping into leadership and pouring into the next generation of disciples. It&rsquo;s amazing to see the impact of this mentorship come full circle &mdash; Mark is now leading his own group, making disciples, and empowering students to grow in their faith.</p>\n<p>Excited to see how God continues to move through this group and the lives of these students. Let&rsquo;s keep praying for the students of ECHS and leaders like Coach Mark Bowles, who are living out the call to make disciples.</p>"
+    },
+    {
+      "key": "contact",
+      "type": "banner",
+      "isActive": true,
+      "heading": "Have other questions?",
+      "body": "<p>Get in contact with us and let us know how we can support you.</p>",
+      "ctaTitle": "CONTACT",
+      "ctaUrl": "/contact"
+    }
   ]
 }

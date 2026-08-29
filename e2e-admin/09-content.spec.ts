@@ -54,6 +54,8 @@ test.describe('[content] Website Content', () => {
     ['Contact', 'contact'],
     ['Discipleship Library', 'discipleship-library'],
     ['Prayer Team', 'prayer-team'],
+    // Joined the stack on 2026-08-29, off its own bespoke screen.
+    ['Coaching with Impact', 'coaching-with-impact'],
   ];
 
   for (const [label, slug] of publicPages) {

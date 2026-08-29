@@ -666,10 +666,10 @@ the hardcoded copy. The document and the rules block are then inert extras, harm
 **This one can blank the whole public site**, so it is first among the runbooks here rather
 than a footnote in one.
 
-Eleven public pages — About Us, the four equipping pages, Seminars, Lunch and Learns, Give,
-Contact, Discipleship Library, Prayer Team — are **dispatchers** now. Each loops over an
-ordered stack of typed sections in `page_content/<slug>` and draws whatever that document
-says. The home page does the same over `home_sections`.
+Twelve public pages — About Us, the four equipping pages, Seminars, Lunch and Learns, Give,
+Contact, Discipleship Library, Prayer Team and Coaching with Impact — are **dispatchers**
+now. Each loops over an ordered stack of typed sections in `page_content/<slug>` and draws
+whatever that document says. The home page does the same over `home_sections`.
 
 **There is no fallback.** The templates used to carry a duplicate of every string and fall back
 to it; that duplicate was deleted with the seed (Shane's call, 2026-08-29) because one copy
@@ -685,6 +685,13 @@ today would take all eleven pages down to their headers.
    Idempotent and **will not overwrite staff edits** — an existing page is skipped and
    reported; `--force` is the deliberate "reset to the shipped wording" escape hatch.
 2. `node scripts/seed-home-sections.js --project=<dev|prod>`, same shape.
+2a. `node scripts/migrate-coaching-to-page-content.js --project=<dev|prod>`, then `--execute`.
+   **After the seed, not before** — it writes onto sections the seed creates. Carries the
+   Coaching with Impact page's three saved things (the progress-report video, the quote
+   carousel's order, the online group's screenshots) out of the retired `coaching_page`
+   singleton and onto the matching sections. Safe where staff never saved that screen: it
+   reports "nothing to carry" and the seeded defaults stand. Idempotent; it does not delete
+   `coaching_page`, so a mistake is recoverable by running it again.
 3. Deploy **firestore rules** — but see the inversion below.
 4. Deploy **admin hosting** (Page Manager).
 5. Deploy **web hosting** — LAST, and only once step 1 has actually run in that project.

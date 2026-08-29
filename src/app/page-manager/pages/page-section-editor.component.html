@@ -84,14 +84,9 @@
         <input matInput [(ngModel)]="section.ctaTitle">
         <mat-hint>Leave empty for no button.</mat-hint>
       </mat-form-field>
-      <mat-form-field appearance="outline" class="psd__field">
-        <mat-label>Button goes to</mat-label>
-        <mat-select (selectionChange)="edited()" [(ngModel)]="section.ctaUrl">
-          @for (d of destinations; track d.value) {
-            <mat-option [value]="d.value">{{ d.text }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <app-destination-field
+        [url]="section.ctaUrl"
+        (urlChange)="section.ctaUrl = $event; edited()"></app-destination-field>
     </div>
   }
 
@@ -102,14 +97,55 @@
         <input matInput [(ngModel)]="section.ctaTitle2">
         <mat-hint>Leave empty for one button only.</mat-hint>
       </mat-form-field>
-      <mat-form-field appearance="outline" class="psd__field">
-        <mat-label>Second button goes to</mat-label>
-        <mat-select (selectionChange)="edited()" [(ngModel)]="section.ctaUrl2">
-          @for (d of destinations; track d.value) {
-            <mat-option [value]="d.value">{{ d.text }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <app-destination-field
+        label="Second button goes to"
+        [url]="section.ctaUrl2"
+        (urlChange)="section.ctaUrl2 = $event; edited()"></app-destination-field>
+    </div>
+  }
+
+  <!-- WHICH QUOTES, AND IN WHAT ORDER. Only the order is this section's - the
+       quotes themselves belong to the Testimonials screen, because a
+       testimonial is not the property of any one page showing it. -->
+  @if (fields.testimonials) {
+    <div class="psd__entries">
+      <div class="psd__entries-head">
+        <h3 class="psd__entries-title">Quotes</h3>
+      </div>
+      <p class="psd__entries-note">
+        Drag to set the order the carousel shows them in. Whether a quote
+        appears at all &mdash; and its words &mdash; are set on the
+        <strong>Testimonials</strong> screen, so switching one off there
+        removes it from every page at once. A new one appears here and on the
+        site without anyone re-saving this section.
+      </p>
+
+      @if (testimonialsFailed) {
+        <p class="psd__entries-empty">
+          The testimonials could not be read, so the order cannot be changed
+          here. Reload the page.
+        </p>
+      } @else if (!testimonials.length) {
+        <p class="psd__entries-empty">
+          No coach testimonials are switched on &mdash; the carousel draws
+          nothing. Add one on the Testimonials screen.
+        </p>
+      }
+
+      <div cdkDropList class="psd__entry-list" (cdkDropListDropped)="reorderTestimonials($event)">
+        @for (t of testimonials; track t.id) {
+          <div class="psd__entry" cdkDrag>
+            <mat-icon class="psd__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+            <div class="psd__entry-fields">
+              <div class="psd__quote-name">{{ t.author }}</div>
+              @if (t.title) {
+                <div class="psd__quote-role">{{ t.title }}</div>
+              }
+              <div class="psd__quote-text">{{ quotePreview(t) }}</div>
+            </div>
+          </div>
+        }
+      </div>
     </div>
   }
 
@@ -230,14 +266,10 @@
               }
 
               @if (entryFields.link) {
-                <mat-form-field appearance="outline" class="psd__entry-line">
-                  <mat-label>{{ entrySpec?.linkLabel ?? 'Goes to' }}</mat-label>
-                  <mat-select (selectionChange)="edited()" [(ngModel)]="entry.link">
-                    @for (d of destinations; track d.value) {
-                      <mat-option [value]="d.value">{{ d.text }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
+                <app-destination-field
+                  [label]="entrySpec?.linkLabel ?? 'Goes to'"
+                  [url]="entry.link"
+                  (urlChange)="entry.link = $event; edited()"></app-destination-field>
               }
 
               @if (entryFields.cta || entryFields.giving) {
@@ -261,14 +293,9 @@
                       </mat-select>
                     </mat-form-field>
                   } @else if (entryFields.cta) {
-                    <mat-form-field appearance="outline" class="psd__entry-line">
-                      <mat-label>Button goes to</mat-label>
-                      <mat-select (selectionChange)="edited()" [(ngModel)]="entry.ctaUrl">
-                        @for (d of destinations; track d.value) {
-                          <mat-option [value]="d.value">{{ d.text }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
+                    <app-destination-field
+                      [url]="entry.ctaUrl"
+                      (urlChange)="entry.ctaUrl = $event; edited()"></app-destination-field>
                   }
                 </div>
               }

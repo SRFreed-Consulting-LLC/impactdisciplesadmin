@@ -286,6 +286,26 @@
   min-height: 0;
 }
 
+/* ------------------------------------------------------------- quotes */
+
+.psd__quote-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-content-ink, var(--app-ink));
+}
+
+.psd__quote-role {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.psd__quote-text {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--app-muted);
+}
+
 .psd__entry-side-col {
   flex: 0 0 auto;
   display: flex;

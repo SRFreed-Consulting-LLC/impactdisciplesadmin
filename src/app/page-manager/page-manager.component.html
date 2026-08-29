@@ -3,9 +3,9 @@
     <app-page-home></app-page-home>
   }
 
-  @if (selectedTab === 'Coaching with Impact') {
-    <app-coaching-page></app-coaching-page>
-  }
+  <!-- Coaching with Impact had its own block here until 2026-08-29, when it
+       became an ordered section stack like the other twelve. It comes from
+       EDITABLE_PAGES now, below. -->
 
   @if (selectedTab === 'Disciple Making Minute') {
     <app-dmms></app-dmms>

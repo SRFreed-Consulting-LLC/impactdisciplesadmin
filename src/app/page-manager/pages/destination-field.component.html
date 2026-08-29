@@ -1,0 +1,21 @@
+<div class="dest">
+  <mat-form-field appearance="outline" class="dest__field">
+    <mat-label>{{ label }}</mat-label>
+    <mat-select [ngModel]="mode" (ngModelChange)="onModeChange($event)">
+      @for (d of destinations; track d.value) {
+        <mat-option [value]="d.value">{{ d.text }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Only when the pick-list cannot name it. What is stored is this address
+       either way - see the component. -->
+  @if (isExternal) {
+    <mat-form-field appearance="outline" class="dest__field">
+      <mat-label>Address</mat-label>
+      <input matInput [ngModel]="url" (ngModelChange)="onUrlTyped($event)"
+             placeholder="https:// or /a-page-on-this-site">
+      <mat-hint>A full web address, or a path starting with /</mat-hint>
+    </mat-form-field>
+  }
+</div>

@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+.dest {
+  display: flex;
+  flex-direction: column;
+}
+
+.dest__field {
+  width: 100%;
+}

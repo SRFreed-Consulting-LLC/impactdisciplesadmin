@@ -1,11 +1,15 @@
-import { Component, EventEmitter, HostListener, Input, OnDestroy, Output } from '@angular/core';
+import {
+  Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, inject
+} from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { BehaviorSubject, Subject, debounceTime } from 'rxjs';
 import {
   PageContentBlock, PageContentItem
 } from '@impact-common/shared/models/domain/page-content.model';
+import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
+import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types.enum';
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
-import menuData from 'src/app/common/services/data/nav-menu-data';
+import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import {
   EntryFields, EntrySpec, GIVING_DESTINATIONS, ICON_CHOICES, PageSectionKind,
@@ -47,7 +51,8 @@ const LIVE_PREVIEW_DEBOUNCE_MS = 250;
     styleUrls: ['./page-section-editor.component.css'],
     standalone: false
 })
-export class PageSectionEditorComponent implements OnDestroy {
+export class PageSectionEditorComponent implements OnInit, OnDestroy {
+  private readonly testimonialService = inject(TestimonialService);
   readonly richTextModules = RICH_TEXT_TOOLBAR;
   readonly amounts = WEB_CONFIG_AMOUNTS;
   readonly givingDestinations = GIVING_DESTINATIONS;
@@ -73,30 +78,71 @@ export class PageSectionEditorComponent implements OnDestroy {
   private target: number | null = null;
   card: { image?: ImageModel } = {};
 
-  destinations: { text: string; value: string }[] = [];
-
   private readonly edits = new Subject<void>();
 
+  // The list of places a button can go moved to app-destination-field, which
+  // owns it along with the "somewhere else" case this editor used to get
+  // wrong - see that component.
   constructor() {
     this.edits.pipe(debounceTime(LIVE_PREVIEW_DEBOUNCE_MS))
       .subscribe(() => this.dirty.emit(this.section));
+  }
 
-    menuData.forEach((menu) => {
-      this.destinations.push({ text: menu.title, value: menu.link });
-      if (menu.hasDropdown) {
-        menu.dropdownItems.forEach((dd) => {
-          this.destinations.push({ text: dd.title, value: dd.link });
-        });
-      }
-    });
-    // An anchor is a real destination: the About Us story buttons all point
-    // at #history, which is the banner further down that same page.
-    this.destinations.push({ text: 'The banner on this page', value: '#history' });
-    this.destinations.push({ text: 'External', value: 'external' });
+  /**
+   * The coach testimonials, in the order this section will show them.
+   *
+   * The list is EVERY live one, not just the ids the section knows: the page
+   * appends anything it has not been told about, by author, so a quote added
+   * after this section was last saved is already showing on the site. Putting
+   * the same rule here means the editor shows what the page shows rather than
+   * a shorter list staff would then have to guess about.
+   */
+  testimonials: TestimonialModel[] = [];
+  testimonialsFailed = false;
+
+  ngOnInit(): void {
+    if (this.fields.testimonials) {
+      this.loadTestimonials();
+    }
   }
 
   ngOnDestroy(): void {
     this.edits.complete();
+  }
+
+  private async loadTestimonials(): Promise<void> {
+    try {
+      const all = await this.testimonialService
+        .getAllByValue('type', TESTIMONIAL_TYPES.COACHING);
+      const live = (all ?? []).filter((t) => t.isActive);
+      const byId = new Map(live.map((t) => [t.id, t]));
+
+      const known = (this.section.testimonialIds ?? [])
+        .map((id) => byId.get(id))
+        .filter((t): t is TestimonialModel => !!t);
+      const knownIds = new Set(known.map((t) => t.id));
+      const rest = live
+        .filter((t) => !knownIds.has(t.id))
+        .sort((a, b) => (a.author ?? '').localeCompare(b.author ?? ''));
+
+      this.testimonials = [...known, ...rest];
+      this.testimonialsFailed = false;
+    } catch (err) {
+      console.error('Section editor: could not read the testimonials', err);
+      this.testimonialsFailed = true;
+    }
+  }
+
+  reorderTestimonials(event: CdkDragDrop<TestimonialModel[]>): void {
+    moveItemInArray(this.testimonials, event.previousIndex, event.currentIndex);
+    this.section.testimonialIds = this.testimonials.map((t) => t.id);
+    this.edited();
+  }
+
+  /** The first line of a quote, so a row is recognisable without opening it. */
+  quotePreview(t: TestimonialModel): string {
+    const text = (t.text ?? '').replace(/\s+/g, ' ').trim();
+    return text.length > 120 ? `${text.slice(0, 120)}…` : text;
   }
 
   /**

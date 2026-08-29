@@ -20,7 +20,7 @@ import { HomeSectionEditorComponent } from './home/home-section-editor.component
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
 import { PageLivePreviewComponent } from './pages/page-live-preview.component';
-import { CoachingPageComponent } from './coaching-page/coaching-page.component';
+import { DestinationFieldComponent } from './pages/destination-field.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
 import { TeamPageComponent } from './team-page/team-page.component';
@@ -36,10 +36,10 @@ import { DockingBarComponent } from './docking-bar/docking-bar.component';
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { PageManagerRoutingModule } from './page-manager-routing.module';
 import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
-// FormsModule for the Coaching screen's [(ngModel)] fields - the rest of this
+// FormsModule for the section editors' [(ngModel)] fields - the rest of this
 // module is reactive forms, so it was not needed until 2026-08-29.
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-// The Coaching screen and the Home slider list both reorder by dragging.
+// Every section stack, entry list and quote order reorders by dragging.
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -95,12 +95,12 @@ import { QuillModule } from 'ngx-quill';
     DMMDialogComponent,
     TestimonialsComponent,
     TestimonialDialogComponent,
-    CoachingPageComponent,
     HomeComponent,
     HomeSectionEditorComponent,
     PageStackComponent,
     PageSectionEditorComponent,
     PageLivePreviewComponent,
+    DestinationFieldComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
     TeamPageComponent,

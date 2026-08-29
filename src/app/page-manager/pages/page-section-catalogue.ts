@@ -56,6 +56,14 @@ export interface PageSectionFields {
   cta2?: boolean;
   video?: boolean;
   entries?: boolean;
+  /**
+   * Which quotes this section shows, and in what order.
+   *
+   * ORDER ONLY. The quotes themselves - their words, who said them, and
+   * whether they appear at all - are administered on the Testimonials screen,
+   * because a testimonial is not the property of any one page showing it.
+   */
+  testimonials?: boolean;
 }
 
 /** Which of an ENTRY's fields a type uses. One control edits every kind of
@@ -322,6 +330,100 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
   },
 
   ...['pastors', 'leaders', 'churches'].map((audience) => equippingCoursePage(audience)),
+
+  {
+    slug: 'coaching-with-impact',
+    label: 'Coaching with Impact',
+    path: '/coaching-with-impact',
+    blurb: 'The whole page: the intro, the quotes, the progress report, both books, the online group and the ECHS story.',
+    kinds: [
+      pageHeader({
+        fields: { heading: true, subheading: true, image: true }
+      }),
+      prose({
+        label: 'Intro',
+        blurb: 'the lead line, a passage, and two buttons',
+        fields: { heading: true, body: true, cta: true, cta2: true },
+        headingLabel: 'Lead line',
+        ctaLabel: 'First button text',
+        cta2Label: 'Second button text'
+      }),
+      {
+        type: PAGE_SECTION_TYPES.TESTIMONIALS,
+        label: 'Quote carousel',
+        blurb: 'coach testimonials on a slider, over a background photo',
+        icon: 'format_quote',
+        singleton: true,
+        fields: { heading: true, subheading: true, image: true, testimonials: true },
+        subheadingLabel: 'Small line above the heading',
+        imageLabel: 'Background photo',
+        caveat:
+          'Only the ORDER is set here. A quote\'s words, who said it and ' +
+          'whether it appears at all belong to the Testimonials screen, ' +
+          'because the same quote can be shown on more than one page.'
+      },
+      mission({
+        label: 'Report with a video',
+        blurb: 'a small line, a heading, a passage, a click-to-play video and a button',
+        fields: {
+          heading: true, subheading: true, body: true, image: true, video: true, cta: true
+        },
+        subheadingLabel: 'Small line above the heading',
+        imageLabel: 'Still shown before play'
+      }),
+      {
+        type: PAGE_SECTION_TYPES.CARDS,
+        label: 'Resources',
+        blurb: 'one article per resource - a cover, a heading, copy and a button; the sides alternate',
+        icon: 'auto_stories',
+        singleton: false,
+        fields: { entries: true },
+        entry: {
+          noun: 'resource',
+          note:
+            'Which side the cover sits on alternates by position, so ' +
+            'reordering can never stack two the same way.',
+          sideLabels: ['cover left', 'cover right'],
+          fields: { image: true, title: true, body: true, cta: true },
+          titleLabel: 'Heading',
+          bodyLabel: 'Copy',
+          imageLabel: 'Cover'
+        }
+      },
+      {
+        type: PAGE_SECTION_TYPES.GALLERY,
+        label: 'Picture grid',
+        blurb: 'a heading, a passage, and a grid of pictures under it',
+        icon: 'grid_on',
+        singleton: false,
+        fields: { heading: true, subheading: true, body: true, entries: true },
+        subheadingLabel: 'Small line above the heading',
+        entry: {
+          noun: 'picture',
+          fields: { image: true, title: true },
+          titleLabel: 'Description (for screen readers)',
+          imageLabel: 'Picture'
+        }
+      },
+      {
+        type: PAGE_SECTION_TYPES.STORY,
+        label: 'Picture and a story',
+        blurb: 'a photo beside a heading and a passage',
+        icon: 'view_sidebar',
+        singleton: false,
+        fields: { heading: true, body: true, image: true },
+        imageLabel: 'Photo beside the copy'
+      },
+      {
+        type: PAGE_SECTION_TYPES.BANNER,
+        label: 'Closing block',
+        blurb: 'a heading, a line and a button, on a tinted band',
+        icon: 'call_to_action',
+        singleton: false,
+        fields: { heading: true, body: true, cta: true }
+      }
+    ]
+  },
 
   {
     slug: 'seminars',
