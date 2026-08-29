@@ -137,12 +137,14 @@ test.describe('[content] Website Content', () => {
     await expect(page.locator('app-page-home')).toContainText('Web Config');
   });
 
-  test('the Home slider opens its slides in a dialog', async ({ page }) => {
-    // The slides table moved INTO a dialog on 2026-08-29 when the slider
-    // became one row of the section stack. Three tests in this file asserted
-    // it was visible on the screen itself and had been red since; opening the
-    // row is the fix rather than dropping the assertion, because "the grid
-    // still loads" is the one thing worth knowing about it.
+  test('the Home slider opens its slides full screen', async ({ page }) => {
+    // The slides table stopped being visible on the Home screen itself on
+    // 2026-08-29, when the slider became one row of the section stack - first
+    // into a dialog, then, later the same day, onto a full screen like every
+    // other section's editor. Three tests in this file asserted it was on the
+    // screen and had been red since; opening the row is the fix rather than
+    // dropping the assertion, because "the grid still loads" is the one thing
+    // worth knowing about it.
     await gotoTab(page, 'page-manager', 'home');
     const sliderRow = page.locator('.home__section', { hasText: 'Slider' }).first();
     await expect(sliderRow).toBeVisible({ timeout: 30_000 });
