@@ -79,6 +79,39 @@ export class HomePageImagesComponent extends BaseListComponent<HomePageImageMode
   isConflicted(row: HomePageImageModel, duplicates: number[] | null): boolean {
     return !!duplicates && duplicates.includes(row.order);
   }
+
+  /**
+   * Writes the running order after a drag.
+   *
+   * RENUMBERS EVERY SLIDE 0..n-1, not just the ones that moved. That is the
+   * point of the feature: `order` was hand-typed for years and production
+   * still carries three duplicate pairs, so a drag is also the repair - one
+   * drag leaves the whole list with distinct, consecutive numbers and the
+   * clash warning goes quiet on its own.
+   *
+   * Only slides whose number actually CHANGES are written, so renumbering a
+   * list that is already consecutive costs nothing.
+   */
+  async saveOrder(rows: HomePageImageModel[]): Promise<void> {
+    const changed = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row, index }) => row.order !== index);
+
+    if (!changed.length) {
+      return;
+    }
+
+    try {
+      await Promise.all(changed.map(({ row, index }) => {
+        row.order = index;
+        return this.service.update(row.id, row);
+      }));
+      this.snackbar.success('Slide order saved');
+    } catch (err) {
+      console.error('Home slider: could not save the new order', err);
+      this.snackbar.error('Could not save the new order - reload and try again');
+    }
+  }
 }
 
 /** Pure, so it can be tested without a component or a service. */

@@ -29,6 +29,8 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+// Backs app-data-grid's opt-in row reordering ([reorderBy]).
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
@@ -81,6 +83,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    DragDropModule,
     MatToolbarModule,
     MatMenuModule,
     MatIconModule,

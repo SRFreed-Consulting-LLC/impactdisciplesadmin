@@ -27,7 +27,9 @@
   tableClass="images-table"
   initialSortKey="order"
   initialSortDirection="asc"
+  reorderBy="order"
   exportFileName="home_page_images.xlsx"
+  (rowsReordered)="saveOrder($event)"
   (rowDoubleClick)="showEditModal($event)">
   <ng-template appDataGridCell="isActive" let-row>
     <span class="active-template" [style.background-color]="row.isActive ? '#1d8a46' : '#c62828'">

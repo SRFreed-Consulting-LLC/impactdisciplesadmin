@@ -117,6 +117,68 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
    *  toggle/masterToggle methods that mutate the caller's SelectionModel. */
   @Output() selectionChange = new EventEmitter<T[]>();
 
+  /**
+   * Lets staff drag rows into a new order instead of typing a number.
+   *
+   * OFF by default, so every existing grid is untouched. Set it to the
+   * column key that holds the order (e.g. 'order') - the grid needs to know
+   * which sort counts as "the running order", because dragging is only
+   * meaningful while the rows are shown in it.
+   */
+  @Input() reorderBy?: string;
+
+  /**
+   * The full row list in its new order, after a drag. The caller persists
+   * it - the grid does not know how a row is saved.
+   */
+  @Output() rowsReordered = new EventEmitter<T[]>();
+
+  /**
+   * Whether a drag would currently mean anything.
+   *
+   * Dragging row 3 above row 1 while the table is sorted by Title, or while
+   * a filter hides half the rows, would write an order derived from a view
+   * that is not the running order - silently wrong in a way nobody would
+   * catch. So the grip is disabled unless the table is showing every row in
+   * the order column, ascending.
+   */
+  get canReorder(): boolean {
+    if (!this.reorderBy) {
+      return false;
+    }
+    const filtered = Object.values(this.filters).some((filter) => !!filter);
+    return !filtered && this.sortKey === this.reorderBy && this.sortDirection === 'asc';
+  }
+
+  /** Says WHY the grip is disabled, rather than leaving it inert. */
+  get reorderBlockedReason(): string {
+    if (Object.values(this.filters).some((filter) => !!filter)) {
+      return 'Clear the column filters to drag rows into a new order';
+    }
+    return 'Sort by ' + this.orderColumnLabel + ' (ascending) to drag rows into a new order';
+  }
+
+  private get orderColumnLabel(): string {
+    return this.columns.find((column) => column.key === this.reorderBy)?.label ?? 'order';
+  }
+
+  /**
+   * Moves a row and hands the caller the whole list in its new order.
+   *
+   * The grid deliberately does NOT write the order field - it does not know
+   * what the field is called on the model, only which column displays it.
+   */
+  onRowDropped(previousIndex: number, currentIndex: number): void {
+    if (!this.canReorder || previousIndex === currentIndex) {
+      return;
+    }
+    const rows = [...this.visibleRows];
+    const [moved] = rows.splice(previousIndex, 1);
+    rows.splice(currentIndex, 0, moved);
+    this.visibleRows = rows;
+    this.rowsReordered.emit(rows);
+  }
+
   @ContentChildren(DataGridCellDirective) private cellTemplateDirectives!: QueryList<DataGridCellDirective<T>>;
 
   @ViewChild('tableScroll') private tableScroll?: ElementRef<HTMLElement>;
@@ -236,6 +298,11 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
     if (this.selection) {
       keys = ['select', ...keys];
     }
+    // The grip leads the row, ahead of the checkbox - it is the handle for
+    // the row itself, not for anything in it.
+    if (this.reorderBy) {
+      keys = ['reorder', ...keys];
+    }
     return this.rowActions.length ? [...keys, 'actions'] : keys;
   }
 
@@ -243,6 +310,9 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
     let keys = this.visibleColumns.map((c) => `${c.key}-filter`);
     if (this.selection) {
       keys = ['select-filter', ...keys];
+    }
+    if (this.reorderBy) {
+      keys = ['reorder-filter', ...keys];
     }
     return this.rowActions.length ? [...keys, 'actions-filter'] : keys;
   }

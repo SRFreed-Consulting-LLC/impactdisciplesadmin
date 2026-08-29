@@ -26,7 +26,27 @@
 <div class="table-scroll" #tableScroll appInfiniteScroll (scrolledToBottom)="loadMore()" (scroll)="rememberScroll()">
   <app-table-loading-overlay [loading]="loading$ | async"></app-table-loading-overlay>
 
-  <table mat-table [dataSource]="visibleRows" class="data-grid-table" [ngClass]="tableClass">
+  <table mat-table [dataSource]="visibleRows" class="data-grid-table" [ngClass]="tableClass"
+         cdkDropList [cdkDropListDisabled]="!canReorder"
+         (cdkDropListDropped)="onRowDropped($any($event).previousIndex, $any($event).currentIndex)">
+    @if (reorderBy) {
+      <ng-container matColumnDef="reorder">
+        <th mat-header-cell *matHeaderCellDef class="reorder-cell"></th>
+        <td mat-cell *matCellDef="let row" class="reorder-cell">
+          <mat-icon class="reorder-grip" [class.reorder-grip--off]="!canReorder"
+                    [matTooltip]="canReorder ? 'Drag to reorder' : reorderBlockedReason">
+            drag_indicator
+          </mat-icon>
+        </td>
+      </ng-container>
+    }
+
+    @if (reorderBy) {
+      <ng-container matColumnDef="reorder-filter">
+        <th mat-header-cell *matHeaderCellDef class="reorder-cell"></th>
+      </ng-container>
+    }
+
     @if (selection) {
       <ng-container matColumnDef="select">
         <th mat-header-cell *matHeaderCellDef>
@@ -95,7 +115,7 @@
     @if (showFilterRow) {
       <tr mat-header-row *matHeaderRowDef="filterColumnKeys; sticky: true"></tr>
     }
-    <tr mat-row *matRowDef="let row; columns: displayedColumnKeys;" [class]="rowClass ? rowClass(row) : ''" (click)="onRowClick(row)" (dblclick)="onRowDoubleClick(row)"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumnKeys;" [class]="rowClass ? rowClass(row) : ''" cdkDrag [cdkDragDisabled]="!canReorder" (click)="onRowClick(row)" (dblclick)="onRowDoubleClick(row)"></tr>
 
     <!-- Only rendered once loading finishes (the loading overlay already
     covers the empty table before then) - see resolvedEmptyMessage. -->

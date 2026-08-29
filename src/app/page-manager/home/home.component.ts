@@ -1,24 +1,44 @@
 import { Component, OnInit } from '@angular/core';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { MatDialog } from '@angular/material/dialog';
 import { Observable, map } from 'rxjs';
 import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
+import { HomeSectionModel } from '@impact-common/shared/models/domain/home-section.model';
+import { HOME_SECTION_TYPES } from '@impact-common/shared/lists/home_section_types.enum';
 import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
+import { HomeSectionService } from 'src/app/common/services/data/home-sections.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
+import { SnackbarService } from '../../shared/snackbar.service';
 import { PreviewDevice } from './home-live-preview.component';
+import { HOME_SECTION_KINDS, HomeSectionKind, kindFor } from './home-section-catalogue';
+import { HomeSectionDialogComponent } from './home-section-dialog.component';
 
 /**
  * HOME - every section the public home page renders, on one screen, in the
  * order a visitor meets them, with a live preview beside them.
  *
- * Replaces the standalone 'Home Page Images' screen (2026-08-29). It is a
- * SECTION STACK rather than a renamed list because the slider is only the
- * first of several home-page sections: the services strip and testimonials
- * are expected to move here, and a stack absorbs those by appending rather
- * than by being redesigned.
+ * The page is DATA now (2026-08-29). Staff drag sections into a different
+ * order, switch one off, add a second banner and edit what is inside each,
+ * and the public site follows without a deploy. Before this the stack was
+ * fixed in the web app's home.component.html with its copy, images and
+ * links written into the templates.
+ *
+ * ORDER IS NEVER TYPED. Dropping a section renumbers every section 0..n-1
+ * and writes them. That is deliberate: the slider spent years with a
+ * hand-entered `order` field and production still carries three duplicate
+ * pairs, which Firestore resolves in whatever sequence it likes.
+ *
+ * WHAT SAVES WHEN, and the two are separate on purpose:
+ *   - REORDER and the LIVE toggle write immediately. They are single facts
+ *     about a section, and a screen-level Save that quietly rewrote six
+ *     records would be a surprise.
+ *   - CONTENT is edited in a dialog, which saves that one section.
  *
  * NOT here, deliberately: the docking bar. It looks like home-page content
  * because that is where staff notice it, but the web app mounts it in
  * app.component.html and it renders on EVERY page - it is site furniture, so
- * it lives with the rest of the site-wide settings on Web Config. The
- * pointer at the foot of this screen exists so nobody hunts for it here.
+ * it lives with the rest of the site-wide settings on Web Config.
  */
 @Component({
   selector: 'app-page-home',
@@ -27,10 +47,16 @@ import { PreviewDevice } from './home-live-preview.component';
   standalone: false
 })
 export class HomeComponent implements OnInit {
-  /** Sections that will move onto this screen but have not yet. Rendered as
-   *  placeholders so the screen reads as "the home page", not "the slider" -
-   *  and so the next person can see where their section is meant to go. */
-  readonly plannedSections: readonly string[] = ['Services strip', 'Testimonials'];
+  private readonly screenKey = 'page-manager.home';
+
+  readonly types = HOME_SECTION_TYPES;
+
+  /** The stack, in page order. Held as a plain array so cdkDrag can move it. */
+  sections: HomeSectionModel[] = [];
+
+  loading = true;
+  /** Set when the first read fails, so the screen refuses to save over it. */
+  loadFailed = false;
 
   device: PreviewDevice = 'desktop';
 
@@ -45,10 +71,17 @@ export class HomeComponent implements OnInit {
    */
   liveSlides$!: Observable<HomePageImageModel[]>;
 
-  constructor(private service: HomePageImageService) {}
+  constructor(
+    private service: HomeSectionService,
+    private slideService: HomePageImageService,
+    private permissionService: PermissionService,
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private snackbar: SnackbarService
+  ) {}
 
   ngOnInit(): void {
-    this.liveSlides$ = this.service.streamAll().pipe(
+    this.liveSlides$ = this.slideService.streamAll().pipe(
       map((slides) => slides
         .filter((slide) => slide.isActive)
         // Same sort as the web slider. Slides sharing an order number come
@@ -57,9 +90,205 @@ export class HomeComponent implements OnInit {
         // running order that the data does not actually determine.
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
     );
+
+    this.load();
+  }
+
+  private async load(): Promise<void> {
+    this.loading = true;
+    try {
+      const rows = await this.service.getAll();
+      this.sections = rows.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      this.loadFailed = false;
+    } catch (err) {
+      // A screen that failed to load must not offer to write - see the
+      // Coaching with Impact screen, which came up blank on 2026-08-29 for
+      // exactly this reason and now refuses to save too.
+      console.error('Home: could not load sections', err);
+      this.loadFailed = true;
+      this.snackbar.error('Could not load the page sections - reload before editing');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  // ------------------------------------------------------------------ order
+
+  /**
+   * Renumbers every section from its position and writes the ones that
+   * moved.
+   *
+   * Writes only what CHANGED rather than all six: a drag usually moves two
+   * or three positions, and rewriting untouched records would put this
+   * screen's timestamp on sections nobody edited.
+   */
+  async reorder(event: CdkDragDrop<HomeSectionModel[]>): Promise<void> {
+    if (!this.canEdit() || this.loadFailed) {
+      return;
+    }
+
+    const before = this.sections.map((section) => section.id);
+    moveItemInArray(this.sections, event.previousIndex, event.currentIndex);
+
+    const moved = this.sections
+      .map((section, index) => ({ section, index }))
+      .filter(({ section, index }) => before[index] !== section.id);
+
+    try {
+      await Promise.all(moved.map(({ section, index }) => {
+        section.order = index;
+        return this.service.update(section.id, section);
+      }));
+      this.snackbar.success('Order saved');
+    } catch (err) {
+      console.error('Home: could not save the new order', err);
+      this.snackbar.error('Could not save the new order - reload and try again');
+      await this.load();
+    }
+  }
+
+  // ----------------------------------------------------------------- toggle
+
+  /**
+   * Live is a single fact about ONE section, so it is written straight away.
+   * The switch goes back if the write fails, rather than showing a state the
+   * database does not have.
+   */
+  async toggleLive(section: HomeSectionModel): Promise<void> {
+    if (!this.canEdit() || this.loadFailed) {
+      return;
+    }
+
+    const next = !section.isActive;
+    section.isActive = next;
+
+    try {
+      await this.service.update(section.id, section);
+      this.snackbar.success(next ? 'Showing on the page' : 'Taken off the page');
+    } catch (err) {
+      console.error('Home: could not change Live', err);
+      section.isActive = !next;
+      this.snackbar.error('Could not change that - try again');
+    }
+  }
+
+  // ------------------------------------------------------- add, edit, remove
+
+  /** Types that may still be added - a singleton already placed drops out. */
+  get addableKinds(): HomeSectionKind[] {
+    const placed = new Set(this.sections.map((section) => section.type));
+    return HOME_SECTION_KINDS.filter((kind) => !kind.singleton || !placed.has(kind.type));
+  }
+
+  async add(kind: HomeSectionKind): Promise<void> {
+    if (!this.canEdit() || this.loadFailed) {
+      return;
+    }
+
+    // Appended at the end rather than inserted: a new section landing in the
+    // middle of the page unannounced is worse than one staff then drag.
+    const section = {
+      type: kind.type,
+      order: this.sections.length,
+      isActive: false,
+      ...(kind.fields.items ? { items: [] } : {})
+    } as HomeSectionModel;
+
+    const saved = await this.service.add(section);
+    this.sections = [...this.sections, saved];
+    this.snackbar.success(`${kind.label} added - switch it on when it is ready`);
+
+    // Straight into the editor: an empty section on a live page is not
+    // useful, and it is switched off until staff say otherwise.
+    if (Object.keys(kind.fields).length) {
+      await this.edit(saved);
+    }
+  }
+
+  async edit(section: HomeSectionModel): Promise<void> {
+    const kind = kindFor(section.type);
+    if (!kind || !Object.keys(kind.fields).length) {
+      return;
+    }
+
+    const ref = this.dialog.open(HomeSectionDialogComponent, {
+      width: '900px', maxWidth: '95vw', maxHeight: '94vh',
+      data: { item: structuredClone(section), kind }
+    });
+
+    const saved = await ref.afterClosed().toPromise();
+    if (saved) {
+      await this.load();
+    }
+  }
+
+  /** Deleting a record is its own permission, not part of editing one. */
+  async remove(section: HomeSectionModel): Promise<void> {
+    if (!this.canDelete() || this.loadFailed) {
+      return;
+    }
+
+    const kind = kindFor(section.type);
+    const confirmed = await this.confirmService.confirm(
+      'It is removed from the home page and its content is gone for good. ' +
+      'To take it off the page but keep it, switch Live off instead.',
+      `Delete this ${kind?.label ?? 'section'}?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await this.service.delete(section.id);
+      this.snackbar.success(`${kind?.label ?? 'Section'} deleted`);
+      await this.load();
+    } catch (err) {
+      console.error('Home: could not delete the section', err);
+      this.snackbar.error('Could not delete that - try again');
+    }
+  }
+
+  // ----------------------------------------------------------------- display
+
+  kindOf(section: HomeSectionModel): HomeSectionKind | undefined {
+    return kindFor(section.type);
+  }
+
+  /**
+   * The one-line summary on a section's row - what it actually holds, so the
+   * stack is readable without opening anything.
+   */
+  summary(section: HomeSectionModel): string {
+    if (section.type === HOME_SECTION_TYPES.SLIDER) {
+      return 'edited below';
+    }
+    if (section.items) {
+      const live = section.items.filter((item) => item.isActive).length;
+      return `${section.items.length} card${section.items.length === 1 ? '' : 's'}` +
+        (live === section.items.length ? '' : `, ${live} showing`);
+    }
+    const title = (section.title ?? '').replace(/<[^>]+>/g, '').trim();
+    return title || 'no heading yet';
+  }
+
+  /** An unknown type still renders a row, so staff can delete it. */
+  isRenderable(section: HomeSectionModel): boolean {
+    return !!kindFor(section.type);
+  }
+
+  get liveCount(): number {
+    return this.sections.filter((section) => section.isActive).length;
   }
 
   setDevice(device: PreviewDevice): void {
     this.device = device;
+  }
+
+  canEdit(): boolean {
+    return this.permissionService.canEdit(this.screenKey);
+  }
+
+  canDelete(): boolean {
+    return this.permissionService.canDelete(this.screenKey);
   }
 }

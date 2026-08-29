@@ -11,6 +11,7 @@ import { provideHttpClient } from '@angular/common/http';
 // SECTION inside it - see home.component.ts.
 import { HomeComponent } from './home/home.component';
 import { HomeLivePreviewComponent } from './home/home-live-preview.component';
+import { HomeSectionDialogComponent } from './home/home-section-dialog.component';
 import { CoachingPageComponent } from './coaching-page/coaching-page.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
@@ -89,6 +90,7 @@ import { QuillModule } from 'ngx-quill';
     CoachingPageComponent,
     HomeComponent,
     HomeLivePreviewComponent,
+    HomeSectionDialogComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
     TeamPageComponent,

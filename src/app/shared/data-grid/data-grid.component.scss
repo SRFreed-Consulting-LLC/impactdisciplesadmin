@@ -82,3 +82,41 @@ th.sortable:hover {
   color: var(--app-card-muted);
   font-size: 14px;
 }
+
+/* Opt-in row reordering ([reorderBy]). The grip column is narrow and the
+   grip itself dims when a sort or filter makes dragging meaningless - see
+   canReorder, which is what actually blocks the drag. */
+.reorder-cell {
+  width: 34px;
+  padding-right: 0 !important;
+}
+
+.reorder-grip {
+  cursor: grab;
+  color: var(--app-faint);
+  vertical-align: middle;
+}
+
+.reorder-grip:active {
+  cursor: grabbing;
+}
+
+.reorder-grip--off {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.cdk-drag-preview.data-grid-table,
+tr.cdk-drag-preview {
+  display: table;
+  background: var(--app-card);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+}
+
+tr.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+tr.cdk-drag-animating {
+  transition: transform 180ms cubic-bezier(0, 0, 0.2, 1);
+}
