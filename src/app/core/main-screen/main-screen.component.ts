@@ -41,11 +41,18 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   // togglePin()/rebuildPinnedItems()).
   pinnedItems: PinnedNavItem[] = [];
 
-  // Which manager groups are currently open - multiple can be open at once
-  // (no accordion-exclusive behavior). A group is also auto-added here
-  // whenever navigation lands on it (left nav click, the new-record-alerts
-  // bell, or a bookmarked URL), so arriving at a manager always shows its
-  // own sub-items without an extra click.
+  // Which manager group is currently open. ACCORDION-EXCLUSIVE since
+  // 2026-08-29 (owner's call): opening one closes the last, so the nav never
+  // grows past the window and the sub-items on screen always belong to one
+  // manager. Still a Set rather than a nullable string - openGroup() is the
+  // single place that enforces the rule, and the template's
+  // `expanded.has(id)` reads the same either way.
+  //
+  // A group is also opened whenever navigation lands on it (left nav click,
+  // the new-record-alerts bell, or a bookmarked URL), so arriving at a
+  // manager always shows its own sub-items without an extra click - that
+  // path goes through openGroup() too, or navigating would leave the
+  // previous group open beside the new one.
   expanded = new Set<string>();
 
   // Derived from the current URL - drives active-state highlighting for
@@ -134,10 +141,20 @@ export class MainScreenComponent implements OnInit, OnDestroy {
 
   toggleGroup(id: string): void {
     if (this.expanded.has(id)) {
-      this.expanded.delete(id);
+      // Collapsing the open group leaves NOTHING open, deliberately: a group
+      // that springs back the moment you close it reads as broken, and
+      // navigation reopens the right one anyway.
+      this.expanded.clear();
     } else {
-      this.expanded.add(id);
+      this.openGroup(id);
     }
+  }
+
+  /** Opens one group and closes any other - the accordion rule, in one place
+   *  so navigation and clicking cannot disagree about it. */
+  private openGroup(id: string): void {
+    this.expanded.clear();
+    this.expanded.add(id);
   }
 
   isPinned(group: NavGroup, item: NavLeaf): boolean {
@@ -339,7 +356,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     if (group?.items) {
       this.activeSlug = new URLSearchParams(queryString ?? '').get('tab');
       if (this.activeGroupId) {
-        this.expanded.add(this.activeGroupId);
+        this.openGroup(this.activeGroupId);
       }
     } else {
       this.activeSlug = null;
