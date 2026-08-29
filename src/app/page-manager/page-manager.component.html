@@ -29,8 +29,15 @@
        block each: which slots a page has is declared in EDITABLE_PAGES, so
        adding a page is an entry there plus a nav-config leaf, and no change
        here. See page-editor.component.ts. -->
+  <!-- About Us has its own screen: it is the one page whose template is a
+       dispatcher, so it gets the ordered stack + preview that the generic
+       slot editor cannot offer. -->
+  @if (selectedTab === 'About Us') {
+    <app-about-us-page></app-about-us-page>
+  }
+
   @for (page of editablePages; track page.slug) {
-    @if (selectedTab === page.label) {
+    @if (selectedTab === page.label && page.slug !== 'about-us') {
       <app-page-editor [page]="page"></app-page-editor>
     }
   }

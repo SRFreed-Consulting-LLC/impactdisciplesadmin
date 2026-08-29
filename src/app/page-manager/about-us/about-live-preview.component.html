@@ -1,0 +1,107 @@
+@if (!sections.length) {
+  <div class="apv-empty">
+    Nothing is showing on this page. Switch a section on, or add one, to see it here.
+  </div>
+} @else {
+  <div class="apv-frame" [class.apv-frame--mobile]="isMobile">
+    <!-- The site header, drawn flat: it is what the page sits under, and
+         without it the first section reads as a floating box. -->
+    <div class="apv-header">
+      <span class="apv-header__mark">IMPACT DISCIPLES</span>
+      @if (!isMobile) {
+        <span class="apv-header__nav">About &nbsp; Events &nbsp; Store</span>
+      } @else {
+        <span aria-hidden="true">&#9776;</span>
+      }
+    </div>
+
+    @for (section of sections; track section.key) {
+      @switch (section.type) {
+
+        @case (types.STORY) {
+          <div class="apv-story" [class.apv-story--flip]="pictureLeft(section)">
+            <div class="apv-story__art"
+                 [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null"></div>
+            <div class="apv-story__copy">
+              <span class="apv-h">{{ plain(section.heading) }}</span>
+              <span class="apv-p">{{ plain(section.body) }}</span>
+              @if (section.ctaTitle) {
+                <span class="apv-btn">{{ section.ctaTitle }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        @case (types.BANNER) {
+          <div class="apv-banner"
+               [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null">
+            <span class="apv-banner__title">{{ plain(section.heading) }}</span>
+          </div>
+        }
+
+        @case (types.MISSION) {
+          <div class="apv-mission">
+            <div class="apv-mission__copy">
+              <span class="apv-h">{{ plain(section.heading) }}</span>
+              <span class="apv-rule" aria-hidden="true"></span>
+              <span class="apv-p">{{ plain(section.body) }}</span>
+            </div>
+            <div class="apv-mission__still"
+                 [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null">
+              <span class="apv-play" aria-hidden="true">&#9654;</span>
+            </div>
+          </div>
+        }
+
+        @case (types.TIMELINE) {
+          <div class="apv-timeline">
+            @if (section.heading) {
+              <div class="apv-year">{{ section.heading }}</div>
+            }
+            <div class="apv-timeline__line" aria-hidden="true"></div>
+            @for (entry of liveEntries(section); track $index) {
+              @if (entry.title) {
+                <div class="apv-year apv-year--small">{{ entry.title }}</div>
+              }
+              <div class="apv-entry" [class.apv-entry--flip]="!entryOnLeft($index)">
+                <div class="apv-entry__copy">{{ entry.description }}</div>
+                <div class="apv-entry__art"
+                     [style.backgroundImage]="entry.image?.url ? 'url(' + entry.image?.url + ')' : null"></div>
+              </div>
+            }
+            @if (section.subheading) {
+              <div class="apv-year">{{ section.subheading }}</div>
+            }
+          </div>
+        }
+
+        @case (types.COUNTRIES) {
+          <div class="apv-countries"
+               [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null">
+            <div class="apv-countries__left">
+              <span class="apv-countries__figure">{{ plain(section.heading) }}</span>
+              <span class="apv-countries__label">{{ plain(section.subheading) }}</span>
+            </div>
+            <div class="apv-countries__right">{{ plain(section.body) }}</div>
+          </div>
+        }
+
+        <!-- A type this build cannot draw. Shown as a labelled gap rather
+             than skipped, so the preview never claims the page is shorter
+             than it is. -->
+        @default {
+          <div class="apv-unknown">
+            Section &ldquo;{{ section.type }}&rdquo; &mdash; this admin cannot preview it
+          </div>
+        }
+      }
+    }
+
+    <!-- Not editable here, but the page has one and leaving it out makes
+         the last section look like the end of the world. -->
+    <div class="apv-footer">
+      <span>IMPACT DISCIPLES</span>
+      <span class="apv-footer__note">footer &mdash; not edited on this screen</span>
+    </div>
+  </div>
+}

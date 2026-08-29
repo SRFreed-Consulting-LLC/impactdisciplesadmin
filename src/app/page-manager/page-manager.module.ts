@@ -14,6 +14,9 @@ import { HomeLivePreviewComponent } from './home/home-live-preview.component';
 import { HomeSectionDialogComponent } from './home/home-section-dialog.component';
 import { HomeSlidesDialogComponent } from './home/home-slides-dialog.component';
 import { PageEditorComponent } from './pages/page-editor.component';
+import { AboutUsPageComponent } from './about-us/about-us-page.component';
+import { AboutSectionDialogComponent } from './about-us/about-section-dialog.component';
+import { AboutLivePreviewComponent } from './about-us/about-live-preview.component';
 import { CoachingPageComponent } from './coaching-page/coaching-page.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
@@ -95,6 +98,9 @@ import { QuillModule } from 'ngx-quill';
     HomeSectionDialogComponent,
     HomeSlidesDialogComponent,
     PageEditorComponent,
+    AboutUsPageComponent,
+    AboutSectionDialogComponent,
+    AboutLivePreviewComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
     TeamPageComponent,

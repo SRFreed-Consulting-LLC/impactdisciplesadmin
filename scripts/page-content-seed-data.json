@@ -10,7 +10,8 @@
         "name": "Home/story-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-1.PNG?alt=media&token=c1daf9a0-35db-4a1e-b502-71d23c701762"
       },
-      "body": "<p>When Ken Adams began pastoring Crossroads Church in 1989, he envisioned that church becoming a part of the mission and movement of Jesus by making and multiplying disciples. The church needed a curriculum that would drive the goals and strategy its leadership had established, but there was a problem…</p>"
+      "body": "<p>When Ken Adams began pastoring Crossroads Church in 1989, he envisioned that church becoming a part of the mission and movement of Jesus by making and multiplying disciples. The church needed a curriculum that would drive the goals and strategy its leadership had established, but there was a problem…</p>",
+      "type": "story"
     },
     {
       "key": "story-2",
@@ -22,7 +23,8 @@
         "name": "Home/story-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-2.jpg?alt=media&token=35028e2e-f4fe-40ca-8d92-042b2cda016d"
       },
-      "body": "<p>Did you know that we have Disciple-Making Churches and pastors all over the world in our disciple making network? We’d love to connect you to other ministry partners pursuing the same goals with the same passion and dedication as you.</p>"
+      "body": "<p>Did you know that we have Disciple-Making Churches and pastors all over the world in our disciple making network? We’d love to connect you to other ministry partners pursuing the same goals with the same passion and dedication as you.</p>",
+      "type": "story"
     },
     {
       "key": "story-3",
@@ -34,29 +36,88 @@
         "name": "Home/story-3",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-3.jpg?alt=media&token=4a367383-4b7e-4a9a-a696-934086475cd0"
       },
-      "body": "<p>Jesus spent time one-on-one with His disciples, but then He took them out into the wide world to apply what they had learned with Him in a small group setting. Our director began his ministry based on Jesus’ strategy using Jesus’ methods in the early 1990s and has continued refining those efforts to the present day.</p>"
+      "body": "<p>Jesus spent time one-on-one with His disciples, but then He took them out into the wide world to apply what they had learned with Him in a small group setting. Our director began his ministry based on Jesus’ strategy using Jesus’ methods in the early 1990s and has continued refining those efforts to the present day.</p>",
+      "type": "story"
     },
     {
       "key": "history",
+      "type": "banner",
       "isActive": true,
-      "heading": "OUR HISTORY"
+      "heading": "OUR HISTORY",
+      "image": {
+        "name": "Headers/history-header",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fhistory-header.PNG?alt=media&token=f3e35d82-8571-4cee-8a7a-db7894d21578"
+      }
     },
     {
       "key": "mission",
+      "type": "mission",
       "isActive": true,
       "heading": "OUR <strong> MISSION</strong>",
-      "body": "<p><strong>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples of Jesus Christ.</strong></p>\n<p>We provide disciple making resources, training, and consultations. We help people explore the concepts of disciple making, we educate people and churches in the principles of disciple making, we assist people and churches to establish disciple-making movements, and engage individuals and churches in developing movements of multiplication.</p>"
+      "body": "<p><strong>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples of Jesus Christ.</strong></p>\n<p>We provide disciple making resources, training, and consultations. We help people explore the concepts of disciple making, we educate people and churches in the principles of disciple making, we assist people and churches to establish disciple-making movements, and engage individuals and churches in developing movements of multiplication.</p>",
+      "image": {
+        "name": "Shared/map",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fmap.jpg?alt=media&token=9db9c6f4-c852-4722-807e-5fa5d93f881a"
+      },
+      "videoId": "HxKSa24hF60",
+      "videoUrl": "https://www.youtube.com/watch?v=HxKSa24hF60"
     },
     {
-      "key": "countries-count",
+      "key": "timeline",
+      "type": "timeline",
+      "isActive": true,
+      "heading": "1989",
+      "subheading": "2019",
+      "items": [
+        {
+          "title": "",
+          "description": "Ken Adams was called as the first pastor of Crossroads Church in Newnan, Georgia in 1989. He was passionate about the Great Commission and wanted his church to be a part of the movement and mission of Jesus. Ken wanted everything at Crossroads to revolve around being and building disciples of Jesus.",
+          "image": {
+            "name": "Content/history-1",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2Fhistory-1.jpg?alt=media&token=b97d532d-c943-429f-b81b-02f428d6ed06"
+          },
+          "isActive": true
+        },
+        {
+          "title": "",
+          "description": "In the early 1990s, Crossroads was well on its way multiplying disciples, but the church was having a major problem finding resources that would accomplish its mission. While a lot of resources provided insight on how to have a discipleship program in a church, there were few resources that taught how to build a church that entirely revolved around a Jesus-style strategy for disciple making.",
+          "image": {
+            "name": "Content/history-2",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2Fhistory-2.PNG?alt=media&token=34a67ae1-7124-405a-b739-00395a6a5659"
+          },
+          "isActive": true
+        },
+        {
+          "title": "",
+          "description": "Out of this need, Ken began writing his own curriculum for Crossroads. He emphasized important topics in his writing like how to define a disciple, how to train a disciple, how to multiply disciples, and how to create church and small group environments that multiply disciples. Ken’s curriculum was a huge hit with the Crossroads, and pretty soon, disciples and small groups were multiplying exponentially in the church.",
+          "image": {
+            "name": "Content/history-3",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2Fhistory-3.PNG?alt=media&token=75dcda00-f148-489d-a885-794276e2235c"
+          },
+          "isActive": true
+        },
+        {
+          "title": "",
+          "description": "Under Ken’s leadership, Crossroads has grown to 3,000+ in attendance, meets on three campuses, and has planted eight other churches as of 2020. In 2001, Ken decided to make his resources available to other churches. He founded Impact Discipleship Ministries as a non-profit of Crossroads Church specifically for the purpose of providing disciple making resources and training. Today, Impact Discipleship Ministries serves pastors, churches, and individuals all over the world.",
+          "image": {
+            "name": "Content/history-4",
+            "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2Fhistory-4.PNG?alt=media&token=23516f82-74de-423a-adb5-12e49531678e"
+          },
+          "isActive": true
+        }
+      ]
+    },
+    {
+      "key": "countries",
+      "type": "countries",
       "isActive": true,
       "heading": "<strong>15</strong>",
-      "body": "<h3>Countries with <br> Disciple-Making <br> Churches</h3>"
-    },
-    {
-      "key": "countries-copy",
-      "isActive": true,
-      "body": "<h3><strong>Impact works with churches, pastors, and individuals all over the world to be and build disciples of Jesus.</strong></h3>\n<h5>We currently have Disciple-Making Church partners in the <strong>United States, Montenegro, Brazil, Dominican Republic, Haiti, the Philippines, Zambia, India, Thailand, Kosovo, Albania, Serbia, Italy, Cambodia</strong>, and closed countries that will not be listed here for safety purposes.</h5>"
+      "subheading": "<h3>Countries with <br> Disciple-Making <br> Churches</h3>",
+      "body": "<h3><strong>Impact works with churches, pastors, and individuals all over the world to be and build disciples of Jesus.</strong></h3>\n<h5>We currently have Disciple-Making Church partners in the <strong>United States, Montenegro, Brazil, Dominican Republic, Haiti, the Philippines, Zambia, India, Thailand, Kosovo, Albania, Serbia, Italy, Cambodia</strong>, and closed countries that will not be listed here for safety purposes.</h5>",
+      "image": {
+        "name": "Shared/yellow-world-banner",
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fyellow-world-banner.PNG?alt=media&token=a2f4b0e2-dacb-4101-b6f6-8de82c5de4dc"
+      }
     }
   ],
   "equipping-groups": [

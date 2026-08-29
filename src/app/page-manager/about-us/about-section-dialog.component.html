@@ -1,0 +1,152 @@
+<h2 mat-dialog-title>{{ kind.label }}</h2>
+
+<mat-dialog-content class="asd">
+  <p class="asd__blurb">{{ kind.blurb }}</p>
+
+  @if (fields.heading) {
+    <mat-form-field appearance="outline" class="asd__field">
+      <mat-label>{{ headingLabel }}</mat-label>
+      <input matInput [(ngModel)]="section.heading">
+      <mat-hint>Bold is written as &lt;strong&gt;like this&lt;/strong&gt;.</mat-hint>
+    </mat-form-field>
+  }
+
+  @if (fields.subheading) {
+    <mat-form-field appearance="outline" class="asd__field">
+      <mat-label>{{ subheadingLabel }}</mat-label>
+      <input matInput [(ngModel)]="section.subheading">
+    </mat-form-field>
+  }
+
+  @if (fields.body) {
+    <div class="asd__rich">
+      <label class="asd__rich-label">Copy</label>
+      <quill-editor [(ngModel)]="section.body" [modules]="richTextModules"></quill-editor>
+    </div>
+  }
+
+  @if (fields.video) {
+    <mat-form-field appearance="outline" class="asd__field">
+      <mat-label>YouTube link</mat-label>
+      <input matInput [(ngModel)]="section.videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+      <mat-hint>
+        Paste the link from YouTube&rsquo;s address bar or its Share button &mdash;
+        the video id is worked out on save.
+      </mat-hint>
+    </mat-form-field>
+  }
+
+  @if (fields.image) {
+    <div class="asd__image">
+      <div class="asd__image-label">{{ imageLabel }}</div>
+      @if (section.image; as image) {
+        <img class="asd__image-thumb" [src]="image.url" [alt]="image.name">
+      } @else {
+        <div class="asd__image-empty">No picture &mdash; this section will draw a gap</div>
+      }
+      <div class="asd__image-actions">
+        <button mat-stroked-button type="button" (click)="showImageUploader()">
+          {{ section.image ? 'Change' : 'Choose' }} picture
+        </button>
+        @if (section.image) {
+          <button mat-button type="button" (click)="clearImage()">Remove</button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (fields.cta) {
+    <div class="asd__cta">
+      <mat-form-field appearance="outline" class="asd__field">
+        <mat-label>Button text</mat-label>
+        <input matInput [(ngModel)]="section.ctaTitle">
+        <mat-hint>Leave empty for no button.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="asd__field">
+        <mat-label>Button goes to</mat-label>
+        <mat-select [(ngModel)]="section.ctaUrl">
+          @for (d of destinations; track d.value) {
+            <mat-option [value]="d.value">{{ d.text }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+
+  @if (fields.entries) {
+    <div class="asd__entries">
+      <div class="asd__entries-head">
+        <h3 class="asd__entries-title">Entries</h3>
+        <button mat-stroked-button type="button" (click)="addEntry()">
+          <mat-icon>add</mat-icon> Add entry
+        </button>
+      </div>
+      <p class="asd__entries-note">
+        Entries alternate left and right down the centre line, by position &mdash;
+        so dragging one somewhere new never leaves two photos on the same side.
+        A year is optional: it draws a big marker above that entry.
+      </p>
+
+      @if (!entries.length) {
+        <p class="asd__entries-empty">No entries &mdash; the timeline draws an empty line.</p>
+      }
+
+      <div cdkDropList class="asd__entry-list" (cdkDropListDropped)="reorderEntries($event)">
+        @for (entry of entries; track $index) {
+          <div class="asd__entry" cdkDrag [class.asd__entry--off]="!entry.isActive">
+            <mat-icon class="asd__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+
+            <button type="button" class="asd__entry-image" (click)="showImageUploader($index)"
+                    [matTooltip]="entry.image ? 'Change this photo' : 'Choose a photo'">
+              @if (entry.image) {
+                <img [src]="entry.image.url" [alt]="entry.title">
+              } @else {
+                <mat-icon>add_photo_alternate</mat-icon>
+              }
+            </button>
+
+            <div class="asd__entry-fields">
+              <div class="asd__entry-top">
+                <mat-form-field appearance="outline" class="asd__entry-year">
+                  <mat-label>Year</mat-label>
+                  <input matInput [(ngModel)]="entry.title" placeholder="optional">
+                </mat-form-field>
+                <span class="asd__entry-side">{{ sideOf($index) }}</span>
+              </div>
+              <mat-form-field appearance="outline" class="asd__entry-copy">
+                <mat-label>Copy</mat-label>
+                <textarea matInput rows="4" [(ngModel)]="entry.description"></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="asd__entry-side-col">
+              <mat-slide-toggle [(ngModel)]="entry.isActive"
+                                [matTooltip]="entry.isActive ? 'Showing' : 'Hidden'">
+              </mat-slide-toggle>
+              <button type="button" class="asd__icon-btn asd__icon-btn--danger"
+                      matTooltip="Remove this entry" (click)="removeEntry($index)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-flat-button color="primary" type="button" (click)="onSave()">SAVE</button>
+</mat-dialog-actions>
+
+@if (isImageUploaderVisible$ | async) {
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+}

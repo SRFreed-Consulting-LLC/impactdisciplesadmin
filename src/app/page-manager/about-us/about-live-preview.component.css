@@ -1,0 +1,319 @@
+/* A picture of another application: colours are LITERAL here, not theme
+   tokens, so this block does not drift when the admin theme changes - the
+   same rule the home page's preview follows. */
+
+:host {
+  display: block;
+  min-height: 0;
+}
+
+.apv-empty {
+  border: 1px dashed var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.apv-frame {
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  font-family: 'Lato', system-ui, sans-serif;
+  color: #1c1c1c;
+}
+
+/* A phone frame, centred. It does NOT scroll: the rail around it already
+   does, and a second scroller inside a scrolling column sends a wheel over
+   the preview to the wrong element. */
+.apv-frame--mobile {
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.apv-header {
+  background: #1c1c1c;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.apv-header__mark { font-weight: 900; letter-spacing: 0.04em; }
+.apv-header__nav { color: #cfcfcf; }
+
+/* Shared type. -webkit-line-clamp keeps a wordy section from growing tall
+   enough to push the rest of the page out of the frame. */
+.apv-h {
+  display: block;
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.apv-p {
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #6a6a6a;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.apv-rule {
+  display: block;
+  width: 34px;
+  border-top: 2px solid #ffcc00;
+  margin: 4px 0;
+}
+
+.apv-btn {
+  align-self: flex-start;
+  background: #588ac7;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 8px;
+  padding: 4px 9px;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------------ story */
+
+.apv-story {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f7f7f7;
+  border-bottom: 1px solid #ececec;
+}
+
+/* The picture side alternates - flipping with row-reverse rather than
+   reordering the markup keeps the copy first for a screen reader. */
+.apv-story--flip { flex-direction: row-reverse; }
+
+.apv-story__art {
+  flex: 0 0 42%;
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  background-color: #e2e2e2;
+}
+
+.apv-story__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ------------------------------------------------------------ banner */
+
+.apv-banner {
+  height: 86px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a2a;
+  display: grid;
+  place-items: center;
+}
+
+.apv-banner__title {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* ----------------------------------------------------------- mission */
+
+.apv-mission {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+}
+
+.apv-mission__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.apv-mission__still {
+  flex: 0 0 46%;
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  background-color: #e9e9e9;
+  display: grid;
+  place-items: center;
+}
+
+.apv-play {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #1c1c1c;
+  font-size: 7px;
+  display: grid;
+  place-items: center;
+  padding-left: 2px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------------------------------------------------------- timeline */
+
+.apv-timeline {
+  position: relative;
+  padding: 10px 12px 14px;
+}
+
+/* The centre line the entries hang off, same as the real page. */
+.apv-timeline__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: #1c1c1c;
+}
+
+.apv-year {
+  text-align: center;
+  font-weight: 900;
+  font-size: 22px;
+  color: #1c1c1c;
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  padding: 2px 0;
+}
+
+.apv-year--small { font-size: 14px; }
+
+.apv-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.apv-entry--flip { flex-direction: row-reverse; }
+
+.apv-entry__copy {
+  flex: 1 1 50%;
+  min-width: 0;
+  background: #ffffff;
+  font-size: 7.5px;
+  line-height: 1.35;
+  color: #4a4a4a;
+  padding: 5px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.apv-entry__art {
+  flex: 1 1 50%;
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  background-color: #e2e2e2;
+}
+
+/* --------------------------------------------------------- countries */
+
+.apv-countries {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  background-size: cover;
+  background-position: center;
+  background-color: #ffcc00;
+}
+
+.apv-countries__left {
+  flex: 0 0 34%;
+  text-align: center;
+}
+
+.apv-countries__figure {
+  display: block;
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.apv-countries__label {
+  display: block;
+  font-size: 8px;
+  line-height: 1.25;
+}
+
+.apv-countries__right {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 8px;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+/* ----------------------------------------------------------- other */
+
+.apv-unknown {
+  padding: 14px 12px;
+  font-size: 10px;
+  color: #8a8a8a;
+  background: #f2f2f2;
+  border-top: 1px dashed #d8d8d8;
+  border-bottom: 1px dashed #d8d8d8;
+  text-align: center;
+}
+
+.apv-footer {
+  background: #101820;
+  color: #cfcfcf;
+  font-size: 8px;
+  padding: 12px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.apv-footer__note { color: #6f7c88; font-style: italic; }
+
+/* Stacked on a phone frame - the real site does the same. */
+.apv-frame--mobile .apv-story,
+.apv-frame--mobile .apv-mission,
+.apv-frame--mobile .apv-countries {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.apv-frame--mobile .apv-story__art,
+.apv-frame--mobile .apv-mission__still {
+  flex: 0 0 auto;
+}
