@@ -264,9 +264,19 @@ export class PageStackComponent implements OnChanges {
   }
 }
 
-/** Strips markup - a heading may carry <strong>, and a row is one line. */
+/**
+ * Strips markup - a heading may carry <strong>, and a row is one line.
+ *
+ * A line break becomes a SPACE, like the preview's own version: a heading
+ * written "Your discipleship library,<br>in your pocket." otherwise summarises
+ * as "library,in your pocket".
+ */
 function plain(html: string | undefined): string {
-  return (html ?? '').replace(/<[^>]+>/g, '').trim();
+  return (html ?? '')
+    .replace(/<br\s*\/?>|<\/(p|div|h[1-6]|li|ul|ol|tr)>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 
