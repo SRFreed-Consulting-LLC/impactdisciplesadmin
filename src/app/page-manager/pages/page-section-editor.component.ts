@@ -1,7 +1,6 @@
-import { Component, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { Component, EventEmitter, HostListener, Input, OnDestroy, Output } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject, debounceTime } from 'rxjs';
 import {
   PageContentBlock, PageContentItem
 } from '@impact-common/shared/models/domain/page-content.model';
@@ -13,41 +12,61 @@ import {
   WEB_CONFIG_AMOUNTS, pluralise
 } from './page-section-catalogue';
 
-export interface PageSectionDialogData {
-  section: PageContentBlock;
-  kind: PageSectionKind;
-}
+/** How long to wait after a keystroke before showing it in the preview.
+ *  Short enough to feel immediate, long enough that a sentence is not
+ *  twenty reloads of a frame. */
+const LIVE_PREVIEW_DEBOUNCE_MS = 250;
 
 /**
  * Edits ONE section of ONE public page.
  *
- * One dialog for every type on every page: which fields a type uses, and what
+ * One editor for every type on every page: which fields a type uses, and what
  * they are called on that page, is declared once in the catalogue - so a new
  * section type that reuses existing fields needs no change here.
  *
- * It does NOT save. It edits a copy and hands it back on close, and the stack
- * screen writes it - because the whole page is one document and a per-section
- * write would race the ordering. That is the difference from
- * BaseEntityDialogComponent, which owns its own save; extending it here would
- * mean two writers for one document.
+ * IT WAS A DIALOG UNTIL 2026-08-29, and the change is not cosmetic. A pop-up
+ * has to be small enough to sit over the screen, which meant a rich-text box
+ * at 220px and a seven-passage list scrolling inside a scroller. The screen
+ * hosts it full-width now, beside a preview of the section being edited.
  *
- * Order and Live are not here either. They are single facts the stack writes
- * the moment they change.
+ * IT STILL DOES NOT SAVE. It edits a copy the stack screen owns and hands
+ * changes back; the stack writes, because the whole page is one document and
+ * a per-section write would race the ordering.
+ *
+ * `dirty` is what makes the preview live. Rather than an ngModelChange on
+ * every one of two dozen bindings, it listens for `input` on its own host -
+ * which covers every text box, textarea and rich-text editor, because those
+ * all fire it and it bubbles. What does NOT bubble to here is a Material
+ * select (its options live in a CDK overlay outside this component) or a
+ * slide toggle, so those carry an explicit output in the template. The
+ * uploader calls it directly on close.
  */
 @Component({
-    selector: 'app-page-section-dialog',
-    templateUrl: './page-section-dialog.component.html',
-    styleUrls: ['./page-section-dialog.component.css'],
+    selector: 'app-page-section-editor',
+    templateUrl: './page-section-editor.component.html',
+    styleUrls: ['./page-section-editor.component.css'],
     standalone: false
 })
-export class PageSectionDialogComponent {
+export class PageSectionEditorComponent implements OnDestroy {
   readonly richTextModules = RICH_TEXT_TOOLBAR;
   readonly amounts = WEB_CONFIG_AMOUNTS;
   readonly givingDestinations = GIVING_DESTINATIONS;
   readonly icons = ICON_CHOICES;
 
-  readonly section: PageContentBlock;
-  readonly kind: PageSectionKind;
+  /**
+   * The WORKING COPY, owned by the stack screen. Mutated in place through
+   * ngModel; the stack clones before handing it over, so cancelling costs
+   * nothing.
+   */
+  @Input({ required: true }) section!: PageContentBlock;
+  @Input({ required: true }) kind!: PageSectionKind;
+
+  /** Every change, debounced - what drives the live preview beside it. */
+  @Output() dirty = new EventEmitter<PageContentBlock>();
+  @Output() save = new EventEmitter<PageContentBlock>();
+  /** `cancelled`, not `cancel` - that is a native DOM event name and an
+   *  output sharing one is ambiguous at the call site. */
+  @Output() cancelled = new EventEmitter<void>();
 
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
   /** Which entry is picking a picture, or null for the section's own. */
@@ -56,20 +75,11 @@ export class PageSectionDialogComponent {
 
   destinations: { text: string; value: string }[] = [];
 
-  // inject() runs in FIELD INITIALIZER order, so anything a later field
-  // depends on has to be declared before it - see CLAUDE.md. These two are
-  // read in the constructor, which runs after every initializer, so order
-  // between them does not matter.
-  private readonly dialogRef =
-    inject<MatDialogRef<PageSectionDialogComponent, PageContentBlock | undefined>>(MatDialogRef);
+  private readonly edits = new Subject<void>();
 
   constructor() {
-    const data = inject<PageSectionDialogData>(MAT_DIALOG_DATA);
-    this.section = data.section;
-    this.kind = data.kind;
-    if (this.kind.fields.entries && !this.section.items) {
-      this.section.items = [];
-    }
+    this.edits.pipe(debounceTime(LIVE_PREVIEW_DEBOUNCE_MS))
+      .subscribe(() => this.dirty.emit(this.section));
 
     menuData.forEach((menu) => {
       this.destinations.push({ text: menu.title, value: menu.link });
@@ -83,6 +93,27 @@ export class PageSectionDialogComponent {
     // at #history, which is the banner further down that same page.
     this.destinations.push({ text: 'The banner on this page', value: '#history' });
     this.destinations.push({ text: 'External', value: 'external' });
+  }
+
+  ngOnDestroy(): void {
+    this.edits.complete();
+  }
+
+  /**
+   * Anything typed anywhere inside this editor.
+   *
+   * `input` covers every text box, textarea and rich-text editor at once,
+   * because they all fire it and it bubbles - which is why there is not an
+   * ngModelChange on each of two dozen bindings. A Material select and a
+   * slide toggle do NOT reach here (a select's options render in a CDK
+   * overlay outside this component), so those two carry an explicit output
+   * in the template and call this.
+   */
+  @HostListener('input')
+  edited(): void {
+    // A list that does not exist yet must not be undefined by the time the
+    // preview draws it - see addEntry.
+    this.edits.next();
   }
 
   get fields() {
@@ -148,14 +179,17 @@ export class PageSectionDialogComponent {
       ...(this.entryFields.column ? { column: 'left' as const } : {})
     };
     this.section.items = [...this.entries, seed];
+    this.edited();
   }
 
   removeEntry(index: number): void {
     this.section.items = this.entries.filter((_, i) => i !== index);
+    this.edited();
   }
 
   reorderEntries(event: CdkDragDrop<PageContentItem[]>): void {
     moveItemInArray(this.entries, event.previousIndex, event.currentIndex);
+    this.edited();
   }
 
   /**
@@ -200,23 +234,25 @@ export class PageSectionDialogComponent {
     this.target = null;
     this.card.image = undefined;
     this.isImageUploaderVisible$.next(false);
+    this.edited();
   }
 
   clearImage(): void {
     this.section.image = undefined;
+    this.edited();
   }
 
   // ---------------------------------------------------------------- close
 
   onCancel(): void {
-    this.dialogRef.close(undefined);
+    this.cancelled.emit();
   }
 
   onSave(): void {
     if (this.fields.video) {
       this.section.videoId = parseVideoId(this.section.videoUrl);
     }
-    this.dialogRef.close(this.section);
+    this.save.emit(this.section);
   }
 }
 

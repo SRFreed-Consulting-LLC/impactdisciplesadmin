@@ -1,6 +1,5 @@
 import { Component, Input, OnChanges, inject } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { PageContentBlock, PageContentModel } from '@impact-common/shared/models/domain/page-content.model';
 import { PageContentService } from 'src/app/common/services/data/page-content.service';
@@ -8,7 +7,6 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { EditablePage, PageSectionKind, kindFor, pluralise } from './page-section-catalogue';
-import { PageSectionDialogComponent } from './page-section-dialog.component';
 import { PreviewDevice } from './page-live-preview.component';
 
 /**
@@ -50,7 +48,6 @@ import { PreviewDevice } from './page-live-preview.component';
 export class PageStackComponent implements OnChanges {
   private readonly service = inject(PageContentService);
   private readonly permissionService = inject(PermissionService);
-  private readonly dialog = inject(MatDialog);
   private readonly confirmService = inject(ConfirmService);
   private readonly snackbar = inject(SnackbarService);
 
@@ -73,6 +70,25 @@ export class PageStackComponent implements OnChanges {
    * cannot be told to refresh itself; changing its src is the only way.
    */
   previewRevision = 0;
+
+  /**
+   * The section being edited full-screen, or null for the stack.
+   *
+   * A WORKING COPY, not the row: cancelling has to cost nothing, and the
+   * preview beside it shows this rather than what is stored.
+   */
+  editing: PageContentBlock | null = null;
+  editingKind: PageSectionKind | null = null;
+
+  /**
+   * The same object, re-referenced on every keystroke.
+   *
+   * The previewer takes it as an @Input, and Angular only notices an input
+   * change when the REFERENCE changes - mutating `editing` in place would
+   * post nothing. So the editor's debounced output lands here as a shallow
+   * copy, which is also what gets posted into the frame.
+   */
+  editingLive: PageContentBlock | null = null;
 
   // ngOnChanges, not ngOnInit. Today Page Manager gives each tab its own @if,
   // so switching pages destroys this component and builds another - and
@@ -169,31 +185,51 @@ export class PageStackComponent implements OnChanges {
 
     // A section with nothing to edit has no dialog to open.
     if (this.isEditable(kind)) {
-      await this.edit(section);
+      this.edit(section);
     }
   }
 
-  async edit(section: PageContentBlock): Promise<void> {
+  /**
+   * Opens the section FULL SCREEN rather than in a pop-up.
+   *
+   * It was a dialog until 2026-08-29. A pop-up has to be small enough to
+   * float over the screen, which meant a rich-text box at 220px and a
+   * seven-passage list scrolling inside a scroller - and no room beside it to
+   * show what the section actually looks like.
+   */
+  edit(section: PageContentBlock): void {
     const kind = this.kindOf(section);
-    if (!kind || !this.isEditable(kind)) {
+    if (!kind || !this.isEditable(kind) || !this.canEdit() || this.loadFailed) {
       return;
     }
-    const ref = this.dialog.open(PageSectionDialogComponent, {
-      width: '980px', maxWidth: '96vw', maxHeight: '94vh',
-      data: { section: structuredClone(section), kind }
-    });
-    const saved: PageContentBlock | undefined = await ref.afterClosed().toPromise();
-    if (!saved) {
-      return;
-    }
-    // The dialog edits a COPY and hands it back; this screen owns the write,
+    this.editingKind = kind;
+    this.editing = structuredClone(section);
+    this.editingLive = { ...this.editing };
+  }
+
+  /** Every keystroke, debounced by the editor. A new REFERENCE each time, or
+   *  the previewer would not see an input change - see editingLive. */
+  onEditing(section: PageContentBlock): void {
+    this.editingLive = { ...section };
+  }
+
+  closeEditor(): void {
+    this.editing = null;
+    this.editingKind = null;
+    this.editingLive = null;
+  }
+
+  async saveEditor(saved: PageContentBlock): Promise<void> {
+    const label = this.editingKind?.label ?? 'Section';
+    // The editor edits a COPY and hands it back; this screen owns the write,
     // because the document holds every section and a per-section save would
     // race the ordering.
     const i = this.sections.findIndex((s) => s.key === saved.key);
     if (i >= 0) {
       this.sections[i] = saved;
-      await this.persist(`${kind.label} saved`);
+      await this.persist(`${label} saved`);
     }
+    this.closeEditor();
   }
 
   async remove(section: PageContentBlock): Promise<void> {

@@ -18,7 +18,7 @@ import { HomeSlidesDialogComponent } from './home/home-slides-dialog.component';
 // needs no change here. Replaced the slot editor and the three About Us-only
 // components on 2026-08-29.
 import { PageStackComponent } from './pages/page-stack.component';
-import { PageSectionDialogComponent } from './pages/page-section-dialog.component';
+import { PageSectionEditorComponent } from './pages/page-section-editor.component';
 import { PageLivePreviewComponent } from './pages/page-live-preview.component';
 import { CoachingPageComponent } from './coaching-page/coaching-page.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
@@ -100,7 +100,7 @@ import { QuillModule } from 'ngx-quill';
     HomeSectionDialogComponent,
     HomeSlidesDialogComponent,
     PageStackComponent,
-    PageSectionDialogComponent,
+    PageSectionEditorComponent,
     PageLivePreviewComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,

@@ -1,8 +1,9 @@
 import {
   AfterViewInit, Component, DestroyRef, ElementRef, Input, NgZone,
-  OnChanges, ViewChild, inject
+  OnChanges, SimpleChanges, ViewChild, inject
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { PageContentBlock } from '@impact-common/shared/models/domain/page-content.model';
 import { environment } from 'src/environments/environment';
 
 /** Which width the framed site is told it is. Lives here rather than in a
@@ -82,7 +83,27 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
    */
   @Input() revision = 0;
 
+  /**
+   * One section's key, to preview it on its own rather than the whole page.
+   *
+   * Passed to the site as `?section=`, which narrows the page to that block
+   * and hides the header, footer and dock around it - the editor's rail is
+   * showing the section being worked on, not the site it lives in.
+   */
+  @Input() sectionKey?: string;
+
+  /**
+   * The section AS IT IS BEING EDITED, unsaved.
+   *
+   * Posted into the frame so the preview shows a change before it is
+   * committed. Everything else about this previewer shows saved state; this
+   * is the one thing that cannot, because the whole point of it is to be
+   * ahead of the save.
+   */
+  @Input() liveSection?: PageContentBlock;
+
   @ViewChild('rail') railRef?: ElementRef<HTMLElement>;
+  @ViewChild('frame') frameRef?: ElementRef<HTMLIFrameElement>;
 
   src?: SafeResourceUrl;
   loaded = false;
@@ -127,7 +148,15 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
     });
   }
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    // The in-progress section changes on every keystroke and must NOT reload
+    // the frame - it is posted into the running page instead. Reloading here
+    // would blank the preview between every two letters.
+    if (isOnly(changes, 'liveSection')) {
+      this.postLiveSection();
+      return;
+    }
+
     this.loaded = false;
     this.contentHeight = ASSUMED_HEIGHT;
     // A cache-buster rather than a reload call: re-assigning src is the only
@@ -138,9 +167,34 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
     // over the preview covers the very sections being arranged AND fires a
     // real impression beacon from a staff browser. See the web repo's
     // shared/utils/admin-preview.ts.
+    const section = this.sectionKey ? `&section=${encodeURIComponent(this.sectionKey)}` : '';
     this.src = this.sanitizer.bypassSecurityTrustResourceUrl(
-      `${this.shownUrl}?adminPreview=${this.revision}`
+      `${this.shownUrl}?adminPreview=${this.revision}${section}`
     );
+  }
+
+  /**
+   * Hands the framed page the section as it currently stands.
+   *
+   * Targeted at the preview site's ORIGIN rather than '*': there is no reason
+   * for this to be readable by anything else that happens to be listening,
+   * and the receiving side checks the sender's origin in return.
+   */
+  private postLiveSection(): void {
+    const frame = this.frameRef?.nativeElement?.contentWindow;
+    if (!frame || !this.liveSection) {
+      return;
+    }
+    try {
+      frame.postMessage(
+        { impactPreviewSection: this.liveSection },
+        new URL(environment.previewSiteUrl).origin
+      );
+    } catch {
+      // A frame mid-navigation, or a malformed configured URL. The next
+      // keystroke posts again; a preview one edit behind beats a thrown
+      // error in an editor.
+    }
   }
 
   /** The address being framed, shown under it so nobody debugs a stale
@@ -185,6 +239,10 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
 
   onLoad(): void {
     this.loaded = true;
+    // A reload starts the page from what is SAVED, so an edit in progress has
+    // to be handed over again - otherwise opening a section, typing, and
+    // having the frame reload for any reason would show the old wording back.
+    this.postLiveSection();
   }
 
   /**
@@ -203,4 +261,17 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
     }
     this.contentHeight = Math.ceil(height);
   }
+}
+
+/**
+ * True when a change set contains ONE named input and nothing else.
+ *
+ * The distinction this draws is load-bearing: a new `liveSection` is posted
+ * into the running frame, but a new `path`, `device` or `revision` reloads
+ * it. Treating them alike either blanks the preview on every keystroke or
+ * never picks up a device switch.
+ */
+function isOnly(changes: SimpleChanges, key: string): boolean {
+  const keys = Object.keys(changes);
+  return keys.length === 1 && keys[0] === key;
 }

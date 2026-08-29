@@ -44,9 +44,10 @@
    Team Page dialog and the coach dialog all carry the same fix and say so -
    this is the sixth copy, and the reason each one comments it.
 
-   220px is about eight lines: enough that a paragraph is editable without
-   scrolling, short enough that a section of six fields is still scannable.
-   .ql-editor keeps its own internal scroll for longer passages. */
+   320px is about twelve lines. It was 220 while this was a pop-up, which had
+   to fit over the screen; hosted full-width there is room for a passage to
+   be read as a passage. .ql-editor keeps its own internal scroll for longer
+   ones. */
 .psd__rich {
   margin-bottom: 12px;
   display: flex;
@@ -54,7 +55,7 @@
 }
 
 .psd__rich quill-editor {
-  height: 220px;
+  height: 320px;
   min-height: 0;
 }
 
@@ -273,7 +274,7 @@
 }
 
 /* Shorter than the section's own box: an entry's copy is a few lines, and
-   six of these at 220px would make the list unscannable. */
+   eight of these at full height would make the list unscannable. */
 .psd__entry-rich {
   margin-bottom: 12px;
   display: flex;
@@ -281,7 +282,7 @@
 }
 
 .psd__entry-rich quill-editor {
-  height: 160px;
+  height: 200px;
   min-height: 0;
 }
 

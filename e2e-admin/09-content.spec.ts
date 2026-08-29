@@ -84,6 +84,34 @@ test.describe('[content] Website Content', () => {
     });
   }
 
+  test('a section opens FULL SCREEN, previews itself alone, and cancels back', async ({ page }) => {
+    // It was a pop-up until 2026-08-29. The three things worth pinning are
+    // that the stack gives way rather than being covered, that the rail
+    // narrows to the one section being edited, and that backing out returns
+    // to the list - a dead end here would strand staff in an editor.
+    await gotoTab(page, 'page-manager', 'seminars');
+    const stack = page.locator('app-page-stack');
+    await expect(stack.locator('.ps__section').first()).toBeVisible({ timeout: 30_000 });
+
+    await stack.locator('.ps__section', { hasText: 'Overview' }).first()
+      .locator('.ps__icon-btn').first().click();
+
+    await expect(page.locator('.ps--editing')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('app-page-section-editor')).toBeVisible();
+    // The stack is GONE, not merely behind something.
+    await expect(page.locator('.ps__stack')).toHaveCount(0);
+
+    // The frame asks the site for that one section, which is what makes the
+    // page drop its header, footer and every other section.
+    await expect(page.locator('app-page-live-preview iframe'))
+      .toHaveAttribute('src', /section=overview/);
+
+    await page.getByRole('button', { name: 'CANCEL' }).click();
+
+    await expect(page.locator('.ps__stack')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('app-page-section-editor')).toHaveCount(0);
+  });
+
   test('Web Config loads', async ({ page }) => {
     await gotoTab(page, 'page-manager', 'web-config');
     await expect(page.locator('app-web-config')).toBeVisible({ timeout: 30_000 });

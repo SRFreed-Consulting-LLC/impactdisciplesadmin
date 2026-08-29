@@ -14,6 +14,11 @@ describe('PageLivePreviewComponent', () => {
   const post = (data: unknown) =>
     window.dispatchEvent(new MessageEvent('message', { data }));
 
+  // Any change set that is not JUST `liveSection` reloads the frame. The
+  // distinction is load-bearing - see isOnly() in the component - so the
+  // specs are explicit about which kind they are triggering.
+  const reload = { revision: {} } as never;
+
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [PageLivePreviewComponent] });
     component = TestBed.inject(PageLivePreviewComponent);
@@ -21,7 +26,7 @@ describe('PageLivePreviewComponent', () => {
   });
 
   it('frames the page it was given, on the site this admin is paired with', () => {
-    component.ngOnChanges();
+    component.ngOnChanges(reload);
 
     const url = TestBed.inject(DomSanitizer)
       .sanitize(SecurityContext.RESOURCE_URL, component.src!) ?? '';
@@ -32,11 +37,11 @@ describe('PageLivePreviewComponent', () => {
 
   it('changes the address on every revision - the only way to reload a frame', () => {
     component.revision = 1;
-    component.ngOnChanges();
+    component.ngOnChanges(reload);
     const first = String(component.src);
 
     component.revision = 2;
-    component.ngOnChanges();
+    component.ngOnChanges(reload);
 
     expect(String(component.src)).not.toBe(first);
   });
@@ -82,6 +87,31 @@ describe('PageLivePreviewComponent', () => {
     post(null);
 
     expect(component.frameHeight).toBe(4210);
+  });
+
+  it('narrows to one section when the editor is open', () => {
+    component.sectionKey = 'overview';
+    component.ngOnChanges(reload);
+
+    expect(String(component.src)).toContain('section=overview');
+  });
+
+  it('leaves the whole page alone when no section is being edited', () => {
+    component.ngOnChanges(reload);
+
+    expect(String(component.src)).not.toContain('section=');
+  });
+
+  it('does NOT reload the frame for a keystroke', () => {
+    // A new `liveSection` is posted into the running page. Reloading on it
+    // would blank the preview between every two letters.
+    component.ngOnChanges(reload);
+    const before = String(component.src);
+
+    component.liveSection = { key: 'overview', heading: 'typing' };
+    component.ngOnChanges({ liveSection: {} } as never);
+
+    expect(String(component.src)).toBe(before);
   });
 
   it('names the address it is showing, without the cache-buster', () => {

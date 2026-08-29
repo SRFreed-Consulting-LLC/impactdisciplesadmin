@@ -27,6 +27,57 @@
   overflow-y: auto;
 }
 
+/* ------------------------------------------------------ editing a section */
+
+/* Wider than the stack's rail. Editing is where the preview earns its space:
+   the section is on its own, so a bigger picture of it is worth more than a
+   bigger form - the form is already full-width where it used to be a pop-up
+   980px across. */
+.ps--editing .ps__preview {
+  flex: 0 0 520px;
+}
+
+.ps__head--editing {
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+.ps__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px 4px 0;
+  border-radius: var(--app-radius-control);
+  flex: 0 0 auto;
+}
+
+.ps__back:hover {
+  color: var(--app-accent);
+}
+
+.ps__editing-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ps__editing-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 /* ----------------------------------------------------------------- header */
 
 .ps__head {

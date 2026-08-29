@@ -1,6 +1,7 @@
-<h2 mat-dialog-title>{{ kind.label }}</h2>
-
-<mat-dialog-content class="psd">
+<!-- No dialog scaffolding: this is hosted full-width by the stack screen, not
+     floated over it. The fields are otherwise the same ones the pop-up had -
+     see the component for what changed and why. -->
+<div class="psd">
   <p class="psd__blurb">{{ kind.blurb }}</p>
 
   <!-- What this screen will NOT change. Said before the fields rather than
@@ -85,7 +86,7 @@
       </mat-form-field>
       <mat-form-field appearance="outline" class="psd__field">
         <mat-label>Button goes to</mat-label>
-        <mat-select [(ngModel)]="section.ctaUrl">
+        <mat-select (selectionChange)="edited()" [(ngModel)]="section.ctaUrl">
           @for (d of destinations; track d.value) {
             <mat-option [value]="d.value">{{ d.text }}</mat-option>
           }
@@ -103,7 +104,7 @@
       </mat-form-field>
       <mat-form-field appearance="outline" class="psd__field">
         <mat-label>Second button goes to</mat-label>
-        <mat-select [(ngModel)]="section.ctaUrl2">
+        <mat-select (selectionChange)="edited()" [(ngModel)]="section.ctaUrl2">
           @for (d of destinations; track d.value) {
             <mat-option [value]="d.value">{{ d.text }}</mat-option>
           }
@@ -164,7 +165,7 @@
                 @if (entryFields.column) {
                   <mat-form-field appearance="outline" class="psd__entry-column">
                     <mat-label>Column</mat-label>
-                    <mat-select [(ngModel)]="entry.column">
+                    <mat-select (selectionChange)="edited()" [(ngModel)]="entry.column">
                       <mat-option value="left">Left</mat-option>
                       <mat-option value="right">Right</mat-option>
                     </mat-select>
@@ -173,7 +174,7 @@
                 @if (entryFields.icon) {
                   <mat-form-field appearance="outline" class="psd__entry-icon">
                     <mat-label>Icon</mat-label>
-                    <mat-select [(ngModel)]="entry.icon">
+                    <mat-select (selectionChange)="edited()" [(ngModel)]="entry.icon">
                       @for (i of icons; track i.value) {
                         <mat-option [value]="i.value">{{ i.label }}</mat-option>
                       }
@@ -198,7 +199,7 @@
                 <div class="psd__entry-amount">
                   <mat-form-field appearance="outline" class="psd__entry-price">
                     <mat-label>Price from Web Config</mat-label>
-                    <mat-select [(ngModel)]="entry.amountKey">
+                    <mat-select (selectionChange)="edited()" [(ngModel)]="entry.amountKey">
                       <mat-option [value]="undefined">No price on this one</mat-option>
                       @for (a of amounts; track a.key) {
                         <mat-option [value]="a.key">{{ a.label }}</mat-option>
@@ -231,7 +232,7 @@
               @if (entryFields.link) {
                 <mat-form-field appearance="outline" class="psd__entry-line">
                   <mat-label>{{ entrySpec?.linkLabel ?? 'Goes to' }}</mat-label>
-                  <mat-select [(ngModel)]="entry.link">
+                  <mat-select (selectionChange)="edited()" [(ngModel)]="entry.link">
                     @for (d of destinations; track d.value) {
                       <mat-option [value]="d.value">{{ d.text }}</mat-option>
                     }
@@ -253,7 +254,7 @@
                          this page redirect donations. -->
                     <mat-form-field appearance="outline" class="psd__entry-line">
                       <mat-label>Button opens</mat-label>
-                      <mat-select [(ngModel)]="entry.link">
+                      <mat-select (selectionChange)="edited()" [(ngModel)]="entry.link">
                         @for (d of givingDestinations; track d.key) {
                           <mat-option [value]="d.key">{{ d.label }}</mat-option>
                         }
@@ -262,7 +263,7 @@
                   } @else if (entryFields.cta) {
                     <mat-form-field appearance="outline" class="psd__entry-line">
                       <mat-label>Button goes to</mat-label>
-                      <mat-select [(ngModel)]="entry.ctaUrl">
+                      <mat-select (selectionChange)="edited()" [(ngModel)]="entry.ctaUrl">
                         @for (d of destinations; track d.value) {
                           <mat-option [value]="d.value">{{ d.text }}</mat-option>
                         }
@@ -274,7 +275,7 @@
             </div>
 
             <div class="psd__entry-side-col">
-              <mat-slide-toggle [(ngModel)]="entry.isActive"
+              <mat-slide-toggle (change)="edited()" [(ngModel)]="entry.isActive"
                                 [matTooltip]="entry.isActive ? 'Showing' : 'Hidden'">
               </mat-slide-toggle>
               <button type="button" class="psd__icon-btn psd__icon-btn--danger"
@@ -287,12 +288,7 @@
       </div>
     </div>
   }
-</mat-dialog-content>
-
-<mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
-  <button mat-flat-button color="primary" type="button" (click)="onSave()">SAVE</button>
-</mat-dialog-actions>
+</div>
 
 @if (isImageUploaderVisible$ | async) {
   <app-image-uploader
