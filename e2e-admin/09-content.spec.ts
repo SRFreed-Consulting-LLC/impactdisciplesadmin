@@ -69,11 +69,18 @@ test.describe('[content] Website Content', () => {
       await expect(stack.locator('.ps__empty')).toHaveCount(0);
       await expect(stack.locator('.ps__failed')).toHaveCount(0);
 
-      // No stored section the admin cannot name, and none the preview cannot
-      // draw. These are the two ways a catalogue and a document drift apart.
+      // No stored section the admin cannot name - the way a catalogue and a
+      // document drift apart. (The other half of this used to check the
+      // preview could DRAW every section; the previewer frames the real page
+      // now, so there is no drawing left to disagree with the data.)
       await expect(stack.locator('.ps__name', { hasText: 'Unknown section' })).toHaveCount(0);
-      await expect(stack.locator('.apv-unknown')).toHaveCount(0);
-      await expect(stack.locator('.apv-empty')).toHaveCount(0);
+
+      // The previewer points at the page it says it does. It frames the web
+      // app paired with this admin - :4201 under the emulator config - and
+      // getting that wrong would show a visitor a different page's preview
+      // with nothing to indicate it.
+      await expect(stack.locator('app-page-live-preview iframe'))
+        .toHaveAttribute('src', new RegExp(`${slug}\\?adminPreview=`));
     });
   }
 

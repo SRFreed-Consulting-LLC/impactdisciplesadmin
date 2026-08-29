@@ -1,28 +1,51 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
-import { PageContentBlock, PageContentItem } from '@impact-common/shared/models/domain/page-content.model';
-import { ImageModel } from '@impact-common/shared/models/utils/image.model';
-import { WebConfigModel } from '@impact-common/shared/models/utils/web-config.model';
-import { WebConfigService } from 'src/app/common/services/data/web-config.service';
+import {
+  AfterViewInit, Component, DestroyRef, ElementRef, Input, NgZone,
+  OnChanges, ViewChild, inject
+} from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { environment } from 'src/environments/environment';
-import { EditablePage, PreviewShape, kindFor } from './page-section-catalogue';
+import { EditablePage } from './page-section-catalogue';
 import { PreviewDevice } from '../home/home-live-preview.component';
 
+/** How wide the framed site is told it is, per device. The phone width is a
+ *  real one (iPhone 14 / Pixel 7 class), so the site's own breakpoints fire
+ *  exactly as they do on a phone rather than at some invented width. */
+const FRAME_WIDTH: Record<PreviewDevice, number> = { desktop: 1440, mobile: 390 };
+
+/** Before the page reports its real height. Tall enough that a short page
+ *  is not clipped in the moment before the first message lands. */
+const ASSUMED_HEIGHT = 2400;
+
 /**
- * The whole public page in miniature, in the order the stack says.
+ * The public page itself, in a scaled frame.
  *
- * Same trade as the home page's preview: recognisable BANDS - right shape,
- * right pictures, right words - and no attempt at the real typography. It is
- * here to be counted and ordered, not proofread.
+ * THIS USED TO BE A DRAWING. Until 2026-08-29 it was a miniature built from
+ * the same section list - recognisable bands, right order, right pictures,
+ * right words, its own typography. Shane asked why it did not look like the
+ * page, and the honest answer was that four of the differences were not the
+ * trade at all, they were mine: the buttons were blue where the site's are
+ * white, the gold emphasis in every heading was stripped, it drew a yellow
+ * rule under a heading that has none on these pages (an About Us element
+ * leaking through a shared shape), and the consultation banner - a 200px
+ * photo band - was a 45px grey strip. The proportions were off too: the
+ * two-column block took 47% of the preview where it takes 30% of the page.
  *
- * SHAPES, NOT TYPES. A section type says what a block IS; a shape says how it
- * LOOKS in outline, and several types share one - a story column, a copy-with-
- * video and an equipping overview are all a `split`. That is what keeps this
- * one component able to draw all eleven pages instead of a switch per page.
+ * A drawing of another application drifts from it, and every one of those
+ * five was drift. So it is the real page now, which cannot drift, and every
+ * class of bug above stops being possible rather than being fixed.
  *
- * It derives the alternating sides the SAME way the public pages do - from
- * each block's position among blocks of its own type, and from each entry's
- * position within its list. Getting that wrong here would make the preview
- * lie about the one thing staff are most likely to change.
+ * WHAT IT SHOWS IS SAVED STATE, and that is fine here rather than a
+ * compromise: this screen writes the moment anything changes - reordering, a
+ * Live toggle and a dialog Save all persist immediately - so there is no
+ * unsaved state for it to miss. The frame reloads after each write.
+ *
+ * WHICH SITE IT FRAMES is environment.previewSiteUrl, which pairs with the
+ * admin you are running: locally your own web server on 4200, and the
+ * deployed public site from a deployed admin. THE CAVEAT WORTH KNOWING: a
+ * deployed admin frames a DEPLOYED web build, so between shipping this admin
+ * and shipping the web app the preview shows the old site reading the new
+ * data. That is the same deploy-order hazard MIGRATION.md opens with, seen
+ * from another side, and it is why the frame names the address it is showing.
  */
 @Component({
   selector: 'app-page-live-preview',
@@ -30,156 +53,132 @@ import { PreviewDevice } from '../home/home-live-preview.component';
   styleUrls: ['./page-live-preview.component.css'],
   standalone: false
 })
-export class PageLivePreviewComponent implements OnInit {
-  private readonly webConfigService = inject(WebConfigService);
+export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly zone = inject(NgZone);
 
   @Input({ required: true }) page!: EditablePage;
-
-  /** Live sections only, in page order. */
-  @Input() sections: readonly PageContentBlock[] = [];
-
   @Input() device: PreviewDevice = 'desktop';
 
   /**
-   * The real prices, so a price tile shows the figure a visitor will see.
-   *
-   * Read here rather than passed in because only two pages have prices, and
-   * the service caches its one fetch for the session - so this costs nothing
-   * on the other nine.
+   * Bumped by the stack screen after every write. Changing it reloads the
+   * frame - which is the only way to refresh a cross-origin child, since
+   * contentWindow.location is not reachable from here.
    */
-  private webConfig: WebConfigModel | null = null;
+  @Input() revision = 0;
 
-  async ngOnInit(): Promise<void> {
-    try {
-      this.webConfig = (await this.webConfigService.getAll())[0] ?? null;
-    } catch {
-      // A preview without a price is worth more than a preview that throws.
-      this.webConfig = null;
-    }
-  }
+  @ViewChild('rail') railRef?: ElementRef<HTMLElement>;
 
-  get isMobile(): boolean {
-    return this.device === 'mobile';
-  }
+  src?: SafeResourceUrl;
+  loaded = false;
 
-  /** Contact is one row of two halves; everything else stacks. */
-  get isHorizontal(): boolean {
-    return !!this.page.horizontal && !this.isMobile;
-  }
+  /** The page's own height, as it reported it. */
+  private contentHeight = ASSUMED_HEIGHT;
 
-  shapeOf(section: PageContentBlock): PreviewShape | 'unknown' {
-    return kindFor(this.page, section.type)?.preview ?? 'unknown';
-  }
+  /** How much of the rail the frame has to fit into, measured on the host. */
+  private railWidth = 430;
 
-  labelOf(section: PageContentBlock): string {
-    return kindFor(this.page, section.type)?.label ?? section.type ?? 'section';
+  constructor() {
+    const onMessage = (event: MessageEvent) => this.onChildMessage(event);
+    window.addEventListener('message', onMessage);
+    this.destroyRef.onDestroy(() => window.removeEventListener('message', onMessage));
   }
 
   /**
-   * Strips markup - a heading may carry <strong>, and this is an 11px band.
-   *
-   * A LINE BREAK BECOMES A SPACE, and so does the end of a block. Stripping
-   * every tag alike ran two lines together: the Discipleship Library's hero
-   * is "Your discipleship library,<br>in your pocket." and the preview read
-   * "library,in your pocket". Inline tags still close up, because
-   * `EQUIPPING <strong>PASTORS</strong>` already carries its own space and a
-   * second one would show.
+   * The scale follows the rail's ACTUAL width rather than the 430px the
+   * stylesheet asks for, because that number changes: the rail becomes
+   * full-width below 1400px, where a fixed divisor would render the page at
+   * a third of the space it has.
    */
-  plain(html: string | undefined): string {
-    return (html ?? '')
-      .replace(/<br\s*\/?>|<\/(p|div|h[1-6]|li|ul|ol|tr)>/gi, ' ')
-      .replace(/<[^>]+>/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+  ngAfterViewInit(): void {
+    const rail = this.railRef?.nativeElement;
+    if (!rail || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    this.zone.runOutsideAngular(() => {
+      const observer = new ResizeObserver(([entry]) => {
+        const width = Math.round(entry.contentRect.width);
+        // Back inside the zone so change detection runs; this component uses
+        // the default strategy, so re-entering IS the notification and a
+        // markForCheck would be a node-scoped dependency bought for nothing.
+        if (width > 0 && width !== this.railWidth) {
+          this.zone.run(() => {
+            this.railWidth = width;
+          });
+        }
+      });
+      observer.observe(rail);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
+
+  ngOnChanges(): void {
+    this.loaded = false;
+    this.contentHeight = ASSUMED_HEIGHT;
+    // A cache-buster rather than a reload call: re-assigning src is the only
+    // navigation a parent can force on a cross-origin frame. The web app
+    // ignores an unknown query parameter.
+    const url = `${environment.previewSiteUrl.replace(/\/+$/, '')}${this.page.path}` +
+      `?adminPreview=${this.revision}`;
+    this.src = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  /** The address being framed, shown under it so nobody debugs a stale
+   *  deployed build thinking it is their own work. */
+  get shownUrl(): string {
+    return `${environment.previewSiteUrl.replace(/\/+$/, '')}${this.page.path}`;
+  }
+
+  get frameWidth(): number {
+    return FRAME_WIDTH[this.device];
+  }
+
+  get frameHeight(): number {
+    return this.contentHeight;
   }
 
   /**
-   * A picture's address AS THIS SCREEN CAN LOAD IT - which is not always the
-   * address the public page uses.
+   * Scaled to whatever width the rail actually has, so the frame is a true
+   * reduction of the page rather than a fixed guess.
    *
-   * Most pictures are absolute Firebase Storage URLs and need nothing. The
-   * Discipleship Library's screenshots are the exception: they ship with the
-   * WEB BUILD as `assets/reader/...`, so the browser resolves them against
-   * whatever origin is asking - and the admin does not have those files.
-   * Eight of them 404'd here, which is how this was found; the preview showed
-   * eight grey rectangles and the console filled up.
-   *
-   * Resolved against the public site because that is what the preview is a
-   * picture OF. A staff member who replaces one gets a Storage URL and this
-   * stops applying to it.
+   * NEVER ENLARGED. A 390px phone in a 430px rail would otherwise be blown up
+   * to 110%, which is not what a phone looks like and makes the type read as
+   * bigger than it is. Below 1:1 it shrinks; at or above, it sits at natural
+   * size and is centred.
    */
-  src(image: ImageModel | undefined): string | null {
-    const url = image?.url;
-    if (!url) {
-      return null;
-    }
-    if (/^(https?:|data:|blob:)/i.test(url)) {
-      return url;
-    }
-    return `${environment.publicSiteUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
+  get scale(): number {
+    return Math.min(1, this.railWidth / this.frameWidth);
   }
 
-  /** The same, ready to drop into a background-image. */
-  bg(image: ImageModel | undefined): string | null {
-    const url = this.src(image);
-    return url ? `url(${url})` : null;
+  /** A transform does not change layout, so the wrapper has to reserve the
+   *  scaled box itself or the source line would sit under the frame. */
+  get scaledHeight(): number {
+    return Math.round(this.frameHeight * this.scale);
   }
 
-  liveEntries(section: PageContentBlock): PageContentItem[] {
-    return (section.items ?? []).filter((e) => e.isActive);
+  get scaledWidth(): number {
+    return Math.round(this.frameWidth * this.scale);
   }
 
-  entriesIn(section: PageContentBlock, column: 'left' | 'right'): PageContentItem[] {
-    return this.liveEntries(section).filter((e) =>
-      column === 'right' ? e.column === 'right' : e.column !== 'right');
+  onLoad(): void {
+    this.loaded = true;
   }
 
   /**
-   * True when this section draws its picture on the LEFT.
+   * The framed page telling us how tall it is.
    *
-   * Counts position among sections OF THE SAME TYPE, exactly like the public
-   * page - not position in the stack, which would disagree the moment a
-   * banner sat between two story columns.
+   * Checked by SHAPE, not by origin. The origin varies across four admin
+   * environments and would be one more thing to get wrong; what arrives is a
+   * number that sets a CSS height, so the worst a hostile sender achieves is
+   * a badly-sized preview in their own browser. Anything that is not a
+   * plausible height is ignored.
    */
-  pictureLeft(section: PageContentBlock): boolean {
-    return this.typeIndex(section) % 2 === 1;
-  }
-
-  private typeIndex(section: PageContentBlock): number {
-    let n = 0;
-    for (const s of this.sections) {
-      if (s.key === section.key) {
-        return n;
-      }
-      if (s.type === section.type) {
-        n++;
-      }
+  private onChildMessage(event: MessageEvent): void {
+    const height = (event.data as { impactPageHeight?: unknown })?.impactPageHeight;
+    if (typeof height !== 'number' || !Number.isFinite(height) || height < 200 || height > 40000) {
+      return;
     }
-    return n;
-  }
-
-  /** Timeline entries and feature rows both alternate from their own
-   *  position within the list. */
-  entryOnLeft(i: number): boolean {
-    return i % 2 === 0;
-  }
-
-  chip(i: number): string {
-    return String(i + 1).padStart(2, '0');
-  }
-
-  /**
-   * The price line as a visitor sees it, resolved from Web Config.
-   *
-   * Empty where the entry names no figure or the figure cannot be resolved -
-   * the same rule the public pages follow, because a preview that showed "$0"
-   * where the site shows nothing would be the wrong kind of wrong.
-   */
-  priceLabel(entry: PageContentItem): string {
-    if (!entry.amountKey || !this.webConfig) {
-      return '';
-    }
-    const value = (this.webConfig as unknown as Record<string, unknown>)[entry.amountKey];
-    return typeof value === 'number' ? `$${value}${entry.amountSuffix ?? ''}` : '';
+    this.contentHeight = Math.ceil(height);
   }
 }

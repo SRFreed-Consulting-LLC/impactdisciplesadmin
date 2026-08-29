@@ -4,10 +4,15 @@ import { PAGE_SECTION_TYPES } from '@impact-common/shared/lists/page_section_typ
  * EVERY public page, as an ordered stack of sections staff can edit.
  *
  * ONE list drives all eleven screens: the Page Manager nav entries, each
- * page's Add menu, every row's icon and label, which fields the pop-up
- * editor shows, and how the live preview draws each section. Adding a page is
- * an entry here plus a nav-config leaf; adding a section type to a page is a
- * line in that page's `kinds`.
+ * page's Add menu, every row's icon and label, and which fields the pop-up
+ * editor shows. Adding a page is an entry here plus a nav-config leaf; adding
+ * a section type to a page is a line in that page's `kinds`.
+ *
+ * IT NO LONGER DESCRIBES THE PREVIEW. Each kind used to carry a `preview`
+ * shape naming which miniature band to draw, because the previewer was a
+ * drawing of the site. It frames the real page now (2026-08-29), so those
+ * declarations described nothing and are gone - and with them the whole class
+ * of bug where a drawing quietly stopped matching what it drew.
  *
  * WHAT A `type` IS. It names a section SHAPE, not a page. `mission` is copy
  * beside a click-to-play video wherever it appears - but it is a dark band on
@@ -38,27 +43,6 @@ import { PAGE_SECTION_TYPES } from '@impact-common/shared/lists/page_section_typ
  * privacy and terms from Web Config. A second source of truth for a value
  * that already has one is worse than no editor at all.
  */
-
-/** How the live preview draws a section. Each shape is one recognisable
- *  band - right proportions, right pictures, right words, no attempt at the
- *  real typography. */
-export type PreviewShape =
-  | 'hero'
-  | 'band'
-  | 'split'
-  | 'prose'
-  | 'columns'
-  | 'cards'
-  | 'prices'
-  | 'timeline'
-  | 'figure'
-  | 'form'
-  | 'features'
-  | 'contact'
-  | 'address'
-  | 'options'
-  | 'signup'
-  | 'fixed';
 
 /** Which of a block's own fields a type uses. */
 export interface PageSectionFields {
@@ -126,7 +110,6 @@ export interface PageSectionKind {
    *  because "Banner" alone does not tell staff which band is which. */
   blurb: string;
   icon: string;
-  preview: PreviewShape;
   /** At most one of these may sit on the page. */
   singleton: boolean;
   fields: PageSectionFields;
@@ -203,7 +186,6 @@ const pageHeader = (over: Partial<PageSectionKind> = {}): PageSectionKind => ({
   label: 'Page header',
   blurb: 'the band at the top: a photo, a small line above, the big title, and buttons',
   icon: 'wallpaper',
-  preview: 'hero',
   // One per page: a second header would put two titles above the fold.
   singleton: true,
   fields: { heading: true, subheading: true, body: true, image: true, cta: true, cta2: true },
@@ -219,7 +201,6 @@ const prose = (over: Partial<PageSectionKind> = {}): PageSectionKind => ({
   label: 'Heading and copy',
   blurb: 'a heading with a passage under it, across the page',
   icon: 'subject',
-  preview: 'prose',
   singleton: false,
   fields: { heading: true, body: true },
   ...over
@@ -230,7 +211,6 @@ const mission = (over: Partial<PageSectionKind> = {}): PageSectionKind => ({
   label: 'Copy with a video',
   blurb: 'a heading and copy on one side, a click-to-play video on the other',
   icon: 'play_circle',
-  preview: 'split',
   singleton: false,
   fields: { heading: true, body: true, image: true, video: true },
   imageLabel: 'Still shown before play',
@@ -242,7 +222,6 @@ const consultBanner = (): PageSectionKind => ({
   label: 'Consultation banner',
   blurb: 'the shared "receive a free consultation" band',
   icon: 'campaign',
-  preview: 'fixed',
   singleton: true,
   fields: {},
   caveat:
@@ -264,7 +243,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Story column',
         blurb: 'copy and a button beside a picture; the side alternates automatically',
         icon: 'view_sidebar',
-        preview: 'split',
         singleton: false,
         fields: { heading: true, body: true, image: true, cta: true },
         imageLabel: 'Picture beside the copy'
@@ -274,7 +252,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Full-width banner',
         blurb: 'a background photo with one heading across it',
         icon: 'panorama',
-        preview: 'band',
         singleton: false,
         fields: { heading: true, image: true },
         imageLabel: 'Background photo'
@@ -285,7 +262,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Timeline',
         blurb: 'dated entries down a centre line, alternating left and right',
         icon: 'timeline',
-        preview: 'timeline',
         // One per page: two timelines would each draw their own centre line.
         singleton: true,
         fields: { heading: true, subheading: true, entries: true },
@@ -309,7 +285,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Figure banner',
         blurb: 'a big number with a label, and a paragraph beside it',
         icon: 'public',
-        preview: 'figure',
         singleton: false,
         fields: { heading: true, subheading: true, body: true, image: true },
         headingLabel: 'The number',
@@ -332,7 +307,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Course list',
         blurb: 'a heading over one row per course: a button and a line saying what it is',
         icon: 'view_list',
-        preview: 'cards',
         singleton: false,
         fields: { heading: true, entries: true },
         entry: {
@@ -362,7 +336,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Price tiles',
         blurb: 'one tile per option: a title, a price, what is included, and a button',
         icon: 'sell',
-        preview: 'prices',
         singleton: false,
         fields: { entries: true },
         caveat:
@@ -381,7 +354,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Picture cards',
         blurb: 'a heading over cards, each a picture with a title and a line of copy',
         icon: 'grid_view',
-        preview: 'cards',
         singleton: false,
         fields: { heading: true, entries: true },
         entry: {
@@ -397,7 +369,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Copy with a form',
         blurb: 'a heading and a passage beside one of the forms from Form Builder',
         icon: 'assignment',
-        preview: 'form',
         singleton: false,
         fields: { heading: true, body: true, image: true, cta: true },
         imageLabel: 'Background photo',
@@ -434,7 +405,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Giving options',
         blurb: 'one tile per way to give: a title, an icon, copy and a button',
         icon: 'volunteer_activism',
-        preview: 'options',
         singleton: true,
         fields: { entries: true },
         caveat:
@@ -457,7 +427,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Cheque band',
         blurb: 'a photo band with where to post a cheque',
         icon: 'markunread_mailbox',
-        preview: 'address',
         singleton: true,
         fields: { heading: true, subheading: true, image: true },
         headingLabel: 'Line above',
@@ -483,7 +452,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Where to find us',
         blurb: 'a heading, the address block, a passage, and the social links',
         icon: 'contact_page',
-        preview: 'contact',
         singleton: true,
         fields: { heading: true, body: true },
         caveat:
@@ -495,7 +463,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Contact form',
         blurb: 'a heading over one of the forms from Form Builder',
         icon: 'assignment',
-        preview: 'form',
         singleton: true,
         fields: { heading: true, cta: true },
         ctaLabel: 'Submit button text',
@@ -527,7 +494,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Feature rows',
         blurb: 'the jump strip and one row per area of the app, alternating side to side',
         icon: 'view_agenda',
-        preview: 'features',
         singleton: true,
         fields: { entries: true },
         entry: {
@@ -579,7 +545,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
         label: 'Join form',
         blurb: 'the copy above the sign-up form, and the button on it',
         icon: 'how_to_reg',
-        preview: 'signup',
         singleton: true,
         fields: { body: true, cta: true },
         ctaLabel: 'Button on the form',
@@ -614,7 +579,6 @@ function equippingCoursePage(audience: string): EditablePage {
         label: 'Two columns',
         blurb: 'headed passages in two columns - the facts on the left, the pitch on the right',
         icon: 'view_column',
-        preview: 'columns',
         singleton: true,
         fields: { entries: true },
         entry: {

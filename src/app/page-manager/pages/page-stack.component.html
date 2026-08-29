@@ -126,13 +126,12 @@
 
     <app-page-live-preview
       [page]="page"
-      [sections]="liveSections"
-      [device]="device"></app-page-live-preview>
+      [device]="device"
+      [revision]="previewRevision"></app-page-live-preview>
 
     <p class="ps__preview-note">
-      The whole page as a visitor gets it, from saved content &mdash;
-      switched-off sections are left out. Reordering shows at once; edits
-      show once saved.
+      The real page, scaled &mdash; not a drawing of it, so it cannot drift.
+      It reloads after every change you make here.
     </p>
   </aside>
 </div>

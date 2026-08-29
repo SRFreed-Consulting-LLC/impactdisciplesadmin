@@ -64,6 +64,16 @@ export class PageStackComponent implements OnChanges {
 
   device: PreviewDevice = 'desktop';
 
+  /**
+   * Bumped after every successful write, which reloads the previewer.
+   *
+   * The preview is the REAL page in a frame now, so it shows what is saved -
+   * and everything on this screen saves the moment it changes, so a reload
+   * per write is the whole synchronisation story. A cross-origin frame
+   * cannot be told to refresh itself; changing its src is the only way.
+   */
+  previewRevision = 0;
+
   // ngOnChanges, not ngOnInit. Today Page Manager gives each tab its own @if,
   // so switching pages destroys this component and builds another - and
   // ngOnChanges fires before ngOnInit on creation, so nothing is lost either
@@ -103,6 +113,7 @@ export class PageStackComponent implements OnChanges {
         this.page.slug,
         { id: this.page.slug, blocks: this.sections } as PageContentModel
       );
+      this.previewRevision++;
       this.snackbar.success(message);
     } catch (err) {
       console.error(`${this.page.label}: could not save`, err);
