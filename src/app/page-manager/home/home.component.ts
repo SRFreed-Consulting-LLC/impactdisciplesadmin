@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatDialog } from '@angular/material/dialog';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 import { HomePageImageModel } from '@impact-common/shared/models/domain/home-page-image.model';
 import { HomeSectionModel } from '@impact-common/shared/models/domain/home-section.model';
 import { HOME_SECTION_TYPES } from '@impact-common/shared/lists/home_section_types.enum';
@@ -13,6 +14,7 @@ import { SnackbarService } from '../../shared/snackbar.service';
 import { PreviewDevice } from './home-live-preview.component';
 import { HOME_SECTION_KINDS, HomeSectionKind, kindFor } from './home-section-catalogue';
 import { HomeSectionDialogComponent } from './home-section-dialog.component';
+import { HomeSlidesDialogComponent } from './home-slides-dialog.component';
 
 /**
  * HOME - every section the public home page renders, on one screen, in the
@@ -49,10 +51,17 @@ import { HomeSectionDialogComponent } from './home-section-dialog.component';
 export class HomeComponent implements OnInit {
   private readonly screenKey = 'page-manager.home';
 
+  // inject() declared BEFORE anything whose initializer could need it -
+  // field initializers run in order (see CLAUDE.md).
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly types = HOME_SECTION_TYPES;
 
   /** The stack, in page order. Held as a plain array so cdkDrag can move it. */
   sections: HomeSectionModel[] = [];
+
+  slideTotal = 0;
+  slideLive = 0;
 
   loading = true;
   /** Set when the first read fails, so the screen refuses to save over it. */
@@ -81,7 +90,9 @@ export class HomeComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.liveSlides$ = this.slideService.streamAll().pipe(
+    const slides$ = this.slideService.streamAll().pipe(shareReplay({ bufferSize: 1, refCount: true }));
+
+    this.liveSlides$ = slides$.pipe(
       map((slides) => slides
         .filter((slide) => slide.isActive)
         // Same sort as the web slider. Slides sharing an order number come
@@ -90,6 +101,15 @@ export class HomeComponent implements OnInit {
         // running order that the data does not actually determine.
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
     );
+
+    // Counts for the slider row's summary. Subscribed rather than piped into
+    // the template because the summary is built in TS alongside every other
+    // type's; torn down with the component (sweep finding A1 - five listeners
+    // here never were).
+    slides$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((slides) => {
+      this.slideTotal = slides.length;
+      this.slideLive = slides.filter((slide) => slide.isActive).length;
+    });
 
     this.load();
   }
@@ -207,19 +227,30 @@ export class HomeComponent implements OnInit {
 
   async edit(section: HomeSectionModel): Promise<void> {
     const kind = kindFor(section.type);
-    if (!kind || !Object.keys(kind.fields).length) {
+    if (!kind || !this.hasEditor(kind)) {
       return;
     }
 
-    const ref = this.dialog.open(HomeSectionDialogComponent, {
-      width: '900px', maxWidth: '95vw', maxHeight: '94vh',
-      data: { item: structuredClone(section), kind }
-    });
+    // The slider's content is its SLIDES, a separate collection with its own
+    // grid - so it gets its own dialog rather than the field editor.
+    const ref = kind.fields.slides
+      ? this.dialog.open(HomeSlidesDialogComponent, {
+          width: '1180px', maxWidth: '96vw', maxHeight: '94vh'
+        })
+      : this.dialog.open(HomeSectionDialogComponent, {
+          width: '900px', maxWidth: '95vw', maxHeight: '94vh',
+          data: { item: structuredClone(section), kind }
+        });
 
     const saved = await ref.afterClosed().toPromise();
     if (saved) {
       await this.load();
     }
+  }
+
+  /** A type with no fields at all has nothing to open. */
+  hasEditor(kind: HomeSectionKind): boolean {
+    return Object.keys(kind.fields).length > 0;
   }
 
   /** Deleting a record is its own permission, not part of editing one. */
@@ -260,7 +291,8 @@ export class HomeComponent implements OnInit {
    */
   summary(section: HomeSectionModel): string {
     if (section.type === HOME_SECTION_TYPES.SLIDER) {
-      return 'edited below';
+      const slides = `${this.slideTotal} slide${this.slideTotal === 1 ? '' : 's'}`;
+      return this.slideLive === this.slideTotal ? slides : `${slides}, ${this.slideLive} showing`;
     }
     if (section.items) {
       const live = section.items.filter((item) => item.isActive).length;

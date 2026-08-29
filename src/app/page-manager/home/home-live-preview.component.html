@@ -1,11 +1,11 @@
-@if (!slides.length) {
+@if (!liveSections.length) {
   <div class="preview-empty">
-    No live slides. A slide appears here once it is switched on.
+    Nothing is showing on the home page. Switch a section on to see it here.
   </div>
 } @else {
   <div class="preview-frame" [class.preview-frame--mobile]="isMobile">
-    <!-- The public site's own header, drawn flat: it is what the slider sits
-         under, and without it the slide reads as a floating rectangle. -->
+    <!-- The public site's own header, drawn flat: it is what the page sits
+         under, and without it the first section reads as a floating box. -->
     <div class="site-header">
       <span class="site-header__mark">IMPACT DISCIPLES</span>
       @if (!isMobile) {
@@ -15,56 +15,161 @@
       }
     </div>
 
-    <!-- gallery__slide--artwork-text: the artwork already has its own
-         headline, so on phones and tablets the overlay and copy step aside.
-         Mirrors the web slider's own class of the same name. -->
-    <div
-      class="gallery__slide"
-      [class.gallery__slide--artwork-text]="artworkSpeaksForItself(current)"
-      [style.backgroundImage]="'url(' + imageUrl(current) + ')'">
-      <div class="gallery__slide-overlay">
-        <div class="gallery__slide-content">
-          <h2 class="title">{{ current?.title }}</h2>
-          <hr class="slider-hr">
-          <!-- The real slider hides body copy at narrow widths too. -->
-          @if (!isMobile) {
-            <p class="text">{{ current?.text }}</p>
-          }
-          @if (current?.ctaTitle) {
-            <span class="impact-btn">{{ current?.ctaTitle }}</span>
-          }
-        </div>
-      </div>
-    </div>
+    @for (section of liveSections; track section.id) {
+      @switch (section.type) {
 
-    <div class="preview-dots">
-      @for (slide of slides; track slide.id; let i = $index) {
-        <button
-          type="button"
-          class="preview-dot"
-          [class.preview-dot--on]="i === index"
-          [attr.aria-label]="'Show slide ' + (i + 1)"
-          (click)="select(i)"></button>
+        @case (types.SLIDER) {
+          @if (!slides.length) {
+            <div class="band band--empty">Slider &mdash; no slides switched on</div>
+          } @else {
+            <!-- gallery__slide--artwork-text: the artwork already has its own
+                 headline, so on phones and tablets the overlay and copy step
+                 aside. Mirrors the web slider's own class of the same name. -->
+            <div
+              class="gallery__slide"
+              [class.gallery__slide--artwork-text]="artworkSpeaksForItself(current)"
+              [style.backgroundImage]="'url(' + imageUrl(current) + ')'">
+              <div class="gallery__slide-overlay">
+                <div class="gallery__slide-content">
+                  <h2 class="title">{{ current?.title }}</h2>
+                  <hr class="slider-hr">
+                  <!-- The real slider hides body copy at narrow widths too. -->
+                  @if (!isMobile) {
+                    <p class="text">{{ current?.text }}</p>
+                  }
+                  @if (current?.ctaTitle) {
+                    <span class="impact-btn">{{ current?.ctaTitle }}</span>
+                  }
+                </div>
+              </div>
+
+              <!-- INSIDE the slide, not a sibling of it. The dots are
+                   absolutely positioned, and while the frame WAS the slide
+                   they could hang off the frame; now the frame is a whole
+                   page and that put them on the footer. -->
+              <div class="preview-dots">
+                @for (slide of slides; track slide.id; let i = $index) {
+                  <button
+                    type="button"
+                    class="preview-dot"
+                    [class.preview-dot--on]="i === index"
+                    [attr.aria-label]="'Show slide ' + (i + 1)"
+                    (click)="select(i)"></button>
+                }
+              </div>
+            </div>
+          }
+        }
+
+        @case (types.SERVICES) {
+          <div class="band band--services">
+            @if (!liveItems(section).length) {
+              <div class="band__note">Services strip &mdash; no cards switched on</div>
+            } @else {
+              @for (item of liveItems(section); track $index) {
+                <div class="mini-card">
+                  <div class="mini-card__img"
+                       [style.backgroundImage]="item.image?.url ? 'url(' + item.image?.url + ')' : null"></div>
+                  <div class="mini-card__title">{{ item.title }}</div>
+                  <div class="mini-card__desc">{{ item.description }}</div>
+                </div>
+              }
+            }
+          </div>
+        }
+
+        @case (types.SUMMIT_BANNER) {
+          <div class="band band--summit"
+               [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null">
+            <div class="band__scrim">
+              <span class="band__heading">{{ plainTitle(section) }}</span>
+              <span class="band__countdown">000 : 00 : 00 : 00</span>
+              @if (section.ctaTitle) {
+                <span class="impact-btn impact-btn--blue">{{ section.ctaTitle }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        @case (types.VIDEO) {
+          <div class="band band--video">
+            <div class="band__copy">
+              <span class="band__heading band__heading--big">{{ plainTitle(section) }}</span>
+              <span class="band__sub">{{ section.subtitle }}</span>
+            </div>
+            <div class="band__still"
+                 [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null">
+              <span class="band__play" aria-hidden="true">&#9654;</span>
+            </div>
+          </div>
+        }
+
+        @case (types.BANNER) {
+          <div class="band band--banner">
+            <div class="band__copy">
+              <span class="band__heading">{{ plainTitle(section) }}</span>
+              <span class="band__sub">{{ section.subtitle }}</span>
+              @if (section.ctaTitle) {
+                <span class="impact-btn impact-btn--blue">{{ section.ctaTitle }}</span>
+              }
+            </div>
+            <div class="band__art"
+                 [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null"></div>
+          </div>
+        }
+
+        @case (types.SUBSCRIBE) {
+          <div class="band band--subscribe"
+               [style.backgroundImage]="section.image?.url ? 'url(' + section.image?.url + ')' : null">
+            <div class="band__scrim band__scrim--light">
+              <span class="band__heading">{{ plainTitle(section) }}</span>
+              <span class="band__sub">{{ section.subtitle }}</span>
+              <span class="mini-form" aria-hidden="true">
+                <span class="mini-form__field"></span>
+                <span class="mini-form__field"></span>
+                <span class="impact-btn impact-btn--blue">subscribe</span>
+              </span>
+            </div>
+          </div>
+        }
+
+        <!-- A type this build cannot draw. Shown as a gap rather than
+             skipped silently, so the preview never claims the page is
+             shorter than it is. -->
+        @default {
+          <div class="band band--empty">
+            Section &ldquo;{{ section.type }}&rdquo; &mdash; this admin cannot preview it
+          </div>
+        }
       }
+    }
+
+    <!-- The footer is not editable here, but the page has one and leaving it
+         out makes the last section look like the end of the world. -->
+    <div class="site-footer">
+      <span>IMPACT DISCIPLES</span>
+      <span class="site-footer__note">footer &mdash; not edited on this screen</span>
     </div>
   </div>
 
-  <div class="preview-bar">
-    <button type="button" class="preview-step" aria-label="Previous slide" (click)="step(-1)">
-      <mat-icon>chevron_left</mat-icon>
-    </button>
-    <span class="preview-count">{{ index + 1 }} of {{ slides.length }}</span>
-    <button type="button" class="preview-step" aria-label="Next slide" (click)="step(1)">
-      <mat-icon>chevron_right</mat-icon>
-    </button>
+  @if (showsSlider && slides.length) {
+    <div class="preview-bar">
+      <button type="button" class="preview-step" aria-label="Previous slide" (click)="step(-1)">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span class="preview-count">slide {{ index + 1 }} of {{ slides.length }}</span>
+      <button type="button" class="preview-step" aria-label="Next slide" (click)="step(1)">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
 
-    <span class="preview-flags">
-      @if (current?.mobileImage) {
-        <span class="preview-flag" [class.preview-flag--on]="isMobile">phone artwork</span>
-      }
-      @if (current?.artworkHasText) {
-        <span class="preview-flag" [class.preview-flag--on]="isMobile">headline in artwork</span>
-      }
-    </span>
-  </div>
+      <span class="preview-flags">
+        @if (current?.mobileImage) {
+          <span class="preview-flag" [class.preview-flag--on]="isMobile">phone artwork</span>
+        }
+        @if (current?.artworkHasText) {
+          <span class="preview-flag" [class.preview-flag--on]="isMobile">headline in artwork</span>
+        }
+      </span>
+    </div>
+  }
 }

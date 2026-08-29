@@ -54,8 +54,9 @@
                 <div class="home__row-summary">{{ summary(section) }}</div>
               </div>
 
-              @if (kind.fields.title || kind.fields.items) {
-                <button type="button" class="home__icon-btn" matTooltip="Edit this section"
+              @if (hasEditor(kind)) {
+                <button type="button" class="home__icon-btn"
+                        [matTooltip]="kind.fields.slides ? 'Open the slides' : 'Edit this section'"
                         [disabled]="!canEdit() || loadFailed" (click)="edit(section)">
                   <mat-icon>edit</mat-icon>
                 </button>
@@ -87,14 +88,6 @@
               Live
             </mat-slide-toggle>
           </div>
-
-          <!-- The slider's SLIDES are their own collection, so they are
-               edited in place here rather than in the section dialog. -->
-          @if (section.type === types.SLIDER) {
-            <div class="home__slides">
-              <app-home-page-images></app-home-page-images>
-            </div>
-          }
         </div>
       }
     </div>
@@ -139,11 +132,14 @@
     </header>
 
     <app-home-live-preview
+      [sections]="sections"
       [slides]="(liveSlides$ | async) ?? []"
       [device]="device"></app-home-live-preview>
 
     <p class="home__preview-note">
-      The slider only, from saved slides. Switched-off slides are left out.
+      The whole page as a visitor gets it, from saved content &mdash;
+      switched-off sections and slides are left out. Reordering shows at once;
+      edits show once saved.
     </p>
   </aside>
 </div>

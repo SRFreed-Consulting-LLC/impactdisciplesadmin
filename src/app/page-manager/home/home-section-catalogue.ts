@@ -8,6 +8,12 @@ export interface HomeSectionFields {
   cta?: boolean;
   video?: boolean;
   items?: boolean;
+  /**
+   * Edited as the slider's own SLIDES rather than as fields - the slides are
+   * a separate collection, so this opens the slides dialog instead of the
+   * section editor. Only the slider sets it.
+   */
+  slides?: boolean;
 }
 
 export interface HomeSectionKind {
@@ -46,8 +52,9 @@ export const HOME_SECTION_KINDS: readonly HomeSectionKind[] = [
     blurb: 'the rotating hero at the top - the first thing a visitor sees',
     icon: 'view_carousel',
     singleton: true,
-    // Edited as its own list of slides, below the row, not in the dialog.
-    fields: {}
+    // Its slides are their own collection, so the pencil opens the slides
+    // dialog rather than the section editor.
+    fields: { slides: true }
   },
   {
     type: HOME_SECTION_TYPES.SERVICES,

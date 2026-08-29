@@ -25,13 +25,12 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  /* The public hero is a wide banner; 16:9 is close enough to read as one
-     without pretending to be pixel-exact about the real viewport. */
-  aspect-ratio: 16 / 9;
-  /* WIDTH drives the frame, height follows from the ratio. Without a
-     definite width and flex-basis auto, this is a shrinkable item in a flex
-     column: the rail's height squeezed it and aspect-ratio then derived the
-     WIDTH from that, collapsing the phone frame to 128px (measured). */
+  /* The frame holds the WHOLE page now, so its height comes from its
+     contents rather than being one 16:9 box - the aspect ratio moved onto
+     the slide, which is the thing that actually has one.
+     It does NOT scroll: the rail around it already does, and nesting a
+     second scroller inside a scrolling column means a wheel over the
+     preview moves the wrong thing. */
   width: 100%;
   flex: 0 0 auto;
 }
@@ -40,7 +39,6 @@
    hidden body copy) are seen at something like their real proportion. No fake
    status bar - on a real phone the OS draws its own over the top. */
 .preview-frame--mobile {
-  aspect-ratio: 10 / 16;
   width: 300px;
   max-width: 100%;
   margin: 0 auto;
@@ -69,8 +67,10 @@
 }
 
 .gallery__slide {
-  flex: 1 1 auto;
-  min-height: 0;
+  /* The ratio lives here rather than on the frame - the hero is the thing
+     that is 16:9, and the frame is now a whole scrolling page. */
+  flex: 0 0 auto;
+  aspect-ratio: 16 / 9;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -226,4 +226,289 @@
 .preview-flag--on {
   color: var(--app-accent);
   border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+}
+
+/* ------------------------------------------------------------------ bands
+
+   Every section other than the slider is drawn as a recognisable band:
+   right shape, right picture, right words, no attempt at the real
+   typography. They are here to be counted and ordered, not proofread.
+   Colours are LITERAL, like the rest of this file - it is a picture of
+   another application and must not move with the admin theme. */
+
+/* On a phone the real hero is close to full height. */
+.preview-frame--mobile .gallery__slide {
+  aspect-ratio: 10 / 13;
+}
+
+.band {
+  flex: 0 0 auto;
+  font-family: 'Lato', system-ui, sans-serif;
+  color: #1c1c1c;
+  overflow: hidden;
+}
+
+.band--empty {
+  padding: 14px 12px;
+  font-size: 10px;
+  color: #8a8a8a;
+  background: #f2f2f2;
+  border-top: 1px dashed #d8d8d8;
+  border-bottom: 1px dashed #d8d8d8;
+  text-align: center;
+}
+
+.band__note {
+  font-size: 10px;
+  color: #8a8a8a;
+  padding: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.band__heading {
+  display: block;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.band__heading--big {
+  font-size: 18px;
+  color: #ffcc00;
+}
+
+/* -webkit-box + line-clamp: a miniature must not grow to fit long copy, or
+   one wordy section pushes the rest of the page out of the frame. */
+.band__sub {
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #6a6a6a;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.band__scrim {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.band__scrim--light {
+  background: rgba(255, 255, 255, 0.82);
+  color: #1c1c1c;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.band__scrim .band__sub {
+  color: #4a4a4a;
+}
+
+/* services */
+
+.band--services {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  background: #1c1c1c;
+}
+
+.mini-card {
+  flex: 1 1 0;
+  min-width: 0;
+  background: #262626;
+  border-radius: 3px;
+  overflow: hidden;
+  padding-bottom: 6px;
+}
+
+.mini-card__img {
+  height: 34px;
+  background-size: cover;
+  background-position: center;
+  background-color: #3a3a3a;
+}
+
+.mini-card__title {
+  font-size: 8px;
+  font-weight: 900;
+  color: #ffcc00;
+  padding: 5px 5px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-card__desc {
+  font-size: 7px;
+  line-height: 1.3;
+  color: #b9b9b9;
+  padding: 0 5px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* summit */
+
+.band--summit {
+  height: 74px;
+  background-size: cover;
+  background-position: center;
+  background-color: #101820;
+}
+
+.band__countdown {
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* video */
+
+.band--video {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  background: #1c1c1c;
+}
+
+.band--video .band__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.band--video .band__sub {
+  color: #b9b9b9;
+}
+
+.band__still {
+  flex: 0 0 46%;
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  background-color: #e9e9e9;
+  display: grid;
+  place-items: center;
+}
+
+.band__play {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #1c1c1c;
+  color: #1c1c1c;
+  font-size: 7px;
+  display: grid;
+  place-items: center;
+  padding-left: 2px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* banner */
+
+.band--banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f4f4f4;
+}
+
+.band--banner .band__copy {
+  flex: 1 1 42%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.band__art {
+  flex: 1 1 58%;
+  aspect-ratio: 16 / 8;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* subscribe */
+
+.band--subscribe {
+  height: 92px;
+  background-size: cover;
+  background-position: center;
+  background-color: #dfe6ee;
+}
+
+.mini-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.mini-form__field {
+  width: 46px;
+  height: 9px;
+  background: #ffffff;
+  border: 1px solid #c9c9c9;
+  border-radius: 2px;
+}
+
+/* The site's blue button, as used by the summit, banner and subscribe
+   sections - the yellow .impact-btn above is the slider's. */
+.impact-btn--blue {
+  background: #588ac7;
+  color: #ffffff;
+  border-color: #588ac7;
+}
+
+/* footer */
+
+.site-footer {
+  flex: 0 0 auto;
+  background: #101820;
+  color: #cfcfcf;
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 8px;
+  padding: 12px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.site-footer__note {
+  color: #6f7c88;
+  font-style: italic;
+}
+
+/* Stacked on a phone frame - the real site does the same. */
+.preview-frame--mobile .band--video,
+.preview-frame--mobile .band--banner {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.preview-frame--mobile .band--services {
+  flex-wrap: wrap;
+}
+
+.preview-frame--mobile .mini-card {
+  flex: 1 1 44%;
 }
