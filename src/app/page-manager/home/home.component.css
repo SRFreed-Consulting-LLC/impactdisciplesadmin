@@ -330,13 +330,28 @@
 }
 
 /* Under about 1400px the rail costs the editor too much width to be worth
-   it; the preview drops below the editor instead of squeezing it. */
+   it; the preview drops below the editor instead of squeezing it.
+
+   TURNING THE ROW INTO A COLUMN CHANGES WHAT `flex: 1 1 auto` MEANS, and
+   that is what made this broken rather than merely narrow. Across a row it
+   means "take the leftover width"; down a column it means "take the leftover
+   height, and give it back when a sibling needs it" - so with the preview at
+   `flex: 0 0 auto` and 994px of bands, the editor was squeezed to ZERO and
+   its rows drew underneath the preview. Measured at 1280x720: editor height
+   0, preview 994, both starting at the same y - the Slider row's edit button
+   was there, and unclickable, because the preview's header sat over it.
+
+   Both columns size to their content here and the screen scrolls as one. */
 @media (max-width: 1400px) {
   .home {
     flex-direction: column;
+    height: auto;
+    overflow-y: auto;
   }
 
+  .home__editor,
   .home__preview {
     flex: 0 0 auto;
+    overflow-y: visible;
   }
 }

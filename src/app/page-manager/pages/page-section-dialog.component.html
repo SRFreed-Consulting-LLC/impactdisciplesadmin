@@ -1,0 +1,306 @@
+<h2 mat-dialog-title>{{ kind.label }}</h2>
+
+<mat-dialog-content class="psd">
+  <p class="psd__blurb">{{ kind.blurb }}</p>
+
+  <!-- What this screen will NOT change. Said before the fields rather than
+       after, so nobody hunts for a box that was never going to be here. -->
+  @if (kind.caveat) {
+    <p class="psd__caveat">
+      <mat-icon>lock_outline</mat-icon>
+      <span>{{ kind.caveat }}</span>
+    </p>
+  }
+
+  @if (fields.heading) {
+    <mat-form-field appearance="outline" class="psd__field">
+      <mat-label>{{ headingLabel }}</mat-label>
+      <input matInput [(ngModel)]="section.heading">
+      <mat-hint>Bold is written as &lt;strong&gt;like this&lt;/strong&gt;.</mat-hint>
+    </mat-form-field>
+  }
+
+  @if (fields.subheading) {
+    <mat-form-field appearance="outline" class="psd__field">
+      <mat-label>{{ subheadingLabel }}</mat-label>
+      <input matInput [(ngModel)]="section.subheading">
+    </mat-form-field>
+  }
+
+  @if (fields.body) {
+    <!-- A SPAN, not a <label>: quill-editor is not a form control, so a label
+         has nothing to associate with and the rule that catches a genuinely
+         orphaned label would have to be silenced. The editor carries the same
+         text as its accessible name instead. -->
+    <div class="psd__rich">
+      <span class="psd__rich-label">{{ bodyLabel }}</span>
+      <quill-editor [(ngModel)]="section.body" [modules]="richTextModules"
+                    [attr.aria-label]="bodyLabel"></quill-editor>
+    </div>
+  }
+
+  @if (fields.note) {
+    <mat-form-field appearance="outline" class="psd__field">
+      <mat-label>{{ noteLabel }}</mat-label>
+      <input matInput [(ngModel)]="section.note">
+    </mat-form-field>
+  }
+
+  @if (fields.video) {
+    <mat-form-field appearance="outline" class="psd__field">
+      <mat-label>YouTube link</mat-label>
+      <input matInput [(ngModel)]="section.videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+      <mat-hint>
+        Paste the link from YouTube&rsquo;s address bar or its Share button &mdash;
+        the video id is worked out on save.
+      </mat-hint>
+    </mat-form-field>
+  }
+
+  @if (fields.image) {
+    <div class="psd__image">
+      <div class="psd__image-label">{{ imageLabel }}</div>
+      @if (section.image; as image) {
+        <img class="psd__image-thumb" [src]="image.url" [alt]="image.name">
+      } @else {
+        <div class="psd__image-empty">No picture &mdash; this section will draw a gap</div>
+      }
+      <div class="psd__image-actions">
+        <button mat-stroked-button type="button" (click)="showImageUploader()">
+          {{ section.image ? 'Change' : 'Choose' }} picture
+        </button>
+        @if (section.image) {
+          <button mat-button type="button" (click)="clearImage()">Remove</button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (fields.cta) {
+    <div class="psd__cta">
+      <mat-form-field appearance="outline" class="psd__field">
+        <mat-label>{{ ctaLabel }}</mat-label>
+        <input matInput [(ngModel)]="section.ctaTitle">
+        <mat-hint>Leave empty for no button.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="psd__field">
+        <mat-label>Button goes to</mat-label>
+        <mat-select [(ngModel)]="section.ctaUrl">
+          @for (d of destinations; track d.value) {
+            <mat-option [value]="d.value">{{ d.text }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+
+  @if (fields.cta2) {
+    <div class="psd__cta">
+      <mat-form-field appearance="outline" class="psd__field">
+        <mat-label>{{ cta2Label }}</mat-label>
+        <input matInput [(ngModel)]="section.ctaTitle2">
+        <mat-hint>Leave empty for one button only.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="psd__field">
+        <mat-label>Second button goes to</mat-label>
+        <mat-select [(ngModel)]="section.ctaUrl2">
+          @for (d of destinations; track d.value) {
+            <mat-option [value]="d.value">{{ d.text }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+
+  <!-- THE LIST. One control for every kind of list on every page - cards,
+       timeline entries, price tiles, feature rows, the passages in a
+       two-column block. Which columns of it appear is the type's own
+       declaration, so a new kind of list needs no markup here. -->
+  @if (fields.entries && entrySpec) {
+    <div class="psd__entries">
+      <div class="psd__entries-head">
+        <h3 class="psd__entries-title">{{ entryNounPlural }}</h3>
+        <button mat-stroked-button type="button" (click)="addEntry()">
+          <mat-icon>add</mat-icon> Add {{ entryNoun }}
+        </button>
+      </div>
+      @if (entrySpec?.note) {
+        <p class="psd__entries-note">{{ entrySpec?.note }}</p>
+      }
+
+      @if (!entries.length) {
+        <p class="psd__entries-empty">
+          No {{ entryNounPlural }} yet &mdash; this section draws an empty space.
+        </p>
+      }
+
+      <div cdkDropList class="psd__entry-list" (cdkDropListDropped)="reorderEntries($event)">
+        @for (entry of entries; track $index) {
+          <div class="psd__entry" cdkDrag [class.psd__entry--off]="!entry.isActive">
+            <mat-icon class="psd__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+
+            @if (entryFields.image) {
+              <button type="button" class="psd__entry-image" (click)="showImageUploader($index)"
+                      [matTooltip]="entry.image ? 'Change this picture' : 'Choose a picture'">
+                @if (entry.image) {
+                  <img [src]="entry.image.url" [alt]="entry.title">
+                } @else {
+                  <mat-icon>add_photo_alternate</mat-icon>
+                }
+              </button>
+            }
+
+            <div class="psd__entry-fields">
+              <div class="psd__entry-top">
+                @if (entrySpec?.numbered) {
+                  <span class="psd__entry-chip">{{ chipOf($index) }}</span>
+                }
+                @if (entryFields.title) {
+                  <mat-form-field appearance="outline" class="psd__entry-title">
+                    <mat-label>{{ entrySpec?.titleLabel ?? 'Title' }}</mat-label>
+                    <input matInput [(ngModel)]="entry.title">
+                  </mat-form-field>
+                }
+                @if (entryFields.column) {
+                  <mat-form-field appearance="outline" class="psd__entry-column">
+                    <mat-label>Column</mat-label>
+                    <mat-select [(ngModel)]="entry.column">
+                      <mat-option value="left">Left</mat-option>
+                      <mat-option value="right">Right</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                }
+                @if (entryFields.icon) {
+                  <mat-form-field appearance="outline" class="psd__entry-icon">
+                    <mat-label>Icon</mat-label>
+                    <mat-select [(ngModel)]="entry.icon">
+                      @for (i of icons; track i.value) {
+                        <mat-option [value]="i.value">{{ i.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                }
+                @if (sideOf($index); as side) {
+                  <span class="psd__entry-side" matTooltip="Worked out from the order, not stored">
+                    {{ side }}
+                  </span>
+                }
+              </div>
+
+              @if (entryFields.heading) {
+                <mat-form-field appearance="outline" class="psd__entry-line">
+                  <mat-label>{{ entrySpec?.headingLabel ?? 'Headline' }}</mat-label>
+                  <input matInput [(ngModel)]="entry.heading">
+                </mat-form-field>
+              }
+
+              @if (entryFields.amount) {
+                <div class="psd__entry-amount">
+                  <mat-form-field appearance="outline" class="psd__entry-price">
+                    <mat-label>Price from Web Config</mat-label>
+                    <mat-select [(ngModel)]="entry.amountKey">
+                      <mat-option [value]="undefined">No price on this one</mat-option>
+                      @for (a of amounts; track a.key) {
+                        <mat-option [value]="a.key">{{ a.label }}</mat-option>
+                      }
+                    </mat-select>
+                    <mat-hint>The amount itself is edited in Web Config.</mat-hint>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="psd__entry-suffix">
+                    <mat-label>After the amount</mat-label>
+                    <input matInput [(ngModel)]="entry.amountSuffix" placeholder="/month">
+                  </mat-form-field>
+                </div>
+              }
+
+              @if (entryFields.description) {
+                <mat-form-field appearance="outline" class="psd__entry-copy">
+                  <mat-label>{{ entrySpec?.descriptionLabel ?? 'Copy' }}</mat-label>
+                  <textarea matInput rows="3" [(ngModel)]="entry.description"></textarea>
+                </mat-form-field>
+              }
+
+              @if (entryFields.body) {
+                <div class="psd__entry-rich">
+                  <span class="psd__rich-label">{{ entrySpec?.bodyLabel ?? 'Copy' }}</span>
+                  <quill-editor [(ngModel)]="entry.body" [modules]="richTextModules"
+                                [attr.aria-label]="entrySpec?.bodyLabel ?? 'Copy'"></quill-editor>
+                </div>
+              }
+
+              @if (entryFields.link) {
+                <mat-form-field appearance="outline" class="psd__entry-line">
+                  <mat-label>{{ entrySpec?.linkLabel ?? 'Goes to' }}</mat-label>
+                  <mat-select [(ngModel)]="entry.link">
+                    @for (d of destinations; track d.value) {
+                      <mat-option [value]="d.value">{{ d.text }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              }
+
+              @if (entryFields.cta || entryFields.giving) {
+                <div class="psd__entry-cta">
+                  <mat-form-field appearance="outline" class="psd__entry-line">
+                    <mat-label>Button text</mat-label>
+                    <input matInput [(ngModel)]="entry.ctaTitle">
+                    <mat-hint>Leave empty for no button.</mat-hint>
+                  </mat-form-field>
+
+                  @if (entryFields.giving) {
+                    <!-- A KEY, not an address. See the catalogue's header:
+                         a free-text URL here would let anyone who can edit
+                         this page redirect donations. -->
+                    <mat-form-field appearance="outline" class="psd__entry-line">
+                      <mat-label>Button opens</mat-label>
+                      <mat-select [(ngModel)]="entry.link">
+                        @for (d of givingDestinations; track d.key) {
+                          <mat-option [value]="d.key">{{ d.label }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else if (entryFields.cta) {
+                    <mat-form-field appearance="outline" class="psd__entry-line">
+                      <mat-label>Button goes to</mat-label>
+                      <mat-select [(ngModel)]="entry.ctaUrl">
+                        @for (d of destinations; track d.value) {
+                          <mat-option [value]="d.value">{{ d.text }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="psd__entry-side-col">
+              <mat-slide-toggle [(ngModel)]="entry.isActive"
+                                [matTooltip]="entry.isActive ? 'Showing' : 'Hidden'">
+              </mat-slide-toggle>
+              <button type="button" class="psd__icon-btn psd__icon-btn--danger"
+                      [matTooltip]="'Remove this ' + entryNoun" (click)="removeEntry($index)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-flat-button color="primary" type="button" (click)="onSave()">SAVE</button>
+</mat-dialog-actions>
+
+@if (isImageUploaderVisible$ | async) {
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+}

@@ -223,7 +223,15 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Guarded so this file can be REQUIRED for its data without running the
+// seed. The emulator fixture world builds `home_sections` from SECTIONS
+// below rather than carrying a second copy of it - a fixture that disagreed
+// with the shipped default would make the emulator prove the wrong page.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = {SECTIONS};

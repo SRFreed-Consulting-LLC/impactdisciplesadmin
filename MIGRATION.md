@@ -656,3 +656,51 @@ page removes the bar, its footer spacing and the home slider's dot offset togeth
 
 **Rollback**: redeploy the previous web build — it ignores `dock_bar` entirely and goes back to
 the hardcoded copy. The document and the rules block are then inert extras, harmless to leave.
+
+---
+
+## `page_content` and `home_sections` must exist BEFORE the web build that reads them
+
+**Found**: 2026-08-29, building the Page Manager section stacks.
+
+**This one can blank the whole public site**, so it is first among the runbooks here rather
+than a footnote in one.
+
+Eleven public pages — About Us, the four equipping pages, Seminars, Lunch and Learns, Give,
+Contact, Discipleship Library, Prayer Team — are **dispatchers** now. Each loops over an
+ordered stack of typed sections in `page_content/<slug>` and draws whatever that document
+says. The home page does the same over `home_sections`.
+
+**There is no fallback.** The templates used to carry a duplicate of every string and fall back
+to it; that duplicate was deleted with the seed (Shane's call, 2026-08-29) because one copy
+that can be edited beats two that can silently disagree. So a page whose document is missing,
+empty or unreadable renders **an empty page** — header, footer, nothing in between. No error,
+no console warning, no alert.
+
+Prod has **no `page_content` documents at all** as of this entry. Deploying web hosting to prod
+today would take all eleven pages down to their headers.
+
+**Deploy order (per environment), and it is not the usual one:**
+1. `node scripts/seed-page-content.js --project=<dev|prod>` (dry run first), then `--execute`.
+   Idempotent and **will not overwrite staff edits** — an existing page is skipped and
+   reported; `--force` is the deliberate "reset to the shipped wording" escape hatch.
+2. `node scripts/seed-home-sections.js --project=<dev|prod>`, same shape.
+3. Deploy **firestore rules** — but see the inversion below.
+4. Deploy **admin hosting** (Page Manager).
+5. Deploy **web hosting** — LAST, and only once step 1 has actually run in that project.
+
+**The rules inversion, worth reading twice.** The usual rule in this repo is that rules ship
+LAST, because tightening them before the code that satisfies them breaks the site. These two
+blocks are the opposite case: they are permissive ADDITIONS (`read: if true`,
+`write: if isBusinessStaff()`), so they must ship BEFORE the web build that reads the
+collections, or every visitor's read is rejected and the pages render empty anyway. Adding a
+permissive rule is safe to do early; removing or narrowing one is not.
+
+**Verify**: load each of the eleven public routes and confirm real copy, not a bare header.
+`node scripts/seed-page-content.js --project=<env>` re-run as a dry run should then report
+every page as SKIP — that is the proof the documents landed.
+
+**Rollback**: there is no build to roll back TO that carries the copy — the fallbacks are gone
+from the templates in every build from `6eabce4` onward. Recovery is to run the seed, which
+holds the shipped wording of all eleven pages. Keep `scripts/page-content-seed-data.json`
+alive for exactly that reason; it is the only copy outside Firestore.

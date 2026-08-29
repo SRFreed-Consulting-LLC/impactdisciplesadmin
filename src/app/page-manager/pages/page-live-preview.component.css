@@ -1,0 +1,666 @@
+/* A picture of another application: colours are LITERAL here, not theme
+   tokens, so this block does not drift when the admin theme changes - the
+   same rule the home page's preview follows. */
+
+:host {
+  display: block;
+  min-height: 0;
+}
+
+.apv-empty {
+  border: 1px dashed var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.apv-frame {
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  font-family: 'Lato', system-ui, sans-serif;
+  color: #1c1c1c;
+}
+
+/* A phone frame, centred. It does NOT scroll: the rail around it already
+   does, and a second scroller inside a scrolling column sends a wheel over
+   the preview to the wrong element. */
+.apv-frame--mobile {
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.apv-header {
+  background: #1c1c1c;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.apv-header__mark { font-weight: 900; letter-spacing: 0.04em; }
+.apv-header__nav { color: #cfcfcf; }
+
+/* Contact only: its two sections are the two halves of one row. */
+.apv-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.apv-row > * {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+/* Shared type. -webkit-line-clamp keeps a wordy section from growing tall
+   enough to push the rest of the page out of the frame. */
+.apv-h {
+  display: block;
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.apv-h--center { text-align: center; }
+
+.apv-p {
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #6a6a6a;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.apv-p--center { text-align: center; }
+
+.apv-rule {
+  display: block;
+  width: 34px;
+  border-top: 2px solid #ffcc00;
+  margin: 4px 0;
+}
+
+.apv-btn {
+  align-self: flex-start;
+  display: inline-block;
+  background: #588ac7;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 8px;
+  padding: 4px 9px;
+  border-radius: 3px;
+  margin-top: 4px;
+}
+
+.apv-btn--center { align-self: center; }
+
+/* ------------------------------------------------------------- hero */
+
+.apv-hero {
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a2a;
+}
+
+.apv-hero__shade {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 20px 14px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.15) 100%);
+  color: #ffffff;
+}
+
+.apv-hero__pre {
+  font-size: 7.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffcc00;
+}
+
+.apv-hero__title { font-size: 15px; font-weight: 900; line-height: 1.15; }
+
+.apv-hero__lede {
+  font-size: 8px;
+  line-height: 1.4;
+  color: #e4e4e4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.apv-hero__btns { display: flex; flex-wrap: wrap; gap: 5px; }
+.apv-hero__note { font-size: 7.5px; color: #cfcfcf; font-style: italic; }
+
+/* ------------------------------------------------------------ banner */
+
+.apv-banner {
+  height: 86px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a2a;
+  display: grid;
+  place-items: center;
+}
+
+.apv-banner__title {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* ------------------------------------------------------------- split */
+
+.apv-split {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid #ececec;
+}
+
+/* The picture side alternates - flipping with row-reverse rather than
+   reordering the markup keeps the copy first for a screen reader. */
+.apv-split--flip { flex-direction: row-reverse; }
+
+.apv-split__art {
+  flex: 0 0 42%;
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  background-color: #e2e2e2;
+  display: grid;
+  place-items: center;
+}
+
+.apv-split__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.apv-play {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #1c1c1c;
+  font-size: 7px;
+  display: grid;
+  place-items: center;
+  padding-left: 2px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* ------------------------------------------------------------- prose */
+
+.apv-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px 14px;
+}
+
+/* ----------------------------------------------------------- columns */
+
+.apv-columns {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  align-items: stretch;
+}
+
+.apv-columns__col {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px;
+}
+
+/* The left column is the dark panel on the live pages. */
+.apv-columns__col--dark {
+  background: #588ac7;
+  color: #ffffff;
+}
+
+.apv-columns__col--dark .apv-p { color: #e8eef7; }
+
+.apv-columns__h {
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.apv-columns__price { font-weight: 900; }
+
+/* ------------------------------------------------------------- cards */
+
+.apv-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 12px;
+}
+
+.apv-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.apv-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 6px;
+  background: #f7f7f7;
+  border-radius: 4px;
+}
+
+.apv-card__art {
+  flex: 0 0 42px;
+  height: 42px;
+  border-radius: 3px;
+  background-size: cover;
+  background-position: center;
+  background-color: #e2e2e2;
+}
+
+.apv-card__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.apv-card__title { font-weight: 800; font-size: 9px; }
+
+/* ------------------------------------------------------------ prices */
+
+.apv-prices {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+}
+
+.apv-price {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  text-align: center;
+  padding: 10px 8px;
+  background: #f7f7f7;
+  border-radius: 5px;
+}
+
+.apv-price__title { font-weight: 800; font-size: 9px; letter-spacing: 0.05em; }
+.apv-price__figure { font-weight: 900; font-size: 20px; color: #588ac7; }
+
+/* ---------------------------------------------------------- timeline */
+
+.apv-timeline {
+  position: relative;
+  padding: 10px 12px 14px;
+}
+
+/* The centre line the entries hang off, same as the real page. */
+.apv-timeline__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: #1c1c1c;
+}
+
+.apv-year {
+  text-align: center;
+  font-weight: 900;
+  font-size: 22px;
+  color: #1c1c1c;
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  padding: 2px 0;
+}
+
+.apv-year--small { font-size: 14px; }
+
+.apv-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.apv-entry--flip { flex-direction: row-reverse; }
+
+.apv-entry__copy {
+  flex: 1 1 50%;
+  min-width: 0;
+  background: #ffffff;
+  font-size: 7.5px;
+  line-height: 1.35;
+  color: #4a4a4a;
+  padding: 5px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.apv-entry__art {
+  flex: 1 1 50%;
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  background-color: #e2e2e2;
+}
+
+/* --------------------------------------------------------- countries */
+
+.apv-countries {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  background-size: cover;
+  background-position: center;
+  background-color: #ffcc00;
+}
+
+.apv-countries__left {
+  flex: 0 0 34%;
+  text-align: center;
+}
+
+.apv-countries__figure {
+  display: block;
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.apv-countries__label {
+  display: block;
+  font-size: 8px;
+  line-height: 1.25;
+}
+
+.apv-countries__right {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 8px;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+/* -------------------------------------------------------------- form */
+
+.apv-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  background-size: cover;
+  background-position: center;
+  background-color: #ffcc00;
+}
+
+.apv-form__copy {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.apv-form__fields {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Stand-ins. The real fields are authored in Form Builder, and drawing
+   invented ones here would be a preview of something that does not exist. */
+.apv-field {
+  display: block;
+  height: 11px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.apv-field--tall { height: 26px; }
+
+/* ---------------------------------------------------------- features */
+
+.apv-features {
+  display: flex;
+  flex-direction: column;
+}
+
+.apv-features__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #f2f4f7;
+  border-bottom: 1px solid #e3e6ea;
+}
+
+.apv-chip {
+  font-size: 7px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #dcdfe3;
+  color: #454d58;
+}
+
+.apv-feature {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+}
+
+.apv-feature--alt { background: #fafbfc; }
+.apv-feature--flip { flex-direction: row-reverse; }
+
+.apv-feature__art {
+  flex: 0 0 34%;
+  aspect-ratio: 16 / 10;
+  background-size: cover;
+  background-position: center;
+  background-color: #e2e2e2;
+  border-radius: 3px;
+}
+
+.apv-feature__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.apv-feature__tag {
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+/* ----------------------------------------------------------- contact */
+
+.apv-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 12px;
+}
+
+.apv-contact__line {
+  font-size: 8px;
+  color: #6a6a6a;
+}
+
+.apv-contact__social {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.apv-contact__social span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #dfe3e8;
+}
+
+/* ----------------------------------------------------------- address */
+
+.apv-address {
+  height: 104px;
+  display: grid;
+  place-items: center;
+  background-size: cover;
+  background-position: center;
+  background-color: #ffcc00;
+}
+
+.apv-address__card {
+  background: #ffffff;
+  padding: 10px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.apv-address__title { font-weight: 700; font-size: 10px; }
+.apv-address__who { font-size: 9px; font-weight: 600; }
+.apv-address__addr { font-size: 7.5px; color: #8a8a8a; font-style: italic; }
+
+/* ----------------------------------------------------------- options */
+
+.apv-options {
+  display: flex;
+  gap: 7px;
+  padding: 12px;
+}
+
+.apv-option {
+  flex: 1 1 33%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding: 10px 7px;
+  background: #1c1c1c;
+  color: #ffffff;
+  border-radius: 5px;
+}
+
+.apv-option .apv-p { color: #cfcfcf; }
+.apv-option__title { font-weight: 900; font-size: 10px; }
+.apv-option__icon { font-size: 16px; color: #ffcc00; }
+
+/* ------------------------------------------------------------ signup */
+
+.apv-signup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 14px;
+  align-items: stretch;
+}
+
+.apv-signup__fields {
+  display: flex;
+  gap: 5px;
+}
+
+.apv-signup__fields .apv-field { flex: 1 1 33%; }
+
+/* ------------------------------------------------------------- other */
+
+.apv-fixed,
+.apv-unknown {
+  padding: 14px 12px;
+  font-size: 10px;
+  color: #8a8a8a;
+  background: #f2f2f2;
+  border-top: 1px dashed #d8d8d8;
+  border-bottom: 1px dashed #d8d8d8;
+  text-align: center;
+}
+
+.apv-footer {
+  background: #101820;
+  color: #cfcfcf;
+  font-size: 8px;
+  padding: 12px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.apv-footer__note { color: #6f7c88; font-style: italic; }
+
+/* Stacked on a phone frame - the real site does the same. */
+.apv-frame--mobile .apv-split,
+.apv-frame--mobile .apv-columns,
+.apv-frame--mobile .apv-prices,
+.apv-frame--mobile .apv-options,
+.apv-frame--mobile .apv-form,
+.apv-frame--mobile .apv-feature,
+.apv-frame--mobile .apv-countries {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.apv-frame--mobile .apv-cards__grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.apv-frame--mobile .apv-split__art,
+.apv-frame--mobile .apv-feature__art {
+  flex: 0 0 auto;
+}

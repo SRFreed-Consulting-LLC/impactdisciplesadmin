@@ -76,7 +76,16 @@ test.describe('seminar-request submission to organization + contact', () => {
             },
           },
           submittedAt: { timestampValue: new Date().toISOString() },
-          newRecordStatus: { stringValue: 'new' },
+          // newRecordStatus is DELIBERATELY absent, and this test used to
+          // send it. Finding S7 (2026-08-28) made the rules refuse the key
+          // outright: a submission that arrived carrying it was treated by
+          // onFormSubmissionCreated as already counted, so posting 'seen'
+          // suppressed the staff alert bell - notification suppression, and
+          // exactly the primitive someone probing the public forms wants.
+          // All three real writers stopped sending it in the same change, so
+          // the trigger is the field's only writer now. The test kept sending
+          // it and had been getting a 403 ever since, which is the rule
+          // working. See firestore.rules' form_submissions block.
         },
       }),
     });

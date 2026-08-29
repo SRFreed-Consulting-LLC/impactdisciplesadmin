@@ -36,10 +36,20 @@ test.describe('Page Manager - read-only smoke checks', () => {
     await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
   });
 
-  test('Home renders the slider section', async ({ page }) => {
+  test('Home lists the slider as a section, and its slides open in a dialog', async ({ page }) => {
+    // The slides table is IN A DIALOG since 2026-08-29 - the slider became one
+    // row of the Home section stack rather than a grid sitting on the screen.
+    // This test asserted `table.images-table` was visible on the page itself
+    // and had been red ever since; opening the row is the fix, not loosening
+    // the assertion.
     await openPageManagerTab(page, 'Home');
 
     await expect(page.locator('app-page-home')).toBeVisible();
+    const sliderRow = page.locator('.home__section', { hasText: 'Slider' }).first();
+    await expect(sliderRow).toBeVisible();
+
+    await sliderRow.locator('.home__icon-btn').first().click();
+
     await expect(page.locator('table.images-table')).toBeVisible();
     await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
   });

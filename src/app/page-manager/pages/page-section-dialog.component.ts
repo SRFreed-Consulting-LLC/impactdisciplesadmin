@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { BehaviorSubject } from 'rxjs';
@@ -8,40 +8,46 @@ import {
 import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import menuData from 'src/app/common/services/data/nav-menu-data';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
-import { AboutSectionKind } from './about-section-catalogue';
+import {
+  EntryFields, EntrySpec, GIVING_DESTINATIONS, ICON_CHOICES, PageSectionKind,
+  WEB_CONFIG_AMOUNTS, pluralise
+} from './page-section-catalogue';
 
-export interface AboutSectionDialogData {
+export interface PageSectionDialogData {
   section: PageContentBlock;
-  kind: AboutSectionKind;
+  kind: PageSectionKind;
 }
 
 /**
- * Edits ONE About Us section.
+ * Edits ONE section of ONE public page.
  *
- * One dialog for every type: which fields a type uses is declared once in
- * ABOUT_SECTION_KINDS, so a new type that reuses existing fields needs no
- * change here.
+ * One dialog for every type on every page: which fields a type uses, and what
+ * they are called on that page, is declared once in the catalogue - so a new
+ * section type that reuses existing fields needs no change here.
  *
- * It does NOT save. It edits a copy and hands it back on close, and the
- * stack screen writes it - because the whole page is one document and a
- * per-section write would race the ordering. That is the difference from
- * BaseEntityDialogComponent, which owns its own save; extending it here
- * would mean two writers for one document.
+ * It does NOT save. It edits a copy and hands it back on close, and the stack
+ * screen writes it - because the whole page is one document and a per-section
+ * write would race the ordering. That is the difference from
+ * BaseEntityDialogComponent, which owns its own save; extending it here would
+ * mean two writers for one document.
  *
- * Order and Live are not here either. They are single facts the stack
- * writes the moment they change.
+ * Order and Live are not here either. They are single facts the stack writes
+ * the moment they change.
  */
 @Component({
-    selector: 'app-about-section-dialog',
-    templateUrl: './about-section-dialog.component.html',
-    styleUrls: ['./about-section-dialog.component.css'],
+    selector: 'app-page-section-dialog',
+    templateUrl: './page-section-dialog.component.html',
+    styleUrls: ['./page-section-dialog.component.css'],
     standalone: false
 })
-export class AboutSectionDialogComponent {
+export class PageSectionDialogComponent {
   readonly richTextModules = RICH_TEXT_TOOLBAR;
+  readonly amounts = WEB_CONFIG_AMOUNTS;
+  readonly givingDestinations = GIVING_DESTINATIONS;
+  readonly icons = ICON_CHOICES;
 
   readonly section: PageContentBlock;
-  readonly kind: AboutSectionKind;
+  readonly kind: PageSectionKind;
 
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
   /** Which entry is picking a picture, or null for the section's own. */
@@ -50,10 +56,15 @@ export class AboutSectionDialogComponent {
 
   destinations: { text: string; value: string }[] = [];
 
-  constructor(
-    private readonly dialogRef: MatDialogRef<AboutSectionDialogComponent, PageContentBlock | undefined>,
-    @Inject(MAT_DIALOG_DATA) data: AboutSectionDialogData
-  ) {
+  // inject() runs in FIELD INITIALIZER order, so anything a later field
+  // depends on has to be declared before it - see CLAUDE.md. These two are
+  // read in the constructor, which runs after every initializer, so order
+  // between them does not matter.
+  private readonly dialogRef =
+    inject<MatDialogRef<PageSectionDialogComponent, PageContentBlock | undefined>>(MatDialogRef);
+
+  constructor() {
+    const data = inject<PageSectionDialogData>(MAT_DIALOG_DATA);
     this.section = data.section;
     this.kind = data.kind;
     if (this.kind.fields.entries && !this.section.items) {
@@ -68,14 +79,22 @@ export class AboutSectionDialogComponent {
         });
       }
     });
-    // An anchor is a real destination on this page - the story buttons all
-    // point at #history, which is the banner further down.
+    // An anchor is a real destination: the About Us story buttons all point
+    // at #history, which is the banner further down that same page.
     this.destinations.push({ text: 'The banner on this page', value: '#history' });
     this.destinations.push({ text: 'External', value: 'external' });
   }
 
   get fields() {
     return this.kind.fields;
+  }
+
+  get entrySpec(): EntrySpec | undefined {
+    return this.kind.entry;
+  }
+
+  get entryFields(): EntryFields {
+    return this.kind.entry?.fields ?? {};
   }
 
   get headingLabel(): string {
@@ -86,8 +105,24 @@ export class AboutSectionDialogComponent {
     return this.kind.subheadingLabel ?? 'Second heading';
   }
 
+  get bodyLabel(): string {
+    return this.kind.bodyLabel ?? 'Copy';
+  }
+
   get imageLabel(): string {
     return this.kind.imageLabel ?? 'Picture';
+  }
+
+  get noteLabel(): string {
+    return this.kind.noteLabel ?? 'Small line';
+  }
+
+  get ctaLabel(): string {
+    return this.kind.ctaLabel ?? 'Button text';
+  }
+
+  get cta2Label(): string {
+    return this.kind.cta2Label ?? 'Second button text';
   }
 
   // ---------------------------------------------------------- the entries
@@ -96,8 +131,23 @@ export class AboutSectionDialogComponent {
     return this.section.items ?? [];
   }
 
+  get entryNoun(): string {
+    return this.entrySpec?.noun ?? 'entry';
+  }
+
+  /** "Entries", not "Entrys" - see pluralise(). */
+  get entryNounPlural(): string {
+    return pluralise(this.entryNoun, 2);
+  }
+
   addEntry(): void {
-    this.section.items = [...this.entries, { title: '', description: '', isActive: true }];
+    // A two-column list defaults a new passage to the left, which is where
+    // the eye goes first and where staff can see it landed.
+    const seed: PageContentItem = {
+      title: '', isActive: true,
+      ...(this.entryFields.column ? { column: 'left' as const } : {})
+    };
+    this.section.items = [...this.entries, seed];
   }
 
   removeEntry(index: number): void {
@@ -108,10 +158,29 @@ export class AboutSectionDialogComponent {
     moveItemInArray(this.entries, event.previousIndex, event.currentIndex);
   }
 
-  /** Which side this entry lands on - derived, never stored. Shown so the
-   *  editor does not hide a layout rule the page applies. */
+  /**
+   * Which side this entry lands on - DERIVED, never stored.
+   *
+   * Shown so the editor does not hide a layout rule the page applies: an
+   * order that silently changes which side a photo sits on looks like a bug
+   * until you know it is the rule.
+   *
+   * Counted among entries of the same COLUMN where there is one, so a
+   * two-column block does not claim an alternation it does not have (it
+   * returns nothing there - it does not alternate at all).
+   */
   sideOf(index: number): string {
-    return index % 2 === 0 ? 'copy left' : 'copy right';
+    const labels = this.entrySpec?.sideLabels;
+    if (!labels) {
+      return '';
+    }
+    return labels[index % 2];
+  }
+
+  /** The "01", "02" chip a numbered list draws, counted here exactly as the
+   *  public page counts it. */
+  chipOf(index: number): string {
+    return String(index + 1).padStart(2, '0');
   }
 
   // --------------------------------------------------------- the uploader

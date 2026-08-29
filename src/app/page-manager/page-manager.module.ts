@@ -13,10 +13,14 @@ import { HomeComponent } from './home/home.component';
 import { HomeLivePreviewComponent } from './home/home-live-preview.component';
 import { HomeSectionDialogComponent } from './home/home-section-dialog.component';
 import { HomeSlidesDialogComponent } from './home/home-slides-dialog.component';
-import { PageEditorComponent } from './pages/page-editor.component';
-import { AboutUsPageComponent } from './about-us/about-us-page.component';
-import { AboutSectionDialogComponent } from './about-us/about-section-dialog.component';
-import { AboutLivePreviewComponent } from './about-us/about-live-preview.component';
+// EVERY public page is one screen: an ordered stack of sections, a pop-up
+// editor per section, and a preview of the whole page. Which sections a page
+// can have is declared in pages/page-section-catalogue.ts, so adding a page
+// needs no change here. Replaced the slot editor and the three About Us-only
+// components on 2026-08-29.
+import { PageStackComponent } from './pages/page-stack.component';
+import { PageSectionDialogComponent } from './pages/page-section-dialog.component';
+import { PageLivePreviewComponent } from './pages/page-live-preview.component';
 import { CoachingPageComponent } from './coaching-page/coaching-page.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
@@ -97,10 +101,9 @@ import { QuillModule } from 'ngx-quill';
     HomeLivePreviewComponent,
     HomeSectionDialogComponent,
     HomeSlidesDialogComponent,
-    PageEditorComponent,
-    AboutUsPageComponent,
-    AboutSectionDialogComponent,
-    AboutLivePreviewComponent,
+    PageStackComponent,
+    PageSectionDialogComponent,
+    PageLivePreviewComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
     TeamPageComponent,

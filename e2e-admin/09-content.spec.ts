@@ -18,10 +18,12 @@ test.describe('[content] Website Content', () => {
   // Content Manager became PAGE MANAGER on 2026-08-29, and 'Home Page
   // Images' became the slider SECTION of a new 'Home' screen. The group id
   // is the route, so these slugs move with it - see nav-config.ts.
+  // Screens that still ARE a grid. Home is not one of them any more: its
+  // slider became a row of a section stack on 2026-08-29 and its slides moved
+  // into a dialog, which is what the two tests further down cover.
   const screens: Array<[string, string, string]> = [
     ['Disciple Making Minute', 'disciple-making-minute', 'dmms-table'],
     ['Testimonials', 'testimonials', 'testimonials-table'],
-    ['Home', 'home', 'images-table'],
     ['Team Page', 'team-page', 'team-page-table'],
   ];
 
@@ -30,6 +32,48 @@ test.describe('[content] Website Content', () => {
       await gotoTab(page, 'page-manager', slug);
       await waitForGrid(page, tableClass);
       await expect(page.locator(`.${tableClass}`)).toBeVisible();
+    });
+  }
+
+  // EVERY PUBLIC PAGE, added 2026-08-29 when the last ten moved off the slot
+  // editor onto the same ordered section stack About Us had. One screen serves
+  // all eleven, driven by page-section-catalogue.ts - so the thing worth
+  // pinning is not that the screen mounts (it is the same component every
+  // time) but that each page's DOCUMENT still matches the catalogue: a
+  // section whose type the page no longer offers renders as "Unknown section"
+  // here and as nothing at all on the site.
+  const publicPages: Array<[string, string]> = [
+    ['About Us', 'about-us'],
+    ['Equipping Groups', 'equipping-groups'],
+    ['Equipping - Pastors', 'equipping-groups-pastors'],
+    ['Equipping - Leaders', 'equipping-groups-leaders'],
+    ['Equipping - Churches', 'equipping-groups-churches'],
+    ['Seminars', 'seminars'],
+    ['Lunch and Learns', 'lunch-and-learns'],
+    ['Give', 'give'],
+    ['Contact', 'contact'],
+    ['Discipleship Library', 'discipleship-library'],
+    ['Prayer Team', 'prayer-team'],
+  ];
+
+  for (const [label, slug] of publicPages) {
+    test(`${label} loads its section stack and previews every section`, async ({ page }) => {
+      await gotoTab(page, 'page-manager', slug);
+
+      const stack = page.locator('app-page-stack');
+      await expect(stack).toBeVisible({ timeout: 30_000 });
+      await expect(stack.locator('.ps__section').first()).toBeVisible({ timeout: 30_000 });
+
+      // A page that read nothing shows the empty-page warning; one that could
+      // not read at all shows the failure banner. Both are silent otherwise.
+      await expect(stack.locator('.ps__empty')).toHaveCount(0);
+      await expect(stack.locator('.ps__failed')).toHaveCount(0);
+
+      // No stored section the admin cannot name, and none the preview cannot
+      // draw. These are the two ways a catalogue and a document drift apart.
+      await expect(stack.locator('.ps__name', { hasText: 'Unknown section' })).toHaveCount(0);
+      await expect(stack.locator('.apv-unknown')).toHaveCount(0);
+      await expect(stack.locator('.apv-empty')).toHaveCount(0);
     });
   }
 
@@ -51,9 +95,25 @@ test.describe('[content] Website Content', () => {
 
   test('Home frames the slider and points at where the docking bar went', async ({ page }) => {
     await gotoTab(page, 'page-manager', 'home');
-    await waitForGrid(page, 'images-table');
-    await expect(page.locator('app-page-home')).toBeVisible();
+    await expect(page.locator('app-page-home')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('.home__section').first()).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('app-page-home')).toContainText('Web Config');
+  });
+
+  test('the Home slider opens its slides in a dialog', async ({ page }) => {
+    // The slides table moved INTO a dialog on 2026-08-29 when the slider
+    // became one row of the section stack. Three tests in this file asserted
+    // it was visible on the screen itself and had been red since; opening the
+    // row is the fix rather than dropping the assertion, because "the grid
+    // still loads" is the one thing worth knowing about it.
+    await gotoTab(page, 'page-manager', 'home');
+    const sliderRow = page.locator('.home__section', { hasText: 'Slider' }).first();
+    await expect(sliderRow).toBeVisible({ timeout: 30_000 });
+
+    await sliderRow.locator('.home__icon-btn').first().click();
+
+    await waitForGrid(page, 'images-table');
+    await expect(page.locator('.images-table')).toBeVisible();
   });
 
   test('the old content-manager route still resolves', async ({ page }) => {
@@ -63,12 +123,26 @@ test.describe('[content] Website Content', () => {
   });
 
   test('the shared list screens run without throwing', async ({ page }) => {
-    // These five moved onto BaseListComponent together; a break in the base
-    // class shows up as a thrown error rather than a missing element.
+    // These moved onto BaseListComponent together; a break in the base class
+    // shows up as a thrown error rather than a missing element.
     const errors = collectConsoleErrors(page);
-    for (const [, slug, tableClass] of screens.slice(0, 3)) {
+    for (const [, slug, tableClass] of screens) {
       await gotoTab(page, 'page-manager', slug);
       await waitForGrid(page, tableClass);
+    }
+    expect(errors, `browser threw:\n${errors.join('\n')}`).toEqual([]);
+  });
+
+  test('every public page opens its editor without throwing', async ({ page }) => {
+    // One component draws all eleven stacks, so a break in it is eleven
+    // screens at once - and it surfaces as a thrown error rather than a
+    // missing element, which is exactly what the per-page tests above would
+    // miss.
+    const errors = collectConsoleErrors(page);
+    for (const [, slug] of publicPages) {
+      await gotoTab(page, 'page-manager', slug);
+      await expect(page.locator('app-page-stack .ps__section').first())
+        .toBeVisible({ timeout: 30_000 });
     }
     expect(errors, `browser threw:\n${errors.join('\n')}`).toEqual([]);
   });

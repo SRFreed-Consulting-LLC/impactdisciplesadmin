@@ -25,20 +25,17 @@
     <app-team-page></app-team-page>
   }
 
-  <!-- Every other public page, driven by ONE catalogue rather than a tab
-       block each: which slots a page has is declared in EDITABLE_PAGES, so
+  <!-- Every public page, driven by ONE catalogue rather than a tab block
+       each: which sections a page can have is declared in EDITABLE_PAGES, so
        adding a page is an entry there plus a nav-config leaf, and no change
-       here. See page-editor.component.ts. -->
-  <!-- About Us has its own screen: it is the one page whose template is a
-       dispatcher, so it gets the ordered stack + preview that the generic
-       slot editor cannot offer. -->
-  @if (selectedTab === 'About Us') {
-    <app-about-us-page></app-about-us-page>
-  }
+       here. See page-stack.component.ts.
 
+       About Us had its own block here until 2026-08-29, when it was the only
+       page whose template was a dispatcher. All eleven are now, so all eleven
+       get the same ordered stack and whole-page preview. -->
   @for (page of editablePages; track page.slug) {
-    @if (selectedTab === page.label && page.slug !== 'about-us') {
-      <app-page-editor [page]="page"></app-page-editor>
+    @if (selectedTab === page.label) {
+      <app-page-stack [page]="page"></app-page-stack>
     }
   }
 </div>

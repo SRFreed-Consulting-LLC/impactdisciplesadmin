@@ -242,11 +242,13 @@ export const NAV_CONFIG: NavGroup[] = [
       // Coaches + Impact Team picker) - see impact-team.service.ts's own
       // header comment.
       { label: 'Team Page', slug: 'team-page' },
-      // Every remaining public page, added 2026-08-29. One generic editor
-      // (page-editor.component) serves them all; which slots each page has
-      // is declared once in page-manager/pages/editable-pages.ts, and the
-      // slug here must match that entry's `label` because TabShell selects
-      // by label. Their content lives in `page_content`, one doc per page.
+      // Every remaining public page, added 2026-08-29. One screen
+      // (page-stack.component) serves them all: an ordered stack of sections
+      // with a pop-up editor each and a preview of the whole page. Which
+      // sections a page can have is declared once in
+      // page-manager/pages/page-section-catalogue.ts, and the LABEL here must
+      // match that entry's `label` because TabShell selects by label. Their
+      // content lives in `page_content`, one doc per page.
       //
       // Pages NOT listed here are already editable somewhere else and would
       // be a second source of truth if they were: Store/E-Books (Products),

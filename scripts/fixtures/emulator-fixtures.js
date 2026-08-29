@@ -524,6 +524,27 @@ const bulkDiscountTiers = {
   "10": {numberOfBooks: 10, percentOff: 20},
 };
 
+// The home page's own section stack, from the shipped default. `order` comes
+// from the array position, never from a typed number - the same rule the
+// admin's drag handles follow.
+const home_sections = Object.fromEntries(
+  require('../seed-home-sections').SECTIONS.map(({id, ...rest}, i) =>
+    [id, {...rest, order: i}])
+);
+
+// The eleven public pages, each an ordered stack of sections. Taken from the
+// SHIPPED seed rather than retyped, so the fixture world cannot drift from
+// what the pages actually say - and so a section type added to the catalogue
+// without a matching renderer fails in the emulator rather than in dev.
+//
+// This has to be here at all because Page Manager is data-driven now: with
+// the collection empty, all eleven screens render "there are no sections on
+// this page" and every e2e assertion about them passes vacuously.
+const page_content = Object.fromEntries(
+  Object.entries(require('../page-content-seed-data.json'))
+    .map(([slug, blocks]) => [slug, {blocks}])
+);
+
 module.exports = {
   T0,
   AUTH_USERS,
@@ -547,6 +568,8 @@ module.exports = {
     campaign_emails,
     libraryUsers,
     bulkDiscountTiers,
+    home_sections,
+    page_content,
   },
   librarySeriesTree,
 };

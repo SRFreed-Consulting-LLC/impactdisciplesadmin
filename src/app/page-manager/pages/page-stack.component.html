@@ -1,0 +1,138 @@
+<div class="ps">
+  <!-- EDITOR COLUMN -->
+  <div class="ps__editor">
+    <header class="ps__head">
+      <div>
+        <h2 class="ps__title">{{ page.label }}</h2>
+        <p class="ps__note">
+          @if (page.horizontal) {
+            <!-- Contact is one row of two halves, so its stack reads across
+                 rather than down. Saying so beats letting someone drag a row
+                 up and wonder why nothing moved on the site. -->
+            Drag to reorder &mdash; on this page the order is
+            <strong>left to right</strong>.
+          } @else {
+            Drag to reorder.
+          }
+          {{ liveCount }} of {{ sections.length }} showing on the site.
+          <span class="ps__path">{{ page.path }}</span>
+        </p>
+      </div>
+
+      <button mat-flat-button color="primary"
+              [matMenuTriggerFor]="addMenu"
+              [disabled]="!canEdit() || loadFailed || !addableKinds.length">
+        <mat-icon>add</mat-icon> Add section
+      </button>
+      <mat-menu #addMenu="matMenu">
+        @for (kind of addableKinds; track kind.type) {
+          <button mat-menu-item type="button" (click)="add(kind)">
+            <mat-icon>{{ kind.icon }}</mat-icon>
+            <span class="ps__menu-label">{{ kind.label }}</span>
+            <span class="ps__menu-blurb">{{ kind.blurb }}</span>
+          </button>
+        }
+      </mat-menu>
+    </header>
+
+    @if (loadFailed) {
+      <div class="ps__failed" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        This page could not be read, so editing is switched off rather than
+        risking a save over content it never loaded. Reload the page.
+      </div>
+    }
+
+    @if (loading) {
+      <p class="ps__loading">Loading the page&hellip;</p>
+    }
+
+    <div cdkDropList class="ps__stack" (cdkDropListDropped)="reorder($event)">
+      @for (section of sections; track section.key) {
+        <div class="ps__section" cdkDrag
+             [class.ps__section--off]="!isLive(section)"
+             [cdkDragDisabled]="!canEdit() || loadFailed">
+          <mat-icon class="ps__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+
+          @if (kindOf(section); as kind) {
+            <mat-icon class="ps__type-icon">{{ kind.icon }}</mat-icon>
+            <div class="ps__body">
+              <div class="ps__name">{{ kind.label }}</div>
+              <div class="ps__summary">{{ summary(section) }}</div>
+            </div>
+            <button type="button" class="ps__icon-btn"
+                    [matTooltip]="isEditable(kind) ? 'Edit this section' : 'Nothing on this section is edited here'"
+                    [disabled]="!canEdit() || loadFailed || !isEditable(kind)"
+                    (click)="edit(section)">
+              <mat-icon>edit</mat-icon>
+            </button>
+          } @else {
+            <!-- A type this build does not know, or one this page does not
+                 offer. Shown so it can be removed; the public page skips it
+                 too. -->
+            <mat-icon class="ps__type-icon ps__type-icon--unknown">help_outline</mat-icon>
+            <div class="ps__body">
+              <div class="ps__name">Unknown section &ldquo;{{ section.type }}&rdquo;</div>
+              <div class="ps__summary">
+                This version of the admin cannot edit it, and the site does not draw it.
+              </div>
+            </div>
+          }
+
+          <button type="button" class="ps__icon-btn ps__icon-btn--danger"
+                  matTooltip="Delete this section for good"
+                  [disabled]="!canDelete() || loadFailed" (click)="remove(section)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+
+          <mat-slide-toggle
+            class="ps__live"
+            [checked]="isLive(section)"
+            [disabled]="!canEdit() || loadFailed"
+            (change)="toggleLive(section)"
+            [matTooltip]="isLive(section) ? 'Showing on the site' : 'Hidden from the site'">
+            Live
+          </mat-slide-toggle>
+        </div>
+      }
+    </div>
+
+    @if (!loading && !sections.length && !loadFailed) {
+      <div class="ps__empty">
+        <p>
+          There are no sections on this page, so <strong>the site shows an
+          empty page</strong> &mdash; this document is the only copy of its
+          words. Add a section to put something back.
+        </p>
+      </div>
+    }
+  </div>
+
+  <!-- PREVIEW RAIL -->
+  <aside class="ps__preview">
+    <header class="ps__preview-head">
+      <h2 class="ps__preview-title">Live preview</h2>
+      <div class="ps__device" role="group" aria-label="Preview width">
+        <button type="button" class="ps__device-btn"
+                [class.ps__device-btn--on]="device === 'desktop'"
+                [attr.aria-pressed]="device === 'desktop'"
+                (click)="setDevice('desktop')">Desktop</button>
+        <button type="button" class="ps__device-btn"
+                [class.ps__device-btn--on]="device === 'mobile'"
+                [attr.aria-pressed]="device === 'mobile'"
+                (click)="setDevice('mobile')">Mobile</button>
+      </div>
+    </header>
+
+    <app-page-live-preview
+      [page]="page"
+      [sections]="liveSections"
+      [device]="device"></app-page-live-preview>
+
+    <p class="ps__preview-note">
+      The whole page as a visitor gets it, from saved content &mdash;
+      switched-off sections are left out. Reordering shows at once; edits
+      show once saved.
+    </p>
+  </aside>
+</div>
