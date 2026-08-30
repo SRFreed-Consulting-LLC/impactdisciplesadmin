@@ -64,6 +64,9 @@ before(async () => {
     await setDoc(doc(db,
       "librarySeries/s1/books/book-unlicensed/units/u1"), {title: "Unit 1"});
     await setDoc(doc(db, "products/p1"), {title: "Book", isActive: true});
+    await setDoc(doc(db, "site_navigation/main"), {
+      items: [{id: "nav-home", title: "Home", kind: "page", routeKey: "home", visible: true}],
+    });
     await setDoc(doc(db, "customers/c1"), {email: "c1@x.test"});
     await setDoc(doc(db, "coupons/FREE"), {code: "FREE", percentOff: 100});
     // An already-sent mail doc, so the resend path (clear `delivery` and
@@ -75,6 +78,16 @@ before(async () => {
     });
     await setDoc(doc(db, "purchases/o1"), {total: 10});
     await setDoc(doc(db, "admin_users/a1"), {email: "admin@test.local"});
+    // The self-preferences carve-out compares resource.data.firebaseUID to
+    // the caller's uid, so these two need a real one. a1 above deliberately
+    // does NOT have one - a doc with no firebaseUID must never match
+    // somebody's own doc by accident.
+    await setDoc(doc(db, "admin_users/a-emp"), {
+      email: "employee@test.local", firebaseUID: "employee-uid", role: "Employee",
+    });
+    await setDoc(doc(db, "admin_users/a-edt"), {
+      email: "editor@test.local", firebaseUID: "editor-uid", role: "Editor",
+    });
     await setDoc(doc(db, "eventSessionCounts/e1"), {counts: {}});
     await setDoc(doc(db, "campaign_offers/camp1"), {
       campaignId: "camp1", isActive: true,
@@ -93,6 +106,27 @@ after(async () => {
 test("anon: public catalog readable, never writable", async () => {
   await assertSucceeds(getDoc(doc(anon(), "products/p1")));
   await assertFails(setDoc(doc(anon(), "products/p-new"), {title: "nope"}));
+});
+
+// The site's own top menu (2026-08-29). More load-bearing than most public
+// content: an unreadable navigation document is a site with no menu on every
+// page, and a writable one is somebody else choosing where your navigation
+// points - a phishing surface rather than a content one.
+test("anon: the site navigation is readable by a visitor, and writable by nobody", async () => {
+  await assertSucceeds(getDoc(doc(anon(), "site_navigation/main")));
+  await assertFails(setDoc(doc(anon(), "site_navigation/main"), {items: []}));
+  await assertFails(updateDoc(doc(anon(), "site_navigation/main"), {
+    items: [{id: "x", title: "Donate", kind: "custom", url: "https://evil.test", visible: true}],
+  }));
+  await assertFails(deleteDoc(doc(anon(), "site_navigation/main")));
+});
+
+test("business staff may edit the site navigation; an Editor may not", async () => {
+  // Editors are the library tier - nothing on the public marketing site is
+  // theirs, and the menu is the most visible thing on it.
+  await assertSucceeds(updateDoc(doc(admin(), "site_navigation/main"), {items: []}));
+  await assertSucceeds(updateDoc(doc(employee(), "site_navigation/main"), {items: []}));
+  await assertFails(updateDoc(doc(editor(), "site_navigation/main"), {items: []}));
 });
 
 test("anon: the retired sales collection is closed to everyone", async () => {
@@ -221,6 +255,69 @@ test("Admin claim: admin_users update yes, create/delete never (functions only)"
   await assertSucceeds(updateDoc(doc(admin(), "admin_users/a1"), {firstName: "A"}));
   await assertFails(setDoc(doc(admin(), "admin_users/a-new"), {email: "n@x.test"}));
   await assertFails(deleteDoc(doc(admin(), "admin_users/a1")));
+});
+
+// SELF-PREFERENCES CARVE-OUT (2026-08-29), added with the drawer's
+// drag-to-resize. The whole value of the carve-out is that it is NARROW, so
+// most of these assert what it still refuses. If any of the "no" cases ever
+// goes green, an Employee can edit part of the staff registry.
+test("Staff may save their OWN nav/appearance preferences", async () => {
+  await assertSucceeds(updateDoc(doc(employee(), "admin_users/a-emp"), {drawerWidth: 380}));
+  await assertSucceeds(updateDoc(doc(employee(), "admin_users/a-emp"), {drawerPinned: false}));
+  await assertSucceeds(updateDoc(doc(employee(), "admin_users/a-emp"), {
+    pinnedScreens: ["page-manager.give"],
+  }));
+  await assertSucceeds(updateDoc(doc(employee(), "admin_users/a-emp"), {colorTheme: "horizon"}));
+  // Their own NAME, added with Settings > My Profile - an Employee should
+  // not have to ask an Admin to correct the spelling of their own name.
+  await assertSucceeds(updateDoc(doc(employee(), "admin_users/a-emp"), {
+    firstName: "Sam", lastName: "Taylor",
+  }));
+  // Editors too - they are the audience for the flattened Library tab.
+  await assertSucceeds(updateDoc(doc(editor(), "admin_users/a-edt"), {drawerWidth: 420}));
+  // Several at once is still fine; it is the KEY SET that is restricted.
+  await assertSucceeds(updateDoc(doc(employee(), "admin_users/a-emp"), {
+    drawerWidth: 300, drawerPinned: true,
+  }));
+});
+
+test("The carve-out does NOT open self-escalation", async () => {
+  // The claim that gates everything else in this file.
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-emp"), {role: "Admin"}));
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-emp"), {
+    permissions: [{screenKey: "store-manager.products", view: true}],
+  }));
+  await assertFails(updateDoc(doc(editor(), "admin_users/a-edt"), {
+    libraryPermissions: [{nodeId: "*", edit: true}],
+  }));
+  // Identity is how the app resolves who you are - not a preference.
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-emp"), {email: "admin@test.local"}));
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-emp"), {firebaseUID: "admin-uid"}));
+  // One allowed key does not smuggle a disallowed one through - hasOnly.
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-emp"), {
+    drawerWidth: 300, role: "Admin",
+  }));
+  // The name being writable must not drag the identity fields along with it.
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-emp"), {
+    firstName: "Sam", email: "admin@test.local",
+  }));
+});
+
+test("Renaming yourself does not let you rename anyone else", async () => {
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-edt"), {firstName: "Nope"}));
+  await assertFails(updateDoc(doc(editor(), "admin_users/a1"), {firstName: "Nope"}));
+});
+
+test("The carve-out is limited to your OWN document", async () => {
+  // Somebody else's doc, and a doc with no firebaseUID at all.
+  await assertFails(updateDoc(doc(employee(), "admin_users/a-edt"), {drawerWidth: 380}));
+  await assertFails(updateDoc(doc(editor(), "admin_users/a-emp"), {drawerWidth: 380}));
+  await assertFails(updateDoc(doc(employee(), "admin_users/a1"), {drawerWidth: 380}));
+  // And create/delete stay shut for everyone, carve-out or not.
+  await assertFails(setDoc(doc(employee(), "admin_users/a-mine"), {
+    email: "employee@test.local", firebaseUID: "employee-uid", drawerWidth: 380,
+  }));
+  await assertFails(deleteDoc(doc(employee(), "admin_users/a-emp")));
 });
 
 test("Employee claim: business staff yes, admin-only collections no", async () => {

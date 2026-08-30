@@ -1,12 +1,10 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StoreManagerComponent } from './store-manager.component';
-import { ProductsComponent } from './products/products.component';
 import { SharedModule } from '../shared/shared.module';
-import { ProductCategoriesComponent } from './product-categories/product-categories.component';
-import { CategoryModalComponent } from './product-categories/category-modal/category-modal.component';
-import { ProductSeriesComponent } from './product-series/product-series.component';
-import { SeriesModalComponent } from './product-series/series-modal/series-modal.component';
+// Products, and the Categories/Series screens edited inside it, moved to the
+// DATA manager on 2026-08-30 - see data-manager.component.ts. Store Manager
+// keeps the money screens: coupons, affiliate sales and payments.
 import { CouponsComponent } from './coupons/coupons.component';
 import { CouponDialogComponent } from './coupons/coupon-dialog.component';
 import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.component';
@@ -40,15 +38,10 @@ import { QuillModule } from 'ngx-quill';
 @NgModule({
   declarations: [
     StoreManagerComponent,
-    ProductsComponent,
     CouponsComponent,
     CouponDialogComponent,
     AffiliateSalesComponent,
-    AffilliattePaymentsComponent,
-    ProductCategoriesComponent,
-    CategoryModalComponent,
-    ProductSeriesComponent,
-    SeriesModalComponent
+    AffilliattePaymentsComponent
   ],
   imports: [
     CommonModule,

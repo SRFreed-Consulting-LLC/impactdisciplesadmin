@@ -20,9 +20,17 @@
   hasBackdrop="false" on the container (not just this sidenav) turns
   off the dark scrim mode="over" would otherwise show behind an "open"
   drawer, since here it's always considered open, just narrow. -->
+  <!-- The width is the user's own, dragged from the seam and saved to their
+  admin_users record - see MainScreenComponent's drag-to-resize section. It
+  is bound ONLY while expanded: an inline style beats a class, so leaving it
+  on would override .impact-drawer--collapsed's 64px rail and the drawer
+  would never collapse. Null removes the attribute entirely, handing the
+  collapsed state back to CSS. -->
   <mat-sidenav
     class="impact-drawer"
     [class.impact-drawer--collapsed]="!drawerExpanded"
+    [class.impact-drawer--resizing]="resizing"
+    [style.width.px]="drawerExpanded ? drawerWidth : null"
     [mode]="isDrawerPinned ? 'side' : 'over'"
     [opened]="true"
     disableClose
@@ -34,6 +42,28 @@
       .impact-drawer--collapsed .drawer-logo img. -->
       <img src="assets/Impact-Logo_Light.png" alt="Impact Disciples logo">
     </div>
+
+    <!-- Section tabs (2026-08-29): Admin / Site / Library. A segmented
+    toggle rather than a mat-tab-group - there are no tab BODIES here, only
+    a filter over the list below, and mat-tab-group's ink bar measures
+    itself against a width the drawer is free to change mid-drag. Hidden
+    while collapsed (the 64px rail has no room for three words) and hidden
+    entirely when only one section has anything in it - a segmented control
+    with a single segment is not a choice. See showSectionTabs. -->
+    @if (drawerExpanded && showSectionTabs) {
+      <mat-button-toggle-group
+        class="impact-drawer__sections"
+        [value]="activeSection"
+        (change)="selectSection($event.value)"
+        hideSingleSelectionIndicator
+        aria-label="Navigation section">
+        @for (section of visibleSections; track section.id) {
+          <mat-button-toggle class="impact-drawer__section" [value]="section.id">
+            {{ section.label }}
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    }
 
     @if (drawerExpanded) {
       <div class="impact-drawer__pin-drawer-row">
@@ -57,7 +87,7 @@
       so it doesn't trip the same "third projected element doubles the
       row height" issue. Hidden entirely (not just empty) when nothing
       is pinned, rather than showing an empty section header. -->
-      @if (pinnedItems.length > 0) {
+      @if (showPinnedItems && pinnedItems.length > 0) {
         @for (pinned of pinnedItems; track pinned) {
           <div class="impact-drawer__pinned-row">
             <a
@@ -82,7 +112,56 @@
         <mat-divider class="impact-drawer__pinned-divider"></mat-divider>
       }
 
-      @for (group of secureNav; track group) {
+      <!-- A FLATTENED section (Library today) drops the group header
+      entirely and lists its screens directly - the tab above already names
+      them, and an expandable LIBRARY row under a LIBRARY tab is one rank of
+      nesting doing no work. Each row still carries its real group, so
+      routing, pinning and "Manage access" are identical to the nested
+      case; only the drawing differs. See NavSectionDef.flatten. -->
+      @if (isSectionFlattened) {
+        <div class="impact-drawer__flat">
+          @for (entry of flatItems; track entry.item) {
+            <div class="impact-drawer__subitem">
+              <a
+                mat-list-item
+                [routerLink]="['/', entry.group.id]"
+                [queryParams]="{ tab: entry.item.slug }"
+                class="impact-drawer__sublink impact-drawer__flatlink"
+                [class.impact-drawer__sublink--active]="
+                  activeGroupId === entry.group.id && activeSlug === entry.item.slug
+                ">
+                <span matListItemTitle class="impact-drawer__sublink-text">{{ entry.item.label }}</span>
+              </a>
+              <button
+                type="button"
+                mat-icon-button
+                class="impact-drawer__row-menu-toggle"
+                matTooltip="More actions"
+                [matMenuTriggerFor]="flatRowMenu"
+                (menuOpened)="onRowMenuOpened()"
+                (menuClosed)="onRowMenuClosed()">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #flatRowMenu="matMenu">
+                <button mat-menu-item (click)="togglePin(entry.group, entry.item)">
+                  <mat-icon>push_pin</mat-icon>
+                  <span>{{ isPinned(entry.group, entry.item) ? 'Unpin' : 'Pin to top' }}</span>
+                </button>
+                @if (canManagePermissions && entry.item.employeeGrantable !== false) {
+                  <button
+                    mat-menu-item
+                    (click)="openScreenPermissions(entry.group, entry.item)">
+                    <mat-icon>manage_accounts</mat-icon>
+                    <span>Manage access</span>
+                  </button>
+                }
+              </mat-menu>
+            </div>
+          }
+        </div>
+      }
+
+      @for (group of groupedNav; track group) {
         <!-- Home - no sub-items, plain link -->
         @if (!group.items) {
           <a
@@ -180,6 +259,27 @@
   beyond it, per the original ask - this only fixes the permanent
   collapsed-state overlap, not the deliberate expanded-state one. -->
   <mat-sidenav-content class="impact-shell__content" [class.impact-shell__content--rail-gutter]="!isDrawerPinned">
+    <!-- DRAG-TO-RESIZE handle, sitting on the seam between drawer and
+    content. It lives in the CONTENT pane, not the drawer: the drawer's own
+    projected content is inside Material's .mat-drawer-inner-container,
+    which scrolls, so a handle in there would scroll away from the edge it
+    is supposed to be pinned to.
+
+    Pinned-only, deliberately. Unpinned the drawer is an overlay that
+    collapses to a rail whenever the mouse leaves it (mode="over"), so the
+    content's left edge is nowhere near the drawer's and there is no seam to
+    grab - resizing something that auto-hides is not a thing anyone wants. -->
+    @if (isDrawerPinned) {
+      <div
+        class="impact-shell__resize"
+        [class.impact-shell__resize--active]="resizing"
+        (pointerdown)="onResizeStart($event)"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize navigation"
+        title="Drag to resize the menu"></div>
+    }
+
     <mat-toolbar class="impact-header">
       <span class="impact-header__spacer"></span>
       <app-new-record-alerts></app-new-record-alerts>

@@ -53,6 +53,45 @@ export interface NavTab {
   label: string;
 }
 
+// ---- Drawer sections (2026-08-29, owner's call) ----
+//
+// The drawer is split into TABS, and a group declares which one it lives
+// under. This is a rank ABOVE the group, which is what makes it cheap:
+// unlike moving a screen between groups (see the screenKey warning at the
+// top of this file), it changes NO identity at all. A screenKey is still
+// `group.id` + `leaf.slug`, every route and bookmark still resolves, and
+// not one stored ScreenPermission grant has to be migrated. Moving a
+// manager to another tab is one word on its group.
+export type NavSection = 'admin' | 'site' | 'library';
+
+export interface NavSectionDef {
+  id: NavSection;
+  label: string;
+  // true = render this section's screens as ONE flat list, with no
+  // expandable group header above them. Worth doing only where the header
+  // would repeat what the tab already says - Library today. Site
+  // deliberately KEEPS its header (owner's call) even though it holds a
+  // single group, because it is the one expected to gain more.
+  //
+  // A section holding two or more groups must never flatten, or the groups
+  // merge into one undifferentiated list with nothing naming either -
+  // nav-config.spec.ts pins that, since the failure is silent.
+  flatten?: boolean;
+}
+
+// Tab order, left to right.
+export const NAV_SECTIONS: NavSectionDef[] = [
+  { id: 'admin', label: 'Admin' },
+  { id: 'site', label: 'Site' },
+  { id: 'library', label: 'Library', flatten: true }
+];
+
+/** A group's section, with the 'admin' default applied - so moving a group
+ *  to another tab stays a one-line edit and the majority stay unannotated. */
+export function sectionOf(group: NavGroup): NavSection {
+  return group.section ?? 'admin';
+}
+
 export interface NavLeaf {
   label: string;
   // ?tab= query param value used to deep-link here from outside the
@@ -94,6 +133,9 @@ export interface NavGroup {
   label: string;
   icon: string; // mat-icon ligature name
   roles: Role[];
+  // Which drawer TAB this group appears under - see NavSection above. Omit
+  // for 'admin', which is most of them.
+  section?: NavSection;
   items?: NavLeaf[]; // undefined = flat link (Home only)
 }
 
@@ -125,7 +167,7 @@ export const NAV_CONFIG: NavGroup[] = [
       // Slug load-bearing - see NavLeaf.slug. Label reads "Form Submissions"
       // (shortened from "Custom Form Submissions") - the slug/screenKey
       // stay as-is on purpose, only the display label changed.
-      { label: 'Form Submissions', slug: 'custom-form-submissions' }
+      // Form Submissions moved to DATA on 2026-08-30.
       // No more standalone Subscribers screen here (removed 2026-08-15) -
       // subscriber management (Add/Edit, Unsubscribe, Send Newsletter/
       // Prayer Request, list-building) folded entirely into Reports
@@ -193,16 +235,40 @@ export const NAV_CONFIG: NavGroup[] = [
     icon: 'storefront',
     roles: [Role.ADMIN],
     items: [
-      { label: 'Products', slug: 'products', roles: [Role.ADMIN] },
+      // Products moved to DATA on 2026-08-30 - this group keeps the money.
       { label: 'Coupons', slug: 'coupons', roles: [Role.ADMIN] }
     ]
+  },
+  {
+    // NAVIGATION - the public site's top menu, a screen of its own rather
+    // than a Page Manager tab (2026-08-30, owner's call). The menu is the
+    // site's FRAME rather than any one page's content: it is on every page,
+    // and it is the only thing on the Site tab that is not a page.
+    //
+    // A flat link, like Home - no `items`, so no ?tab= and no sub-rows. That
+    // has one consequence worth knowing: PermissionService.buildPermissionTree()
+    // skips groups with no items, so this screen is Admin/Root only and
+    // cannot be granted to an Employee, where it could be as a leaf. If an
+    // Employee ever needs the menu, it has to grow a leaf of its own.
+    id: 'navigation',
+    label: 'NAVIGATION',
+    icon: 'menu',
+    roles: [Role.ADMIN],
+    section: 'site'
   },
   {
     id: 'page-manager',
     label: 'PAGE MANAGER',
     icon: 'handyman',
     roles: [Role.ADMIN],
+    // The SITE tab - everything that decides what a visitor to
+    // impactdisciples.com sees. On its own tab since 2026-08-29: it is the
+    // one group whose audience is the public rather than the back office,
+    // and at 17 screens it was longer than every other manager combined.
+    section: 'site',
     items: [
+      // Navigation was a leaf here for a day (2026-08-29/30). It is its own
+      // top-level group now - see the NAVIGATION entry above Page Manager.
       // HOME (2026-08-29): the home page's own sections, gathered onto one
       // screen in the order a visitor meets them. Today that is the slider
       // (formerly the standalone 'Home Page Images' screen); the services
@@ -223,7 +289,6 @@ export const NAV_CONFIG: NavGroup[] = [
       // app.component.html and renders on every page, so it is site
       // furniture rather than home-page content and never belonged on Home.
       { label: 'Web Config', slug: 'web-config' },
-      { label: 'Testimonials', slug: 'testimonials' },
       // 'Home Page Popups' retired 2026-08-19 (Campaign Manager v2 Phase
       // 6): the public site never had a renderer for home_page_popups (the
       // screen wrote docs nothing read); web-campaign popups (Campaigns
@@ -241,7 +306,6 @@ export const NAV_CONFIG: NavGroup[] = [
       // breakout instructor (see course-dialog.component.ts's combined
       // Coaches + Impact Team picker) - see impact-team.service.ts's own
       // header comment.
-      { label: 'Team Page', slug: 'team-page' },
       // Every remaining public page, added 2026-08-29. One screen
       // (page-stack.component) serves them all: an ordered stack of sections
       // with a pop-up editor each and a preview of the whole page. Which
@@ -271,6 +335,41 @@ export const NAV_CONFIG: NavGroup[] = [
     ]
   },
   {
+    // DATA (2026-08-30, owner's call) - the RECORDS the public site is built
+    // out of, gathered from four different managers by what they are rather
+    // than by which module happened to own them. Last on the Site tab: you
+    // arrange the site's frame and its pages first, and these are what fills
+    // them.
+    //
+    // Each of these is a list of records the site renders, as distinct from
+    // a page's own words (Page Manager), the site's frame (Navigation), or a
+    // back-office process (orders, campaigns, shipping).
+    //
+    // THIS MOVE CHANGED FIVE SCREENKEYS - page-manager.testimonials became
+    // data.testimonials, store-manager.products became data.products, and so
+    // on. Unlike a section change, that IS an identity change: stored
+    // ScreenPermission grants were migrated by
+    // scripts/migrate-screenkey-renames-3.js, run on dev. The production run
+    // is written up in MIGRATION.md and has NOT been done.
+    id: 'data',
+    label: 'DATA',
+    icon: 'inventory_2',
+    roles: [Role.ADMIN],
+    section: 'site',
+    items: [
+      { label: 'Products', slug: 'products', roles: [Role.ADMIN] },
+      { label: 'Testimonials', slug: 'testimonials' },
+      { label: 'Team Page', slug: 'team-page' },
+      // Slug unchanged from its Contacts Manager days on purpose:
+      // NewRecordAlertsComponent navigates using this exact string, and the
+      // label already reads shorter than the slug does.
+      { label: 'Form Submissions', slug: 'custom-form-submissions' },
+      // Sits beside the submissions its forms produce, which is the pairing
+      // that was split across two managers before.
+      { label: 'Form Builder', slug: 'form-builder' }
+    ]
+  },
+  {
     id: 'tools-manager',
     label: 'TOOLS MANAGER',
     icon: 'build',
@@ -297,8 +396,8 @@ export const NAV_CONFIG: NavGroup[] = [
       // edit. Stored grants were migrated off tools-manager.system-templates
       // by scripts/migrate-email-designer-grant.js.
       { label: 'Email Designer', slug: 'email-designer', hideFromNav: true },
-      { label: 'Shipping Labels', slug: 'shipping-labels' },
-      { label: 'Form Builder', slug: 'form-builder' }
+      // Form Builder moved to DATA on 2026-08-30.
+      { label: 'Shipping Labels', slug: 'shipping-labels' }
     ]
   },
   {
@@ -395,6 +494,16 @@ export const NAV_CONFIG: NavGroup[] = [
     label: 'LIBRARY MANAGER',
     icon: 'menu_book',
     roles: [Role.ADMIN, Role.EDITOR],
+    // The LIBRARY tab, and the only group on it - so the section FLATTENS
+    // (see NavSectionDef.flatten) and these screens render directly under
+    // the tab with no 'LIBRARY' header repeating the tab's own name.
+    //
+    // This tab is also the whole of what a Role.EDITOR can see, since
+    // PermissionService hard-scopes that role to library-manager keys. For
+    // them the other two tabs have nothing in them, the tab strip hides
+    // itself entirely (see MainScreenComponent.showSectionTabs), and this
+    // flat list is simply their nav.
+    section: 'library',
     items: [
       // Slice 1: read-only Series/Book/Unit/Lesson drill-down, proving the
       // named-database service pattern end to end. Later slices add the

@@ -1,0 +1,93 @@
+// Sits inside .settings-content alongside the Appearance card, and matches
+// its 520px measure - the two cards read as one column, not two widths.
+// .settings-card's own width rule lives in themes.component.scss and does
+// not reach here (different component, emulated encapsulation), so it is
+// restated rather than inherited.
+:host {
+  display: block;
+}
+
+.settings-card {
+  max-width: 520px;
+  margin-bottom: 16px;
+}
+
+.profile-fields {
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+
+  // Below ~420px the two fields stop having room to sit side by side. Note
+  // the flex values are restated: down a COLUMN `flex: 1 1 0` would mean
+  // "share the available HEIGHT", which is not what it means across a row.
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0;
+
+    .profile-field {
+      flex: 0 0 auto;
+    }
+  }
+}
+
+.profile-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.profile-locked {
+  border-top: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  padding-top: 12px;
+}
+
+.profile-locked__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.profile-locked__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.profile-locked__value {
+  font-size: 13px;
+  color: var(--mat-sys-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-locked__note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
+}
+
+.profile-status {
+  margin-right: auto;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+// Semantic colours, not the theme accent - "saved" and "could not save" are
+// states, and an accent-coloured failure message reads as decoration.
+.profile-status--saved {
+  color: var(--mat-sys-primary);
+}
+
+.profile-status--error {
+  color: var(--mat-sys-error);
+}

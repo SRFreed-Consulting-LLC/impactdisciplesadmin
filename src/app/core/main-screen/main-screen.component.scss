@@ -22,12 +22,17 @@ $collapsed-width: 64px;
 }
 
 .impact-drawer {
-  // 300px predates the nav label diet (group labels render without the
-  // "MANAGER" suffix now - see displayGroupLabel()) and the removal of the
-  // old widest rows ("SUBSCRIPTIONS MANAGER", "Lunch and Learn Requests").
-  // 260px clears today's widest label at the new 13.5px size with room for
-  // the chevron.
-  width: 260px;
+  // FALLBACK ONLY, and only while collapsed. The expanded width is an
+  // inline style bound from MainScreenComponent.drawerWidth (the user's own
+  // dragged value, default 300px) - see the template's [style.width.px].
+  //
+  // 260px was the previous fixed width and was clipping the longest screen
+  // names ("Disciple Making Minute", "Coaching with Impact", "Equipping -
+  // Churches"): the sub-item rows spend 80px of any width on padding alone
+  // (44px indent + 36px clearing the row's "⋮" button) before a character
+  // is drawn. Rather than pick a new number that a future longer label
+  // breaks again, the width is the user's to set.
+  width: 300px;
   background: var(--app-side);
   border-right: 1px solid var(--app-divider);
   border-radius: 0;
@@ -78,9 +83,19 @@ $collapsed-width: 64px;
 // just the always-relevant navigation icons - including pinned shortcuts,
 // which stay visible here since "quick access while collapsed" is the
 // whole point of pinning.
+// The width transition is what makes the collapse/expand read as a slide
+// rather than a jump - but during a DRAG it means the drawer lags the
+// pointer by 180ms, which feels like the handle has come off in your hand.
+// Killed for the duration of the drag only.
+.impact-drawer--resizing {
+  transition: none;
+}
+
 .impact-drawer--collapsed {
   width: $collapsed-width;
 
+  .impact-drawer__sections,
+  .impact-drawer__flat,
   .impact-drawer__sublist,
   .impact-drawer__link-text,
   .impact-drawer__sublink-text,
@@ -121,6 +136,98 @@ $collapsed-width: 64px;
 
   img {
     height: 36px;
+  }
+}
+
+// SECTION TABS (Admin / Site / Library) - a segmented control, not a
+// mat-tab-group: there are no tab bodies, and mat-tab-group's ink bar
+// measures a width the resize handle is free to change under it.
+//
+// Sentence case at 12px rather than the uppercase + letter-spacing the nav
+// rows use, deliberately: three uppercase words do not fit across the
+// minimum 240px drawer, and "LIBRARY" was the one that broke first.
+.impact-drawer__sections {
+  display: flex;
+  margin: 0 12px 10px;
+}
+
+// Material renders .mat-button-toggle-* INSIDE mat-button-toggle, and those
+// internals never receive this component's [_ngcontent-*] attribute - so a
+// plain selector for them compiles to something that can never match. Same
+// trap, same fix, as .mat-drawer-inner-container above: ::ng-deep drops the
+// attribute requirement, :host keeps the rule inside this component.
+:host ::ng-deep .impact-drawer__sections {
+  // NO width: 100%. `display: flex` above already makes this a block-level
+  // box that fills its line minus its own margins. With width:100% the
+  // over-constrained block equation adjusts margin-RIGHT, never the width,
+  // so the 12px left margin pushed the strip 12px past the drawer's right
+  // edge - where line 75's `overflow-x: hidden !important` silently CLIPPED
+  // it rather than showing a scrollbar. Measured at 300px: the strip
+  // spanned x=12..312 and the Library tab lost 11px of its 99px.
+  border-radius: var(--app-radius-control);
+  border: 1px solid var(--app-divider);
+  // NOT --app-field. That token is the near-white colour of an input inside
+  // a white CARD (#f4f6f9 in Midnight Paper, #f6f8fb in Harbor Split,
+  // #f5f6f9 in Horizon) - but no variant has a white DRAWER: all ten paint
+  // the sidebar --app-side, the darkest navy in the app. Using it here put
+  // a white slab in a navy sidebar (measured RGB distance 366-387) and
+  // every colour layered on top then assumed a dark ground and failed:
+  // unchecked labels at 2.1:1, hover at 1.08:1, and the CHECKED tab at
+  // 1.06:1 in Harbor Split - white on white, with the selected background
+  // differing from the unselected one by an RGB distance of 1.2. There was
+  // no selected-tab indication at all in three of the ten themes.
+  //
+  // Transparent lets the drawer's own --app-side show through, which is the
+  // same ground the flattened list below sits on - and that pairing
+  // measures 7.4-12.1:1 in those same three themes. The border still
+  // delineates the control.
+  background: transparent;
+  overflow: hidden;
+
+  .mat-button-toggle {
+    // Equal thirds. This is a ROW, so `1 1 0` means "share the width" -
+    // it would mean something quite different in a column.
+    flex: 1 1 0;
+    min-width: 0;
+    background: transparent;
+    color: var(--app-muted);
+    border-left-color: var(--app-divider);
+  }
+
+  .mat-button-toggle-button {
+    height: 28px;
+    padding: 0;
+    font: inherit;
+  }
+
+  .mat-button-toggle-label-content {
+    line-height: 28px;
+    padding: 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    // The whole point of the drag handle is that names stop being clipped,
+    // so a tab label that does not fit should shrink the gap, not vanish
+    // behind an ellipsis nobody can widen away.
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mat-button-toggle-appearance-standard:hover
+    .mat-button-toggle-focus-overlay {
+    opacity: 0;
+  }
+
+  .mat-button-toggle:not(.mat-button-toggle-checked):hover {
+    background: color-mix(in srgb, var(--app-ink) 8%, transparent);
+    color: var(--app-ink);
+  }
+
+  // Same tinted "you are here" treatment as an active nav row, so the tab
+  // and the row it reveals read as one selection rather than two systems.
+  .mat-button-toggle-checked {
+    background: var(--app-nav-active-bg);
+    color: var(--app-nav-active-ink);
   }
 }
 
@@ -497,6 +604,81 @@ $collapsed-width: 64px;
   color: inherit !important;
 }
 
+// A FLATTENED section's list (Library). It reuses the sublink's type and
+// active treatment - these are still screens, and should read as the same
+// rank as screens on any other tab - but drops the recessed well and guide
+// rail, which exist to tether children to a parent header that is not here,
+// and drops the 44px indent with them.
+.impact-drawer__flat {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+}
+
+// Specificity note, same as the sublink rule above: that one is prefixed
+// .impact-drawer__list to beat Material's own (0,2,0) list-item padding, so
+// this override has to match it and then come later in source.
+.impact-drawer__list .impact-drawer__flatlink {
+  padding-left: 20px;
+}
+
+.impact-shell__resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  z-index: 3;
+  cursor: col-resize;
+  // Invisible until asked for - a permanent vertical stripe down the seam
+  // would read as a border nobody chose. The drawer's own border-right is
+  // still there underneath.
+  background: transparent;
+  transition: background 0.15s ease;
+
+  &:hover,
+  &--active {
+    background: var(--app-accent);
+  }
+}
+
+// While dragging, every element on the page would otherwise fight the
+// pointer for a text selection or its own cursor - the pointer regularly
+// travels over the nav's labels and the content pane's tables.
+:host ::ng-deep .impact-shell:has(.impact-shell__resize--active) {
+  cursor: col-resize;
+  user-select: none;
+
+  // `cursor` is INHERITED, so the declaration above only reaches elements
+  // that declare none of their own - and every element actually in the way
+  // declares one: .impact-drawer__link and every Material button set
+  // `cursor: pointer`, any input gets `cursor: text` from the UA sheet.
+  // Inheritance never enters their cascade, so no amount of ancestor
+  // specificity wins - only a declaration on the element itself does.
+  // Scoped to this shell and alive only for the length of a drag.
+  * {
+    cursor: col-resize !important;
+  }
+
+  // Material puts its OWN 400ms ease on the content pane's margin-left
+  // (`.mat-drawer-transition .mat-drawer-content`, and the class is added
+  // unconditionally 200ms after init because app.module provides real
+  // animations) - and margin-left is exactly what updateContentMargins()
+  // moves on every pointermove. Killing the drawer's width transition
+  // above fixes only half of it: without this, the drawer edge tracks the
+  // pointer while the content pane - and the resize handle pinned to its
+  // left edge - eases toward each new target, trailing the cursor through
+  // the whole drag and still sliding for 400ms after the button comes up.
+  //
+  // Specificity: :host (0,1,0) + .impact-shell:has(...) (0,2,0, since
+  // :has() takes its most specific argument) + .mat-drawer-content = a
+  // clear (0,4,0) against Material's (0,2,0), so this wins regardless of
+  // stylesheet injection order.
+  .mat-drawer-content {
+    transition: none;
+  }
+}
+
 // mat-sidenav-content scrolls by default (CDK Scrollable) - .portal-content
 // needs to be the app's *only* scrolling region (every migrated screen's own
 // internal scroll-region assumptions, e.g. `.table-scroll { overflow: auto }`,
@@ -508,6 +690,9 @@ $collapsed-width: 64px;
   height: 100%;
   overflow: hidden;
   background: var(--app-ground);
+  // Positioning context for .impact-shell__resize, which pins itself to
+  // this pane's left edge - i.e. the seam with the drawer.
+  position: relative;
 }
 
 // Unpinned only (mode="over" - see the template's own comment on

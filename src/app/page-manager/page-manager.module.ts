@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { DMMServiceComponent } from './dmms/dmms.component';
 import { DMMDialogComponent } from './dmms/dmm-dialog.component';
-import { TestimonialsComponent } from './testimonials/testimonials.component';
 import { PageManagerComponent } from './page-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { provideHttpClient } from '@angular/common/http';
@@ -17,14 +16,16 @@ import { HomeSectionEditorComponent } from './home/home-section-editor.component
 // page needs no change here. Replaced the slot editor and the three About
 // Us-only components on 2026-08-29; the pop-ups went the same day, along with
 // Home's two.
+// NavigationComponent is NOT declared here. The public site's top menu became
+// a top-level screen on 2026-08-30 and has its own lazy module,
+// navigation/navigation.module.ts - its files stay in this folder only
+// because it borrows pages/page-stack.component.css outright.
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
 import { PageLivePreviewComponent } from './pages/page-live-preview.component';
 import { DestinationFieldComponent } from './pages/destination-field.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
-import { TeamPageComponent } from './team-page/team-page.component';
-import { TeamPageDialogComponent } from './team-page/team-page-dialog.component';
 // Moved here from Tools Manager 2026-08-19 with the Web Manager -> Content
 // Manager rename - public-site configuration lives with public-site content.
 import { WebConfigComponent } from './web-config/web-config.component';
@@ -35,7 +36,6 @@ import { DockingBarComponent } from './docking-bar/docking-bar.component';
 // is now fully DevExtreme-free.
 import { ImageUploaderModule } from '../shared/image-uploader/image-uploader.module';
 import { PageManagerRoutingModule } from './page-manager-routing.module';
-import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
 // FormsModule for the section editors' [(ngModel)] fields - the rest of this
 // module is reactive forms, so it was not needed until 2026-08-29.
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -55,6 +55,8 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
+// The Navigation screen's Add menu separates pages from links and dropdowns.
+import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -84,6 +86,7 @@ import { QuillModule } from 'ngx-quill';
     MatToolbarModule,
     MatProgressSpinnerModule,
     MatMenuModule,
+    MatDividerModule,
     MatCheckboxModule,
     MatButtonToggleModule,
     MatTabsModule,
@@ -93,8 +96,6 @@ import { QuillModule } from 'ngx-quill';
     PageManagerComponent,
     DMMServiceComponent,
     DMMDialogComponent,
-    TestimonialsComponent,
-    TestimonialDialogComponent,
     HomeComponent,
     HomeSectionEditorComponent,
     PageStackComponent,
@@ -103,8 +104,6 @@ import { QuillModule } from 'ngx-quill';
     DestinationFieldComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,
-    TeamPageComponent,
-    TeamPageDialogComponent,
     WebConfigComponent,
     DockingBarComponent
   ],

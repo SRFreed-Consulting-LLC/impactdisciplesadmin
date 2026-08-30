@@ -116,12 +116,22 @@ export class ThemeService {
   }
 
   private persist(changes: { colorTheme?: string }): void {
-    // FirebaseDAO.update() is a full setDoc (no merge) - the write has to
-    // carry the whole record, not just the changed field, same as every
-    // other update() call site in this codebase.
+    // PARTIAL write (updateDoc), not the whole record.
+    //
+    // This used to spread the entire cached AdminUser into a full setDoc,
+    // which quietly made two components fight over one document. This
+    // service writes from `currentAgent$.value`; MainScreenComponent writes
+    // the user's nav preferences (pinnedScreens, drawerPinned, and now
+    // drawerWidth) from its OWN local clone and never pushes the result
+    // back into currentAgent$. currentAgent$ is fed once per auth-state
+    // change, so the two copies diverge the moment either writes - and each
+    // one's next whole-record write then erased the other's field. Setting
+    // a theme after resizing the nav reverted the width; resizing after
+    // setting a theme reverted the theme. Writing only the changed key
+    // means neither copy's staleness can reach the other's fields.
     const user = this.authService.dao.currentAgent$.value;
     if (user?.id) {
-      this.userService.update(user.id, { ...user, ...changes }).catch((err) => {
+      this.userService.updateFields(user.id, { ...changes }).catch((err) => {
         console.error('ThemeService: failed to save theme preference:', err);
       });
     }

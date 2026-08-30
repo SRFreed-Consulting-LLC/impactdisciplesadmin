@@ -1,0 +1,24 @@
+<div class="manager-content">
+  <!-- The records the public site is built out of. Each of these was in a
+       different manager until 2026-08-30 - see data-manager.component.ts for
+       what they have in common and what the move cost. -->
+  @if (selectedTab === 'Products') {
+    <app-products></app-products>
+  }
+
+  @if (selectedTab === 'Testimonials') {
+    <app-testimonials></app-testimonials>
+  }
+
+  @if (selectedTab === 'Team Page') {
+    <app-team-page></app-team-page>
+  }
+
+  @if (selectedTab === 'Form Submissions') {
+    <app-custom-form-submissions></app-custom-form-submissions>
+  }
+
+  @if (selectedTab === 'Form Builder') {
+    <app-form-builder></app-form-builder>
+  }
+</div>

@@ -17,7 +17,8 @@ function shell(): MainScreenComponent {
     null as never, // PermissionMigrationService
     null as never, // AdminUserService
     null as never, // MatDialog
-    { url: '/', events: { pipe: () => ({ subscribe: () => undefined }) } } as never // Router
+    { url: '/', events: { pipe: () => ({ subscribe: () => undefined }) } } as never, // Router
+    null as never // Injector - only used by afterNextRender, never on this path
   );
 }
 

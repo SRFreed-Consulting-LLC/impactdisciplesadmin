@@ -227,6 +227,26 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // The public site's TOP NAVIGATION - one document, `main`, holding the
+    // whole ordered menu (2026-08-29). Both the desktop header and the
+    // mobile off-canvas menu render from it; it replaces two hand-maintained
+    // arrays in the web repo that had silently drifted apart.
+    //
+    // World-readable for the same reason as page_content above: the public
+    // site has no Firebase Auth at all, so anything it renders must be
+    // readable by an anonymous visitor. This one is more load-bearing than
+    // most - an unreadable navigation document is a site with no menu on
+    // every page - which is also why the web app keeps a bundled fallback
+    // until every environment is confirmed seeded.
+    //
+    // Staff-only write, and it must stay that way: the items carry
+    // destination URLs, so a public write path here would let anyone point
+    // the site's own navigation at somewhere of their choosing. That is a
+    // phishing surface, not a content one.
+    match /site_navigation/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();
@@ -431,8 +451,46 @@ service cloud.firestore {
     // A write here propagates into the role CLAIM via onAdminUserRoleSync -
     // that's why update is the only client verb and is admin-gated.
     match /admin_users/{id} {
+      // SELF-ACCOUNT CARVE-OUT (2026-08-29). Every staff tier may save its
+      // OWN preferences and its OWN display name - and nothing else - on its
+      // OWN document. Everything that decides what a person can DO or how
+      // the app identifies them (role, permissions, libraryPermissions,
+      // email, firebaseUID) stays Admin/Root, so the anti-self-escalation
+      // property is unchanged: an Employee still cannot grant themselves a
+      // screen, and the role claim that onAdminUserRoleSync propagates is
+      // not in the allow-list.
+      //
+      // firstName/lastName are in the list because they are the person's own
+      // name (owner's call: "a user should be able to save to their own
+      // accounts"); Settings > My Profile is the screen that writes them.
+      // Note the name is NOT purely cosmetic - it is what other staff see
+      // against records - which is why it stops at the name and does not
+      // extend to email, the key the whole app resolves an account by.
+      //
+      // Needed because these preferences are written by the CLIENT, from the
+      // person they belong to. Before this, an Employee or Editor resizing
+      // the nav, pinning a screen or picking a theme had the write rejected
+      // and the UI silently revert - most visibly with drag-to-resize, where
+      // the whole drawer snaps back on release.
+      //
+      // This is also the one place the file's "rules cannot look admin_users
+      // up by uid" caveat does not bite: on a per-document update `resource`
+      // is already in hand, so firebaseUID can be compared directly.
+      function isOwnStaffDoc() {
+        return isStaffAny() && resource.data.firebaseUID == request.auth.uid;
+      }
+      // hasOnly, not hasAny: the write must touch NOTHING outside this list.
+      // Note this requires a PARTIAL update (updateDoc) - a whole-record
+      // setDoc would list every field as changed and be denied, which is
+      // why the client writes these with BaseService.updateFields().
+      function onlyOwnPrefsChanged() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['drawerWidth', 'drawerPinned', 'pinnedScreens', 'colorTheme', 'darkMode',
+                    'firstName', 'lastName']);
+      }
+
       allow read: if isStaffAny();
-      allow update: if isAdminRole();
+      allow update: if isAdminRole() || (isOwnStaffDoc() && onlyOwnPrefsChanged());
       allow create, delete: if false;
     }
     match /user_permissions/{id} {          // legacy per-user grants, loaded

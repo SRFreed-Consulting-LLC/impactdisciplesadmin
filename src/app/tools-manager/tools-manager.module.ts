@@ -7,9 +7,6 @@ import { ToolsManagerComponent } from './tools-manager.component';
 import { ToolsManagerRoutingModule } from './tools-manager-routing.module';
 import { ShippingLabelsComponent } from './shipping-labels/shipping-labels.component';
 import { ShippingLabelDialogComponent } from './shipping-labels/shipping-label-dialog.component';
-import { FormBuilderComponent } from './form-builder/form-builder.component';
-import { FormFieldSettingsComponent } from './form-builder/form-field-settings.component';
-import { FormTestSubmitDialogComponent } from './form-builder/form-test-submit-dialog.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -64,9 +61,6 @@ import { QuillModule } from 'ngx-quill';
     ToolsManagerComponent,
     ShippingLabelsComponent,
     ShippingLabelDialogComponent,
-    FormBuilderComponent,
-    FormFieldSettingsComponent,
-    FormTestSubmitDialogComponent
   ]
 })
 export class ToolsManagerModule { }

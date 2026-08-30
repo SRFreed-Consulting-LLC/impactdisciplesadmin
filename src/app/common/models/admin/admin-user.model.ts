@@ -57,6 +57,15 @@ export class AdminUser extends Person {
     // starts auto-collapsing on them.
     drawerPinned?: boolean;
 
+    // How wide the left nav drawer is, in pixels - the user drags its right
+    // edge to set this (see MainScreenComponent.onResizeStart). Persisted
+    // per-admin like drawerPinned above rather than per-browser, so a nav
+    // widened to fit the longest screen name follows this person to their
+    // other machines. undefined = the 300px default; the value is clamped on
+    // both read and write, so a hand-edited Firestore doc cannot produce a
+    // drawer too narrow to use or one that swallows the screen.
+    drawerWidth?: number;
+
     constructor(){
       super();
     }

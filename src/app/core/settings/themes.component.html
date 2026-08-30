@@ -1,6 +1,11 @@
 <app-list-header title="Settings"></app-list-header>
 
 <div class="settings-content">
+  <!-- The one place a member of staff can change something on their OWN
+  admin_users record. Above Appearance because it is about who you are
+  rather than how the app looks. -->
+  <app-profile-card></app-profile-card>
+
   <mat-card class="settings-card">
     <mat-card-header>
       <mat-card-title>Appearance</mat-card-title>

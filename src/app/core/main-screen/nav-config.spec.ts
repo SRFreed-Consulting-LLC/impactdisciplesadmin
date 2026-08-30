@@ -1,4 +1,4 @@
-import { NAV_CONFIG, NavGroup, NavLeaf } from './nav-config';
+import { NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, sectionOf } from './nav-config';
 
 // NAV_CONFIG is not just the left nav - it doubles as the granular
 // PERMISSION REGISTRY (see its own header comment): a group/leaf/tab's
@@ -115,9 +115,16 @@ describe('NAV_CONFIG', () => {
     // NavLeaf.slug's comment. Renaming one silently breaks that deep link.
     it('keeps the slugs other components navigate to', () => {
       const contacts = groups.find((g) => g.id === 'contacts-manager');
-      const slugs = (contacts?.items ?? []).map((l) => l.slug);
-      expect(slugs).toContain('purchases');
-      expect(slugs).toContain('custom-form-submissions');
+      expect((contacts?.items ?? []).map((l) => l.slug)).toContain('purchases');
+
+      // Form Submissions moved to DATA on 2026-08-30 and kept its slug. It
+      // was pinned here as "load-bearing - NewRecordAlertsComponent
+      // navigates using this exact string", and that had stopped being true:
+      // that component deep-links only Event Registrations now and sends
+      // everything else to /home. Checked before the move rather than
+      // assumed - a stale "do not touch" comment is its own hazard.
+      const data = groups.find((g) => g.id === 'data');
+      expect((data?.items ?? []).map((l) => l.slug)).toContain('custom-form-submissions');
     });
 
     it('keeps the campaigns slugs the manager tab shell resolves', () => {
@@ -162,15 +169,80 @@ describe('NAV_CONFIG', () => {
     });
   });
 
-  describe('shape', () => {
-    it('has Home as a flat link with no sub-items', () => {
-      const home = groups.find((g) => g.id === 'home');
-      expect(home).toBeDefined();
-      expect(home?.items).toBeUndefined();
+  describe('drawer sections', () => {
+    // The Admin/Site/Library tabs, added 2026-08-29. Unlike a group move,
+    // this rank changes no screenKey - but it can still strand a screen
+    // somewhere nobody looks, and every failure mode here is silent.
+    const declared = NAV_SECTIONS.map((s) => s.id);
+
+    it('puts every group on a section that exists', () => {
+      // A typo'd section id would not fail to compile if it ever widened to
+      // a string, and the group would simply stop appearing on every tab.
+      for (const group of groups) {
+        expect(declared)
+          .withContext(`${group.id} is on an undeclared section`)
+          .toContain(sectionOf(group));
+      }
     });
 
-    it('gives every other group at least one item, so no group renders empty', () => {
-      for (const group of groups.filter((g) => g.id !== 'home')) {
+    it('ships no empty tab', () => {
+      // A declared section with nothing on it renders as a segment that
+      // switches to a blank nav. visibleSections hides it at runtime, so
+      // this is the check that notices it was left declared.
+      for (const section of NAV_SECTIONS) {
+        expect(groups.some((g) => sectionOf(g) === section.id))
+          .withContext(`the ${section.id} tab has no groups on it`)
+          .toBeTrue();
+      }
+    });
+
+    it('only flattens a section holding exactly one group', () => {
+      // Flattening drops the group headers. With two groups on the section
+      // their screens merge into one undifferentiated list with nothing
+      // naming either half - and it looks deliberate.
+      for (const section of NAV_SECTIONS.filter((s) => s.flatten)) {
+        const held = groups.filter((g) => sectionOf(g) === section.id);
+        expect(held.length)
+          .withContext(`${section.id} flattens but holds ${held.map((g) => g.id)}`)
+          .toBe(1);
+      }
+    });
+
+    it('gives every section a label to put on its tab', () => {
+      for (const section of NAV_SECTIONS) {
+        expect(section.label?.trim())
+          .withContext(`the ${section.id} section has no label`).toBeTruthy();
+      }
+    });
+
+    it('keeps Library on its own section, since Editors can see nothing else', () => {
+      // PermissionService hard-scopes Role.EDITOR to library-manager keys.
+      // Were Library to share a tab with anything else, an Editor would get
+      // a tab whose other groups all filter out from under them.
+      const librarySection = sectionOf(groups.find((g) => g.id === 'library-manager')!);
+      const sharing = groups.filter((g) => sectionOf(g) === librarySection).map((g) => g.id);
+      expect(sharing).toEqual(['library-manager']);
+    });
+  });
+
+  describe('shape', () => {
+    // A group with NO `items` is a flat link - it navigates instead of
+    // expanding. Listed by name rather than counted, because a flat link is
+    // outside the granular permission system entirely
+    // (buildPermissionTree() skips groups with no items), so one appearing
+    // by accident silently makes a screen Admin-only and ungrantable.
+    const FLAT_LINKS = ['home', 'navigation'];
+
+    it('has exactly these flat links, and they really have no sub-items', () => {
+      const flat = groups.filter((g) => !g.items).map((g) => g.id);
+      expect(flat).toEqual(FLAT_LINKS);
+    });
+
+    it('gives every OTHER group at least one item, so none renders empty', () => {
+      // An expandable header that opens onto nothing. MainScreenComponent
+      // drops such a group at runtime, so this is the check that notices it
+      // was left in the registry at all.
+      for (const group of groups.filter((g) => !FLAT_LINKS.includes(g.id))) {
         expect(group.items?.length)
           .withContext(`${group.id} would render as an empty expandable header`)
           .toBeGreaterThan(0);

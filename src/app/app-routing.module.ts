@@ -48,6 +48,23 @@ const routes: Routes = [
         loadChildren: () => import('./page-manager/page-manager.module').then(m => m.PageManagerModule),
         canActivate: [ authGuard ]
       },
+      // The public site's top menu. A screen of its own rather than a Page
+      // Manager tab (2026-08-30): the menu is the site's frame, not any one
+      // page's content. Its files live under page-manager/ anyway - see
+      // NavigationModule's own comment on why.
+      // The records the public site is built out of - Products,
+      // Testimonials, Team Page, Form Submissions, Form Builder - gathered
+      // from four managers on 2026-08-30. See data-manager.component.ts.
+      {
+        path: 'data',
+        loadChildren: () => import('./data-manager/data-manager.module').then(m => m.DataManagerModule),
+        canActivate: [ authGuard ]
+      },
+      {
+        path: 'navigation',
+        loadChildren: () => import('./page-manager/navigation/navigation.module').then(m => m.NavigationModule),
+        canActivate: [ authGuard ]
+      },
       // 2026-08-19 renames (Customers Manager -> Contacts Manager, Web
       // Manager -> Content Manager) and 2026-08-29 (Content Manager -> Page
       // Manager): old paths redirect so pre-rename bookmarks and stale deep

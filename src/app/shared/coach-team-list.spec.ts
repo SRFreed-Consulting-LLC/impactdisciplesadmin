@@ -1,6 +1,6 @@
 import { BehaviorSubject, of } from 'rxjs';
 import { CoachesComponent } from 'src/app/events-manager/coaches/coaches.component';
-import { TeamPageComponent } from 'src/app/page-manager/team-page/team-page.component';
+import { TeamPageComponent } from 'src/app/data-manager/team-page/team-page.component';
 
 // CHARACTERIZATION tests, written BEFORE Coaches and Team Page move onto
 // BaseListComponent (2026-08-27 sweep, P4).

@@ -11,7 +11,7 @@ test.describe('Left nav - collapsible manager groups', () => {
   // nav-config's internal "CONTACTS MANAGER" strings the pre-redesign
   // version of this spec targeted (fixed 2026-08-18, same staleness batch
   // as the Settings-Themes rewrite below).
-  test('expanding a group reveals its sub-items, and multiple groups can stay open', async ({ page }) => {
+  test('expanding a group reveals its sub-items, and opening another closes the first', async ({ page }) => {
     await page.goto('/home');
 
     // Collapsed by default on a route with no active manager - Purchases
@@ -23,19 +23,23 @@ test.describe('Left nav - collapsible manager groups', () => {
     await page.getByRole('button', { name: 'CONTACTS', exact: true }).click();
     await expect(page.getByText('Purchases', { exact: true })).toBeVisible();
 
-    // Opening a second group shouldn't close the first (no accordion-
-    // exclusive behavior - see MainScreenComponent.expanded). Store has no
-    // label overlap with Contacts' items, unlike Reports (which also has
-    // its own separate "Purchases" entry) - picked deliberately to avoid a
-    // two-match ambiguity here.
+    // ACCORDION-EXCLUSIVE since 2026-08-29 (owner's call): opening a second
+    // group CLOSES the first, so the nav never grows past the window. This
+    // test asserted the opposite until 2026-08-29 and had been red since the
+    // rule changed - its comment was actively misdocumenting the component.
+    // Both paths that open a group go through MainScreenComponent.openGroup();
+    // nav-accordion.spec.ts pins the unit-level rule. Store has no label
+    // overlap with Contacts' items, unlike Reports (which also has its own
+    // separate "Purchases" entry) - picked deliberately to avoid a two-match
+    // ambiguity here.
     await page.getByRole('button', { name: 'STORE', exact: true }).click();
     await expect(page.getByText('Products', { exact: true })).toBeVisible();
-    await expect(page.getByText('Purchases', { exact: true })).toBeVisible();
-
-    // Collapsing Contacts again hides just its own sub-items.
-    await page.getByRole('button', { name: 'CONTACTS', exact: true }).click();
     await expect(page.getByText('Purchases', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('Products', { exact: true })).toBeVisible();
+
+    // Collapsing the open group leaves nothing open, deliberately - a group
+    // that springs back when you close it reads as broken.
+    await page.getByRole('button', { name: 'STORE', exact: true }).click();
+    await expect(page.getByText('Products', { exact: true })).toHaveCount(0);
   });
 
   test('clicking between sibling tabs switches content live', async ({ page }) => {

@@ -1,0 +1,134 @@
+/* Page Manager > Site > Navigation.
+ *
+ * The chrome - rows, grips, type icons, the empty and failed states - comes
+ * from page-stack.component.css, listed first in this component's styleUrls.
+ * This screen is meant to BE a section stack rather than resemble one, so
+ * borrowing the stylesheet is the point: there is no second copy to keep in
+ * step when the stack's look changes.
+ *
+ * Everything below is only what a menu needs and a page does not. */
+
+/* No preview rail on this screen (Shane's call, 2026-08-30) - a menu is a
+ * row of words and every one is already on screen with its destination, so a
+ * framed copy of the site would say the same thing smaller. `.ps` is a flex
+ * row expecting an editor and a rail; with the rail gone the editor takes the
+ * width. Stated rather than relied on, because `flex: 1 1 auto` and a missing
+ * sibling is exactly the pairing that silently collapses. */
+.ps__editor--wide {
+  flex: 1 1 100%;
+  max-width: 1100px;
+}
+
+/* ---- the stack header ---- */
+
+.nav-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nav-msg {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+.nav-msg--ok {
+  color: var(--app-accent);
+}
+
+.nav-msg--error {
+  color: var(--app-danger, #d9534f);
+}
+
+/* Each problem on its own line inside the shared failed-state box, which is
+ * laid out for one icon and one run of text. */
+.nav-problem {
+  display: block;
+  margin-top: 3px;
+}
+
+/* ---- one item, full screen ---- */
+
+.nav-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 620px;
+  padding-top: 4px;
+}
+
+.nav-form__field {
+  width: 100%;
+}
+
+.nav-form__readonly {
+  padding: 2px 0 12px;
+}
+
+.nav-form__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+  margin-bottom: 2px;
+}
+
+.nav-form__readonly code {
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+/* mat-hint lives in a form field's own subscript row; the hints under the
+ * switches and the read-only block need their own spacing. */
+.nav-form__hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-muted);
+  max-width: 62ch;
+}
+
+.nav-form__bad {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-danger, #d9534f);
+  max-width: 62ch;
+}
+
+.nav-form__switch {
+  padding: 10px 0;
+  border-top: 1px solid var(--app-divider);
+}
+
+/* ---- a dropdown's contents, one level down ---- */
+
+.nav-children {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-divider);
+  /* Wider than the form above it: these are stack rows, and squeezing them
+     into the form's measure would make them a different kind of row from the
+     identical ones on the screen behind. */
+  max-width: none;
+}
+
+.nav-children__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.nav-children__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

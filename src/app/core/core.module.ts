@@ -5,11 +5,16 @@ import { ScreenPermissionsDialogComponent } from './main-screen/screen-permissio
 import { RouterModule } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ThemesComponent } from './settings/themes.component';
+import { ProfileCardComponent } from './settings/profile-card.component';
+import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,16 +31,23 @@ import { SharedModule } from '../shared/shared.module';
     MainScreenComponent,
     DashboardComponent,
     ThemesComponent,
+    ProfileCardComponent,
     ScreenPermissionsDialogComponent
   ],
   imports: [
     CommonModule,
     RouterModule,
+    // SharedModule imports these but does not re-export them, so the profile
+    // card's two text fields need them declared here.
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatSidenavModule,
     MatToolbarModule,
     MatListModule,
     MatIconModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatMenuModule,
     MatDividerModule,
     MatTooltipModule,

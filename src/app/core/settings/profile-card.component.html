@@ -1,0 +1,68 @@
+<mat-card class="settings-card">
+  <mat-card-header>
+    <mat-card-title>My Profile</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="profile-fields">
+      <mat-form-field appearance="outline" class="profile-field">
+        <mat-label>First name</mat-label>
+        <input
+          matInput
+          name="firstName"
+          autocomplete="given-name"
+          [(ngModel)]="firstName"
+          (ngModelChange)="onEdited()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="profile-field">
+        <mat-label>Last name</mat-label>
+        <input
+          matInput
+          name="lastName"
+          autocomplete="family-name"
+          [(ngModel)]="lastName"
+          (ngModelChange)="onEdited()">
+      </mat-form-field>
+    </div>
+
+    <!-- Read-only, and shown rather than hidden: these are the two things
+    people want to confirm about their own account. Email is the key the app
+    resolves an AdminUser by, and role is propagated into the auth claim -
+    neither is a preference, and firestore.rules refuses both. -->
+    <div class="profile-locked">
+      <div class="profile-locked__row">
+        <span class="profile-locked__label">Email</span>
+        <span class="profile-locked__value">{{ email }}</span>
+      </div>
+      <div class="profile-locked__row">
+        <span class="profile-locked__label">Role</span>
+        <span class="profile-locked__value">{{ role }}</span>
+      </div>
+      <p class="profile-locked__note">
+        Your email address and role are set by an administrator.
+      </p>
+    </div>
+
+    <div class="profile-actions">
+      @if (error) {
+        <span class="profile-status profile-status--error">{{ error }}</span>
+      } @else if (saved) {
+        <span class="profile-status profile-status--saved">Saved</span>
+      }
+
+      @if (dirty) {
+        <button type="button" mat-button (click)="revert()" [disabled]="saving">
+          CANCEL
+        </button>
+      }
+      <button
+        type="button"
+        mat-flat-button
+        color="primary"
+        [disabled]="!canSave"
+        (click)="save()">
+        {{ saving ? 'SAVING...' : 'SAVE' }}
+      </button>
+    </div>
+  </mat-card-content>
+</mat-card>

@@ -1,0 +1,308 @@
+<!-- EDITING ONE ITEM, full screen. Same treatment as a page section: not a
+     pop-up, and the stack is not destroyed underneath - it is the same
+     component and the same in-memory items, so backing out is instant.
+     No preview rail: a menu is a row of words, and every one of them is
+     already on screen with its destination. -->
+@if (editing; as item) {
+  <div class="ps ps--editing">
+    <div class="ps__editor ps__editor--wide">
+      <header class="ps__head ps__head--editing">
+        <button type="button" class="ps__back" (click)="closeEditor()">
+          <mat-icon>arrow_back</mat-icon>
+          <span>{{ editingParent ? editingParent.title : 'Navigation' }}</span>
+        </button>
+        <div class="ps__editing-title">
+          <mat-icon class="ps__type-icon">{{ iconFor(item) }}</mat-icon>
+          <h2 class="ps__title">{{ item.title || 'Untitled' }}</h2>
+        </div>
+        <div class="ps__editing-actions">
+          <button mat-button type="button" (click)="closeEditor()">DONE</button>
+        </div>
+      </header>
+
+      <div class="nav-form">
+        <mat-form-field appearance="outline" class="nav-form__field">
+          <mat-label>What the menu says</mat-label>
+          <input matInput [(ngModel)]="item.title" (ngModelChange)="touched()" autocomplete="off">
+          <mat-hint>The wording a visitor reads, not the page's own title.</mat-hint>
+        </mat-form-field>
+
+        @if (item.kind === 'page') {
+          <!-- Read-only on purpose. A page item stores a catalogue KEY, not a
+               URL, so a route that moves is corrected in one place instead of
+               everywhere it happens to be linked. -->
+          <div class="nav-form__readonly">
+            <span class="nav-form__label">Goes to</span>
+            <code>{{ summary(item) }}</code>
+            @if (isStale(item)) {
+              <p class="nav-form__bad">
+                That page is not on the site any more. Delete this item and add
+                the page you want instead.
+              </p>
+            } @else {
+              <p class="nav-form__hint">
+                To send it somewhere else, delete it and add the page you want.
+              </p>
+            }
+          </div>
+        }
+
+        @if (item.kind === 'custom') {
+          <mat-form-field appearance="outline" class="nav-form__field">
+            <mat-label>Address</mat-label>
+            <input matInput [(ngModel)]="item.url" (ngModelChange)="touched()"
+                   autocomplete="off" placeholder="https://example.com">
+            <mat-hint>
+              A full web address for somewhere else, or something like
+              /store?category=spanish-resources for a spot on this site.
+            </mat-hint>
+          </mat-form-field>
+
+          <div class="nav-form__switch">
+            <mat-slide-toggle [checked]="!!item.external"
+                              (change)="item.external = $event.checked; touched()">
+              Opens in a new tab
+            </mat-slide-toggle>
+            <p class="nav-form__hint">
+              On for anywhere outside impactdisciples.com. Off for an address
+              on this site, or the page reloads instead of moving smoothly.
+            </p>
+          </div>
+        }
+
+        <div class="nav-form__switch">
+          <mat-slide-toggle [checked]="!!item.highlight"
+                            (change)="item.highlight = $event.checked; touched()">
+            Draw attention to it
+          </mat-slide-toggle>
+          <p class="nav-form__hint">Styled to stand out &mdash; a summit, an event, a deadline.</p>
+        </div>
+
+        <div class="nav-form__switch">
+          <mat-slide-toggle [checked]="item.visible"
+                            (change)="item.visible = $event.checked; touched()">
+            Show it in the menu
+          </mat-slide-toggle>
+          <p class="nav-form__hint">
+            Off takes it out of the menu without losing it &mdash; a yearly
+            event keeps its wording and its link for next time.
+          </p>
+        </div>
+
+        <!-- A DROPDOWN'S CONTENTS, one level down. This is the cost of the
+             stack shape and it was chosen knowingly: you never see the whole
+             menu at once, but each screen holds one thing. -->
+        @if (item.kind === 'group') {
+          <section class="nav-children">
+            <header class="nav-children__head">
+              <h3 class="nav-children__title">What is inside it</h3>
+              <button mat-stroked-button type="button" [matMenuTriggerFor]="childMenu">
+                <mat-icon>add</mat-icon> Add
+              </button>
+              <mat-menu #childMenu="matMenu">
+                @for (group of routeGroups; track group) {
+                  <button mat-menu-item type="button" [matMenuTriggerFor]="childRoutes">
+                    <span>{{ group }}</span>
+                  </button>
+                  <mat-menu #childRoutes="matMenu">
+                    @for (route of routesIn(group); track route.key) {
+                      <button mat-menu-item type="button"
+                              [disabled]="isInMenu(route)"
+                              (click)="addPageToGroup(route, item)">
+                        {{ route.label }}
+                      </button>
+                    }
+                  </mat-menu>
+                }
+                <mat-divider></mat-divider>
+                <button mat-menu-item type="button" (click)="addLinkToGroup(item)">
+                  <mat-icon>link</mat-icon> <span>A link</span>
+                </button>
+              </mat-menu>
+            </header>
+
+            <div cdkDropList class="ps__stack" (cdkDropListDropped)="reorderChildren($event, item)">
+              @for (child of childrenOf(item); track child.id) {
+                <div class="ps__section" cdkDrag [class.ps__section--off]="!child.visible">
+                  <mat-icon class="ps__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+                  <mat-icon class="ps__type-icon">{{ iconFor(child) }}</mat-icon>
+                  <div class="ps__body">
+                    <div class="ps__name">{{ child.title }}</div>
+                    <div class="ps__summary">{{ summary(child) }}</div>
+                  </div>
+                  <button type="button" class="ps__icon-btn" matTooltip="Edit this item"
+                          (click)="edit(child)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button type="button" class="ps__icon-btn" matTooltip="Move it out to the top level"
+                          (click)="liftOut(child, item)">
+                    <mat-icon>north</mat-icon>
+                  </button>
+                  <button type="button" class="ps__icon-btn ps__icon-btn--danger"
+                          matTooltip="Delete this item for good" (click)="remove(child)">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                  <mat-slide-toggle class="ps__live" [checked]="child.visible"
+                                    (change)="toggleLive(child)"
+                                    [matTooltip]="child.visible ? 'Showing on the site' : 'Hidden from the site'">
+                    Live
+                  </mat-slide-toggle>
+                </div>
+              }
+            </div>
+
+            @if (!childrenOf(item).length) {
+              <div class="ps__empty">
+                <p>
+                  This dropdown has nothing in it, so <strong>the site leaves it
+                  out altogether</strong> &mdash; a heading that opens onto
+                  nothing is worse than no heading. Add something, or delete it.
+                </p>
+              </div>
+            }
+          </section>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+
+<div class="ps">
+  <div class="ps__editor ps__editor--wide">
+    <header class="ps__head">
+      <div>
+        <h2 class="ps__title">Navigation</h2>
+        <p class="ps__note">
+          Drag to reorder. {{ liveCount }} of {{ items.length }} showing on the site.
+          <span class="ps__path">the site's header and its phone menu both show this</span>
+        </p>
+      </div>
+
+      <div class="nav-head__actions">
+        @if (error) {
+          <span class="nav-msg nav-msg--error">{{ error }}</span>
+        } @else if (justSaved) {
+          <span class="nav-msg nav-msg--ok">Saved</span>
+        } @else if (dirty) {
+          <span class="nav-msg">Unsaved changes</span>
+        }
+
+        <button mat-flat-button color="primary" [matMenuTriggerFor]="addMenu" [disabled]="!canEdit">
+          <mat-icon>add</mat-icon> Add
+        </button>
+        <mat-menu #addMenu="matMenu">
+          @for (group of routeGroups; track group) {
+            <button mat-menu-item type="button" [matMenuTriggerFor]="routeMenu">
+              <span>{{ group }}</span>
+            </button>
+            <mat-menu #routeMenu="matMenu">
+              @for (route of routesIn(group); track route.key) {
+                <button mat-menu-item type="button"
+                        [disabled]="isInMenu(route)"
+                        (click)="addPage(route)">
+                  {{ route.label }}
+                </button>
+              }
+            </mat-menu>
+          }
+          <mat-divider></mat-divider>
+          <button mat-menu-item type="button" (click)="addLink()">
+            <mat-icon>link</mat-icon> <span>A link</span>
+          </button>
+          <button mat-menu-item type="button" (click)="addDropdown()">
+            <mat-icon>expand_more</mat-icon> <span>A dropdown</span>
+          </button>
+        </mat-menu>
+
+        @if (dirty) {
+          <button mat-button type="button" (click)="revert()" [disabled]="saving">CANCEL</button>
+        }
+        <button mat-flat-button color="primary"
+                [disabled]="!dirty || saving || problems.length > 0"
+                (click)="save()">
+          {{ saving ? 'SAVING...' : 'SAVE' }}
+        </button>
+      </div>
+    </header>
+
+    @if (loadFailed) {
+      <div class="ps__failed" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        The menu could not be read, so editing is switched off rather than
+        risking a save over a menu it never loaded. Reload the page.
+      </div>
+    }
+
+    @if (notSeeded) {
+      <div class="ps__failed" role="alert">
+        <mat-icon>info_outline</mat-icon>
+        This environment has no menu document yet, so the site is showing the
+        menu built into its own code. Ask for
+        <code>seed-site-navigation.js</code> to be run here before editing.
+      </div>
+    }
+
+    @if (!loaded) {
+      <p class="ps__loading">Loading the menu&hellip;</p>
+    }
+
+    @if (problems.length) {
+      <div class="ps__failed" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>
+          <strong>Fix before saving:</strong>
+          @for (problem of problems; track problem) {
+            <span class="nav-problem">{{ problem }}</span>
+          }
+        </span>
+      </div>
+    }
+
+    <div cdkDropList class="ps__stack" (cdkDropListDropped)="reorder($event)">
+      @for (item of items; track item.id) {
+        <div class="ps__section" cdkDrag
+             [class.ps__section--off]="!item.visible"
+             [cdkDragDisabled]="!canEdit">
+          <mat-icon class="ps__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+          <mat-icon class="ps__type-icon" [class.ps__type-icon--unknown]="isStale(item)">
+            {{ isStale(item) ? 'help_outline' : iconFor(item) }}
+          </mat-icon>
+
+          <div class="ps__body">
+            <div class="ps__name">{{ item.title }}</div>
+            <div class="ps__summary">{{ summary(item) }}</div>
+          </div>
+
+          <button type="button" class="ps__icon-btn" matTooltip="Edit this item"
+                  [disabled]="!canEdit" (click)="edit(item)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button type="button" class="ps__icon-btn ps__icon-btn--danger"
+                  matTooltip="Delete this item for good"
+                  [disabled]="!canEdit" (click)="remove(item)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+
+          <mat-slide-toggle class="ps__live"
+                            [checked]="item.visible"
+                            [disabled]="!canEdit"
+                            (change)="toggleLive(item)"
+                            [matTooltip]="item.visible ? 'Showing on the site' : 'Hidden from the site'">
+            Live
+          </mat-slide-toggle>
+        </div>
+      }
+    </div>
+
+    @if (loaded && !items.length && !loadFailed) {
+      <div class="ps__empty">
+        <p>
+          There is nothing in the menu, so <strong>the site's header would be
+          empty</strong>. Add a page to put something back.
+        </p>
+      </div>
+    }
+  </div>
+</div>
+
+}

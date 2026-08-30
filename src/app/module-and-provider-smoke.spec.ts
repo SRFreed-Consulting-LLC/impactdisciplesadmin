@@ -31,7 +31,7 @@ import { CampaignPopupModel } from 'src/app/common/models/domain/campaign-popup.
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CampaignsManagerModule } from 'src/app/campaigns-manager/campaigns-manager.module';
 import { CampaignsManagerRoutingModule } from 'src/app/campaigns-manager/campaigns-manager-routing.module';
-import { CategoryModalComponent } from 'src/app/store-manager/product-categories/category-modal/category-modal.component';
+import { CategoryModalComponent } from 'src/app/data-manager/product-categories/category-modal/category-modal.component';
 import { CoachDialogComponent } from 'src/app/events-manager/coaches/coach-dialog.component';
 import { ConfirmDialogComponent } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
@@ -45,7 +45,7 @@ import { CoreModule } from 'src/app/core/core.module';
 import { CouponDialogComponent } from 'src/app/store-manager/coupons/coupon-dialog.component';
 import { CreateItemDialogComponent } from 'src/app/library-manager/dialogs/create-item-dialog.component';
 import { CreateOrgContactDialogComponent } from 'src/app/shared/create-org-contact-dialog/create-org-contact-dialog.component';
-import { CustomFormSubmissionDetailDialogComponent } from 'src/app/contacts-manager/custom-form-submissions/custom-form-submission-detail-dialog.component';
+import { CustomFormSubmissionDetailDialogComponent } from 'src/app/data-manager/custom-form-submissions/custom-form-submission-detail-dialog.component';
 import { DailyReadingDialogComponent } from 'src/app/library-manager/lesson-editor/daily-reading-dialog.component';
 import { DataGridCellDirective } from 'src/app/shared/data-grid/data-grid-cell.directive';
 import { DEFAULT_COLOR_THEME } from 'src/app/common/services/utils/theme.service';
@@ -67,7 +67,7 @@ import { FaqDialogComponent } from 'src/app/events-manager/events/event-applicat
 import { FileBrowserStorageService } from 'src/app/shared/image-uploader/file-browser-storage.service';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { FolderPickerDialogComponent } from 'src/app/shared/image-uploader/folder-picker-dialog.component';
-import { FormTestSubmitDialogComponent } from 'src/app/tools-manager/form-builder/form-test-submit-dialog.component';
+import { FormTestSubmitDialogComponent } from 'src/app/data-manager/form-builder/form-test-submit-dialog.component';
 import { getLibraryLanguageOptions } from 'src/app/common/services/data/library/library-language-options.util';
 import { HomePageImageDialogComponent } from 'src/app/page-manager/home-page-images/home-page-image-dialog.component';
 import { ImageUploaderModule } from 'src/app/shared/image-uploader/image-uploader.module';
@@ -111,7 +111,7 @@ import { normalizeInlineHtml } from 'src/app/tools-manager/email-designer/inline
 import { notify } from 'src/app/common/utils/notify.util';
 import { OrderWorkflowDialogComponent } from 'src/app/shared/order-workflow-dialog/order-workflow-dialog.component';
 import { OrganizationLocationDialogComponent } from 'src/app/contacts-manager/organizations/organization-location-dialog.component';
-import { PALETTE_PREFIX } from 'src/app/tools-manager/form-builder/field-drop.util';
+import { PALETTE_PREFIX } from 'src/app/data-manager/form-builder/field-drop.util';
 import { parseBookPath } from 'src/app/common/services/data/library/library-nested-path.util';
 import { parseVideoUrl } from 'src/app/tools-manager/email-designer/video-url.util';
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
@@ -134,7 +134,7 @@ import { ScreenService } from 'src/app/common/services/utils/screen.service';
 import { SendSubscriptionDialogComponent } from 'src/app/reports-manager/subscriber-report/send-subscription-dialog.component';
 import { SendTestDialogComponent } from 'src/app/tools-manager/email-designer/preview/send-test-dialog.component';
 import { SentEmailPreviewDialogComponent } from 'src/app/campaigns-manager/sent-emails/sent-email-preview-dialog.component';
-import { SeriesModalComponent } from 'src/app/store-manager/product-series/series-modal/series-modal.component';
+import { SeriesModalComponent } from 'src/app/data-manager/product-series/series-modal/series-modal.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ShippingLabelDialogComponent } from 'src/app/tools-manager/shipping-labels/shipping-label-dialog.component';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
@@ -147,9 +147,9 @@ import { SummitPreviewComponent } from 'src/app/events-manager/events/summit-pre
 import { TagApplicationModel } from 'src/app/common/services/data/tag-application.service';
 import { TagRuleModel } from 'src/app/common/models/domain/tag-rule.model';
 import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
-import { TeamPageDialogComponent } from 'src/app/page-manager/team-page/team-page-dialog.component';
+import { TeamPageDialogComponent } from 'src/app/data-manager/team-page/team-page-dialog.component';
 import { TemplatePickerDialogComponent } from 'src/app/tools-manager/email-designer/template-picker/template-picker-dialog.component';
-import { TestimonialDialogComponent } from 'src/app/page-manager/testimonials/testimonial-dialog.component';
+import { TestimonialDialogComponent } from 'src/app/data-manager/testimonials/testimonial-dialog.component';
 import { ToolsManagerModule } from 'src/app/tools-manager/tools-manager.module';
 import { ToolsManagerRoutingModule } from 'src/app/tools-manager/tools-manager-routing.module';
 

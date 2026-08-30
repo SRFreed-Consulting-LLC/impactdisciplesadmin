@@ -13,8 +13,6 @@ import { PurchasesComponent } from './purchases/purchases.component';
 import { PurchaseDetailsComponent } from './purchase-details/purchase-details.component';
 import { OrderTimelineComponent } from './purchase-details/order-timeline/order-timeline.component';
 import { FulfillmentComponent } from './fulfillment/fulfillment.component';
-import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
-import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submissions/custom-form-submission-detail-dialog.component';
 // Organizations moved here from Events Manager in the 2026-08 restructure -
 // an organization is a contact-world record (see nav-config.ts).
 import { OrganizationsComponent } from './organizations/organizations.component';
@@ -83,8 +81,6 @@ import { MatExpansionModule } from '@angular/material/expansion';
     PurchaseDetailsComponent,
     OrderTimelineComponent,
     FulfillmentComponent,
-    CustomFormSubmissionsComponent,
-    CustomFormSubmissionDetailDialogComponent,
     OrganizationsComponent,
     OrganizationDetailsComponent,
     OrganizationLocationDialogComponent
