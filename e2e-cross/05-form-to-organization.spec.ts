@@ -94,7 +94,9 @@ test.describe('seminar-request submission to organization + contact', () => {
 
   test('Form Submissions offers Create Organization + Contact and completes it', async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto(`${ADMIN_URL}/contacts-manager?tab=custom-form-submissions`);
+    // Form Submissions moved to the DATA manager on 2026-08-30, alongside the
+    // Form Builder that produces the forms these come from.
+    await page.goto(`${ADMIN_URL}/data?tab=custom-form-submissions`);
 
     // The list is paged newest-first (custom-form-submissions.component.ts)
     // and the Form column renders formName - the fresh submission is the

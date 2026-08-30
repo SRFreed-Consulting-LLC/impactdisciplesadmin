@@ -8,6 +8,58 @@ every call site.
 
 ---
 
+## DEPLOY RUNBOOK: the site's frame moves into Firestore (2026-08-29/30)
+
+**Nothing below has been done on production.** Dev is fully seeded and its
+rules are deployed; prod is untouched.
+
+The public site's **top menu** and **footer** stopped being hardcoded and now
+come from `site_navigation/main` and `site_footer/main`. Five admin screens
+also moved into a new **DATA** manager, which changed their permission
+screenKeys.
+
+**Order for production, and it matters in one place only:**
+
+1. `node scripts/seed-site-navigation.js --project=prod --execute`
+2. `node scripts/seed-site-footer.js --project=prod --execute`
+3. `firebase deploy --only firestore:rules --project impactdisciples-a82a8`
+   (adds `site_navigation` and `site_footer`: public read, staff write; and
+   the admin_users self-preferences carve-out)
+4. `node scripts/migrate-screenkey-renames-3.js --project=prod --dry-run`,
+   then without `--dry-run`
+5. Deploy web hosting, then admin hosting
+
+**Why the order is forgiving.** Both web readers fall back to the copy
+bundled in their own build when the document is missing, so shipping the web
+app before the seed renders the OLD menu and footer rather than none. That is
+deliberate - a site with no navigation on any page was the worst thing this
+change could ship - and it is why steps 1-2 are not strictly gating. The
+fallbacks come out in a later commit once every environment is confirmed
+seeded.
+
+**The screenKey migration is not urgent** either: the old keys stay correct in
+prod until the admin build that renames them ships there. On dev it was a
+no-op (0 of 3 `admin_users` docs had any grant or pin on a moved key); prod
+may differ.
+
+**Two visible changes to the live site, both intended:**
+
+- The **phone menu gains** the Store dropdown (so Impact Merchandise becomes
+  reachable on a phone at all) and Impact Golf Tournament. Desktop and mobile
+  were two hand-maintained arrays that had drifted; they are one list now.
+- An **Instagram icon appears** in the footer. The footer used to read a
+  hardcoded copy of the contact details that had no `instagram` field; it
+  reads `web_config` now, which has one.
+
+**One prod data edit still to make.** `web_config` on prod holds
+`twitter: https://twitter.com/ImpactDisciples` and
+`youtube: https://youtube.com/@impactdisciples`, while the live site links to
+`https://x.com/ImpactDisciples` and `https://www.youtube.com/@impactdisciples`.
+Both old URLs redirect, so nothing is broken - but once the footer reads the
+config, the config is what shows. Dev has been corrected; prod has not.
+
+---
+
 ## Date fields: inconsistent storage shapes across collections
 
 **Found**: 2026-08-10, while investigating a sort-order bug on
