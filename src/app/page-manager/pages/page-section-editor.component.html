@@ -56,6 +56,22 @@
         as one thing until you deliberately break the run.
       </p>
     </div>
+
+    <!-- Only while the photo is a cropped BACKGROUND does a focus mean
+         anything - which part of it the band keeps. Born from About Us's
+         history banner cutting every head off at centre. -->
+    @if (onPhotoSurface && fields.image) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Photo focus</span>
+        <mat-button-toggle-group [value]="section.photoFocus ?? 'center'"
+                                 (change)="pickPhotoFocus($event.value)"
+                                 aria-label="Which part of the photo the band keeps">
+          @for (option of photoFocuses; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    }
   }
 
   <!-- TEXT STYLE - kit pages only, and only where the fields exist. Each

@@ -303,6 +303,23 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
+  readonly photoFocuses = [
+    { key: 'top', label: 'Top (keep faces)' },
+    { key: 'center', label: 'Centre' },
+    { key: 'bottom', label: 'Bottom' }
+  ] as const;
+
+  pickPhotoFocus(value: 'top' | 'center' | 'bottom'): void {
+    this.section.photoFocus = value;
+    this.edits.next();
+  }
+
+  /** The focus lever only means anything while the photo is a cropped
+   *  BACKGROUND - i.e. this section is actually on the photo surface. */
+  get onPhotoSurface(): boolean {
+    return this.activeSurface === 'photo';
+  }
+
   /** Whether this section splits copy beside media - the only place a media
    *  share means anything. */
   get hasSplitMedia(): boolean {
