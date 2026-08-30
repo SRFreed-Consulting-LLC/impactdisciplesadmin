@@ -44,6 +44,9 @@ export class KitCompareComponent {
   }
 
   get kitUrl(): SafeResourceUrl {
-    return this.url(`/kit-preview/${this.slug}`);
+    // ?framed=1: the preview wears the same site header and footer as the
+    // live page and drops its ribbon, so the two frames start identically -
+    // the labels above the frames are what says which side is which.
+    return this.url(`/kit-preview/${this.slug}?framed=1`);
   }
 }
