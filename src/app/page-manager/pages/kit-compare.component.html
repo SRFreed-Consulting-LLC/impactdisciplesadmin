@@ -3,14 +3,22 @@
     <div class="kc__label">
       Today &mdash; the live page, drawn by its own component
     </div>
-    <iframe class="kc__frame" [src]="liveUrl" title="The page as it is today"></iframe>
+    <div class="kc__viewport" #viewport>
+      <iframe class="kc__frame" [src]="liveUrl" title="The page as it is today"
+              [style.width.px]="desktopWidth" [style.height.px]="frameCssHeight"
+              [style.transform]="'scale(' + scale + ')'"></iframe>
+    </div>
   </div>
 
   <div class="kc__pane">
     <div class="kc__label kc__label--kit">
       After migrating &mdash; the same content, drawn by the section kit
     </div>
-    <iframe class="kc__frame" [src]="kitUrl" title="The page as the kit would draw it"></iframe>
+    <div class="kc__viewport">
+      <iframe class="kc__frame" [src]="kitUrl" title="The page as the kit would draw it"
+              [style.width.px]="desktopWidth" [style.height.px]="frameCssHeight"
+              [style.transform]="'scale(' + scale + ')'"></iframe>
+    </div>
   </div>
 </div>
 

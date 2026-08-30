@@ -27,16 +27,25 @@
   color: var(--app-accent);
 }
 
-.kc__frame {
-  width: 100%;
-  /* Tall enough to compare real content, short enough that the note below
-     stays reachable. Each frame scrolls its own page. */
+.kc__viewport {
+  /* The visible box. The frame inside renders the site at 1600px - true
+     desktop layout - and is scaled down to fit this box, because two
+     ~900px responsive reflows were a comparison of the wrong thing:
+     columns broke to the next row on both sides and nothing lined up with
+     the site Shane knows. Each frame still scrolls its own page. */
   height: calc(100vh - 240px);
   min-height: 480px;
+  overflow: hidden;
   border: 1px solid var(--app-field-border);
   border-radius: var(--app-radius-card);
   background: #fff; /* the framed SITE is light; a dark gap while it loads
                        reads as a broken frame */
+}
+
+.kc__frame {
+  border: 0;
+  transform-origin: top left;
+  background: #fff;
 }
 
 .kc__note {
@@ -52,7 +61,7 @@
     grid-template-columns: 1fr;
   }
 
-  .kc__frame {
+  .kc__viewport {
     height: 60vh;
   }
 }

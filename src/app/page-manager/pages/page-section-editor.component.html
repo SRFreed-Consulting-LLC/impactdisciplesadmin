@@ -58,6 +58,46 @@
     </div>
   }
 
+  <!-- TEXT STYLE - kit pages only, and only where the fields exist. Each
+       defaults to the site's own style, so these read as a choice AWAY from
+       the house look rather than a decision every section demands. -->
+  @if (surfaces.length && fields.heading) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Heading</span>
+      <mat-button-toggle-group [value]="section.headingStyle ?? 'bold'"
+                               (change)="pickHeadingStyle($event.value)"
+                               aria-label="How the heading is drawn">
+        @for (option of headingStyles; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+  }
+
+  @if (surfaces.length && fields.body) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Copy</span>
+      <mat-button-toggle-group [value]="section.copyTone ?? 'soft'"
+                               (change)="pickCopyTone($event.value)"
+                               aria-label="The copy's tone">
+        @for (option of copyTones; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="psd__axis">
+      <span class="psd__axis-label">Bullets</span>
+      <mat-button-toggle-group [value]="section.bullets ?? 'dots'"
+                               (change)="pickBullets($event.value)"
+                               aria-label="How list items are marked">
+        @for (option of bulletStyles; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+  }
+
   <!-- WHICH form this section shows - picked from the forms that exist in
        Form Builder, by name. The id is stored, never typed: the old rule's
        whole rationale was that a retyped id is a blank widget nobody can

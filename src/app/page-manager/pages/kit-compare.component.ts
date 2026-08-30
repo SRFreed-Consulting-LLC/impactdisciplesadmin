@@ -1,4 +1,6 @@
-import { Component, Input, OnChanges, inject } from '@angular/core';
+import {
+  AfterViewInit, Component, ElementRef, HostListener, Input, OnChanges, ViewChild, inject
+} from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { environment } from 'src/environments/environment';
 
@@ -22,8 +24,42 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./kit-compare.component.css'],
   standalone: false
 })
-export class KitCompareComponent implements OnChanges {
+export class KitCompareComponent implements OnChanges, AfterViewInit {
   private readonly sanitizer = inject(DomSanitizer);
+
+  /**
+   * Each frame renders the site at FULL DESKTOP WIDTH and is scaled down to
+   * fit its pane. Without this the frames were ~900px wide, the site laid
+   * itself out responsively, and Shane was comparing two phone-ish reflows
+   * to his memory of a desktop - columns broke to the next row and nothing
+   * lined up with the real site.
+   */
+  readonly desktopWidth = 1600;
+  scale = 0.5;
+  frameCssHeight = 2000;
+
+  @ViewChild('viewport') private viewport?: ElementRef<HTMLElement>;
+
+  ngAfterViewInit(): void {
+    // The panes are laid out by the grid, so their width only exists after
+    // the first render.
+    setTimeout(() => this.rescale());
+  }
+
+  @HostListener('window:resize')
+  rescale(): void {
+    const el = this.viewport?.nativeElement;
+    if (!el) {
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0) {
+      this.scale = rect.width / this.desktopWidth;
+      // The frame's CSS height is the visible height UN-scaled, so that
+      // after scaling it exactly fills the viewport box.
+      this.frameCssHeight = rect.height / this.scale;
+    }
+  }
 
   /** The page's public path, e.g. '/lunch-and-learns'. */
   @Input({ required: true }) path!: string;

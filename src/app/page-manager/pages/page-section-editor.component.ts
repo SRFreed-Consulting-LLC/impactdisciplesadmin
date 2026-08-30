@@ -252,6 +252,44 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
+  // -------------------------------------------------- text-style options
+  //
+  // KIT PAGES ONLY, like the axes above. Each defaults (absent) to the
+  // site's own measured style, so the toggles read as a choice away from
+  // the house look rather than a mandatory decision. Closed unions on
+  // purpose - a font box would be a second web designer inside every
+  // editor. (Shane's call, comparing Lunch and Learns 2026-08-30.)
+
+  readonly headingStyles = [
+    { key: 'bold', label: 'Bold (site style)' },
+    { key: 'standard', label: 'Standard' }
+  ] as const;
+
+  readonly copyTones = [
+    { key: 'soft', label: 'Soft grey (site style)' },
+    { key: 'dark', label: 'Dark' }
+  ] as const;
+
+  readonly bulletStyles = [
+    { key: 'dots', label: 'Dots (site style)' },
+    { key: 'none', label: 'None' }
+  ] as const;
+
+  pickHeadingStyle(value: 'bold' | 'standard'): void {
+    this.section.headingStyle = value;
+    this.edits.next();
+  }
+
+  pickCopyTone(value: 'soft' | 'dark'): void {
+    this.section.copyTone = value;
+    this.edits.next();
+  }
+
+  pickBullets(value: 'dots' | 'none'): void {
+    this.section.bullets = value;
+    this.edits.next();
+  }
+
   // --------------------------------------------------------------- fields
 
   get fields() {
