@@ -1,6 +1,5 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { inject } from '@angular/core';
 import { environment } from 'src/environments/environment';
 
 /**
@@ -23,7 +22,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./kit-compare.component.css'],
   standalone: false
 })
-export class KitCompareComponent {
+export class KitCompareComponent implements OnChanges {
   private readonly sanitizer = inject(DomSanitizer);
 
   /** The page's public path, e.g. '/lunch-and-learns'. */
@@ -31,22 +30,31 @@ export class KitCompareComponent {
   /** Its page_content document id. */
   @Input({ required: true }) slug!: string;
 
-  private url(suffix: string): SafeResourceUrl {
+  /**
+   * STORED FIELDS, built once per input change - never getters.
+   *
+   * The getter version of these made both frames BLINK: a getter builds a
+   * fresh SafeResourceUrl OBJECT on every change-detection pass, Angular
+   * compares by reference, sees a "new" src each time, re-sets it - and
+   * setting an iframe's src reloads the iframe. Every CD cycle, forever.
+   * Same referential-stability rule as the kitPage() freeze earlier today:
+   * anything bound into the template must keep its identity unless it
+   * genuinely changed.
+   */
+  liveUrl: SafeResourceUrl | null = null;
+  kitUrl: SafeResourceUrl | null = null;
+
+  ngOnChanges(): void {
     const base = (environment.previewSiteUrl || '').replace(/\/+$/, '');
     // bypassSecurityTrustResourceUrl is safe here BECAUSE the base is the
     // environment's own preview site and the path/slug come from the static
     // catalogue, never from user input.
-    return this.sanitizer.bypassSecurityTrustResourceUrl(`${base}${suffix}`);
-  }
-
-  get liveUrl(): SafeResourceUrl {
-    return this.url(this.path);
-  }
-
-  get kitUrl(): SafeResourceUrl {
+    this.liveUrl = this.sanitizer.bypassSecurityTrustResourceUrl(`${base}${this.path}`);
     // ?framed=1: the preview wears the same site header and footer as the
     // live page and drops its ribbon, so the two frames start identically -
-    // the labels above the frames are what says which side is which.
-    return this.url(`/kit-preview/${this.slug}?framed=1`);
+    // the labels above the frames say which side is which.
+    this.kitUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+      `${base}/kit-preview/${this.slug}?framed=1`
+    );
   }
 }
