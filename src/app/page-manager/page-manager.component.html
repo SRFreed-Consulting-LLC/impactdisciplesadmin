@@ -7,13 +7,12 @@
     <app-page-home></app-page-home>
   }
 
-  <!-- PAGES STAFF CREATED (2026-08-30). One screen for all of them, because
-       the leaves below are declared in nav-config.ts and a page made here
-       cannot have one without a deploy - which is the whole thing the page
-       builder exists to avoid. It reads them from page_content instead. -->
-  @if (selectedTab === 'Pages') {
-    <app-kit-pages></app-kit-pages>
-  }
+  <!-- The Pages LIST screen lived here for a day (2026-08-30) and is gone:
+       Shane's call - the left nav IS the list. Created pages are leaves
+       (via SitePagesNavService), New Page is the drawer's own "+" row
+       (?new=1, handled in the component), and every per-page control lives
+       in that page's editor header. -->
+
 
   <!-- Coaching with Impact had its own block here until 2026-08-29, when it
        became an ordered section stack like the other twelve. It comes from

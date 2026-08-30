@@ -198,7 +198,8 @@
           </div>
         }
         @if (group.items && expanded.has(group.id)) {
-          <div class="impact-drawer__sublist">
+          <div class="impact-drawer__sublist"
+               [attr.data-group]="group.id">
             <!-- Same wrapper-div-as-sibling structure as the pinned rows/
             group-header above - the menu-trigger button sits next to the
             link, not projected inside it. -->
@@ -245,6 +246,26 @@
                     </button>
                   }
                 </mat-menu>
+              </div>
+            }
+
+            <!-- MAKING a page, from the same list the pages live in (Shane's
+                 call, 2026-08-30: no Pages screen - the left nav IS the
+                 list). A routerLink, not a dialog opened from here: the
+                 dialog and the create logic belong to the lazily-loaded Page
+                 Manager, and ?new=1 is how this row asks it to start. -->
+            @if (group.id === 'page-manager') {
+              <div class="impact-drawer__subitem">
+                <a
+                  mat-list-item
+                  [routerLink]="['/', group.id]"
+                  [queryParams]="{ new: '1' }"
+                  class="impact-drawer__sublink impact-drawer__sublink--new">
+                  <span matListItemTitle class="impact-drawer__sublink-text">
+                    <mat-icon class="impact-drawer__new-icon">add</mat-icon>
+                    New Page
+                  </span>
+                </a>
               </div>
             }
           </div>

@@ -1,0 +1,89 @@
+/* One created page, opened from its leaf. Everything about the page lives
+   in the header row since the Pages list screen was removed (Shane's call,
+   2026-08-30: the left nav IS the list).
+
+   COLOURS ARE MEASURED, NOT GUESSED - the palette notes live in
+   admin-theme-contrast (memory) and the git history of the deleted
+   kit-pages.component.css: card-ink 11.34 on a card, muted 5.13, faint 2.45
+   (FAIL - decorative use only), and the draft chip's amber tint at 0.10
+   alpha measures 4.74 where 0.16 measured 4.30. */
+
+.kp__note {
+  margin: 0;
+  padding: 14px 2px;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.kp__note--bad {
+  color: var(--app-attention);
+}
+
+.kp__editing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kp__crumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+.kp__crumb-title {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--app-content-ink);
+}
+
+/* Pushes the controls to the right edge of the header row. */
+.kp__crumb-spacer {
+  flex: 1 1 auto;
+}
+
+.kp__slug {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  /* muted (5.13), not faint (2.45): it is the page's URL and people read it
+     character by character to check it. */
+  color: var(--app-muted);
+}
+
+.kp__chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.kp__chip--draft {
+  background: rgba(215, 155, 46, 0.1);
+  color: var(--app-attention);
+}
+
+.kp__axis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kp__axis-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.kp__axis mat-button-toggle-group {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .kp__crumb {
+    align-items: flex-start;
+  }
+}

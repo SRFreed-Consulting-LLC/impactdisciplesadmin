@@ -1,5 +1,9 @@
 import { BehaviorSubject, Observable, Subject, of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { PageContentService } from 'src/app/common/services/data/page-content.service';
+import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
 import { PageManagerComponent } from 'src/app/page-manager/page-manager.component';
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
@@ -81,7 +85,15 @@ describe('tab shells (characterization, pre-extraction)', () => {
     beforeEach(() => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        providers: [{ provide: SitePagesNavService, useValue: pagesNavStub }]
+        providers: [
+          { provide: SitePagesNavService, useValue: pagesNavStub },
+          // The ?new=1 New Page flow's deps (2026-08-30). Inert here - no
+          // spec in this file emits ?new=1, so none of these are reached.
+          { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } },
+          { provide: PageContentService, useValue: {} },
+          { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined } },
+          { provide: Router, useValue: { navigate: () => Promise.resolve(true) } }
+        ]
       });
     });
     const construct = (auth: never, perms: never, route: never): ShellLike =>

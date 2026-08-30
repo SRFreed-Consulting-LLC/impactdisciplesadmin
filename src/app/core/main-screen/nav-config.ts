@@ -366,13 +366,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // (Testimonials), Privacy/Terms (Web Config), Disciple-Making Minute
       // (its own screen above), and the cart/checkout flow, which is
       // behaviour rather than content.
-      // PAGES STAFF CREATED, above the twelve fixed ones. ONE leaf for all of
-      // them however many there are, because a leaf is code and these are
-      // data - a page made in the admin cannot have its own entry here
-      // without a deploy, which is exactly what the builder exists to avoid.
-      // The screen reads them from page_content and offers a New Page.
-      { label: 'Pages', slug: 'pages' },
-
+      // PAGES STAFF CREATE do not get entries here - a leaf is code and they
+      // are data. They stream in from page_content (SitePagesNavService) and
+      // the drawer appends them after the leaves below, alongside a
+      // "+ New Page" row (Shane's call, 2026-08-30: no Pages list screen at
+      // all - the left nav IS the list). The twelve below stay hardcoded
+      // only until each migrates onto the kit and carries its own title.
       { label: 'About Us', slug: 'about-us' },
       { label: 'Equipping Groups', slug: 'equipping-groups' },
       { label: 'Equipping - Pastors', slug: 'equipping-groups-pastors' },

@@ -17,6 +17,21 @@
         <span class="kp__chip kp__chip--draft">Draft &mdash; not on the site</span>
       }
       <span class="kp__crumb-spacer"></span>
+
+      <!-- The page's prevailing ground - what sections on "same as the
+           page" follow. Everything about a page lives in this header now
+           that the Pages list is gone. -->
+      <div class="kp__axis">
+        <span class="kp__axis-label">Mostly</span>
+        <mat-button-toggle-group [value]="surface"
+                                 (change)="setSurface($event.value)"
+                                 aria-label="The page's usual background">
+          @for (option of surfaces; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+
       <mat-slide-toggle [checked]="page?.isPublished !== false"
                         (change)="togglePublished($event.checked)"
                         aria-label="Show this page on the site">
@@ -26,6 +41,10 @@
          matTooltip="Open on the site" aria-label="Open this page on the site">
         <mat-icon>open_in_new</mat-icon>
       </a>
+      <button mat-icon-button type="button" (click)="remove()"
+              matTooltip="Delete this page" aria-label="Delete this page">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
     </div>
 
     <app-page-stack [page]="editablePage"></app-page-stack>

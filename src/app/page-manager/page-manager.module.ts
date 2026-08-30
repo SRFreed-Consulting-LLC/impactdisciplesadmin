@@ -24,9 +24,6 @@ import { HomeSectionEditorComponent } from './home/home-section-editor.component
 // because it borrows pages/page-stack.component.css outright.
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
-// Pages staff CREATE, as opposed to the twelve the site shipped with. One
-// list screen rather than a nav leaf each, because a leaf is code.
-import { KitPagesComponent } from './pages/kit-pages.component';
 import { NewPageDialogComponent } from './pages/new-page-dialog.component';
 // The per-leaf editor for a created page - the loading shell around the
 // same app-page-stack the twelve originals use.
@@ -111,7 +108,6 @@ import { QuillModule } from 'ngx-quill';
     HomeSectionEditorComponent,
     PageStackComponent,
     PageSectionEditorComponent,
-    KitPagesComponent,
     NewPageDialogComponent,
     KitPageEditorComponent,
     DestinationFieldComponent,

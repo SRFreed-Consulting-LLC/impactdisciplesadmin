@@ -1,6 +1,9 @@
 import { Component, Input, OnChanges, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { PageContentModel } from '@impact-common/shared/models/domain/page-content.model';
+import { DEFAULT_PAGE_THEME, SECTION_SURFACES, SectionSurface } from '@impact-common/shared/lists/section_kit';
 import { PageContentService } from 'src/app/common/services/data/page-content.service';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { environment } from 'src/environments/environment';
 import { EditablePage } from './page-section-catalogue';
@@ -21,12 +24,18 @@ import { kitPage } from './kit-page.adapter';
 @Component({
   selector: 'app-kit-page-editor',
   templateUrl: './kit-page-editor.component.html',
-  styleUrls: ['./kit-pages.component.css'],
+  styleUrls: ['./kit-page-editor.component.css'],
   standalone: false
 })
 export class KitPageEditorComponent implements OnChanges {
   private readonly service = inject(PageContentService);
   private readonly snackbar = inject(SnackbarService);
+  private readonly confirm = inject(ConfirmService);
+  private readonly router = inject(Router);
+
+  /** The grounds the page's own theme may name - what a section on "same as
+   *  the page" gets. */
+  readonly surfaces = SECTION_SURFACES.filter((s) => s.key !== 'inherit');
 
   /** The page_content document id. Rebinding it loads the new page -
    *  ngOnChanges, because the leaf clicks are same-route query-param
@@ -99,5 +108,61 @@ export class KitPageEditorComponent implements OnChanges {
   get liveUrl(): string {
     const base = (environment.previewSiteUrl || '').replace(/\/+$/, '');
     return `${base}/${this.slug}`;
+  }
+
+  // ------------------------------------------------------------ settings
+
+  get surface(): SectionSurface {
+    return this.page?.theme?.surface ?? DEFAULT_PAGE_THEME.surface;
+  }
+
+  /** The page's prevailing ground - what its sections on "same as the page"
+   *  follow. A partial write, like everything on this screen: the section
+   *  editor owns `blocks` and this header must not overwrite them. */
+  async setSurface(surface: Exclude<SectionSurface, 'inherit'>): Promise<void> {
+    if (!this.page) {
+      return;
+    }
+    const before = this.page.theme;
+    const theme = { ...(this.page.theme ?? DEFAULT_PAGE_THEME), surface };
+    this.page.theme = theme;
+    try {
+      await this.service.updateFields(this.slug, { theme });
+      this.snackbar.success('Background saved');
+    } catch (err) {
+      console.error('Could not save the background', err);
+      this.page.theme = before;
+      this.snackbar.error('Could not save that - reload and try again');
+    }
+  }
+
+  // ------------------------------------------------------------ deleting
+
+  async remove(): Promise<void> {
+    if (!this.page) {
+      return;
+    }
+    // Says what actually happens rather than "are you sure": the page and
+    // every section on it go, and any menu item pointing at it stops
+    // working - which this screen cannot fix on their behalf.
+    const ok = await this.confirm.confirm(
+      `The page and all ${this.page.blocks?.length ?? 0} of its sections will be `
+      + `deleted. Anything in the menu pointing at /${this.slug} will stop `
+      + 'working. This cannot be undone.',
+      `Delete "${this.page.title}"?`
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await this.service.delete(this.slug);
+      this.snackbar.success(`"${this.page.title}" deleted`);
+      // The leaf removes itself via the Firestore stream; this editor is now
+      // showing a page that does not exist, so leave it.
+      this.router.navigate(['/page-manager'], { replaceUrl: true });
+    } catch (err) {
+      console.error('Could not delete the page', err);
+      this.snackbar.error('Could not delete that page - try again');
+    }
   }
 }

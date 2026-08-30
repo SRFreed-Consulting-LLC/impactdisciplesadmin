@@ -1,8 +1,14 @@
-import { Component, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Component, OnInit, inject } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { Observable, firstValueFrom, takeUntil } from 'rxjs';
+import { PageContentModel } from '@impact-common/shared/models/domain/page-content.model';
+import { PageContentService } from '../common/services/data/page-content.service';
 import { NavLeaf } from '../core/main-screen/nav-config';
 import { TabShellComponent } from '../core/main-screen/tab-shell.component';
+import { SnackbarService } from '../shared/snackbar.service';
 import { EDITABLE_PAGES, EditablePage } from './pages/page-section-catalogue';
+import { NewPageDialogComponent, NewPageResult } from './pages/new-page-dialog.component';
 import { SitePagesNavService } from './pages/site-pages-nav.service';
 
 @Component({
@@ -11,13 +17,21 @@ import { SitePagesNavService } from './pages/site-pages-nav.service';
     styleUrls: ['./page-manager.component.css'],
     standalone: false
 })
-export class PageManagerComponent extends TabShellComponent {
+export class PageManagerComponent extends TabShellComponent implements OnInit {
   protected readonly groupId = 'page-manager';
 
-  // inject(), not a constructor parameter: the base takes its deps through
+  // inject(), not constructor parameters: the base takes its deps through
   // its own constructor and this class declares none - adding one would mean
   // re-declaring all of the base's to call super. New code, house style.
   private readonly sitePagesNav = inject(SitePagesNavService);
+  private readonly dialog = inject(MatDialog);
+  private readonly pageContent = inject(PageContentService);
+  private readonly snackbar = inject(SnackbarService);
+  private readonly router = inject(Router);
+
+  /** Guards against ?new=1 re-opening the dialog on every same-route
+   *  query-param emission while it is already up. */
+  private newPageDialogOpen = false;
 
   /**
    * Every public page, each an ordered stack of sections on one screen.
@@ -54,5 +68,65 @@ export class PageManagerComponent extends TabShellComponent {
     }
     return this.sitePagesNav.leaves
       .find((leaf) => leaf.label === this.selectedTab)?.slug ?? null;
+  }
+
+  override ngOnInit(): void {
+    super.ngOnInit();
+    // The drawer's "+ New Page" row is a routerLink to ?new=1 - the dialog
+    // and the create logic belong here in the lazy module, not in the shell
+    // that drew the row. Watched live for the same reason the base watches
+    // ?tab= live: clicking the row while already on this route is a
+    // query-param-only navigation that re-fires no lifecycle hook.
+    this.route.queryParamMap
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((params) => {
+        if (params.get('new') === '1' && !this.newPageDialogOpen) {
+          this.openNewPageDialog();
+        }
+      });
+  }
+
+  private async openNewPageDialog(): Promise<void> {
+    this.newPageDialogOpen = true;
+    try {
+      const result: NewPageResult | undefined = await firstValueFrom(
+        this.dialog
+          .open(NewPageDialogComponent, {
+            data: { existingSlugs: this.sitePagesNav.leaves.map((leaf) => leaf.slug) }
+          })
+          .afterClosed()
+      );
+
+      if (!result) {
+        // Cancelled - clear ?new=1 so the row can be clicked again and a
+        // reload does not resurrect the dialog.
+        this.router.navigate(['/page-manager'], { replaceUrl: true });
+        return;
+      }
+
+      // NOT PUBLISHED, deliberately: the page is reachable by anyone who
+      // guesses the URL the moment the document exists, and a half-written
+      // page on the public site is worse than no page.
+      const page = {
+        id: result.slug,
+        title: result.title,
+        theme: { surface: result.surface, banding: false },
+        isPublished: false,
+        blocks: []
+      } as PageContentModel;
+
+      await this.pageContent.update(result.slug, page);
+      this.snackbar.success(`"${result.title}" created - add some sections, then publish it`);
+      // Straight into its editor; the leaf appears on its own via the
+      // Firestore stream. replaceUrl so Back does not re-open the dialog.
+      this.router.navigate(['/page-manager'],
+        { queryParams: { tab: result.slug }, replaceUrl: true });
+    } catch (err) {
+      console.error('Could not create the page', err);
+      this.snackbar.error('Could not create that page - try again');
+      this.router.navigate(['/page-manager'], { replaceUrl: true });
+    } finally {
+      this.newPageDialogOpen = false;
+    }
   }
 }
