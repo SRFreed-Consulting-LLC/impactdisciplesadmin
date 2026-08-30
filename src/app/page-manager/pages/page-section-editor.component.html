@@ -203,6 +203,17 @@
 
   @if (surfaces.length && isGrid) {
     <div class="psd__axis">
+      <span class="psd__axis-label">Per row</span>
+      <mat-button-toggle-group [value]="section.cardsPerRow ?? 0"
+                               (change)="pickPerRow($event.value)"
+                               aria-label="How many cards sit on a row">
+        @for (option of perRowChoices; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="psd__axis">
       <span class="psd__axis-label">Cards</span>
       <mat-button-toggle-group [value]="section.cardGround ?? 'none'"
                                (change)="setGround('card', $event.value)"

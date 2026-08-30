@@ -355,6 +355,18 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
+  readonly perRowChoices = [
+    { key: 0, label: 'As many as fit' },
+    { key: 2, label: '2' },
+    { key: 3, label: '3' },
+    { key: 4, label: '4' }
+  ] as const;
+
+  pickPerRow(value: number): void {
+    this.section.cardsPerRow = value === 0 ? undefined : (value as 2 | 3 | 4);
+    this.edits.next();
+  }
+
   readonly titleTones = [
     { key: 'ink', label: 'Ink' },
     { key: 'brand', label: 'Brand blue' }

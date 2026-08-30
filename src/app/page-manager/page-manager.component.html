@@ -48,21 +48,26 @@
            with its own bespoke component, and this document IS the live page
            - there is no draft state to toggle. The Compare & migrate action
            will sit on this banner. -->
-      <p class="pm__original">
-        <mat-icon>history_edu</mat-icon>
-        <span>
-          <strong>Original page &mdash; always live.</strong>
-          Edits here reach the site as they save. It still renders through its
-          own page component.
-        </span>
-        <button mat-stroked-button type="button" class="pm__compare-btn"
-                (click)="comparing = !comparing">
-          <mat-icon>{{ comparing ? 'edit' : 'compare' }}</mat-icon>
-          {{ comparing ? 'Back to editing' : 'Compare with the section kit' }}
-        </button>
-      </p>
+      <!-- APPROVED pages carry no banner and no Compare - the absence IS
+           the done-marker (Shane's call): a page still wearing the banner
+           is one still awaiting his verdict. -->
+      @if (!isApproved(page.slug)) {
+        <p class="pm__original">
+          <mat-icon>history_edu</mat-icon>
+          <span>
+            <strong>Original page &mdash; always live.</strong>
+            Edits here reach the site as they save. It still renders through its
+            own page component.
+          </span>
+          <button mat-stroked-button type="button" class="pm__compare-btn"
+                  (click)="comparing = !comparing">
+            <mat-icon>{{ comparing ? 'edit' : 'compare' }}</mat-icon>
+            {{ comparing ? 'Back to editing' : 'Compare with the section kit' }}
+          </button>
+        </p>
+      }
 
-      @if (comparing) {
+      @if (comparing && !isApproved(page.slug)) {
         <app-kit-compare [path]="page.path" [slug]="page.slug"></app-kit-compare>
       } @else {
         <app-page-stack [page]="page"></app-page-stack>

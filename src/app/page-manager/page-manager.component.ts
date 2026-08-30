@@ -39,6 +39,26 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
   comparing = false;
 
   /**
+   * Pages whose comparison SHANE HAS APPROVED (his spoken verdicts,
+   * 2026-08-30). An approved page drops the original-page banner and its
+   * Compare button entirely - the ABSENCE is the done-marker he asked for:
+   * a page still wearing the banner is one still awaiting his eyes. The
+   * whole mechanism retires per page at cutover.
+   */
+  private readonly approvedPages = new Set<string>([
+    'lunch-and-learns',
+    'about-us',
+    'equipping-groups',
+    'equipping-groups-pastors',
+    'equipping-groups-leaders',
+    'equipping-groups-churches'
+  ]);
+
+  isApproved(slug: string): boolean {
+    return this.approvedPages.has(slug);
+  }
+
+  /**
    * Every public page, each an ordered stack of sections on one screen.
    *
    * Their nav leaves live in nav-config.ts like every other screen; this is
