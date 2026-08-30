@@ -17,3 +17,35 @@
   padding: 16px;
   box-sizing: border-box;
 }
+
+/* The "original page" banner above each of the twelve pre-migration pages.
+   Quiet - it states a standing fact, not a problem - so it takes the same
+   field/border treatment as the editor's caveat boxes, with measured tokens
+   (muted 5.13 on a card; never faint, which is 2.45 and fails). It retires
+   per page as each migrates onto the section kit. */
+.pm__original {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-field);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--app-muted);
+}
+
+.pm__original mat-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--app-muted);
+}
+
+.pm__original strong {
+  color: var(--app-content-ink);
+  font-weight: 500;
+}

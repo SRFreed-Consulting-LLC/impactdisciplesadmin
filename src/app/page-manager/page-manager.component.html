@@ -41,6 +41,22 @@
        get the same ordered stack and whole-page preview. -->
   @for (page of editablePages; track page.slug) {
     @if (selectedTab === page.label) {
+      <!-- The honest difference between an original page and a created one,
+           said where the page is edited (the Pages list that used to carry
+           this as a row badge is gone). Two facts, both of which retire when
+           this page migrates onto the section kit: the public site draws it
+           with its own bespoke component, and this document IS the live page
+           - there is no draft state to toggle. The Compare & migrate action
+           will sit on this banner. -->
+      <p class="pm__original">
+        <mat-icon>history_edu</mat-icon>
+        <span>
+          <strong>Original page &mdash; always live.</strong>
+          Edits here reach the site as they save. It still renders through its
+          own page component; comparing and moving it onto the section kit is
+          the next piece of work.
+        </span>
+      </p>
       <app-page-stack [page]="page"></app-page-stack>
     }
   }
