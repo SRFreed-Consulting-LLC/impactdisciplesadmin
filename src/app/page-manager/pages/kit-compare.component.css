@@ -1,0 +1,58 @@
+/* Two renderings of one page, side by side. The frames get the room - the
+   labels are one quiet line each, measured tokens only (muted 5.13 on a
+   card; never faint, 2.45). */
+
+.kc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kc__pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.kc__label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.kc__label--kit {
+  color: var(--app-accent);
+}
+
+.kc__frame {
+  width: 100%;
+  /* Tall enough to compare real content, short enough that the note below
+     stays reachable. Each frame scrolls its own page. */
+  height: calc(100vh - 240px);
+  min-height: 480px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  background: #fff; /* the framed SITE is light; a dark gap while it loads
+                       reads as a broken frame */
+}
+
+.kc__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--app-muted);
+  max-width: 90ch;
+}
+
+@media (max-width: 1100px) {
+  .kc {
+    grid-template-columns: 1fr;
+  }
+
+  .kc__frame {
+    height: 60vh;
+  }
+}

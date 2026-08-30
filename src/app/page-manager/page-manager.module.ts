@@ -28,6 +28,8 @@ import { NewPageDialogComponent } from './pages/new-page-dialog.component';
 // The per-leaf editor for a created page - the loading shell around the
 // same app-page-stack the twelve originals use.
 import { KitPageEditorComponent } from './pages/kit-page-editor.component';
+// The side-by-side an original page's Compare button opens.
+import { KitCompareComponent } from './pages/kit-compare.component';
 import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
@@ -110,6 +112,7 @@ import { QuillModule } from 'ngx-quill';
     PageSectionEditorComponent,
     NewPageDialogComponent,
     KitPageEditorComponent,
+    KitCompareComponent,
     DestinationFieldComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,

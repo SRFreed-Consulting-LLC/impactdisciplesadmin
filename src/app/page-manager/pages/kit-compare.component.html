@@ -1,0 +1,22 @@
+<div class="kc">
+  <div class="kc__pane">
+    <div class="kc__label">
+      Today &mdash; the live page, drawn by its own component
+    </div>
+    <iframe class="kc__frame" [src]="liveUrl" title="The page as it is today"></iframe>
+  </div>
+
+  <div class="kc__pane">
+    <div class="kc__label kc__label--kit">
+      After migrating &mdash; the same content, drawn by the section kit
+    </div>
+    <iframe class="kc__frame" [src]="kitUrl" title="The page as the kit would draw it"></iframe>
+  </div>
+</div>
+
+<p class="kc__note">
+  Each side scrolls on its own. Nothing has been changed &mdash; the right side is
+  computed in memory from the same saved content. When it looks right, say so and
+  the migration for this page follows; if something is off, the kit gets fixed and
+  this comparison is re-run.
+</p>

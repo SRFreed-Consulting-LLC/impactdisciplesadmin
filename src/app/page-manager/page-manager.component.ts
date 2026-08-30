@@ -33,6 +33,11 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
    *  query-param emission while it is already up. */
   private newPageDialogOpen = false;
 
+  /** Whether the selected ORIGINAL page is showing the side-by-side
+   *  comparison instead of its editor. Reset on every tab change - arriving
+   *  at Seminars mid-comparison of About Us would be baffling. */
+  comparing = false;
+
   /**
    * Every public page, each an ordered stack of sections on one screen.
    *
@@ -72,6 +77,12 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
 
   override ngOnInit(): void {
     super.ngOnInit();
+    // A tab change leaves comparison mode - it is a per-page act.
+    this.route.queryParamMap
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(() => {
+        this.comparing = false;
+      });
     // The drawer's "+ New Page" row is a routerLink to ?new=1 - the dialog
     // and the create logic belong here in the lazy module, not in the shell
     // that drew the row. Watched live for the same reason the base watches

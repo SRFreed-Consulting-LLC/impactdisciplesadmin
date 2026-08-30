@@ -53,11 +53,20 @@
         <span>
           <strong>Original page &mdash; always live.</strong>
           Edits here reach the site as they save. It still renders through its
-          own page component; comparing and moving it onto the section kit is
-          the next piece of work.
+          own page component.
         </span>
+        <button mat-stroked-button type="button" class="pm__compare-btn"
+                (click)="comparing = !comparing">
+          <mat-icon>{{ comparing ? 'edit' : 'compare' }}</mat-icon>
+          {{ comparing ? 'Back to editing' : 'Compare with the section kit' }}
+        </button>
       </p>
-      <app-page-stack [page]="page"></app-page-stack>
+
+      @if (comparing) {
+        <app-kit-compare [path]="page.path" [slug]="page.slug"></app-kit-compare>
+      } @else {
+        <app-page-stack [page]="page"></app-page-stack>
+      }
     }
   }
 

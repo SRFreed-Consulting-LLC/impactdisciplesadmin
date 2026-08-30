@@ -49,3 +49,10 @@
   color: var(--app-content-ink);
   font-weight: 500;
 }
+
+/* The Compare button rides the banner's right edge. */
+.pm__original .pm__compare-btn {
+  margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
