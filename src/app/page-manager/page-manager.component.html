@@ -45,4 +45,12 @@
       <app-page-stack [page]="page"></app-page-stack>
     }
   }
+
+  <!-- A page staff CREATED, opened from its own leaf (Shane's call,
+       2026-08-30: no difference between the pages - every one is a leaf and
+       clicking it edits it). dynamicPageSlug is null whenever the selected
+       tab is any static screen above, so nothing can render twice. -->
+  @if (dynamicPageSlug; as slug) {
+    <app-kit-page-editor [slug]="slug"></app-kit-page-editor>
+  }
 </div>

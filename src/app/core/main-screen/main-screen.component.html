@@ -202,7 +202,11 @@
             <!-- Same wrapper-div-as-sibling structure as the pinned rows/
             group-header above - the menu-trigger button sits next to the
             link, not projected inside it. -->
-            @for (item of group.items; track item) {
+            <!-- navItemsFor, not group.items: Page Manager's leaves are the
+                 static twelve PLUS every page staff have created, read live
+                 from Firestore - see SitePagesNavService. Every other group
+                 gets its items back untouched. -->
+            @for (item of navItemsFor(group); track item.slug) {
               <div class="impact-drawer__subitem">
                 <a
                   mat-list-item

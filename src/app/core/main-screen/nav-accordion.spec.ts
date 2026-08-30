@@ -18,7 +18,8 @@ function shell(): MainScreenComponent {
     null as never, // AdminUserService
     null as never, // MatDialog
     { url: '/', events: { pipe: () => ({ subscribe: () => undefined }) } } as never, // Router
-    null as never // Injector - only used by afterNextRender, never on this path
+    null as never, // Injector - only used by afterNextRender, never on this path
+    { leaves: [] } as never // SitePagesNavService - no created pages in these specs
   );
 }
 

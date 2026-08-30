@@ -205,6 +205,13 @@
   font-weight: 500;
 }
 
+/* Pushes the publish toggle and the open-on-site link to the right edge of
+   the breadcrumb row, in the per-leaf editor where there is no back button
+   to balance them. */
+.kp__crumb-spacer {
+  flex: 1 1 auto;
+}
+
 .kp__chip {
   padding: 2px 9px;
   border-radius: 999px;
@@ -218,6 +225,21 @@
      0.10 measures 4.74. */
   background: rgba(215, 155, 46, 0.1);
   color: var(--app-attention);
+}
+
+/* The quiet badge on the twelve originals. Muted (5.13 on a card), not
+   faint (2.45) - it is 11px and people will read it. */
+.kp__chip--original {
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+/* The originals sit above the created pages with a hair of separation, not
+   a heading - one list was the entire request. */
+.kp__list--originals {
+  margin-bottom: 10px;
 }
 
 @media (max-width: 900px) {

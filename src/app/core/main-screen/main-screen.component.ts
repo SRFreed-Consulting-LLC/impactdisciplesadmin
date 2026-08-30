@@ -14,6 +14,7 @@ import { PermissionMigrationService } from 'src/app/common/services/permission-m
 import { ScreenPermissionsDialogComponent } from './screen-permissions-dialog/screen-permissions-dialog.component';
 import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
 import { NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, NavSection, NavSectionDef, sectionOf } from './nav-config';
+import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
 
 interface PinnedNavItem {
   group: NavGroup;
@@ -107,7 +108,10 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // throw NG0203 in both the moment they do. Converting the whole class is
     // its own piece of work, not something to smuggle into this change.
     // Needed for afterNextRender - see reSyncContentMargin().
-    private injector: Injector
+    private injector: Injector,
+    // The pages staff created, as leaves under Page Manager - see
+    // navItemsFor(). Constructor-injected for the same NG0203 reason above.
+    private sitePagesNav: SitePagesNavService
   ) {}
 
   /** Re-measures the drawer AFTER Angular has flushed the DOM.
@@ -240,6 +244,34 @@ export class MainScreenComponent implements OnInit, OnDestroy {
    *  template's `track group` keeps working. */
   get sectionNav(): NavGroup[] {
     return this.secureNav.filter((group) => sectionOf(group) === this.activeSection);
+  }
+
+  /**
+   * A group's leaves as the drawer draws them.
+   *
+   * For Page Manager that is the static list PLUS every page staff have
+   * created (Shane's call, 2026-08-30: no difference between the pages -
+   * each one is a leaf, clicking it opens its editor). The created pages
+   * cannot be in nav-config.ts because that file is code and they are data;
+   * they stream in from `page_content` instead, appearing the moment a page
+   * is created and vanishing when it is deleted, with no reload.
+   *
+   * Appended AFTER the static items, so the fixed screens (Home, Pages,
+   * the twelve, Web Config...) keep their positions and the created pages
+   * read as one alphabetical run.
+   * @param {NavGroup} group The group being rendered.
+   * @return {NavLeaf[]} Its leaves, extended for page-manager only.
+   */
+  navItemsFor(group: NavGroup): NavLeaf[] {
+    const items = group.items ?? [];
+    if (group.id !== 'page-manager' || !this.sitePagesNav.leaves.length) {
+      return items;
+    }
+    // A created page whose slug collides with a static leaf is not listed
+    // twice - the static one wins, since it is the one the router and the
+    // permission registry know.
+    const taken = new Set(items.map((item) => item.slug));
+    return [...items, ...this.sitePagesNav.leaves.filter((leaf) => !taken.has(leaf.slug))];
   }
 
   // Library renders as one flat list with no group header - the tab already

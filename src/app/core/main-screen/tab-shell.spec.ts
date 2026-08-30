@@ -1,4 +1,6 @@
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
 import { PageManagerComponent } from 'src/app/page-manager/page-manager.component';
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
 
@@ -69,11 +71,25 @@ function harness(allowed: string[], role = 'Admin') {
 
 describe('tab shells (characterization, pre-extraction)', () => {
   describe('PageManagerComponent', () => {
+    // PageManagerComponent takes SitePagesNavService via inject() since
+    // 2026-08-30 (the created pages' nav leaves), so a bare `new` throws
+    // NG0203. The house rule (CLAUDE.md, the designer-side-panel case):
+    // construct inside an injection context, do NOT move the dependency
+    // back to the constructor. No created pages in these specs - the
+    // stream is empty, so every assertion below is unchanged.
+    const pagesNavStub = { leaves: [], leaves$: of([]) };
+    beforeEach(() => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [{ provide: SitePagesNavService, useValue: pagesNavStub }]
+      });
+    });
+    const construct = (auth: never, perms: never, route: never): ShellLike =>
+      TestBed.runInInjectionContext(() => new PageManagerComponent(auth, perms, route)) as unknown as ShellLike;
+
     it('starts with NO selected tab - the direct-URL bypass guard', () => {
       const h = harness([]);
-      const shell = new PageManagerComponent(
-        h.authService as never, h.permissions as never, h.route as never
-      ) as unknown as ShellLike;
+      const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       expect(shell.selectedTab)
         .withContext('a pre-seeded default renders content to someone with no grants')
@@ -82,9 +98,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
 
     it('shows nothing when the user has no grants for this group', () => {
       const h = harness([]);
-      const shell = new PageManagerComponent(
-        h.authService as never, h.permissions as never, h.route as never
-      ) as unknown as ShellLike;
+      const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       shell.ngOnInit();
       expect(shell.secureItems.length).toBe(0);
@@ -96,9 +110,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
       // Live-diagnosed 2026-08-18: permissions arrive AFTER first render, so
       // reading them once leaves the tab list empty forever.
       const h = harness([]);
-      const shell = new PageManagerComponent(
-        h.authService as never, h.permissions as never, h.route as never
-      ) as unknown as ShellLike;
+      const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       shell.ngOnInit();
       expect(shell.secureItems.length).toBe(0);
@@ -113,15 +125,11 @@ describe('tab shells (characterization, pre-extraction)', () => {
     });
 
     it('opens the tab named by ?tab= when it is permitted', () => {
-      const probe = new PageManagerComponent(
-        null as never, null as never, null as never
-      ) as unknown as ShellLike;
+      const probe = construct(null as never, null as never, null as never);
       const target = probe.items[1] ?? probe.items[0];
 
       const h = harness(probe.items.map((i) => i.slug));
-      const shell = new PageManagerComponent(
-        h.authService as never, h.permissions as never, h.route as never
-      ) as unknown as ShellLike;
+      const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       shell.ngOnInit();
       h.queryParamMap$.next(paramMap(target.slug));
@@ -131,17 +139,13 @@ describe('tab shells (characterization, pre-extraction)', () => {
     });
 
     it('IGNORES ?tab= for a screen the user may not see', () => {
-      const probe = new PageManagerComponent(
-        null as never, null as never, null as never
-      ) as unknown as ShellLike;
+      const probe = construct(null as never, null as never, null as never);
       const forbidden = probe.items[probe.items.length - 1];
 
       const h = harness(
         probe.items.filter((i) => i.slug !== forbidden.slug).map((i) => i.slug)
       );
-      const shell = new PageManagerComponent(
-        h.authService as never, h.permissions as never, h.route as never
-      ) as unknown as ShellLike;
+      const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       shell.ngOnInit();
       h.queryParamMap$.next(paramMap(forbidden.slug));
@@ -154,9 +158,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
 
     it('stops filtering after destroy', () => {
       const h = harness([]);
-      const shell = new PageManagerComponent(
-        h.authService as never, h.permissions as never, h.route as never
-      ) as unknown as ShellLike;
+      const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       shell.ngOnInit();
       shell.ngOnDestroy();

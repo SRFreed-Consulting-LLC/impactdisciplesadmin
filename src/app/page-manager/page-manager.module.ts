@@ -1,5 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+// routerLink on the Pages list's original-page rows.
+import { RouterModule } from '@angular/router';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { DMMServiceComponent } from './dmms/dmms.component';
 import { DMMDialogComponent } from './dmms/dmm-dialog.component';
@@ -26,6 +28,9 @@ import { PageSectionEditorComponent } from './pages/page-section-editor.componen
 // list screen rather than a nav leaf each, because a leaf is code.
 import { KitPagesComponent } from './pages/kit-pages.component';
 import { NewPageDialogComponent } from './pages/new-page-dialog.component';
+// The per-leaf editor for a created page - the loading shell around the
+// same app-page-stack the twelve originals use.
+import { KitPageEditorComponent } from './pages/kit-page-editor.component';
 import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
@@ -69,6 +74,7 @@ import { QuillModule } from 'ngx-quill';
 @NgModule({
   imports: [
     CommonModule,
+    RouterModule,
     PageManagerRoutingModule,
     PageLivePreviewModule,
     ImpactDisciplesCommonModule,
@@ -107,6 +113,7 @@ import { QuillModule } from 'ngx-quill';
     PageSectionEditorComponent,
     KitPagesComponent,
     NewPageDialogComponent,
+    KitPageEditorComponent,
     DestinationFieldComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,

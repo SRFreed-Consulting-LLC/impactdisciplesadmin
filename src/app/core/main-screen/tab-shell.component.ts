@@ -1,6 +1,6 @@
 import { Directive, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Subject, combineLatest, takeUntil } from 'rxjs';
+import { Observable, Subject, combineLatest, of, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { NAV_CONFIG, NavGroup, NavLeaf } from './nav-config';
@@ -70,11 +70,35 @@ export abstract class TabShellComponent implements OnInit, OnDestroy {
     return this._group;
   }
 
+  /**
+   * Screens this shell offers BEYOND its nav-config group - live, because
+   * they may not exist yet when ngOnInit runs.
+   *
+   * Exists for Page Manager, whose tabs now include every page staff have
+   * created: those arrive from Firestore, and a deep link to
+   * `?tab=<created-slug>` lands BEFORE the read resolves. Selection being in
+   * the same combineLatest means the late leaves re-run it and the deep link
+   * settles on the page it named instead of snapping to the first tab.
+   * Every other shell returns the default empty stream and is unaffected.
+   * @return {Observable<NavLeaf[]>} The extra screens, live.
+   */
+  protected extraItems$(): Observable<NavLeaf[]> {
+    return of([]);
+  }
+
   ngOnInit(): void {
-    combineLatest([this.authService.dao.loggedInUser$, this.route.queryParamMap])
+    combineLatest([
+      this.authService.dao.loggedInUser$,
+      this.route.queryParamMap,
+      this.extraItems$()
+    ])
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(([user, params]) => {
-        this.secureItems = this.filterItems(this.items, user);
+      .subscribe(([user, params, extra]) => {
+        // Static leaves keep their order and win a slug collision - they are
+        // what the router and the permission registry know.
+        const taken = new Set(this.items.map((item) => item.slug));
+        const all = [...this.items, ...extra.filter((leaf) => !taken.has(leaf.slug))];
+        this.secureItems = this.filterItems(all, user);
         const requested = this.secureItems.find(
           (item) => item.slug === params.get('tab')
         );

@@ -44,7 +44,8 @@ function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {
     adminUserService as never, // AdminUserService
     null as never, // MatDialog
     { url: '/', events: { pipe: () => ({ subscribe: () => undefined }) } } as never, // Router
-    null as never // Injector - afterNextRender is not reached on these paths
+    null as never, // Injector - afterNextRender is not reached on these paths
+    { leaves: [] } as never // SitePagesNavService - no created pages in these specs
   );
 
   // An Administrator. Every spec here is about which SECTION is showing,
@@ -334,7 +335,8 @@ describe('drawer sections', () => {
         null as never,
         null as never,
         { url: '/', events: { pipe: () => ({ subscribe: () => undefined }) } } as never,
-        null as never
+        null as never,
+        { leaves: [] } as never // SitePagesNavService
       );
       nav.ngOnInit();
       return { nav, currentAgent$ };

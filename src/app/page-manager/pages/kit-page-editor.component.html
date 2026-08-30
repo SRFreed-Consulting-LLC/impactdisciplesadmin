@@ -1,0 +1,33 @@
+@if (loading) {
+  <p class="kp__note">Loading&hellip;</p>
+} @else if (failed || !editablePage) {
+  <!-- A stale leaf (the page was deleted elsewhere) or a failed read. Say
+       which action helps rather than rendering an empty editor over a page
+       that is not there. -->
+  <p class="kp__note kp__note--bad">
+    This page could not be read. If it was just deleted, this entry will
+    disappear on its own; otherwise reload and try again.
+  </p>
+} @else {
+  <div class="kp__editing">
+    <div class="kp__crumb">
+      <span class="kp__crumb-title">{{ page?.title }}</span>
+      <span class="kp__slug">/{{ slug }}</span>
+      @if (page?.isPublished === false) {
+        <span class="kp__chip kp__chip--draft">Draft &mdash; not on the site</span>
+      }
+      <span class="kp__crumb-spacer"></span>
+      <mat-slide-toggle [checked]="page?.isPublished !== false"
+                        (change)="togglePublished($event.checked)"
+                        aria-label="Show this page on the site">
+        On the site
+      </mat-slide-toggle>
+      <a mat-icon-button [href]="liveUrl" target="_blank" rel="noopener"
+         matTooltip="Open on the site" aria-label="Open this page on the site">
+        <mat-icon>open_in_new</mat-icon>
+      </a>
+    </div>
+
+    <app-page-stack [page]="editablePage"></app-page-stack>
+  </div>
+}

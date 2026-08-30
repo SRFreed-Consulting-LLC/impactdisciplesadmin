@@ -6,7 +6,7 @@ import { PageContentService } from 'src/app/common/services/data/page-content.se
 import { SnackbarService } from '../../shared/snackbar.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { environment } from 'src/environments/environment';
-import { EditablePage } from './page-section-catalogue';
+import { EDITABLE_PAGES, EditablePage } from './page-section-catalogue';
 import { isKitPage, kitPage } from './kit-page.adapter';
 import { NewPageDialogComponent, NewPageResult } from './new-page-dialog.component';
 
@@ -66,6 +66,18 @@ export class KitPagesComponent implements OnInit {
   selectedPage: EditablePage | null = null;
 
   readonly surfaces = SECTION_SURFACES.filter((s) => s.key !== 'inherit');
+
+  /**
+   * The twelve original pages, on the SAME list (Shane's call, 2026-08-30:
+   * no difference between the pages). Quietly badged, because two things
+   * about them are honestly different until each one migrates onto the kit:
+   * they still render through their own bespoke component, and their
+   * document IS the live page - there is no draft state to toggle. A toggle
+   * that lies would be worse than a badge.
+   *
+   * Clicking one goes to its own leaf, where its editor already lives.
+   */
+  readonly originals: readonly EditablePage[] = EDITABLE_PAGES;
 
   constructor(
     private service: PageContentService,

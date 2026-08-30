@@ -35,23 +35,42 @@
       </button>
     </div>
 
+    <!-- The twelve the site shipped with, on the same list. They open from
+         their own leaves; the badge is the one honest difference - each
+         still renders through its own bespoke component, and its document
+         IS the live page, so there is no draft toggle to offer. The badge
+         retires per page as each migrates onto the kit. -->
+    <div class="kp__list kp__list--originals">
+      @for (original of originals; track original.slug) {
+        <article class="kp__row">
+          <a class="kp__open" [routerLink]="['/page-manager']" [queryParams]="{ tab: original.slug }">
+            <span class="kp__name">{{ original.label }}</span>
+            <span class="kp__slug">{{ original.path }}</span>
+          </a>
+          <div class="kp__controls">
+            <span class="kp__chip kp__chip--original"
+                  matTooltip="One of the site's original pages - always live, drawn by its own page component until it moves onto the kit.">
+              original &middot; always live
+            </span>
+          </div>
+        </article>
+      }
+    </div>
+
     @if (loading) {
       <p class="kp__note">Loading&hellip;</p>
     } @else if (failed) {
       <!-- A failed read and an empty list must not look the same: one invites
            a reload, the other invites a New Page. -->
       <p class="kp__note kp__note--bad">
-        The pages could not be read. Nothing has been changed &mdash; reload and try again.
+        The pages you created could not be read. Nothing has been changed &mdash;
+        reload and try again.
       </p>
     } @else if (!pages.length) {
-      <div class="kp__empty">
-        <mat-icon>web</mat-icon>
-        <p><strong>No pages yet.</strong></p>
-        <p>
-          A page you make here gets its own web address and can be added to the menu.
-          The twelve pages the site shipped with are edited from the list on the left.
-        </p>
-      </div>
+      <p class="kp__note">
+        No pages of your own yet &mdash; New Page above makes one, with its own web
+        address and its own leaf in the list on the left.
+      </p>
     } @else {
       <div class="kp__list">
         @for (page of pages; track page.id) {
