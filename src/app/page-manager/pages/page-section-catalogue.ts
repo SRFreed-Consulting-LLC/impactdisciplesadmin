@@ -65,6 +65,17 @@ export interface PageSectionFields {
    * because a testimonial is not the property of any one page showing it.
    */
   testimonials?: boolean;
+  /**
+   * WHICH Form Builder form this section shows - a mat-select over the forms
+   * that EXIST, storing the picked id. KIT PAGES ONLY: on the twelve original
+   * pages the id stays in the page component. The original rule's rationale
+   * ("an id retyped into a text box is a blank widget nobody can diagnose")
+   * survives intact - nothing is ever typed. Approved 2026-08-30.
+   */
+  form?: boolean;
+  /** WHICH mailing list a sign-up section joins - a fixed two-option choice
+   *  (SIGNUP_LISTS), stored by key. Same pattern as the giving buttons. */
+  signupList?: boolean;
 }
 
 /** Which of an ENTRY's fields a type uses. One control edits every kind of

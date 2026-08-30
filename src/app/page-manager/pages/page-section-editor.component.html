@@ -58,6 +58,50 @@
     </div>
   }
 
+  <!-- WHICH form this section shows - picked from the forms that exist in
+       Form Builder, by name. The id is stored, never typed: the old rule's
+       whole rationale was that a retyped id is a blank widget nobody can
+       diagnose, and a picker cannot mistype. A select renders its options in
+       a CDK overlay outside this component, so it carries an explicit change
+       handler - the bubbling `input` listener never hears it. -->
+  @if (fields.form) {
+    @if (formsFailed) {
+      <p class="psd__caveat">
+        <mat-icon>error_outline</mat-icon>
+        <span>The forms could not be read - reload and try again. Nothing has been changed.</span>
+      </p>
+    } @else {
+      <mat-form-field appearance="outline" class="psd__field">
+        <mat-label>Which form</mat-label>
+        <mat-select [(ngModel)]="section.formId" (selectionChange)="edited()">
+          @for (form of formOptions; track form.id) {
+            <mat-option [value]="form.id">{{ form.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Built in Tools &gt; Form Builder. Until one is picked, the page shows the words alone.</mat-hint>
+      </mat-form-field>
+    }
+  }
+
+  <!-- WHICH mailing list the sign-up joins - a fixed choice, stored by key,
+       same pattern as the giving buttons. -->
+  @if (fields.signupList) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Joins</span>
+      <mat-button-toggle-group [value]="section.signupList ?? 'newsletter'"
+                               (change)="section.signupList = $event.value; edited()"
+                               aria-label="Which mailing list this form joins">
+        @for (list of signupLists; track list.key) {
+          <mat-button-toggle [value]="list.key">{{ list.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <p class="psd__axis-blurb">
+        The prayer team is a commitment someone chooses - a sign-up form joins the
+        newsletter unless you say otherwise.
+      </p>
+    </div>
+  }
+
   @if (fields.heading) {
     <mat-form-field appearance="outline" class="psd__field">
       <mat-label>{{ headingLabel }}</mat-label>

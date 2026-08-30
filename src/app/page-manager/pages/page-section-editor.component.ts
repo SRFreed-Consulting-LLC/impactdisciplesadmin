@@ -15,7 +15,9 @@ import {
   EntryFields, EntrySpec, GIVING_DESTINATIONS, ICON_CHOICES, KindVariant, PageSectionKind,
   WEB_CONFIG_AMOUNTS, pluralise
 } from './page-section-catalogue';
-import { SECTION_SURFACES, SectionSurface } from '@impact-common/shared/lists/section_kit';
+import { SECTION_SURFACES, SIGNUP_LISTS, SectionSurface } from '@impact-common/shared/lists/section_kit';
+import { FormDefinitionModel } from '@impact-common/shared/models/domain/form-definition.model';
+import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 
 /** How long to wait after a keystroke before showing it in the preview.
  *  Short enough to feel immediate, long enough that a sentence is not
@@ -54,10 +56,17 @@ const LIVE_PREVIEW_DEBOUNCE_MS = 250;
 })
 export class PageSectionEditorComponent implements OnInit, OnDestroy {
   private readonly testimonialService = inject(TestimonialService);
+  private readonly formDefinitions = inject(FormDefinitionService);
   readonly richTextModules = RICH_TEXT_TOOLBAR;
   readonly amounts = WEB_CONFIG_AMOUNTS;
   readonly givingDestinations = GIVING_DESTINATIONS;
   readonly icons = ICON_CHOICES;
+  readonly signupLists = SIGNUP_LISTS;
+
+  /** The Form Builder forms a FORM section may show, by name. Loaded only
+   *  when the variant declares `form` - most sections never pay the read. */
+  formOptions: FormDefinitionModel[] = [];
+  formsFailed = false;
 
   /**
    * The WORKING COPY, owned by the stack screen. Mutated in place through
@@ -104,6 +113,26 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     if (this.fields.testimonials) {
       this.loadTestimonials();
+    }
+    // ANY variant, not just the active one: on the FORM archetype the picker
+    // appears the moment staff switch from the sign-up variant to one that
+    // shows a Form Builder form, and ngOnInit has long passed by then.
+    const anyVariantHasForm = (this.kind.variants ?? []).some((v) => v.fields.form);
+    if (this.fields.form || anyVariantHasForm) {
+      this.loadForms();
+    }
+  }
+
+  private async loadForms(): Promise<void> {
+    try {
+      const all = await this.formDefinitions.getAll();
+      this.formOptions = (all ?? [])
+        .filter((form) => !!form.id)
+        .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+      this.formsFailed = false;
+    } catch (err) {
+      console.error('Section editor: could not read the forms', err);
+      this.formsFailed = true;
     }
   }
 
