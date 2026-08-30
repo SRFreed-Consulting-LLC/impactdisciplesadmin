@@ -355,6 +355,17 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
+  readonly titleTones = [
+    { key: 'ink', label: 'Ink' },
+    { key: 'brand', label: 'Brand blue' }
+  ] as const;
+
+  setTitleTone(which: 'left' | 'right', value: 'ink' | 'brand'): void {
+    if (which === 'left') { this.section.leftTitleTone = value; }
+    if (which === 'right') { this.section.rightTitleTone = value; }
+    this.edits.next();
+  }
+
   get isColumns(): boolean {
     return this.kind.type === 'listColumns';
   }
@@ -364,9 +375,11 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   }
 
   /** What a ground's text defaults to when no ink is stored - the pair that
-   *  reads on it. Shown as the toggle's value so the control never lies. */
+   *  reads on it. Brand defaults LIGHT: the original's grey-on-blue measured
+   *  ~1.4:1 and Shane called it terrible on sight. Shown as the toggle's
+   *  value so the control never lies about what is rendering. */
   inkFor(ground: string | undefined, stored: string | undefined): string {
-    return stored ?? (ground === 'dark' ? 'light' : 'dark');
+    return stored ?? (ground === 'panel' ? 'dark' : 'light');
   }
 
   /** Whether this section splits copy beside media - the only place a media

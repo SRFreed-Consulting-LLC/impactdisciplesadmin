@@ -57,6 +57,15 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     descriptionLabel: 'Copy',
     imageLabel: 'Picture'
   },
+  'listGrid/pictureRows': {
+    noun: 'card',
+    note: 'Each card is a square picture beside its title and copy - the '
+      + 'Seminars picture cards\' own arrangement.',
+    fields: { image: true, title: true, description: true },
+    titleLabel: 'Card title',
+    descriptionLabel: 'Copy',
+    imageLabel: 'Picture (square)'
+  },
   'listGrid/icon': {
     noun: 'tile',
     fields: { title: true, icon: true, body: true, cta: true },

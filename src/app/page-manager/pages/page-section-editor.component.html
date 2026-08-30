@@ -143,8 +143,8 @@
   }
 
   <!-- CARD GROUNDS - a box behind a column or the tiles, palette-fixed.
-       The text choice appears beside a chosen box, defaulted to what reads
-       on that ground (brand blue defaults DARK - the original's own look). -->
+       The text choice appears beside a chosen box, defaulted to what READS
+       on that ground - brand and dark default light text. -->
   @if (surfaces.length && isColumns) {
     <div class="psd__axis">
       <span class="psd__axis-label">Left column</span>
@@ -164,6 +164,13 @@
           }
         </mat-button-toggle-group>
       }
+      <mat-button-toggle-group class="psd__ink" [value]="section.leftTitleTone ?? 'ink'"
+                               (change)="setTitleTone('left', $event.value)"
+                               aria-label="The left column headings">
+        @for (option of titleTones; track option.key) {
+          <mat-button-toggle [value]="option.key">Headings: {{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
     </div>
 
     <div class="psd__axis">
@@ -184,6 +191,13 @@
           }
         </mat-button-toggle-group>
       }
+      <mat-button-toggle-group class="psd__ink" [value]="section.rightTitleTone ?? 'ink'"
+                               (change)="setTitleTone('right', $event.value)"
+                               aria-label="The right column headings">
+        @for (option of titleTones; track option.key) {
+          <mat-button-toggle [value]="option.key">Headings: {{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
     </div>
   }
 
