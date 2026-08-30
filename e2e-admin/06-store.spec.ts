@@ -16,20 +16,20 @@ test.describe('[store] Store Catalog', () => {
   });
 
   test('the products grid lists the catalog', async ({ page }) => {
-    await gotoTab(page, 'store-manager', 'products');
+    await gotoTab(page, 'data', 'products');
     const rows = await waitForGrid(page, 'products-table');
     expect(rows).toBeGreaterThanOrEqual(6);
     await expect(page.locator('.products-table')).toContainText('Disciple-Making Field Guide');
   });
 
   test('staff can still see a retired product the public store hides', async ({ page }) => {
-    await gotoTab(page, 'store-manager', 'products');
+    await gotoTab(page, 'data', 'products');
     await waitForGrid(page, 'products-table');
     await expect(page.locator('.products-table')).toContainText('Retired Product');
   });
 
   test('a product opens its edit form with its values loaded', async ({ page }) => {
-    await gotoTab(page, 'store-manager', 'products');
+    await gotoTab(page, 'data', 'products');
     await waitForGrid(page, 'products-table');
     await page.locator('.products-table tbody tr', { hasText: 'Disciple-Making Field Guide' })
       .first().dblclick();
@@ -44,7 +44,7 @@ test.describe('[store] Store Catalog', () => {
     // prod-book-digital -> lib-book-0001 is the admin end of the store/
     // reader seam. If this field stops being editable, nobody can ever
     // point a product at a book again.
-    await gotoTab(page, 'store-manager', 'products');
+    await gotoTab(page, 'data', 'products');
     await waitForGrid(page, 'products-table');
     await expect(page.locator('.products-table')).toContainText('Field Guide (Library Edition)');
     expect(FIXTURES.digitalProduct).toBe('prod-book-digital');
@@ -62,7 +62,7 @@ test.describe('[store] Store Catalog', () => {
     // shipping is a flag on that offer. Asserted rather than just deleted,
     // because a second pricing system quietly reappearing is exactly the
     // regression this work exists to prevent.
-    await gotoTab(page, 'store-manager', 'products');
+    await gotoTab(page, 'data', 'products');
     await waitForGrid(page, 'products-table');
 
     await expect(page.getByRole('link', { name: 'Sales', exact: true })).toHaveCount(0);

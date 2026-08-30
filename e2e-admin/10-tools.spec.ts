@@ -23,7 +23,7 @@ test.describe('[tools] Tools & Reports', () => {
   });
 
   test('the form builder loads', async ({ page }) => {
-    await gotoTab(page, 'tools-manager', 'form-builder');
+    await gotoTab(page, 'data', 'form-builder');
     await waitForGrid(page, 'form-builder-table');
     await expect(page.locator('.form-builder-table')).toBeVisible();
   });

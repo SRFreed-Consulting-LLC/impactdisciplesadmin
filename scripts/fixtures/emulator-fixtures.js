@@ -545,6 +545,20 @@ const page_content = Object.fromEntries(
     .map(([slug, blocks]) => [slug, {blocks}])
 );
 
+// The site's FRAME - its top menu and its footer, both one document, both
+// taken from the shipped seed in the shared submodule for the same reason as
+// page_content above: with the collection empty the admin screens render
+// "this environment has no document yet" and every assertion about them
+// passes vacuously, while the public site silently falls back to the copy
+// bundled in its own build.
+const site_navigation = {
+  main: require('../../src/common/src/shared/data/site-navigation-seed.json'),
+};
+
+const site_footer = {
+  main: require('../../src/common/src/shared/data/site-footer-seed.json'),
+};
+
 module.exports = {
   T0,
   AUTH_USERS,
@@ -570,6 +584,8 @@ module.exports = {
     bulkDiscountTiers,
     home_sections,
     page_content,
+    site_navigation,
+    site_footer,
   },
   librarySeriesTree,
 };

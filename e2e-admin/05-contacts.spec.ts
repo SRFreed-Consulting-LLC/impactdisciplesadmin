@@ -64,7 +64,7 @@ test.describe('[contacts] Contacts & Orders', () => {
   });
 
   test('form submissions load', async ({ page }) => {
-    await gotoTab(page, 'contacts-manager', 'custom-form-submissions');
+    await gotoTab(page, 'data', 'custom-form-submissions');
     await waitForGrid(page, 'custom-form-submissions-table');
     await expect(page.locator('.custom-form-submissions-table')).toBeVisible();
   });

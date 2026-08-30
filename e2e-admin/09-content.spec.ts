@@ -21,15 +21,19 @@ test.describe('[content] Website Content', () => {
   // Screens that still ARE a grid. Home is not one of them any more: its
   // slider became a row of a section stack on 2026-08-29 and its slides moved
   // into a dialog, which is what the two tests further down cover.
-  const screens: Array<[string, string, string]> = [
-    ['Disciple Making Minute', 'disciple-making-minute', 'dmms-table'],
-    ['Testimonials', 'testimonials', 'testimonials-table'],
-    ['Team Page', 'team-page', 'team-page-table'],
+  // Testimonials and Team Page left this group on 2026-08-30 for the new
+  // DATA manager - they are lists of RECORDS the site renders, not a page's
+  // own words. The group id is the route, so their entries carry it: see the
+  // `screens` shape's third element.
+  const screens: Array<[string, string, string, string]> = [
+    ['Disciple Making Minute', 'page-manager', 'disciple-making-minute', 'dmms-table'],
+    ['Testimonials', 'data', 'testimonials', 'testimonials-table'],
+    ['Team Page', 'data', 'team-page', 'team-page-table'],
   ];
 
-  for (const [label, slug, tableClass] of screens) {
+  for (const [label, group, slug, tableClass] of screens) {
     test(`${label} loads its editor grid`, async ({ page }) => {
-      await gotoTab(page, 'page-manager', slug);
+      await gotoTab(page, group, slug);
       await waitForGrid(page, tableClass);
       await expect(page.locator(`.${tableClass}`)).toBeVisible();
     });
@@ -165,8 +169,8 @@ test.describe('[content] Website Content', () => {
     // These moved onto BaseListComponent together; a break in the base class
     // shows up as a thrown error rather than a missing element.
     const errors = collectConsoleErrors(page);
-    for (const [, slug, tableClass] of screens) {
-      await gotoTab(page, 'page-manager', slug);
+    for (const [, group, slug, tableClass] of screens) {
+      await gotoTab(page, group, slug);
       await waitForGrid(page, tableClass);
     }
     expect(errors, `browser threw:\n${errors.join('\n')}`).toEqual([]);

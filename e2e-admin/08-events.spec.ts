@@ -28,24 +28,35 @@ test.describe('[events] Events & Registrations', () => {
     await expect(page.locator('app-summit, app-events').first()).toBeVisible({ timeout: 30_000 });
   });
 
-  test('an event opens and shows its internal tabs', async ({ page }) => {
+  test('an event opens its editor', async ({ page }) => {
+    // Asserted on app-event-form, NOT on a mat-tab-group. A regular event's
+    // Details | Attendees strip was removed on 2026-08-27 - attendees became
+    // a full-page REPORT off the list's row action instead - so the tab group
+    // this used to wait for is not rendered for a regular event at all. The
+    // test had been red ever since while the screen worked perfectly; it was
+    // pointing at markup that no longer exists.
     await gotoTab(page, 'events-manager', 'events');
     await waitForGrid(page, 'events-table');
     await page.locator('.events-table tbody tr').first().dblclick();
-    await expect(page.locator('mat-tab-group, app-event-details').first()).toBeVisible({ timeout: 25_000 });
+
+    await expect(page.locator('app-event-form')).toBeVisible({ timeout: 25_000 });
+    // Its values are loaded, not just its shell - an empty form would
+    // otherwise pass this.
+    await expect(page.getByRole('textbox', { name: 'Event Name' })).not.toBeEmpty();
   });
 
-  test('the attendees tab lists registrations', async ({ page }) => {
+  test('the attendees report lists registrations', async ({ page }) => {
+    // VIEW ATTENDEES on the row, not a tab inside the editor. The old version
+    // looked for a tab, found none, and skipped its assertions entirely - so
+    // it could only ever fail on the way in, never on what it was meant to
+    // check. This opens the report the way a person does.
     await gotoTab(page, 'events-manager', 'events');
     await waitForGrid(page, 'events-table');
-    await page.locator('.events-table tbody tr').first().dblclick();
-    await expect(page.locator('mat-tab-group, app-event-details').first()).toBeVisible({ timeout: 25_000 });
 
-    const attendees = page.getByRole('tab', { name: /attendees/i });
-    if (await attendees.count()) {
-      await attendees.first().click();
-      await expect(page.locator('.attendees-table')).toBeVisible({ timeout: 25_000 });
-    }
+    await page.locator('.events-table tbody tr').first()
+      .getByRole('button', { name: /view attendees/i }).click();
+
+    await expect(page.locator('app-event-attendees')).toBeVisible({ timeout: 25_000 });
   });
 
   test('coaches load', async ({ page }) => {
