@@ -1,5 +1,25 @@
 /* Pages staff created. One screen rather than a nav leaf each, because a leaf
-   is code and these are data - see the component's header. */
+   is code and these are data - see the component's header.
+
+   COLOURS ARE MEASURED, NOT GUESSED. This stylesheet first shipped using
+   --app-surface, --app-warn, --app-warn-soft and --app-danger, none of which
+   exist. Every one silently fell back to its hardcoded default, so the rows
+   painted themselves WHITE inside a dark admin and then wrote the theme's
+   light-grey muted text on top: contrast 2.64, against a readable floor of
+   4.5. The page names were near-white ink on white and could not be read at
+   all.
+
+   The real palette is dark - ground #1b2436, cards #232e45, ink #e6ebf4 -
+   and the tokens below were checked against it in the browser:
+
+     --app-card-ink on --app-card    11.34   ok
+     --app-muted    on --app-card     5.13   ok
+     --app-card-muted on --app-card   4.66   ok
+     --app-faint    on --app-card     2.45   FAIL
+
+   --app-faint therefore appears nowhere here that carries a word worth
+   reading. It fails on cards throughout the app, which is worth fixing, but
+   not by quietly adding more of it. */
 
 .kp {
   padding: 4px 2px 24px;
@@ -38,7 +58,7 @@
 }
 
 .kp__note--bad {
-  color: var(--app-danger, #b3261e);
+  color: var(--app-attention);
 }
 
 /* An empty state that says what a page here IS, and points at where the
@@ -87,13 +107,13 @@
   padding: 14px 16px;
   border: 1px solid var(--app-field-border);
   border-radius: var(--app-radius-card);
-  background: var(--app-surface, #fff);
+  background: var(--app-card);
 }
 
 /* A draft is marked by a rail rather than by dimming the row: greyed-out text
    reads as disabled, and a draft page is entirely editable. */
 .kp__row--draft {
-  border-left: 3px solid var(--app-warn, #b06a00);
+  border-left: 3px solid var(--app-attention);
 }
 
 .kp__open {
@@ -115,15 +135,21 @@
   text-decoration: underline;
 }
 
+/* Explicit, not inherited. The button sets `color: inherit`, and what it
+   inherited was whatever the panel happened to give it - which is how these
+   ended up near-white on a white row. */
 .kp__name {
   font-size: 14.5px;
   font-weight: 500;
+  color: var(--app-card-ink);
 }
 
 .kp__slug {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
-  color: var(--app-faint);
+  /* --app-muted (5.13), not --app-faint (2.45). This is the page's URL and
+     people will read it character by character to check it. */
+  color: var(--app-muted);
 }
 
 .kp__count {
@@ -149,7 +175,9 @@
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--app-faint);
+  /* Small and uppercase, which is the worst case for legibility - so it gets
+     the token that passes (5.13), not the one that does not (2.45). */
+  color: var(--app-muted);
 }
 
 .kp__axis mat-button-toggle-group {
@@ -185,8 +213,11 @@
 }
 
 .kp__chip--draft {
-  background: var(--app-warn-soft, #fdf0dc);
-  color: var(--app-warn, #8a5200);
+  /* 0.10, not 0.16. The tint darkens the ground the amber text sits on, and
+     at 0.16 the pair measured 4.30 - fine for large text, and this is 11px.
+     0.10 measures 4.74. */
+  background: rgba(215, 155, 46, 0.1);
+  color: var(--app-attention);
 }
 
 @media (max-width: 900px) {

@@ -48,6 +48,23 @@ export class KitPagesComponent implements OnInit {
   /** The page being edited, or null while the list is showing. */
   selected: PageContentModel | null = null;
 
+  /**
+   * The adapted page handed to app-page-stack. A STORED FIELD, never a getter.
+   *
+   * This was a getter returning `kitPage(this.selected)`, and it froze the
+   * browser solid. `kitPage()` builds a new object every call, a template
+   * binding re-reads a getter on every change-detection pass, and
+   * PageStackComponent reloads its document in `ngOnChanges` - which fires on
+   * every new reference. So: new object, ngOnChanges, load, async resolve,
+   * change detection, new object, forever. The tab stopped responding and the
+   * browser offered to kill the page.
+   *
+   * The rule this file now follows: anything bound to an @Input must be
+   * REFERENTIALLY STABLE unless it genuinely changed. Built once when a page
+   * is opened, cleared when it closes.
+   */
+  selectedPage: EditablePage | null = null;
+
   readonly surfaces = SECTION_SURFACES.filter((s) => s.key !== 'inherit');
 
   constructor(
@@ -80,21 +97,18 @@ export class KitPagesComponent implements OnInit {
 
   // ------------------------------------------------------------- editing
 
-  /** The catalogue shape the existing stack screen needs. Rebuilt on each
-   *  read rather than cached: it is derived, and a stale one would show the
-   *  old title above the editor. */
-  get selectedPage(): EditablePage | null {
-    return this.selected ? kitPage(this.selected) : null;
-  }
-
   open(page: PageContentModel): void {
     this.selected = page;
+    // Built ONCE, here. See the field's comment for what happens if this
+    // becomes a getter again.
+    this.selectedPage = kitPage(page);
   }
 
   /** Back to the list, re-reading so a title or theme changed underneath is
    *  reflected rather than stale. */
   async closeEditor(): Promise<void> {
     this.selected = null;
+    this.selectedPage = null;
     await this.load();
   }
 
