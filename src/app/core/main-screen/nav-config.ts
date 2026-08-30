@@ -257,6 +257,21 @@ export const NAV_CONFIG: NavGroup[] = [
     section: 'site'
   },
   {
+    // FOOTER - the other half of the site's frame, and the same shape of
+    // screen as Navigation above: a flat link, Admin/Root only, outside the
+    // granular permission system for the same reason.
+    //
+    // Its headings, link columns and copyright live in `site_footer`. The
+    // address, phone, email and social links do NOT - those are on
+    // web_config, which the footer now reads instead of the hardcoded second
+    // copy it used to.
+    id: 'footer',
+    label: 'FOOTER',
+    icon: 'vertical_align_bottom',
+    roles: [Role.ADMIN],
+    section: 'site'
+  },
+  {
     id: 'page-manager',
     label: 'PAGE MANAGER',
     icon: 'handyman',

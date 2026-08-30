@@ -1,0 +1,324 @@
+/* Page Manager > Site > Footer. One section, three cards, each answering a
+   question about the footer rather than mirroring its rendered layout. */
+
+.ft {
+  display: block;
+  padding-bottom: 24px;
+}
+
+.ft__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--app-divider);
+  margin-bottom: 18px;
+}
+
+.ft__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ft__note {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.ft__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ft__msg {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+.ft__msg--ok { color: var(--app-accent); }
+.ft__msg--error { color: var(--app-danger, #d9534f); }
+
+.ft__state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--app-muted);
+  padding: 14px 0;
+}
+
+.ft__state--bad {
+  color: var(--app-danger, #d9534f);
+  font-weight: 600;
+  border: 1px solid var(--app-danger, #d9534f);
+  border-radius: var(--app-radius-control);
+  background: color-mix(in srgb, var(--app-danger, #d9534f) 10%, transparent);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.ft__problem {
+  display: block;
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+/* THREE CARDS ACROSS. The middle one carries the link columns and is the
+   busiest, so it takes the extra room rather than three equal thirds. */
+.ft__cards {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Below this the three cannot stand side by side and stack instead. The
+   grid does not need its children's sizing restated the way a flex row
+   turned column would - a single-column grid gives each child the full
+   width by definition. */
+@media (max-width: 1500px) {
+  .ft__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ft__card {
+  border: 1px solid var(--app-divider);
+  border-radius: var(--app-radius-control);
+  background: var(--app-card);
+  padding: 16px 18px 18px;
+  min-width: 0;
+}
+
+.ft__card-head {
+  margin-bottom: 12px;
+}
+
+.ft__card-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ft__card-head p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.ft__field {
+  width: 100%;
+}
+
+.ft__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 620px) {
+  .ft__pair { grid-template-columns: 1fr; }
+}
+
+.ft__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+  margin-bottom: 6px;
+}
+
+.ft__sub {
+  padding: 4px 0 12px;
+}
+
+.ft__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+/* ---- rows ---- */
+
+.ft__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--app-field);
+  border: 1px solid var(--app-divider);
+  border-radius: var(--app-radius-control);
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  min-width: 0;
+}
+
+.ft__row--off .ft__row-title,
+.ft__row--off .ft__row-dest {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.ft__row-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ft__row-dest {
+  font-size: 11px;
+  color: var(--app-faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.ft__spacer { flex: 1 1 auto; }
+
+.ft__grip {
+  cursor: grab;
+  color: var(--app-faint);
+  flex: 0 0 auto;
+}
+
+.ft__tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 100px;
+  border: 1px solid var(--app-divider);
+  color: var(--app-faint);
+  white-space: nowrap;
+}
+
+.ft__tag--bad {
+  border-color: var(--app-danger, #d9534f);
+  color: var(--app-danger, #d9534f);
+}
+
+/* ---- columns of links ---- */
+
+.ft__columns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ft__column {
+  border: 1px solid var(--app-divider);
+  border-radius: var(--app-radius-control);
+  padding: 8px 10px 10px;
+}
+
+.ft__column--off {
+  opacity: 0.6;
+}
+
+.ft__column-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ft__heading-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The heading input sits in a dense row; Material's default subscript
+   reserve would push the row apart for a hint that is not there. */
+.ft__heading-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.ft__links {
+  display: flex;
+  flex-direction: column;
+  min-height: 20px;
+  margin-bottom: 6px;
+}
+
+.ft__empty {
+  margin: 0;
+  padding: 4px 2px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--app-faint);
+}
+
+.ft__add {
+  margin-top: 2px;
+}
+
+/* ---- read-only, from Web Config ---- */
+
+.ft__readonly {
+  border-top: 1px solid var(--app-divider);
+  padding-top: 12px;
+  margin-top: 6px;
+}
+
+.ft__readonly dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.ft__readonly dt {
+  color: var(--app-faint);
+  white-space: nowrap;
+}
+
+.ft__readonly dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ft__socials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ft__socials strong {
+  display: inline-block;
+  min-width: 82px;
+}
+
+.ft__socials span {
+  color: var(--app-faint);
+  overflow-wrap: anywhere;
+}
+
+.cdk-drag-preview {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  border-radius: var(--app-radius-control);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}

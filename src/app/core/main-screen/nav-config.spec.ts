@@ -231,7 +231,7 @@ describe('NAV_CONFIG', () => {
     // outside the granular permission system entirely
     // (buildPermissionTree() skips groups with no items), so one appearing
     // by accident silently makes a screen Admin-only and ungrantable.
-    const FLAT_LINKS = ['home', 'navigation'];
+    const FLAT_LINKS = ['home', 'navigation', 'footer'];
 
     it('has exactly these flat links, and they really have no sub-items', () => {
       const flat = groups.filter((g) => !g.items).map((g) => g.id);

@@ -1,0 +1,279 @@
+<div class="ft">
+  <header class="ft__head">
+    <div>
+      <h2 class="ft__title">Footer</h2>
+      <p class="ft__note">
+        The bottom of every page on the site.
+        @if (footer) {
+          {{ liveColumnCount }} of {{ footer.columns.length }} column(s) showing.
+        }
+      </p>
+    </div>
+
+    <div class="ft__actions">
+      @if (error) {
+        <span class="ft__msg ft__msg--error">{{ error }}</span>
+      } @else if (justSaved) {
+        <span class="ft__msg ft__msg--ok">Saved</span>
+      } @else if (dirty) {
+        <span class="ft__msg">Unsaved changes</span>
+      }
+      @if (dirty) {
+        <button mat-button type="button" (click)="revert()" [disabled]="saving">CANCEL</button>
+      }
+      <button mat-flat-button color="primary"
+              [disabled]="!dirty || saving || problems.length > 0"
+              (click)="save()">
+        {{ saving ? 'SAVING...' : 'SAVE' }}
+      </button>
+    </div>
+  </header>
+
+  @if (!loaded) {
+    <p class="ft__state">Loading the footer&hellip;</p>
+  } @else if (notSeeded) {
+    <div class="ft__state ft__state--bad" role="alert">
+      <mat-icon>info_outline</mat-icon>
+      This environment has no footer document yet, so the site is showing the
+      footer built into its own code. Ask for
+      <code>seed-site-footer.js</code> to be run here before editing.
+    </div>
+  } @else if (loadFailed) {
+    <div class="ft__state ft__state--bad" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      The footer could not be read, so editing is switched off rather than
+      risking a save over a footer it never loaded. Reload the page.
+    </div>
+  } @else if (footer; as f) {
+
+    @if (problems.length) {
+      <div class="ft__state ft__state--bad" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>
+          <strong>Fix before saving:</strong>
+          @for (problem of problems; track problem) {
+            <span class="ft__problem">{{ problem }}</span>
+          }
+        </span>
+      </div>
+    }
+
+    <!-- ONE SECTION, THREE CARDS, each answering a question about the
+         footer rather than mirroring its rendered column layout. -->
+    <div class="ft__cards">
+
+      <!-- 1 ------------------------------------------------------------ -->
+      <section class="ft__card">
+        <header class="ft__card-head">
+          <h3>Who we are</h3>
+          <p>The name at the top left, and how to reach us.</p>
+        </header>
+
+        <mat-form-field appearance="outline" class="ft__field">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="f.brandTitle" (ngModelChange)="touched()" autocomplete="off">
+        </mat-form-field>
+
+        <div class="ft__sub">
+          <span class="ft__label">Links under the name</span>
+          @for (link of f.brandLinks; track link.id) {
+            <div class="ft__row" [class.ft__row--off]="!link.visible">
+              <span class="ft__row-title">{{ link.title }}</span>
+              <span class="ft__row-dest">{{ destination(link) }}</span>
+              <span class="ft__spacer"></span>
+              <mat-slide-toggle [checked]="link.visible"
+                                (change)="link.visible = $event.checked; touched()"></mat-slide-toggle>
+              <button mat-icon-button type="button" (click)="removeLink(link, f.brandLinks)"
+                      matTooltip="Remove">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
+          <button mat-stroked-button type="button" [matMenuTriggerFor]="brandAdd" class="ft__add">
+            <mat-icon>add</mat-icon> Add
+          </button>
+          <mat-menu #brandAdd="matMenu">
+            @for (group of routeGroups; track group) {
+              <button mat-menu-item type="button" [matMenuTriggerFor]="brandRoutes">{{ group }}</button>
+              <mat-menu #brandRoutes="matMenu">
+                @for (route of routesIn(group); track route.key) {
+                  <button mat-menu-item type="button" (click)="addPage(route, f.brandLinks)">
+                    {{ route.label }}
+                  </button>
+                }
+              </mat-menu>
+            }
+            <mat-divider></mat-divider>
+            <button mat-menu-item type="button" (click)="addLink(f.brandLinks)">
+              <mat-icon>link</mat-icon> <span>A link</span>
+            </button>
+          </mat-menu>
+        </div>
+
+        <mat-form-field appearance="outline" class="ft__field">
+          <mat-label>Rights line</mat-label>
+          <input matInput [(ngModel)]="f.attribution" (ngModelChange)="touched()" autocomplete="off">
+          <mat-hint>Shown under the links. Free text, including the year.</mat-hint>
+        </mat-form-field>
+
+        <!-- READ-ONLY. These live on web_config and are edited there. The
+             footer used to render a second, hardcoded copy of them that
+             nobody could edit - showing the real values here is the point. -->
+        <div class="ft__readonly">
+          <span class="ft__label">Contact details</span>
+          <dl>
+            <dt>Address</dt><dd>{{ addressLine || '—' }}</dd>
+            <dt>Email</dt><dd>{{ config?.email || '—' }}</dd>
+            <dt>Phone</dt><dd>{{ config?.phone || '—' }}</dd>
+          </dl>
+          <p class="ft__hint">
+            These come from
+            <a routerLink="/page-manager" [queryParams]="{ tab: 'web-config' }">Web Config</a>,
+            so the site and the admin cannot disagree about them.
+          </p>
+        </div>
+      </section>
+
+      <!-- 2 ------------------------------------------------------------ -->
+      <section class="ft__card">
+        <header class="ft__card-head">
+          <h3>Where they go</h3>
+          <p>The columns of links across the middle. Drag to reorder.</p>
+        </header>
+
+        <div cdkDropList (cdkDropListDropped)="reorderColumns($event)" class="ft__columns">
+          @for (column of f.columns; track column.id) {
+            <div class="ft__column" cdkDrag [class.ft__column--off]="!column.visible">
+              <div class="ft__column-head">
+                <mat-icon class="ft__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+                <mat-form-field appearance="outline" class="ft__heading-field">
+                  <mat-label>Heading</mat-label>
+                  <input matInput [(ngModel)]="column.heading" (ngModelChange)="touched()" autocomplete="off">
+                </mat-form-field>
+                <mat-slide-toggle [checked]="column.visible"
+                                  (change)="column.visible = $event.checked; touched()"
+                                  [matTooltip]="column.visible ? 'Showing on the site' : 'Hidden'"></mat-slide-toggle>
+                <button mat-icon-button type="button" (click)="removeColumn(column)"
+                        matTooltip="Delete this column">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+
+              <div cdkDropList (cdkDropListDropped)="reorderLinks($event, column)" class="ft__links">
+                @for (link of column.links; track link.id) {
+                  <div class="ft__row" cdkDrag [class.ft__row--off]="!link.visible">
+                    <mat-icon class="ft__grip" cdkDragHandle>drag_indicator</mat-icon>
+                    <span class="ft__row-title">{{ link.title }}</span>
+                    @if (isStale(link)) {
+                      <span class="ft__tag ft__tag--bad" matTooltip="This page is not on the site any more">broken</span>
+                    }
+                    @if (link.external) {
+                      <span class="ft__tag">leaves the site</span>
+                    }
+                    <span class="ft__row-dest">{{ destination(link) }}</span>
+                    <span class="ft__spacer"></span>
+                    <mat-slide-toggle [checked]="link.visible"
+                                      (change)="link.visible = $event.checked; touched()"></mat-slide-toggle>
+                    <button mat-icon-button type="button" (click)="removeLink(link, column.links)"
+                            matTooltip="Remove">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                }
+                @if (!column.links.length) {
+                  <p class="ft__empty">
+                    Nothing in this column, so the site leaves it out entirely.
+                  </p>
+                }
+              </div>
+
+              <button mat-stroked-button type="button" [matMenuTriggerFor]="colAdd" class="ft__add">
+                <mat-icon>add</mat-icon> Add
+              </button>
+              <mat-menu #colAdd="matMenu">
+                @for (group of routeGroups; track group) {
+                  <button mat-menu-item type="button" [matMenuTriggerFor]="colRoutes">{{ group }}</button>
+                  <mat-menu #colRoutes="matMenu">
+                    @for (route of routesIn(group); track route.key) {
+                      <button mat-menu-item type="button" (click)="addPage(route, column.links)">
+                        {{ route.label }}
+                      </button>
+                    }
+                  </mat-menu>
+                }
+                <mat-divider></mat-divider>
+                <button mat-menu-item type="button" (click)="addLink(column.links)">
+                  <mat-icon>link</mat-icon> <span>A link</span>
+                </button>
+              </mat-menu>
+            </div>
+          }
+        </div>
+
+        <button mat-stroked-button type="button" (click)="addColumn()" class="ft__add">
+          <mat-icon>view_column</mat-icon> ADD A COLUMN
+        </button>
+      </section>
+
+      <!-- 3 ------------------------------------------------------------ -->
+      <section class="ft__card">
+        <header class="ft__card-head">
+          <h3>Keep in touch</h3>
+          <p>The sign-up box, the bar along the very bottom, and the socials.</p>
+        </header>
+
+        <mat-form-field appearance="outline" class="ft__field">
+          <mat-label>Sign-up heading</mat-label>
+          <input matInput [(ngModel)]="f.newsletterHeading" (ngModelChange)="touched()" autocomplete="off">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="ft__field">
+          <mat-label>Sign-up wording</mat-label>
+          <textarea matInput rows="3" [(ngModel)]="f.newsletterBlurb" (ngModelChange)="touched()"></textarea>
+          <mat-hint>The form itself is fixed; only these words change.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="ft__field">
+          <mat-label>Bottom bar</mat-label>
+          <input matInput [(ngModel)]="f.bottomText" (ngModelChange)="touched()" autocomplete="off">
+        </mat-form-field>
+
+        <div class="ft__pair">
+          <mat-form-field appearance="outline" class="ft__field">
+            <mat-label>Link wording</mat-label>
+            <input matInput [(ngModel)]="f.bottomLinkLabel" (ngModelChange)="touched()" autocomplete="off">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="ft__field">
+            <mat-label>Link address</mat-label>
+            <input matInput [(ngModel)]="f.bottomLinkUrl" (ngModelChange)="touched()" autocomplete="off"
+                   placeholder="mailto:someone@example.com">
+          </mat-form-field>
+        </div>
+
+        <div class="ft__readonly">
+          <span class="ft__label">Social icons</span>
+          @if (socialLinks.length) {
+            <ul class="ft__socials">
+              @for (social of socialLinks; track social.label) {
+                <li><strong>{{ social.label }}</strong> <span>{{ social.url }}</span></li>
+              }
+            </ul>
+          } @else {
+            <p class="ft__hint">None set, so no icons show.</p>
+          }
+          <p class="ft__hint">
+            Also from
+            <a routerLink="/page-manager" [queryParams]="{ tab: 'web-config' }">Web Config</a>.
+            An icon appears only when its address is filled in.
+          </p>
+        </div>
+
+        <mat-form-field appearance="outline" class="ft__field">
+          <mat-label>Background image</mat-label>
+          <input matInput [(ngModel)]="f.backgroundImage" (ngModelChange)="touched()" autocomplete="off">
+          <mat-hint>The picture behind the top half of the footer.</mat-hint>
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>

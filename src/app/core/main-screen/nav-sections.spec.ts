@@ -84,7 +84,7 @@ describe('drawer sections', () => {
 
       // Navigation joined Site as a top-level group on 2026-08-30 - the
       // menu is the site's frame rather than any one page's content.
-      expect(idsOf(nav.sectionNav)).toEqual(['navigation', 'page-manager', 'data']);
+      expect(idsOf(nav.sectionNav)).toEqual(['navigation', 'footer', 'page-manager', 'data']);
     });
 
     it('keeps Page Manager OFF the Admin tab', () => {
@@ -228,7 +228,7 @@ describe('drawer sections', () => {
       nav.selectSection('site');
 
       expect(nav.isSectionFlattened).toBeFalse();
-      expect(idsOf(nav.groupedNav)).toEqual(['navigation', 'page-manager', 'data']);
+      expect(idsOf(nav.groupedNav)).toEqual(['navigation', 'footer', 'page-manager', 'data']);
     });
 
     it('never draws both lists at once', () => {

@@ -67,6 +67,7 @@ before(async () => {
     await setDoc(doc(db, "site_navigation/main"), {
       items: [{id: "nav-home", title: "Home", kind: "page", routeKey: "home", visible: true}],
     });
+    await setDoc(doc(db, "site_footer/main"), {brandTitle: "Impact Discipleship Ministries", columns: []});
     await setDoc(doc(db, "customers/c1"), {email: "c1@x.test"});
     await setDoc(doc(db, "coupons/FREE"), {code: "FREE", percentOff: 100});
     // An already-sent mail doc, so the resend path (clear `delivery` and
@@ -119,6 +120,20 @@ test("anon: the site navigation is readable by a visitor, and writable by nobody
     items: [{id: "x", title: "Donate", kind: "custom", url: "https://evil.test", visible: true}],
   }));
   await assertFails(deleteDoc(doc(anon(), "site_navigation/main")));
+});
+
+test("anon: the site footer is readable by a visitor, and writable by nobody", async () => {
+  await assertSucceeds(getDoc(doc(anon(), "site_footer/main")));
+  await assertFails(setDoc(doc(anon(), "site_footer/main"), {columns: []}));
+  await assertFails(updateDoc(doc(anon(), "site_footer/main"), {
+    bottomLinkUrl: "https://evil.test",
+  }));
+});
+
+test("business staff may edit the site footer; an Editor may not", async () => {
+  await assertSucceeds(updateDoc(doc(admin(), "site_footer/main"), {brandTitle: "X"}));
+  await assertSucceeds(updateDoc(doc(employee(), "site_footer/main"), {brandTitle: "Y"}));
+  await assertFails(updateDoc(doc(editor(), "site_footer/main"), {brandTitle: "Z"}));
 });
 
 test("business staff may edit the site navigation; an Editor may not", async () => {

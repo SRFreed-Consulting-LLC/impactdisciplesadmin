@@ -247,6 +247,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
+    // The public site's FOOTER - one document, `main`, holding its headings,
+    // link columns and copyright lines (2026-08-30). Same reasoning as
+    // site_navigation above in every respect: world-readable because the
+    // public site has no Firebase Auth, staff-write-only because the items
+    // carry destination URLs and a public write path here would let anyone
+    // point the site's own footer wherever they liked.
+    //
+    // The address, phone, email and social links are NOT here - they are on
+    // `config` (web_config), which the footer now reads instead of the
+    // hardcoded copy it used to.
+    match /site_footer/{id} {
+      allow read: if true;
+      allow write: if isBusinessStaff();
+    }
     match /dmms/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();

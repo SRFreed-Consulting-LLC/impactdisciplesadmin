@@ -65,6 +65,12 @@ const routes: Routes = [
         loadChildren: () => import('./page-manager/navigation/navigation.module').then(m => m.NavigationModule),
         canActivate: [ authGuard ]
       },
+      // The other half of the site's frame - see SiteFooterModule.
+      {
+        path: 'footer',
+        loadChildren: () => import('./page-manager/footer/footer.module').then(m => m.SiteFooterModule),
+        canActivate: [ authGuard ]
+      },
       // 2026-08-19 renames (Customers Manager -> Contacts Manager, Web
       // Manager -> Content Manager) and 2026-08-29 (Content Manager -> Page
       // Manager): old paths redirect so pre-rename bookmarks and stale deep
