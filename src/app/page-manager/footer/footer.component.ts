@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SiteFooterService } from 'src/app/common/services/data/site-footer.service';
+import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
 import { WebConfigModel } from '@impact-common/shared/models/utils/web-config.model';
 import {
@@ -61,18 +62,26 @@ export class SiteFooterAdminComponent implements OnInit {
   loadFailed = false;
   notSeeded = false;
   saving = false;
-  error: string | null = null;
-  justSaved = false;
 
   readonly routeGroups = SITE_ROUTE_GROUPS;
 
+
   constructor(
     private service: SiteFooterService,
-    private webConfig: WebConfigService
+    private webConfig: WebConfigService,
+    private snackbar: SnackbarService
   ) {}
 
   ngOnInit(): void {
-    this.service.load()
+    this.load();
+
+    this.webConfig.getAll()
+      .then((configs) => this.config = configs?.[0] ?? null)
+      .catch((err) => console.error('Failed to read web config for the footer:', err));
+  }
+
+  private load(): Promise<void> {
+    return this.service.load()
       .then((footer) => {
         if (footer === null) {
           this.notSeeded = true;
@@ -88,15 +97,59 @@ export class SiteFooterAdminComponent implements OnInit {
         this.loadFailed = true;
         this.loaded = true;
       });
+  }
 
-    this.webConfig.getAll()
-      .then((configs) => this.config = configs?.[0] ?? null)
-      .catch((err) => console.error('Failed to read web config for the footer:', err));
+  /**
+   * Writes the whole footer and says so, mirroring PageStackComponent down to
+   * the wording and the reload-on-failure - a screen that keeps displaying a
+   * change that never landed is how somebody walks away believing they saved.
+   */
+  private async persist(message: string): Promise<void> {
+    if (!this.footer || !this.canEdit) {
+      return;
+    }
+    const problems = this.problems;
+    if (problems.length) {
+      // Structure that cannot be saved yet - an empty column, a link with no
+      // address. Said plainly and left on screen to be finished, rather than
+      // written in a state the site cannot render.
+      this.snackbar.error(problems[0]);
+      return;
+    }
+    this.saving = true;
+    try {
+      await this.service.save(this.footer);
+      this.saved = JSON.stringify(this.footer);
+      this.snackbar.success(message);
+    } catch (err) {
+      console.error('Could not save the footer:', err);
+      this.snackbar.error('Could not save that - reload and try again');
+      await this.load();
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  /**
+   * Commits a text field when it loses focus.
+   *
+   * The footer's wording sits inline on the cards rather than inside an
+   * editor, so there is no SAVE to press and no natural moment to commit
+   * except leaving the field. Saving on every keystroke would be a write per
+   * character; saving on blur is the same "as you go" promise the rest of
+   * the screen makes.
+   */
+  async commitText(): Promise<void> {
+    if (this.hasUnsavedChanges()) {
+      await this.persist('Saved');
+    }
   }
 
   // ---- state ----
 
-  get dirty(): boolean {
+  /** Only ever true for a text field somebody is still inside, or structure
+   *  that is not yet valid to write. Everything else saves itself. */
+  hasUnsavedChanges(): boolean {
     return this.loaded && JSON.stringify(this.footer) !== this.saved;
   }
 
@@ -143,11 +196,6 @@ export class SiteFooterAdminComponent implements OnInit {
     ].filter((entry) => !!entry.url?.trim());
   }
 
-  touched(): void {
-    this.justSaved = false;
-    this.error = null;
-  }
-
   // ---- links and columns ----
 
   routesIn(group: SiteRoute['group']): CatalogueRoute[] {
@@ -165,15 +213,16 @@ export class SiteFooterAdminComponent implements OnInit {
     return link.kind === 'page' && !!link.routeKey && !siteRoutePath(link.routeKey);
   }
 
-  reorderColumns(event: CdkDragDrop<SiteFooterColumn[]>): void {
-    if (!this.footer) return;
+  async reorderColumns(event: CdkDragDrop<SiteFooterColumn[]>): Promise<void> {
+    if (!this.footer || event.previousIndex === event.currentIndex) return;
     moveItemInArray(this.footer.columns, event.previousIndex, event.currentIndex);
-    this.touched();
+    await this.persist('Order saved');
   }
 
-  reorderLinks(event: CdkDragDrop<SiteNavItem[]>, column: SiteFooterColumn): void {
+  async reorderLinks(event: CdkDragDrop<SiteNavItem[]>, column: SiteFooterColumn): Promise<void> {
+    if (event.previousIndex === event.currentIndex) return;
     moveItemInArray(column.links, event.previousIndex, event.currentIndex);
-    this.touched();
+    await this.persist('Order saved');
   }
 
   addColumn(): void {
@@ -181,21 +230,22 @@ export class SiteFooterAdminComponent implements OnInit {
     this.footer.columns.push({
       id: this.newId('column'), heading: 'New column', links: [], visible: true
     });
-    this.touched();
+    // Not written yet: a column with no links fails the validator, so it
+    // is saved once something is put in it.
   }
 
-  removeColumn(column: SiteFooterColumn): void {
+  async removeColumn(column: SiteFooterColumn): Promise<void> {
     if (!this.footer) return;
     this.footer.columns = this.footer.columns.filter((entry) => entry.id !== column.id);
-    this.touched();
+    await this.persist(`“${column.heading}” removed`);
   }
 
-  addPage(route: CatalogueRoute, links: SiteNavItem[]): void {
+  async addPage(route: CatalogueRoute, links: SiteNavItem[]): Promise<void> {
     links.push({
       id: this.newId(route.key), title: route.label,
       kind: 'page', routeKey: route.key, visible: true
     });
-    this.touched();
+    await this.persist(`“${route.label}” added`);
   }
 
   addLink(links: SiteNavItem[]): void {
@@ -203,60 +253,47 @@ export class SiteFooterAdminComponent implements OnInit {
       id: this.newId('link'), title: 'New link', kind: 'custom',
       url: '', external: true, visible: true
     });
-    this.touched();
+    // Not written yet - a link with no address fails the validator. Give it
+    // one and it saves on blur, like every other field here.
   }
 
-  removeLink(link: SiteNavItem, links: SiteNavItem[]): void {
+  async removeLink(link: SiteNavItem, links: SiteNavItem[]): Promise<void> {
     const at = links.findIndex((entry) => entry.id === link.id);
     if (at >= 0) {
       links.splice(at, 1);
-      this.touched();
+      await this.persist(`“${link.title}” removed`);
     }
   }
 
   // ---- saving ----
 
-  /** What the leave-guard asks. See site-frame.guard.ts - edits here are
-   *  deliberately not auto-saved, so the exit has to be defended. */
-  hasUnsavedChanges(): boolean {
-    return this.dirty;
-  }
-
-  /** Saves, and REJECTS on failure, so the guard can keep somebody on this
-   *  page rather than navigating away with their changes silently gone. */
-  save(): Promise<void> {
-    if (!this.footer || this.saving || !this.dirty) {
-      return Promise.resolve();
+  /** What the leave-guard calls if you choose Save on the way out. Rejects
+   *  on failure so it keeps you here rather than leaving with the change
+   *  gone. */
+  async save(): Promise<void> {
+    if (!this.hasUnsavedChanges()) {
+      return;
     }
-    if (this.problems.length) {
-      return Promise.reject(new Error(this.problems.join('\n')));
+    const problems = this.problems;
+    if (problems.length) {
+      this.snackbar.error(problems[0]);
+      throw new Error(problems.join('; '));
+    }
+    if (!this.footer) {
+      return;
     }
     this.saving = true;
-    this.error = null;
-
-    return this.service.save(this.footer)
-      .then(() => {
-        this.saved = JSON.stringify(this.footer);
-        this.saving = false;
-        this.justSaved = true;
-      })
-      .catch((err) => {
-        console.error('Failed to save the site footer:', err);
-        this.saving = false;
-        this.error = err?.message || 'Could not save the footer. Please try again.';
-        throw err;
-      });
-  }
-
-  /** The SAVE button. Separate from save() so the template does not create an
-   *  unhandled rejection - the error is already on screen. */
-  onSaveClicked(): void {
-    this.save().catch(() => undefined);
-  }
-
-  revert(): void {
-    this.footer = this.saved ? JSON.parse(this.saved) : null;
-    this.touched();
+    try {
+      await this.service.save(this.footer);
+      this.saved = JSON.stringify(this.footer);
+      this.snackbar.success('Saved');
+    } catch (err) {
+      console.error('Could not save the footer:', err);
+      this.snackbar.error('Could not save that - reload and try again');
+      throw err;
+    } finally {
+      this.saving = false;
+    }
   }
 
   /** Readable and unique across the whole footer - link ids and column ids

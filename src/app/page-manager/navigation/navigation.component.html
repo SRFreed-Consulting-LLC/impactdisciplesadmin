@@ -16,6 +16,16 @@
           <h2 class="ps__title">{{ item.title || 'Untitled' }}</h2>
         </div>
         <div class="ps__editing-actions">
+          <!-- The wording is the one thing here that is NOT saved as you
+               type, so it gets a real Save. Leaving with it uncommitted is
+               what the route guard catches. -->
+          @if (hasUnsavedChanges()) {
+            <span class="nav-msg">Unsaved wording</span>
+            <button mat-button type="button" (click)="revert()" [disabled]="saving">CANCEL</button>
+          }
+          <button mat-flat-button color="primary" type="button"
+                  [disabled]="!hasUnsavedChanges() || saving"
+                  (click)="onSaveClicked()">{{ saving ? 'SAVING...' : 'SAVE' }}</button>
           <button mat-button type="button" (click)="closeEditor()">DONE</button>
         </div>
       </header>
@@ -23,7 +33,7 @@
       <div class="nav-form">
         <mat-form-field appearance="outline" class="nav-form__field">
           <mat-label>What the menu says</mat-label>
-          <input matInput [(ngModel)]="item.title" (ngModelChange)="touched()" autocomplete="off">
+          <input matInput [(ngModel)]="item.title" autocomplete="off">
           <mat-hint>The wording a visitor reads, not the page's own title.</mat-hint>
         </mat-form-field>
 
@@ -50,7 +60,7 @@
         @if (item.kind === 'custom') {
           <mat-form-field appearance="outline" class="nav-form__field">
             <mat-label>Address</mat-label>
-            <input matInput [(ngModel)]="item.url" (ngModelChange)="touched()"
+            <input matInput [(ngModel)]="item.url"
                    autocomplete="off" placeholder="https://example.com">
             <mat-hint>
               A full web address for somewhere else, or something like
@@ -60,7 +70,7 @@
 
           <div class="nav-form__switch">
             <mat-slide-toggle [checked]="!!item.external"
-                              (change)="item.external = $event.checked; touched()">
+                              (change)="item.external = $event.checked">
               Opens in a new tab
             </mat-slide-toggle>
             <p class="nav-form__hint">
@@ -72,7 +82,7 @@
 
         <div class="nav-form__switch">
           <mat-slide-toggle [checked]="!!item.highlight"
-                            (change)="item.highlight = $event.checked; touched()">
+                            (change)="item.highlight = $event.checked">
             Draw attention to it
           </mat-slide-toggle>
           <p class="nav-form__hint">Styled to stand out &mdash; a summit, an event, a deadline.</p>
@@ -80,7 +90,7 @@
 
         <div class="nav-form__switch">
           <mat-slide-toggle [checked]="item.visible"
-                            (change)="item.visible = $event.checked; touched()">
+                            (change)="item.visible = $event.checked">
             Show it in the menu
           </mat-slide-toggle>
           <p class="nav-form__hint">
@@ -179,15 +189,10 @@
       </div>
 
       <div class="nav-head__actions">
-        @if (error) {
-          <span class="nav-msg nav-msg--error">{{ error }}</span>
-        } @else if (justSaved) {
-          <span class="nav-msg nav-msg--ok">Saved</span>
-        } @else if (dirty) {
-          <span class="nav-msg">Unsaved changes</span>
-        }
-
-        <button mat-flat-button color="primary" [matMenuTriggerFor]="addMenu" [disabled]="!canEdit">
+        <!-- No SAVE here. Reordering, switching an item on or off, adding
+             and removing all write immediately - see the component. The
+             wording of an item is still committed in its own editor. -->
+        <button mat-flat-button color="primary" [matMenuTriggerFor]="addMenu" [disabled]="!canEdit || saving">
           <mat-icon>add</mat-icon> Add
         </button>
         <mat-menu #addMenu="matMenu">
@@ -214,14 +219,6 @@
           </button>
         </mat-menu>
 
-        @if (dirty) {
-          <button mat-button type="button" (click)="revert()" [disabled]="saving">CANCEL</button>
-        }
-        <button mat-flat-button color="primary"
-                [disabled]="!dirty || saving || problems.length > 0"
-                (click)="onSaveClicked()">
-          {{ saving ? 'SAVING...' : 'SAVE' }}
-        </button>
       </div>
     </header>
 
@@ -262,7 +259,7 @@
       @for (item of items; track item.id) {
         <div class="ps__section" cdkDrag
              [class.ps__section--off]="!item.visible"
-             [cdkDragDisabled]="!canEdit">
+             [cdkDragDisabled]="!canEdit || saving">
           <mat-icon class="ps__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
           <mat-icon class="ps__type-icon" [class.ps__type-icon--unknown]="isStale(item)">
             {{ isStale(item) ? 'help_outline' : iconFor(item) }}
@@ -274,18 +271,18 @@
           </div>
 
           <button type="button" class="ps__icon-btn" matTooltip="Edit this item"
-                  [disabled]="!canEdit" (click)="edit(item)">
+                  [disabled]="!canEdit || saving" (click)="edit(item)">
             <mat-icon>edit</mat-icon>
           </button>
           <button type="button" class="ps__icon-btn ps__icon-btn--danger"
                   matTooltip="Delete this item for good"
-                  [disabled]="!canEdit" (click)="remove(item)">
+                  [disabled]="!canEdit || saving" (click)="remove(item)">
             <mat-icon>delete_outline</mat-icon>
           </button>
 
           <mat-slide-toggle class="ps__live"
                             [checked]="item.visible"
-                            [disabled]="!canEdit"
+                            [disabled]="!canEdit || saving"
                             (change)="toggleLive(item)"
                             [matTooltip]="item.visible ? 'Showing on the site' : 'Hidden from the site'">
             Live

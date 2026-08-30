@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { SiteNavigationService } from 'src/app/common/services/data/site-navigation.service';
+import { SnackbarService } from 'src/app/shared/snackbar.service';
 import {
   SiteNavItem,
   liveNavItems,
@@ -62,23 +63,41 @@ type CatalogueRoute = (typeof SITE_ROUTES)[number];
     standalone: false
 })
 export class NavigationComponent implements OnInit, OnDestroy {
-  /** The working copy. Every edit is local until Save - a menu is a shape,
-   *  and saving each drag would publish half-finished arrangements to a live
-   *  site. */
+  /**
+   * The menu, and it is SAVED AS YOU GO.
+   *
+   * Reordering, switching an item on or off, adding and removing all write
+   * immediately, exactly as the twelve page section stacks have always done -
+   * see PageStackComponent.persist(), which this deliberately mirrors down to
+   * the snackbar wording and the reload-on-failure.
+   *
+   * It did not, until 2026-08-30. It held a working copy behind a SAVE
+   * button, which is defensible on its own terms - a menu is a shape, and
+   * publishing each drag pushes half-finished arrangements to a live site -
+   * but it was the ONLY screen on the Site tab that behaved that way. Shane
+   * switched a footer link off, went to look at the site, came back and found
+   * it on again, and reasonably read that as the save being broken. It was
+   * not: he had not pressed a button he could not see. One inconsistent
+   * screen is a worse problem than a slightly eager write.
+   *
+   * The wording of an item is still committed explicitly, in the full-screen
+   * editor - the same split Page Manager already draws between structure and
+   * text.
+   */
   items: SiteNavItem[] = [];
 
-  /** What was last read, so Cancel has something to go back to and `dirty`
-   *  has something to compare against. */
-  private saved = '';
+  /** The item's stored values when its editor opened, so CANCEL there has
+   *  something to go back to. Only ever holds the one item being edited. */
+  private editingSnapshot: string | null = null;
 
   loaded = false;
   loadFailed = false;
   /** The document does not exist here - a different state from an empty menu
    *  and from a failed read. */
   notSeeded = false;
+  /** A write is in flight. Disables the controls rather than letting a second
+   *  drag race the first. */
   saving = false;
-  error: string | null = null;
-  justSaved = false;
 
   /** The item being edited full screen, and its parent if it is a child.
    *  Held by id, not by reference: the arrays are rebuilt on every drag and
@@ -89,10 +108,18 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe = new Subject<void>();
 
-  constructor(private service: SiteNavigationService) {}
+
+  constructor(
+    private service: SiteNavigationService,
+    private snackbar: SnackbarService
+  ) {}
 
   ngOnInit(): void {
-    this.service.load()
+    this.load();
+  }
+
+  private load(): Promise<void> {
+    return this.service.load()
       .then((items) => {
         if (items === null) {
           this.notSeeded = true;
@@ -100,7 +127,6 @@ export class NavigationComponent implements OnInit, OnDestroy {
         } else {
           this.items = JSON.parse(JSON.stringify(items));
         }
-        this.saved = JSON.stringify(this.items);
         this.loaded = true;
       })
       .catch((err) => {
@@ -110,16 +136,37 @@ export class NavigationComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Writes the whole ordered menu and says so. The array IS the order.
+   *
+   * On failure it RELOADS rather than leaving the screen showing a change
+   * that never landed - the same choice PageStackComponent makes, and the
+   * important half: a screen that keeps displaying a failed edit is how
+   * somebody walks away believing they saved.
+   */
+  private async persist(message: string): Promise<void> {
+    if (!this.canEdit) {
+      return;
+    }
+    this.saving = true;
+    try {
+      await this.service.save(this.items);
+      this.snackbar.success(message);
+    } catch (err) {
+      console.error('Could not save the menu:', err);
+      this.snackbar.error('Could not save that - reload and try again');
+      await this.load();
+    } finally {
+      this.saving = false;
+    }
+  }
+
   ngOnDestroy(): void {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
   }
 
   // ---- state ----
-
-  get dirty(): boolean {
-    return this.loaded && JSON.stringify(this.items) !== this.saved;
-  }
 
   get canEdit(): boolean {
     return this.loaded && !this.loadFailed;
@@ -167,18 +214,21 @@ export class NavigationComponent implements OnInit, OnDestroy {
     return 'description';
   }
 
-  reorder(event: CdkDragDrop<SiteNavItem[]>): void {
+  async reorder(event: CdkDragDrop<SiteNavItem[]>): Promise<void> {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
     moveItemInArray(this.items, event.previousIndex, event.currentIndex);
     this.items = [...this.items];
-    this.touched();
+    await this.persist('Order saved');
   }
 
-  toggleLive(item: SiteNavItem): void {
+  async toggleLive(item: SiteNavItem): Promise<void> {
     item.visible = !item.visible;
-    this.touched();
+    await this.persist(item.visible ? 'Showing in the menu' : 'Taken out of the menu');
   }
 
-  remove(item: SiteNavItem): void {
+  async remove(item: SiteNavItem): Promise<void> {
     this.items = this.items
       .filter((entry) => entry.id !== item.id)
       .map((entry) => entry.children
@@ -187,7 +237,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     if (this.editingId === item.id) {
       this.editingId = null;
     }
-    this.touched();
+    await this.persist(`“${item.title}” removed`);
   }
 
   // ---- adding ----
@@ -208,7 +258,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  addPage(route: CatalogueRoute): void {
+  async addPage(route: CatalogueRoute): Promise<void> {
     this.items = [...this.items, {
       id: this.newId(route.key),
       title: route.label,
@@ -216,7 +266,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
       routeKey: route.key,
       visible: true
     }];
-    this.touched();
+    await this.persist(`“${route.label}” added`);
   }
 
   addLink(): void {
@@ -225,10 +275,9 @@ export class NavigationComponent implements OnInit, OnDestroy {
       url: '', external: true, visible: true
     };
     this.items = [...this.items, item];
-    this.touched();
-    // Straight into the editor - it has no address yet, and a link with no
-    // address is a dead entry the validator would later block the save over
-    // without saying which item it meant.
+    // Straight into the editor - it has no address yet. NOT persisted first:
+    // a link with no address fails the validator, so it is written when the
+    // editor is saved, once it has one.
     this.edit(item);
   }
 
@@ -238,7 +287,8 @@ export class NavigationComponent implements OnInit, OnDestroy {
       visible: true, children: []
     };
     this.items = [...this.items, item];
-    this.touched();
+    // Same reason as a new link: an empty dropdown fails the validator, so
+    // it is written once it has something in it.
     this.edit(item);
   }
 
@@ -269,13 +319,16 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   edit(item: SiteNavItem): void {
     this.editingId = item.id;
+    this.editingSnapshot = JSON.stringify(item);
   }
 
   closeEditor(): void {
     // Back to the dropdown you came from rather than all the way out, when
     // there is one - editing three children in a row should not mean three
     // trips through the stack.
-    this.editingId = this.editingParent?.id ?? null;
+    const parent = this.editingParent;
+    this.editingId = parent?.id ?? null;
+    this.editingSnapshot = parent ? JSON.stringify(parent) : null;
   }
 
   // ---- a dropdown's children, one level down ----
@@ -284,21 +337,24 @@ export class NavigationComponent implements OnInit, OnDestroy {
     return item.children ?? [];
   }
 
-  reorderChildren(event: CdkDragDrop<SiteNavItem[]>, parent: SiteNavItem): void {
+  async reorderChildren(event: CdkDragDrop<SiteNavItem[]>, parent: SiteNavItem): Promise<void> {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
     const children = parent.children ?? (parent.children = []);
     moveItemInArray(children, event.previousIndex, event.currentIndex);
     this.items = [...this.items];
-    this.touched();
+    await this.persist('Order saved');
   }
 
-  addPageToGroup(route: CatalogueRoute, parent: SiteNavItem): void {
+  async addPageToGroup(route: CatalogueRoute, parent: SiteNavItem): Promise<void> {
     const children = parent.children ?? (parent.children = []);
     children.push({
       id: this.newId(route.key), title: route.label,
       kind: 'page', routeKey: route.key, visible: true
     });
     this.items = [...this.items];
-    this.touched();
+    await this.persist(`“${route.label}” added`);
   }
 
   addLinkToGroup(parent: SiteNavItem): void {
@@ -309,74 +365,78 @@ export class NavigationComponent implements OnInit, OnDestroy {
     };
     children.push(child);
     this.items = [...this.items];
-    this.touched();
+    // Not persisted yet - a link with no address fails the validator. It is
+    // written when its editor is saved, once it has one.
     this.edit(child);
   }
 
   /** Lifts a child out to the top level, which is the only way back up -
    *  there is no cross-list dragging in this shape, because you cannot see
    *  both lists at once. */
-  liftOut(child: SiteNavItem, parent: SiteNavItem): void {
+  async liftOut(child: SiteNavItem, parent: SiteNavItem): Promise<void> {
     parent.children = (parent.children ?? []).filter((entry) => entry.id !== child.id);
     this.items = [...this.items, child];
-    this.touched();
+    await this.persist(`“${child.title}” moved out`);
   }
 
-  // ---- saving ----
-
-  touched(): void {
-    this.justSaved = false;
-    this.error = null;
-  }
-
-  /** What the leave-guard asks. See site-frame.guard.ts - edits here are
-   *  deliberately not auto-saved, so the exit has to be defended. */
-  hasUnsavedChanges(): boolean {
-    return this.dirty;
-  }
+  // ---- editing one item, and committing its wording ----
 
   /**
-   * Saves, and REJECTS on failure.
-   *
-   * The guard needs a promise it can await and catch: on a rejection it keeps
-   * the person on this page rather than navigating away with their changes
-   * silently gone. The button path swallows the rejection itself, because a
-   * click has already been told about it by `error`.
+   * Whether the item open in the editor has wording that has not been
+   * written yet. Structure saves itself; TEXT does not, which is the same
+   * split Page Manager draws - so this is the only unsaved state left, and
+   * the only thing the leave-guard has to defend.
    */
-  save(): Promise<void> {
-    if (this.saving || !this.dirty) {
-      return Promise.resolve();
-    }
-    if (this.problems.length) {
-      return Promise.reject(new Error(this.problems.join('\n')));
-    }
-    this.saving = true;
-    this.error = null;
-
-    return this.service.save(this.items)
-      .then(() => {
-        this.saved = JSON.stringify(this.items);
-        this.saving = false;
-        this.justSaved = true;
-      })
-      .catch((err) => {
-        console.error('Failed to save the site navigation:', err);
-        this.saving = false;
-        this.error = err?.message || 'Could not save the menu. Please try again.';
-        throw err;
-      });
+  hasUnsavedChanges(): boolean {
+    return !!this.editing && this.editingSnapshot !== null
+      && JSON.stringify(this.editing) !== this.editingSnapshot;
   }
 
-  /** The SAVE button. Separate from save() so the template does not create an
-   *  unhandled rejection - the error is already on screen. */
+  /** Commits the open item. Rejects on failure so the leave-guard keeps
+   *  somebody here rather than navigating away with their wording gone. */
+  async save(): Promise<void> {
+    if (!this.hasUnsavedChanges()) {
+      return;
+    }
+    const problems = this.problems;
+    if (problems.length) {
+      this.snackbar.error(problems[0]);
+      throw new Error(problems.join('; '));
+    }
+    this.saving = true;
+    try {
+      await this.service.save(this.items);
+      this.editingSnapshot = JSON.stringify(this.editing);
+      this.snackbar.success('Saved');
+    } catch (err) {
+      console.error('Could not save the menu:', err);
+      this.snackbar.error('Could not save that - reload and try again');
+      throw err;
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  /** The SAVE button. Swallows the rejection - the snackbar has already
+   *  said what went wrong. */
   onSaveClicked(): void {
     this.save().catch(() => undefined);
   }
 
+  /** Puts the open item back to what was stored when it was opened. */
   revert(): void {
-    this.items = JSON.parse(this.saved || '[]');
-    this.editingId = null;
-    this.touched();
+    if (!this.editing || this.editingSnapshot === null) {
+      return;
+    }
+    // Mutated in place rather than replaced: `editing` is a live reference
+    // into `items`, and swapping the object would leave the array pointing at
+    // the old one. Keys are cleared first so a field the edit ADDED (a url on
+    // what was a page item) does not survive the revert.
+    const stored = JSON.parse(this.editingSnapshot) as SiteNavItem;
+    const target = this.editing as unknown as Record<string, unknown>;
+    Object.keys(target).forEach((k) => delete target[k]);
+    Object.assign(target, stored);
+    this.items = [...this.items];
   }
 
   /** Readable and unique enough for a document nobody hand-edits. Not a

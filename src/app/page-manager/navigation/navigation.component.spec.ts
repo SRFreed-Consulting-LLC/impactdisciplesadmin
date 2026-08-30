@@ -15,6 +15,7 @@ import { SITE_ROUTES } from '@impact-common/shared/lists/site_routes';
 interface Harness {
   screen: NavigationComponent;
   saved: SiteNavItem[][];
+  said: string[];
 }
 
 const route = (key: string) => SITE_ROUTES.find((r) => r.key === key)!;
@@ -31,11 +32,15 @@ function setup(items: SiteNavItem[] | null = [], failLoad = false, failSave = fa
       return Promise.resolve();
     }
   };
-  return { screen: new NavigationComponent(service as never), saved };
+  const said: string[] = [];
+  const snackbar = {
+    success: (m: string) => said.push('ok: ' + m),
+    error: (m: string) => said.push('err: ' + m)
+  };
+  return { screen: new NavigationComponent(service as never, snackbar as never), saved, said };
 }
 
-/** Loads the screen the way it really loads, which `dirty` depends on - it is
- *  false until the screen knows what it started from. */
+/** Loads the screen the way it really loads. */
 async function opened(items: SiteNavItem[] | null = [], failLoad = false, failSave = false): Promise<Harness> {
   const h = setup(items, failLoad, failSave);
   h.screen.ngOnInit();
@@ -57,7 +62,6 @@ describe('Page Manager > Navigation', () => {
 
       expect(screen.loaded).toBeTrue();
       expect(screen.items.map((i) => i.id)).toEqual(['a']);
-      expect(screen.dirty).toBeFalse();
     });
 
     it('works on a COPY, so cancel can really go back', async () => {
@@ -103,19 +107,52 @@ describe('Page Manager > Navigation', () => {
       expect(screen.items.length).toBe(3);
     });
 
-    it('reorders by dragging', async () => {
-      const { screen } = await opened([page('a', 'give'), page('b', 'team')]);
+    it('reorders by dragging, and WRITES IT immediately', async () => {
+      // Saved as you go, like every page section stack. The write and the
+      // snackbar are both asserted: a silent save is indistinguishable
+      // from none, which is exactly how the old model lost work.
+      const { screen, saved, said } = await opened([page('a', 'give'), page('b', 'team')]);
 
-      screen.reorder({ previousIndex: 1, currentIndex: 0 } as never);
+      await screen.reorder({ previousIndex: 1, currentIndex: 0 } as never);
 
       expect(screen.items.map((i) => i.id)).toEqual(['b', 'a']);
-      expect(screen.dirty).toBeTrue();
+      expect(saved.length).toBe(1);
+      expect(saved[0].map((i) => i.id)).toEqual(['b', 'a']);
+      expect(said).toEqual(['ok: Order saved']);
+    });
+
+    it('does not write when a drag ends where it started', async () => {
+      const { screen, saved } = await opened([page('a', 'give')]);
+
+      await screen.reorder({ previousIndex: 0, currentIndex: 0 } as never);
+
+      expect(saved.length).toBe(0);
+    });
+
+    it('switches an item off and writes that too', async () => {
+      const { screen, saved, said } = await opened([page('a', 'give')]);
+
+      await screen.toggleLive(screen.items[0]);
+
+      expect(saved[0][0].visible).toBeFalse();
+      expect(said).toEqual(['ok: Taken out of the menu']);
+    });
+
+    it('puts the menu BACK when the write fails, rather than showing a lie', async () => {
+      // The important half. A screen that keeps displaying a change that
+      // never landed is how somebody walks away believing they saved.
+      const { screen, said } = await opened([page('a', 'give')], false, true);
+
+      await screen.toggleLive(screen.items[0]);
+
+      expect(screen.items[0].visible).withContext('the failed edit stuck').toBeTrue();
+      expect(said.some((m) => m.startsWith('err:'))).toBeTrue();
     });
 
     it('removes an item wherever it sits, including inside a dropdown', async () => {
       const { screen } = await opened([group('g', [page('c', 'seminars')])]);
 
-      screen.remove(screen.items[0].children![0]);
+      await screen.remove(screen.items[0].children![0]);
 
       expect(screen.items[0].children).toEqual([]);
     });
@@ -145,11 +182,10 @@ describe('Page Manager > Navigation', () => {
     it('adds a page at the end, titled from the catalogue', async () => {
       const { screen } = await opened([page('a', 'give')]);
 
-      screen.addPage(route('seminars'));
+      await screen.addPage(route('seminars'));
 
       expect(screen.items.map((i) => i.routeKey)).toEqual(['give', 'seminars']);
       expect(screen.items[1].title).toBe('Seminars');
-      expect(screen.dirty).toBeTrue();
     });
 
     it('knows a page is already in the menu, including inside a dropdown', async () => {
@@ -259,59 +295,85 @@ describe('Page Manager > Navigation', () => {
     });
   });
 
-  describe('problems, and refusing to save them', () => {
-    it('lists an empty dropdown before anybody presses save', async () => {
+  describe('the wording of one item - the only thing not saved as you go', () => {
+    // Structure writes itself. TEXT does not, which is the same split Page
+    // Manager draws between its stack rows and its section editor - so this
+    // is the only unsaved state left on the screen, and the only thing the
+    // route guard has to defend.
+
+    it('is clean the moment an item is opened', async () => {
+      const { screen } = await opened([page('a', 'give')]);
+      screen.edit(screen.items[0]);
+
+      expect(screen.hasUnsavedChanges()).toBeFalse();
+    });
+
+    it('notices a changed title', async () => {
+      const { screen } = await opened([page('a', 'give')]);
+      screen.edit(screen.items[0]);
+
+      screen.editing!.title = 'Donate';
+
+      expect(screen.hasUnsavedChanges()).toBeTrue();
+    });
+
+    it('writes it, says so, and stops being unsaved', async () => {
+      const { screen, saved, said } = await opened([page('a', 'give')]);
+      screen.edit(screen.items[0]);
+      screen.editing!.title = 'Donate';
+
+      await screen.save();
+
+      expect(saved[0][0].title).toBe('Donate');
+      expect(said).toEqual(['ok: Saved']);
+      expect(screen.hasUnsavedChanges()).toBeFalse();
+    });
+
+    it('REJECTS a failed save, so the guard can keep you on the screen', async () => {
+      const { screen } = await opened([page('a', 'give')], false, true);
+      screen.edit(screen.items[0]);
+      screen.editing!.title = 'Donate';
+
+      await expectAsync(screen.save()).toBeRejected();
+
+      expect(screen.hasUnsavedChanges())
+        .withContext('the edit was silently marked saved').toBeTrue();
+      expect(screen.saving).toBeFalse();
+    });
+
+    it('refuses to write a menu the site could not render', async () => {
+      // An empty dropdown renders as a heading that opens onto nothing. Said
+      // out loud and left on screen to be finished, rather than written.
+      const { screen, saved, said } = await opened([page('a', 'give')]);
+      screen.addDropdown();
+      // Renamed first, because SAVE only acts on wording that CHANGED - a
+      // freshly added item is identical to its own snapshot, so pressing
+      // save on it does nothing at all. That is the path a person actually
+      // takes: add a dropdown, name it, try to save it while it is empty.
+      screen.editing!.title = 'Training';
+
+      await expectAsync(screen.save()).toBeRejected();
+
+      expect(saved.length).toBe(0);
+      expect(said.some((m) => m.startsWith('err:'))).toBeTrue();
+    });
+
+    it('puts the wording back on CANCEL', async () => {
+      const { screen } = await opened([page('a', 'give')]);
+      screen.edit(screen.items[0]);
+      screen.editing!.title = 'Whoops';
+
+      screen.revert();
+
+      expect(screen.items[0].title).toBe('give');
+      expect(screen.hasUnsavedChanges()).toBeFalse();
+    });
+
+    it('lists an empty dropdown as a problem', async () => {
       const { screen } = await opened([group('g', [])]);
 
       expect(screen.problems.length).toBe(1);
       expect(screen.problems[0]).toContain('nothing in it');
-    });
-
-    it('will not save while there is a problem', async () => {
-      const { screen, saved } = await opened([page('a', 'give')]);
-      screen.addDropdown(); // empty, so invalid
-
-      screen.save();
-
-      expect(saved.length).toBe(0);
-    });
-
-    it('saves a valid menu and stops being dirty', async () => {
-      const { screen, saved } = await opened([page('a', 'give')]);
-      screen.addPage(route('team'));
-
-      screen.save();
-      await Promise.resolve();
-
-      expect(saved.length).toBe(1);
-      expect(saved[0].map((i) => i.routeKey)).toEqual(['give', 'team']);
-      expect(screen.dirty).toBeFalse();
-      expect(screen.justSaved).toBeTrue();
-    });
-
-    it('reports a refused save and STAYS dirty, so the work is not lost', async () => {
-      const { screen } = await opened([page('a', 'give')], false, true);
-      screen.addPage(route('team'));
-
-      screen.save();
-      await Promise.resolve();
-      await Promise.resolve();
-
-      expect(screen.error).toBeTruthy();
-      expect(screen.dirty).withContext('the edit was silently marked saved').toBeTrue();
-      expect(screen.saving).toBeFalse();
-    });
-
-    it('reverts to what was loaded, not to empty', async () => {
-      const { screen } = await opened([page('a', 'give')]);
-      screen.addPage(route('team'));
-      screen.addDropdown();
-
-      screen.revert();
-
-      expect(screen.items.map((i) => i.routeKey)).toEqual(['give']);
-      expect(screen.dirty).toBeFalse();
-      expect(screen.editing).toBeNull();
     });
   });
 });
