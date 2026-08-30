@@ -25,8 +25,16 @@ describe('PageStackComponent', () => {
           provide: PageContentService,
           useValue: {
             getById: () => Promise.resolve({ blocks: loaded }),
-            update: (_slug: string, doc: { blocks: PageContentBlock[] }) => {
-              saved.push(doc.blocks.map((b) => ({ ...b })));
+            // updateFields, NOT update. update() is setDoc with no merge - a
+            // whole-document overwrite - and a page staff created also holds
+            // `title`, `theme` and `isPublished` that a section save must not
+            // touch. Losing `title` would 404 the page.
+            //
+            // Stubbing the wrong one here would let that regression back in
+            // silently, so `update` is deliberately ABSENT: if the component
+            // reverts to it, these specs throw rather than pass.
+            updateFields: (_slug: string, partial: { blocks: PageContentBlock[] }) => {
+              saved.push(partial.blocks.map((b) => ({ ...b })));
               return Promise.resolve();
             }
           }

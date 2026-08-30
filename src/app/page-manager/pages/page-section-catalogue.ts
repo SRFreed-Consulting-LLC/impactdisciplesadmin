@@ -1,4 +1,5 @@
 import { PAGE_SECTION_TYPES } from '@impact-common/shared/lists/page_section_types.enum';
+import { SECTION_ARCHETYPE, SectionSurface } from '@impact-common/shared/lists/section_kit';
 
 /**
  * EVERY public page, as an ordered stack of sections staff can edit.
@@ -111,8 +112,30 @@ export interface EntrySpec {
   imageLabel?: string;
 }
 
+/**
+ * ONE selectable look within a kind, for pages drawn by the SECTION KIT.
+ *
+ * The twelve original pages do not use these and never will: each has its own
+ * web component, so a difference in layout was expressed by giving the section
+ * a different TYPE. A staff-created page has no component, so the same
+ * difference has to be a choice on the section itself.
+ *
+ * A variant carries its own `fields` and `entry` because that is exactly what
+ * differs - a price tile and a picture tile are the same archetype with
+ * different columns. The editor reads them through the same getters it
+ * already used for a kind, so nothing else in it had to change.
+ */
+export interface KindVariant {
+  /** Stored in PageContentBlock.variant. Never renamed once in use. */
+  key: string;
+  label: string;
+  blurb: string;
+  fields: PageSectionFields;
+  entry?: EntrySpec;
+}
+
 export interface PageSectionKind {
-  type: PAGE_SECTION_TYPES;
+  type: PAGE_SECTION_TYPES | SECTION_ARCHETYPE;
   label: string;
   /** What it draws, in a phrase. The Add menu shows it under the label,
    *  because "Banner" alone does not tell staff which band is which. */
@@ -132,6 +155,24 @@ export interface PageSectionKind {
   /** Shown at the top of the dialog where a type has something staff need to
    *  know before editing - what this screen will NOT change. */
   caveat?: string;
+
+  /**
+   * The looks staff may choose between. KIT PAGES ONLY - undefined on all
+   * twelve original pages, which is what keeps them unaffected.
+   *
+   * When present, the FIRST is the default, and the editor reads its `fields`
+   * and `entry` in place of the kind's own.
+   */
+  variants?: readonly KindVariant[];
+
+  /**
+   * The grounds this section may be drawn on. KIT PAGES ONLY.
+   *
+   * Undefined means the section has no say and takes the page's theme - which
+   * is every section on the twelve original pages, whose colours are decided
+   * by their own stylesheets.
+   */
+  surfaces?: readonly SectionSurface[];
 }
 
 export interface EditablePage {

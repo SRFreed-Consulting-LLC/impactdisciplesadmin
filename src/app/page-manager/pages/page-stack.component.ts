@@ -121,14 +121,25 @@ export class PageStackComponent implements OnChanges {
     }
   }
 
-  /** Writes the whole ordered list. The array IS the order. */
+  /**
+   * Writes the whole ordered list. The array IS the order.
+   *
+   * A PARTIAL write, and it has to be. This used to call `service.update()`,
+   * which is `setDoc` with no merge - a whole-document overwrite. That was
+   * harmless while every document held nothing but `blocks`, and became
+   * destructive the moment pages staff create arrived: those also carry
+   * `title`, `theme` and `isPublished`, and the first section anybody saved
+   * would have wiped all three. Losing `title` is not cosmetic - it is what
+   * marks a document as a builder page, so the page would have 404'd.
+   *
+   * `updateFields` rejects if the document does not exist, which is the
+   * behaviour we want either way: this screen already refuses to save when
+   * its load failed, rather than writing over content it never read.
+   */
   private async persist(message: string): Promise<void> {
     this.busy$.next(true);
     try {
-      await this.service.update(
-        this.page.slug,
-        { id: this.page.slug, blocks: this.sections } as PageContentModel
-      );
+      await this.service.updateFields(this.page.slug, { blocks: this.sections });
       this.previewRevision++;
       this.snackbar.success(message);
     } catch (err) {

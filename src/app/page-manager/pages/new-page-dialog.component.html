@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>New page</h2>
+
+<mat-dialog-content class="npd">
+  <mat-form-field appearance="outline" class="npd__field">
+    <mat-label>Page title</mat-label>
+    <input matInput [ngModel]="title" (ngModelChange)="onTitle($event)"
+           placeholder="Men's Retreat" cdkFocusInitial>
+    <mat-hint>What the browser tab says, and what the menu offers.</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="npd__field"
+                  [class.npd__field--bad]="!!slugProblem">
+    <mat-label>Web address</mat-label>
+    <span matTextPrefix class="npd__prefix">/</span>
+    <input matInput [ngModel]="slug" (ngModelChange)="onSlug($event)" placeholder="mens-retreat">
+    @if (slugProblem) {
+      <mat-error>{{ slugProblem }}</mat-error>
+    } @else {
+      <!-- Said plainly and up front: this is the one decision on this screen
+           that cannot be undone later without breaking every link to the
+           page. -->
+      <mat-hint>Filled in from the title. It cannot be changed after the page is created.</mat-hint>
+    }
+  </mat-form-field>
+
+  <div class="npd__axis">
+    <span class="npd__axis-label">Mostly</span>
+    <mat-button-toggle-group [(ngModel)]="surface" aria-label="The page's usual background">
+      @for (option of surfaces; track option.key) {
+        <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+    <p class="npd__axis-blurb">
+      The ground most of the page sits on. Any section can be set differently, and this is
+      only what they follow when they are not.
+    </p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" type="button"
+          [disabled]="!canCreate" (click)="create()">Create page</button>
+</mat-dialog-actions>

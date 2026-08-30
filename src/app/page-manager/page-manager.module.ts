@@ -22,6 +22,10 @@ import { HomeSectionEditorComponent } from './home/home-section-editor.component
 // because it borrows pages/page-stack.component.css outright.
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
+// Pages staff CREATE, as opposed to the twelve the site shipped with. One
+// list screen rather than a nav leaf each, because a leaf is code.
+import { KitPagesComponent } from './pages/kit-pages.component';
+import { NewPageDialogComponent } from './pages/new-page-dialog.component';
 import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
@@ -101,6 +105,8 @@ import { QuillModule } from 'ngx-quill';
     HomeSectionEditorComponent,
     PageStackComponent,
     PageSectionEditorComponent,
+    KitPagesComponent,
+    NewPageDialogComponent,
     DestinationFieldComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,

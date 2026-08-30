@@ -366,6 +366,13 @@ export const NAV_CONFIG: NavGroup[] = [
       // (Testimonials), Privacy/Terms (Web Config), Disciple-Making Minute
       // (its own screen above), and the cart/checkout flow, which is
       // behaviour rather than content.
+      // PAGES STAFF CREATED, above the twelve fixed ones. ONE leaf for all of
+      // them however many there are, because a leaf is code and these are
+      // data - a page made in the admin cannot have its own entry here
+      // without a deploy, which is exactly what the builder exists to avoid.
+      // The screen reads them from page_content and offers a New Page.
+      { label: 'Pages', slug: 'pages' },
+
       { label: 'About Us', slug: 'about-us' },
       { label: 'Equipping Groups', slug: 'equipping-groups' },
       { label: 'Equipping - Pastors', slug: 'equipping-groups-pastors' },

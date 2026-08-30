@@ -1,0 +1,55 @@
+/* Naming a new page: a title, a URL and a background. Three decisions, laid
+   out as a column because they are read in that order - the slug is derived
+   from the title above it, and the background only makes sense once the page
+   has a name. */
+
+.npd {
+  display: flex;
+  flex-direction: column;
+  min-width: 420px;
+  padding-top: 6px;
+}
+
+.npd__field {
+  width: 100%;
+}
+
+/* The slash before the slug, so the field reads as a URL rather than a name
+   and it is obvious what is being typed. */
+.npd__prefix {
+  padding-right: 2px;
+  color: var(--app-faint);
+}
+
+.npd__axis {
+  margin-top: 4px;
+}
+
+.npd__axis-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+/* Wraps rather than scrolls - four toggles in a 420px dialog is tight, and a
+   group that scrolls sideways hides options with nothing to say they exist. */
+.npd__axis mat-button-toggle-group {
+  flex-wrap: wrap;
+}
+
+.npd__axis-blurb {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--app-muted);
+}
+
+@media (max-width: 560px) {
+  .npd {
+    min-width: 0;
+  }
+}

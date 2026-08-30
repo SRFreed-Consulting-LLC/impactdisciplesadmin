@@ -13,6 +13,51 @@
     </p>
   }
 
+  <!-- THE TWO AXES. Only pages built from the section kit declare either, so
+       the twelve original pages show neither and are unchanged.
+
+       They are separate controls on purpose. The LOOK changes the layout and
+       therefore which fields are below; the GROUND only changes colour.
+       Folding them into one list would make every new shade of band a new
+       kind of section, which is the thing this whole design avoids. -->
+  @if (variants.length > 1) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Look</span>
+      <mat-button-toggle-group [value]="activeVariant?.key"
+                               (change)="pickVariant($event.value)"
+                               aria-label="Which arrangement this section uses">
+        @for (variant of variants; track variant.key) {
+          <mat-button-toggle [value]="variant.key" [matTooltip]="variant.blurb"
+                             [attr.aria-label]="variant.label + ': ' + variant.blurb">
+            {{ variant.label }}
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      @if (activeVariant) {
+        <p class="psd__axis-blurb">{{ activeVariant.blurb }}</p>
+      }
+    </div>
+  }
+
+  @if (surfaces.length) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Ground</span>
+      <mat-button-toggle-group [value]="activeSurface"
+                               (change)="pickSurface($event.value)"
+                               aria-label="What colour this section is drawn on">
+        @for (surface of surfaceLabels; track surface.key) {
+          <mat-button-toggle [value]="surface.key" [attr.aria-label]="surface.label">
+            {{ surface.label }}
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <p class="psd__axis-blurb">
+        &ldquo;Same as the page&rdquo; follows this page&rsquo;s own setting, so the page reads
+        as one thing until you deliberately break the run.
+      </p>
+    </div>
+  }
+
   @if (fields.heading) {
     <mat-form-field appearance="outline" class="psd__field">
       <mat-label>{{ headingLabel }}</mat-label>

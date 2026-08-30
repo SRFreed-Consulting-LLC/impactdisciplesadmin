@@ -1,0 +1,200 @@
+/* Pages staff created. One screen rather than a nav leaf each, because a leaf
+   is code and these are data - see the component's header. */
+
+.kp {
+  padding: 4px 2px 24px;
+}
+
+/* Nothing touches the edge: this screen sits inside the Site tab's panel and
+   an element flush against it reads as a rendering fault. */
+.kp__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.kp__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.kp__blurb {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--app-muted);
+}
+
+.kp__note {
+  margin: 0;
+  padding: 14px 2px;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.kp__note--bad {
+  color: var(--app-danger, #b3261e);
+}
+
+/* An empty state that says what a page here IS, and points at where the
+   original twelve are edited - otherwise "no pages" reads as though the
+   site's pages have gone missing. */
+.kp__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 44px 24px;
+  border: 1px dashed var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-field);
+  text-align: center;
+}
+
+.kp__empty mat-icon {
+  margin-bottom: 4px;
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: var(--app-faint);
+}
+
+.kp__empty p {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--app-muted);
+}
+
+.kp__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kp__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-surface, #fff);
+}
+
+/* A draft is marked by a rail rather than by dimming the row: greyed-out text
+   reads as disabled, and a draft page is entirely editable. */
+.kp__row--draft {
+  border-left: 3px solid var(--app-warn, #b06a00);
+}
+
+.kp__open {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.kp__open:hover .kp__name,
+.kp__open:focus-visible .kp__name {
+  text-decoration: underline;
+}
+
+.kp__name {
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.kp__slug {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--app-faint);
+}
+
+.kp__count {
+  font-size: 11.5px;
+  color: var(--app-muted);
+}
+
+.kp__controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.kp__axis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kp__axis-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+.kp__axis mat-button-toggle-group {
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------- editing */
+
+.kp__editing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kp__crumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+.kp__crumb-title {
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.kp__chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.kp__chip--draft {
+  background: var(--app-warn-soft, #fdf0dc);
+  color: var(--app-warn, #8a5200);
+}
+
+@media (max-width: 900px) {
+  .kp__row {
+    align-items: flex-start;
+  }
+
+  .kp__controls {
+    width: 100%;
+  }
+}

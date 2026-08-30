@@ -32,6 +32,42 @@
   color: var(--app-faint);
 }
 
+/* THE TWO AXES - the look (structural) and the ground (colour). Only pages
+   built from the section kit show either; the twelve original pages declare
+   neither and this block never applies to them.
+
+   Laid out as a labelled row rather than a form field because neither is a
+   value being typed - they are a choice between named arrangements, and a
+   select would hide the options behind a click. */
+.psd__axis {
+  margin: 0 0 14px;
+}
+
+.psd__axis-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+/* Wraps rather than scrolls: four or five toggles will not fit a narrow
+   drawer, and a horizontally scrolling group hides options off the right
+   edge with nothing to say they are there. */
+.psd__axis mat-button-toggle-group {
+  flex-wrap: wrap;
+  border-radius: var(--app-radius-card);
+}
+
+.psd__axis-blurb {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--app-muted);
+}
+
 .psd__field {
   width: 100%;
 }

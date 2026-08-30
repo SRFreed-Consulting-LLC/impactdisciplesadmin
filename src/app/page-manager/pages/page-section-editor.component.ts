@@ -12,9 +12,10 @@ import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import {
-  EntryFields, EntrySpec, GIVING_DESTINATIONS, ICON_CHOICES, PageSectionKind,
+  EntryFields, EntrySpec, GIVING_DESTINATIONS, ICON_CHOICES, KindVariant, PageSectionKind,
   WEB_CONFIG_AMOUNTS, pluralise
 } from './page-section-catalogue';
+import { SECTION_SURFACES, SectionSurface } from '@impact-common/shared/lists/section_kit';
 
 /** How long to wait after a keystroke before showing it in the preview.
  *  Short enough to feel immediate, long enough that a sentence is not
@@ -162,16 +163,78 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
+  // ------------------------------------------------ variant, and its fields
+  //
+  // A KIT PAGE ONLY. The twelve original pages declare no variants, so every
+  // getter below falls straight through to the kind and they are unaffected.
+  //
+  // The whole reason this works with no other change to the editor: every
+  // field block in the template is already gated on `fields`, and the entry
+  // control on `entrySpec`. Point those at the chosen variant and the form
+  // reshapes itself.
+
+  get variants(): readonly KindVariant[] {
+    return this.kind.variants ?? [];
+  }
+
+  /** The chosen look, or the first - so a section written before variants
+   *  existed, or one whose variant was retired, still shows real fields
+   *  rather than none. */
+  get activeVariant(): KindVariant | undefined {
+    const variants = this.kind.variants;
+    if (!variants?.length) {
+      return undefined;
+    }
+    return variants.find((v) => v.key === this.section.variant) ?? variants[0];
+  }
+
+  /**
+   * Changing the look does NOT clear what was typed.
+   *
+   * A variant that drops a field leaves its value on the block, unshown. That
+   * is deliberate: switching to look at another arrangement and back must not
+   * cost you the paragraph you had written. The renderer only reads the
+   * fields the variant declares, so an unused value is inert - and the far
+   * worse behaviour is a form that silently eats copy.
+   */
+  pickVariant(key: string): void {
+    this.section.variant = key;
+    this.edits.next();
+  }
+
+  // ------------------------------------------------------------- surface
+
+  get surfaces(): readonly SectionSurface[] {
+    return this.kind.surfaces ?? [];
+  }
+
+  get surfaceLabels(): typeof SECTION_SURFACES {
+    return SECTION_SURFACES;
+  }
+
+  /** 'inherit' rather than undefined, so the control always has a selection
+   *  and "same as the page" reads as a choice rather than a blank. */
+  get activeSurface(): SectionSurface {
+    return this.section.surface ?? 'inherit';
+  }
+
+  pickSurface(surface: SectionSurface): void {
+    this.section.surface = surface;
+    this.edits.next();
+  }
+
+  // --------------------------------------------------------------- fields
+
   get fields() {
-    return this.kind.fields;
+    return this.activeVariant?.fields ?? this.kind.fields;
   }
 
   get entrySpec(): EntrySpec | undefined {
-    return this.kind.entry;
+    return this.activeVariant ? this.activeVariant.entry : this.kind.entry;
   }
 
   get entryFields(): EntryFields {
-    return this.kind.entry?.fields ?? {};
+    return this.entrySpec?.fields ?? {};
   }
 
   get headingLabel(): string {
