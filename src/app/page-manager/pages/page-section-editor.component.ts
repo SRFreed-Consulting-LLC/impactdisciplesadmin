@@ -270,7 +270,8 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   readonly copySizes = [
     { key: 'compact', label: 'Compact (site style)' },
-    { key: 'large', label: 'Large (site style)' }
+    { key: 'large', label: 'Large (site style)' },
+    { key: 'display', label: 'Statement (site style)' }
   ] as const;
 
   readonly mediaSizes = [
@@ -293,7 +294,7 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
-  pickCopySize(value: 'large' | 'compact'): void {
+  pickCopySize(value: 'large' | 'compact' | 'display'): void {
     this.section.copySize = value;
     this.edits.next();
   }

@@ -58,7 +58,9 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
     'coaching-with-impact',
     'seminars',
     'discipleship-library',
-    'prayer-team'
+    'prayer-team',
+    // 'Contact looks much better' - the side-by-side landed.
+    'contact'
   ]);
 
   isApproved(slug: string): boolean {
