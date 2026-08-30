@@ -320,6 +320,55 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     return this.activeSurface === 'photo';
   }
 
+  // --------------------------------------------------------- card grounds
+  //
+  // A box behind a column or the tiles, from the same fixed palette as the
+  // surfaces. Shane's own follow-up named the trap - "then we'd have to let
+  // them change the text colours too" - and the palette IS the answer: each
+  // ground defaults its text to what reads on it (brand defaults DARK,
+  // because that is what the original blue box does), and the text lever is
+  // its own two-way choice rather than a colour wheel.
+
+  readonly cardGrounds = [
+    { key: 'none', label: 'No box' },
+    { key: 'panel', label: 'Light panel' },
+    { key: 'brand', label: 'Brand blue' },
+    { key: 'dark', label: 'Dark' }
+  ] as const;
+
+  readonly cardInks = [
+    { key: 'dark', label: 'Dark text' },
+    { key: 'light', label: 'Light text' }
+  ] as const;
+
+  setGround(which: 'card' | 'left' | 'right', value: 'none' | 'panel' | 'brand' | 'dark'): void {
+    if (which === 'card') { this.section.cardGround = value; }
+    if (which === 'left') { this.section.leftGround = value; }
+    if (which === 'right') { this.section.rightGround = value; }
+    this.edits.next();
+  }
+
+  setInk(which: 'card' | 'left' | 'right', value: 'dark' | 'light'): void {
+    if (which === 'card') { this.section.cardInk = value; }
+    if (which === 'left') { this.section.leftInk = value; }
+    if (which === 'right') { this.section.rightInk = value; }
+    this.edits.next();
+  }
+
+  get isColumns(): boolean {
+    return this.kind.type === 'listColumns';
+  }
+
+  get isGrid(): boolean {
+    return this.kind.type === 'listGrid';
+  }
+
+  /** What a ground's text defaults to when no ink is stored - the pair that
+   *  reads on it. Shown as the toggle's value so the control never lies. */
+  inkFor(ground: string | undefined, stored: string | undefined): string {
+    return stored ?? (ground === 'dark' ? 'light' : 'dark');
+  }
+
   /** Whether this section splits copy beside media - the only place a media
    *  share means anything. */
   get hasSplitMedia(): boolean {

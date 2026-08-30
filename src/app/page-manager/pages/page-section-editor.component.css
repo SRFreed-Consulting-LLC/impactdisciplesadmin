@@ -396,3 +396,8 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* The ink toggle rides beside its ground toggle with a breath between. */
+.psd__axis .psd__ink {
+  margin-left: 10px;
+}

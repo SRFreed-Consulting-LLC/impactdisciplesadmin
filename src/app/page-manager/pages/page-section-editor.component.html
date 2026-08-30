@@ -142,6 +142,73 @@
     </div>
   }
 
+  <!-- CARD GROUNDS - a box behind a column or the tiles, palette-fixed.
+       The text choice appears beside a chosen box, defaulted to what reads
+       on that ground (brand blue defaults DARK - the original's own look). -->
+  @if (surfaces.length && isColumns) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Left column</span>
+      <mat-button-toggle-group [value]="section.leftGround ?? 'none'"
+                               (change)="setGround('left', $event.value)"
+                               aria-label="A box behind the left column">
+        @for (option of cardGrounds; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      @if ((section.leftGround ?? 'none') !== 'none') {
+        <mat-button-toggle-group class="psd__ink" [value]="inkFor(section.leftGround, section.leftInk)"
+                                 (change)="setInk('left', $event.value)"
+                                 aria-label="The text inside the left box">
+          @for (option of cardInks; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      }
+    </div>
+
+    <div class="psd__axis">
+      <span class="psd__axis-label">Right column</span>
+      <mat-button-toggle-group [value]="section.rightGround ?? 'none'"
+                               (change)="setGround('right', $event.value)"
+                               aria-label="A box behind the right column">
+        @for (option of cardGrounds; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      @if ((section.rightGround ?? 'none') !== 'none') {
+        <mat-button-toggle-group class="psd__ink" [value]="inkFor(section.rightGround, section.rightInk)"
+                                 (change)="setInk('right', $event.value)"
+                                 aria-label="The text inside the right box">
+          @for (option of cardInks; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      }
+    </div>
+  }
+
+  @if (surfaces.length && isGrid) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Cards</span>
+      <mat-button-toggle-group [value]="section.cardGround ?? 'none'"
+                               (change)="setGround('card', $event.value)"
+                               aria-label="A box behind every card">
+        @for (option of cardGrounds; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      @if ((section.cardGround ?? 'none') !== 'none') {
+        <mat-button-toggle-group class="psd__ink" [value]="inkFor(section.cardGround, section.cardInk)"
+                                 (change)="setInk('card', $event.value)"
+                                 aria-label="The text inside the cards">
+          @for (option of cardInks; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      }
+    </div>
+  }
+
   <!-- WHICH form this section shows - picked from the forms that exist in
        Form Builder, by name. The id is stored, never typed: the old rule's
        whole rationale was that a retyped id is a blank widget nobody can
