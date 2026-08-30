@@ -79,6 +79,7 @@ const BLOCKS = [
     subheading: 'Section kit',
     heading: 'A page nobody wrote a component for',
     body: '<p>Every band below is drawn by one shared renderer. No route was written for this page, no component, no nav entry - it exists because a document exists.</p>',
+    image: IMG.hero,
     ctaTitle: 'See the sections', ctaUrl: '#',
     ctaTitle2: 'Back to the site', ctaUrl2: '/'
   },
