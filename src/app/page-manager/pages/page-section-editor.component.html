@@ -57,6 +57,16 @@
       </p>
     </div>
 
+    <!-- Two sections sharing one row, half and half - the Contact page's
+         parallel halves. On phones they stack again. -->
+    <div class="psd__axis">
+      <mat-slide-toggle [checked]="section.pairWithNext === true"
+                        (change)="section.pairWithNext = $event.checked || undefined; edited()"
+                        aria-label="Share the row with the next section">
+        Share the row with the next section
+      </mat-slide-toggle>
+    </div>
+
     <!-- Only while the photo is a cropped BACKGROUND does a focus mean
          anything - which part of it the band keeps. Born from About Us's
          history banner cutting every head off at centre. -->

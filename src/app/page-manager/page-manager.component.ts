@@ -51,7 +51,14 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
     'equipping-groups',
     'equipping-groups-pastors',
     'equipping-groups-leaders',
-    'equipping-groups-churches'
+    'equipping-groups-churches',
+    // Shane's second sweep, same day: "Coaching with Impact looks great.
+    // Seminar looks great... Impact library looks great, and prayer team
+    // looks great. Go ahead and mark all those for completion."
+    'coaching-with-impact',
+    'seminars',
+    'discipleship-library',
+    'prayer-team'
   ]);
 
   isApproved(slug: string): boolean {
