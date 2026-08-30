@@ -186,6 +186,114 @@ const BLOCKS = [
     ctaTitle: 'And a button under that', ctaUrl: '#'
   },
 
+  // ------------------------------------------- heroSplit / standard / dark
+  {
+    key: 'hero-split', type: 'heroSplit', variant: 'standard', surface: 'dark', isActive: true,
+    subheading: 'The other hero',
+    heading: 'Copy beside a screenshot',
+    body: '<p>The reader-app landing page\'s layout, and the only section using the small '
+      + 'line under the button.</p>',
+    note: 'That small line is this one.',
+    image: IMG.one,
+    ctaTitle: 'One way in', ctaUrl: '#'
+  },
+
+  // ------------------------------------- listRows / buttonAndText / light
+  {
+    key: 'rows', type: 'listRows', variant: 'buttonAndText', surface: 'light', isActive: true,
+    heading: 'Labelled rows',
+    items: [
+      entry({title: 'For Pastors', description: 'Equip the men who equip everyone else.', link: '#'}),
+      entry({title: 'For Leaders', description: 'The course for the men already leading a table.', link: '#'}),
+      entry({title: 'For Churches', description: 'A whole congregation, one step at a time.', link: '#'})
+    ]
+  },
+
+  // ---------------------------------------- listArticles / plain / light
+  {
+    key: 'articles', type: 'listArticles', variant: 'plain', surface: 'light', isActive: true,
+    items: [
+      entry({title: 'A row with its picture on the left', body: '<p>The sides alternate by position, never stored - so dragging a row cannot stack two the same way.</p>', image: IMG.two, ctaTitle: 'Read more', ctaUrl: '#'}),
+      entry({title: 'And the next one on the right', body: '<p>The same rule About Us\'s story columns follow.</p>', image: IMG.three, ctaTitle: 'Read more', ctaUrl: '#'})
+    ]
+  },
+
+  // -------------------------------------- listArticles / numbered / light
+  {
+    key: 'articles-numbered', type: 'listArticles', variant: 'numbered', surface: 'light', isActive: true,
+    items: [
+      entry({title: 'Strip one', heading: 'The strip above is built from this list', description: 'So it can never fall out of step.', body: '<ul><li>Numbered from the order</li><li>Nothing stored</li></ul>', image: IMG.one}),
+      entry({title: 'Strip two', heading: 'The chips are counted, not typed', description: 'Drag a row and its number follows.', body: '<ul><li>01 becomes 02</li></ul>', image: IMG.two})
+    ]
+  },
+
+  // ----------------------------------- listColumns / twoColumn / light
+  {
+    key: 'columns', type: 'listColumns', variant: 'twoColumn', surface: 'light', isActive: true,
+    items: [
+      entry({title: 'The facts', body: '<p>Which column a passage sits in is yours to set - the columns say different kinds of thing.</p>', column: 'left'}),
+      entry({title: 'In person', amountKey: 'inpersonSeminarCost', description: 'a price line, resolved from the site settings', column: 'left'}),
+      entry({title: 'The pitch', body: '<p>Copy on the right, the facts on the left - the equipping pages\' arrangement.</p>', column: 'right'}),
+      entry({title: '', ctaTitle: 'Get started', ctaUrl: '#', column: 'right'})
+    ]
+  },
+
+  // ------------------------------------- timeline / centreLine / light
+  {
+    key: 'timeline', type: 'timeline', variant: 'centreLine', surface: 'light', isActive: true,
+    heading: '1989',
+    subheading: '2019',
+    items: [
+      entry({title: '', description: 'Entries alternate either side of the centre line, by position.', image: IMG.one}),
+      entry({title: '2005', description: 'An entry that names a year draws it as a marker above itself.', image: IMG.two}),
+      entry({title: '', description: 'And the block\'s own headings open and close the run.', image: IMG.three})
+    ]
+  },
+
+  // --------------------------------------- carousel / quotes / photo
+  {
+    key: 'quotes', type: 'carousel', variant: 'quotes', surface: 'photo', isActive: true,
+    subheading: 'What people say',
+    heading: 'The quote carousel',
+    image: IMG.band,
+    // Order only - the quotes themselves live on the Testimonials screen.
+    // Empty here means "every live coaching quote, by author", which is the
+    // appending rule the coaching page follows.
+    testimonialIds: []
+  },
+
+  // ------------------------------------------- form / plain / light
+  {
+    key: 'form-plain', type: 'form', variant: 'plain', surface: 'light', isActive: true,
+    heading: 'A form under a heading',
+    // The CONTACT page's real form, picked by id the way the admin's picker
+    // stores it. Exists in dev; the page renders the words alone if not.
+    formId: 'N0ynW6zeYKdXQS2EkBii',
+    ctaTitle: 'Send it'
+  },
+
+  // -------------------------------------- form / mailingList / tinted
+  {
+    key: 'signup', type: 'form', variant: 'mailingList', surface: 'tinted', isActive: true,
+    body: '<p>The three-field sign-up, joining the list the section names - the newsletter '
+      + 'here, never the prayer team by default.</p>',
+    signupList: 'newsletter',
+    ctaTitle: 'Sign me up'
+  },
+
+  // ------------------------------------ contactDetails / standard / light
+  {
+    key: 'contact', type: 'contactDetails', variant: 'standard', surface: 'light', isActive: true,
+    heading: 'Where to find us',
+    body: '<p>Everything but this heading and this passage comes from Web Config, which '
+      + 'already feeds the footer.</p>'
+  },
+
+  // --------------------------------- fixedBand / consultation / tinted
+  {
+    key: 'consult', type: 'fixedBand', variant: 'consultation', surface: 'tinted', isActive: true
+  },
+
   // ----------------------------------- copyCentred / withButtons / tinted
   {
     key: 'closing', type: 'copyCentred', variant: 'withButtons', surface: 'tinted', isActive: true,
