@@ -262,7 +262,20 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   readonly headingStyles = [
     { key: 'bold', label: 'Bold (site style)' },
+    // The site's own prose headings - OVERVIEW is the same 50px at weight
+    // 500, never 900. Measured, not invented.
+    { key: 'light', label: 'Light (site style)' },
     { key: 'standard', label: 'Standard' }
+  ] as const;
+
+  readonly copySizes = [
+    { key: 'compact', label: 'Compact (site style)' },
+    { key: 'large', label: 'Large (site style)' }
+  ] as const;
+
+  readonly mediaSizes = [
+    { key: 'large', label: 'Large (site style)' },
+    { key: 'balanced', label: 'Even split' }
   ] as const;
 
   readonly copyTones = [
@@ -275,9 +288,26 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     { key: 'none', label: 'None' }
   ] as const;
 
-  pickHeadingStyle(value: 'bold' | 'standard'): void {
+  pickHeadingStyle(value: 'bold' | 'light' | 'standard'): void {
     this.section.headingStyle = value;
     this.edits.next();
+  }
+
+  pickCopySize(value: 'large' | 'compact'): void {
+    this.section.copySize = value;
+    this.edits.next();
+  }
+
+  pickMediaSize(value: 'large' | 'balanced'): void {
+    this.section.mediaSize = value;
+    this.edits.next();
+  }
+
+  /** Whether this section splits copy beside media - the only place a media
+   *  share means anything. */
+  get hasSplitMedia(): boolean {
+    return !!this.fields.video
+      || (this.kind.type === 'copyMedia' || this.kind.type === 'heroSplit');
   }
 
   pickCopyTone(value: 'soft' | 'dark'): void {

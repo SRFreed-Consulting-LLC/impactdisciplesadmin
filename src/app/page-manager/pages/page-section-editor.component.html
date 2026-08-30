@@ -87,6 +87,34 @@
     </div>
 
     <div class="psd__axis">
+      <span class="psd__axis-label">Copy size</span>
+      <mat-button-toggle-group [value]="section.copySize ?? 'compact'"
+                               (change)="pickCopySize($event.value)"
+                               aria-label="The copy's scale">
+        @for (option of copySizes; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <p class="psd__axis-blurb">
+        Both are the site&rsquo;s own: Large is the wide 20px passages (the OVERVIEW
+        sections), Compact the 14px copy beside pictures and videos.
+      </p>
+    </div>
+
+    @if (hasSplitMedia) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Media</span>
+        <mat-button-toggle-group [value]="section.mediaSize ?? 'large'"
+                                 (change)="pickMediaSize($event.value)"
+                                 aria-label="How much room the picture or video takes">
+          @for (option of mediaSizes; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    }
+
+    <div class="psd__axis">
       <span class="psd__axis-label">Bullets</span>
       <mat-button-toggle-group [value]="section.bullets ?? 'dots'"
                                (change)="pickBullets($event.value)"
@@ -146,7 +174,9 @@
     <mat-form-field appearance="outline" class="psd__field">
       <mat-label>{{ headingLabel }}</mat-label>
       <input matInput [(ngModel)]="section.heading">
-      <mat-hint>Bold is written as &lt;strong&gt;like this&lt;/strong&gt;.</mat-hint>
+      <!-- The same convention the original pages have always stored -
+           "WHAT YOU <strong>GET</strong>" is how GET is yellow today. -->
+      <mat-hint>Wrap a word in &lt;strong&gt;word&lt;/strong&gt; to bold it &mdash; in a heading it also takes the site&rsquo;s yellow.</mat-hint>
     </mat-form-field>
   }
 
