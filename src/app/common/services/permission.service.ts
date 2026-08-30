@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AdminAuthService } from '../forms/admin/admin-auth.service';
 import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
-import { NAV_CONFIG, NavGroup, NavLeaf } from '../../core/main-screen/nav-config';
+import { NAV_CONFIG, NavGroup, NavLeaf, sectionOfKey, sectionRoles } from '../../core/main-screen/nav-config';
 import { AdminUser } from '../models/admin/admin-user.model';
 import { EffectivePermission, ScreenPermission } from '../models/admin/screen-permission.model';
 
@@ -95,6 +95,20 @@ export class PermissionService {
     return key === 'library-manager' || key.startsWith('library-manager.');
   }
 
+  /**
+   * Whether this user's role is allowed on the TAB this key sits under.
+   *
+   * A tab with no `roles` has no gate and everything passes - Library, where
+   * the items decide. A key whose group is not in the registry also passes:
+   * that is a stale or unknown key, and it is the grant lookup's job to
+   * refuse it, not this one's. Being permissive here is safe because this is
+   * only ever an extra narrowing on top of the grant check.
+   */
+  private allowedInSection(key: string): boolean {
+    const roles = sectionRoles(sectionOfKey(key));
+    return !roles || hasRole(this.currentUser?.role, roles);
+  }
+
   private grant(key: string): ScreenPermission | undefined {
     return this.currentUser?.permissions?.find((p) => p.screenKey === key);
   }
@@ -147,6 +161,18 @@ export class PermissionService {
   canView(key: string, employeeGrantable = true): boolean {
     if (this.isFullAccess()) {
       return true;
+    }
+    // THE TAB-LEVEL GATE (2026-08-30, owner's call). A drawer tab can carry a
+    // role allow-list - the Site tab is Administrators and Root only, because
+    // "who can change the public website" is one decision rather than
+    // something inferred from whichever screens happen to be granted.
+    //
+    // Enforced HERE and not only in the drawer, deliberately: hiding a tab is
+    // presentation, and without this an Employee holding a grant on, say,
+    // page-manager.give could still reach it by typing the URL. Full access
+    // short-circuits above, so this only ever narrows.
+    if (!this.allowedInSection(key)) {
+      return false;
     }
     if (this.isLibraryEditor()) {
       // Hard block on every non-Library key, unconditionally - see this

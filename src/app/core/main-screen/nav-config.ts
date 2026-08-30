@@ -67,6 +67,23 @@ export type NavSection = 'admin' | 'site' | 'library';
 export interface NavSectionDef {
   id: NavSection;
   label: string;
+  /**
+   * Who may see this TAB at all (2026-08-30, owner's call).
+   *
+   * A gate ABOVE the granular permission system, and the only one: the items
+   * on a tab still follow their own grants exactly as before. This exists so
+   * "who can touch the public website" is one decision rather than something
+   * inferred from whichever screens happen to be granted.
+   *
+   * Omit for no role gate - the tab shows whenever any of its items does,
+   * which is what Library wants.
+   *
+   * ENFORCED IN TWO PLACES, and it has to be. MainScreenComponent hides the
+   * tab; PermissionService.canView() refuses the screens under it. Hiding a
+   * tab is presentation - without the second half, a direct URL still lets a
+   * granted Employee into a Site screen.
+   */
+  roles?: Role[];
   // true = render this section's screens as ONE flat list, with no
   // expandable group header above them. Worth doing only where the header
   // would repeat what the tab already says - Library today. Site
@@ -79,10 +96,19 @@ export interface NavSectionDef {
   flatten?: boolean;
 }
 
-// Tab order, left to right.
+// Tab order, left to right. `roles` is the tab-level gate - see
+// NavSectionDef.roles. Root is not listed anywhere: hasRole() gives it
+// everything Admin has, so listing it would be noise that can drift.
 export const NAV_SECTIONS: NavSectionDef[] = [
-  { id: 'admin', label: 'Admin' },
-  { id: 'site', label: 'Site' },
+  // The back office. Employees work here, subject to their own grants.
+  { id: 'admin', label: 'Admin', roles: [Role.ADMIN, Role.EMPLOYEE] },
+  // The PUBLIC WEBSITE. Administrators and Root only - what a visitor sees
+  // is not delegated, whatever an Employee may be granted underneath.
+  { id: 'site', label: 'Site', roles: [Role.ADMIN] },
+  // No role gate: everybody who has anything granted under Library sees it.
+  // In practice that is Admin/Root and Editors, because every Library leaf
+  // is employeeGrantable: false - but that is the ITEMS deciding, which is
+  // how it should be, rather than a second rule here that could disagree.
   { id: 'library', label: 'Library', flatten: true }
 ];
 
@@ -90,6 +116,25 @@ export const NAV_SECTIONS: NavSectionDef[] = [
  *  to another tab stays a one-line edit and the majority stay unannotated. */
 export function sectionOf(group: NavGroup): NavSection {
   return group.section ?? 'admin';
+}
+
+/**
+ * The tab a screenKey belongs to, resolved from the key's own first segment.
+ *
+ * Takes a KEY rather than a group so PermissionService can apply the
+ * tab-level gate without knowing about groups - a screenKey is
+ * `group.id` + `.` + `leaf.slug`, so the group id is simply everything
+ * before the first dot.
+ */
+export function sectionOfKey(key: string): NavSection | undefined {
+  const groupId = String(key ?? '').split('.')[0];
+  const group = NAV_CONFIG.find((g) => g.id === groupId);
+  return group ? sectionOf(group) : undefined;
+}
+
+/** The role gate on a tab, if it has one. */
+export function sectionRoles(section: NavSection | undefined): Role[] | undefined {
+  return section ? NAV_SECTIONS.find((s) => s.id === section)?.roles : undefined;
 }
 
 export interface NavLeaf {
@@ -257,21 +302,6 @@ export const NAV_CONFIG: NavGroup[] = [
     section: 'site'
   },
   {
-    // FOOTER - the other half of the site's frame, and the same shape of
-    // screen as Navigation above: a flat link, Admin/Root only, outside the
-    // granular permission system for the same reason.
-    //
-    // Its headings, link columns and copyright live in `site_footer`. The
-    // address, phone, email and social links do NOT - those are on
-    // web_config, which the footer now reads instead of the hardcoded second
-    // copy it used to.
-    id: 'footer',
-    label: 'FOOTER',
-    icon: 'vertical_align_bottom',
-    roles: [Role.ADMIN],
-    section: 'site'
-  },
-  {
     id: 'page-manager',
     label: 'PAGE MANAGER',
     icon: 'handyman',
@@ -348,6 +378,21 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Discipleship Library', slug: 'discipleship-library' },
       { label: 'Prayer Team', slug: 'prayer-team' },
     ]
+  },
+  {
+    // FOOTER - the other half of the site's frame, and the same shape of
+    // screen as Navigation above: a flat link, Admin/Root only, outside the
+    // granular permission system for the same reason.
+    //
+    // Its headings, link columns and copyright live in `site_footer`. The
+    // address, phone, email and social links do NOT - those are on
+    // web_config, which the footer now reads instead of the hardcoded second
+    // copy it used to.
+    id: 'footer',
+    label: 'FOOTER',
+    icon: 'vertical_align_bottom',
+    roles: [Role.ADMIN],
+    section: 'site'
   },
   {
     // DATA (2026-08-30, owner's call) - the RECORDS the public site is built

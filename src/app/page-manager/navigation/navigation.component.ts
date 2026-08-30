@@ -329,14 +329,31 @@ export class NavigationComponent implements OnInit, OnDestroy {
     this.error = null;
   }
 
-  save(): void {
-    if (this.saving || !this.dirty || this.problems.length) {
-      return;
+  /** What the leave-guard asks. See site-frame.guard.ts - edits here are
+   *  deliberately not auto-saved, so the exit has to be defended. */
+  hasUnsavedChanges(): boolean {
+    return this.dirty;
+  }
+
+  /**
+   * Saves, and REJECTS on failure.
+   *
+   * The guard needs a promise it can await and catch: on a rejection it keeps
+   * the person on this page rather than navigating away with their changes
+   * silently gone. The button path swallows the rejection itself, because a
+   * click has already been told about it by `error`.
+   */
+  save(): Promise<void> {
+    if (this.saving || !this.dirty) {
+      return Promise.resolve();
+    }
+    if (this.problems.length) {
+      return Promise.reject(new Error(this.problems.join('\n')));
     }
     this.saving = true;
     this.error = null;
 
-    this.service.save(this.items)
+    return this.service.save(this.items)
       .then(() => {
         this.saved = JSON.stringify(this.items);
         this.saving = false;
@@ -346,7 +363,14 @@ export class NavigationComponent implements OnInit, OnDestroy {
         console.error('Failed to save the site navigation:', err);
         this.saving = false;
         this.error = err?.message || 'Could not save the menu. Please try again.';
+        throw err;
       });
+  }
+
+  /** The SAVE button. Separate from save() so the template does not create an
+   *  unhandled rejection - the error is already on screen. */
+  onSaveClicked(): void {
+    this.save().catch(() => undefined);
   }
 
   revert(): void {

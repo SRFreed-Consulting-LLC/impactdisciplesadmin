@@ -216,14 +216,25 @@ export class SiteFooterAdminComponent implements OnInit {
 
   // ---- saving ----
 
-  save(): void {
-    if (!this.footer || this.saving || !this.dirty || this.problems.length) {
-      return;
+  /** What the leave-guard asks. See site-frame.guard.ts - edits here are
+   *  deliberately not auto-saved, so the exit has to be defended. */
+  hasUnsavedChanges(): boolean {
+    return this.dirty;
+  }
+
+  /** Saves, and REJECTS on failure, so the guard can keep somebody on this
+   *  page rather than navigating away with their changes silently gone. */
+  save(): Promise<void> {
+    if (!this.footer || this.saving || !this.dirty) {
+      return Promise.resolve();
+    }
+    if (this.problems.length) {
+      return Promise.reject(new Error(this.problems.join('\n')));
     }
     this.saving = true;
     this.error = null;
 
-    this.service.save(this.footer)
+    return this.service.save(this.footer)
       .then(() => {
         this.saved = JSON.stringify(this.footer);
         this.saving = false;
@@ -233,7 +244,14 @@ export class SiteFooterAdminComponent implements OnInit {
         console.error('Failed to save the site footer:', err);
         this.saving = false;
         this.error = err?.message || 'Could not save the footer. Please try again.';
+        throw err;
       });
+  }
+
+  /** The SAVE button. Separate from save() so the template does not create an
+   *  unhandled rejection - the error is already on screen. */
+  onSaveClicked(): void {
+    this.save().catch(() => undefined);
   }
 
   revert(): void {

@@ -8,6 +8,22 @@
  *
  * Everything below is only what a menu needs and a page does not. */
 
+/* THE PADDING A MANAGER SHELL WOULD HAVE GIVEN US.
+ *
+ * Every other screen in the admin renders inside `.manager-content`, which
+ * carries `padding: 16px`. This one is a top-level route, so it sits straight
+ * in `.portal-content` - which pads 20px at the SIDES and nothing top or
+ * bottom. Measured 2026-08-30: the heading was flush against the top edge at
+ * 0px, where a Page Manager screen sits 16px down and 36px in.
+ *
+ * Restated here rather than added to .portal-content, which would shift every
+ * manager screen by a further 16px on top of its own. */
+:host {
+  display: block;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
 /* No preview rail on this screen (Shane's call, 2026-08-30) - a menu is a
  * row of words and every one is already on screen with its destination, so a
  * framed copy of the site would say the same thing smaller. `.ps` is a flex

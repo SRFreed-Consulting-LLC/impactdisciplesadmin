@@ -4,6 +4,16 @@
   height: 100%;
 }
 
+// Same shape as the dashboard, and the same fix: the list header sits
+// outside .settings-content so it stays put while the body scrolls, which
+// also leaves it outside that body's 16px inset. Without this, "Settings"
+// renders 16px left of the cards beneath it.
+:host > app-list-header {
+  display: block;
+  padding: 16px 16px 0;
+  box-sizing: border-box;
+}
+
 .settings-content {
   flex: 1 1 auto;
   min-height: 0;

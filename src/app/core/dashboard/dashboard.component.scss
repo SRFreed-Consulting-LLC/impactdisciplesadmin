@@ -28,6 +28,21 @@ $live: var(--app-attention);
   height: 100%;
 }
 
+// The list header sits OUTSIDE .dashboard-content, deliberately - that is
+// what keeps "Home" in place while the body below it scrolls. The cost is
+// that it also sits outside that body's 16px inset, so the title rendered
+// 16px to the LEFT of everything under it and 16px higher than the same
+// title on any manager screen.
+//
+// Measured 2026-08-30: heading at 18/20 here against 34/36 on a manager
+// screen with the same list header. Matched by insetting the header rather
+// than by moving it into the scroll area, which would make it scroll away.
+:host > app-list-header {
+  display: block;
+  padding: 16px 16px 0;
+  box-sizing: border-box;
+}
+
 .dashboard-content {
   flex: 1 1 auto;
   min-height: 0;

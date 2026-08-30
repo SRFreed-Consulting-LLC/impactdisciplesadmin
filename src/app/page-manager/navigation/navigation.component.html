@@ -219,7 +219,7 @@
         }
         <button mat-flat-button color="primary"
                 [disabled]="!dirty || saving || problems.length > 0"
-                (click)="save()">
+                (click)="onSaveClicked()">
           {{ saving ? 'SAVING...' : 'SAVE' }}
         </button>
       </div>

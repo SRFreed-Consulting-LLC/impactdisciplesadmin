@@ -12,6 +12,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NavigationComponent } from './navigation.component';
+import { navigationCanDeactivateGuard } from './site-frame.guard';
 
 /**
  * NAVIGATION - a TOP-LEVEL screen, not a Page Manager tab (Shane's call,
@@ -36,7 +37,7 @@ import { NavigationComponent } from './navigation.component';
  * has to go back to being a leaf, or grow a leaf of its own.
  */
 const routes: Routes = [
-  { path: '', component: NavigationComponent }
+  { path: '', component: NavigationComponent, canDeactivate: [navigationCanDeactivateGuard] }
 ];
 
 @NgModule({

@@ -1,6 +1,17 @@
 /* Page Manager > Site > Footer. One section, three cards, each answering a
    question about the footer rather than mirroring its rendered layout. */
 
+/* THE PADDING A MANAGER SHELL WOULD HAVE GIVEN US - same as the Navigation
+ * screen, and for the same reason. A top-level route sits straight in
+ * `.portal-content`, which pads 20px at the SIDES and nothing top or bottom,
+ * so the heading was measured flush against the top edge at 0px while every
+ * manager screen sits 16px down and 36px in. */
+:host {
+  display: block;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
 .ft {
   display: block;
   padding-bottom: 24px;

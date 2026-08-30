@@ -12,7 +12,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 // shell is where this belongs.
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
 import { ScreenPermissionsDialogComponent } from './screen-permissions-dialog/screen-permissions-dialog.component';
-import { Role } from '@impact-common/shared/lists/roles.enum';
+import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
 import { NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, NavSection, NavSectionDef, sectionOf } from './nav-config';
 
 interface PinnedNavItem {
@@ -218,8 +218,15 @@ export class MainScreenComponent implements OnInit, OnDestroy {
    *  Role.EDITOR - hard-scoped to Library by PermissionService - sees no
    *  tab strip at all, because there is nothing to switch between. */
   get visibleSections(): NavSectionDef[] {
-    return NAV_SECTIONS.filter((section) =>
-      this.secureNav.some((group) => sectionOf(group) === section.id));
+    return NAV_SECTIONS.filter((section) => {
+      // The TAB-LEVEL role gate (2026-08-30). Presentation only - the real
+      // refusal is in PermissionService.canView(), which this cannot be
+      // trusted to do because hiding a row does not stop a typed URL.
+      if (section.roles && !hasRole(this.currentUser?.role, section.roles)) {
+        return false;
+      }
+      return this.secureNav.some((group) => sectionOf(group) === section.id);
+    });
   }
 
   // One tab is not a choice - render the nav on its own rather than a

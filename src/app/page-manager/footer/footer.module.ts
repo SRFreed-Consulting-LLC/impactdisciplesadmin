@@ -12,6 +12,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SiteFooterAdminComponent } from './footer.component';
+import { footerCanDeactivateGuard } from '../navigation/site-frame.guard';
 
 /**
  * FOOTER - a top-level screen alongside Navigation, for the same reason: the
@@ -24,7 +25,7 @@ import { SiteFooterAdminComponent } from './footer.component';
  * cannot be granted to an Employee.
  */
 const routes: Routes = [
-  { path: '', component: SiteFooterAdminComponent }
+  { path: '', component: SiteFooterAdminComponent, canDeactivate: [footerCanDeactivateGuard] }
 ];
 
 @NgModule({

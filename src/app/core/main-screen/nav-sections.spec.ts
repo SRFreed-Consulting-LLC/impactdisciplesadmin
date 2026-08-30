@@ -1,6 +1,7 @@
 import { BehaviorSubject, of } from 'rxjs';
 import { MainScreenComponent } from './main-screen.component';
 import { NAV_CONFIG, NavGroup, sectionOf } from './nav-config';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 
 // The drawer gained three TABS on 2026-08-29 - Admin / Site / Library - and
 // a drag-resizable width. Both are display state layered over a nav config
@@ -36,7 +37,7 @@ function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {
     }
   };
 
-  return new MainScreenComponent(
+  const nav = new MainScreenComponent(
     null as never, // AdminAuthService
     null as never, // PermissionService
     null as never, // PermissionMigrationService
@@ -45,6 +46,13 @@ function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {
     { url: '/', events: { pipe: () => ({ subscribe: () => undefined }) } } as never, // Router
     null as never // Injector - afterNextRender is not reached on these paths
   );
+
+  // An Administrator. Every spec here is about which SECTION is showing,
+  // not about roles - and a tab carries a role gate since 2026-08-30, so a
+  // shell with no role correctly sees almost nothing. The gate has its own
+  // suite: section-gate.spec.ts.
+  nav.currentUser = { role: Role.ADMIN } as never;
+  return nav;
 }
 
 /** secureNav is normally built from the auth stream. Setting it directly is
@@ -84,7 +92,7 @@ describe('drawer sections', () => {
 
       // Navigation joined Site as a top-level group on 2026-08-30 - the
       // menu is the site's frame rather than any one page's content.
-      expect(idsOf(nav.sectionNav)).toEqual(['navigation', 'footer', 'page-manager', 'data']);
+      expect(idsOf(nav.sectionNav)).toEqual(['navigation', 'page-manager', 'footer', 'data']);
     });
 
     it('keeps Page Manager OFF the Admin tab', () => {
@@ -228,7 +236,7 @@ describe('drawer sections', () => {
       nav.selectSection('site');
 
       expect(nav.isSectionFlattened).toBeFalse();
-      expect(idsOf(nav.groupedNav)).toEqual(['navigation', 'footer', 'page-manager', 'data']);
+      expect(idsOf(nav.groupedNav)).toEqual(['navigation', 'page-manager', 'footer', 'data']);
     });
 
     it('never draws both lists at once', () => {
@@ -251,7 +259,7 @@ describe('drawer sections', () => {
       const nav = shell();
       everything(nav);
       nav.selectSection('library');
-      nav.currentUser = { drawerPinned: false } as never; // unpinned, not hovered
+      nav.currentUser = { role: Role.ADMIN, drawerPinned: false } as never; // unpinned, not hovered
       expect(nav.drawerExpanded).toBeFalse();
 
       expect(nav.isSectionFlattened).toBeFalse();
@@ -362,7 +370,7 @@ describe('drawer sections', () => {
 
     it('uses the width the user dragged to', () => {
       const nav = shell();
-      nav.currentUser = { drawerWidth: 380 } as never;
+      nav.currentUser = { role: Role.ADMIN, drawerWidth: 380 } as never;
 
       expect(nav.drawerWidth).toBe(380);
     });
@@ -370,14 +378,14 @@ describe('drawer sections', () => {
     it('clamps a stored width that is too narrow to use', () => {
       // The value round-trips through Firestore and is editable by hand.
       const nav = shell();
-      nav.currentUser = { drawerWidth: 12 } as never;
+      nav.currentUser = { role: Role.ADMIN, drawerWidth: 12 } as never;
 
       expect(nav.drawerWidth).toBe(nav.minDrawerWidth);
     });
 
     it('clamps a stored width that would swallow the screen', () => {
       const nav = shell();
-      nav.currentUser = { drawerWidth: 9999 } as never;
+      nav.currentUser = { role: Role.ADMIN, drawerWidth: 9999 } as never;
 
       expect(nav.drawerWidth).toBe(nav.maxDrawerWidth);
     });
@@ -390,7 +398,7 @@ describe('drawer sections', () => {
       // write to admin_users, so a partial write is not optional.
       const writes: WriteLog = { calls: [] };
       const nav = shell(writes);
-      nav.currentUser = { id: 'admin-1', colorTheme: 'harbor-split' } as never;
+      nav.currentUser = { role: Role.ADMIN, id: 'admin-1', colorTheme: 'harbor-split' } as never;
 
       nav.onResizeStart({ preventDefault: () => undefined, clientX: 300 } as never);
       (nav as unknown as { onResizeMove(e: unknown): void })
@@ -406,7 +414,7 @@ describe('drawer sections', () => {
       // Unpinned, the drawer collapses on mouseleave - and a drag routinely
       // leaves it. Without this the drawer snaps to a 64px rail mid-drag.
       const nav = shell();
-      nav.currentUser = { drawerPinned: false } as never;
+      nav.currentUser = { role: Role.ADMIN, drawerPinned: false } as never;
       expect(nav.drawerExpanded).toBeFalse();
 
       nav.onResizeStart({ preventDefault: () => undefined, clientX: 300 } as never);
