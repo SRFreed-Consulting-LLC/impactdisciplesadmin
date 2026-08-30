@@ -557,7 +557,7 @@
   "lunch-and-learns": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "DISCIPLE-MAKING CHURCH",
       "heading": "Lunch & Learns",
@@ -567,18 +567,24 @@
       "image": {
         "name": "Headers/lunchlearn-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Flunchlearn-header.png?alt=media&token=557bdabf-9daa-4475-80a6-a9f6410d4d74"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "overview",
-      "type": "prose",
+      "type": "copyCentred",
       "isActive": true,
       "heading": "OVERVIEW",
-      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training and resources for churches who need help implementing a proven strategy to grow their ministries.\nLet us join you for lunch and give you more information on how we can come alongside you to help your church multiply disciples.</p>"
+      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training and resources for churches who need help implementing a proven strategy to grow their ministries.\nLet us join you for lunch and give you more information on how we can come alongside you to help your church multiply disciples.</p>",
+      "variant": "plain",
+      "surface": "light",
+      "headingStyle": "light",
+      "copySize": "large"
     },
     {
       "key": "whatyouget",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "WHAT YOU <strong> GET</strong>",
       "body": "<ul class=\"custom-bullets\">\n  <li>Meet and Greet with Our Team</li>\n  <li>An Overview of Our Strategy and Resources</li>\n  <li>Follow-up Support</li>\n</ul>",
@@ -587,7 +593,9 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Flunch-and-learn-thumbnail.jpg?alt=media&token=88186f35-4e15-4ba1-b115-e02c613b513d"
       },
       "videoId": "HxKSa24hF60",
-      "videoUrl": "https://www.youtube.com/watch?v=HxKSa24hF60"
+      "videoUrl": "https://www.youtube.com/watch?v=HxKSa24hF60",
+      "variant": "video",
+      "surface": "light"
     }
   ],
   "give": [

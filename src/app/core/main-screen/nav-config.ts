@@ -378,7 +378,6 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Equipping - Leaders', slug: 'equipping-groups-leaders' },
       { label: 'Equipping - Churches', slug: 'equipping-groups-churches' },
       { label: 'Seminars', slug: 'seminars' },
-      { label: 'Lunch and Learns', slug: 'lunch-and-learns' },
       { label: 'Give', slug: 'give' },
       { label: 'Contact', slug: 'contact' },
       { label: 'Discipleship Library', slug: 'discipleship-library' },

@@ -536,18 +536,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
   },
 
   {
-    slug: 'lunch-and-learns',
-    label: 'Lunch and Learns',
-    path: '/lunch-and-learns',
-    blurb: 'The overview, and what you get beside the video.',
-    kinds: [
-      pageHeader(),
-      prose({ label: 'Overview' }),
-      mission({ label: 'What you get, with a video' })
-    ]
-  },
-
-  {
     slug: 'give',
     label: 'Give',
     path: '/give',

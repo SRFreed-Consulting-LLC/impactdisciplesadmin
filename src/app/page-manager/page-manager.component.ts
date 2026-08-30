@@ -46,7 +46,6 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
    * whole mechanism retires per page at cutover.
    */
   private readonly approvedPages = new Set<string>([
-    'lunch-and-learns',
     'about-us',
     'equipping-groups',
     'equipping-groups-pastors',

@@ -58,6 +58,14 @@
 const {getFirestoreFor, resolveProjectId} = require('./lib/firestore-admin');
 const SEED = require('./page-content-seed-data.json');
 
+// Pages CUT OVER to the section kit (2026-08-30 onward). Their seed blocks
+// are already in kit vocabulary, and the DOCUMENT needs a title - it is what
+// marks a kit page, names the browser tab, and feeds the admin nav leaf. A
+// migrated page seeded without one renders 404 on a fresh environment.
+const CUTOVER_TITLES = {
+  'lunch-and-learns': { title: 'Lunch and Learns', theme: { surface: 'light', banding: false } }
+};
+
 const COLLECTION = 'page_content';
 
 /** One-line summary of a block, for the dry-run listing. */
@@ -144,7 +152,7 @@ async function main() {
     if (execute) {
       // set(), not merge: --force means "put this page back to the shipped
       // wording", and a merge would leave fields an edit had added.
-      await ref.set({blocks});
+      await ref.set({blocks, ...(CUTOVER_TITLES[slug] ?? {})});
     }
   }
 
