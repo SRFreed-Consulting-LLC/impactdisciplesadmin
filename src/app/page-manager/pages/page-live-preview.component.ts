@@ -221,8 +221,22 @@ export class PageLivePreviewComponent implements OnChanges, AfterViewInit {
     return FRAME_WIDTH[this.device];
   }
 
+  /**
+   * How tall a slice of the page to show, before scaling.
+   *
+   * Set it to frame a BAND off the top rather than the whole page - the
+   * Navigation screen uses it to show the site's real menu bar and nothing
+   * else, across the top of the screen. Left unset, the frame is as tall as
+   * the page reported itself to be, which is what every other caller wants.
+   *
+   * The page still LOADS in full; only the window onto it is shorter, and
+   * .apv-stage already clips. That matters: the header stays the real header,
+   * with the real fonts and spacing, rather than a drawing that can drift.
+   */
+  @Input() cropHeight?: number;
+
   get frameHeight(): number {
-    return this.contentHeight;
+    return this.cropHeight ?? this.contentHeight;
   }
 
   /**

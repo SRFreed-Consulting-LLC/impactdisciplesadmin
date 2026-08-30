@@ -46,7 +46,11 @@ type CatalogueRoute = (typeof SITE_ROUTES)[number];
 @Component({
     selector: 'app-site-footer',
     templateUrl: './footer.component.html',
-    styleUrls: ['./footer.component.css'],
+    // The page stack's stylesheet first, for the preview rail and its
+    // device toggle - the same rail every page stack has, so it is borrowed
+    // rather than copied. footer.component.css then adds only what is
+    // particular to a footer.
+    styleUrls: ['../pages/page-stack.component.css', './footer.component.css'],
     standalone: false
 })
 export class SiteFooterAdminComponent implements OnInit {
@@ -64,6 +68,18 @@ export class SiteFooterAdminComponent implements OnInit {
   saving = false;
 
   readonly routeGroups = SITE_ROUTE_GROUPS;
+
+  /** The home page. The footer is on every page, so any of them would do -
+   *  '/' is simply the least to load. Site-relative; the previewer builds
+   *  the URL from the environment's own publicSiteUrl. */
+  readonly previewPath = '/';
+
+  /** Desktop or phone, the same choice the page stacks offer. */
+  device: 'desktop' | 'mobile' = 'desktop';
+
+  /** Bumped after every write so the frame reloads and shows the footer as
+   *  it now stands rather than the one it was serving. */
+  previewRevision = 0;
 
 
   constructor(
@@ -120,6 +136,7 @@ export class SiteFooterAdminComponent implements OnInit {
     try {
       await this.service.save(this.footer);
       this.saved = JSON.stringify(this.footer);
+      this.previewRevision++;
       this.snackbar.success(message);
     } catch (err) {
       console.error('Could not save the footer:', err);
@@ -286,6 +303,7 @@ export class SiteFooterAdminComponent implements OnInit {
     try {
       await this.service.save(this.footer);
       this.saved = JSON.stringify(this.footer);
+      this.previewRevision++;
       this.snackbar.success('Saved');
     } catch (err) {
       console.error('Could not save the footer:', err);

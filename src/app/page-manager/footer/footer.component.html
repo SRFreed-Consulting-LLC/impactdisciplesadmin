@@ -1,3 +1,4 @@
+<div class="ft-screen">
 <div class="ft">
   <header class="ft__head">
     <div>
@@ -267,4 +268,37 @@
       </section>
     </div>
   }
+</div>
+
+<!-- THE REAL SITE, framed. Down the right like every page stack - unlike
+     the menu, a footer is a block rather than a strip, so it reads at the
+     rail's scale. It shows what is SAVED, which here is everything: the
+     structure writes itself and the wording writes when you leave a field.
+     Scroll it to the bottom to see the footer itself. -->
+<aside class="ps__preview ft__preview">
+  <header class="ps__preview-head">
+    <h2 class="ps__preview-title">Live preview</h2>
+    <div class="ps__device" role="group" aria-label="Preview width">
+      <button type="button" class="ps__device-btn"
+              [class.ps__device-btn--on]="device === 'desktop'"
+              [attr.aria-pressed]="device === 'desktop'"
+              (click)="device = 'desktop'">Desktop</button>
+      <button type="button" class="ps__device-btn"
+              [class.ps__device-btn--on]="device === 'mobile'"
+              [attr.aria-pressed]="device === 'mobile'"
+              (click)="device = 'mobile'">Mobile</button>
+    </div>
+  </header>
+
+  <app-page-live-preview
+    [path]="previewPath"
+    label="the footer"
+    [device]="device"
+    [revision]="previewRevision"></app-page-live-preview>
+
+  <p class="ps__preview-note">
+    The real page, scaled &mdash; not a drawing of it, so it cannot drift.
+    The footer is at the bottom of it. It reloads after every change.
+  </p>
+</aside>
 </div>

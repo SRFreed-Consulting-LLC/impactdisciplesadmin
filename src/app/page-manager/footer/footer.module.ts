@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { PageLivePreviewModule } from '../pages/page-live-preview.module';
 import { SiteFooterAdminComponent } from './footer.component';
 import { footerCanDeactivateGuard } from '../navigation/site-frame.guard';
 
@@ -33,6 +34,7 @@ const routes: Routes = [
   imports: [
     CommonModule,
     RouterModule.forChild(routes),
+    PageLivePreviewModule,
     FormsModule,
     DragDropModule,
     MatButtonModule,

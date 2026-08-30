@@ -12,9 +12,42 @@
   box-sizing: border-box;
 }
 
+/* Editor on the left, the real site framed on the right - the same shape
+   every page stack uses. Unlike the menu, a footer is a block rather than a
+   strip, so it reads perfectly well at the rail's scale. */
+.ft-screen {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  min-height: 0;
+}
+
 .ft {
   display: block;
   padding-bottom: 24px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ft__preview {
+  flex: 0 0 430px;
+  min-width: 0;
+}
+
+/* Below this the two cannot stand side by side. The flex values are RESTATED
+   rather than inherited: down a COLUMN `flex: 1 1 auto` means "share the
+   available height, and give it back", which is exactly the pairing that
+   silently collapses a pane to zero. */
+@media (max-width: 1500px) {
+  .ft-screen {
+    flex-direction: column;
+  }
+
+  .ft,
+  .ft__preview {
+    flex: 0 0 auto;
+    width: 100%;
+  }
 }
 
 .ft__head {
@@ -85,9 +118,12 @@
 
 /* THREE CARDS ACROSS. The middle one carries the link columns and is the
    busiest, so it takes the extra room rather than three equal thirds. */
+/* Three across when there is room, wrapping when there is not. A fixed
+   1fr 1.35fr 1fr was fine while this screen had the whole width; it now
+   shares it with the preview rail, so the columns have to give. */
 .ft__cards {
   display: grid;
-  grid-template-columns: 1fr 1.35fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 16px;
   align-items: start;
 }

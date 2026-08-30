@@ -24,6 +24,47 @@
   box-sizing: border-box;
 }
 
+/* THE LIVE MENU BAR, across the top and full width.
+ *
+ * Every other Site screen frames the real page down the RIGHT. This one does
+ * not, and the reason is measurable rather than aesthetic: the header is
+ * 1440 wide and 80 tall, so in the 430px rail the others use it scales to
+ * 0.30 and renders 24px high - unreadable. Across the full width it sits at
+ * or near 1:1.
+ *
+ * The frame is cropped to the header band by cropHeight - the page loads in
+ * full and .apv-stage clips it, so what shows is the real header with the
+ * real fonts, not a drawing that can drift. */
+.nav-bar-preview {
+  display: block;
+  border: 1px solid var(--app-divider);
+  border-radius: var(--app-radius-control);
+  padding: 10px 12px 12px;
+  margin-bottom: 18px;
+  background: var(--app-card);
+}
+
+.nav-bar-preview__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.nav-bar-preview__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+.nav-bar-preview__note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
 /* No preview rail on this screen (Shane's call, 2026-08-30) - a menu is a
  * row of words and every one is already on screen with its destination, so a
  * framed copy of the site would say the same thing smaller. `.ps` is a flex

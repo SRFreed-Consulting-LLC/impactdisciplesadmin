@@ -22,7 +22,7 @@ import { HomeSectionEditorComponent } from './home/home-section-editor.component
 // because it borrows pages/page-stack.component.css outright.
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
-import { PageLivePreviewComponent } from './pages/page-live-preview.component';
+import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
 import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
 import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
@@ -66,6 +66,7 @@ import { QuillModule } from 'ngx-quill';
   imports: [
     CommonModule,
     PageManagerRoutingModule,
+    PageLivePreviewModule,
     ImpactDisciplesCommonModule,
     SharedModule,
     ImageUploaderModule,
@@ -100,7 +101,6 @@ import { QuillModule } from 'ngx-quill';
     HomeSectionEditorComponent,
     PageStackComponent,
     PageSectionEditorComponent,
-    PageLivePreviewComponent,
     DestinationFieldComponent,
     HomePageImagesComponent,
     HomePageImageDialogComponent,

@@ -106,6 +106,23 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   readonly routeGroups = SITE_ROUTE_GROUPS;
 
+  /** The home page - the header is on every page and '/' is the least to
+   *  load. Site-relative; the previewer builds the URL from the
+   *  environment's own publicSiteUrl. */
+  readonly previewPath = '/';
+
+  /**
+   * How tall a slice of the framed page to show: the header band, nothing
+   * else. MEASURED, not guessed - the real header is exactly 80px at the
+   * 1440px width the previewer frames at, checked against the live site with
+   * its fonts loaded, since a fallback font measures differently.
+   */
+  readonly headerHeight = 80;
+
+  /** Bumped after every write so the frame reloads and shows the menu as it
+   *  now stands rather than the one it was serving. */
+  previewRevision = 0;
+
   private ngUnsubscribe = new Subject<void>();
 
 
@@ -151,6 +168,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     this.saving = true;
     try {
       await this.service.save(this.items);
+      this.previewRevision++;
       this.snackbar.success(message);
     } catch (err) {
       console.error('Could not save the menu:', err);
@@ -406,6 +424,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     this.saving = true;
     try {
       await this.service.save(this.items);
+      this.previewRevision++;
       this.editingSnapshot = JSON.stringify(this.editing);
       this.snackbar.success('Saved');
     } catch (err) {

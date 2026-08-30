@@ -1,8 +1,10 @@
 <!-- EDITING ONE ITEM, full screen. Same treatment as a page section: not a
      pop-up, and the stack is not destroyed underneath - it is the same
      component and the same in-memory items, so backing out is instant.
-     No preview rail: a menu is a row of words, and every one of them is
-     already on screen with its destination. -->
+     The live menu bar sits ACROSS THE TOP rather than down the right (Shane's
+     call, 2026-08-30): the real header is 1440 wide and 80 tall, so in a
+     430px rail it scales to 24px and cannot be read. Full width it sits
+     near 1:1. -->
 @if (editing; as item) {
   <div class="ps ps--editing">
     <div class="ps__editor ps__editor--wide">
@@ -176,6 +178,26 @@
     </div>
   </div>
 } @else {
+
+  <!-- THE REAL MENU BAR, across the top and full width. The actual site in
+       a frame, cropped to the header band - not a drawing of it, so it
+       cannot drift from what a visitor sees. It reloads after every change
+       written below. -->
+  <aside class="nav-bar-preview">
+    <header class="nav-bar-preview__head">
+      <span class="nav-bar-preview__title">The live menu</span>
+    </header>
+    <app-page-live-preview
+      [path]="previewPath"
+      label="the menu"
+      device="desktop"
+      [cropHeight]="headerHeight"
+      [revision]="previewRevision"></app-page-live-preview>
+    <p class="nav-bar-preview__note">
+      The site's own header, scaled. It shows what is SAVED - which is
+      everything here, the moment you change it.
+    </p>
+  </aside>
 
 <div class="ps">
   <div class="ps__editor ps__editor--wide">
