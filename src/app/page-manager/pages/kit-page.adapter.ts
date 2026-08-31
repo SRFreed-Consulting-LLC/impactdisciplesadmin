@@ -126,6 +126,25 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
   }
 };
 
+/**
+ * The LIST looks reuse the entry specs their old archetypes had.
+ *
+ * A List's items are the same items - only the look changed - so pointing
+ * the new key at the same object is the whole migration for the editor.
+ * Copying the specs instead would be nine chances for one to drift.
+ */
+const LIST_LOOK_SPECS: Record<string, string> = {
+  'list/tiles': 'listGrid/picture',
+  'list/pictureRows': 'listGrid/pictureRows',
+  'list/icon': 'listGrid/icon',
+  'list/price': 'listGrid/price',
+  'list/rows': 'listRows/buttonAndText',
+  'list/articles': 'listArticles/plain',
+  'list/numbered': 'listArticles/numbered',
+  'list/timeline': 'timeline/centreLine',
+  'list/slides': 'slider/slides'
+};
+
 /** Caveats worth saying before somebody edits one of these. Same wording as
  *  the equivalent sections on the twelve original pages, because they are the
  *  same rules. */
@@ -172,7 +191,8 @@ const BUTTON_BEARING: readonly SECTION_ARCHETYPE[] = [
 ];
 
 function toVariant(archetype: SECTION_ARCHETYPE, variant: SectionVariant): KindVariant {
-  const named = ENTRY_SPECS[`${archetype}/${variant.key}`];
+  const key = `${archetype}/${variant.key}`;
+  const named = ENTRY_SPECS[key] ?? ENTRY_SPECS[LIST_LOOK_SPECS[key]];
   return {
     key: variant.key,
     label: variant.label,
