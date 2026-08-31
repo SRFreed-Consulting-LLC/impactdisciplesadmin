@@ -774,7 +774,8 @@
         "url": "assets/reader/hero-lesson.jpg"
       },
       "variant": "standard",
-      "surface": "dark"
+      "surface": "dark",
+      "ctaUrl": "reader"
     },
     {
       "key": "features",
@@ -870,7 +871,8 @@
       "body": "<p>\n  Anyone can sign up. Open it in your browser, sign in, and your shelf is waiting.\n</p>",
       "ctaTitle": "Open the Library",
       "variant": "withButtons",
-      "surface": "tinted"
+      "surface": "tinted",
+      "ctaUrl": "reader"
     }
   ],
   "prayer-team": [
