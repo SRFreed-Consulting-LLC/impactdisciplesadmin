@@ -1,0 +1,158 @@
+/* ONE PIECE of a column.
+   Tokens only, and only tokens that EXIST: --app-surface, --app-warn,
+   --app-warn-soft and --app-danger are never defined anywhere in this app
+   and fall back silently to nothing, which is how a row can end up
+   transparent on a dark theme and look fine in a screenshot. */
+
+.cp {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+}
+
+/* A hidden piece still has to be readable - staff hide things to come back
+   to them. Dimmed, not erased. */
+.cp--off {
+  opacity: 0.55;
+}
+
+.cp__grip {
+  cursor: grab;
+  color: var(--app-muted);
+}
+
+.cp__grip--small {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.cp__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cp__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cp__kind-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--app-accent);
+}
+
+.cp__kind {
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+/* The closed row's one line of content. Truncated rather than wrapped, so
+   eight pieces stay a list rather than becoming the page itself. */
+.cp__summary {
+  color: var(--app-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cp__caveat,
+.cp__unknown,
+.cp__warn {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.85rem;
+}
+
+.cp__line {
+  width: 100%;
+}
+
+.cp__rich {
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-control);
+  background: var(--app-field);
+}
+
+.cp__image {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--app-field);
+  border: 1px dashed var(--app-field-border);
+  border-radius: var(--app-radius-control);
+  color: var(--app-muted);
+  cursor: pointer;
+}
+
+.cp__image img {
+  width: 96px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--app-radius-control);
+}
+
+.cp__buttons,
+.cp__button-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.cp__button-list {
+  align-self: stretch;
+}
+
+.cp__button {
+  display: grid;
+  grid-template-columns: auto minmax(140px, 1fr) minmax(180px, 2fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.cp__amount {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+
+.cp__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cp__icon-btn {
+  border: none;
+  background: none;
+  color: var(--app-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--app-radius-control);
+}
+
+.cp__icon-btn--danger:hover {
+  color: #ff6b6b;
+}
+
+@media (max-width: 900px) {
+  .cp__button,
+  .cp__amount {
+    grid-template-columns: 1fr;
+  }
+}

@@ -26,6 +26,7 @@ import { KitPageEditorComponent } from './pages/kit-page-editor.component';
 import { KitCompareComponent } from './pages/kit-compare.component';
 import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
+import { ContentPieceComponent } from './pages/content-piece.component';
 // Moved here from Tools Manager 2026-08-19 with the Web Manager -> Content
 // Manager rename - public-site configuration lives with public-site content.
 import { WebConfigComponent } from './web-config/web-config.component';
@@ -102,6 +103,7 @@ import { QuillModule } from 'ngx-quill';
     KitPageEditorComponent,
     KitCompareComponent,
     DestinationFieldComponent,
+    ContentPieceComponent,
     WebConfigComponent,
     DockingBarComponent
   ],

@@ -8,6 +8,9 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { EditablePage, PageSectionKind, kindFor, pluralise } from './page-section-catalogue';
 import { PreviewDevice } from './page-live-preview.component';
+import {
+  SECTION_ARCHETYPE, SECTION_PRESETS, SectionPreset
+} from '@impact-common/shared/lists/section_kit';
 
 /**
  * ONE public page as an ordered stack of sections, with a live preview of the
@@ -179,6 +182,52 @@ export class PageStackComponent implements OnChanges {
     return this.page.kinds.filter((k) => !k.singleton || !placed.has(k.type));
   }
 
+  /**
+   * The ready-made arrangements, offered ONLY on a page whose kit knows what
+   * a Section is.
+   *
+   * The twelve original pages declare their own fixed kinds and must not
+   * grow a menu of things they cannot draw.
+   */
+  get addablePresets(): readonly SectionPreset[] {
+    const knowsSections = this.page.kinds.some((k) => k.type === SECTION_ARCHETYPE.SECTION);
+    return knowsSections ? SECTION_PRESETS : [];
+  }
+
+  /**
+   * Place a preset: an ordinary Section that arrives already arranged.
+   *
+   * The seed is plain data (see SectionPreset) so what a preset places can
+   * be read in a review rather than traced through a builder function. Keys
+   * are minted here rather than stored in the preset, because two of the
+   * same preset on one page would otherwise share them - and a list tracked
+   * by key treats two rows with one key as a single row.
+   */
+  async addPreset(preset: SectionPreset): Promise<void> {
+    if (!this.canEdit() || this.loadFailed) {
+      return;
+    }
+    const section: PageContentBlock = {
+      key: uniqueKey(preset.key, this.sections),
+      type: SECTION_ARCHETYPE.SECTION,
+      variant: 'columns',
+      isActive: false,
+      ...preset.seed,
+      columns: preset.seed.columns.map((column, ci) => ({
+        key: `col-${ci + 1}`,
+        pieces: column.pieces.map((piece, pi) => ({
+          key: `${piece.kind}-${ci + 1}-${pi + 1}`,
+          kind: piece.kind,
+          isActive: true,
+          ...(piece.level ? { level: piece.level } : {})
+        }))
+      }))
+    };
+    this.sections = [...this.sections, section];
+    await this.persist(`${preset.label} added - switch it on when it is ready`);
+    this.edit(section);
+  }
+
   async add(kind: PageSectionKind): Promise<void> {
     if (!this.canEdit() || this.loadFailed) {
       return;
@@ -269,6 +318,13 @@ export class PageStackComponent implements OnChanges {
   /** A section with no fields of its own - the consultation banner - can be
    *  moved and switched off but has nothing to open. */
   isEditable(kind: PageSectionKind): boolean {
+    // A SECTION'S CONTENT IS ITS COLUMNS, not its fields - it declares none,
+    // deliberately. "Has fields" was the right question while a section WAS
+    // its fields; asking only that would report the one member that replaces
+    // eight of them as "nothing to edit" and refuse to open it.
+    if (kind.type === SECTION_ARCHETYPE.SECTION) {
+      return true;
+    }
     return Object.keys(kind.fields).length > 0;
   }
 
@@ -277,6 +333,17 @@ export class PageStackComponent implements OnChanges {
     const kind = this.kindOf(section);
     if (kind && !this.isEditable(kind)) {
       return 'nothing to edit - move it or switch it off';
+    }
+    // A SECTION'S heading is a PIECE, not a field, so the field-reading path
+    // below would call a full section "nothing in it yet" - the row would
+    // look empty while carrying the whole band.
+    if (section.columns?.length) {
+      const pieces = section.columns.flatMap((column) => column.pieces ?? []);
+      const heading = pieces.find((piece) => piece.kind === 'heading' && piece.text);
+      const counted = `${section.columns.length} `
+        + pluralise('column', section.columns.length)
+        + `, ${pieces.length} ${pluralise('piece', pieces.length)}`;
+      return heading?.text ? `${plain(heading.text)} — ${counted}` : counted;
     }
     if (section.items) {
       const noun = kind?.entry?.noun ?? 'entry';

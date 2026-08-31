@@ -6,7 +6,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PageStackComponent, uniqueKey } from './page-stack.component';
-import { SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
+import { SECTION_ARCHETYPE, SECTION_PRESETS } from '@impact-common/shared/lists/section_kit';
 import { kitPage } from './kit-page.adapter';
 
 // TestBed as an INJECTOR, not as a renderer: this component takes everything
@@ -193,5 +193,197 @@ describe('uniqueKey', () => {
     const existing = [{ key: 'prose' }, { key: 'prose-2' }] as never;
 
     expect(uniqueKey('prose', existing)).toBe('prose-3');
+  });
+});
+
+
+/** The dialog stub the newer describes share. Hoisted so a provider list
+ *  stays inside the line length rather than running off the side. */
+const dialogStub = {
+  open: () => ({ afterClosed: () => ({ toPromise: () => Promise.resolve(undefined) }) })
+};
+
+/**
+ * PRESETS - the mitigation for the one thing this refactor gives up.
+ *
+ * "Hero band" used to MEAN something: one per page, a page title, over a
+ * photo. A freeform builder makes every arrangement equally easy, including
+ * three page titles and a wall of unstyled text. Presets keep the Add menu
+ * reading the way it read before, each placing a Section already arranged.
+ */
+describe('placing a preset', () => {
+  let saved: PageContentBlock[][];
+
+  const build = (): PageStackComponent => {
+    saved = [];
+    TestBed.configureTestingModule({
+      providers: [
+        PageStackComponent,
+        {
+          provide: PageContentService,
+          useValue: {
+            getById: () => Promise.resolve({ blocks: [] }),
+            updateFields: (_slug: string, partial: { blocks: PageContentBlock[] }) => {
+              saved.push(partial.blocks.map((b) => ({ ...b })));
+              return Promise.resolve();
+            }
+          }
+        },
+        { provide: PermissionService, useValue: { canEdit: () => true, canDelete: () => true } },
+        { provide: MatDialog, useValue: dialogStub },
+        { provide: ConfirmService, useValue: { confirm: () => Promise.resolve(true) } },
+        { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined } }
+      ]
+    });
+    const component = TestBed.inject(PageStackComponent);
+    component.page = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never);
+    component.sections = [];
+    return component;
+  };
+
+  it('offers every preset on a kit page', () => {
+    expect(build().addablePresets.length).toBe(SECTION_PRESETS.length);
+  });
+
+  it('offers none on a page whose kit has no Section', () => {
+    // The twelve original pages declared their own fixed kinds. Offering
+    // them a menu of things their renderer cannot draw would place a section
+    // that silently never appears.
+    const component = build();
+    component.page = { ...component.page, kinds: [] };
+
+    expect(component.addablePresets).toEqual([]);
+  });
+
+  it('places a real Section, arranged, and switched OFF', () => {
+    const component = build();
+    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
+
+    return component.addPreset(hero).then(() => {
+      const placed = component.sections[0];
+
+      expect(placed.type).toBe(SECTION_ARCHETYPE.SECTION);
+      expect(placed.variant).toBe('columns');
+      // Nothing reaches the live site until staff say so - the same rule
+      // every other added section follows.
+      expect(placed.isActive).toBe(false);
+      expect((placed.columns ?? []).length).toBe(hero.seed.columns.length);
+      expect((placed.columns?.[0].pieces ?? []).length)
+        .toBe(hero.seed.columns[0].pieces.length);
+    });
+  });
+
+  it('carries the preset styling rather than leaving it to be redone by hand', () => {
+    // The whole value of a preset is the MEASURED styling. A preset that
+    // placed the right pieces with the wrong look would be worse than none,
+    // because it looks finished.
+    const component = build();
+    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
+
+    return component.addPreset(hero).then(() => {
+      expect(component.sections[0].surface).toBe(hero.seed.surface);
+    });
+  });
+
+  it('gives two of the same preset different keys', () => {
+    // A list tracked BY KEY treats two rows sharing one as a single row -
+    // dragging one moves the other and deleting one deletes both. Minted
+    // here rather than stored on the preset for exactly this reason.
+    const component = build();
+    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
+
+    return component.addPreset(hero)
+      .then(() => component.addPreset(hero))
+      .then(() => {
+        const keys = component.sections.map((s) => s.key);
+        expect(new Set(keys).size).toBe(keys.length);
+      });
+  });
+
+  it('writes the page rather than only changing the screen', () => {
+    const component = build();
+    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
+
+    return component.addPreset(hero).then(() => {
+      expect(saved.length).toBe(1);
+      expect(saved[0][0].type).toBe(SECTION_ARCHETYPE.SECTION);
+    });
+  });
+});
+
+/**
+ * "NOTHING TO EDIT" HAS NOW BEEN WRONG TWICE.
+ *
+ * It reads a kind's FIELDS, which was the right question while a section
+ * simply was its fields. It pointed at the retired fixed band once already,
+ * and it would have pointed at the one member that replaces eight of them:
+ * a Section declares no fields on purpose, because its content is its
+ * columns. The row said "nothing to edit" and refused to open.
+ */
+describe('what counts as having something to edit', () => {
+  const build = (): PageStackComponent => {
+    TestBed.configureTestingModule({
+      providers: [
+        PageStackComponent,
+        {
+          provide: PageContentService,
+          useValue: {
+            getById: () => Promise.resolve({ blocks: [] }),
+            updateFields: () => Promise.resolve()
+          }
+        },
+        { provide: PermissionService, useValue: { canEdit: () => true, canDelete: () => true } },
+        { provide: MatDialog, useValue: dialogStub },
+        { provide: ConfirmService, useValue: { confirm: () => Promise.resolve(true) } },
+        { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined } }
+      ]
+    });
+    const component = TestBed.inject(PageStackComponent);
+    component.page = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never);
+    return component;
+  };
+
+  it('opens a Section even though it declares no fields', () => {
+    const component = build();
+    const section = component.page.kinds.find((k) => k.type === SECTION_ARCHETYPE.SECTION)!;
+
+    expect(Object.keys(section.fields).length)
+      .withContext('a Section is expected to declare NO fields - its content is its columns')
+      .toBe(0);
+    expect(component.isEditable(section)).toBe(true);
+  });
+
+  it('describes a Section by its heading piece and what it holds', () => {
+    // Reading the FIELDS would call this "nothing in it yet" while it
+    // carried the whole band.
+    const component = build();
+    const summary = component.summary({
+      key: 'k1',
+      type: SECTION_ARCHETYPE.SECTION,
+      variant: 'columns',
+      columns: [
+        { key: 'c1', pieces: [
+          { key: 'h', kind: 'heading', text: 'Our Vision', isActive: true },
+          { key: 't', kind: 'text', html: '<p>x</p>', isActive: true }
+        ] },
+        { key: 'c2', pieces: [{ key: 'p', kind: 'picture', isActive: true }] }
+      ]
+    } as never);
+
+    expect(summary).toContain('Our Vision');
+    expect(summary).toContain('2 columns');
+    expect(summary).toContain('3 pieces');
+  });
+
+  it('still describes a Section that has no heading piece yet', () => {
+    const component = build();
+    const summary = component.summary({
+      key: 'k1',
+      type: SECTION_ARCHETYPE.SECTION,
+      variant: 'columns',
+      columns: [{ key: 'c1', pieces: [{ key: 'p', kind: 'picture', isActive: true }] }]
+    } as never);
+
+    expect(summary).toBe('1 column, 1 piece');
   });
 });

@@ -401,3 +401,72 @@
 .psd__axis .psd__ink {
   margin-left: 10px;
 }
+
+/* ------------------------------------------------------------ the columns */
+
+.psd__cols {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Side by side on a computer, stacked on a phone - the same rule the public
+   page follows, so the editor is not showing an arrangement the site will
+   not draw. */
+.psd__col-strip {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.psd__col-strip--1 { grid-template-columns: 1fr; }
+.psd__col-strip--2 { grid-template-columns: 1fr 1fr; }
+.psd__col-strip--3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.psd__col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+}
+
+.psd__col-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.psd__col-name {
+  font-weight: 600;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+
+.psd__col-ground {
+  flex: 1;
+  min-width: 0;
+}
+
+.psd__piece-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.psd__col-warning {
+  margin: 6px 0 0;
+  color: #ffb86b;
+}
+
+@media (max-width: 1100px) {
+  .psd__col-strip--2,
+  .psd__col-strip--3 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -91,6 +91,23 @@
         <mat-icon>add</mat-icon> Add section
       </button>
       <mat-menu #addMenu="matMenu">
+        <!-- PRESETS FIRST, and they are what the old archetype names were.
+             A freeform builder makes every arrangement equally easy,
+             including three page titles and a wall of unstyled text - so the
+             menu still reads "Hero", "Text with a video", "Call to action",
+             each placing a Section with its columns, pieces and measured
+             styling already set. A preset is a STARTING POINT, not a type:
+             once placed it is an ordinary Section. -->
+        @if (addablePresets.length) {
+          @for (preset of addablePresets; track preset.key) {
+            <button mat-menu-item type="button" (click)="addPreset(preset)">
+              <mat-icon>{{ preset.icon }}</mat-icon>
+              <span class="ps__menu-label">{{ preset.label }}</span>
+              <span class="ps__menu-blurb">{{ preset.blurb }}</span>
+            </button>
+          }
+          <mat-divider></mat-divider>
+        }
         @for (kind of addableKinds; track kind.type) {
           <button mat-menu-item type="button" (click)="add(kind)">
             <mat-icon>{{ kind.icon }}</mat-icon>

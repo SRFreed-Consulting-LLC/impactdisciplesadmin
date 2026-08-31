@@ -1,0 +1,189 @@
+<!-- ONE PIECE. Which controls appear is the kind's own declaration - see
+     CONTENT_PIECES - so a new kind that reuses existing fields needs nothing
+     added here. -->
+<div class="cp" [class.cp--off]="!piece.isActive">
+
+  <mat-icon class="cp__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
+
+  <div class="cp__body">
+    <div class="cp__head">
+      <mat-icon class="cp__kind-icon">{{ def?.icon ?? 'help_outline' }}</mat-icon>
+      <span class="cp__kind">{{ def?.label ?? piece.kind }}</span>
+      @if (summary) {
+        <span class="cp__summary">{{ summary }}</span>
+      }
+    </div>
+
+    <!-- A kind this build does not know. Said plainly rather than drawn as
+         an empty box: the data outlives the build, and a piece written by a
+         later version has to survive being opened by this one. -->
+    @if (!def) {
+      <p class="cp__unknown">
+        This is a "{{ piece.kind }}", which this version does not know how to
+        edit. It has been left exactly as it was.
+      </p>
+    }
+
+    @if (def?.caveat) {
+      <p class="cp__caveat">{{ def?.caveat }}</p>
+    }
+
+    @if (fields.text) {
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>{{ def?.label }}</mat-label>
+        <input matInput [(ngModel)]="piece.text">
+      </mat-form-field>
+    }
+
+    @if (fields.level) {
+      <!-- THE PAGE TITLE IS A LEVEL NOW. It used to be guaranteed by the hero
+           archetype being one-per-page; making it explicit is what lets any
+           column carry it, and what lets the page editor check there is
+           exactly one. -->
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>Size and importance</mat-label>
+        <mat-select (selectionChange)="changed.emit()" [(ngModel)]="piece.level">
+          @for (l of levels; track l.key) {
+            <mat-option [value]="l.key">{{ l.label }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>One "Page title" per page - it is what search engines read.</mat-hint>
+      </mat-form-field>
+    }
+
+    @if (fields.html) {
+      <div class="cp__rich">
+        <quill-editor [(ngModel)]="piece.html" [modules]="richTextModules"
+                      aria-label="Text"></quill-editor>
+      </div>
+    }
+
+    @if (fields.image) {
+      <button type="button" class="cp__image" (click)="pickImage.emit()"
+              [matTooltip]="piece.image ? 'Change this picture' : 'Choose a picture'">
+        @if (piece.image) {
+          <img [src]="piece.image.url" [alt]="piece.image.name ?? ''">
+        } @else {
+          <mat-icon>add_photo_alternate</mat-icon>
+          <span>Choose a picture</span>
+        }
+      </button>
+    }
+
+    @if (fields.video) {
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>Video link</mat-label>
+        <input matInput [(ngModel)]="piece.videoId" placeholder="Paste a YouTube link">
+        <mat-hint>Paste the whole link - the id is taken out of it on save.</mat-hint>
+      </mat-form-field>
+    }
+
+    <!-- AS MANY BUTTONS AS THEY ADD. The old fields allowed one, or two on
+         the sections that had been given a second pair by hand. -->
+    @if (fields.buttons) {
+      <div class="cp__buttons">
+        <div cdkDropList class="cp__button-list" (cdkDropListDropped)="reorderButtons($event)">
+          @for (button of buttons; track $index) {
+            <div class="cp__button" cdkDrag>
+              <mat-icon class="cp__grip cp__grip--small" cdkDragHandle
+                        matTooltip="Drag to reorder">drag_indicator</mat-icon>
+              <mat-form-field appearance="outline" class="cp__button-text">
+                <mat-label>Button text</mat-label>
+                <input matInput [(ngModel)]="button.title">
+              </mat-form-field>
+
+              @if (isGiving(button)) {
+                <!-- A KEY, never an address. A free-text URL here would let
+                     anyone who can edit this page redirect donations. -->
+                <mat-form-field appearance="outline" class="cp__button-dest">
+                  <mat-label>Button opens</mat-label>
+                  <mat-select (selectionChange)="changed.emit()" [(ngModel)]="button.link">
+                    @for (d of givingDestinations; track d.key) {
+                      <mat-option [value]="d.key">{{ d.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                <app-destination-field class="cp__button-dest"
+                  [url]="button.link"
+                  (urlChange)="button.link = $event; changed.emit()"></app-destination-field>
+              }
+
+              <button type="button" class="cp__icon-btn cp__icon-btn--danger"
+                      matTooltip="Remove this button" (click)="removeButton($index)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+        <button mat-stroked-button type="button" (click)="addButton()">
+          <mat-icon>add</mat-icon> Add button
+        </button>
+      </div>
+    }
+
+    @if (fields.form) {
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>Which form</mat-label>
+        <mat-select (selectionChange)="changed.emit()" [(ngModel)]="piece.formId">
+          @for (form of forms; track form.id) {
+            <mat-option [value]="form.id">{{ form.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Forms are built in Tools &gt; Form Builder.</mat-hint>
+      </mat-form-field>
+      @if (formsFailed) {
+        <p class="cp__warn">The list of forms could not be read. Try again shortly.</p>
+      }
+    }
+
+    @if (fields.signupList) {
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>Signs people up to</mat-label>
+        <mat-select (selectionChange)="changed.emit()" [(ngModel)]="piece.signupList">
+          @for (list of signupLists; track list.key) {
+            <mat-option [value]="list.key">{{ list.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    @if (fields.targetDate) {
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>Counts down to</mat-label>
+        <input matInput type="date" [(ngModel)]="piece.targetDate" (change)="changed.emit()">
+        <mat-hint>The clock disappears on its own once the date passes.</mat-hint>
+      </mat-form-field>
+    }
+
+    <!-- The FIGURE lives in Web Config and is named here, never typed, so a
+         price exists in one place across the whole site. -->
+    @if (fields.amount) {
+      <div class="cp__amount">
+        <mat-form-field appearance="outline" class="cp__price">
+          <mat-label>Price from Web Config</mat-label>
+          <mat-select (selectionChange)="changed.emit()" [(ngModel)]="piece.amountKey">
+            @for (a of amounts; track a.key) {
+              <mat-option [value]="a.key">{{ a.label }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>The amount itself is edited in Web Config.</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="cp__suffix">
+          <mat-label>After the amount</mat-label>
+          <input matInput [(ngModel)]="piece.amountSuffix" placeholder="/month">
+        </mat-form-field>
+      </div>
+    }
+  </div>
+
+  <div class="cp__side">
+    <mat-slide-toggle (change)="changed.emit()" [(ngModel)]="piece.isActive"
+                      [matTooltip]="piece.isActive ? 'Showing' : 'Hidden'">
+    </mat-slide-toggle>
+    <button type="button" class="cp__icon-btn cp__icon-btn--danger"
+            matTooltip="Remove this piece" (click)="remove.emit()">
+      <mat-icon>delete_outline</mat-icon>
+    </button>
+  </div>
+</div>

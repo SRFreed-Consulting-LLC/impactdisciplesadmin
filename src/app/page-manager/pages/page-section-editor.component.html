@@ -463,6 +463,94 @@
     </div>
   }
 
+<!-- THE COLUMNS. One to three, each an ordered list of pieces - the whole
+       of the SECTION archetype, replacing eight hand-arranged ones.
+
+       The count is a control rather than a type, which is the point: a band
+       that needs a third column stops being a request for a new kind of
+       section. -->
+  @if (isColumnSection) {
+    <div class="psd__cols">
+      <div class="psd__axis">
+        <span class="psd__axis-label">Columns</span>
+        <mat-button-toggle-group [value]="columns.length"
+                                 (change)="setColumnCount($event.value)"
+                                 aria-label="How many columns this section has">
+          @for (n of [1, 2, 3]; track n) {
+            <mat-button-toggle [value]="n">{{ n }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <p class="psd__axis-blurb">
+          Columns sit side by side on a computer and stack on a phone, so a
+          three-column row is always readable.
+        </p>
+        <!-- Refusing without saying why reads as a broken control. -->
+        @if (columnWarning) {
+          <p class="psd__col-warning">{{ columnWarning }}</p>
+        }
+      </div>
+
+      <div class="psd__col-strip" [class]="'psd__col-strip--' + columns.length">
+        @for (column of columns; track column.key) {
+          <div class="psd__col">
+            <div class="psd__col-head">
+              <span class="psd__col-name">Column {{ $index + 1 }}</span>
+
+              <!-- A GROUND PER COLUMN, which is what the six leftGround /
+                   leftInk / leftTitleTone / rightGround / rightInk /
+                   rightTitleTone fields were trying to say. Three columns
+                   would have needed nine of them. -->
+              <mat-form-field appearance="outline" class="psd__col-ground">
+                <mat-label>Painted box</mat-label>
+                <mat-select (selectionChange)="edited()" [(ngModel)]="column.ground">
+                  @for (g of columnGrounds; track g.key) {
+                    <mat-option [value]="g.key">{{ g.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div cdkDropList class="psd__piece-list"
+                 [cdkDropListData]="column"
+                 (cdkDropListDropped)="reorderPieces(column, $event)">
+              @for (piece of piecesOf(column); track piece.key) {
+                <div cdkDrag>
+                  <app-content-piece
+                    [piece]="piece"
+                    [forms]="formOptions"
+                    [formsFailed]="formsFailed"
+                    (changed)="edited()"
+                    (remove)="removePiece(column, piece)"
+                    (pickImage)="showImageUploader(piece)"></app-content-piece>
+                </div>
+              }
+            </div>
+
+            @if (!piecesOf(column).length) {
+              <p class="psd__entries-empty">
+                Nothing in this column yet &mdash; it draws an empty space.
+              </p>
+            }
+
+            <!-- The menu is the piece registry, so a new kind of piece
+                 appears here the moment it is declared. -->
+            <button mat-stroked-button type="button" [matMenuTriggerFor]="pieceMenu">
+              <mat-icon>add</mat-icon> Add to this column
+            </button>
+            <mat-menu #pieceMenu="matMenu">
+              @for (kind of pieceKinds; track kind.kind) {
+                <button mat-menu-item type="button" (click)="addPiece(column, kind.kind)">
+                  <mat-icon>{{ kind.icon }}</mat-icon>
+                  <span>{{ kind.label }}</span>
+                </button>
+              }
+            </mat-menu>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
   <!-- THE LIST. One control for every kind of list on every page - cards,
        timeline entries, price tiles, feature rows, the passages in a
        two-column block. Which columns of it appear is the type's own
@@ -491,7 +579,7 @@
             <mat-icon class="psd__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
 
             @if (entryFields.image) {
-              <button type="button" class="psd__entry-image" (click)="showImageUploader($index)"
+              <button type="button" class="psd__entry-image" (click)="showImageUploader(entry)"
                       [matTooltip]="entry.image ? 'Change this picture' : 'Choose a picture'">
                 @if (entry.image) {
                   <img [src]="entry.image.url" [alt]="entry.title">

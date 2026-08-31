@@ -4,7 +4,7 @@ import {
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { BehaviorSubject, Subject, debounceTime } from 'rxjs';
 import {
-  PageContentBlock, PageContentItem
+  ContentPiece, PageContentBlock, PageContentItem, SectionColumn
 } from '@impact-common/shared/models/domain/page-content.model';
 import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
 import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types.enum';
@@ -15,7 +15,10 @@ import {
   EntryFields, EntrySpec, GIVING_DESTINATIONS, ICON_CHOICES, KindVariant, PageSectionKind,
   WEB_CONFIG_AMOUNTS, pluralise
 } from './page-section-catalogue';
-import { SECTION_SURFACES, SIGNUP_LISTS, SectionSurface } from '@impact-common/shared/lists/section_kit';
+import {
+  CONTENT_PIECES, ContentPieceKindKey, SECTION_ARCHETYPE, SECTION_SURFACES, SIGNUP_LISTS,
+  SectionSurface
+} from '@impact-common/shared/lists/section_kit';
 import { FormDefinitionModel } from '@impact-common/shared/models/domain/form-definition.model';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 
@@ -84,8 +87,8 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   @Output() cancelled = new EventEmitter<void>();
 
   isImageUploaderVisible$ = new BehaviorSubject<boolean>(false);
-  /** Which entry is picking a picture, or null for the section's own. */
-  private target: number | null = null;
+  /** Whatever is picking a picture - see showImageUploader. */
+  private target: { image?: ImageModel } | null = null;
   card: { image?: ImageModel } = {};
 
   private readonly edits = new Subject<void>();
@@ -562,19 +565,124 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     return String(index + 1).padStart(2, '0');
   }
 
+  // ------------------------------------------------------- the columns
+  //
+  // THE SECTION ARCHETYPE. One to three columns, each an ordered list of
+  // pieces - see content-piece.component for why a piece is its own thing.
+  // Everything here is absent on the fourteen archetypes, so they are
+  // untouched.
+
+  readonly pieceKinds = CONTENT_PIECES;
+
+  /** The same fixed palette a two-column block already had, one per column
+   *  instead of one per side. "None" is stored as absent, so a column that
+   *  never had an opinion does not start carrying one. */
+  readonly columnGrounds = [
+    { key: undefined, label: 'No box' },
+    { key: 'tint', label: 'Tinted box' },
+    { key: 'panel', label: 'Dark panel' }
+  ] as const;
+
+  get isColumnSection(): boolean {
+    return this.kind.type === SECTION_ARCHETYPE.SECTION;
+  }
+
+  get columns(): SectionColumn[] {
+    return this.section.columns ?? [];
+  }
+
+  piecesOf(column: SectionColumn): ContentPiece[] {
+    return column.pieces ?? [];
+  }
+
+  /**
+   * ADDING a column adds an empty one; REMOVING one is refused while it has
+   * anything in it.
+   *
+   * Dropping a column silently would take its pieces with it, and the pieces
+   * are the work. Staff empty it first, which is a deliberate act, or leave
+   * it - an empty column costs a little space and nothing else.
+   */
+  setColumnCount(count: number): void {
+    const current = this.columns;
+    if (count > current.length) {
+      const added: SectionColumn[] = [];
+      for (let i = 0; i < count - current.length; i++) {
+        added.push({ key: freshKey('col', this.takenKeys([...current, ...added])), pieces: [] });
+      }
+      this.section.columns = [...current, ...added];
+    } else if (count < current.length) {
+      const doomed = current.slice(count);
+      if (doomed.some((column) => this.piecesOf(column).length)) {
+        this.columnWarning = 'Empty the last column before removing it, '
+          + 'so nothing you wrote disappears with it.';
+        return;
+      }
+      this.section.columns = current.slice(0, count);
+    }
+    this.columnWarning = '';
+    this.edited();
+  }
+
+  /** Said out loud rather than silently refusing, which reads as a broken
+   *  control. Cleared by the next successful change. */
+  columnWarning = '';
+
+  /** Every key in this section - columns and pieces alike. Unique across the
+   *  whole section rather than within one column, so a piece keeps its key
+   *  if it is ever moved between columns. */
+  private takenKeys(columns: readonly SectionColumn[] = this.columns): Set<string> {
+    const taken = new Set<string>();
+    for (const column of columns) {
+      taken.add(column.key);
+      for (const piece of this.piecesOf(column)) {
+        taken.add(piece.key);
+      }
+    }
+    return taken;
+  }
+
+  addPiece(column: SectionColumn, kind: ContentPieceKindKey): void {
+    const seed: ContentPiece = { key: freshKey(kind, this.takenKeys()), kind, isActive: true };
+    // A heading defaults to a SECTION heading, never a page title: there is
+    // one page title per page and it is not the thing being added twelve
+    // times.
+    if (kind === 'heading') {
+      seed.level = 'section';
+    }
+    column.pieces = [...this.piecesOf(column), seed];
+    this.edited();
+  }
+
+  removePiece(column: SectionColumn, piece: ContentPiece): void {
+    column.pieces = this.piecesOf(column).filter((p) => p !== piece);
+    this.edited();
+  }
+
+  reorderPieces(column: SectionColumn, event: CdkDragDrop<SectionColumn>): void {
+    moveItemInArray(this.piecesOf(column), event.previousIndex, event.currentIndex);
+    this.edited();
+  }
+
   // --------------------------------------------------------- the uploader
 
-  showImageUploader(index: number | null = null): void {
-    this.target = index;
-    this.card.image = index === null ? this.section.image : this.entries[index]?.image;
+  /**
+   * WHICH object is picking a picture - the section, an entry, or a piece.
+   *
+   * It used to be an entry's numeric INDEX, with null meaning the section.
+   * That could not name a piece at all (it is in a column, which is in a
+   * list), and it silently retargeted if the entries were reordered while
+   * the picker was open. A reference to the object cannot do either.
+   */
+  showImageUploader(target: { image?: ImageModel } = this.section): void {
+    this.target = target;
+    this.card.image = target.image;
     this.isImageUploaderVisible$.next(true);
   }
 
   closeImageUploader(): void {
-    if (this.target === null) {
-      this.section.image = this.card.image;
-    } else if (this.entries[this.target]) {
-      this.entries[this.target].image = this.card.image;
+    if (this.target) {
+      this.target.image = this.card.image;
     }
     this.target = null;
     this.card.image = undefined;
@@ -599,6 +707,24 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     }
     this.save.emit(this.section);
   }
+}
+
+/**
+ * A key nothing else in this section uses.
+ *
+ * The same rule page-stack applies to sections, one level down and for the
+ * same reason: the lists are tracked BY KEY, and two rows sharing one behave
+ * as a single row - dragging one moves the other, deleting one deletes both.
+ */
+export function freshKey(prefix: string, taken: ReadonlySet<string>): string {
+  if (!taken.has(prefix)) {
+    return prefix;
+  }
+  let n = 2;
+  while (taken.has(`${prefix}-${n}`)) {
+    n++;
+  }
+  return `${prefix}-${n}`;
 }
 
 /**
