@@ -5,13 +5,19 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { environment } from 'src/environments/environment';
 
 /**
- * ONE original page, drawn both ways, side by side.
+ * ONE page, drawn both ways, side by side.
  *
- * LEFT: the live page, exactly as its bespoke component renders it today.
+ * LEFT: the page as it is now, drawn from the fourteen archetypes.
  * RIGHT: /kit-preview/<slug> - the same document flipped through
- * toKitBlocks() in memory and drawn by the section kit. The flip is the
- * migration's own transform, so what the right side shows is what approving
- * the migration would produce. Nothing on this screen changes anything.
+ * toSectionBlocks() in memory and drawn from the two members that replace
+ * them. The flip is the migration's own transform, so what the right side
+ * shows is what approving the migration would produce. Nothing on this
+ * screen changes anything.
+ *
+ * SECOND TIME OF ASKING. This component came through the first cutover -
+ * nine bespoke page components into fourteen archetypes - and was left in
+ * the tree when its route retired. Everything it learned then still holds,
+ * which is why only these words changed.
  *
  * TWO PLAIN IFRAMES, deliberately - not the postMessage-driven live
  * previewer. That component exists to swap unsaved edits into a frame; this

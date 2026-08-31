@@ -141,3 +141,47 @@ describe('the per-leaf page editor', () => {
     expect(navigated.length).withContext('stayed on an editor for a deleted page').toBe(1);
   });
 });
+
+/**
+ * THE COMPARISON, per page.
+ *
+ * The approval tool for the second migration: this page drawn from the
+ * fourteen archetypes on the left, and the same document flipped through
+ * toSectionBlocks() on the right, from the transform the cutover will run.
+ */
+describe('comparing a page with what it would become', () => {
+  it('starts on the editor, never on the comparison', () => {
+    const { component } = build();
+    expect(component.comparing).toBe(false);
+  });
+
+  it('goes back to the editor when a different page is opened', () => {
+    // Arriving at Seminars mid-comparison of About Us is baffling, and it is
+    // the thing a boolean on a reused component instance gets wrong: the
+    // leaf clicks are same-route navigations, so this instance survives them.
+    const { component } = build();
+    component.comparing = true;
+
+    component.slug = 'another-page';
+    component.ngOnChanges();
+
+    expect(component.comparing).toBe(false);
+  });
+
+  it('frames the page at its real public address', () => {
+    const { component } = build();
+    component.slug = 'mens-retreat';
+
+    expect(component.publicPath).toBe('/mens-retreat');
+  });
+
+  it('frames HOME at the site root, not at /home', () => {
+    // The dynamic route deliberately refuses 'home' so it cannot become a
+    // second copy of the front page. Comparing it at /home would frame Not
+    // Found beside the preview and read as the migration losing the page.
+    const { component } = build();
+    component.slug = 'home';
+
+    expect(component.publicPath).toBe('/');
+  });
+});

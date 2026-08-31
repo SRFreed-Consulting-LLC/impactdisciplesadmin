@@ -109,3 +109,10 @@
     align-items: flex-start;
   }
 }
+
+/* The Compare action sits with the page's other header controls rather than
+   on a banner - the banner it used to live on belonged to the "original
+   page" distinction, which retired when the last of them migrated. */
+.kp__compare {
+  white-space: nowrap;
+}
