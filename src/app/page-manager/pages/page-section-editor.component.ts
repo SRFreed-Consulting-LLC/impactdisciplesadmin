@@ -412,7 +412,9 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
    *  share means anything. */
   get hasSplitMedia(): boolean {
     return !!this.fields.video
-      || (this.kind.type === 'copyMedia' || this.kind.type === 'heroSplit');
+      || this.kind.type === 'copyMedia'
+      // The hero's beside-a-picture look has a side too.
+      || (this.kind.type === 'heroBand' && this.section.variant === 'besidePicture');
   }
 
   /** A stacked section, where "which side" has no meaning but "which first"

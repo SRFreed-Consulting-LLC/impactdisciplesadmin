@@ -161,7 +161,7 @@
         "name": "Home/home-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fhome-header.jpg?alt=media&token=4a6de836-e6fc-4c12-9e2a-e8c063ffdcc3"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo",
       "items": [
         {
@@ -233,7 +233,7 @@
         "name": "Home/20240126-AS3A2169",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2F20240126-AS3A2169.jpg?alt=media&token=a2ae3fd2-9706-4e55-9ee0-56a90c097719"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo",
       "items": [
         {
@@ -339,7 +339,7 @@
         "name": "Home/20210129-IMG_0151-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2F20210129-IMG_0151-2.jpg?alt=media&token=d1ae9d34-5eef-432d-9f11-f6269404a2cf"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo",
       "items": [
         {
@@ -435,7 +435,7 @@
         "name": "Home/home-header-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fhome-header-2.PNG?alt=media&token=9f2866c3-5b8c-4cdc-9604-573c276fd7f9"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo",
       "items": [
         {
@@ -548,7 +548,7 @@
         "name": "Headers/seminars-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fseminars-header.PNG?alt=media&token=a3d6bae8-00d0-43d3-ae8e-8ab356ce1cfc"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo",
       "items": [
         {
@@ -684,7 +684,7 @@
         "name": "Headers/lunchlearn-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Flunchlearn-header.png?alt=media&token=557bdabf-9daa-4475-80a6-a9f6410d4d74"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo",
       "items": [
         {
@@ -733,7 +733,7 @@
         "name": "Headers/give-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fgive-header.PNG?alt=media&token=ae05b066-c061-4991-ba0d-189f37607431"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo"
     },
     {
@@ -816,7 +816,7 @@
   "discipleship-library": [
     {
       "key": "hero",
-      "type": "heroSplit",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "The Impact Discipleship Library",
       "heading": "Your discipleship library,<br>in your pocket.",
@@ -826,7 +826,7 @@
         "name": "A lesson open in the Impact Discipleship Library",
         "url": "assets/reader/hero-lesson.jpg"
       },
-      "variant": "standard",
+      "variant": "besidePicture",
       "surface": "dark",
       "items": [
         {
@@ -964,7 +964,7 @@
           "isActive": true
         }
       ],
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo"
     },
     {
@@ -989,7 +989,7 @@
         "name": "Coaching-With-Impact/Untitled-design-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FUntitled-design-1.png?alt=media&token=9a0407b8-074e-4cac-b3e9-c5ab1e1ced18"
       },
-      "variant": "buttonList",
+      "variant": "overPhoto",
       "surface": "photo"
     },
     {
