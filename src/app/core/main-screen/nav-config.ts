@@ -319,7 +319,10 @@ export const NAV_CONFIG: NavGroup[] = [
       // (formerly the standalone 'Home Page Images' screen); the services
       // strip and testimonials are expected to follow, which is why this is
       // a section stack rather than a renamed list.
-      { label: 'Home', slug: 'home' },
+      // Home is a KIT PAGE since 2026-08-31 - page_content/home - so it
+      // streams into this group from Firestore with every other page,
+      // pinned first by SitePagesNavService. A static leaf here as well
+      // would show it twice.
       // Disciple Making Minute moved to DATA on 2026-08-31 - see that group.
       // Moved from Tools Manager 2026-08-19 alongside the Web Manager ->
       // Content Manager rename: the public site's configuration belongs

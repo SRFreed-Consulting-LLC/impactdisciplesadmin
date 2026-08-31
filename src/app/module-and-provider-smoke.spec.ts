@@ -69,7 +69,6 @@ import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { FolderPickerDialogComponent } from 'src/app/shared/image-uploader/folder-picker-dialog.component';
 import { FormTestSubmitDialogComponent } from 'src/app/data-manager/form-builder/form-test-submit-dialog.component';
 import { getLibraryLanguageOptions } from 'src/app/common/services/data/library/library-language-options.util';
-import { HomePageImageDialogComponent } from 'src/app/page-manager/home-page-images/home-page-image-dialog.component';
 import { ImageUploaderModule } from 'src/app/shared/image-uploader/image-uploader.module';
 import { IMPACT_APPLICATIONS } from 'src/app/common/lists/impact_applications.enum';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
@@ -271,7 +270,6 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'FolderPickerDialogComponent', value: FolderPickerDialogComponent },
   { name: 'FormTestSubmitDialogComponent', value: FormTestSubmitDialogComponent },
   { name: 'getLibraryLanguageOptions', value: getLibraryLanguageOptions },
-  { name: 'HomePageImageDialogComponent', value: HomePageImageDialogComponent },
   { name: 'ImageUploaderModule', value: ImageUploaderModule },
   { name: 'IMPACT_APPLICATIONS', value: IMPACT_APPLICATIONS },
   { name: 'ImpactDisciplesCommonModule', value: ImpactDisciplesCommonModule },

@@ -34,7 +34,16 @@ export class SitePagesNavService {
     map((pages) => (pages ?? [])
       .filter((page) => isKitPage(page) && !!page.id)
       .map((page) => ({ label: page.title ?? page.id ?? '', slug: page.id ?? '' }))
-      .sort((a, b) => a.label.localeCompare(b.label))
+      // HOME FIRST, then alphabetical. It became an ordinary kit page on
+      // 2026-08-31 and would otherwise sort between Give and Lunch and
+      // Learns - the site's front page, and the most-edited screen here,
+      // buried in the middle of the list.
+      .sort((a, b) => {
+        if (a.slug === 'home' || b.slug === 'home') {
+          return a.slug === 'home' ? -1 : 1;
+        }
+        return a.label.localeCompare(b.label);
+      })
     ),
     // One Firestore listener however many consumers - the drawer and the
     // Page Manager shell both subscribe, and each nav render must not open

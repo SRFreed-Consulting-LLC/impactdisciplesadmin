@@ -73,8 +73,6 @@ import { FormRendererFieldComponent } from 'src/app/shared/form-renderer/form-re
 import { FormTestSubmitDialogComponent } from 'src/app/data-manager/form-builder/form-test-submit-dialog.component';
 import { FulfillmentComponent } from 'src/app/contacts-manager/fulfillment/fulfillment.component';
 import { GlobalStylesPanelComponent } from 'src/app/tools-manager/email-designer/side-panel/global-styles-panel.component';
-import { HomePageImageDialogComponent } from 'src/app/page-manager/home-page-images/home-page-image-dialog.component';
-import { HomePageImagesComponent } from 'src/app/page-manager/home-page-images/home-page-images.component';
 import { ImportBookDialogComponent } from 'src/app/library-manager/dialogs/import-book-dialog.component';
 import { IndicatorButtonComponent } from 'src/app/shared/indicator-button/indicator-button.component';
 import { InlineTextEditorComponent } from 'src/app/tools-manager/email-designer/inline-editor/inline-text-editor.component';
@@ -274,8 +272,6 @@ const CONSTRUCTIBLE: ComponentRow[] = [
   { name: 'FormRendererFieldComponent', type: FormRendererFieldComponent },
   { name: 'FormTestSubmitDialogComponent', type: FormTestSubmitDialogComponent },
   { name: 'FulfillmentComponent', type: FulfillmentComponent },
-  { name: 'HomePageImageDialogComponent', type: HomePageImageDialogComponent },
-  { name: 'HomePageImagesComponent', type: HomePageImagesComponent },
   { name: 'ImportBookDialogComponent', type: ImportBookDialogComponent },
   { name: 'IndicatorButtonComponent', type: IndicatorButtonComponent },
   { name: 'LessonEditorComponent', type: LessonEditorComponent },

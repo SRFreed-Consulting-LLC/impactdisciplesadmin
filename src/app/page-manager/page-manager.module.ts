@@ -6,10 +6,6 @@ import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.comm
 import { PageManagerComponent } from './page-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { provideHttpClient } from '@angular/common/http';
-// The Home SCREEN (the section stack); HomePageImagesComponent is the slider
-// SECTION inside it - see home.component.ts.
-import { HomeComponent } from './home/home.component';
-import { HomeSectionEditorComponent } from './home/home-section-editor.component';
 // EVERY public page is one screen: an ordered stack of sections, a FULL-SCREEN
 // editor per section, and the real page in a frame beside it. Which sections a
 // page can have is declared in pages/page-section-catalogue.ts, so adding a
@@ -30,8 +26,6 @@ import { KitPageEditorComponent } from './pages/kit-page-editor.component';
 import { KitCompareComponent } from './pages/kit-compare.component';
 import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
-import { HomePageImagesComponent } from './home-page-images/home-page-images.component';
-import { HomePageImageDialogComponent } from './home-page-images/home-page-image-dialog.component';
 // Moved here from Tools Manager 2026-08-19 with the Web Manager -> Content
 // Manager rename - public-site configuration lives with public-site content.
 import { WebConfigComponent } from './web-config/web-config.component';
@@ -102,16 +96,12 @@ import { QuillModule } from 'ngx-quill';
   ],
   declarations: [
     PageManagerComponent,
-    HomeComponent,
-    HomeSectionEditorComponent,
     PageStackComponent,
     PageSectionEditorComponent,
     NewPageDialogComponent,
     KitPageEditorComponent,
     KitCompareComponent,
     DestinationFieldComponent,
-    HomePageImagesComponent,
-    HomePageImageDialogComponent,
     WebConfigComponent,
     DockingBarComponent
   ],
