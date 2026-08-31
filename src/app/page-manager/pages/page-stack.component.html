@@ -76,29 +76,15 @@
         </p>
       </div>
 
-      <button mat-flat-button color="primary"
-              [matMenuTriggerFor]="addMenu"
+      <!-- The raw archetypes, behind a menu. They are what the presets are
+           MADE of, and while the fourteen are still being retired somebody
+           occasionally needs one - but a bar of twenty-eight is not a bar,
+           it is a wall. -->
+      <button mat-stroked-button type="button" [matMenuTriggerFor]="moreMenu"
               [disabled]="!canEdit() || loadFailed || !addableKinds.length">
-        <mat-icon>add</mat-icon> Add section
+        More&hellip;
       </button>
-      <mat-menu #addMenu="matMenu">
-        <!-- PRESETS FIRST, and they are what the old archetype names were.
-             A freeform builder makes every arrangement equally easy,
-             including three page titles and a wall of unstyled text - so the
-             menu still reads "Hero", "Text with a video", "Call to action",
-             each placing a Section with its columns, pieces and measured
-             styling already set. A preset is a STARTING POINT, not a type:
-             once placed it is an ordinary Section. -->
-        @if (addablePresets.length) {
-          @for (preset of addablePresets; track preset.key) {
-            <button mat-menu-item type="button" (click)="addPreset(preset)">
-              <mat-icon>{{ preset.icon }}</mat-icon>
-              <span class="ps__menu-label">{{ preset.label }}</span>
-              <span class="ps__menu-blurb">{{ preset.blurb }}</span>
-            </button>
-          }
-          <mat-divider></mat-divider>
-        }
+      <mat-menu #moreMenu="matMenu">
         @for (kind of addableKinds; track kind.type) {
           <button mat-menu-item type="button" (click)="add(kind)">
             <mat-icon>{{ kind.icon }}</mat-icon>
@@ -106,8 +92,7 @@
             <span class="ps__menu-blurb">{{ kind.blurb }}</span>
           </button>
         }
-      </mat-menu>
-    </header>
+      </mat-menu>    </header>
 
     @if (loadFailed) {
       <div class="ps__failed" role="alert">
@@ -121,7 +106,45 @@
       <p class="ps__loading">Loading the page&hellip;</p>
     }
 
-    <div cdkDropList class="ps__stack" (cdkDropListDropped)="reorder($event)">
+    <!-- SECTIONS, ACROSS THE TOP rather than behind a button. Drag one down
+         into the page at the position you want it; every section in the
+         list is the same short drag away, including the last.
+
+         A BAR rather than a rail, unlike the piece palette one level down:
+         this list is dropped into a single COLUMN of sections, so there is
+         no left-or-right to be near - only up and down, which a bar across
+         the top serves and a rail does not.
+
+         These are the PRESETS: ready-made arrangements that place a Section
+         already carrying its columns, pieces and measured styling. The raw
+         archetypes live behind "More" in the header. -->
+    @if (addablePresets.length) {
+      <div cdkDropList id="section-palette" class="ps__palette"
+           [cdkDropListData]="addablePresets"
+           cdkDropListConnectedTo="page-stack"
+           cdkDropListSortingDisabled>
+        @for (preset of addablePresets; track preset.key) {
+          <button type="button" class="ps__chip" cdkDrag
+                  [cdkDragData]="preset"
+                  [disabled]="!canEdit() || loadFailed"
+                  (click)="addPreset(preset)"
+                  [matTooltip]="preset.blurb
+                    + '. Drag into the page, or click to add it at the end.'">
+            <mat-icon>{{ preset.icon }}</mat-icon>
+            <span>{{ preset.label }}</span>
+            <div class="ps__chip-drag" *cdkDragPreview>
+              <mat-icon>{{ preset.icon }}</mat-icon>
+              <span>{{ preset.label }}</span>
+            </div>
+          </button>
+        }
+      </div>
+    }
+    <!-- Takes a reorder from within itself, and a NEW section dropped from
+         the bar above. Which one it was is worked out in the handler. -->
+    <div cdkDropList id="page-stack" class="ps__stack"
+         [cdkDropListData]="sections"
+         (cdkDropListDropped)="dropIntoStack($event)">
       @for (section of sections; track section.key) {
         <!-- DOUBLE-CLICK THE ROW TO EDIT IT (Shane, 2026-08-31). The edit
              button is gone: the row itself is the thing you want to open,

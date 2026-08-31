@@ -389,3 +389,93 @@
   font-size: 0.8rem;
   white-space: nowrap;
 }
+
+/* -------------------------------------------------- the section palette */
+
+/* ACROSS THE TOP rather than down the side, unlike the piece palette one
+   level down. Sections are dropped into a single COLUMN, so there is no
+   left-or-right to be near - only up and down, which a bar serves and a rail
+   does not. Sticky, so the last section on a long page is the same short
+   drag away as the first. */
+.ps__palette {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-card);
+}
+
+.ps__chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-control);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  /* grab, not pointer: it says "drag me" before anybody tries clicking. */
+  cursor: grab;
+}
+
+.ps__chip:hover:not(:disabled),
+.ps__chip:focus-visible {
+  border-color: var(--app-accent);
+}
+
+.ps__chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ps__chip mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--app-accent);
+  flex: 0 0 auto;
+}
+
+/* What follows the cursor - shaped like the thing being made rather than the
+   button it was dragged from. */
+.ps__chip-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  background: var(--app-card);
+  border: 1px solid var(--app-accent);
+  border-radius: var(--app-radius-control);
+  color: var(--app-ink);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.ps__chip-drag mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--app-accent);
+}
+
+/* Where it will land. Without this, dropping into a page is a guess. */
+.ps__stack.cdk-drop-list-receiving {
+  outline: 2px dashed var(--app-accent);
+  outline-offset: 6px;
+  border-radius: var(--app-radius-card);
+}
+
+/* An EMPTY page still has to be a target you can see and hit. */
+.ps__stack {
+  min-height: 72px;
+}

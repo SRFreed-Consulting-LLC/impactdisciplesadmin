@@ -81,7 +81,10 @@ describe('PageStackComponent', () => {
     const c = build();
     await c.ngOnChanges();
 
-    await c.reorder({ previousIndex: 2, currentIndex: 0 } as never);
+    await c.dropIntoStack({
+      previousContainer: { id: 'page-stack' }, container: { id: 'page-stack' },
+      item: { data: undefined }, previousIndex: 2, currentIndex: 0
+    } as never);
 
     expect(saved.length).toBe(1);
     expect(saved[0].map((s) => s.key)).toEqual(['prices', 'pageHeader', 'overview']);
@@ -92,7 +95,10 @@ describe('PageStackComponent', () => {
     const c = build();
     await c.ngOnChanges();
 
-    await c.reorder({ previousIndex: 1, currentIndex: 1 } as never);
+    await c.dropIntoStack({
+      previousContainer: { id: 'page-stack' }, container: { id: 'page-stack' },
+      item: { data: undefined }, previousIndex: 1, currentIndex: 1
+    } as never);
 
     expect(saved.length).toBe(0);
   });
@@ -104,7 +110,10 @@ describe('PageStackComponent', () => {
     c.loadFailed = true;
     c.sections = [...loaded];
 
-    await c.reorder({ previousIndex: 0, currentIndex: 2 } as never);
+    await c.dropIntoStack({
+      previousContainer: { id: 'page-stack' }, container: { id: 'page-stack' },
+      item: { data: undefined }, previousIndex: 0, currentIndex: 2
+    } as never);
     await c.toggleLive(c.sections[0]);
     await c.remove(c.sections[0]);
 
@@ -476,5 +485,137 @@ describe('opening a section by double-clicking its row', () => {
     component.editFromRow(section, clickOn(grip));
 
     expect(component.editing).toBeNull();
+  });
+});
+
+/**
+ * THE SECTION BAR, and the two things a drop into the page can mean.
+ *
+ * Same shape as the piece palette one level down, and the same silent
+ * failures: a section that lands at the end instead of where it was dropped,
+ * or a reorder mistaken for a new section.
+ */
+describe('dropping a section into the page', () => {
+  let saved: PageContentBlock[][];
+
+  const build = (): PageStackComponent => {
+    saved = [];
+    TestBed.configureTestingModule({
+      providers: [
+        PageStackComponent,
+        {
+          provide: PageContentService,
+          useValue: {
+            getById: () => Promise.resolve({ blocks: [] }),
+            updateFields: (_slug: string, partial: { blocks: PageContentBlock[] }) => {
+              saved.push(partial.blocks.map((b) => ({ ...b })));
+              return Promise.resolve();
+            }
+          }
+        },
+        { provide: PermissionService, useValue: { canEdit: () => true, canDelete: () => true } },
+        { provide: MatDialog, useValue: dialogStub },
+        { provide: ConfirmService, useValue: { confirm: () => Promise.resolve(true) } },
+        { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined } }
+      ]
+    });
+    const component = TestBed.inject(PageStackComponent);
+    component.page = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never);
+    component.loadFailed = false;
+    component.sections = [
+      { key: 'a', type: SECTION_ARCHETYPE.SECTION, variant: 'columns' },
+      { key: 'b', type: SECTION_ARCHETYPE.SECTION, variant: 'columns' }
+    ];
+    return component;
+  };
+
+  const hero = () => SECTION_PRESETS.find((p) => p.key === 'hero')!;
+
+  const drop = (fromId: string, previousIndex: number, currentIndex: number, data?: unknown) => ({
+    previousContainer: { id: fromId },
+    container: { id: 'page-stack' },
+    item: { data },
+    previousIndex,
+    currentIndex
+  }) as never;
+
+  it('places a dragged section AT the position it was dropped', () => {
+    // The whole reason for a bar over a button: the button could only append,
+    // so every section then had to be dragged into place anyway.
+    const component = build();
+
+    return component.dropIntoStack(drop('section-palette', 0, 1, hero())).then(() => {
+      expect(component.sections.map((s) => s.key)).toEqual(['a', 'hero', 'b']);
+    });
+  });
+
+  it('places one dropped at the very top', () => {
+    const component = build();
+
+    return component.dropIntoStack(drop('section-palette', 0, 0, hero())).then(() => {
+      expect(component.sections[0].key).toBe('hero');
+    });
+  });
+
+  it('does NOT open the editor on a drop', () => {
+    // Dragging is how you lay a page out. Being thrown into an editor after
+    // every drop turns laying three sections out into three round trips.
+    const component = build();
+
+    return component.dropIntoStack(drop('section-palette', 0, 1, hero())).then(() => {
+      expect(component.editing)
+        .withContext('the drop opened the editor and interrupted the layout')
+        .toBeNull();
+    });
+  });
+
+  it('DOES open the editor on a click, as the Add button always did', () => {
+    const component = build();
+
+    return component.addPreset(hero()).then(() => {
+      expect(component.editing).not.toBeNull();
+      // Appended, because a click has no position to mean.
+      expect(component.sections[component.sections.length - 1].key).toBe('hero');
+    });
+  });
+
+  it('reorders when the drag started inside the page', () => {
+    const component = build();
+
+    return component.dropIntoStack(drop('page-stack', 1, 0)).then(() => {
+      expect(component.sections.map((s) => s.key)).toEqual(['b', 'a']);
+    });
+  });
+
+  it('writes the page after a drop, not only the screen', () => {
+    const component = build();
+
+    return component.dropIntoStack(drop('section-palette', 0, 0, hero())).then(() => {
+      expect(saved.length).toBe(1);
+      expect(saved[0][0].key).toBe('hero');
+    });
+  });
+
+  it('refuses every drop on a page whose load failed', () => {
+    // Saving over content the screen never read is how a page gets silently
+    // emptied, and these documents are the only copy of the words.
+    const component = build();
+    component.loadFailed = true;
+
+    return component.dropIntoStack(drop('section-palette', 0, 0, hero())).then(() => {
+      expect(component.sections.length).toBe(2);
+      expect(saved.length).toBe(0);
+    });
+  });
+
+  it('survives a drop index past the end of the page', () => {
+    // The index comes from the CDK. An out-of-range splice appends silently,
+    // which looks like the drop having been ignored.
+    const component = build();
+
+    return component.dropIntoStack(drop('section-palette', 0, 99, hero())).then(() => {
+      expect(component.sections.length).toBe(3);
+      expect(component.sections[2].key).toBe('hero');
+    });
   });
 });

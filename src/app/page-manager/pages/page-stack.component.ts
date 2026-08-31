@@ -153,8 +153,25 @@ export class PageStackComponent implements OnChanges {
 
   // ------------------------------------------------------------------ order
 
-  async reorder(event: CdkDragDrop<PageContentBlock[]>): Promise<void> {
-    if (!this.canEdit() || this.loadFailed || event.previousIndex === event.currentIndex) {
+  /**
+   * TWO DROPS, told apart by where the drag started: a reorder of the page,
+   * or a new section dragged down out of the bar.
+   *
+   * A DROPPED SECTION DOES NOT OPEN. Clicking one still does, because that
+   * is what the Add button always did and there is nowhere else the click
+   * could mean - but dragging is how you LAY A PAGE OUT, and being thrown
+   * into an editor after every drop makes laying three sections out into
+   * three round trips.
+   */
+  async dropIntoStack(event: CdkDragDrop<PageContentBlock[]>): Promise<void> {
+    if (!this.canEdit() || this.loadFailed) {
+      return;
+    }
+    if (event.previousContainer.id === 'section-palette') {
+      await this.placePreset(event.item.data as SectionPreset, event.currentIndex, false);
+      return;
+    }
+    if (event.previousIndex === event.currentIndex) {
       return;
     }
     moveItemInArray(this.sections, event.previousIndex, event.currentIndex);
@@ -200,8 +217,25 @@ export class PageStackComponent implements OnChanges {
    * same preset on one page would otherwise share them - and a list tracked
    * by key treats two rows with one key as a single row.
    */
+  /** The CLICK path, and the only one a keyboard can take: appended to the
+   *  end and opened, exactly as the Add button behaved. */
   async addPreset(preset: SectionPreset): Promise<void> {
-    if (!this.canEdit() || this.loadFailed) {
+    await this.placePreset(preset, this.sections.length, true);
+  }
+
+  /**
+   * Place a preset: an ordinary Section that arrives already arranged.
+   *
+   * The seed is plain data (see SectionPreset) so what a preset places can
+   * be read in a review rather than traced through a builder function.
+   * Keys are minted HERE rather than stored on the preset, because two of
+   * the same preset on one page would otherwise share them - and a list
+   * tracked by key treats two rows with one key as a single row.
+   */
+  private async placePreset(
+    preset: SectionPreset, at: number, thenEdit: boolean
+  ): Promise<void> {
+    if (!this.canEdit() || this.loadFailed || !preset) {
       return;
     }
     const section: PageContentBlock = {
@@ -220,10 +254,17 @@ export class PageStackComponent implements OnChanges {
         }))
       }))
     };
-    this.sections = [...this.sections, section];
+    // Clamped: a drop index comes from the CDK and an out-of-range splice
+    // would silently append instead of landing where it was dropped.
+    const next = [...this.sections];
+    next.splice(Math.max(0, Math.min(at, next.length)), 0, section);
+    this.sections = next;
     await this.persist(`${preset.label} added - switch it on when it is ready`);
-    this.edit(section);
+    if (thenEdit) {
+      this.edit(section);
+    }
   }
+
 
   async add(kind: PageSectionKind): Promise<void> {
     if (!this.canEdit() || this.loadFailed) {
