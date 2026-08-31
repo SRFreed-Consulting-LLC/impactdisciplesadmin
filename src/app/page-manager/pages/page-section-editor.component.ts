@@ -642,6 +642,25 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     return taken;
   }
 
+  // Stored as ABSENT rather than false, so a column that never had an
+  // opinion does not start carrying one - the same rule the section's own
+  // levers follow.
+
+  setColumnAlign(column: SectionColumn, centred: boolean): void {
+    column.align = centred ? 'centre' : undefined;
+    this.edited();
+  }
+
+  setColumnMeasure(column: SectionColumn, held: boolean): void {
+    column.measure = held || undefined;
+    this.edited();
+  }
+
+  setColumnFull(column: SectionColumn, full: boolean): void {
+    column.full = full || undefined;
+    this.edited();
+  }
+
   addPiece(column: SectionColumn, kind: ContentPieceKindKey): void {
     const seed: ContentPiece = { key: freshKey(kind, this.takenKeys()), kind, isActive: true };
     // A heading defaults to a SECTION heading, never a page title: there is

@@ -470,3 +470,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.psd__col-look {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+}

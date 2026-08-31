@@ -510,6 +510,31 @@
               </mat-form-field>
             </div>
 
+            <!-- The two things that used to make a whole ARCHETYPE. Centred
+                 text was the entire difference of the centred band, and
+                 holding the words to a readable width is what every
+                 single-column band on the site does. -->
+            <div class="psd__col-look">
+              <mat-slide-toggle [checked]="column.align === 'centre'"
+                                (change)="setColumnAlign(column, $event.checked)">
+                Centred
+              </mat-slide-toggle>
+              <mat-slide-toggle [checked]="column.measure === true"
+                                (change)="setColumnMeasure(column, $event.checked)"
+                                matTooltip="Holds the words to a comfortable
+                                            reading width instead of letting
+                                            them run the whole way across">
+                Hold the width
+              </mat-slide-toggle>
+              <mat-slide-toggle [checked]="column.full === true"
+                                (change)="setColumnFull(column, $event.checked)"
+                                matTooltip="Spans the whole row rather than
+                                            taking a share of it - what a
+                                            heading above the columns does">
+                Full width
+              </mat-slide-toggle>
+            </div>
+
             <div cdkDropList class="psd__piece-list"
                  [cdkDropListData]="column"
                  (cdkDropListDropped)="reorderPieces(column, $event)">
