@@ -415,6 +415,38 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
       || (this.kind.type === 'copyMedia' || this.kind.type === 'heroSplit');
   }
 
+  /** A stacked section, where "which side" has no meaning but "which first"
+   *  does. */
+  get isCentred(): boolean {
+    return this.kind.type === 'copyCentred';
+  }
+
+  /**
+   * WHICH SIDE the picture sits on.
+   *
+   * 'auto' is not a third position - it is "leave it to the look", which for
+   * the alternating archetypes means the side still flips down the page. It
+   * has to stay available, or a section that was deliberately alternating
+   * could never be put back.
+   */
+  readonly mediaSides = [
+    { key: 'auto', label: 'As the page decides' },
+    { key: 'left', label: 'Picture left' },
+    { key: 'right', label: 'Picture right' }
+  ] as const;
+
+  pickMediaSide(value: 'auto' | 'left' | 'right'): void {
+    // Stored as absent rather than 'auto', so a section that never had an
+    // opinion does not start carrying one.
+    this.section.mediaSide = value === 'auto' ? undefined : value;
+    this.edits.next();
+  }
+
+  pickStackOrder(value: 'heading' | 'text'): void {
+    this.section.textFirst = value === 'text' ? true : undefined;
+    this.edits.next();
+  }
+
   pickCopyTone(value: 'soft' | 'dark'): void {
     this.section.copyTone = value;
     this.edits.next();

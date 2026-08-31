@@ -5,45 +5,60 @@
       "type": "copyMedia",
       "isActive": true,
       "heading": "OUR STORY BEGAN WITH A <strong>NEED</strong>",
-      "ctaTitle": "READ MORE",
-      "ctaUrl": "#history",
       "image": {
         "name": "Home/story-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-1.PNG?alt=media&token=c1daf9a0-35db-4a1e-b502-71d23c701762"
       },
       "body": "<p>When Ken Adams began pastoring Crossroads Church in 1989, he envisioned that church becoming a part of the mission and movement of Jesus by making and multiplying disciples. The church needed a curriculum that would drive the goals and strategy its leadership had established, but there was a problem…</p>",
       "variant": "image",
-      "surface": "light"
+      "surface": "light",
+      "items": [
+        {
+          "title": "READ MORE",
+          "link": "#history",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "story-2",
       "type": "copyMedia",
       "isActive": true,
       "heading": "MORE ABOUT <strong>OUR MINISTRY</strong>",
-      "ctaTitle": "READ MORE",
-      "ctaUrl": "#history",
       "image": {
         "name": "Home/story-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-2.jpg?alt=media&token=35028e2e-f4fe-40ca-8d92-042b2cda016d"
       },
       "body": "<p>Did you know that we have Disciple-Making Churches and pastors all over the world in our disciple making network? We’d love to connect you to other ministry partners pursuing the same goals with the same passion and dedication as you.</p>",
       "variant": "image",
-      "surface": "light"
+      "surface": "light",
+      "items": [
+        {
+          "title": "READ MORE",
+          "link": "#history",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "story-3",
       "type": "copyMedia",
       "isActive": true,
       "heading": "WHY CHOOSE <strong>US</strong>",
-      "ctaTitle": "READ MORE",
-      "ctaUrl": "#history",
       "image": {
         "name": "Home/story-3",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-3.jpg?alt=media&token=4a367383-4b7e-4a9a-a696-934086475cd0"
       },
       "body": "<p>Jesus spent time one-on-one with His disciples, but then He took them out into the wide world to apply what they had learned with Him in a small group setting. Our director began his ministry based on Jesus’ strategy using Jesus’ methods in the early 1990s and has continued refining those efforts to the present day.</p>",
       "variant": "image",
-      "surface": "light"
+      "surface": "light",
+      "items": [
+        {
+          "title": "READ MORE",
+          "link": "#history",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "history",
@@ -806,7 +821,6 @@
       "subheading": "The Impact Discipleship Library",
       "heading": "Your discipleship library,<br>in your pocket.",
       "body": "<p>\n  Read every title, work through the lessons at your own pace, and walk through\n  them together with your Impact Group — on any phone, with nothing to install.\n</p>",
-      "ctaTitle": "Open the Library",
       "note": "Free to join — anyone can sign up.",
       "image": {
         "name": "A lesson open in the Impact Discipleship Library",
@@ -814,7 +828,13 @@
       },
       "variant": "standard",
       "surface": "dark",
-      "ctaUrl": "reader"
+      "items": [
+        {
+          "title": "Open the Library",
+          "link": "reader",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "features",
@@ -908,10 +928,15 @@
       "isActive": true,
       "heading": "Start reading today.",
       "body": "<p>\n  Anyone can sign up. Open it in your browser, sign in, and your shelf is waiting.\n</p>",
-      "ctaTitle": "Open the Library",
-      "variant": "withButtons",
+      "variant": "plain",
       "surface": "tinted",
-      "ctaUrl": "reader"
+      "items": [
+        {
+          "title": "Open the Library",
+          "link": "reader",
+          "isActive": true
+        }
+      ]
     }
   ],
   "prayer-team": [
@@ -973,12 +998,20 @@
       "isActive": true,
       "heading": "Step onto your <strong>&ldquo;field&rdquo;</strong> of influence with <strong>purpose</strong> and <strong>impact</strong>.",
       "body": "<p>Through a clear biblical framework, <b>Coaching With Impact</b> empowers coaches to embrace their role as disciple-makers, guiding them to develop both personally and professionally. Join us on this transformative journey as we equip coaches to lead with authenticity, intentionality, and lasting impact.</p>\n<p>Drawing from his experiences as a former Professional Baseball player and Major League Baseball scout, <a href=\"/team-details/AP4yP449P3iI7L0PsOVp\"><b>Kevin Burrell</b></a> has partnered with <b>Ken Adams</b>, Impact Discipleship Ministries&rsquo; founder and director, in inviting coaches of all levels to rediscover the essence of Jesus Christ&rsquo;s final command &ndash; the &lsquo;Great Commission.&rsquo;</p>",
-      "ctaTitle": "BUY THE BOOK",
-      "ctaUrl": "/product-details/rySK3NIIjWwWuBLTpxPc",
-      "ctaTitle2": "REQUEST A COACHING CONSULTATION",
-      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/pl/2148229316",
-      "variant": "withButtons",
-      "surface": "light"
+      "variant": "plain",
+      "surface": "light",
+      "items": [
+        {
+          "title": "BUY THE BOOK",
+          "link": "/product-details/rySK3NIIjWwWuBLTpxPc",
+          "isActive": true
+        },
+        {
+          "title": "REQUEST A COACHING CONSULTATION",
+          "link": "https://impact-discipleship-ministries.mykajabi.com/pl/2148229316",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "quotes",
@@ -1007,10 +1040,15 @@
       },
       "videoId": "krHPH7SoQwU",
       "videoUrl": "https://www.youtube.com/watch?v=krHPH7SoQwU",
-      "ctaTitle": "CONNECT WITH KEVIN",
-      "ctaUrl": "/team-details/AP4yP449P3iI7L0PsOVp",
       "variant": "mediaBelow",
-      "surface": "light"
+      "surface": "light",
+      "items": [
+        {
+          "title": "CONNECT WITH KEVIN",
+          "link": "/team-details/AP4yP449P3iI7L0PsOVp",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "resources",
@@ -1106,10 +1144,15 @@
       "isActive": true,
       "heading": "Have other questions?",
       "body": "<p>Get in contact with us and let us know how we can support you.</p>",
-      "ctaTitle": "CONTACT",
-      "ctaUrl": "/contact",
-      "variant": "withButtons",
-      "surface": "tinted"
+      "variant": "plain",
+      "surface": "tinted",
+      "items": [
+        {
+          "title": "CONTACT",
+          "link": "/contact",
+          "isActive": true
+        }
+      ]
     }
   ]
 }

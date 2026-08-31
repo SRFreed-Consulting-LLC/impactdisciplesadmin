@@ -35,22 +35,6 @@ import { EditablePage, EntrySpec, KindVariant, PageSectionKind } from './page-se
 
 /** What one entry is, per list variant. Keyed `archetype/variant`. */
 const ENTRY_SPECS: Record<string, EntrySpec> = {
-  'heroBand/buttonList': {
-    noun: 'button',
-    note: 'Buttons are entries rather than two fixed slots, so you can add a third, '
-      + 'reorder them, or give one an icon.',
-    fields: { title: true, link: true, icon: true },
-    titleLabel: 'Button text',
-    linkLabel: 'Goes to'
-  },
-  'copyMedia/buttonList': {
-    noun: 'button',
-    note: 'Buttons are entries rather than fixed slots, so you can add a third, '
-      + 'reorder them, or give one an icon.',
-    fields: { title: true, link: true, icon: true },
-    titleLabel: 'Button text',
-    linkLabel: 'Goes to'
-  },
   'slider/slides': {
     noun: 'slide',
     note: 'Each slide is a full-width picture with words over it. The order here '
@@ -161,7 +145,37 @@ const CAVEATS: Partial<Record<SECTION_ARCHETYPE, string>> = {
     + 'retyped by hand is a blank widget nobody can diagnose.'
 };
 
+/**
+ * What an entry IS on a section whose entries are its BUTTONS.
+ *
+ * Since 2026-08-31 every section that has buttons takes a list of them
+ * rather than one or two fixed slots, so six variants across five archetypes
+ * all mean the same thing by `entries`. One shared spec rather than six
+ * copies: they are the same object, and six copies is six chances for one to
+ * drift.
+ */
+const BUTTON_ENTRY: EntrySpec = {
+  noun: 'button',
+  note: 'Buttons are entries rather than fixed slots, so you can add as many as '
+    + 'you need, reorder them, or give one an icon.',
+  fields: { title: true, link: true, icon: true },
+  titleLabel: 'Button text',
+  linkLabel: 'Goes to'
+};
+
+/** Sections whose `entries` are buttons rather than content. The list
+ *  archetypes are absent on purpose - their entries are the tiles and rows,
+ *  and each of those carries its own button. */
+const BUTTON_BEARING: readonly SECTION_ARCHETYPE[] = [
+  SECTION_ARCHETYPE.HERO_BAND,
+  SECTION_ARCHETYPE.HERO_SPLIT,
+  SECTION_ARCHETYPE.COPY_MEDIA,
+  SECTION_ARCHETYPE.COPY_CENTRED,
+  SECTION_ARCHETYPE.COUNTDOWN
+];
+
 function toVariant(archetype: SECTION_ARCHETYPE, variant: SectionVariant): KindVariant {
+  const named = ENTRY_SPECS[`${archetype}/${variant.key}`];
   return {
     key: variant.key,
     label: variant.label,
@@ -170,7 +184,8 @@ function toVariant(archetype: SECTION_ARCHETYPE, variant: SectionVariant): KindV
     // both are "which of a block's own fields this uses". Kept as two types
     // rather than one because the kit is shared and the catalogue is not.
     fields: { ...variant.fields },
-    entry: ENTRY_SPECS[`${archetype}/${variant.key}`]
+    entry: named
+      ?? (variant.fields.entries && BUTTON_BEARING.includes(archetype) ? BUTTON_ENTRY : undefined)
   };
 }
 

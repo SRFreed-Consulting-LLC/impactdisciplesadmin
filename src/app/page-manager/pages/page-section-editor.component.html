@@ -102,10 +102,10 @@
 
   @if (surfaces.length && fields.body) {
     <div class="psd__axis">
-      <span class="psd__axis-label">Copy</span>
+      <span class="psd__axis-label">Text colour</span>
       <mat-button-toggle-group [value]="section.copyTone ?? 'soft'"
                                (change)="pickCopyTone($event.value)"
-                               aria-label="The copy's tone">
+                               aria-label="The text colour">
         @for (option of copyTones; track option.key) {
           <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
         }
@@ -113,23 +113,54 @@
     </div>
 
     <div class="psd__axis">
-      <span class="psd__axis-label">Copy size</span>
+      <span class="psd__axis-label">Text size</span>
       <mat-button-toggle-group [value]="section.copySize ?? 'compact'"
                                (change)="pickCopySize($event.value)"
-                               aria-label="The copy's scale">
+                               aria-label="The text size">
         @for (option of copySizes; track option.key) {
           <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
         }
       </mat-button-toggle-group>
       <p class="psd__axis-blurb">
         Both are the site&rsquo;s own: Large is the wide 20px passages (the OVERVIEW
-        sections), Compact the 14px copy beside pictures and videos.
+        sections), Compact the 14px text beside pictures and videos.
       </p>
     </div>
 
+    <!-- WHICH SIDE the picture sits on. It used to be fixed by the look, or
+         alternated down a list, and getting a picture on the left meant
+         picking a different look. Owner's call 2026-08-31: it is a setting.
+         "As the page decides" keeps the old behaviour, which is what every
+         section that has never been told otherwise still does. -->
     @if (hasSplitMedia) {
       <div class="psd__axis">
-        <span class="psd__axis-label">Media</span>
+        <span class="psd__axis-label">Picture side</span>
+        <mat-button-toggle-group [value]="section.mediaSide ?? 'auto'"
+                                 (change)="pickMediaSide($event.value)"
+                                 aria-label="Which side the picture or video sits on">
+          @for (option of mediaSides; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    }
+
+    <!-- The stacked equivalent, where there is no media to put a side on. -->
+    @if (isCentred) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Order</span>
+        <mat-button-toggle-group [value]="section.textFirst ? 'text' : 'heading'"
+                                 (change)="pickStackOrder($event.value)"
+                                 aria-label="Whether the heading or the text comes first">
+          <mat-button-toggle value="heading">Heading, then text</mat-button-toggle>
+          <mat-button-toggle value="text">Text, then heading</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+    }
+
+    @if (hasSplitMedia) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Media size</span>
         <mat-button-toggle-group [value]="section.mediaSize ?? 'large'"
                                  (change)="pickMediaSize($event.value)"
                                  aria-label="How much room the picture or video takes">
