@@ -142,14 +142,19 @@
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "Making of a Disciple-Maker",
-      "ctaTitle": "Go to the Disciple-Making Portal",
-      "ctaUrl": "https://impact-discipleship-ministries.mykajabi.com/login",
       "image": {
         "name": "Home/home-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fhome-header.jpg?alt=media&token=4a6de836-e6fc-4c12-9e2a-e8c063ffdcc3"
       },
-      "variant": "standard",
-      "surface": "photo"
+      "variant": "buttonList",
+      "surface": "photo",
+      "items": [
+        {
+          "title": "Go to the Disciple-Making Portal",
+          "link": "https://impact-discipleship-ministries.mykajabi.com/login",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "overview",
@@ -209,16 +214,24 @@
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "The Making of a Disciple-Making Pastor",
-      "ctaTitle": "Enroll in a Group",
-      "ctaUrl": "/events",
-      "ctaTitle2": "Go to Disciple-Making Pastors Portal",
-      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/login",
       "image": {
         "name": "Home/20240126-AS3A2169",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2F20240126-AS3A2169.jpg?alt=media&token=a2ae3fd2-9706-4e55-9ee0-56a90c097719"
       },
-      "variant": "standard",
-      "surface": "photo"
+      "variant": "buttonList",
+      "surface": "photo",
+      "items": [
+        {
+          "title": "Enroll in a Group",
+          "link": "/events",
+          "isActive": true
+        },
+        {
+          "title": "Go to Disciple-Making Pastors Portal",
+          "link": "https://impact-discipleship-ministries.mykajabi.com/login",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "overview",
@@ -307,16 +320,24 @@
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "Coming Soon: The Disciple-Making Leader Equipping Group",
-      "ctaTitle": "Enroll in a Group",
-      "ctaUrl": "/events",
-      "ctaTitle2": "Go to Disciple-Making Leaders Portal",
-      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/login",
       "image": {
         "name": "Home/20210129-IMG_0151-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2F20210129-IMG_0151-2.jpg?alt=media&token=d1ae9d34-5eef-432d-9f11-f6269404a2cf"
       },
-      "variant": "standard",
-      "surface": "photo"
+      "variant": "buttonList",
+      "surface": "photo",
+      "items": [
+        {
+          "title": "Enroll in a Group",
+          "link": "/events",
+          "isActive": true
+        },
+        {
+          "title": "Go to Disciple-Making Leaders Portal",
+          "link": "https://impact-discipleship-ministries.mykajabi.com/login",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "overview",
@@ -395,16 +416,24 @@
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "Disciple-Making Church Equipping Group (NEW COURSE)",
-      "ctaTitle": "Enroll in a Group",
-      "ctaUrl": "/events",
-      "ctaTitle2": "Go to Disciple-Making Church Portal",
-      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/login",
       "image": {
         "name": "Home/home-header-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fhome-header-2.PNG?alt=media&token=9f2866c3-5b8c-4cdc-9604-573c276fd7f9"
       },
-      "variant": "standard",
-      "surface": "photo"
+      "variant": "buttonList",
+      "surface": "photo",
+      "items": [
+        {
+          "title": "Enroll in a Group",
+          "link": "/events",
+          "isActive": true
+        },
+        {
+          "title": "Go to Disciple-Making Church Portal",
+          "link": "https://impact-discipleship-ministries.mykajabi.com/login",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "overview",
@@ -500,14 +529,19 @@
       "subheading": "Disciple-Making Church",
       "heading": "Seminars",
       "body": "Structure your church to make and multiply disciples with the Disciple-Making Church strategy. We come to you and train your staff to implement a proven strategy to grow your ministry.",
-      "ctaTitle": "Book a Seminar",
-      "ctaUrl": "/team",
       "image": {
         "name": "Headers/seminars-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fseminars-header.PNG?alt=media&token=a3d6bae8-00d0-43d3-ae8e-8ab356ce1cfc"
       },
-      "variant": "standard",
-      "surface": "photo"
+      "variant": "buttonList",
+      "surface": "photo",
+      "items": [
+        {
+          "title": "Book a Seminar",
+          "link": "/team",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "overview",
@@ -631,14 +665,19 @@
       "subheading": "DISCIPLE-MAKING CHURCH",
       "heading": "Lunch & Learns",
       "body": "Structure your church to make and multiply disciples with the Disciple-Making Church strategy. We come to you and give you a free overview of a proven strategy to multiply disciples through your ministry.",
-      "ctaTitle": "Request to Book a Lunch and Learn",
-      "ctaUrl": "/lunch-and-learn-form",
       "image": {
         "name": "Headers/lunchlearn-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Flunchlearn-header.png?alt=media&token=557bdabf-9daa-4475-80a6-a9f6410d4d74"
       },
-      "variant": "standard",
-      "surface": "photo"
+      "variant": "buttonList",
+      "surface": "photo",
+      "items": [
+        {
+          "title": "Request to Book a Lunch and Learn",
+          "link": "/lunch-and-learn-form",
+          "isActive": true
+        }
+      ]
     },
     {
       "key": "overview",
@@ -679,7 +718,7 @@
         "name": "Headers/give-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fgive-header.PNG?alt=media&token=ae05b066-c061-4991-ba0d-189f37607431"
       },
-      "variant": "standard",
+      "variant": "buttonList",
       "surface": "photo"
     },
     {
@@ -925,7 +964,7 @@
         "name": "Coaching-With-Impact/Untitled-design-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FUntitled-design-1.png?alt=media&token=9a0407b8-074e-4cac-b3e9-c5ab1e1ced18"
       },
-      "variant": "standard",
+      "variant": "buttonList",
       "surface": "photo"
     },
     {

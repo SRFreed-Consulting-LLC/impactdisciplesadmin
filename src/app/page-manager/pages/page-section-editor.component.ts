@@ -284,6 +284,19 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     { key: 'dark', label: 'Dark' }
   ] as const;
 
+  /**
+   * Whether this section's copy contains a list at all.
+   *
+   * The Bullets control styles `li`s, so on a passage with none it is a
+   * control that visibly does nothing - which reads as broken rather than as
+   * inapplicable. Checked against the stored HTML rather than a flag,
+   * because the copy is edited in a rich-text field and a flag would drift
+   * from it the moment someone deleted the last bullet.
+   */
+  get copyHasBullets(): boolean {
+    return /<\s*(ul|ol|li)\b/i.test(this.section?.body ?? '');
+  }
+
   readonly bulletStyles = [
     { key: 'dots', label: 'Dots (site style)' },
     { key: 'none', label: 'None' }
@@ -305,7 +318,7 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   }
 
   readonly photoFocuses = [
-    { key: 'top', label: 'Top (keep faces)' },
+    { key: 'top', label: 'Top' },
     { key: 'center', label: 'Centre' },
     { key: 'bottom', label: 'Bottom' }
   ] as const;

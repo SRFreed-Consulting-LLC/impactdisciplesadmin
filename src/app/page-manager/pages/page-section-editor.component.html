@@ -140,16 +140,22 @@
       </div>
     }
 
-    <div class="psd__axis">
-      <span class="psd__axis-label">Bullets</span>
-      <mat-button-toggle-group [value]="section.bullets ?? 'dots'"
-                               (change)="pickBullets($event.value)"
-                               aria-label="How list items are marked">
-        @for (option of bulletStyles; track option.key) {
-          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
+    <!-- Only where the copy ACTUALLY HAS A LIST in it. Offering a bullet
+         style for a passage with no bullets is a control that cannot do
+         anything, and staff reasonably read that as broken. Owner's call,
+         2026-08-31. -->
+    @if (copyHasBullets) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Bullets</span>
+        <mat-button-toggle-group [value]="section.bullets ?? 'dots'"
+                                 (change)="pickBullets($event.value)"
+                                 aria-label="How list items are marked">
+          @for (option of bulletStyles; track option.key) {
+            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    }
   }
 
   <!-- CARD GROUNDS - a box behind a column or the tiles, palette-fixed.
