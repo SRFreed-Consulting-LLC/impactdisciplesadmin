@@ -206,12 +206,25 @@ const KIT_KINDS: PageSectionKind[] = SECTION_KIT.map(toKind);
  * `slug` is the document id and the public route; `label` is the page's own
  * title, because a builder page has no nav leaf to take a label from.
  */
+/**
+ * WHERE A KIT PAGE LIVES on the public site.
+ *
+ * Every page is served at its own slug except HOME, which is the site root -
+ * the one page whose address is not its name. The dynamic route deliberately
+ * refuses `/home` so it cannot become a second copy of the front page, which
+ * means anything pointing an editor or a preview at `/home` gets Not Found.
+ * That is exactly what the Home screen's preview showed until 2026-08-31.
+ */
+export function publicPathFor(slug: string): string {
+  return slug === 'home' ? '/' : `/${slug}`;
+}
+
 export function kitPage(page: PageContentModel): EditablePage {
   const slug = page.id ?? '';
   return {
     slug,
     label: page.title || slug,
-    path: `/${slug}`,
+    path: publicPathFor(slug),
     blurb: 'A page you created. Add sections, drag them into order, and switch any of them off.',
     kinds: KIT_KINDS
   };

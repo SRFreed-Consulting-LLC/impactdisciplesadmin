@@ -1,6 +1,6 @@
 import { PageContentModel } from '@impact-common/shared/models/domain/page-content.model';
 import { SECTION_ARCHETYPE, SECTION_KIT } from '@impact-common/shared/lists/section_kit';
-import { isKitPage, kitPage } from './kit-page.adapter';
+import { isKitPage, kitPage, publicPathFor } from './kit-page.adapter';
 import { kindFor } from './page-section-catalogue';
 
 /**
@@ -135,5 +135,21 @@ describe('telling a staff page from one of the twelve', () => {
     expect(isKitPage({ title: undefined })).toBeFalse();
     expect(isKitPage({ title: '' })).toBeFalse();
     expect(isKitPage(null)).toBeFalse();
+  });
+});
+
+describe("where a kit page lives on the public site", () => {
+  it("serves HOME at the site root, not at /home", () => {
+    // The dynamic route deliberately refuses /home so it cannot become a
+    // second copy of the front page. Anything pointing a preview or an
+    // "open the site" link at /home therefore gets Not Found - which is
+    // exactly what the Home editor showed on the day it migrated.
+    expect(publicPathFor("home")).toBe("/");
+    expect(kitPage({ id: "home", title: "Home" } as never).path).toBe("/");
+  });
+
+  it("serves every other page at its own slug", () => {
+    expect(publicPathFor("seminars")).toBe("/seminars");
+    expect(kitPage({ id: "mens-retreat", title: "Mens Retreat" } as never).path).toBe("/mens-retreat");
   });
 });

@@ -7,7 +7,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { environment } from 'src/environments/environment';
 import { EditablePage } from './page-section-catalogue';
-import { kitPage } from './kit-page.adapter';
+import { kitPage, publicPathFor } from './kit-page.adapter';
 
 /**
  * ONE created page, opened from its own leaf in the left nav.
@@ -107,7 +107,9 @@ export class KitPageEditorComponent implements OnChanges {
 
   get liveUrl(): string {
     const base = (environment.previewSiteUrl || '').replace(/\/+$/, '');
-    return `${base}/${this.slug}`;
+    // publicPathFor, not '/' + slug: home is served at the site root, and
+    // /home is deliberately Not Found.
+    return `${base}${publicPathFor(this.slug)}`;
   }
 
   // ------------------------------------------------------------ settings
