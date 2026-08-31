@@ -477,3 +477,162 @@
   gap: 16px;
   width: 100%;
 }
+
+/* -------------------------------------------------------- the palette */
+
+/* The palette and the columns side by side, and they SCROLL TOGETHER - the
+   whole reason it sits here rather than at the far left of the screen. A
+   palette you have to scroll away from to reach the column you are filling
+   is a palette that makes the drag longer than the button it replaced. */
+.psd__build {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.psd__build .psd__col-strip {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.psd__palette {
+  flex: 0 0 168px;
+  position: sticky;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-card);
+}
+
+/* Icons only. Twelve names is real width on a screen that also wants three
+   columns and a preview, and which of those matters is the person's call. */
+.psd__palette--tight {
+  flex: 0 0 52px;
+  align-items: center;
+}
+
+.psd__palette-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.psd__palette-title {
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.psd__palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.psd__chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--app-radius-control);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  /* grab, not pointer: it says "drag me" before anybody tries clicking. */
+  cursor: grab;
+}
+
+.psd__palette--tight .psd__chip {
+  justify-content: center;
+  padding: 7px 0;
+}
+
+.psd__chip:hover,
+.psd__chip:focus-visible {
+  border-color: var(--app-accent);
+}
+
+.psd__chip mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--app-accent);
+  flex: 0 0 auto;
+}
+
+.psd__chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What follows the cursor - small, and shaped like the thing being made
+   rather than the full-width button it was dragged from. */
+.psd__chip-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--app-card);
+  border: 1px solid var(--app-accent);
+  border-radius: var(--app-radius-control);
+  color: var(--app-ink);
+  font-size: 0.85rem;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.psd__chip-drag mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--app-accent);
+}
+
+/* Where it will land. Without this a drop into a column is a guess. */
+.psd__piece-list.cdk-drop-list-dragging,
+.psd__piece-list.cdk-drop-list-receiving {
+  outline: 2px dashed var(--app-accent);
+  outline-offset: 4px;
+  border-radius: var(--app-radius-control);
+}
+
+/* An EMPTY column still has to be a target you can see and hit - a zero-height
+   list is one nothing can be dropped into. */
+.psd__piece-list {
+  min-height: 56px;
+}
+
+@media (max-width: 1100px) {
+  .psd__build {
+    flex-direction: column;
+  }
+
+  .psd__palette,
+  .psd__palette--tight {
+    position: static;
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .psd__palette-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .psd__chip {
+    width: auto;
+  }
+}

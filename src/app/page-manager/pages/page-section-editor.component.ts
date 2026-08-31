@@ -1,7 +1,7 @@
 import {
   Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, inject
 } from '@angular/core';
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { BehaviorSubject, Subject, debounceTime } from 'rxjs';
 import {
   ContentPiece, PageContentBlock, PageContentItem, SectionColumn
@@ -114,6 +114,7 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   testimonialsFailed = false;
 
   ngOnInit(): void {
+    this.loadPalette();
     if (this.fields.testimonials) {
       this.loadTestimonials();
     }
@@ -666,15 +667,13 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edited();
   }
 
+  /** The CLICK path, and the only one a keyboard can take. Appends to the
+   *  end of the column, which is where the Add button always put it. */
   addPiece(column: SectionColumn, kind: ContentPieceKindKey): void {
-    const seed: ContentPiece = { key: freshKey(kind, this.takenKeys()), kind, isActive: true };
-    // A heading defaults to a SECTION heading, never a page title: there is
-    // one page title per page and it is not the thing being added twelve
-    // times.
-    if (kind === 'heading') {
-      seed.level = 'section';
+    if (!column) {
+      return;
     }
-    column.pieces = [...this.piecesOf(column), seed];
+    this.insertPiece(column, kind, this.pieces(column).length);
     this.edited();
   }
 
@@ -683,9 +682,88 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edited();
   }
 
-  reorderPieces(column: SectionColumn, event: CdkDragDrop<SectionColumn>): void {
-    moveItemInArray(this.piecesOf(column), event.previousIndex, event.currentIndex);
+  /** The drop lists a piece may travel between - every column of this
+   *  section, and nothing else. The palette connects TO these; they never
+   *  connect back, which is what stops a piece being dragged into it. */
+  get columnListIds(): string[] {
+    return this.columns.map((column) => `piececol-${column.key}`);
+  }
+
+  /**
+   * THREE DROPS, told apart by where the drag started.
+   *
+   * Within one column it is a reorder. From another column the piece MOVES,
+   * keeping everything about it - which is the behaviour that makes columns
+   * feel like places rather than fixed slots. From the palette it is not a
+   * move at all: a new piece of that kind is made at the position it was
+   * dropped, and the palette itself is left untouched, or it would empty
+   * itself one drag at a time.
+   */
+  dropIntoColumn(column: SectionColumn, event: CdkDragDrop<SectionColumn>): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(this.pieces(column), event.previousIndex, event.currentIndex);
+    } else if (event.previousContainer.id === 'piece-palette') {
+      this.insertPiece(column, event.item.data as ContentPieceKindKey, event.currentIndex);
+    } else {
+      const from = event.previousContainer.data as SectionColumn;
+      transferArrayItem(
+        this.pieces(from), this.pieces(column), event.previousIndex, event.currentIndex
+      );
+    }
     this.edited();
+  }
+
+  /**
+   * The column's piece array, CREATED if it does not exist yet.
+   *
+   * piecesOf() returns a throwaway `[]` for a column that has none, which is
+   * right for reading and silently useless for dropping into: the CDK would
+   * splice the new piece into an array nothing holds a reference to, and the
+   * drop would appear to do nothing.
+   */
+  private pieces(column: SectionColumn): ContentPiece[] {
+    if (!column.pieces) {
+      column.pieces = [];
+    }
+    return column.pieces;
+  }
+
+  private insertPiece(column: SectionColumn, kind: ContentPieceKindKey, at: number): void {
+    const seed: ContentPiece = { key: freshKey(kind, this.takenKeys()), kind, isActive: true };
+    if (kind === 'heading') {
+      seed.level = 'section';
+    }
+    this.pieces(column).splice(at, 0, seed);
+  }
+
+  // ------------------------------------------------------- the palette
+
+  /**
+   * Icons only, remembered - the same bargain the preview rail strikes.
+   *
+   * Twelve names is a real amount of width on a screen that also wants three
+   * columns and a preview, and which of those matters is the person's call
+   * rather than ours.
+   */
+  paletteTight = false;
+
+  private readonly PALETTE_KEY = 'page-piece-palette';
+
+  togglePalette(): void {
+    this.paletteTight = !this.paletteTight;
+    try {
+      localStorage.setItem(this.PALETTE_KEY, this.paletteTight ? 'tight' : 'wide');
+    } catch {
+      // Storage unavailable - the palette still works, it just forgets.
+    }
+  }
+
+  private loadPalette(): void {
+    try {
+      this.paletteTight = localStorage.getItem(this.PALETTE_KEY) === 'tight';
+    } catch {
+      // Defaults stand.
+    }
   }
 
   // --------------------------------------------------------- the uploader

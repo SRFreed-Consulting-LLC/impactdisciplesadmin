@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { PageContentBlock } from '@impact-common/shared/models/domain/page-content.model';
-import { SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
+import { CONTENT_PIECES, SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 import { PageSectionEditorComponent, freshKey } from './page-section-editor.component';
@@ -181,5 +181,168 @@ describe('freshKey', () => {
   it('counts up rather than colliding', () => {
     expect(freshKey('heading', new Set(['heading']))).toBe('heading-2');
     expect(freshKey('heading', new Set(['heading', 'heading-2']))).toBe('heading-3');
+  });
+});
+
+/**
+ * THE PALETTE, and the three different things a drop can mean.
+ *
+ * Told apart by where the drag STARTED, which is the only thing that
+ * distinguishes them - and getting it wrong is silent in every direction: a
+ * palette that empties itself one drag at a time, a piece that is copied
+ * instead of moved between columns, or a drop into an empty column that
+ * appears to do nothing at all.
+ */
+describe('dropping into a column', () => {
+  function build(columns = 2): PageSectionEditorComponent {
+    TestBed.configureTestingModule({
+      providers: [
+        PageSectionEditorComponent,
+        { provide: TestimonialService, useValue: { getAllByValue: () => Promise.resolve([]) } },
+        { provide: FormDefinitionService, useValue: { getAll: () => Promise.resolve([]) } }
+      ]
+    });
+    const component = TestBed.inject(PageSectionEditorComponent);
+    component.section = {
+      key: 'k1', type: SECTION_ARCHETYPE.SECTION, variant: 'columns', columns: []
+    } as PageContentBlock;
+    component.kind = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never)
+      .kinds.find((k) => k.type === SECTION_ARCHETYPE.SECTION)!;
+    component.setColumnCount(columns);
+    return component;
+  }
+
+  /** The shape of the CDK's drop event, reduced to what the handler reads. */
+  const drop = (
+    fromId: string, container: unknown, data: unknown,
+    previousIndex: number, currentIndex: number, previousData?: unknown
+  ) => ({
+    previousContainer: { id: fromId, data: previousData },
+    container,
+    item: { data },
+    previousIndex,
+    currentIndex
+  }) as never;
+
+  it('makes a NEW piece where a palette drag lands', () => {
+    const component = build(1);
+    const column = component.columns[0];
+    const container = { id: 'piececol-' + column.key, data: column };
+
+    component.dropIntoColumn(column, drop('piece-palette', container, 'heading', 0, 0));
+
+    expect(column.pieces?.length).toBe(1);
+    expect(column.pieces?.[0].kind).toBe('heading');
+  });
+
+  it('drops it at the POSITION it was dropped, not on the end', () => {
+    // The whole reason for a palette over a button: the button could only
+    // ever append, so every piece then had to be dragged into place anyway.
+    const component = build(1);
+    const column = component.columns[0];
+    component.addPiece(column, 'heading');
+    component.addPiece(column, 'buttons');
+    const container = { id: 'piececol-' + column.key, data: column };
+
+    component.dropIntoColumn(column, drop('piece-palette', container, 'text', 0, 1));
+
+    expect(column.pieces?.map((p) => p.kind)).toEqual(['heading', 'text', 'buttons']);
+  });
+
+  it('leaves the palette alone - it must not empty itself', () => {
+    const component = build(1);
+    const before = component.pieceKinds.length;
+    const column = component.columns[0];
+    const container = { id: 'piececol-' + column.key, data: column };
+
+    component.dropIntoColumn(column, drop('piece-palette', container, 'text', 3, 0));
+    component.dropIntoColumn(column, drop('piece-palette', container, 'picture', 5, 0));
+
+    expect(component.pieceKinds.length)
+      .withContext('the palette lost the kinds that were dragged out of it')
+      .toBe(before);
+  });
+
+  it('MOVES a piece dragged from another column rather than copying it', () => {
+    // A copy would duplicate the key as well as the content, and two rows
+    // sharing a key behave as one row.
+    const component = build(2);
+    const [first, second] = component.columns;
+    component.addPiece(first, 'text');
+    const moved = first.pieces![0];
+
+    component.dropIntoColumn(second, drop(
+      'piececol-' + first.key,
+      { id: 'piececol-' + second.key, data: second },
+      undefined, 0, 0, first
+    ));
+
+    expect(first.pieces?.length).withContext('it was copied, not moved').toBe(0);
+    expect(second.pieces?.length).toBe(1);
+    expect(second.pieces?.[0]).toBe(moved);
+  });
+
+  it('reorders within one column when it did not leave', () => {
+    const component = build(1);
+    const column = component.columns[0];
+    component.addPiece(column, 'heading');
+    component.addPiece(column, 'text');
+    const container = { id: 'piececol-' + column.key, data: column };
+
+    component.dropIntoColumn(column, {
+      previousContainer: container, container, item: { data: undefined },
+      previousIndex: 1, currentIndex: 0
+    } as never);
+
+    expect(column.pieces?.map((p) => p.kind)).toEqual(['text', 'heading']);
+  });
+
+  it('drops into a column that has never held anything', () => {
+    // setColumnCount seeds `pieces: []`, but a column read from an older
+    // document may have no array at all - and splicing into the throwaway []
+    // that piecesOf() returns is a drop that silently does nothing.
+    const component = build(1);
+    const column = component.columns[0];
+    delete (column as { pieces?: unknown }).pieces;
+    const container = { id: 'piececol-' + column.key, data: column };
+
+    component.dropIntoColumn(column, drop('piece-palette', container, 'text', 0, 0));
+
+    expect(column.pieces?.length)
+      .withContext('the piece went into an array nothing holds')
+      .toBe(1);
+  });
+
+  it('names every column as a drop target, and nothing else', () => {
+    const component = build(3);
+
+    expect(component.columnListIds)
+      .toEqual(component.columns.map((c) => 'piececol-' + c.key));
+    expect(component.columnListIds)
+      .withContext('the palette must not be a place a piece can be dropped')
+      .not.toContain('piece-palette');
+  });
+
+  it('still adds by CLICK, which is the only keyboard path', () => {
+    // A drag-only palette cannot be operated from a keyboard at all.
+    const component = build(1);
+    component.addPiece(component.columns[0], 'video');
+
+    expect(component.columns[0].pieces?.[0].kind).toBe('video');
+  });
+
+  it('does nothing when clicked with no column to add to', () => {
+    // The click path targets columns[0], which does not exist on a section
+    // whose columns have not been set up yet.
+    const component = build(1);
+    component.section.columns = [];
+
+    expect(() => component.addPiece(component.columns[0], 'text')).not.toThrow();
+  });
+
+  it('offers every kind the registry declares', () => {
+    // The palette IS the registry - a kind that exists but cannot be reached
+    // is a piece nobody can add.
+    expect(build().pieceKinds.length).toBe(CONTENT_PIECES.length);
   });
 });

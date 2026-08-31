@@ -490,6 +490,57 @@
         }
       </div>
 
+      <!-- THE PALETTE. Every kind of content a column can hold, visible
+           without opening anything - which the Add button never was: you
+           had to open it to find out what a section could even contain.
+
+           BESIDE THE COLUMNS rather than at the far left of the screen.
+           Same idea, shorter drag: the palette and the thing you are
+           dropping into scroll together and are always both in view.
+
+           CLICK STILL WORKS, and that is not a convenience - a drag-only
+           palette cannot be operated from a keyboard at all. Clicking adds
+           to the first column, which is unambiguous on the one-column
+           sections that are most of the site. -->
+      <div class="psd__build">
+        <aside class="psd__palette" [class.psd__palette--tight]="paletteTight">
+          <div class="psd__palette-head">
+            @if (!paletteTight) {
+              <span class="psd__palette-title">Pieces</span>
+            }
+            <button type="button" class="psd__icon-btn"
+                    (click)="togglePalette()"
+                    [matTooltip]="paletteTight ? 'Show the names' : 'Icons only'"
+                    [attr.aria-expanded]="!paletteTight">
+              <mat-icon>{{ paletteTight ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+            </button>
+          </div>
+
+          <div cdkDropList id="piece-palette" class="psd__palette-list"
+               [cdkDropListData]="pieceKinds"
+               [cdkDropListConnectedTo]="columnListIds"
+               cdkDropListSortingDisabled>
+            @for (kind of pieceKinds; track kind.kind) {
+              <button type="button" class="psd__chip" cdkDrag
+                      [cdkDragData]="kind.kind"
+                      (click)="addPiece(columns[0], kind.kind)"
+                      [matTooltip]="kind.label + ' - ' + kind.blurb
+                        + '. Drag into a column, or click to add it to the first.'">
+                <mat-icon>{{ kind.icon }}</mat-icon>
+                @if (!paletteTight) {
+                  <span>{{ kind.label }}</span>
+                }
+                <!-- What follows the cursor. The default preview is the
+                     button at its full width, which looks nothing like the
+                     piece being made. -->
+                <div class="psd__chip-drag" *cdkDragPreview>
+                  <mat-icon>{{ kind.icon }}</mat-icon>
+                  <span>{{ kind.label }}</span>
+                </div>
+              </button>
+            }
+          </div>
+        </aside>
       <div class="psd__col-strip" [class]="'psd__col-strip--' + columns.length">
         @for (column of columns; track column.key) {
           <div class="psd__col">
@@ -541,9 +592,14 @@
               </mat-slide-toggle>
             </div>
 
+            <!-- Accepts three things: a reorder within itself, a piece
+                 dragged over FROM ANOTHER COLUMN, and a new piece from the
+                 palette. Which one it was is worked out in the handler. -->
             <div cdkDropList class="psd__piece-list"
+                 [id]="'piececol-' + column.key"
                  [cdkDropListData]="column"
-                 (cdkDropListDropped)="reorderPieces(column, $event)">
+                 [cdkDropListConnectedTo]="columnListIds"
+                 (cdkDropListDropped)="dropIntoColumn(column, $event)">
               @for (piece of piecesOf(column); track piece.key) {
                 <div cdkDrag>
                   <app-content-piece
@@ -563,21 +619,9 @@
               </p>
             }
 
-            <!-- The menu is the piece registry, so a new kind of piece
-                 appears here the moment it is declared. -->
-            <button mat-stroked-button type="button" [matMenuTriggerFor]="pieceMenu">
-              <mat-icon>add</mat-icon> Add to this column
-            </button>
-            <mat-menu #pieceMenu="matMenu">
-              @for (kind of pieceKinds; track kind.kind) {
-                <button mat-menu-item type="button" (click)="addPiece(column, kind.kind)">
-                  <mat-icon>{{ kind.icon }}</mat-icon>
-                  <span>{{ kind.label }}</span>
-                </button>
-              }
-            </mat-menu>
           </div>
         }
+        </div>
       </div>
     </div>
   }
