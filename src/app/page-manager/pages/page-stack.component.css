@@ -25,6 +25,16 @@
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
+  /* ROOM FOR THE SCROLLBAR. Without it the bar sits ON the rows: the Live
+     toggle at the right edge of every row ends up under it, and on the last
+     row nothing separates the content from the bottom of the pane. Both
+     columns scroll independently now (the height chain above them was
+     broken until 2026-08-31), so both need it. */
+  padding-right: 10px;
+  padding-bottom: 12px;
+  /* Reserve the gutter even before the list is long enough to scroll, so
+     rows do not shift sideways the moment one more section is added. */
+  scrollbar-gutter: stable;
 }
 
 /* ------------------------------------------------------ editing a section */
@@ -275,6 +285,9 @@
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+  padding-right: 10px;
+  padding-bottom: 12px;
+  scrollbar-gutter: stable;
 }
 
 /* The preview must not SHRINK. This is a flex column that scrolls, and a

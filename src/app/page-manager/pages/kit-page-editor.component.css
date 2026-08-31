@@ -19,10 +19,32 @@
   color: var(--app-attention);
 }
 
+/* THE HEIGHT CHAIN. A custom element with no display set is inline, so this
+   host could not carry a height at all - it measured 0 while its child grew
+   to 4,574px, and the whole editor scrolled as ONE column inside
+   .manager-content. That is why the section list and the preview rail moved
+   together: neither was ever bounded, so their own overflow-y never had
+   anything to overflow. Every link from here down needs a definite height
+   and min-height:0, or the chain breaks again silently. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .kp__editing {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The stack takes the rest of the height, and scrolls inside itself. */
+.kp__editing app-page-stack {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .kp__crumb {
