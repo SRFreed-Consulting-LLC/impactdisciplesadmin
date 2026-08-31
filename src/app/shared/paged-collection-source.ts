@@ -3,6 +3,10 @@ import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { PagedResult } from 'src/app/common/dao/firebase.dao';
 import { BaseModel } from '@impact-common/shared/models/base.model';
 
+/** How many rows loadAll() asks for per round trip - see its own comment.
+ *  Well inside Firestore's limits, and 10x fewer requests than browsing. */
+const BULK_PAGE_SIZE = 500;
+
 // Client-side accumulator driving "infinite scroll" over BaseService.getPage()
 // - a one-time (not live) fetch per batch, unlike streamAll()'s "subscribe to
 // the entire collection forever". Used by list screens on large collections
@@ -96,15 +100,27 @@ export class PagedCollectionSource<T extends BaseModel> {
    * place rather than emptying the table.
    */
   async loadAll(): Promise<void> {
-    // Bounded: a fetchPage that always claimed hasMore without advancing its
-    // cursor would otherwise spin forever. 400 pages is far beyond any real
-    // collection here and still terminates.
-    for (let guard = 0; guard < 400 && this.hasMore$.value; guard++) {
-      const before = this.rows$.value.length;
-      await this.loadNextPage();
-      if (this.rows$.value.length === before) {
-        break;
+    // BIGGER PAGES, deliberately. Scrolling wants small pages - they arrive
+    // fast and the reader is only ever looking at a screenful. A search wants
+    // the opposite: at the browsing size, 5,450 contacts took 109 round trips
+    // and 27 seconds, which is long enough that staff would assume it had
+    // hung. The page size is a scrolling decision, not a fetching limit.
+    const browsingSize = this.pageSize;
+    this.pageSize = Math.max(this.pageSize, BULK_PAGE_SIZE);
+    try {
+      // Bounded: a fetchPage that always claimed hasMore without advancing
+      // its cursor would otherwise spin forever.
+      for (let guard = 0; guard < 400 && this.hasMore$.value; guard++) {
+        const before = this.rows$.value.length;
+        await this.loadNextPage();
+        if (this.rows$.value.length === before) {
+          break;
+        }
       }
+    } finally {
+      // Restored even on a failed page: the next scroll must go back to
+      // arriving a screenful at a time.
+      this.pageSize = browsingSize;
     }
   }
 

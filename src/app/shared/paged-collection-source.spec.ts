@@ -329,6 +329,28 @@ describe('PagedCollectionSource', () => {
       expect(source.hasMore$.value).toBeFalse();
     });
 
+    it('asks for BIGGER pages than browsing, and puts the size back after', async () => {
+      // At the browsing size a full search of 5,450 contacts was 109 round
+      // trips and 27 seconds - long enough to read as hung. The page size is
+      // a scrolling decision, not a limit on fetching.
+      const sizes: number[] = [];
+      const fetchPage = jasmine.createSpy('fetchPage').and.callFake((size: number) => {
+        sizes.push(size);
+        return Promise.resolve(page([row(String(sizes.length))], null, sizes.length < 2));
+      });
+      const source = new PagedCollectionSource<Row>(fetchPage, 50);
+
+      await source.loadAll();
+      expect(sizes.every((s) => s >= 500)).withContext(`asked for ${sizes}`).toBeTrue();
+
+      // and browsing is back to a screenful at a time
+      fetchPage.calls.reset();
+      sizes.length = 0;
+      source.hasMore$.next(true);
+      await source.loadNextPage();
+      expect(sizes).toEqual([50]);
+    });
+
     it('does nothing when the tail is already loaded', async () => {
       const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1')], null, false));
       const source = new PagedCollectionSource<Row>(fetchPage);
