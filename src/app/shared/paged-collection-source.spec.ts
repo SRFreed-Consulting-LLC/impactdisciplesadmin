@@ -307,4 +307,63 @@ describe('PagedCollectionSource', () => {
       expect(source.rows$.value).toEqual([row('1')]);
     });
   });
+
+  describe('loadAll', () => {
+    // Exists for the grid's "Search all": a column filter only ever matched
+    // the rows that were LOADED, so on a big collection it answered "none
+    // found" about records that were simply further down.
+
+    it('keeps paging until the collection runs out', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage')
+        .and.returnValues(
+          Promise.resolve(page([row('1')], fakeCursor('c1'), true)),
+          Promise.resolve(page([row('2')], fakeCursor('c2'), true)),
+          Promise.resolve(page([row('3')], null, false))
+        );
+      const source = new PagedCollectionSource<Row>(fetchPage);
+
+      await source.loadAll();
+
+      expect(fetchPage).toHaveBeenCalledTimes(3);
+      expect(source.rows$.value.map((r) => r.id)).toEqual(['1', '2', '3']);
+      expect(source.hasMore$.value).toBeFalse();
+    });
+
+    it('does nothing when the tail is already loaded', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([row('1')], null, false));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+      await source.loadFirstPage();
+      fetchPage.calls.reset();
+
+      await source.loadAll();
+
+      expect(fetchPage).not.toHaveBeenCalled();
+    });
+
+    it('stops rather than spinning when a page adds nothing but still claims more', async () => {
+      // A fetchPage that never advances its cursor would otherwise loop until
+      // the tab died. The guard is why this terminates.
+      const fetchPage = jasmine.createSpy('fetchPage').and.resolveTo(page([], fakeCursor('stuck'), true));
+      const source = new PagedCollectionSource<Row>(fetchPage);
+
+      await source.loadAll();
+
+      expect(fetchPage).toHaveBeenCalledTimes(1);
+      expect(source.rows$.value).toEqual([]);
+    });
+
+    it('keeps the rows it already fetched when a later page fails', async () => {
+      const fetchPage = jasmine.createSpy('fetchPage')
+        .and.returnValues(
+          Promise.resolve(page([row('1')], fakeCursor('c1'), true)),
+          Promise.reject(new Error('network'))
+        );
+      const source = new PagedCollectionSource<Row>(fetchPage);
+
+      await expectAsync(source.loadAll()).toBeRejected();
+
+      expect(source.rows$.value.map((r) => r.id))
+        .withContext('a failed page must not empty the table').toEqual(['1']);
+    });
+  });
 });

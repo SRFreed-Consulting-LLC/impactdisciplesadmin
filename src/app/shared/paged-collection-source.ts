@@ -79,6 +79,36 @@ export class PagedCollectionSource<T extends BaseModel> {
   }
 
   /**
+   * Pages to the end of the collection, deliberately and on demand.
+   *
+   * WHY THIS EXISTS. The column filters run over the rows that are LOADED, so
+   * on a big collection a filter answers "none found" for records that are
+   * simply further down - which reads as "this person is not in the system"
+   * and is how a duplicate contact gets created. The grid offers this behind
+   * a button once a filter is active and pages remain; see data-grid's
+   * searchAll().
+   *
+   * NEVER call it automatically. Paging exists because these collections are
+   * thousands of rows; this is the escape hatch for a search, not a default.
+   *
+   * `loadingMore$` stays true for the whole run, so the grid can say what is
+   * happening, and a page that fails leaves the rows already fetched in
+   * place rather than emptying the table.
+   */
+  async loadAll(): Promise<void> {
+    // Bounded: a fetchPage that always claimed hasMore without advancing its
+    // cursor would otherwise spin forever. 400 pages is far beyond any real
+    // collection here and still terminates.
+    for (let guard = 0; guard < 400 && this.hasMore$.value; guard++) {
+      const before = this.rows$.value.length;
+      await this.loadNextPage();
+      if (this.rows$.value.length === before) {
+        break;
+      }
+    }
+  }
+
+  /**
    * Swaps one already-loaded row for a fresher copy, in place, leaving every
    * other loaded page untouched.
    *

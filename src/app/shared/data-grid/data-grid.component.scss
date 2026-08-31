@@ -120,3 +120,32 @@ tr.cdk-drag-placeholder {
 tr.cdk-drag-animating {
   transition: transform 180ms cubic-bezier(0, 0, 0.2, 1);
 }
+
+/* The scope note under a filtered paged table. --app-card-ink, not
+   --app-faint: this line has to be READ, and --app-faint measures 2.45:1 on
+   a card, which fails. See the admin-theme-contrast note. */
+.grid-scope-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+  background: var(--app-card);
+  color: var(--app-card-ink);
+  font-size: 13px;
+
+  mat-icon {
+    color: var(--app-accent);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &__text {
+    flex: 1 1 auto;
+  }
+
+  &--done mat-icon {
+    color: var(--app-card-muted);
+  }
+}

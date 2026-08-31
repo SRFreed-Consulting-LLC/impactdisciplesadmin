@@ -286,6 +286,13 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   }
 
   get resolvedEmptyMessage(): string {
+    // "No contacts found." is a claim about the COLLECTION, and on a paged
+    // table with a filter on it the grid has only looked at part of one. Say
+    // what was actually searched instead - the note below the table carries
+    // the button that searches the rest.
+    if (this.filteringPartialSet) {
+      return `No matches in the ${this.loadedCount} rows loaded so far.`;
+    }
     return this.emptyMessage || (this.title ? `No ${this.title} found.` : 'No records found.');
   }
 
@@ -466,6 +473,48 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   loadMore(): void {
     this.pagedSource?.loadNextPage();
   }
+
+  /**
+   * Whether a filter is being applied to only PART of the collection.
+   *
+   * THE BUG THIS EXISTS FOR. Column filters match against the rows that are
+   * loaded, and a paged grid starts with 50 of them. Filtering 5,450 contacts
+   * for someone on page 30 therefore said "No contacts found" - an
+   * authoritative-looking wrong answer, and the way a staff member concludes
+   * a donor is not in the system and adds a duplicate. The grid now says what
+   * it actually searched and offers to search the rest.
+   */
+  get filteringPartialSet(): boolean {
+    return !!this.pagedSource && this.hasMore$.value && this.hasActiveFilter;
+  }
+
+  get hasActiveFilter(): boolean {
+    return Object.values(this.filters).some((filter) => !!filter?.operator);
+  }
+
+  /** How many rows the filter actually looked at. Not a total - the grid has
+   *  never counted the collection, and inventing a denominator would be its
+   *  own kind of lie. */
+  get loadedCount(): number {
+    return this.sourceRows$.value.length;
+  }
+
+  /**
+   * Pages in the rest of the collection and re-runs the filter over all of
+   * it. Deliberately a button rather than something that happens on its own:
+   * these are thousands of rows, and paging is why the screen opens quickly.
+   */
+  async searchAll(): Promise<void> {
+    if (!this.pagedSource) {
+      return;
+    }
+    this.searchedEverything = true;
+    await this.pagedSource.loadAll();
+  }
+
+  /** Latches once the whole collection has been paged in, so the grid can
+   *  say the search was complete instead of silently looking the same. */
+  searchedEverything = false;
 
   exportExcel(): void {
     const excelColumns: ExcelColumn<T>[] = this.visibleColumns.map((column) => ({

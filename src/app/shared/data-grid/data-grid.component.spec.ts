@@ -2,7 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { SimpleChange, SimpleChanges } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { DataGridComponent } from './data-grid.component';
 import { DataGridColumn, DataGridRowAction } from './data-grid.model';
 
@@ -183,6 +183,97 @@ describe('DataGridComponent', () => {
       const grid = makeGrid(COLUMNS, ROWS);
       const column: DataGridColumn<Row> = { key: 'name', label: 'Name', value: () => 42 };
       expect(grid.displayValue(column, ROWS[0])).toBe('42');
+    });
+  });
+
+  describe('filtering only part of a paged collection', () => {
+    // THE BUG THIS EXISTS FOR. Column filters match the rows that are LOADED,
+    // and a paged grid starts with 50. Filtering 5,450 contacts for someone
+    // on page 30 answered "No contacts found." - which reads as "not in the
+    // system", and is how a duplicate contact gets created. Found in the dev
+    // sweep 2026-08-31; nine screens share this grid.
+
+    /**
+     * A paged grid with rows loaded and more waiting.
+     *
+     * Wired through ngOnChanges the way the component really consumes a
+     * source - it IGNORES [rows] once [pagedSource] is bound, so a fake that
+     * only sets the field leaves the grid holding nothing and every
+     * assertion here reads zero.
+     */
+    function pagedGrid(hasMore = true): DataGridComponent<Row> {
+      const grid = makeGrid(COLUMNS);
+      let loadAllCalls = 0;
+      const source = {
+        loadAll: async () => { loadAllCalls++; source.hasMore$.next(false); },
+        loadNextPage: async () => undefined,
+        rows$: new BehaviorSubject<Row[]>(ROWS),
+        loading$: new BehaviorSubject(false),
+        loadingMore$: new BehaviorSubject(false),
+        hasMore$: new BehaviorSubject(hasMore)
+      };
+      grid.pagedSource = source as never;
+      grid.ngOnChanges({ pagedSource: new SimpleChange(null, source, true) } as unknown as SimpleChanges);
+      (grid as unknown as { loadAllCalls: () => number }).loadAllCalls = () => loadAllCalls;
+      return grid;
+    }
+
+    it('says nothing while no filter is on - paging alone is not a problem', () => {
+      expect(pagedGrid().filteringPartialSet).toBeFalse();
+    });
+
+    it('warns once a filter is applied and pages remain', () => {
+      const grid = pagedGrid();
+      grid.onFilterChange('name', { operator: 'contains', value: 'zz' } as never);
+
+      expect(grid.filteringPartialSet).toBeTrue();
+      expect(grid.loadedCount).toBe(3);
+    });
+
+    it('stays quiet when the whole collection is already loaded', () => {
+      const grid = pagedGrid(false);
+      grid.onFilterChange('name', { operator: 'contains', value: 'zz' } as never);
+
+      expect(grid.filteringPartialSet)
+        .withContext('nothing is hidden, so there is nothing to warn about').toBeFalse();
+    });
+
+    it('never claims the record does not exist - only that it is not in what was searched', () => {
+      const grid = pagedGrid();
+      grid.emptyMessage = 'No contacts found.';
+      grid.onFilterChange('name', { operator: 'contains', value: 'nobody' } as never);
+
+      expect(grid.resolvedEmptyMessage).toBe('No matches in the 3 rows loaded so far.');
+      expect(grid.resolvedEmptyMessage)
+        .withContext('the whole defect was an authoritative-looking wrong answer')
+        .not.toContain('No contacts found');
+    });
+
+    it('gives the caller\'s own message back once everything has been searched', () => {
+      const grid = pagedGrid(false);
+      grid.emptyMessage = 'No contacts found.';
+      grid.onFilterChange('name', { operator: 'contains', value: 'nobody' } as never);
+
+      expect(grid.resolvedEmptyMessage).toBe('No contacts found.');
+    });
+
+    it('pages in the rest only when asked, and says so afterwards', async () => {
+      const grid = pagedGrid();
+      grid.onFilterChange('name', { operator: 'contains', value: 'zz' } as never);
+      expect(grid.searchedEverything).withContext('must not happen on its own').toBeFalse();
+
+      await grid.searchAll();
+
+      expect((grid as unknown as { loadAllCalls: () => number }).loadAllCalls()).toBe(1);
+      expect(grid.searchedEverything).toBeTrue();
+      expect(grid.filteringPartialSet)
+        .withContext('nothing left unsearched, so the warning goes away').toBeFalse();
+    });
+
+    it('does nothing in static mode, where every row is already present', async () => {
+      const grid = makeGrid(COLUMNS, ROWS);
+      await grid.searchAll();
+      expect(grid.filteringPartialSet).toBeFalse();
     });
   });
 
