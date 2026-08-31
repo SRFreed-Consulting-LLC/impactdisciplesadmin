@@ -514,7 +514,7 @@
       "type": "copyCentred",
       "isActive": true,
       "heading": "OVERVIEW",
-      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training seminars to churches that need help implementing a proven strategy to grow their ministry. Our team comes to you and facilitates a half-day training seminar where you will learn the mission, model, and methods you need to multiply disciples. Read more about how our seminars can help you below. Read more details below on our Disciple-Making Church Seminar below. Before you begin, you might consider one of our <a>free consultations</a> from our Impact team to introduce our ministry and assess if our Seminar is right for you.</p>",
+      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training seminars to churches that need help implementing a proven strategy to grow their ministry. Our team comes to you and facilitates a half-day training seminar where you will learn the mission, model, and methods you need to multiply disciples. Read more about how our seminars can help you below. Read more details below on our Disciple-Making Church Seminar below. Before you begin, you might consider one of our <a href=\"/consultation-survey\">free consultations</a> from our Impact team to introduce our ministry and assess if our Seminar is right for you.</p>",
       "variant": "plain",
       "surface": "light",
       "headingStyle": "light",
