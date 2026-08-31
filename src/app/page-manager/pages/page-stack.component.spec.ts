@@ -8,6 +8,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PageStackComponent, uniqueKey } from './page-stack.component';
 import { pageFor } from './page-section-catalogue';
+import { kitPage } from './kit-page.adapter';
 
 // TestBed as an INJECTOR, not as a renderer: this component takes everything
 // through inject(), so `new`-ing it throws NG0203, and nothing here needs a
@@ -155,9 +156,11 @@ describe('PageStackComponent', () => {
   });
 
   it('says plainly when a section has nothing to edit', () => {
+    // Re-pointed at the KIT's consultation band when the equipping pages -
+    // the last catalogue holders of consultBanner - cut over (2026-08-30).
     const c = build();
-    c.page = pageFor('equipping-groups')!;
-    const banner = { key: 'b', type: PAGE_SECTION_TYPES.CONSULT_BANNER };
+    c.page = kitPage({ id: 'x', title: 'X', blocks: [] } as never);
+    const banner = { key: 'b', type: 'fixedBand' as never };
 
     expect(c.summary(banner)).toBe('nothing to edit - move it or switch it off');
     expect(c.isEditable(c.kindOf(banner)!)).toBe(false);

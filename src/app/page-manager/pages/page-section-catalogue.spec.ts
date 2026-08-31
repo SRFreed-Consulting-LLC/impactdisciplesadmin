@@ -122,15 +122,6 @@ describe('page section catalogue', () => {
     expect(pageFor('podcasts')).toBeUndefined();
   });
 
-  it('builds the three course pages from one shape', () => {
-    // They are the same page three times over; the only things that should
-    // differ are the slug, the label and the blurb.
-    const shapes = ['pastors', 'leaders', 'churches']
-      .map((a) => pageFor(`equipping-groups-${a}`)?.kinds.map((k) => k.type).join(','));
-
-    expect(new Set(shapes).size).toBe(1);
-    expect(shapes[0]).toBeTruthy();
-  });
 });
 
 describe('pluralise', () => {

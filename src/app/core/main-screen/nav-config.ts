@@ -373,10 +373,6 @@ export const NAV_CONFIG: NavGroup[] = [
       // all - the left nav IS the list). The twelve below stay hardcoded
       // only until each migrates onto the kit and carries its own title.
       { label: 'About Us', slug: 'about-us' },
-      { label: 'Equipping Groups', slug: 'equipping-groups' },
-      { label: 'Equipping - Pastors', slug: 'equipping-groups-pastors' },
-      { label: 'Equipping - Leaders', slug: 'equipping-groups-leaders' },
-      { label: 'Equipping - Churches', slug: 'equipping-groups-churches' },
       { label: 'Seminars', slug: 'seminars' },
       { label: 'Give', slug: 'give' },
       { label: 'Contact', slug: 'contact' },

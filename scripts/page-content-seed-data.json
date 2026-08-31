@@ -123,7 +123,7 @@
   "equipping-groups": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "Making of a Disciple-Maker",
@@ -132,11 +132,13 @@
       "image": {
         "name": "Home/home-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fhome-header.jpg?alt=media&token=4a6de836-e6fc-4c12-9e2a-e8c063ffdcc3"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "overview",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "OUR APPROACH TO <strong>EQUIPPING</strong>",
       "body": "<div>\n  <p>\n    <b>Impact Discipleship Equipping Groups</b> are designed to help pastors and church leaders rediscover and live out Jesus’ original vision for the church—a movement of multiplying disciples.\n  </p>\n  <p>\n    Drawing from over 30 years of real-life ministry experience, these small-group learning environments invite leaders to study the life and methods of Jesus alongside other like-minded pastors and leaders.\n  </p>\n  <p>\n    Through short videos, focused articles, and live Zoom discussions, each equipping group provides practical, biblical insight you can immediately apply in your local church.\n  </p>\n  <p>\n    It’s a simple investment that produces lasting impact—helping you lead, build, and multiply disciples the way Jesus intended.\n  </p>\n</div>",
@@ -145,11 +147,13 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2FGENERIC%20EQUPPING%20GROUP%20PHOTO.png?alt=media&token=b4e0ab45-0a02-45b3-9f2b-464fae27f7fa"
       },
       "videoId": "q-NGIqAAupg",
-      "videoUrl": "https://www.youtube.com/watch?v=q-NGIqAAupg"
+      "videoUrl": "https://www.youtube.com/watch?v=q-NGIqAAupg",
+      "variant": "video",
+      "surface": "light"
     },
     {
       "key": "courses",
-      "type": "cards",
+      "type": "listRows",
       "isActive": true,
       "heading": "Impact Discipleship offers three Equipping Group courses.",
       "items": [
@@ -171,18 +175,22 @@
           "link": "/equipping-groups-leaders",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "buttonAndText",
+      "surface": "light"
     },
     {
       "key": "consultBanner",
-      "type": "consultBanner",
-      "isActive": true
+      "type": "fixedBand",
+      "isActive": true,
+      "variant": "consultation",
+      "surface": "tinted"
     }
   ],
   "equipping-groups-pastors": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "The Making of a Disciple-Making Pastor",
@@ -193,11 +201,13 @@
       "image": {
         "name": "Home/20240126-AS3A2169",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2F20240126-AS3A2169.jpg?alt=media&token=a2ae3fd2-9706-4e55-9ee0-56a90c097719"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "overview",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "OUR APPROACH TO <strong>EQUIPPING PASTORS</strong>",
       "body": "<div>\n  <p>\n    Many pastors today have not been personally discipled and lack disciple-making training in their theological education. Our course seeks to address this gap by providing pastors with the tools to become influential disciple-making leaders in their churches.\n  </p>\n  <p>\n    Drawing on over 30 years of “on-the-job” disciple-making experience, we offer a strategic and intentional process for pastors seeking to lead their congregations toward becoming movements of multiplication. The course covers six crucial priorities of Disciple-Making Pastors, modeled after Jesus’ approach to disciple-making.\n  </p>\n  <p>\n    The course consists of seven online sessions where pastors meet with a group of twelve peers to discuss the strategic content developed by our team. Pastors will receive personalized coaching and accountability throughout the course to help them develop the necessary skills to fulfill Jesus’ mission of making disciples.\n  </p>\n  <p>\n    As a pastor, the course creator, Ken Adams, knows firsthand the challenges of leading a church to become a Disciple-Making Movement. He is committed to sharing the most important things he has learned about this ministry to help pastors progress as Disciple-Making Pastors.\n  </p>\n  <p>\n    Join us in “The Making of a Disciple-Making Pastor” group and take the first step towards leading your congregation to fulfill the mission of making disciples.\n  </p>\n</div>",
@@ -206,11 +216,13 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2FDMPastor%20for%20youtube.png?alt=media&token=01bf9698-722d-47d3-b09f-c98bc3f0ce93"
       },
       "videoId": "74k0Ia-pdcg",
-      "videoUrl": "https://www.youtube.com/watch?v=74k0Ia-pdcg"
+      "videoUrl": "https://www.youtube.com/watch?v=74k0Ia-pdcg",
+      "variant": "video",
+      "surface": "light"
     },
     {
       "key": "columns",
-      "type": "columns",
+      "type": "listColumns",
       "isActive": true,
       "items": [
         {
@@ -259,18 +271,24 @@
           "body": "<ul>\n  <li class=\"mb-5\">* <b>Seven live weekly Zoom sessions</b> led by veteran pastors</li>\n  <li class=\"mb-5\">* <b>Personalized coaching</b> to develop your disciple‑making skills</li>\n  <li class=\"mb-5\">* <b>Six crucial priorities</b> every Disciple‑Making Pastor must master</li>\n  <li class=\"mb-5\">* <b>Practical tools and resources</b> grounded in decades of experience</li>\n  <li class=\"mb-5\">* <b>Join us today</b> and take the first step toward leading your congregation into a movement of multiplying disciples!</li>\n</ul>",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "twoColumn",
+      "surface": "light",
+      "leftGround": "brand",
+      "rightTitleTone": "brand"
     },
     {
       "key": "consultBanner",
-      "type": "consultBanner",
-      "isActive": true
+      "type": "fixedBand",
+      "isActive": true,
+      "variant": "consultation",
+      "surface": "tinted"
     }
   ],
   "equipping-groups-leaders": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "Coming Soon: The Disciple-Making Leader Equipping Group",
@@ -281,11 +299,13 @@
       "image": {
         "name": "Home/20210129-IMG_0151-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2F20210129-IMG_0151-2.jpg?alt=media&token=d1ae9d34-5eef-432d-9f11-f6269404a2cf"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "overview",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "OUR APPROACH TO <strong>EQUIPPING LEADERS</strong>",
       "body": "<div>\n  <p>\n    <b>The Disciple-Making Leader Equipping Group</b> is a new online training experience designed to equip everyday church leaders to live out and lead the mission of making disciples. This group focuses on personal spiritual growth and practical, real-life disciple-making—helping leaders know, model, and multiply the mission in their everyday ministry.\n  </p>\n  <p>\n    Designed to be accessible, relational, and actionable, this experience is for small group leaders, ministry and team leaders, volunteers, emerging leaders, and churches seeking to develop disciple-making leaders at every level. No formal ministry role required—just a desire to grow and faithfully lead others.\n  </p>\n  <p>\n    Launching soon. More details coming.\n  </p>\n</div>",
@@ -294,11 +314,13 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2FDMC%20LEADER%20for%20youtube.png?alt=media&token=5abf0844-f9a8-4a73-b50d-1b8ac36e8c40"
       },
       "videoId": "L_OHs9Cn6bQ",
-      "videoUrl": "https://www.youtube.com/watch?v=L_OHs9Cn6bQ"
+      "videoUrl": "https://www.youtube.com/watch?v=L_OHs9Cn6bQ",
+      "variant": "video",
+      "surface": "light"
     },
     {
       "key": "columns",
-      "type": "columns",
+      "type": "listColumns",
       "isActive": true,
       "items": [
         {
@@ -337,18 +359,24 @@
           "body": "<ul>\n  <li class=\"mb-5\">* Small group leaders</li>\n  <li class=\"mb-5\">* Ministry leaders and team leaders</li>\n  <li class=\"mb-5\">* Volunteers and emerging leaders</li>\n  <li class=\"mb-5\">* Simple, reproducible tools leaders can use immediately</li>\n  <li class=\"mb-5\">* Churches seeking to develop disciple-making leaders at every level</li>\n</ul>\n<p><i>No formal ministry role required.</i></p>",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "twoColumn",
+      "surface": "light",
+      "leftGround": "brand",
+      "rightTitleTone": "brand"
     },
     {
       "key": "consultBanner",
-      "type": "consultBanner",
-      "isActive": true
+      "type": "fixedBand",
+      "isActive": true,
+      "variant": "consultation",
+      "surface": "tinted"
     }
   ],
   "equipping-groups-churches": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "ONLINE EQUIPPING GROUPS",
       "heading": "Disciple-Making Church Equipping Group (NEW COURSE)",
@@ -359,11 +387,13 @@
       "image": {
         "name": "Home/home-header-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fhome-header-2.PNG?alt=media&token=9f2866c3-5b8c-4cdc-9604-573c276fd7f9"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "overview",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "OUR APPROACH TO <strong>EQUIPPING CHURCHES</strong>",
       "body": "<div>\n  <p>\n    <b>The Disciple-Making Church Equipping Group</b> is an online training experience designed to help churches move from intention to implementation in building a disciple-making culture.\n  </p>\n  <p>\n    For the first time ever, Impact Discipleship Ministries’ Disciple-Making Church Seminar—previously offered only as an onsite, half-day training—is now available in a seven-week live Zoom equipping group. Built on more than 30 years of real-world disciple-making experience, this proven content equips pastors and ministry leaders with the mission, model, and methods needed to multiply disciples together.\n  </p>\n  <p>\n    Through live weekly sessions, guided discussion, practical ministry projects, and proven tools, churches will gain clarity, alignment, and momentum toward a sustainable disciple-making culture. This experience is designed for pastors, ministry staff, key leaders, and churches ready to move beyond programs and toward multiplication.\n  </p>\n</div>",
@@ -372,11 +402,13 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FContent%2FDMCHURCH%20for%20youtube%20cover.png?alt=media&token=0a4ead1b-4289-4185-8019-c0def5c536e3"
       },
       "videoId": "7FqlKpxX8Eg",
-      "videoUrl": "https://www.youtube.com/watch?v=7FqlKpxX8Eg"
+      "videoUrl": "https://www.youtube.com/watch?v=7FqlKpxX8Eg",
+      "variant": "video",
+      "surface": "light"
     },
     {
       "key": "columns",
-      "type": "columns",
+      "type": "listColumns",
       "isActive": true,
       "items": [
         {
@@ -431,12 +463,18 @@
           "body": "<ul>\n  <li class=\"mb-5\">* Pastors and church leaders</li>\n  <li class=\"mb-5\">* Ministry staff and key leaders</li>\n  <li class=\"mb-5\">* Churches ready to move from programs to multiplication</li>\n</ul>",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "twoColumn",
+      "surface": "light",
+      "leftGround": "brand",
+      "rightTitleTone": "brand"
     },
     {
       "key": "consultBanner",
-      "type": "consultBanner",
-      "isActive": true
+      "type": "fixedBand",
+      "isActive": true,
+      "variant": "consultation",
+      "surface": "tinted"
     }
   ],
   "seminars": [

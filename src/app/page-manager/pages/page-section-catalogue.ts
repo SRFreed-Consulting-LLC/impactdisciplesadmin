@@ -355,35 +355,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
   },
 
   {
-    slug: 'equipping-groups',
-    label: 'Equipping Groups',
-    path: '/equipping-groups',
-    blurb: 'The hub page: the overview beside its video, and the three course cards.',
-    kinds: [
-      pageHeader(),
-      mission({ label: 'Overview with a video' }),
-      {
-        type: PAGE_SECTION_TYPES.CARDS,
-        label: 'Course list',
-        blurb: 'a heading over one row per course: a button and a line saying what it is',
-        icon: 'view_list',
-        singleton: false,
-        fields: { heading: true, entries: true },
-        entry: {
-          noun: 'course',
-          fields: { title: true, description: true, link: true },
-          titleLabel: 'Button text',
-          descriptionLabel: 'What it is',
-          linkLabel: 'Goes to'
-        }
-      },
-      consultBanner()
-    ]
-  },
-
-  ...['pastors', 'leaders', 'churches'].map((audience) => equippingCoursePage(audience)),
-
-  {
     slug: 'coaching-with-impact',
     label: 'Coaching with Impact',
     path: '/coaching-with-impact',
@@ -698,51 +669,6 @@ export const EDITABLE_PAGES: readonly EditablePage[] = [
   }
 ];
 
-/**
- * The three course pages, which are the same page three times over.
- *
- * They differ only in audience and in the document each one reads, and their
- * web templates were folded into one on 2026-08-29 for the same reason.
- * Writing this out three times would be three chances to fix a label in two
- * places.
- */
-function equippingCoursePage(audience: string): EditablePage {
-  const label = audience[0].toUpperCase() + audience.slice(1);
-  return {
-    slug: `equipping-groups-${audience}`,
-    label: `Equipping - ${label}`,
-    path: `/equipping-groups-${audience}`,
-    blurb: `The ${label} course page: the overview beside its video, then the two columns.`,
-    kinds: [
-      pageHeader(),
-      mission({ label: 'Overview with a video' }),
-      {
-        type: PAGE_SECTION_TYPES.COLUMNS,
-        label: 'Two columns',
-        blurb: 'headed passages in two columns - the facts on the left, the pitch on the right',
-        icon: 'view_column',
-        singleton: true,
-        fields: { entries: true },
-        entry: {
-          noun: 'passage',
-          note:
-            'Which column a passage sits in is YOURS to set, unlike everywhere ' +
-            'else on these pages - the two columns say different kinds of ' +
-            'thing rather than alternating. Order within a column is the order ' +
-            'here. A passage can be a heading over copy, a price line, a ' +
-            'button, or any combination.',
-          fields: {
-            title: true, body: true, column: true, amount: true, description: true, cta: true
-          },
-          titleLabel: 'Heading',
-          bodyLabel: 'Copy',
-          descriptionLabel: 'Note under the price'
-        }
-      },
-      consultBanner()
-    ]
-  };
-}
 
 export function pageFor(slug: string): EditablePage | undefined {
   return EDITABLE_PAGES.find((page) => page.slug === slug);
