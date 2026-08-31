@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 
 export type PreviewDevice = 'web' | 'phone';
 
@@ -25,7 +25,7 @@ export type PreviewDevice = 'web' | 'phone';
   styleUrls: ['./preview-rail.component.scss'],
   standalone: false
 })
-export class PreviewRailComponent {
+export class PreviewRailComponent implements OnChanges {
   /** Distinct per screen - see the class comment. */
   @Input({ required: true }) storageKey!: string;
   /** Shown in the rail's header, e.g. "Public page". */
@@ -45,13 +45,33 @@ export class PreviewRailComponent {
    *  inside a dialog it has to leave the form the larger share. */
   @Input() width = 420;
 
+  /** Readable by a host through a template reference - see ngOnChanges
+   *  for why it is settled before the first render. */
   device: PreviewDevice = 'web';
   collapsed = false;
 
   private loaded = false;
 
-  /** Read lazily rather than in the constructor: storageKey is an @Input
-   *  and is not set yet when the constructor runs. */
+  /**
+   * A CHANGING storageKey re-reads, which is what lets a key carry the
+   * thing being edited: `page-stack:seminars` and `page-stack:home`
+   * remember separately, so an admin who folds the preview away on one page
+   * has said nothing about the next (Shane, 2026-08-31).
+   *
+   * Loading HERE rather than only lazily from the template also settles the
+   * order for a host that reads `device` off a template reference: this runs
+   * before anything renders, so the projected content sees the stored choice
+   * on its first pass rather than the default and then a correction.
+   *
+   * Every existing host passes a constant key and is unaffected.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['storageKey']) {
+      this.loaded = false;
+      this.load();
+    }
+  }
+
   private load(): void {
     if (this.loaded) {
       return;

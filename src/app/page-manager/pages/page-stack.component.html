@@ -32,25 +32,16 @@
         (cancelled)="closeEditor()"></app-page-section-editor>
     </div>
 
-    <aside class="ps__preview">
-      <header class="ps__preview-head">
-        <h2 class="ps__preview-title">This section</h2>
-        <div class="ps__device" role="group" aria-label="Preview width">
-          <button type="button" class="ps__device-btn"
-                  [class.ps__device-btn--on]="device === 'desktop'"
-                  [attr.aria-pressed]="device === 'desktop'"
-                  (click)="setDevice('desktop')">Desktop</button>
-          <button type="button" class="ps__device-btn"
-                  [class.ps__device-btn--on]="device === 'mobile'"
-                  [attr.aria-pressed]="device === 'mobile'"
-                  (click)="setDevice('mobile')">Mobile</button>
-        </div>
-      </header>
-
+    <!-- The SECTION preview folds away on its own key: collapsing the
+         whole-page preview says nothing about whether you want to see the
+         section you are editing. -->
+    <app-preview-rail #sectionRail
+                      [storageKey]="'page-section:' + page.slug"
+                      label="This section" [width]="430">
       <app-page-live-preview
         [path]="page.path"
         [label]="editingKind.label"
-        [device]="device"
+        [device]="sectionRail.device === 'phone' ? 'mobile' : 'desktop'"
         [revision]="previewRevision"
         [sectionKey]="editing.key"
         [liveSection]="editingLive ?? undefined"></app-page-live-preview>
@@ -60,7 +51,7 @@
         the site&rsquo;s header and footer are left out. A switched-off
         section still draws here, because you are working on it.
       </p>
-    </aside>
+    </app-preview-rail>
   </div>
 } @else {
 
@@ -201,33 +192,28 @@
     }
   </div>
 
-  <!-- PREVIEW RAIL -->
-  <aside class="ps__preview">
-    <header class="ps__preview-head">
-      <h2 class="ps__preview-title">Live preview</h2>
-      <div class="ps__device" role="group" aria-label="Preview width">
-        <button type="button" class="ps__device-btn"
-                [class.ps__device-btn--on]="device === 'desktop'"
-                [attr.aria-pressed]="device === 'desktop'"
-                (click)="setDevice('desktop')">Desktop</button>
-        <button type="button" class="ps__device-btn"
-                [class.ps__device-btn--on]="device === 'mobile'"
-                [attr.aria-pressed]="device === 'mobile'"
-                (click)="setDevice('mobile')">Mobile</button>
-      </div>
-    </header>
+  <!-- THE PREVIEW FOLDS AWAY, in the same rail six other screens use
+       (Shane, 2026-08-31). Its own web/phone switch replaces the Desktop
+       and Mobile buttons that used to sit here - one switch, and the same
+       one as everywhere else in the admin.
 
+       The key carries the SLUG, so folding the preview away on Seminars
+       says nothing about Home. `rail.device` is read off the template
+       reference rather than plumbed through this component: the rail
+       settles it in ngOnChanges, before anything renders. -->
+  <app-preview-rail #rail [storageKey]="'page-stack:' + page.slug"
+                    label="Live preview" [width]="430">
     <app-page-live-preview
       [path]="page.path"
       [label]="page.label"
-      [device]="device"
+      [device]="rail.device === 'phone' ? 'mobile' : 'desktop'"
       [revision]="previewRevision"></app-page-live-preview>
 
     <p class="ps__preview-note">
       The real page, scaled &mdash; not a drawing of it, so it cannot drift.
       It reloads after every change you make here.
     </p>
-  </aside>
+  </app-preview-rail>
 </div>
 
 }

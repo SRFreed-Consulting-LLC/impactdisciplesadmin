@@ -7,7 +7,6 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { EditablePage, PageSectionKind, kindFor, pluralise } from './page-section-catalogue';
-import { PreviewDevice } from './page-live-preview.component';
 import {
   SECTION_ARCHETYPE, SECTION_PRESETS, SectionPreset
 } from '@impact-common/shared/lists/section_kit';
@@ -61,8 +60,6 @@ export class PageStackComponent implements OnChanges {
   loading = true;
   loadFailed = false;
   readonly busy$ = new BehaviorSubject<boolean>(false);
-
-  device: PreviewDevice = 'desktop';
 
   /**
    * Bumped after every successful write, which reloads the previewer.
@@ -394,9 +391,6 @@ export class PageStackComponent implements OnChanges {
     return this.sections.filter((s) => this.isLive(s));
   }
 
-  setDevice(device: PreviewDevice): void {
-    this.device = device;
-  }
 
   canEdit(): boolean {
     return this.permissionService.canEdit(this.screenKey);
