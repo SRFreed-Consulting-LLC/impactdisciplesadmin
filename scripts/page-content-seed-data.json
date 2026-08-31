@@ -216,10 +216,23 @@
     },
     {
       "key": "consultBanner",
-      "type": "fixedBand",
+      "type": "photoBand",
       "isActive": true,
-      "variant": "consultation",
-      "surface": "tinted"
+      "variant": "title",
+      "surface": "photo",
+      "heading": "RECEIVE A FREE CONSULTATION",
+      "body": "<p>Your first consultation is on us. Fill out a brief survey and one of our consultants will contact you shortly!</p>",
+      "image": {
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fteam-header.PNG?alt=media&token=96b45f4e-2a72-4068-944a-ae188c4f3090",
+        "name": "team-header.PNG"
+      },
+      "items": [
+        {
+          "title": "Get My Free Consultation",
+          "link": "/consultation-survey",
+          "isActive": true
+        }
+      ]
     }
   ],
   "equipping-groups-pastors": [
@@ -322,10 +335,23 @@
     },
     {
       "key": "consultBanner",
-      "type": "fixedBand",
+      "type": "photoBand",
       "isActive": true,
-      "variant": "consultation",
-      "surface": "tinted"
+      "variant": "title",
+      "surface": "photo",
+      "heading": "RECEIVE A FREE CONSULTATION",
+      "body": "<p>Your first consultation is on us. Fill out a brief survey and one of our consultants will contact you shortly!</p>",
+      "image": {
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fteam-header.PNG?alt=media&token=96b45f4e-2a72-4068-944a-ae188c4f3090",
+        "name": "team-header.PNG"
+      },
+      "items": [
+        {
+          "title": "Get My Free Consultation",
+          "link": "/consultation-survey",
+          "isActive": true
+        }
+      ]
     }
   ],
   "equipping-groups-leaders": [
@@ -418,10 +444,23 @@
     },
     {
       "key": "consultBanner",
-      "type": "fixedBand",
+      "type": "photoBand",
       "isActive": true,
-      "variant": "consultation",
-      "surface": "tinted"
+      "variant": "title",
+      "surface": "photo",
+      "heading": "RECEIVE A FREE CONSULTATION",
+      "body": "<p>Your first consultation is on us. Fill out a brief survey and one of our consultants will contact you shortly!</p>",
+      "image": {
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fteam-header.PNG?alt=media&token=96b45f4e-2a72-4068-944a-ae188c4f3090",
+        "name": "team-header.PNG"
+      },
+      "items": [
+        {
+          "title": "Get My Free Consultation",
+          "link": "/consultation-survey",
+          "isActive": true
+        }
+      ]
     }
   ],
   "equipping-groups-churches": [
@@ -530,10 +569,23 @@
     },
     {
       "key": "consultBanner",
-      "type": "fixedBand",
+      "type": "photoBand",
       "isActive": true,
-      "variant": "consultation",
-      "surface": "tinted"
+      "variant": "title",
+      "surface": "photo",
+      "heading": "RECEIVE A FREE CONSULTATION",
+      "body": "<p>Your first consultation is on us. Fill out a brief survey and one of our consultants will contact you shortly!</p>",
+      "image": {
+        "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fteam-header.PNG?alt=media&token=96b45f4e-2a72-4068-944a-ae188c4f3090",
+        "name": "team-header.PNG"
+      },
+      "items": [
+        {
+          "title": "Get My Free Consultation",
+          "link": "/consultation-survey",
+          "isActive": true
+        }
+      ]
     }
   ],
   "seminars": [

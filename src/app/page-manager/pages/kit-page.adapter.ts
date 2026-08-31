@@ -137,9 +137,6 @@ const CAVEATS: Partial<Record<SECTION_ARCHETYPE, string>> = {
   [SECTION_ARCHETYPE.CONTACT_DETAILS]:
     'The address, phone, email and social links come from the site details - '
     + 'they already feed the footer. Change them in Web Config.',
-  [SECTION_ARCHETYPE.FIXED_BAND]:
-    'Nothing on this band is edited here - it is the same one every page shows. '
-    + 'It is a section so you can move it or switch it off.',
   [SECTION_ARCHETYPE.FORM]:
     'WHICH form this shows is not set here. It is a Firestore id, and one '
     + 'retyped by hand is a blank widget nobody can diagnose.'
@@ -170,7 +167,8 @@ const BUTTON_BEARING: readonly SECTION_ARCHETYPE[] = [
   SECTION_ARCHETYPE.HERO_BAND,
   SECTION_ARCHETYPE.COPY_MEDIA,
   SECTION_ARCHETYPE.COPY_CENTRED,
-  SECTION_ARCHETYPE.COUNTDOWN
+  SECTION_ARCHETYPE.COUNTDOWN,
+  SECTION_ARCHETYPE.PHOTO_BAND
 ];
 
 function toVariant(archetype: SECTION_ARCHETYPE, variant: SectionVariant): KindVariant {

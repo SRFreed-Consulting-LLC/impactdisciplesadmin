@@ -156,14 +156,22 @@ describe('PageStackComponent', () => {
   });
 
   it('says plainly when a section has nothing to edit', () => {
-    // Re-pointed at the KIT's consultation band when the equipping pages -
-    // the last catalogue holders of consultBanner - cut over (2026-08-30).
+    // A HAND-MADE fieldless kind, not a real archetype. It pointed at
+    // `fixedBand` until 2026-08-31, when the consultation banner became an
+    // ordinary photo band and that archetype retired - leaving the kit with
+    // nothing fieldless in it and this spec asserting against a type that no
+    // longer existed. The BEHAVIOUR is still real and still worth pinning:
+    // any kind can end up with no editable fields, and a row that silently
+    // does nothing when clicked is worse than one that says why.
     const c = build();
-    c.page = kitPage({ id: 'x', title: 'X', blocks: [] } as never);
-    const banner = { key: 'b', type: 'fixedBand' as never };
+    c.page = {
+      slug: 'x', label: 'X', path: '/x', blurb: '',
+      kinds: [{ type: 'nothingHere', label: 'Nothing', blurb: '', icon: 'block', singleton: false, fields: {} }]
+    } as never;
+    const row = { key: 'b', type: 'nothingHere' as never };
 
-    expect(c.summary(banner)).toBe('nothing to edit - move it or switch it off');
-    expect(c.isEditable(c.kindOf(banner)!)).toBe(false);
+    expect(c.summary(row)).toBe('nothing to edit - move it or switch it off');
+    expect(c.isEditable(c.kindOf(row)!)).toBe(false);
   });
 
   it('strips markup out of a row summary', () => {
