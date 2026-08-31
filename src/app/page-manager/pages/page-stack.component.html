@@ -118,26 +118,31 @@
          These are the PRESETS: ready-made arrangements that place a Section
          already carrying its columns, pieces and measured styling. The raw
          archetypes live behind "More" in the header. -->
-    @if (addablePresets.length) {
+    @if (addableMembers.length) {
       <div cdkDropList id="section-palette" class="ps__palette"
-           [cdkDropListData]="addablePresets"
+           [cdkDropListData]="addableMembers"
            cdkDropListConnectedTo="page-stack"
            cdkDropListSortingDisabled>
-        @for (preset of addablePresets; track preset.key) {
+        @for (member of addableMembers; track member.type) {
           <button type="button" class="ps__chip" cdkDrag
-                  [cdkDragData]="preset"
+                  [cdkDragData]="member"
                   [disabled]="!canEdit() || loadFailed"
-                  (click)="addPreset(preset)"
-                  [matTooltip]="preset.blurb
+                  (click)="addMember(member)"
+                  [matTooltip]="member.blurb
                     + '. Drag into the page, or click to add it at the end.'">
-            <mat-icon>{{ preset.icon }}</mat-icon>
-            <span>{{ preset.label }}</span>
+            <mat-icon>{{ member.icon }}</mat-icon>
+            <span>{{ member.label }}</span>
             <div class="ps__chip-drag" *cdkDragPreview>
-              <mat-icon>{{ preset.icon }}</mat-icon>
-              <span>{{ preset.label }}</span>
+              <mat-icon>{{ member.icon }}</mat-icon>
+              <span>{{ member.label }}</span>
             </div>
           </button>
         }
+        <p class="ps__palette-note">
+          A <strong>Section</strong> is one to three columns of whatever you put
+          in them. A <strong>List</strong> is one item shape repeated &mdash; tiles,
+          rows, a timeline. Everything on the site is one or the other.
+        </p>
       </div>
     }
     <!-- Takes a reorder from within itself, and a NEW section dropped from

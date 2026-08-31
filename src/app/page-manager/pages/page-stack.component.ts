@@ -7,9 +7,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { EditablePage, PageSectionKind, kindFor, pluralise } from './page-section-catalogue';
-import {
-  SECTION_ARCHETYPE, SECTION_PRESETS, SectionPreset
-} from '@impact-common/shared/lists/section_kit';
+import { SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 
 /**
  * ONE public page as an ordered stack of sections, with a live preview of the
@@ -168,7 +166,7 @@ export class PageStackComponent implements OnChanges {
       return;
     }
     if (event.previousContainer.id === 'section-palette') {
-      await this.placePreset(event.item.data as SectionPreset, event.currentIndex, false);
+      await this.placeMember(event.item.data as PageSectionKind, event.currentIndex, false);
       return;
     }
     if (event.previousIndex === event.currentIndex) {
@@ -203,63 +201,65 @@ export class PageStackComponent implements OnChanges {
    * The twelve original pages declare their own fixed kinds and must not
    * grow a menu of things they cannot draw.
    */
-  get addablePresets(): readonly SectionPreset[] {
-    const knowsSections = this.page.kinds.some((k) => k.type === SECTION_ARCHETYPE.SECTION);
-    return knowsSections ? SECTION_PRESETS : [];
+  /**
+   * THE TWO MEMBERS, and nothing else.
+   *
+   * A Section is one to three columns of whatever you put in them; a List is
+   * one item shape repeated. Everything on the site is one or the other,
+   * which is the whole point of the consolidation - so the bar says exactly
+   * that rather than implying a dozen kinds of thing.
+   *
+   * PRESETS LIVED HERE UNTIL 2026-08-31: twelve ready-made arrangements -
+   * Hero, Text with a video, Call to action - each placing a Section already
+   * carrying its columns and styling. They existed as the answer to "a
+   * freeform builder makes building a hero from scratch tedious", and the
+   * piece palette answered that better: you drag a Section in, then drag a
+   * heading, some text and buttons into it. Shane's call, and the right one -
+   * a preset is a shortcut for a problem that no longer exists, and twelve of
+   * them on the bar made two members look like twelve types.
+   */
+  get addableMembers(): PageSectionKind[] {
+    return this.page.kinds.filter(
+      (kind) => kind.type === SECTION_ARCHETYPE.SECTION || kind.type === SECTION_ARCHETYPE.LIST
+    );
   }
 
-  /**
-   * Place a preset: an ordinary Section that arrives already arranged.
-   *
-   * The seed is plain data (see SectionPreset) so what a preset places can
-   * be read in a review rather than traced through a builder function. Keys
-   * are minted here rather than stored in the preset, because two of the
-   * same preset on one page would otherwise share them - and a list tracked
-   * by key treats two rows with one key as a single row.
-   */
   /** The CLICK path, and the only one a keyboard can take: appended to the
    *  end and opened, exactly as the Add button behaved. */
-  async addPreset(preset: SectionPreset): Promise<void> {
-    await this.placePreset(preset, this.sections.length, true);
+  async addMember(kind: PageSectionKind): Promise<void> {
+    await this.placeMember(kind, this.sections.length, true);
   }
 
   /**
-   * Place a preset: an ordinary Section that arrives already arranged.
+   * Place an EMPTY member at a position.
    *
-   * The seed is plain data (see SectionPreset) so what a preset places can
-   * be read in a review rather than traced through a builder function.
-   * Keys are minted HERE rather than stored on the preset, because two of
-   * the same preset on one page would otherwise share them - and a list
-   * tracked by key treats two rows with one key as a single row.
+   * A Section arrives with one empty column, because a Section with no
+   * columns has nowhere to drop a piece and would read as broken. A List
+   * arrives on its first look, which its own Look control then changes.
+   *
+   * Switched OFF either way: nothing reaches the live site until staff say
+   * so, which is the rule every added section has always followed.
    */
-  private async placePreset(
-    preset: SectionPreset, at: number, thenEdit: boolean
+  private async placeMember(
+    kind: PageSectionKind, at: number, thenEdit: boolean
   ): Promise<void> {
-    if (!this.canEdit() || this.loadFailed || !preset) {
+    if (!this.canEdit() || this.loadFailed || !kind) {
       return;
     }
+    const isSection = kind.type === SECTION_ARCHETYPE.SECTION;
     const section: PageContentBlock = {
-      key: uniqueKey(preset.key, this.sections),
-      type: SECTION_ARCHETYPE.SECTION,
-      variant: 'columns',
+      key: uniqueKey(kind.type, this.sections),
+      type: kind.type,
+      variant: kind.variants?.[0]?.key,
       isActive: false,
-      ...preset.seed,
-      columns: preset.seed.columns.map((column, ci) => ({
-        key: `col-${ci + 1}`,
-        pieces: column.pieces.map((piece, pi) => ({
-          key: `${piece.kind}-${ci + 1}-${pi + 1}`,
-          kind: piece.kind,
-          isActive: true,
-          ...(piece.level ? { level: piece.level } : {})
-        }))
-      }))
+      ...(isSection ? { columns: [{ key: 'col-1', pieces: [] }] } : { items: [] })
     };
-    // Clamped: a drop index comes from the CDK and an out-of-range splice
-    // would silently append instead of landing where it was dropped.
+    // CLAMPED: a drop index comes from the CDK, and an out-of-range splice
+    // appends silently - which reads as the drop having been ignored.
     const next = [...this.sections];
     next.splice(Math.max(0, Math.min(at, next.length)), 0, section);
     this.sections = next;
-    await this.persist(`${preset.label} added - switch it on when it is ready`);
+    await this.persist(kind.label + ' added - switch it on when it is ready');
     if (thenEdit) {
       this.edit(section);
     }

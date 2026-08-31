@@ -6,7 +6,7 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PageStackComponent, uniqueKey } from './page-stack.component';
-import { SECTION_ARCHETYPE, SECTION_PRESETS } from '@impact-common/shared/lists/section_kit';
+import { SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 import { kitPage } from './kit-page.adapter';
 
 // TestBed as an INJECTOR, not as a renderer: this component takes everything
@@ -213,14 +213,14 @@ const dialogStub = {
 };
 
 /**
- * PRESETS - the mitigation for the one thing this refactor gives up.
+ * ADDING ONE OF THE TWO MEMBERS.
  *
- * "Hero band" used to MEAN something: one per page, a page title, over a
- * photo. A freeform builder makes every arrangement equally easy, including
- * three page titles and a wall of unstyled text. Presets keep the Add menu
- * reading the way it read before, each placing a Section already arranged.
+ * The bar carries a Section and a List and nothing else, which is the point
+ * of the consolidation said out loud: everything on the site is one or the
+ * other. Twelve presets used to sit here, and made two members look like
+ * twelve types - see the epitaph in section_kit.ts for why they went.
  */
-describe('placing a preset', () => {
+describe('adding a section or a list', () => {
   let saved: PageContentBlock[][];
 
   const build = (): PageStackComponent => {
@@ -247,62 +247,71 @@ describe('placing a preset', () => {
     const component = TestBed.inject(PageStackComponent);
     component.page = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never);
     component.sections = [];
+    component.loadFailed = false;
     return component;
   };
 
-  it('offers every preset on a kit page', () => {
-    expect(build().addablePresets.length).toBe(SECTION_PRESETS.length);
+  const memberOf = (component: PageStackComponent, type: SECTION_ARCHETYPE) =>
+    component.addableMembers.find((k) => k.type === type)!;
+
+  it('offers exactly two things, and they are Section and List', () => {
+    const component = build();
+
+    expect(component.addableMembers.map((k) => k.type))
+      .withContext('the bar is meant to say "everything is one of these two"')
+      .toEqual([SECTION_ARCHETYPE.SECTION, SECTION_ARCHETYPE.LIST]);
   });
 
-  it('offers none on a page whose kit has no Section', () => {
-    // The twelve original pages declared their own fixed kinds. Offering
-    // them a menu of things their renderer cannot draw would place a section
-    // that silently never appears.
+  it('offers neither on a page whose kit has no Section', () => {
     const component = build();
     component.page = { ...component.page, kinds: [] };
 
-    expect(component.addablePresets).toEqual([]);
+    expect(component.addableMembers).toEqual([]);
   });
 
-  it('places a real Section, arranged, and switched OFF', () => {
+  it('gives a new Section a column to drop pieces into', () => {
+    // A Section with NO columns has nowhere to put a piece, so the palette
+    // would have nothing to aim at and the section would read as broken.
     const component = build();
-    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
 
-    return component.addPreset(hero).then(() => {
+    return component.addMember(memberOf(component, SECTION_ARCHETYPE.SECTION)).then(() => {
       const placed = component.sections[0];
-
       expect(placed.type).toBe(SECTION_ARCHETYPE.SECTION);
-      expect(placed.variant).toBe('columns');
-      // Nothing reaches the live site until staff say so - the same rule
-      // every other added section follows.
-      expect(placed.isActive).toBe(false);
-      expect((placed.columns ?? []).length).toBe(hero.seed.columns.length);
-      expect((placed.columns?.[0].pieces ?? []).length)
-        .toBe(hero.seed.columns[0].pieces.length);
+      expect(placed.columns?.length).toBe(1);
+      expect(placed.columns?.[0].pieces).toEqual([]);
     });
   });
 
-  it('carries the preset styling rather than leaving it to be redone by hand', () => {
-    // The whole value of a preset is the MEASURED styling. A preset that
-    // placed the right pieces with the wrong look would be worse than none,
-    // because it looks finished.
+  it('gives a new List a look and an empty item list', () => {
     const component = build();
-    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
 
-    return component.addPreset(hero).then(() => {
-      expect(component.sections[0].surface).toBe(hero.seed.surface);
+    return component.addMember(memberOf(component, SECTION_ARCHETYPE.LIST)).then(() => {
+      const placed = component.sections[0];
+      expect(placed.type).toBe(SECTION_ARCHETYPE.LIST);
+      expect(placed.variant)
+        .withContext('a List with no look draws nothing at all')
+        .toBeTruthy();
+      expect(placed.items).toEqual([]);
     });
   });
 
-  it('gives two of the same preset different keys', () => {
+  it('adds it switched OFF', () => {
+    // Nothing reaches the live site until staff say so.
+    const component = build();
+
+    return component.addMember(memberOf(component, SECTION_ARCHETYPE.SECTION)).then(() => {
+      expect(component.sections[0].isActive).toBe(false);
+    });
+  });
+
+  it('gives two of the same member different keys', () => {
     // A list tracked BY KEY treats two rows sharing one as a single row -
-    // dragging one moves the other and deleting one deletes both. Minted
-    // here rather than stored on the preset for exactly this reason.
+    // dragging one moves the other, deleting one deletes both.
     const component = build();
-    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
+    const section = memberOf(component, SECTION_ARCHETYPE.SECTION);
 
-    return component.addPreset(hero)
-      .then(() => component.addPreset(hero))
+    return component.addMember(section)
+      .then(() => component.addMember(section))
       .then(() => {
         const keys = component.sections.map((s) => s.key);
         expect(new Set(keys).size).toBe(keys.length);
@@ -311,11 +320,10 @@ describe('placing a preset', () => {
 
   it('writes the page rather than only changing the screen', () => {
     const component = build();
-    const hero = SECTION_PRESETS.find((p) => p.key === 'hero')!;
 
-    return component.addPreset(hero).then(() => {
+    return component.addMember(memberOf(component, SECTION_ARCHETYPE.LIST)).then(() => {
       expect(saved.length).toBe(1);
-      expect(saved[0][0].type).toBe(SECTION_ARCHETYPE.SECTION);
+      expect(saved[0][0].type).toBe(SECTION_ARCHETYPE.LIST);
     });
   });
 });
@@ -529,7 +537,8 @@ describe('dropping a section into the page', () => {
     return component;
   };
 
-  const hero = () => SECTION_PRESETS.find((p) => p.key === 'hero')!;
+  const member = (component: PageStackComponent) =>
+    component.addableMembers.find((k) => k.type === SECTION_ARCHETYPE.SECTION)!;
 
   const drop = (fromId: string, previousIndex: number, currentIndex: number, data?: unknown) => ({
     previousContainer: { id: fromId },
@@ -544,16 +553,16 @@ describe('dropping a section into the page', () => {
     // so every section then had to be dragged into place anyway.
     const component = build();
 
-    return component.dropIntoStack(drop('section-palette', 0, 1, hero())).then(() => {
-      expect(component.sections.map((s) => s.key)).toEqual(['a', 'hero', 'b']);
+    return component.dropIntoStack(drop('section-palette', 0, 1, member(component))).then(() => {
+      expect(component.sections.map((s) => s.key)).toEqual(['a', 'section', 'b']);
     });
   });
 
   it('places one dropped at the very top', () => {
     const component = build();
 
-    return component.dropIntoStack(drop('section-palette', 0, 0, hero())).then(() => {
-      expect(component.sections[0].key).toBe('hero');
+    return component.dropIntoStack(drop('section-palette', 0, 0, member(component))).then(() => {
+      expect(component.sections[0].type).toBe(SECTION_ARCHETYPE.SECTION);
     });
   });
 
@@ -562,7 +571,7 @@ describe('dropping a section into the page', () => {
     // every drop turns laying three sections out into three round trips.
     const component = build();
 
-    return component.dropIntoStack(drop('section-palette', 0, 1, hero())).then(() => {
+    return component.dropIntoStack(drop('section-palette', 0, 1, member(component))).then(() => {
       expect(component.editing)
         .withContext('the drop opened the editor and interrupted the layout')
         .toBeNull();
@@ -572,10 +581,11 @@ describe('dropping a section into the page', () => {
   it('DOES open the editor on a click, as the Add button always did', () => {
     const component = build();
 
-    return component.addPreset(hero()).then(() => {
+    return component.addMember(member(component)).then(() => {
       expect(component.editing).not.toBeNull();
       // Appended, because a click has no position to mean.
-      expect(component.sections[component.sections.length - 1].key).toBe('hero');
+      expect(component.sections[component.sections.length - 1].type)
+        .toBe(SECTION_ARCHETYPE.SECTION);
     });
   });
 
@@ -590,9 +600,9 @@ describe('dropping a section into the page', () => {
   it('writes the page after a drop, not only the screen', () => {
     const component = build();
 
-    return component.dropIntoStack(drop('section-palette', 0, 0, hero())).then(() => {
+    return component.dropIntoStack(drop('section-palette', 0, 0, member(component))).then(() => {
       expect(saved.length).toBe(1);
-      expect(saved[0][0].key).toBe('hero');
+      expect(saved[0][0].type).toBe(SECTION_ARCHETYPE.SECTION);
     });
   });
 
@@ -602,7 +612,7 @@ describe('dropping a section into the page', () => {
     const component = build();
     component.loadFailed = true;
 
-    return component.dropIntoStack(drop('section-palette', 0, 0, hero())).then(() => {
+    return component.dropIntoStack(drop('section-palette', 0, 0, member(component))).then(() => {
       expect(component.sections.length).toBe(2);
       expect(saved.length).toBe(0);
     });
@@ -613,9 +623,9 @@ describe('dropping a section into the page', () => {
     // which looks like the drop having been ignored.
     const component = build();
 
-    return component.dropIntoStack(drop('section-palette', 0, 99, hero())).then(() => {
+    return component.dropIntoStack(drop('section-palette', 0, 99, member(component))).then(() => {
       expect(component.sections.length).toBe(3);
-      expect(component.sections[2].key).toBe('hero');
+      expect(component.sections[2].type).toBe(SECTION_ARCHETYPE.SECTION);
     });
   });
 });
