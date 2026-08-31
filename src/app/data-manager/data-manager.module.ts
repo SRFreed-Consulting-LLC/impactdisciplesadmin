@@ -1,4 +1,10 @@
 import { NgModule } from '@angular/core';
+// Web Config and the docking bar moved to this module on 2026-08-31.
+// Their FILES stay under page-manager/ - the same arrangement
+// NavigationModule already has, and for the same reason: the files are
+// fine where they are and moving them would make the diff unreadable.
+import { WebConfigComponent } from '../page-manager/web-config/web-config.component';
+import { DockingBarComponent } from '../page-manager/docking-bar/docking-bar.component';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -65,6 +71,8 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [
+    WebConfigComponent,
+    DockingBarComponent,
     DataManagerComponent,
     ProductsComponent,
     ProductCategoriesComponent,

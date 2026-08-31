@@ -29,8 +29,6 @@ import { DestinationFieldComponent } from './pages/destination-field.component';
 import { ContentPieceComponent } from './pages/content-piece.component';
 // Moved here from Tools Manager 2026-08-19 with the Web Manager -> Content
 // Manager rename - public-site configuration lives with public-site content.
-import { WebConfigComponent } from './web-config/web-config.component';
-import { DockingBarComponent } from './docking-bar/docking-bar.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
 // see src/app/shared/image-uploader/ for the full rationale. Web Manager
@@ -104,8 +102,6 @@ import { QuillModule } from 'ngx-quill';
     KitCompareComponent,
     DestinationFieldComponent,
     ContentPieceComponent,
-    WebConfigComponent,
-    DockingBarComponent
   ],
   providers:[
     provideHttpClient()

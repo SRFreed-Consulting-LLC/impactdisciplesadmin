@@ -28,4 +28,13 @@
   @if (selectedTab === 'Form Builder') {
     <app-form-builder></app-form-builder>
   }
+
+  <!-- Came from Page Manager on 2026-08-31. The odd one out in this group -
+       everything else here is a list of records and this is settings - but
+       it is site-wide either way, and it was the last thing in Page Manager
+       that was not a page. It hosts the DOCKING BAR too: that strip renders
+       on every page of the site, so it is furniture rather than content. -->
+  @if (selectedTab === 'Web Config') {
+    <app-web-config></app-web-config>
+  }
 </div>

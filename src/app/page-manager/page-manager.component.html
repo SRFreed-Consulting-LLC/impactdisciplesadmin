@@ -22,11 +22,9 @@
        is a list of records the public site renders, like Testimonials and
        Team Page before it, rather than one page's own words. -->
 
-  <!-- Web Config also hosts the DOCKING BAR since 2026-08-29 - see
-       home.component.ts for why it is not on Home. -->
-  @if (selectedTab === 'Web Config') {
-    <app-web-config></app-web-config>
-  }
+  <!-- Web Config moved to DATA on 2026-08-31. It was the last thing in
+       Page Manager that was not a page - see nav-config.ts. It brings the
+       DOCKING BAR with it, which is site furniture for the same reason.  -->
 
   <!-- Testimonials and Team Page moved to DATA on 2026-08-30: they are
        lists of records the site renders, not a page's own words. -->

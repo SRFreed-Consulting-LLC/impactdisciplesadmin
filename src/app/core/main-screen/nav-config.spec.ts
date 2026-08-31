@@ -1,4 +1,6 @@
-import { NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, sectionOf } from './nav-config';
+import {
+  NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, keepsNavGroup, sectionOf
+} from './nav-config';
 
 // NAV_CONFIG is not just the left nav - it doubles as the granular
 // PERMISSION REGISTRY (see its own header comment): a group/leaf/tab's
@@ -238,15 +240,65 @@ describe('NAV_CONFIG', () => {
       expect(flat).toEqual(FLAT_LINKS);
     });
 
+    /**
+     * PAGE MANAGER declares no static items at all since Web Config moved to
+     * Data (2026-08-31). Every leaf it has is a page streamed from
+     * `page_content` and merged in at render time, so an empty static list is
+     * correct rather than a mistake - and MainScreenComponent carries a
+     * matching exception, without which the group would be dropped and every
+     * page would vanish from the nav.
+     *
+     * NAMED rather than inferred, so a SECOND group going empty is still
+     * caught. That is the failure this check exists for.
+     */
+    const FILLED_FROM_DATA = ['page-manager'];
+
     it('gives every OTHER group at least one item, so none renders empty', () => {
       // An expandable header that opens onto nothing. MainScreenComponent
       // drops such a group at runtime, so this is the check that notices it
       // was left in the registry at all.
-      for (const group of groups.filter((g) => !FLAT_LINKS.includes(g.id))) {
+      const staticGroups = groups.filter(
+        (g) => !FLAT_LINKS.includes(g.id) && !FILLED_FROM_DATA.includes(g.id)
+      );
+      for (const group of staticGroups) {
         expect(group.items?.length)
           .withContext(`${group.id} would render as an empty expandable header`)
           .toBeGreaterThan(0);
       }
+    });
+
+    it('names exactly one group as filled from data', () => {
+      // Pinned so a second one cannot be added quietly. Each entry needs a
+      // matching exception in MainScreenComponent's own filter, or the group
+      // is judged on its empty static list and disappears from the nav -
+      // which is what happened to Page Manager the moment Web Config left it.
+      // The runtime half is keepsNavGroup(), checked below.
+      expect(FILLED_FROM_DATA).toEqual(['page-manager']);
+    });
+
+    it('keeps Page Manager even with no static items, and drops a truly empty group', () => {
+      // THE RUNTIME RULE, and the reason it was extracted from the drawer:
+      // as an inline predicate it decided whether a whole area of the app
+      // was reachable and no spec could call it.
+      expect(keepsNavGroup({ id: 'page-manager', items: [] }))
+        .withContext('Page Manager fills from Firestore - dropping it hides every page')
+        .toBeTrue();
+
+      expect(keepsNavGroup({ id: 'admin-manager', items: [] }))
+        .withContext('a group that really is empty opens onto nothing')
+        .toBeFalse();
+
+      // A flat link has no items key at all and always passes.
+      expect(keepsNavGroup({ id: 'home', items: undefined })).toBeTrue();
+      expect(keepsNavGroup({ id: 'store-manager', items: [{ label: 'X', slug: 'x' }] })).toBeTrue();
+    });
+
+    it('really has no static items left in Page Manager', () => {
+      // Not an assumption: if a static leaf is ever added back, the exception
+      // above stops being needed and this says so rather than leaving a
+      // special case nobody can justify.
+      const pageManager = groups.find((g) => g.id === 'page-manager');
+      expect(pageManager?.items).toEqual([]);
     });
   });
 });

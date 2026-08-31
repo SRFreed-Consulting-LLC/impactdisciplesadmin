@@ -79,9 +79,21 @@ describe('tab shells (characterization, pre-extraction)', () => {
     // 2026-08-30 (the created pages' nav leaves), so a bare `new` throws
     // NG0203. The house rule (CLAUDE.md, the designer-side-panel case):
     // construct inside an injection context, do NOT move the dependency
-    // back to the constructor. No created pages in these specs - the
-    // stream is empty, so every assertion below is unchanged.
-    const pagesNavStub = { leaves: [], leaves$: of([]) };
+    // back to the constructor.
+    //
+    // THE STREAM CARRIES PAGES NOW, and it has to. This stub was empty with
+    // a comment saying that left every assertion below unchanged - true
+    // while Page Manager had static leaves of its own, and false the moment
+    // Web Config left for Data on 2026-08-31, because the group then had NO
+    // tabs at all and every spec here reading `items[0]` broke. An empty
+    // stub is no longer a neutral choice; it is a Page Manager that cannot
+    // happen, since a page always exists.
+    const pagesNavLeaves = [
+      { label: 'Home', slug: 'home' },
+      { label: 'About Us', slug: 'about-us' },
+      { label: 'Seminars', slug: 'seminars' }
+    ];
+    const pagesNavStub = { leaves: pagesNavLeaves, leaves$: of(pagesNavLeaves) };
     beforeEach(() => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
@@ -99,6 +111,11 @@ describe('tab shells (characterization, pre-extraction)', () => {
     const construct = (auth: never, perms: never, route: never): ShellLike =>
       TestBed.runInInjectionContext(() => new PageManagerComponent(auth, perms, route)) as unknown as ShellLike;
 
+    // PAGE MANAGER HAS NO STATIC ITEMS. `shell.items` is the group's own
+    // list from nav-config, and since Web Config left for Data every tab
+    // here is a page arriving from Firestore instead. These specs read the
+    // stub above rather than `items`, which is what a person actually sees.
+    const tabs = () => pagesNavLeaves;
     it('starts with NO selected tab - the direct-URL bypass guard', () => {
       const h = harness([]);
       const shell = construct(h.authService as never, h.permissions as never, h.route as never);
@@ -127,7 +144,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
       shell.ngOnInit();
       expect(shell.secureItems.length).toBe(0);
 
-      h.permissions.allowed.add(shell.items[0].slug);
+      h.permissions.allowed.add(tabs()[0].slug);
       h.loggedInUser$.next({ role: 'Admin' });
 
       expect(shell.secureItems.length)
@@ -137,10 +154,9 @@ describe('tab shells (characterization, pre-extraction)', () => {
     });
 
     it('opens the tab named by ?tab= when it is permitted', () => {
-      const probe = construct(null as never, null as never, null as never);
-      const target = probe.items[1] ?? probe.items[0];
+      const target = tabs()[1] ?? tabs()[0];
 
-      const h = harness(probe.items.map((i) => i.slug));
+      const h = harness(tabs().map((i) => i.slug));
       const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
       shell.ngOnInit();
@@ -151,11 +167,10 @@ describe('tab shells (characterization, pre-extraction)', () => {
     });
 
     it('IGNORES ?tab= for a screen the user may not see', () => {
-      const probe = construct(null as never, null as never, null as never);
-      const forbidden = probe.items[probe.items.length - 1];
+      const forbidden = tabs()[tabs().length - 1];
 
       const h = harness(
-        probe.items.filter((i) => i.slug !== forbidden.slug).map((i) => i.slug)
+        tabs().filter((i) => i.slug !== forbidden.slug).map((i) => i.slug)
       );
       const shell = construct(h.authService as never, h.permissions as never, h.route as never);
 
@@ -175,7 +190,7 @@ describe('tab shells (characterization, pre-extraction)', () => {
       shell.ngOnInit();
       shell.ngOnDestroy();
 
-      h.permissions.allowed.add(shell.items[0].slug);
+      h.permissions.allowed.add(tabs()[0].slug);
       h.loggedInUser$.next({ role: 'Admin' });
 
       expect(shell.secureItems.length)

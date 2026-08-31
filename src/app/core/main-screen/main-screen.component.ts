@@ -13,7 +13,10 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { PermissionMigrationService } from 'src/app/common/services/permission-migration.service';
 import { ScreenPermissionsDialogComponent } from './screen-permissions-dialog/screen-permissions-dialog.component';
 import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
-import { NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, NavSection, NavSectionDef, sectionOf } from './nav-config';
+import {
+  NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, NavSection, NavSectionDef,
+  keepsNavGroup, sectionOf
+} from './nav-config';
 import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
 
 interface PinnedNavItem {
@@ -174,7 +177,18 @@ export class MainScreenComponent implements OnInit, OnDestroy {
         // nothing to show - drop it rather than render an expandable header
         // that opens to nothing. Home (items undefined) always passes this
         // check, `!group.items` short-circuits before the length check.
-        .filter((group) => !group.items || group.items.length > 0);
+        //
+        // PAGE MANAGER IS THE EXCEPTION, and it has to be: since Web Config
+        // moved to Data on 2026-08-31 it declares NO static items at all -
+        // every one of its leaves is a page streamed from page_content by
+        // SitePagesNavService, and those are merged later, in navItemsFor().
+        // Judged on its static list alone it looks empty and would vanish
+        // from the nav entirely, taking every page with it.
+        //
+        // The rule lives in nav-config.ts so a spec can call it. As an
+        // inline predicate here it decided whether a whole area of the app
+        // was reachable and nothing could check it.
+        .filter((group) => keepsNavGroup(group));
 
       this.rebuildPinnedItems();
       this.ensureSectionVisible();

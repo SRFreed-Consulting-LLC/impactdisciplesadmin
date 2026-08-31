@@ -324,13 +324,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // pinned first by SitePagesNavService. A static leaf here as well
       // would show it twice.
       // Disciple Making Minute moved to DATA on 2026-08-31 - see that group.
-      // Moved from Tools Manager 2026-08-19 alongside the Web Manager ->
-      // Content Manager rename: the public site's configuration belongs
-      // with the rest of the public-site content. It also owns the DOCKING
-      // BAR since 2026-08-29 - that strip is mounted in the web app's
-      // app.component.html and renders on every page, so it is site
-      // furniture rather than home-page content and never belonged on Home.
-      { label: 'Web Config', slug: 'web-config' },
+      // Web Config moved to DATA on 2026-08-31 (owner's call) - see that
+      // group. It is site-wide settings rather than any one page's content,
+      // which the field-by-field audit that morning made plain: the address,
+      // the phone number and the socials are read by the footer, the emails,
+      // the checkout and the shipping labels as well as by pages.
+
       // 'Home Page Popups' retired 2026-08-19 (Campaign Manager v2 Phase
       // 6): the public site never had a renderer for home_page_popups (the
       // screen wrote docs nothing read); web-campaign popups (Campaigns
@@ -426,7 +425,20 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Form Submissions', slug: 'custom-form-submissions' },
       // Sits beside the submissions its forms produce, which is the pairing
       // that was split across two managers before.
-      { label: 'Form Builder', slug: 'form-builder' }
+      { label: 'Form Builder', slug: 'form-builder' },
+      // Moved here from Page Manager 2026-08-31 (owner's call). Every other
+      // leaf in this group is a list of RECORDS and this one is settings,
+      // which is a fair objection - but it is site-wide either way, and it
+      // was the last thing in Page Manager that was not a page. The audit
+      // that prompted the move found its address, phone and socials read by
+      // the footer, the admin's email branding, the checkout and the
+      // shipping function, none of which is a page.
+      //
+      // screenKey CHANGED: page-manager.web-config -> data.web-config. That
+      // is an identity change and normally a grant migration; none was
+      // needed, because no admin_user in dev OR prod held a grant
+      // mentioning web-config at all (both read before the move).
+      { label: 'Web Config', slug: 'web-config' }
     ]
   },
   {
@@ -607,3 +619,34 @@ export const NAV_CONFIG: NavGroup[] = [
     ]
   }
 ];
+
+/**
+ * Groups whose leaves come from FIRESTORE rather than from this file.
+ *
+ * Page Manager is the only one, and has been since Web Config moved to Data
+ * on 2026-08-31: every leaf under it is a page streamed from `page_content`
+ * by SitePagesNavService and merged in at render time.
+ */
+export const NAV_GROUPS_FILLED_FROM_DATA: readonly string[] = ['page-manager'];
+
+/**
+ * Whether a group survives to be drawn, judged on its own items.
+ *
+ * A group with `items` defined but every one filtered out - Admin Manager
+ * today, whose two screens are both hideFromNav - opens onto nothing, so it
+ * is dropped rather than rendered as an empty expandable header. A group with
+ * NO `items` key at all is a flat link and always passes.
+ *
+ * EXTRACTED FROM MainScreenComponent so it can be tested. It was an inline
+ * predicate in a subscribe, which is why the day Page Manager's last static
+ * leaf left, nothing could check that the group still appeared - it would
+ * have been judged empty and dropped, taking every page in the nav with it.
+ * A rule that decides whether a whole area of the app is reachable should be
+ * something a spec can call.
+ */
+export function keepsNavGroup(group: Pick<NavGroup, 'id' | 'items'>): boolean {
+  if (NAV_GROUPS_FILLED_FROM_DATA.includes(group.id)) {
+    return true;
+  }
+  return !group.items || group.items.length > 0;
+}
