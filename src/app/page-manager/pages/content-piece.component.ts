@@ -65,7 +65,8 @@ export class ContentPieceComponent {
   readonly levels = [
     { key: 'page', label: 'Page title' },
     { key: 'section', label: 'Section heading' },
-    { key: 'minor', label: 'Small heading' }
+    { key: 'minor', label: 'Small heading' },
+    { key: 'display', label: 'Big figure' }
   ] as const;
 
   /** What this kind is called and which controls it uses. Undefined for a
