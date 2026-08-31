@@ -137,6 +137,14 @@
       }
     }
 
+    @if (fields.submitLabel) {
+      <mat-form-field appearance="outline" class="cp__line">
+        <mat-label>Button text</mat-label>
+        <input matInput [(ngModel)]="piece.submitLabel">
+        <mat-hint>What the form&rsquo;s own button says. Empty means &ldquo;Submit&rdquo;.</mat-hint>
+      </mat-form-field>
+    }
+
     @if (fields.signupList) {
       <mat-form-field appearance="outline" class="cp__line">
         <mat-label>Signs people up to</mat-label>
