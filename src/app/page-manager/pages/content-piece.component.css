@@ -80,10 +80,27 @@
   width: 100%;
 }
 
+/* styles.scss gives EVERY quill-editor `height: 100%`, so its host must
+   supply a DEFINITE height or .ql-container collapses to almost nothing and
+   there is no room to type. Web Config, the DMM dialog, the Team Page
+   dialog, the coach dialog, the popup editor and the section editor all
+   carry this same fix and all say so - this is the seventh copy, and the
+   reason every one of them comments it. Worth folding into one rich-text
+   host component the next time somebody is in here.
+
+   320px is about twelve lines, matching the section editor beside it.
+   .ql-editor keeps its own scroll for longer passages. */
 .cp__rich {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--app-field-border);
   border-radius: var(--app-radius-control);
   background: var(--app-field);
+}
+
+.cp__rich quill-editor {
+  height: 320px;
+  min-height: 0;
 }
 
 .cp__image {
