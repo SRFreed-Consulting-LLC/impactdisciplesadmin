@@ -58,41 +58,22 @@
 <div class="ps">
   <!-- EDITOR COLUMN -->
   <div class="ps__editor">
-    <header class="ps__head">
-      <div>
-        <h2 class="ps__title">{{ page.label }}</h2>
-        <p class="ps__note">
-          @if (page.horizontal) {
-            <!-- Contact is one row of two halves, so its stack reads across
-                 rather than down. Saying so beats letting someone drag a row
-                 up and wonder why nothing moved on the site. -->
-            Drag to reorder &mdash; on this page the order is
-            <strong>left to right</strong>.
-          } @else {
-            Drag to reorder.
-          }
-          {{ liveCount }} of {{ sections.length }} showing on the site.
-          <span class="ps__path">{{ page.path }}</span>
-        </p>
-      </div>
+    <!-- A HEADER BAR LIVED HERE until 2026-08-31. It carried the page name,
+         its path, "Drag to reorder", a count of how many sections were
+         showing, and a More menu of the fourteen retiring archetypes.
 
-      <!-- The raw archetypes, behind a menu. They are what the presets are
-           MADE of, and while the fourteen are still being retired somebody
-           occasionally needs one - but a bar of twenty-eight is not a bar,
-           it is a wall. -->
-      <button mat-stroked-button type="button" [matMenuTriggerFor]="moreMenu"
-              [disabled]="!canEdit() || loadFailed || !addableKinds.length">
-        More&hellip;
-      </button>
-      <mat-menu #moreMenu="matMenu">
-        @for (kind of addableKinds; track kind.type) {
-          <button mat-menu-item type="button" (click)="add(kind)">
-            <mat-icon>{{ kind.icon }}</mat-icon>
-            <span class="ps__menu-label">{{ kind.label }}</span>
-            <span class="ps__menu-blurb">{{ kind.blurb }}</span>
-          </button>
-        }
-      </mat-menu>    </header>
+         Removed at Shane's request, and the reason it had to go is that
+         every part of it was already said better somewhere else: the page
+         editor's own header above carries the title, the slug, the publish
+         toggle and a link to the live page, and the section rows say
+         themselves whether they are showing. A second bar restating it
+         made the screen look busier than the job is.
+
+         The More menu went with it, so `add()` and `addableKinds` are now
+         unreachable from the UI. They are kept for the moment because they
+         are the fourteen archetypes' own path and those are deleted as a
+         set in the retirement pass - not because anything still calls
+         them. -->
 
     @if (loadFailed) {
       <div class="ps__failed" role="alert">
@@ -115,9 +96,10 @@
          no left-or-right to be near - only up and down, which a bar across
          the top serves and a rail does not.
 
-         These are the PRESETS: ready-made arrangements that place a Section
-         already carrying its columns, pieces and measured styling. The raw
-         archetypes live behind "More" in the header. -->
+         TWO CHIPS, because there are two members and everything on the site
+         is one of them. Twelve preset chips sat here for an hour and made
+         that look like twelve types, which is the impression the whole
+         consolidation exists to remove. -->
     @if (addableMembers.length) {
       <div cdkDropList id="section-palette" class="ps__palette"
            [cdkDropListData]="addableMembers"

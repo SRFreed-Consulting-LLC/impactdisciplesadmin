@@ -136,27 +136,16 @@
     </div>
   </mat-tab>
 
-  <mat-tab label="Privacy Policy">
-    <div class="tab-content-wrap">
-      <div class="tab-content tab-content--editor">
-        <quill-editor formControlName="policy" [modules]="richTextModules"></quill-editor>
-      </div>
-      <div class="save-row">
-        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
-      </div>
-    </div>
-  </mat-tab>
+  <!-- PRIVACY POLICY AND TERMS OF USE were two tabs here, each a rich-text
+       box writing one field of this settings document. They are ORDINARY
+       PAGES now (2026-08-31, Shane's request): their own documents, their
+       own screens in the page list, and their own sections - so they can
+       gain a heading, a picture or a second passage like every other page,
+       which as settings fields they never could.
 
-  <mat-tab label="Terms Of Use">
-    <div class="tab-content-wrap">
-      <div class="tab-content tab-content--editor">
-        <quill-editor formControlName="tos" [modules]="richTextModules"></quill-editor>
-      </div>
-      <div class="save-row">
-        <app-indicator-button title="SAVE" [isInProgress]="spinnerVisible" [disabled]="!canEdit()" (clicked)="save()"></app-indicator-button>
-      </div>
-    </div>
-  </mat-tab>
+       The `policy` and `tos` FIELDS are deliberately still on the model and
+       still hold the words. They are a silent copy until somebody has
+       looked at the new pages and says otherwise; nothing reads them. -->
 
   <!-- DOCKING BAR, moved here from its own screen 2026-08-29. It is site
        furniture - the web app mounts it in app.component.html and it renders
