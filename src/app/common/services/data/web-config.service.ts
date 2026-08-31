@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import { WebConfigModel } from '@impact-common/shared/models/utils/web-config.model';
-import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { BaseService } from './base.service';
 
 @Injectable({
@@ -23,11 +21,11 @@ export class WebConfigService extends BaseService<WebConfigModel>{
     this.fromFirestore = WebConfigService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): WebConfigModel => {
-    data.taxImportDate = dateFromTimestamp(data.taxImportDate as Timestamp)
-
-    return data;
-  };
+  // fromFirestore normalised `taxImportDate` here until 2026-08-31. That
+  // field is gone - nothing had read it since tax rates stopped being
+  // imported - so there is nothing left to reshape on the way in, and a
+  // hook that only re-wrote a dead field is worse than no hook.
+  static readonly fromFirestore = (data): WebConfigModel => data;
 
   override getAll(): Promise<WebConfigModel[]> {
     if (!this.cachedConfig) {

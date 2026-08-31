@@ -54,7 +54,7 @@ export class WebConfigComponent implements OnInit {
       equippingGroupTotalCost: [null],
       equippingGroupPaymentCost: [null],
       freeShippingAmount: [null],
-      adminEmailAddress: [''],
+      logo: [''],
       // Recipient(s) for the daily locked-out-patron alert (see
       // functions/src/library-lockout-alert.functions.ts). Comma-separated
       // for multiple; blank falls back to the function's default.
