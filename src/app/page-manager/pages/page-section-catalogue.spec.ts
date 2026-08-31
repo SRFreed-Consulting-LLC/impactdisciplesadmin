@@ -117,8 +117,10 @@ describe('page section catalogue', () => {
     expect(dupes).toEqual([]);
   });
 
-  it('finds a page by slug and returns nothing for one it does not have', () => {
-    expect(pageFor('seminars')?.label).toBe('Seminars');
+  it('finds nothing at all - the catalogue emptied when the twelve cut over', () => {
+    // Every page is a kit page now (2026-08-31). pageFor() stays only for the
+    // shells that still call it, and must answer undefined for everything.
+    expect(pageFor('seminars')).toBeUndefined();
     expect(pageFor('podcasts')).toBeUndefined();
   });
 

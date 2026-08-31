@@ -45,18 +45,10 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
    * a page still wearing the banner is one still awaiting his eyes. The
    * whole mechanism retires per page at cutover.
    */
-  private readonly approvedPages = new Set<string>([
-    'about-us',
-    // Shane's second sweep, same day: "Coaching with Impact looks great.
-    // Seminar looks great... Impact library looks great, and prayer team
-    // looks great. Go ahead and mark all those for completion."
-    'coaching-with-impact',
-    'seminars',
-    'discipleship-library',
-    'prayer-team',
-    // 'Contact looks much better' - the side-by-side landed.
-    'contact'
-  ]);
+  // The approval mechanism retired 2026-08-31: every original page has cut
+  // over, so nothing is left to approve. isApproved stays true-for-all so
+  // the template blocks (now iterating an empty EDITABLE_PAGES) stay inert.
+  private readonly approvedPages = new Set<string>();
 
   isApproved(slug: string): boolean {
     return this.approvedPages.has(slug);

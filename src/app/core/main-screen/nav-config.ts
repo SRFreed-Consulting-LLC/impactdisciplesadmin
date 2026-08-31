@@ -320,12 +320,6 @@ export const NAV_CONFIG: NavGroup[] = [
       // strip and testimonials are expected to follow, which is why this is
       // a section stack rather than a renamed list.
       { label: 'Home', slug: 'home' },
-      // The public Coaching with Impact page's editable content (2026-08-29):
-      // its video, which coach testimonials it shows and in what order, and
-      // the "A movement of multiplication" screenshots. The rest of that page
-      // - hero, book covers, group photo, outbound links - stays in the web
-      // repo's own component.
-      { label: 'Coaching with Impact', slug: 'coaching-with-impact' },
       { label: 'Disciple Making Minute', slug: 'disciple-making-minute' },
       // Moved from Tools Manager 2026-08-19 alongside the Web Manager ->
       // Content Manager rename: the public site's configuration belongs
@@ -372,12 +366,6 @@ export const NAV_CONFIG: NavGroup[] = [
       // "+ New Page" row (Shane's call, 2026-08-30: no Pages list screen at
       // all - the left nav IS the list). The twelve below stay hardcoded
       // only until each migrates onto the kit and carries its own title.
-      { label: 'About Us', slug: 'about-us' },
-      { label: 'Seminars', slug: 'seminars' },
-      { label: 'Give', slug: 'give' },
-      { label: 'Contact', slug: 'contact' },
-      { label: 'Discipleship Library', slug: 'discipleship-library' },
-      { label: 'Prayer Team', slug: 'prayer-team' },
     ]
   },
   {

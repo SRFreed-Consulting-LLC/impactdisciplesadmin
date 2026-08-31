@@ -2,7 +2,6 @@ import { SecurityContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { DomSanitizer } from '@angular/platform-browser';
 import { PageLivePreviewComponent } from './page-live-preview.component';
-import { pageFor } from './page-section-catalogue';
 import { environment } from 'src/environments/environment';
 
 // TestBed as an INJECTOR: this component takes DomSanitizer, NgZone and
@@ -22,7 +21,7 @@ describe('PageLivePreviewComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [PageLivePreviewComponent] });
     component = TestBed.inject(PageLivePreviewComponent);
-    component.path = pageFor('seminars')!.path;
+    component.path = '/seminars';
   });
 
   it('frames the page it was given, on the site this admin is paired with', () => {

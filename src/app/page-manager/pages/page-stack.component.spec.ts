@@ -1,13 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { PageContentBlock } from '@impact-common/shared/models/domain/page-content.model';
-import { PAGE_SECTION_TYPES } from '@impact-common/shared/lists/page_section_types.enum';
 import { PageContentService } from 'src/app/common/services/data/page-content.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { PageStackComponent, uniqueKey } from './page-stack.component';
-import { pageFor } from './page-section-catalogue';
+import { SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 import { kitPage } from './kit-page.adapter';
 
 // TestBed as an INJECTOR, not as a renderer: this component takes everything
@@ -47,22 +46,23 @@ describe('PageStackComponent', () => {
       ]
     });
     const c = TestBed.inject(PageStackComponent);
-    c.page = pageFor('seminars')!;
+    // A KIT page - the only kind left after the twelve cut over (2026-08-31).
+    c.page = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never);
     return c;
   };
 
   beforeEach(() => {
     loaded = [
-      { key: 'pageHeader', type: PAGE_SECTION_TYPES.PAGE_HEADER, heading: 'Seminars' },
-      { key: 'overview', type: PAGE_SECTION_TYPES.PROSE, heading: 'OVERVIEW' },
+      { key: 'pageHeader', type: 'heroBand', heading: 'Seminars' },
+      { key: 'overview', type: 'copyCentred', heading: 'OVERVIEW' },
       {
-        key: 'prices', type: PAGE_SECTION_TYPES.PRICES,
+        key: 'prices', type: 'listGrid', variant: 'price',
         items: [
           { title: 'In person', isActive: true },
           { title: 'Online', isActive: false }
         ]
       }
-    ];
+    ] as never;
   });
 
   it('loads the page it is pointed at, and shows what is live', async () => {
@@ -130,15 +130,15 @@ describe('PageStackComponent', () => {
 
     // Seminars' page header is a singleton and one is already on the page;
     // its price tiles and cards repeat.
-    expect(offered).not.toContain(PAGE_SECTION_TYPES.PAGE_HEADER);
-    expect(offered).toContain(PAGE_SECTION_TYPES.PRICES);
-    expect(offered).toContain(PAGE_SECTION_TYPES.CARDS);
+    expect(offered).not.toContain(SECTION_ARCHETYPE.HERO_BAND);
+    expect(offered).toContain(SECTION_ARCHETYPE.LIST_GRID);
+    expect(offered).toContain(SECTION_ARCHETYPE.COPY_MEDIA);
   });
 
   it('adds a section switched OFF, so nothing half-written reaches the site', async () => {
     const c = build();
     await c.ngOnChanges();
-    const cards = c.page.kinds.find((k) => k.type === PAGE_SECTION_TYPES.CARDS)!;
+    const cards = c.page.kinds.find((k) => k.type === 'listGrid')!;
 
     await c.add(cards);
 
@@ -169,7 +169,7 @@ describe('PageStackComponent', () => {
   it('strips markup out of a row summary', () => {
     const c = build();
 
-    expect(c.summary({ key: 'k', type: PAGE_SECTION_TYPES.PROSE, heading: 'WHAT YOU <strong>GET</strong>' }))
+    expect(c.summary({ key: 'k', type: 'copyCentred' as never, heading: 'WHAT YOU <strong>GET</strong>' }))
       .toBe('WHAT YOU GET');
   });
 });

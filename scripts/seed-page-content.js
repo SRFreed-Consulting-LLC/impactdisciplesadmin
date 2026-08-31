@@ -63,7 +63,18 @@ const SEED = require('./page-content-seed-data.json');
 // marks a kit page, names the browser tab, and feeds the admin nav leaf. A
 // migrated page seeded without one renders 404 on a fresh environment.
 const CUTOVER_TITLES = {
-  'lunch-and-learns': { title: 'Lunch and Learns', theme: { surface: 'light', banding: false } }
+  'lunch-and-learns': { title: 'Lunch and Learns', theme: { surface: 'light', banding: false } },
+  'equipping-groups': { title: 'Equipping Groups', theme: { surface: 'light', banding: false } },
+  'equipping-groups-pastors': { title: 'Equipping - Pastors', theme: { surface: 'light', banding: false } },
+  'equipping-groups-leaders': { title: 'Equipping - Leaders', theme: { surface: 'light', banding: false } },
+  'equipping-groups-churches': { title: 'Equipping - Churches', theme: { surface: 'light', banding: false } },
+  'prayer-team': { title: 'Prayer Team', theme: { surface: 'light', banding: false } },
+  'give': { title: 'Give', theme: { surface: 'light', banding: false } },
+  'about-us': { title: 'About Us', theme: { surface: 'light', banding: false } },
+  'discipleship-library': { title: 'Discipleship Library', theme: { surface: 'light', banding: false } },
+  'seminars': { title: 'Seminars', theme: { surface: 'light', banding: false } },
+  'contact': { title: 'Contact', theme: { surface: 'light', banding: false } },
+  'coaching-with-impact': { title: 'Coaching with Impact', theme: { surface: 'light', banding: false } }
 };
 
 const COLLECTION = 'page_content';

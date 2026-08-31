@@ -2,7 +2,7 @@
   "about-us": [
     {
       "key": "story-1",
-      "type": "story",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "OUR STORY BEGAN WITH A <strong>NEED</strong>",
       "ctaTitle": "READ MORE",
@@ -11,11 +11,13 @@
         "name": "Home/story-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-1.PNG?alt=media&token=c1daf9a0-35db-4a1e-b502-71d23c701762"
       },
-      "body": "<p>When Ken Adams began pastoring Crossroads Church in 1989, he envisioned that church becoming a part of the mission and movement of Jesus by making and multiplying disciples. The church needed a curriculum that would drive the goals and strategy its leadership had established, but there was a problem…</p>"
+      "body": "<p>When Ken Adams began pastoring Crossroads Church in 1989, he envisioned that church becoming a part of the mission and movement of Jesus by making and multiplying disciples. The church needed a curriculum that would drive the goals and strategy its leadership had established, but there was a problem…</p>",
+      "variant": "image",
+      "surface": "light"
     },
     {
       "key": "story-2",
-      "type": "story",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "MORE ABOUT <strong>OUR MINISTRY</strong>",
       "ctaTitle": "READ MORE",
@@ -24,11 +26,13 @@
         "name": "Home/story-2",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-2.jpg?alt=media&token=35028e2e-f4fe-40ca-8d92-042b2cda016d"
       },
-      "body": "<p>Did you know that we have Disciple-Making Churches and pastors all over the world in our disciple making network? We’d love to connect you to other ministry partners pursuing the same goals with the same passion and dedication as you.</p>"
+      "body": "<p>Did you know that we have Disciple-Making Churches and pastors all over the world in our disciple making network? We’d love to connect you to other ministry partners pursuing the same goals with the same passion and dedication as you.</p>",
+      "variant": "image",
+      "surface": "light"
     },
     {
       "key": "story-3",
-      "type": "story",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "WHY CHOOSE <strong>US</strong>",
       "ctaTitle": "READ MORE",
@@ -37,21 +41,26 @@
         "name": "Home/story-3",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHome%2Fstory-3.jpg?alt=media&token=4a367383-4b7e-4a9a-a696-934086475cd0"
       },
-      "body": "<p>Jesus spent time one-on-one with His disciples, but then He took them out into the wide world to apply what they had learned with Him in a small group setting. Our director began his ministry based on Jesus’ strategy using Jesus’ methods in the early 1990s and has continued refining those efforts to the present day.</p>"
+      "body": "<p>Jesus spent time one-on-one with His disciples, but then He took them out into the wide world to apply what they had learned with Him in a small group setting. Our director began his ministry based on Jesus’ strategy using Jesus’ methods in the early 1990s and has continued refining those efforts to the present day.</p>",
+      "variant": "image",
+      "surface": "light"
     },
     {
       "key": "history",
-      "type": "banner",
+      "type": "photoBand",
       "isActive": true,
       "heading": "OUR HISTORY",
       "image": {
         "name": "Headers/history-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fhistory-header.PNG?alt=media&token=f3e35d82-8571-4cee-8a7a-db7894d21578"
-      }
+      },
+      "variant": "title",
+      "surface": "photo",
+      "photoFocus": "top"
     },
     {
       "key": "mission",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "OUR <strong> MISSION</strong>",
       "body": "<p><strong>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples of Jesus Christ.</strong></p>\n<p>We provide disciple making resources, training, and consultations. We help people explore the concepts of disciple making, we educate people and churches in the principles of disciple making, we assist people and churches to establish disciple-making movements, and engage individuals and churches in developing movements of multiplication.</p>",
@@ -60,7 +69,9 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fmap.jpg?alt=media&token=9db9c6f4-c852-4722-807e-5fa5d93f881a"
       },
       "videoId": "HxKSa24hF60",
-      "videoUrl": "https://www.youtube.com/watch?v=HxKSa24hF60"
+      "videoUrl": "https://www.youtube.com/watch?v=HxKSa24hF60",
+      "variant": "video",
+      "surface": "dark"
     },
     {
       "key": "timeline",
@@ -105,11 +116,13 @@
           },
           "isActive": true
         }
-      ]
+      ],
+      "variant": "centreLine",
+      "surface": "light"
     },
     {
       "key": "countries",
-      "type": "countries",
+      "type": "photoBand",
       "isActive": true,
       "heading": "<strong>15</strong>",
       "subheading": "<h3>Countries with <br> Disciple-Making <br> Churches</h3>",
@@ -117,7 +130,9 @@
       "image": {
         "name": "Shared/yellow-world-banner",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fyellow-world-banner.PNG?alt=media&token=a2f4b0e2-dacb-4101-b6f6-8de82c5de4dc"
-      }
+      },
+      "variant": "figure",
+      "surface": "photo"
     }
   ],
   "equipping-groups": [
@@ -480,7 +495,7 @@
   "seminars": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "Disciple-Making Church",
       "heading": "Seminars",
@@ -490,18 +505,24 @@
       "image": {
         "name": "Headers/seminars-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fseminars-header.PNG?alt=media&token=a3d6bae8-00d0-43d3-ae8e-8ab356ce1cfc"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "overview",
-      "type": "prose",
+      "type": "copyCentred",
       "isActive": true,
       "heading": "OVERVIEW",
-      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training seminars to churches that need help implementing a proven strategy to grow their ministry. Our team comes to you and facilitates a half-day training seminar where you will learn the mission, model, and methods you need to multiply disciples. Read more about how our seminars can help you below. Read more details below on our Disciple-Making Church Seminar below. Before you begin, you might consider one of our <a>free consultations</a> from our Impact team to introduce our ministry and assess if our Seminar is right for you.</p>"
+      "body": "<p>Impact Discipleship Ministries exists to inspire people and churches to be and build disciples. One of the best ways we do that is by providing training seminars to churches that need help implementing a proven strategy to grow their ministry. Our team comes to you and facilitates a half-day training seminar where you will learn the mission, model, and methods you need to multiply disciples. Read more about how our seminars can help you below. Read more details below on our Disciple-Making Church Seminar below. Before you begin, you might consider one of our <a>free consultations</a> from our Impact team to introduce our ministry and assess if our Seminar is right for you.</p>",
+      "variant": "plain",
+      "surface": "light",
+      "headingStyle": "light",
+      "copySize": "large"
     },
     {
       "key": "prices",
-      "type": "prices",
+      "type": "listGrid",
       "isActive": true,
       "items": [
         {
@@ -520,11 +541,13 @@
           "ctaUrl": "/store",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "price",
+      "surface": "dark"
     },
     {
       "key": "whatyouget",
-      "type": "mission",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "WHAT YOU <strong> GET</strong>",
       "body": "<ul class=\"custom-bullets\">\n  <li>Experienced Trainer</li>\n  <li>A Proven Church Multiplication Strategy</li>\n  <li>Tools + Resources for Multiplication</li>\n  <li>Follow-up Support</li>\n</ul>",
@@ -533,11 +556,13 @@
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fseminar-video-thumbnail.png?alt=media&token=9fb83005-f1c7-4973-884c-98436560271b"
       },
       "videoId": "Civbm8KNXhE",
-      "videoUrl": "https://www.youtube.com/watch?v=Civbm8KNXhE"
+      "videoUrl": "https://www.youtube.com/watch?v=Civbm8KNXhE",
+      "variant": "video",
+      "surface": "light"
     },
     {
       "key": "missions",
-      "type": "cards",
+      "type": "listGrid",
       "isActive": true,
       "heading": "Approved Plan for <br><strong>Growing</strong> Your Church",
       "items": [
@@ -577,7 +602,10 @@
           },
           "isActive": true
         }
-      ]
+      ],
+      "variant": "pictureRows",
+      "surface": "light",
+      "cardsPerRow": 2
     },
     {
       "key": "consultation",
@@ -589,7 +617,10 @@
       "image": {
         "name": "Shared/yellow-world-banner",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fyellow-world-banner.PNG?alt=media&token=a2f4b0e2-dacb-4101-b6f6-8de82c5de4dc"
-      }
+      },
+      "variant": "withCopy",
+      "surface": "photo",
+      "formId": "KsdeDkokfLGRI3sPFijp"
     }
   ],
   "lunch-and-learns": [
@@ -639,7 +670,7 @@
   "give": [
     {
       "key": "pageHeader",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "YOUR SUPPORT",
       "heading": "Makes the Difference",
@@ -647,11 +678,13 @@
       "image": {
         "name": "Headers/give-header",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FHeaders%2Fgive-header.PNG?alt=media&token=ae05b066-c061-4991-ba0d-189f37607431"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "options",
-      "type": "giveOptions",
+      "type": "listGrid",
       "isActive": true,
       "items": [
         {
@@ -676,46 +709,60 @@
           "body": "<p>Would you be willing to invest in the next generation of disciples?<br>\n\"Become an Impact Partner”<br>\nPsalm 78:6 - “So the next generation would know… and they would tell their children.”<br>\nYour support multiplies the mission of Jesus!</p>",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "icon",
+      "surface": "light",
+      "cardGround": "dark"
     },
     {
       "key": "intro",
-      "type": "prose",
+      "type": "copyCentred",
       "isActive": true,
-      "body": "Your gift makes a difference in the lives of individual disciples, Disciple-Making Pastors, and Disciple-Making Churches all over the world. Consider partnering with us financially in one of the ways below."
+      "body": "Your gift makes a difference in the lives of individual disciples, Disciple-Making Pastors, and Disciple-Making Churches all over the world. Consider partnering with us financially in one of the ways below.",
+      "variant": "plain",
+      "surface": "light",
+      "copySize": "display"
     },
     {
       "key": "mailto",
-      "type": "addressBand",
+      "type": "photoBand",
       "isActive": true,
       "heading": "Mail Donations by Check To:",
       "subheading": "Impact Discipleship Ministries",
       "image": {
         "name": "Shared/yellow-world-banner",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Web-Pages%2FShared%2Fyellow-world-banner.PNG?alt=media&token=a2f4b0e2-dacb-4101-b6f6-8de82c5de4dc"
-      }
+      },
+      "variant": "address",
+      "surface": "photo"
     }
   ],
   "contact": [
     {
       "key": "intro",
-      "type": "contactInfo",
+      "type": "contactDetails",
       "isActive": true,
       "heading": "Find us here.",
-      "body": "<p>\n  If we can answer any questions or offer you more information, we will be happy to have a conversation with you. The quickest way to get in contact\n  with us is through email, but feel free to reach out to us using any of the information below.\n</p>"
+      "body": "<p>\n  If we can answer any questions or offer you more information, we will be happy to have a conversation with you. The quickest way to get in contact\n  with us is through email, but feel free to reach out to us using any of the information below.\n</p>",
+      "variant": "standard",
+      "surface": "light",
+      "pairWithNext": true
     },
     {
       "key": "form",
       "type": "form",
       "isActive": true,
       "heading": "Contact Us.",
-      "ctaTitle": "Send Message"
+      "ctaTitle": "Send Message",
+      "variant": "plain",
+      "surface": "light",
+      "formId": "N0ynW6zeYKdXQS2EkBii"
     }
   ],
   "discipleship-library": [
     {
       "key": "hero",
-      "type": "pageHeader",
+      "type": "heroSplit",
       "isActive": true,
       "subheading": "The Impact Discipleship Library",
       "heading": "Your discipleship library,<br>in your pocket.",
@@ -725,11 +772,13 @@
       "image": {
         "name": "A lesson open in the Impact Discipleship Library",
         "url": "assets/reader/hero-lesson.jpg"
-      }
+      },
+      "variant": "standard",
+      "surface": "dark"
     },
     {
       "key": "features",
-      "type": "features",
+      "type": "listArticles",
       "isActive": true,
       "items": [
         {
@@ -809,21 +858,25 @@
           },
           "isActive": true
         }
-      ]
+      ],
+      "variant": "numbered",
+      "surface": "light"
     },
     {
       "key": "closing",
-      "type": "prose",
+      "type": "copyCentred",
       "isActive": true,
       "heading": "Start reading today.",
       "body": "<p>\n  Anyone can sign up. Open it in your browser, sign in, and your shelf is waiting.\n</p>",
-      "ctaTitle": "Open the Library"
+      "ctaTitle": "Open the Library",
+      "variant": "withButtons",
+      "surface": "tinted"
     }
   ],
   "prayer-team": [
     {
       "key": "hero",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "GROW AS DISCIPLES TOGETHER",
       "heading": "Join the Prayer Team",
@@ -844,42 +897,51 @@
           "icon": "fa-solid fa-hand-holding-medical",
           "isActive": true
         }
-      ]
+      ],
+      "variant": "buttonList",
+      "surface": "photo"
     },
     {
       "key": "signup",
-      "type": "signup",
+      "type": "form",
       "isActive": true,
       "body": "<p>Join our prayer team and you will receive an exclusive monthly email newsletter detailing specific prayer needs for Impact and Impact partners.</p>",
-      "ctaTitle": "JOIN THE PRAYER TEAM"
+      "ctaTitle": "JOIN THE PRAYER TEAM",
+      "variant": "mailingList",
+      "surface": "light",
+      "signupList": "prayer"
     }
   ],
   "coaching-with-impact": [
     {
       "key": "hero",
-      "type": "pageHeader",
+      "type": "heroBand",
       "isActive": true,
       "subheading": "IMPACT DISCIPLESHIP MINISTRIES",
       "heading": "Coaching With Impact",
       "image": {
         "name": "Coaching-With-Impact/Untitled-design-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FUntitled-design-1.png?alt=media&token=9a0407b8-074e-4cac-b3e9-c5ab1e1ced18"
-      }
+      },
+      "variant": "standard",
+      "surface": "photo"
     },
     {
       "key": "intro",
-      "type": "prose",
+      "type": "copyCentred",
       "isActive": true,
       "heading": "Step onto your <strong>&ldquo;field&rdquo;</strong> of influence with <strong>purpose</strong> and <strong>impact</strong>.",
       "body": "<p>Through a clear biblical framework, <b>Coaching With Impact</b> empowers coaches to embrace their role as disciple-makers, guiding them to develop both personally and professionally. Join us on this transformative journey as we equip coaches to lead with authenticity, intentionality, and lasting impact.</p>\n<p>Drawing from his experiences as a former Professional Baseball player and Major League Baseball scout, <a href=\"/team-details/AP4yP449P3iI7L0PsOVp\"><b>Kevin Burrell</b></a> has partnered with <b>Ken Adams</b>, Impact Discipleship Ministries&rsquo; founder and director, in inviting coaches of all levels to rediscover the essence of Jesus Christ&rsquo;s final command &ndash; the &lsquo;Great Commission.&rsquo;</p>",
       "ctaTitle": "BUY THE BOOK",
       "ctaUrl": "/product-details/rySK3NIIjWwWuBLTpxPc",
       "ctaTitle2": "REQUEST A COACHING CONSULTATION",
-      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/pl/2148229316"
+      "ctaUrl2": "https://impact-discipleship-ministries.mykajabi.com/pl/2148229316",
+      "variant": "withButtons",
+      "surface": "light"
     },
     {
       "key": "quotes",
-      "type": "testimonials",
+      "type": "carousel",
       "isActive": true,
       "subheading": "OUR RESOURCE",
       "heading": "Check out how coaches are using our resource",
@@ -887,11 +949,13 @@
         "name": "Coaching-With-Impact/grid-bg-1",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2Fgrid-bg-1.png?alt=media&token=cd20c7ce-deaa-471b-aa05-5a2aee9e2b90"
       },
-      "testimonialIds": []
+      "testimonialIds": [],
+      "variant": "quotes",
+      "surface": "photo"
     },
     {
       "key": "report",
-      "type": "mission",
+      "type": "copyCentred",
       "isActive": true,
       "subheading": "2023",
       "heading": "Progress Report",
@@ -903,11 +967,13 @@
       "videoId": "krHPH7SoQwU",
       "videoUrl": "https://www.youtube.com/watch?v=krHPH7SoQwU",
       "ctaTitle": "CONNECT WITH KEVIN",
-      "ctaUrl": "/team-details/AP4yP449P3iI7L0PsOVp"
+      "ctaUrl": "/team-details/AP4yP449P3iI7L0PsOVp",
+      "variant": "mediaBelow",
+      "surface": "light"
     },
     {
       "key": "resources",
-      "type": "cards",
+      "type": "listArticles",
       "isActive": true,
       "items": [
         {
@@ -932,11 +998,13 @@
           "ctaTitle": "PURCHASE BOOK",
           "ctaUrl": "/product-details/Th0IrFrIUElnj5urBzl6"
         }
-      ]
+      ],
+      "variant": "plain",
+      "surface": "light"
     },
     {
       "key": "online",
-      "type": "gallery",
+      "type": "listGrid",
       "isActive": true,
       "subheading": "COACHING WITH IMPACT ONLINE",
       "heading": "A movement of multiplication",
@@ -974,27 +1042,33 @@
             "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FScreenshot%202025-01-06%20at%208.32.14%20AM.PNG?alt=media&token=aa7ba169-93da-48c3-9a88-111993d0a2a3"
           }
         }
-      ]
+      ],
+      "variant": "picture",
+      "surface": "light"
     },
     {
       "key": "echs",
-      "type": "story",
+      "type": "copyMedia",
       "isActive": true,
       "heading": "First &ldquo;Competing with Impact&rdquo; High School Discipleship Group at ECHS",
       "image": {
         "name": "The first Competing with Impact high school discipleship group at East Coweta High School",
         "url": "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/Coaching-With-Impact%2FIMG_1707.JPG?alt=media&token=3f98f870-7d49-425a-9640-880defd337eb"
       },
-      "body": "<p>What an incredible moment to witness. We celebrated the very first Competing with Impact high school discipleship group at East Coweta High School, led by none other than Coach Mark Bowles.</p>\n<p>Coach Mark, who was discipled by Kevin Burrell, is now stepping into leadership and pouring into the next generation of disciples. It&rsquo;s amazing to see the impact of this mentorship come full circle &mdash; Mark is now leading his own group, making disciples, and empowering students to grow in their faith.</p>\n<p>Excited to see how God continues to move through this group and the lives of these students. Let&rsquo;s keep praying for the students of ECHS and leaders like Coach Mark Bowles, who are living out the call to make disciples.</p>"
+      "body": "<p>What an incredible moment to witness. We celebrated the very first Competing with Impact high school discipleship group at East Coweta High School, led by none other than Coach Mark Bowles.</p>\n<p>Coach Mark, who was discipled by Kevin Burrell, is now stepping into leadership and pouring into the next generation of disciples. It&rsquo;s amazing to see the impact of this mentorship come full circle &mdash; Mark is now leading his own group, making disciples, and empowering students to grow in their faith.</p>\n<p>Excited to see how God continues to move through this group and the lives of these students. Let&rsquo;s keep praying for the students of ECHS and leaders like Coach Mark Bowles, who are living out the call to make disciples.</p>",
+      "variant": "image",
+      "surface": "light"
     },
     {
       "key": "contact",
-      "type": "banner",
+      "type": "copyCentred",
       "isActive": true,
       "heading": "Have other questions?",
       "body": "<p>Get in contact with us and let us know how we can support you.</p>",
       "ctaTitle": "CONTACT",
-      "ctaUrl": "/contact"
+      "ctaUrl": "/contact",
+      "variant": "withButtons",
+      "surface": "tinted"
     }
   ]
 }
