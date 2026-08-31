@@ -387,3 +387,94 @@ describe('what counts as having something to edit', () => {
     expect(summary).toBe('1 column, 1 piece');
   });
 });
+
+/**
+ * DOUBLE-CLICKING A ROW OPENS IT (Shane, 2026-08-31), and the edit button
+ * that used to do it is gone.
+ *
+ * The risk the handler exists to manage: delete and the live toggle sit
+ * inside the same row, so a double-click landing on either would open the
+ * editor on top of what it just did - over a section that is mid-delete, or
+ * one whose toggle is still saving.
+ */
+describe('opening a section by double-clicking its row', () => {
+  const build = (): PageStackComponent => {
+    TestBed.configureTestingModule({
+      providers: [
+        PageStackComponent,
+        {
+          provide: PageContentService,
+          useValue: {
+            getById: () => Promise.resolve({ blocks: [] }),
+            updateFields: () => Promise.resolve()
+          }
+        },
+        { provide: PermissionService, useValue: { canEdit: () => true, canDelete: () => true } },
+        { provide: MatDialog, useValue: dialogStub },
+        { provide: ConfirmService, useValue: { confirm: () => Promise.resolve(true) } },
+        { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined } }
+      ]
+    });
+    const component = TestBed.inject(PageStackComponent);
+    component.page = kitPage({ id: 'seminars', title: 'Seminars', blocks: [] } as never);
+    return component;
+  };
+
+  const section = {
+    key: 'k1', type: SECTION_ARCHETYPE.SECTION, variant: 'columns',
+    columns: [{ key: 'c1', pieces: [{ key: 'h', kind: 'heading', text: 'A', isActive: true }] }]
+  } as never;
+
+  /** A double-click that landed on `el`, which is all the handler reads. */
+  const clickOn = (el: HTMLElement) => ({ target: el }) as unknown as Event;
+
+  it('opens the section when the row itself is double-clicked', () => {
+    const component = build();
+    component.sections = [section];
+
+    component.editFromRow(section, clickOn(document.createElement('div')));
+
+    expect(component.editing)
+      .withContext('double-clicking the row did not open it')
+      .not.toBeNull();
+  });
+
+  it('ignores a double-click on the delete button', () => {
+    // Otherwise the editor opens over a section that is being deleted.
+    const component = build();
+    component.sections = [section];
+
+    const row = document.createElement('div');
+    const button = document.createElement('button');
+    row.appendChild(button);
+    component.editFromRow(section, clickOn(button));
+
+    expect(component.editing).toBeNull();
+  });
+
+  it('ignores a double-click on the live toggle', () => {
+    const component = build();
+    component.sections = [section];
+
+    const row = document.createElement('div');
+    const toggle = document.createElement('mat-slide-toggle');
+    const inner = document.createElement('span');
+    toggle.appendChild(inner);
+    row.appendChild(toggle);
+    // On the toggle's INNER element, which is what a real click hits.
+    component.editFromRow(section, clickOn(inner));
+
+    expect(component.editing).toBeNull();
+  });
+
+  it('ignores a double-click on the drag handle', () => {
+    const component = build();
+    component.sections = [section];
+
+    const grip = document.createElement('mat-icon');
+    grip.className = 'ps__grip';
+    component.editFromRow(section, clickOn(grip));
+
+    expect(component.editing).toBeNull();
+  });
+});

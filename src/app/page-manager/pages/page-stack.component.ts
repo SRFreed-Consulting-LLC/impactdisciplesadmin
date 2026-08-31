@@ -250,6 +250,24 @@ export class PageStackComponent implements OnChanges {
   }
 
   /**
+   * Double-clicking a row opens it.
+   *
+   * IGNORES the controls that are not "open this". Delete and the live
+   * toggle sit inside the same row, and a double-click landing on either
+   * would otherwise open the editor on top of what it just did - so the
+   * handler checks what was actually hit rather than asking every control
+   * to stop the event, which is the version somebody forgets to do on the
+   * next control they add.
+   */
+  editFromRow(section: PageContentBlock, event: Event): void {
+    const hit = event.target as HTMLElement | null;
+    if (hit?.closest('button, mat-slide-toggle, .ps__grip')) {
+      return;
+    }
+    this.edit(section);
+  }
+
+  /**
    * Opens the section FULL SCREEN rather than in a pop-up.
    *
    * It was a dialog until 2026-08-29. A pop-up has to be small enough to

@@ -132,9 +132,17 @@
 
     <div cdkDropList class="ps__stack" (cdkDropListDropped)="reorder($event)">
       @for (section of sections; track section.key) {
+        <!-- DOUBLE-CLICK THE ROW TO EDIT IT (Shane, 2026-08-31). The edit
+             button is gone: the row itself is the thing you want to open,
+             and a button that only ever does what opening the row does is
+             a second way to say it. The controls that are NOT "open this"
+             - delete, and the live toggle - are ignored by the handler
+             rather than needing to stop the event themselves. -->
         <div class="ps__section" cdkDrag
              [class.ps__section--off]="!isLive(section)"
-             [cdkDragDisabled]="!canEdit() || loadFailed">
+             [class.ps__section--editable]="canEdit() && !loadFailed"
+             [cdkDragDisabled]="!canEdit() || loadFailed"
+             (dblclick)="editFromRow(section, $event)">
           <mat-icon class="ps__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
 
           @if (kindOf(section); as kind) {
@@ -143,12 +151,14 @@
               <div class="ps__name">{{ kind.label }}</div>
               <div class="ps__summary">{{ summary(section) }}</div>
             </div>
-            <button type="button" class="ps__icon-btn"
-                    [matTooltip]="isEditable(kind) ? 'Edit this section' : 'Nothing on this section is edited here'"
-                    [disabled]="!canEdit() || loadFailed || !isEditable(kind)"
-                    (click)="edit(section)">
-              <mat-icon>edit</mat-icon>
-            </button>
+            <!-- Not a button any more - the row opens on a double-click.
+                 Said out loud, because an interaction with nothing on
+                 screen to suggest it is one nobody finds. -->
+            @if (isEditable(kind)) {
+              <span class="ps__hint">Double-click to edit</span>
+            } @else {
+              <span class="ps__hint">Nothing to edit here</span>
+            }
           } @else {
             <!-- A type this build does not know, or one this page does not
                  offer. Shown so it can be removed; the public page skips it

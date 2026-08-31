@@ -56,9 +56,6 @@ export class KitPageEditorComponent implements OnChanges {
   failed = false;
 
   ngOnChanges(): void {
-    // Back to the editor whenever a different page is opened - see
-    // `comparing`.
-    this.comparing = false;
     this.load();
   }
 
@@ -115,20 +112,6 @@ export class KitPageEditorComponent implements OnChanges {
     return `${base}${publicPathFor(this.slug)}`;
   }
 
-  /** Where this page is on the public site, for the comparison's left frame.
-   *  Same rule as liveUrl - home is the site root. */
-  get publicPath(): string {
-    return publicPathFor(this.slug);
-  }
-
-  /**
-   * Whether the comparison is showing instead of the editor.
-   *
-   * Reset whenever the slug changes: arriving at Seminars mid-comparison of
-   * About Us is baffling, and it was the first thing the previous
-   * comparison screen got wrong.
-   */
-  comparing = false;
 
   // ------------------------------------------------------------ settings
 

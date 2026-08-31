@@ -377,3 +377,15 @@
     overflow-y: visible;
   }
 }
+
+/* The row opens on a double-click, so it has to look like something you can
+   open. */
+.ps__section--editable {
+  cursor: pointer;
+}
+
+.ps__hint {
+  color: var(--app-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}

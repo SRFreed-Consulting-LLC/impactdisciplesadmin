@@ -41,27 +41,17 @@
          matTooltip="Open on the site" aria-label="Open this page on the site">
         <mat-icon>open_in_new</mat-icon>
       </a>
-      <!-- THE COMPARISON, back for a second migration. It draws this page
-           through the two new members - Section and List - beside the page
-           as it is, from the same transform the cutover will run, so what
-           is approved here is what gets written. -->
-      <button mat-stroked-button type="button" class="kp__compare"
-              (click)="comparing = !comparing"
-              [matTooltip]="comparing ? 'Back to editing this page' : 
-                'See this page drawn the new way, beside the way it is now'">
-        <mat-icon>{{ comparing ? 'edit' : 'compare' }}</mat-icon>
-        {{ comparing ? 'Back to editing' : 'Compare' }}
-      </button>
       <button mat-icon-button type="button" (click)="remove()"
               matTooltip="Delete this page" aria-label="Delete this page">
         <mat-icon>delete_outline</mat-icon>
       </button>
     </div>
 
-    @if (comparing) {
-      <app-kit-compare [path]="publicPath" [slug]="slug"></app-kit-compare>
-    } @else {
-      <app-page-stack [page]="editablePage"></app-page-stack>
-    }
+    <!-- The side-by-side comparison lived here until every page migrated
+         (2026-08-31). It had nothing left to compare against: both sides
+         drew the same document the same way. The component and the web
+         /kit-preview route are still in the tree and now unreachable -
+         they go with the fourteen archetypes in the retirement pass. -->
+    <app-page-stack [page]="editablePage"></app-page-stack>
   </div>
 }
