@@ -17,7 +17,11 @@ import { DMMDialogComponent } from './dmm-dialog.component';
 })
 export class DMMServiceComponent extends BaseListComponent<DMMModel> {
   readonly itemType = 'Disciple Making Minute';
-  protected readonly screenKey = 'page-manager.disciple-making-minute';
+  // data.*, not page-manager.*: the screen moved to the DATA group on
+  // 2026-08-31 and a screenKey is `${group.id}.${item.slug}`. Nothing needed
+  // migrating - no admin_user in dev OR prod held a grant on the old key
+  // (both checked, read-only, before the move).
+  protected readonly screenKey = 'data.disciple-making-minute';
   protected readonly dialogComponent = DMMDialogComponent;
   protected override readonly dialogConfig: MatDialogConfig = { width: '1200px', maxWidth: '95vw' };
 

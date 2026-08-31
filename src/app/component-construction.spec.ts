@@ -51,8 +51,8 @@ import { DailyReadingDialogComponent } from 'src/app/library-manager/lesson-edit
 import { DashboardComponent } from 'src/app/core/dashboard/dashboard.component';
 import { DateTimeFieldComponent } from 'src/app/shared/date-time-field/date-time-field.component';
 import { DesignCanvasComponent } from 'src/app/tools-manager/email-designer/canvas/design-canvas.component';
-import { DMMDialogComponent } from 'src/app/page-manager/dmms/dmm-dialog.component';
-import { DMMServiceComponent } from 'src/app/page-manager/dmms/dmms.component';
+import { DMMDialogComponent } from 'src/app/data-manager/dmms/dmm-dialog.component';
+import { DMMServiceComponent } from 'src/app/data-manager/dmms/dmms.component';
 import { EditTierDialogComponent } from 'src/app/library-manager/dialogs/edit-tier-dialog.component';
 import { EmailDesignerComponent } from 'src/app/tools-manager/email-designer/email-designer.component';
 import { EventAgendaComponent } from 'src/app/events-manager/events/event-agenda/event-agenda.component';

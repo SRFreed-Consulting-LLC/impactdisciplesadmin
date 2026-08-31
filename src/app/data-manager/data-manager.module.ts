@@ -41,6 +41,8 @@ import { CustomFormSubmissionDetailDialogComponent } from './custom-form-submiss
 import { FormBuilderComponent } from './form-builder/form-builder.component';
 import { FormFieldSettingsComponent } from './form-builder/form-field-settings.component';
 import { FormTestSubmitDialogComponent } from './form-builder/form-test-submit-dialog.component';
+import { DMMServiceComponent } from './dmms/dmms.component';
+import { DMMDialogComponent } from './dmms/dmm-dialog.component';
 
 /**
  * DATA - see data-manager.component.ts for what these five screens have in
@@ -73,6 +75,8 @@ const routes: Routes = [
     TestimonialDialogComponent,
     TeamPageComponent,
     TeamPageDialogComponent,
+    DMMServiceComponent,
+    DMMDialogComponent,
     CustomFormSubmissionsComponent,
     CustomFormSubmissionDetailDialogComponent,
     FormBuilderComponent,

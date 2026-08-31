@@ -36,19 +36,29 @@
       {{ row.isActive ? 'LIVE' : 'INACTIVE' }}
     </span>
   </ng-template>
-  <ng-template appDataGridCell="order" let-row>
+  <!-- The clash marker rides on the TITLE now that the order number is not
+       shown (2026-08-31). Without it the banner above would name numbers -
+       "3 is used twice" - with nothing on screen carrying a number, so there
+       would be no way to tell WHICH slides it meant. -->
+  <ng-template appDataGridCell="title" let-row>
     @if (isConflicted(row, (duplicateOrders$ | async))) {
-      <span class="order-clash" matTooltip="Another slide has this order number">
-        {{ row.order }}
+      <span class="order-clash"
+            [matTooltip]="'This slide shares running order ' + row.order + ' with another - drag any row to renumber them all'">
+        {{ row.title }}
         <mat-icon class="order-clash__icon">warning_amber</mat-icon>
       </span>
     } @else {
-      {{ row.order }}
+      {{ row.title }}
     }
   </ng-template>
   <ng-template appDataGridCell="image" let-row>
     @if (row.image) {
-      <img width="100" [src]="row.image.url" [alt]="row.image.name">
+      <!-- The width stays an ATTRIBUTE. This img is projected into
+           app-data-grid's table, so it does not carry this component's
+           encapsulation attribute and a plain rule in the css file never
+           matches it - dropping the attribute in favour of one let the image
+           render at its intrinsic 2560px and took the column with it. -->
+      <img width="96" [src]="row.image.url" [alt]="row.image.name">
     }
   </ng-template>
 </app-data-grid>

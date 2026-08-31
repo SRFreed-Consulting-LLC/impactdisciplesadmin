@@ -62,3 +62,49 @@ app-data-grid {
   display: flex;
   flex-direction: column;
 }
+
+/* COLUMN WIDTHS, because this table lives in a ~480px pane beside the live
+   preview and its columns' natural widths came to 499 - a sideways scrollbar
+   under four columns, and "Actions" clipped. Live and Actions hold a fixed
+   pill and one icon, so they are sized to their content and Title takes what
+   is left rather than wrapping every slide name onto three lines.
+
+   :host ::ng-deep, not a plain rule. The table element belongs to
+   app-data-grid, so it never carries THIS component's encapsulation
+   attribute and an unpierced selector matches nothing - the first version of
+   this block was dead CSS, measured in the browser. :host keeps it to this
+   screen rather than every grid in the app; the class arrives via
+   [tableClass]="images-table". The thumbnail's own width stays an attribute
+   in the template, for the same encapsulation reason. */
+/* table-layout: fixed makes the widths below BINDING. Under the default auto
+   layout they are only suggestions, and the content won: the Live column
+   ignored 88px and sat at 129 because "INACTIVE" plus its pill padding is
+   that wide, which kept the table 19px past the pane. Fixed also gives Title
+   the remainder instead of the leftovers. */
+:host ::ng-deep .images-table {
+  table-layout: fixed;
+}
+
+/* The default 16px each side is what made the columns too wide to fit; at
+   8px every label still clears its cell. Trimmed rather than the words - the
+   first attempt sized these columns by guess and ellipsised the pills to
+   "LIV…" and "INA…", which is the one column the screen exists to show. */
+:host ::ng-deep .images-table th,
+:host ::ng-deep .images-table td {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Widths are MEASURED, not guessed: the INACTIVE pill needs 98px and the
+   Actions header 83px, both read off the rendered page. */
+:host ::ng-deep .images-table .cdk-column-isActive {
+  width: 114px;
+}
+
+:host ::ng-deep .images-table .cdk-column-image {
+  width: 112px;
+}
+
+:host ::ng-deep .images-table .cdk-column-actions {
+  width: 68px;
+}

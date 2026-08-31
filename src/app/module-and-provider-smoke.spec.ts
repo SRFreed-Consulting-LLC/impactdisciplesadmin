@@ -51,7 +51,7 @@ import { DataGridCellDirective } from 'src/app/shared/data-grid/data-grid-cell.d
 import { DEFAULT_COLOR_THEME } from 'src/app/common/services/utils/theme.service';
 import { describeCampaignDelete } from 'src/app/campaigns-manager/campaigns/campaign-delete-text';
 import { DesignerStateService } from 'src/app/tools-manager/email-designer/designer-state.service';
-import { DMMDialogComponent } from 'src/app/page-manager/dmms/dmm-dialog.component';
+import { DMMDialogComponent } from 'src/app/data-manager/dmms/dmm-dialog.component';
 import { EditTierDialogComponent } from 'src/app/library-manager/dialogs/edit-tier-dialog.component';
 import { EmailBuilderModule } from 'src/app/tools-manager/email-designer/email-builder.module';
 import { emailDesignerCanDeactivateGuard } from 'src/app/tools-manager/email-designer/email-designer.guard';

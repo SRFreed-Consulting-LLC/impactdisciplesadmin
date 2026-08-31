@@ -33,15 +33,35 @@ export class HomePageImagesComponent extends BaseListComponent<HomePageImageMode
     width: '1120px', maxWidth: '95vw', maxHeight: '94vh'
   };
 
+  /**
+   * THREE COLUMNS: is it live, what does it look like, what does it say.
+   *
+   * This is a running order of pictures, not a data table. Everything else a
+   * slide carries - its date, its button's words and destination - is edited
+   * in the dialog, and having it in the grid as well only made the table wide
+   * enough to scroll sideways past the thing that identifies a slide: the
+   * picture. (Owner's call 2026-08-31; several slides share the title
+   * "Impact Discipleship Ministries", so the image IS the identifier.)
+   *
+   * NOTHING IS SORTABLE, deliberately. The rows are in running order and
+   * dragging is how that order is changed - and dragging only works while the
+   * grid is sorted by `order` ascending (see DataGridComponent.canReorder).
+   * With the Order column hidden there would be no header to click to get
+   * back, so one stray click on Title would disable reordering for the rest
+   * of the session with no way to recover it.
+   */
   readonly columns: DataGridColumn<HomePageImageModel>[] = [
-    { key: 'isActive', label: 'Live', filterable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
-    { key: 'order', label: 'Order', type: 'number' },
+    { key: 'isActive', label: 'Live', filterable: false, sortable: false, sortFn: (a, b) => Number(a.isActive) - Number(b.isActive) },
     { key: 'image', label: 'Image', filterable: false, sortable: false, value: (item) => item.image?.name ?? '' },
-    { key: 'date', label: 'Date', type: 'date' },
-    { key: 'title', label: 'Title' },
-    { key: 'ctaTitle', label: 'Button Title' },
-    { key: 'ctaDestination', label: 'Button Internal Destination' },
-    { key: 'ctaUrl', label: 'Button External URL' }
+    { key: 'title', label: 'Title', sortable: false },
+    // Hidden, not deleted: `order` still drives the sort, the drag and the
+    // clash check, and the rest are still exported and still edited in the
+    // dialog. This grid has no Columns button, so hidden here means hidden.
+    { key: 'order', label: 'Order', type: 'number', visible: false },
+    { key: 'date', label: 'Date', type: 'date', visible: false },
+    { key: 'ctaTitle', label: 'Button Title', visible: false },
+    { key: 'ctaDestination', label: 'Button Internal Destination', visible: false },
+    { key: 'ctaUrl', label: 'Button External URL', visible: false }
   ];
 
   /**

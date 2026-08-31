@@ -14,6 +14,13 @@
     <app-team-page></app-team-page>
   }
 
+  <!-- Came from Page Manager on 2026-08-31, for the same reason Testimonials
+       and Team Page did the day before: it is a list of records the site
+       renders, not the content of any one page. -->
+  @if (selectedTab === 'Disciple Making Minute') {
+    <app-dmms></app-dmms>
+  }
+
   @if (selectedTab === 'Form Submissions') {
     <app-custom-form-submissions></app-custom-form-submissions>
   }

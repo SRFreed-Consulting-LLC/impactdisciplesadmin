@@ -3,8 +3,6 @@ import { CommonModule } from '@angular/common';
 // routerLink on the Pages list's original-page rows.
 import { RouterModule } from '@angular/router';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
-import { DMMServiceComponent } from './dmms/dmms.component';
-import { DMMDialogComponent } from './dmms/dmm-dialog.component';
 import { PageManagerComponent } from './page-manager.component';
 import { SharedModule } from '../shared/shared.module';
 import { provideHttpClient } from '@angular/common/http';
@@ -104,8 +102,6 @@ import { QuillModule } from 'ngx-quill';
   ],
   declarations: [
     PageManagerComponent,
-    DMMServiceComponent,
-    DMMDialogComponent,
     HomeComponent,
     HomeSectionEditorComponent,
     PageStackComponent,

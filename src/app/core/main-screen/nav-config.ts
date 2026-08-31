@@ -320,7 +320,7 @@ export const NAV_CONFIG: NavGroup[] = [
       // strip and testimonials are expected to follow, which is why this is
       // a section stack rather than a renamed list.
       { label: 'Home', slug: 'home' },
-      { label: 'Disciple Making Minute', slug: 'disciple-making-minute' },
+      // Disciple Making Minute moved to DATA on 2026-08-31 - see that group.
       // Moved from Tools Manager 2026-08-19 alongside the Web Manager ->
       // Content Manager rename: the public site's configuration belongs
       // with the rest of the public-site content. It also owns the DOCKING
@@ -409,6 +409,14 @@ export const NAV_CONFIG: NavGroup[] = [
       { label: 'Products', slug: 'products', roles: [Role.ADMIN] },
       { label: 'Testimonials', slug: 'testimonials' },
       { label: 'Team Page', slug: 'team-page' },
+      // Moved here from Page Manager 2026-08-31 (owner's call), the same
+      // reasoning as Testimonials and Team Page the day before: a list of
+      // records the public site renders, not one page's own words. This
+      // changed its screenKey from page-manager.disciple-making-minute to
+      // data.disciple-making-minute - an identity change, and normally a
+      // grant migration. None was needed: no admin_user in dev OR prod held
+      // a grant on the old key (both read before the move).
+      { label: 'Disciple Making Minute', slug: 'disciple-making-minute' },
       // Slug unchanged from its Contacts Manager days on purpose:
       // NewRecordAlertsComponent navigates using this exact string, and the
       // label already reads shorter than the slug does.
