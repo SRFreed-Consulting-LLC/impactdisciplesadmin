@@ -656,6 +656,11 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edited();
   }
 
+  setColumnInset(column: SectionColumn, inset: boolean): void {
+    column.inset = inset || undefined;
+    this.edited();
+  }
+
   setColumnFull(column: SectionColumn, full: boolean): void {
     column.full = full || undefined;
     this.edited();

@@ -526,6 +526,12 @@
                                             them run the whole way across">
                 Hold the width
               </mat-slide-toggle>
+              <mat-slide-toggle [checked]="column.inset === true"
+                                (change)="setColumnInset(column, $event.checked)"
+                                matTooltip="Indents this column off the edge
+                                            of the page">
+                Indent
+              </mat-slide-toggle>
               <mat-slide-toggle [checked]="column.full === true"
                                 (change)="setColumnFull(column, $event.checked)"
                                 matTooltip="Spans the whole row rather than
