@@ -85,6 +85,16 @@ export class HomeComponent implements OnInit {
    * A WORKING COPY, not the row: cancelling has to cost nothing, and the
    * preview beside it shows this rather than what is stored.
    */
+  /**
+   * Showing the live home page beside what the section kit would draw.
+   *
+   * TEMPORARY, and it retires with the migration - the same way each of the
+   * twelve pages carried a Compare view until it cut over. Nothing in that
+   * view writes: the right-hand frame runs the migration's transform in
+   * memory against today's sections.
+   */
+  comparing = false;
+
   editing: HomeSectionModel | null = null;
   editingKind: HomeSectionKind | null = null;
 

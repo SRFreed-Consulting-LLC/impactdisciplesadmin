@@ -76,6 +76,31 @@
       </p>
     </aside>
   </div>
+} @else if (comparing) {
+
+  <!-- BEFORE THE MIGRATION, not after it: the live home page beside what the
+       kit would draw from the very same data, so the move can be judged
+       before anything is written. The right frame runs toKitHomeBlocks() in
+       memory - the migration's own transform - so approving this approves
+       what would actually be stored. Nothing here writes. -->
+  <div class="home home--comparing">
+    <header class="home__head">
+      <button type="button" class="home__back" (click)="comparing = false">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Home page</span>
+      </button>
+      <div>
+        <h2 class="home__title">Home, as the section kit would draw it</h2>
+        <p class="home__note">
+          Nothing is saved by looking. The right-hand side is the migration itself,
+          run in memory against today's sections.
+        </p>
+      </div>
+    </header>
+
+    <app-kit-compare path="/" slug="home"></app-kit-compare>
+  </div>
+
 } @else {
 
 <div class="home">
@@ -88,6 +113,13 @@
           Drag to reorder. {{ liveCount }} of {{ sections.length }} showing on the site.
         </p>
       </div>
+
+      <!-- Temporary, like the twelve pages' own compare buttons were: it
+           goes when Home migrates. -->
+      <button mat-stroked-button type="button" class="home__compare"
+              (click)="comparing = true">
+        <mat-icon>compare</mat-icon> Compare with the kit
+      </button>
 
       <button mat-flat-button color="primary" class="home__add"
               [matMenuTriggerFor]="addMenu"

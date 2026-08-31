@@ -43,6 +43,24 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     titleLabel: 'Button text',
     linkLabel: 'Goes to'
   },
+  'copyMedia/buttonList': {
+    noun: 'button',
+    note: 'Buttons are entries rather than fixed slots, so you can add a third, '
+      + 'reorder them, or give one an icon.',
+    fields: { title: true, link: true, icon: true },
+    titleLabel: 'Button text',
+    linkLabel: 'Goes to'
+  },
+  'slider/slides': {
+    noun: 'slide',
+    note: 'Each slide is a full-width picture with words over it. The order here '
+      + 'is the order they rotate in.',
+    fields: { image: true, title: true, description: true, cta: true, link: true },
+    imageLabel: 'Background picture',
+    titleLabel: 'Heading',
+    descriptionLabel: 'Line under the heading',
+    linkLabel: 'Button goes to'
+  },
   'listRows/buttonAndText': {
     noun: 'row',
     fields: { title: true, description: true, link: true },
