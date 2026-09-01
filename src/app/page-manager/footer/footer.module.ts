@@ -24,7 +24,6 @@ import { FooterManagerComponent } from './footer-manager.component';
 // NavigationModule and the Data module already have. Moving them would
 // make the diff unreadable and buys nothing.
 import { DockingBarComponent } from '../docking-bar/docking-bar.component';
-import { DockingBarPreviewComponent } from '../docking-bar/docking-bar-preview.component';
 import { footerCanDeactivateGuard } from '../navigation/site-frame.guard';
 
 /**
@@ -54,8 +53,7 @@ const routes: Routes = [
   declarations: [
     SiteFooterAdminComponent,
     FooterManagerComponent,
-    DockingBarComponent,
-    DockingBarPreviewComponent
+    DockingBarComponent
   ],
   imports: [
     CommonModule,

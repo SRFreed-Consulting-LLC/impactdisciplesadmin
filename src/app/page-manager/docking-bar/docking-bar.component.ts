@@ -5,7 +5,6 @@ import { DockBarService } from 'src/app/common/services/data/dock-bar.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import menuData from 'src/app/common/services/data/nav-menu-data';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { DockPreview } from './docking-bar-preview.component';
 
 interface Destination {
   text: string;
@@ -84,24 +83,6 @@ export class DockingBarComponent implements OnInit {
       });
     });
     this.destinations.push({ text: 'External', value: EXTERNAL });
-  }
-
-  /**
-   * What the preview draws, straight off the LIVE form.
-   *
-   * A getter rather than a stored copy: the form is the only source, and
-   * anything mirrored into a field beside it is a second one that goes
-   * stale the first time somebody types into a control nobody wired up.
-   */
-  get preview(): DockPreview {
-    const v = this.form.value;
-    return {
-      label: v.label,
-      message: v.message,
-      note: v.note,
-      // In order, because the LAST button is the solid one on the site.
-      buttons: [v.cta1?.title, v.cta2?.title].filter((t): t is string => !!t)
-    };
   }
 
   async ngOnInit(): Promise<void> {

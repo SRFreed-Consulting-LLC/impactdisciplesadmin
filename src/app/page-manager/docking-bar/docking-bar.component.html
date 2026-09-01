@@ -6,12 +6,50 @@
 
 <app-list-header [title]="itemType"></app-list-header>
 
-<!-- THE BAR, AT THE TOP, as the site draws it - the same place the Header
-     screen puts its own preview. It follows the form rather than what is
-     saved, so a message that is too long shows as too long before it is
-     written. See the preview component for why it draws the bar itself
-     instead of framing the real site. -->
-<app-docking-bar-preview [dock]="preview"></app-docking-bar-preview>
+<!-- PREVIEW, AT THE TOP (owner, 2026-09-01: "like the Top Nav
+     Structure"), which is where the Header screen puts its own. It sat
+     BELOW the fields until then, on the earlier reasoning that a
+     full-width strip reads as a band under the fields that define it -
+     true of its shape, and beaten by wanting to see the thing you are
+     editing without scrolling to it.
+
+     It is still full width rather than a side rail, which was the other
+     half of that call and still holds: the dock is one full-width strip
+     pinned to the bottom of the public site and reads badly as a 420px
+     column.
+
+     The markup and colours are PORTED from the web repo's real component
+     (shared/components/library-dock) rather than approximated - same class
+     names, same #1c1c1c bar, same #ffcc00 rule and eyebrow, same
+     last-button-is-solid rule. If that component changes, this needs the
+     same edit; an approximation would have drifted silently instead. -->
+<div class="dock-preview">
+  <p class="section-label">Preview</p>
+  @if (form.value.isActive) {
+    <div class="dockp">
+      <div class="dockp__inner">
+        <p class="dockp__message">
+          @if (form.value.label) {
+            <span class="dockp__eyebrow">{{ form.value.label }}</span>
+          }
+          <span class="dockp__headline">
+            {{ form.value.message || 'Your message appears here' }}@if (form.value.note) {<span class="dockp__muted"> {{ form.value.note }}</span>}
+          </span>
+        </p>
+        <div class="dockp__actions">
+          @for (cta of previewCtas; track cta.title; let last = $last) {
+            <span class="dockp__btn" [class.dockp__btn--ghost]="!last">{{ cta.title }}</span>
+          }
+        </div>
+        <span class="dockp__close">&times;</span>
+      </div>
+    </div>
+  } @else {
+    <p class="dock-preview__off">
+      The docking bar is switched off, so nothing shows on the public site.
+    </p>
+  }
+</div>
 
 <div class="tab-content-wrap">
   <div class="tab-content" [formGroup]="form">
@@ -121,42 +159,4 @@
     </div>
 
   </div>
-</div>
-
-<!-- PREVIEW. Deliberately at the bottom of the form rather than in a side
-     rail (owner's call): the dock is a single full-width strip pinned to the
-     bottom of the public site, so it reads correctly as a band under the
-     fields that define it, and badly as a 420px column.
-
-     The markup and colours below are PORTED from the web repo's real
-     component (shared/components/library-dock) rather than approximated -
-     same class names, same #1c1c1c bar, same #ffcc00 rule and eyebrow, same
-     last-button-is-solid rule. If that component changes, this needs the
-     same edit; an approximation would have drifted silently instead. -->
-<div class="dock-preview">
-  <p class="section-label">Preview</p>
-  @if (form.value.isActive) {
-    <div class="dockp">
-      <div class="dockp__inner">
-        <p class="dockp__message">
-          @if (form.value.label) {
-            <span class="dockp__eyebrow">{{ form.value.label }}</span>
-          }
-          <span class="dockp__headline">
-            {{ form.value.message || 'Your message appears here' }}@if (form.value.note) {<span class="dockp__muted"> {{ form.value.note }}</span>}
-          </span>
-        </p>
-        <div class="dockp__actions">
-          @for (cta of previewCtas; track cta.title; let last = $last) {
-            <span class="dockp__btn" [class.dockp__btn--ghost]="!last">{{ cta.title }}</span>
-          }
-        </div>
-        <span class="dockp__close">&times;</span>
-      </div>
-    </div>
-  } @else {
-    <p class="dock-preview__off">
-      The docking bar is switched off, so nothing shows on the public site.
-    </p>
-  }
 </div>

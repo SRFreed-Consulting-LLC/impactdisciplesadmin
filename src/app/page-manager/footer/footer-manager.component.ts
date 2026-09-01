@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { TabShellComponent } from '../../core/main-screen/tab-shell.component';
+import { SiteFooterAdminComponent } from './footer.component';
 
 /**
  * THE BOTTOM OF EVERY PAGE - the footer, and the strip that floats over it.
@@ -29,4 +30,32 @@ import { TabShellComponent } from '../../core/main-screen/tab-shell.component';
 })
 export class FooterManagerComponent extends TabShellComponent {
   protected readonly groupId = 'footer';
+
+  /**
+   * THE UNSAVED-CHANGES GUARD RUNS ON THIS COMPONENT, because this is
+   * what the route resolves to now - so it has to answer for the screen
+   * inside it.
+   *
+   * The guard was written against SiteFooterAdminComponent and calls
+   * hasUnsavedChanges() on whatever the route holds. The moment the shell
+   * took over the route, that call landed on a component that had no such
+   * method - which throws inside a canDeactivate guard, and a guard that
+   * throws blocks the navigation.
+   *
+   * The protection it exists for is real and was asked for: the footer
+   * holds a local working copy and publishes on SAVE, so leaving without
+   * saving loses the work silently. Delegating keeps it.
+   */
+  @ViewChild(SiteFooterAdminComponent) private footer?: SiteFooterAdminComponent;
+
+  hasUnsavedChanges(): boolean {
+    // Only the footer tab has unsaved state to lose. On the docking bar
+    // the footer editor is not even rendered, and nothing to ask about
+    // must read as "nothing to lose" rather than as an error.
+    return this.footer?.hasUnsavedChanges() ?? false;
+  }
+
+  async save(): Promise<void> {
+    await this.footer?.save();
+  }
 }

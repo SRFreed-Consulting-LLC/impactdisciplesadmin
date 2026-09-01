@@ -1,6 +1,6 @@
 import { libraryUnsavedChangesGuard } from 'src/app/common/guards/library-unsaved-changes.guard';
 import type { NavigationComponent } from './navigation.component';
-import type { SiteFooterAdminComponent } from '../footer/footer.component';
+import type { FooterManagerComponent } from '../footer/footer-manager.component';
 
 /**
  * "You have unsaved changes" for the two screens that edit the SITE'S FRAME -
@@ -29,7 +29,7 @@ export const navigationCanDeactivateGuard =
   );
 
 export const footerCanDeactivateGuard =
-  libraryUnsavedChangesGuard<SiteFooterAdminComponent>(
+  libraryUnsavedChangesGuard<FooterManagerComponent>(
     'footer',
     'The footer could not be saved, so you are still on this page.',
   );
