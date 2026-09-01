@@ -775,34 +775,37 @@ describe('dropping a section into the page', () => {
       expect(c.pageTitleProblem).toBeNull();
     });
 
-    it('excuses HOME, which deliberately has none', () => {
-      // Shane's call, 2026-09-01. Home opens on a full-width slider, and the
-      // only way to give it a heading is a band of words above that slider -
-      // which is what the fix did, and it looked wrong. He would rather Home
-      // had no page title than carry that band.
+    // An exception list held 'home' for a few hours on 2026-09-01, while Home
+    // had no <h1> at all. It carries one now, marked "read, but not shown" -
+    // so there is no page that legitimately has none, and nothing to excuse.
+    //
+    // ONE `it` PER PAGE, not a loop: build() configures the TestBed, which
+    // cannot be reconfigured once it has handed out an instance.
+    it('does not excuse HOME a missing page title', () => {
       const c = headed(['section']);
       c.page = { ...c.page, slug: 'home' };
 
-      expect(c.pageTitleCount).toBe(0);
       expect(c.pageTitleProblem)
-        .withContext('nagged about the one page that is allowed to have none')
-        .toBeNull();
+        .withContext('home was let off a missing page title')
+        .toContain('Page title');
     });
 
-    it('still tells HOME about TWO page titles', () => {
-      // The exception excuses having none. It does not excuse having two,
-      // which is a different mistake and still worth saying.
-      const c = headed(['page', 'page']);
-      c.page = { ...c.page, slug: 'home' };
-
-      expect(c.pageTitleProblem).toContain('2 headings');
-    });
-
-    it('excuses nothing else', () => {
+    it('does not excuse any other page either', () => {
       const c = headed(['section']);
       c.page = { ...c.page, slug: 'about-us' };
 
       expect(c.pageTitleProblem).toContain('Page title');
+    });
+
+    it('counts a HIDDEN page title, because it is really there', () => {
+      // "Read, but not shown" puts the heading off-screen, not out of the
+      // markup - a screen reader and a search engine both find it. Not
+      // counting it would nag Home about a title it has.
+      const c = headed(['page']);
+      c.sections[0].columns[0].pieces[0].hidden = true;
+
+      expect(c.pageTitleCount).toBe(1);
+      expect(c.pageTitleProblem).toBeNull();
     });
   });
 });

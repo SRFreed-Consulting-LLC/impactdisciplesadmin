@@ -76,6 +76,20 @@
   font-size: 0.85rem;
 }
 
+/* A switch with its own explanation under it - the form fields carry theirs
+   in mat-hint, and a toggle has nowhere to put one. */
+.cp__switch {
+  padding: 2px 0 6px;
+}
+
+.cp__hint {
+  margin: 4px 0 0;
+  color: var(--app-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  max-width: 62ch;
+}
+
 .cp__line {
   width: 100%;
 }

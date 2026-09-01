@@ -481,30 +481,18 @@ export class PageStackComponent implements OnChanges {
     return found;
   }
 
-  /**
-   * Pages that are allowed to have no page title.
-   *
-   * ONE ENTRY, AND IT IS THE HOME PAGE (Shane's call, 2026-09-01). Home
-   * opens on a full-width picture slider, and the only way to give it a
-   * heading is to put a band of words above that slider - which is what the
-   * fix did, and it looked wrong. He would rather have no page title there
-   * than that band.
-   *
-   * Listed here rather than silently skipped, so the exception is a decision
-   * somebody can find and argue with, not a hole in the check.
-   */
-  private static readonly PAGES_WITHOUT_A_TITLE: readonly string[] = ['home'];
+  // A PAGES_WITHOUT_A_TITLE exception list lived here for a few hours on
+  // 2026-09-01, holding one entry: the home page, which has nowhere to put a
+  // visible <h1> above its slider. It is gone, and so is the exception -
+  // Home carries a real page title now, marked "read, but not shown"
+  // (ContentPiece.hidden), so it is in the markup for a search engine and a
+  // screen reader and off the screen for everybody else. There is no page
+  // that legitimately has no heading, so there is nothing to excuse.
 
   /** What to say about it, or null when there is nothing to say. Written as
    *  one getter so the message and the condition cannot disagree. */
   get pageTitleProblem(): string | null {
     if (this.loading || this.loadFailed || !this.sections.length) {
-      return null;
-    }
-    // The exception only excuses having NONE. Two page titles on Home is
-    // still two page titles, and still worth saying.
-    if (PageStackComponent.PAGES_WITHOUT_A_TITLE.includes(this.page.slug)
-        && this.pageTitleCount === 0) {
       return null;
     }
     const n = this.pageTitleCount;

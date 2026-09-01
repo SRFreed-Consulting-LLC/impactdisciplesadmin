@@ -51,6 +51,25 @@
       </mat-form-field>
     }
 
+    @if (fields.hidden) {
+      <!-- A HEADING NOBODY SEES. For a page that opens on a picture and has
+           nowhere to put a visible one - the home page's slider is the case
+           this was built for. The words still have to describe the page:
+           that is the difference between an accessible heading and a trick
+           search engines punish, and it is why this says so out loud. -->
+      <div class="cp__switch">
+        <mat-slide-toggle [checked]="!!piece.hidden"
+                          (change)="piece.hidden = $event.checked || undefined; changed.emit()">
+          Read, but not shown
+        </mat-slide-toggle>
+        <p class="cp__hint">
+          Keeps the heading for search engines and screen readers and takes it
+          off the screen. For a page that opens on a picture with nowhere to
+          put one. Only use it for words that genuinely describe the page.
+        </p>
+      </div>
+    }
+
     @if (fields.html) {
       <div class="cp__rich">
         <quill-editor [(ngModel)]="piece.html" [modules]="richTextModules"
