@@ -38,7 +38,11 @@ describe('editing a section built from columns', () => {
     const component = build();
     expect(component.isColumnSection).toBe(true);
 
-    component.kind = { ...component.kind, type: SECTION_ARCHETYPE.HERO_BAND };
+    // A LIST is the other member, and the only other thing this can now be.
+    // It repeats ONE item shape and has no columns to edit - offering the
+    // column editor there would be offering to arrange something that does
+    // not exist.
+    component.kind = { ...component.kind, type: SECTION_ARCHETYPE.LIST };
     expect(component.isColumnSection).toBe(false);
   });
 

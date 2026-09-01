@@ -361,15 +361,11 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   setGround(which: 'card' | 'left' | 'right', value: 'none' | 'panel' | 'brand' | 'dark'): void {
     if (which === 'card') { this.section.cardGround = value; }
-    if (which === 'left') { this.section.leftGround = value; }
-    if (which === 'right') { this.section.rightGround = value; }
     this.edits.next();
   }
 
   setInk(which: 'card' | 'left' | 'right', value: 'dark' | 'light'): void {
     if (which === 'card') { this.section.cardInk = value; }
-    if (which === 'left') { this.section.leftInk = value; }
-    if (which === 'right') { this.section.rightInk = value; }
     this.edits.next();
   }
 
@@ -391,18 +387,11 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   ] as const;
 
   setTitleTone(which: 'left' | 'right', value: 'ink' | 'brand'): void {
-    if (which === 'left') { this.section.leftTitleTone = value; }
-    if (which === 'right') { this.section.rightTitleTone = value; }
     this.edits.next();
   }
 
-  get isColumns(): boolean {
-    return this.kind.type === 'listColumns';
-  }
-
-  get isGrid(): boolean {
-    return this.kind.type === 'listGrid';
-  }
+  // isColumns and isGrid asked whether this section was one of two
+  // archetypes, and both are gone. Nothing has asked since.
 
   /** What a ground's text defaults to when no ink is stored - the pair that
    *  reads on it. Brand defaults LIGHT: the original's grey-on-blue measured
@@ -412,46 +401,18 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     return stored ?? (ground === 'panel' ? 'dark' : 'light');
   }
 
-  /** Whether this section splits copy beside media - the only place a media
-   *  share means anything. */
-  get hasSplitMedia(): boolean {
-    return !!this.fields.video
-      || this.kind.type === 'copyMedia'
-      // The hero's beside-a-picture look has a side too.
-      || (this.kind.type === 'heroBand' && this.section.variant === 'besidePicture');
-  }
+  // hasSplitMedia and isCentred asked which ARCHETYPE this was, to decide
+  // whether a media-side or a stacking-order control applied. Both are
+  // gone, and so is the question: a Section says which side its picture is
+  // on by which COLUMN holds it, and a column that is centred says so
+  // itself. The two controls they gated went with them.
 
-  /** A stacked section, where "which side" has no meaning but "which first"
-   *  does. */
-  get isCentred(): boolean {
-    return this.kind.type === 'copyCentred';
-  }
-
-  /**
-   * WHICH SIDE the picture sits on.
-   *
-   * 'auto' is not a third position - it is "leave it to the look", which for
-   * the alternating archetypes means the side still flips down the page. It
-   * has to stay available, or a section that was deliberately alternating
-   * could never be put back.
-   */
-  readonly mediaSides = [
-    { key: 'auto', label: 'As the page decides' },
-    { key: 'left', label: 'Picture left' },
-    { key: 'right', label: 'Picture right' }
-  ] as const;
-
-  pickMediaSide(value: 'auto' | 'left' | 'right'): void {
-    // Stored as absent rather than 'auto', so a section that never had an
-    // opinion does not start carrying one.
-    this.section.mediaSide = value === 'auto' ? undefined : value;
-    this.edits.next();
-  }
-
-  pickStackOrder(value: 'heading' | 'text'): void {
-    this.section.textFirst = value === 'text' ? true : undefined;
-    this.edits.next();
-  }
+  // The two controls themselves - `mediaSides` / `pickMediaSide` and
+  // `pickStackOrder` - went with them on 2026-09-01. Both had already
+  // stopped being reachable from the template when the archetype question
+  // above was deleted, and neither has anything left to set: a picture's
+  // side is which column it is in, and the order of a heading and its text
+  // is the order they are dragged into.
 
   pickCopyTone(value: 'soft' | 'dark'): void {
     this.section.copyTone = value;

@@ -34,44 +34,15 @@
        adding a page is an entry there plus a nav-config leaf, and no change
        here. See page-stack.component.ts.
 
-       About Us had its own block here until 2026-08-29, when it was the only
-       page whose template was a dispatcher. All eleven are now, so all eleven
-       get the same ordered stack and whole-page preview. -->
-  @for (page of editablePages; track page.slug) {
-    @if (selectedTab === page.label) {
-      <!-- The honest difference between an original page and a created one,
-           said where the page is edited (the Pages list that used to carry
-           this as a row badge is gone). Two facts, both of which retire when
-           this page migrates onto the section kit: the public site draws it
-           with its own bespoke component, and this document IS the live page
-           - there is no draft state to toggle. The Compare & migrate action
-           will sit on this banner. -->
-      <!-- APPROVED pages carry no banner and no Compare - the absence IS
-           the done-marker (Shane's call): a page still wearing the banner
-           is one still awaiting his verdict. -->
-      @if (!isApproved(page.slug)) {
-        <p class="pm__original">
-          <mat-icon>history_edu</mat-icon>
-          <span>
-            <strong>Original page &mdash; always live.</strong>
-            Edits here reach the site as they save. It still renders through its
-            own page component.
-          </span>
-          <button mat-stroked-button type="button" class="pm__compare-btn"
-                  (click)="comparing = !comparing">
-            <mat-icon>{{ comparing ? 'edit' : 'compare' }}</mat-icon>
-            {{ comparing ? 'Back to editing' : 'Compare with the section kit' }}
-          </button>
-        </p>
-      }
+  <!-- THE TWELVE ORIGINAL PAGES had a tab block each here, with the
+       "original page - always live" banner and the Compare button that
+       showed each one drawn both ways before it migrated.
 
-      @if (comparing && !isApproved(page.slug)) {
-        <app-kit-compare [path]="page.path" [slug]="page.slug"></app-kit-compare>
-      } @else {
-        <app-page-stack [page]="page"></app-page-stack>
-      }
-    }
-  }
+       EDITABLE_PAGES emptied when the last of them cut over on 2026-08-31,
+       so this loop has iterated nothing since; the markup went on
+       2026-09-01 with the archetypes it was built to retire. Every page is
+       a leaf now - see the app-kit-page-editor block below. -->
+
 
   <!-- A page staff CREATED, opened from its own leaf (Shane's call,
        2026-08-30: no difference between the pages - every one is a leaf and

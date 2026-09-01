@@ -35,7 +35,7 @@ import { EditablePage, EntrySpec, KindVariant, PageSectionKind } from './page-se
 
 /** What one entry is, per list variant. Keyed `archetype/variant`. */
 const ENTRY_SPECS: Record<string, EntrySpec> = {
-  'slider/slides': {
+  'list/slides': {
     noun: 'slide',
     note: 'Each slide is a full-width picture with words over it. The order here '
       + 'is the order they rotate in.',
@@ -45,21 +45,21 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     descriptionLabel: 'Line under the heading',
     linkLabel: 'Button goes to'
   },
-  'listRows/buttonAndText': {
+  'list/rows': {
     noun: 'row',
     fields: { title: true, description: true, link: true },
     titleLabel: 'Button text',
     descriptionLabel: 'What it is',
     linkLabel: 'Goes to'
   },
-  'listGrid/picture': {
+  'list/tiles': {
     noun: 'tile',
     fields: { image: true, title: true, description: true },
     titleLabel: 'Tile title',
     descriptionLabel: 'Copy',
     imageLabel: 'Picture'
   },
-  'listGrid/pictureRows': {
+  'list/pictureRows': {
     noun: 'card',
     note: 'Each card is a square picture beside its title and copy - the '
       + 'Seminars picture cards\' own arrangement.',
@@ -68,12 +68,12 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     descriptionLabel: 'Copy',
     imageLabel: 'Picture (square)'
   },
-  'listGrid/icon': {
+  'list/icon': {
     noun: 'tile',
     fields: { title: true, icon: true, body: true, cta: true },
     titleLabel: 'Tile title'
   },
-  'listGrid/price': {
+  'list/price': {
     noun: 'tile',
     // The figure is NAMED, never typed - a price with two homes drifts, and
     // this page is not its home.
@@ -81,7 +81,7 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     titleLabel: 'Tile title',
     bodyLabel: 'What is included'
   },
-  'listArticles/plain': {
+  'list/articles': {
     noun: 'row',
     note: 'Which side the picture sits on alternates by position, so reordering '
       + 'can never stack two the same way.',
@@ -91,7 +91,7 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     bodyLabel: 'Copy',
     imageLabel: 'Picture'
   },
-  'listArticles/numbered': {
+  'list/numbered': {
     noun: 'row',
     note: 'The strip of names at the top is built from this same list, so it cannot '
       + 'fall out of step. The numbers are counted from the order and the picture '
@@ -105,16 +105,7 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     bodyLabel: 'Bullets',
     imageLabel: 'Picture or clip'
   },
-  'listColumns/twoColumn': {
-    noun: 'passage',
-    note: 'Which column a passage sits in is YOURS to set, unlike everywhere else - '
-      + 'the two columns say different kinds of thing rather than alternating.',
-    fields: { title: true, body: true, column: true, amount: true, description: true, cta: true },
-    titleLabel: 'Heading',
-    bodyLabel: 'Copy',
-    descriptionLabel: 'Note under the price'
-  },
-  'timeline/centreLine': {
+  'list/timeline': {
     noun: 'entry',
     note: 'Entries alternate left and right down the centre line, by position. '
       + 'A year is optional: it draws a big marker above that entry.',
@@ -126,73 +117,24 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
   }
 };
 
-/**
- * The LIST looks reuse the entry specs their old archetypes had.
- *
- * A List's items are the same items - only the look changed - so pointing
- * the new key at the same object is the whole migration for the editor.
- * Copying the specs instead would be nine chances for one to drift.
- */
-const LIST_LOOK_SPECS: Record<string, string> = {
-  'list/tiles': 'listGrid/picture',
-  'list/pictureRows': 'listGrid/pictureRows',
-  'list/icon': 'listGrid/icon',
-  'list/price': 'listGrid/price',
-  'list/rows': 'listRows/buttonAndText',
-  'list/articles': 'listArticles/plain',
-  'list/numbered': 'listArticles/numbered',
-  'list/timeline': 'timeline/centreLine',
-  'list/slides': 'slider/slides'
-};
+// LIST_LOOK_SPECS lived here until 2026-09-01: a map from each List look to
+// the archetype whose entry spec it borrowed. The specs above are keyed on
+// the looks themselves now, so there is nothing left to translate.
 
-/** Caveats worth saying before somebody edits one of these. Same wording as
- *  the equivalent sections on the twelve original pages, because they are the
- *  same rules. */
-const CAVEATS: Partial<Record<SECTION_ARCHETYPE, string>> = {
-  [SECTION_ARCHETYPE.CAROUSEL]:
-    'Only the ORDER is set here. A quote\'s words, who said it and whether it '
-    + 'appears at all belong to the Testimonials screen, because the same quote '
-    + 'can be shown on more than one page.',
-  [SECTION_ARCHETYPE.CONTACT_DETAILS]:
-    'The address, phone, email and social links come from the site details - '
-    + 'they already feed the footer. Change them in Web Config.',
-  [SECTION_ARCHETYPE.FORM]:
-    'WHICH form this shows is not set here. It is a Firestore id, and one '
-    + 'retyped by hand is a blank widget nobody can diagnose.'
-};
+// CAVEATS lived here until 2026-09-01, keyed on three archetypes. Each one
+// found a better home than a map: the form and site-details warnings are on
+// their PIECES, where somebody meets them while adding one, and the quote
+// carousel says its own in the look's blurb. A caveat beside the thing it
+// warns about beats a lookup table of them.
 
-/**
- * What an entry IS on a section whose entries are its BUTTONS.
- *
- * Since 2026-08-31 every section that has buttons takes a list of them
- * rather than one or two fixed slots, so six variants across five archetypes
- * all mean the same thing by `entries`. One shared spec rather than six
- * copies: they are the same object, and six copies is six chances for one to
- * drift.
- */
-const BUTTON_ENTRY: EntrySpec = {
-  noun: 'button',
-  note: 'Buttons are entries rather than fixed slots, so you can add as many as '
-    + 'you need, reorder them, or give one an icon.',
-  fields: { title: true, link: true, icon: true },
-  titleLabel: 'Button text',
-  linkLabel: 'Goes to'
-};
 
-/** Sections whose `entries` are buttons rather than content. The list
- *  archetypes are absent on purpose - their entries are the tiles and rows,
- *  and each of those carries its own button. */
-const BUTTON_BEARING: readonly SECTION_ARCHETYPE[] = [
-  SECTION_ARCHETYPE.HERO_BAND,
-  SECTION_ARCHETYPE.COPY_MEDIA,
-  SECTION_ARCHETYPE.COPY_CENTRED,
-  SECTION_ARCHETYPE.COUNTDOWN,
-  SECTION_ARCHETYPE.PHOTO_BAND
-];
+// BUTTON_BEARING listed the five archetypes whose entries were BUTTONS
+// rather than content. All five were compositions absorbed by SECTION on
+// 2026-09-01, where buttons are a piece of their own carrying a list - so
+// there is no longer a section whose  mean buttons.
 
 function toVariant(archetype: SECTION_ARCHETYPE, variant: SectionVariant): KindVariant {
-  const key = `${archetype}/${variant.key}`;
-  const named = ENTRY_SPECS[key] ?? ENTRY_SPECS[LIST_LOOK_SPECS[key]];
+  const named = ENTRY_SPECS[`${archetype}/${variant.key}`];
   return {
     key: variant.key,
     label: variant.label,
@@ -202,7 +144,6 @@ function toVariant(archetype: SECTION_ARCHETYPE, variant: SectionVariant): KindV
     // rather than one because the kit is shared and the catalogue is not.
     fields: { ...variant.fields },
     entry: named
-      ?? (variant.fields.entries && BUTTON_BEARING.includes(archetype) ? BUTTON_ENTRY : undefined)
   };
 }
 
@@ -224,7 +165,6 @@ function toKind(def: ArchetypeDef): PageSectionKind {
     // Every kit section may be re-grounded. This is the list the editor's
     // Surface control offers.
     surfaces: ['inherit', 'light', 'dark', 'tinted', 'photo'],
-    caveat: CAVEATS[def.archetype]
   };
 }
 

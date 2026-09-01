@@ -23,7 +23,6 @@ import { NewPageDialogComponent } from './pages/new-page-dialog.component';
 // same app-page-stack the twelve originals use.
 import { KitPageEditorComponent } from './pages/kit-page-editor.component';
 // The side-by-side an original page's Compare button opens.
-import { KitCompareComponent } from './pages/kit-compare.component';
 import { PageLivePreviewModule } from './pages/page-live-preview.module';
 import { DestinationFieldComponent } from './pages/destination-field.component';
 import { ContentPieceComponent } from './pages/content-piece.component';
@@ -99,7 +98,6 @@ import { QuillModule } from 'ngx-quill';
     PageSectionEditorComponent,
     NewPageDialogComponent,
     KitPageEditorComponent,
-    KitCompareComponent,
     DestinationFieldComponent,
     ContentPieceComponent,
   ],

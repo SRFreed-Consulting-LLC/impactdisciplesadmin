@@ -127,52 +127,16 @@
       </p>
     </div>
 
-    <!-- WHICH SIDE the picture sits on. It used to be fixed by the look, or
-         alternated down a list, and getting a picture on the left meant
-         picking a different look. Owner's call 2026-08-31: it is a setting.
-         "As the page decides" keeps the old behaviour, which is what every
-         section that has never been told otherwise still does. -->
-    @if (hasSplitMedia) {
-      <div class="psd__axis">
-        <span class="psd__axis-label">Picture side</span>
-        <mat-button-toggle-group [value]="section.mediaSide ?? 'auto'"
-                                 (change)="pickMediaSide($event.value)"
-                                 aria-label="Which side the picture or video sits on">
-          @for (option of mediaSides; track option.key) {
-            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
-    }
 
-    <!-- The stacked equivalent, where there is no media to put a side on. -->
-    @if (isCentred) {
-      <div class="psd__axis">
-        <span class="psd__axis-label">Order</span>
-        <mat-button-toggle-group [value]="section.textFirst ? 'text' : 'heading'"
-                                 (change)="pickStackOrder($event.value)"
-                                 aria-label="Whether the heading or the text comes first">
-          <mat-button-toggle value="heading">Heading, then text</mat-button-toggle>
-          <mat-button-toggle value="text">Text, then heading</mat-button-toggle>
-        </mat-button-toggle-group>
-      </div>
-    }
 
-    @if (hasSplitMedia) {
-      <div class="psd__axis">
-        <span class="psd__axis-label">Media size</span>
-        <mat-button-toggle-group [value]="section.mediaSize ?? 'large'"
-                                 (change)="pickMediaSize($event.value)"
-                                 aria-label="How much room the picture or video takes">
-          @for (option of mediaSizes; track option.key) {
-            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
-    }
 
     <!-- Only where the copy ACTUALLY HAS A LIST in it. Offering a bullet
          style for a passage with no bullets is a control that cannot do
+    <!-- THE PICTURE-SIDE AND STACKING-ORDER CONTROLS lived here until
+         2026-09-01. They asked which archetype this was to decide whether a
+         side or an order applied. A Section says which side its picture is
+         on by which COLUMN holds it, and a centred column says so itself. -->
+
          anything, and staff reasonably read that as broken. Owner's call,
          2026-08-31. -->
     @if (copyHasBullets) {
@@ -189,99 +153,18 @@
     }
   }
 
-  <!-- CARD GROUNDS - a box behind a column or the tiles, palette-fixed.
-       The text choice appears beside a chosen box, defaulted to what READS
-       on that ground - brand and dark default light text. -->
-  @if (surfaces.length && isColumns) {
-    <div class="psd__axis">
-      <span class="psd__axis-label">Left column</span>
-      <mat-button-toggle-group [value]="section.leftGround ?? 'none'"
-                               (change)="setGround('left', $event.value)"
-                               aria-label="A box behind the left column">
-        @for (option of cardGrounds; track option.key) {
-          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-      @if ((section.leftGround ?? 'none') !== 'none') {
-        <mat-button-toggle-group class="psd__ink" [value]="inkFor(section.leftGround, section.leftInk)"
-                                 (change)="setInk('left', $event.value)"
-                                 aria-label="The text inside the left box">
-          @for (option of cardInks; track option.key) {
-            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      }
-      <mat-button-toggle-group class="psd__ink" [value]="section.leftTitleTone ?? 'ink'"
-                               (change)="setTitleTone('left', $event.value)"
-                               aria-label="The left column headings">
-        @for (option of titleTones; track option.key) {
-          <mat-button-toggle [value]="option.key">Headings: {{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
 
-    <div class="psd__axis">
-      <span class="psd__axis-label">Right column</span>
-      <mat-button-toggle-group [value]="section.rightGround ?? 'none'"
-                               (change)="setGround('right', $event.value)"
-                               aria-label="A box behind the right column">
-        @for (option of cardGrounds; track option.key) {
-          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-      @if ((section.rightGround ?? 'none') !== 'none') {
-        <mat-button-toggle-group class="psd__ink" [value]="inkFor(section.rightGround, section.rightInk)"
-                                 (change)="setInk('right', $event.value)"
-                                 aria-label="The text inside the right box">
-          @for (option of cardInks; track option.key) {
-            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      }
-      <mat-button-toggle-group class="psd__ink" [value]="section.rightTitleTone ?? 'ink'"
-                               (change)="setTitleTone('right', $event.value)"
-                               aria-label="The right column headings">
-        @for (option of titleTones; track option.key) {
-          <mat-button-toggle [value]="option.key">Headings: {{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
-  }
-
-  @if (surfaces.length && isGrid) {
-    <div class="psd__axis">
-      <span class="psd__axis-label">Per row</span>
-      <mat-button-toggle-group [value]="section.cardsPerRow ?? 0"
-                               (change)="pickPerRow($event.value)"
-                               aria-label="How many cards sit on a row">
-        @for (option of perRowChoices; track option.key) {
-          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
-
-    <div class="psd__axis">
-      <span class="psd__axis-label">Cards</span>
-      <mat-button-toggle-group [value]="section.cardGround ?? 'none'"
-                               (change)="setGround('card', $event.value)"
-                               aria-label="A box behind every card">
-        @for (option of cardGrounds; track option.key) {
-          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-      @if ((section.cardGround ?? 'none') !== 'none') {
-        <mat-button-toggle-group class="psd__ink" [value]="inkFor(section.cardGround, section.cardInk)"
-                                 (change)="setInk('card', $event.value)"
-                                 aria-label="The text inside the cards">
-          @for (option of cardInks; track option.key) {
-            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      }
-    </div>
-  }
 
   <!-- WHICH form this section shows - picked from the forms that exist in
+  <!-- THE TWO-COLUMN AND GRID GROUND CONTROLS lived here until 2026-09-01.
+       They painted a box behind each half of a listColumns band and behind
+       a listGrid's tiles - six fields between them: leftGround, leftInk,
+       leftTitleTone and their right-hand twins.
+
+       A Section carries the ground on each COLUMN now, which is what those
+       six were trying to say without admitting there were columns - and it
+       works for a third column, which nine more fields would have been. -->
+
        Form Builder, by name. The id is stored, never typed: the old rule's
        whole rationale was that a retyped id is a blank widget nobody can
        diagnose, and a picker cannot mistype. A select renders its options in

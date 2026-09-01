@@ -102,8 +102,11 @@ describe('a kit page as a catalogue page', () => {
   });
 
   it('defaults a kind to its first variant, so it opens on real fields', () => {
-    const hero = kindFor(kitPage(page()), SECTION_ARCHETYPE.HERO_BAND);
-    expect(hero?.fields).toEqual(hero?.variants?.[0]?.fields as never);
+    // The LIST, because it is the member with more than one variant - ten
+    // looks - so "the first one" is a real choice rather than the only one.
+    const list = kindFor(kitPage(page()), SECTION_ARCHETYPE.LIST);
+    expect(list?.variants?.length).toBeGreaterThan(1);
+    expect(list?.fields).toEqual(list?.variants?.[0]?.fields as never);
   });
 
   it('takes its label from the page title and its slug from the document id', () => {

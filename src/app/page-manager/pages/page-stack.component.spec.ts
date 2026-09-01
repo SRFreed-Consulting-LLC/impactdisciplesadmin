@@ -52,11 +52,24 @@ describe('PageStackComponent', () => {
   };
 
   beforeEach(() => {
+    // The migrated shape - what Seminars actually holds since the cutover of
+    // 2026-08-31. It read heroBand / copyCentred / listGrid until
+    // 2026-09-01, which was a page no longer in the data: the noun lookup
+    // stopped matching and this fixture started saying "2 entries" where the
+    // page says "2 tiles".
     loaded = [
-      { key: 'pageHeader', type: 'heroBand', heading: 'Seminars' },
-      { key: 'overview', type: 'copyCentred', heading: 'OVERVIEW' },
       {
-        key: 'prices', type: 'listGrid', variant: 'price',
+        key: 'pageHeader', type: SECTION_ARCHETYPE.SECTION, variant: 'columns',
+        columns: [{ key: 'c1', pieces: [
+          { key: 'h', kind: 'heading', level: 'page', text: 'Seminars', isActive: true }
+        ] }]
+      },
+      {
+        key: 'overview', type: SECTION_ARCHETYPE.SECTION, variant: 'columns',
+        heading: 'OVERVIEW'
+      },
+      {
+        key: 'prices', type: SECTION_ARCHETYPE.LIST, variant: 'price',
         items: [
           { title: 'In person', isActive: true },
           { title: 'Online', isActive: false }
@@ -132,22 +145,39 @@ describe('PageStackComponent', () => {
   });
 
   it('hides a singleton from the Add menu once one is placed', async () => {
+    // HERO_BAND used to be the singleton this covered - at most one per
+    // page, because a second hero puts two titles above the fold. It is
+    // gone, and NEITHER of the two members is a singleton, so the kit no
+    // longer supplies an example. The filter is still live and still worth
+    // holding, so the example is made here instead of borrowing an archetype
+    // that does not exist (2026-09-01).
+    //
+    // NOTE the gap this leaves: nothing now stops a page having two
+    // page-level headings. That guard was a property of the hero being a
+    // singleton, and its replacement - a warning on the page itself - has
+    // not been built.
     const c = build();
     await c.ngOnChanges();
 
-    const offered = c.addableKinds.map((k) => k.type);
+    const once = { ...c.page.kinds[0], type: 'onlyOnce' as never, singleton: true };
+    const repeats = { ...c.page.kinds[0], type: 'asOftenAsYouLike' as never, singleton: false };
+    c.page = { ...c.page, kinds: [once, repeats] };
 
-    // Seminars' page header is a singleton and one is already on the page;
-    // its price tiles and cards repeat.
-    expect(offered).not.toContain(SECTION_ARCHETYPE.HERO_BAND);
-    expect(offered).toContain(SECTION_ARCHETYPE.LIST_GRID);
-    expect(offered).toContain(SECTION_ARCHETYPE.COPY_MEDIA);
+    expect(c.addableKinds.map((k) => k.type))
+      .withContext('neither is placed yet, so both are on offer')
+      .toEqual(['onlyOnce', 'asOftenAsYouLike'] as never);
+
+    c.sections = [{ key: 'k1', type: 'onlyOnce' } as never];
+
+    expect(c.addableKinds.map((k) => k.type)).toEqual(['asOftenAsYouLike'] as never);
   });
 
   it('adds a section switched OFF, so nothing half-written reaches the site', async () => {
     const c = build();
     await c.ngOnChanges();
-    const cards = c.page.kinds.find((k) => k.type === 'listGrid')!;
+    // A LIST, which is what 'listGrid' became. The point of the test is the
+    // switched-OFF default, not which member is added.
+    const cards = c.page.kinds.find((k) => k.type === SECTION_ARCHETYPE.LIST)!;
 
     await c.add(cards);
 
