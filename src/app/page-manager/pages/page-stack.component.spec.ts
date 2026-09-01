@@ -712,4 +712,67 @@ describe('dropping a section into the page', () => {
       expect(c.publishedButBlank).toBeFalse();
     });
   });
+
+  describe('one page title per page', () => {
+    // THE GUARD THAT WENT MISSING IN THE REFACTOR. One <h1> per page used to
+    // be free: the hero archetype was a singleton and its heading was it.
+    // Fourteen archetypes became two, the singleton went with them, and the
+    // replacement warning was never built - so by 2026-09-01 Home, About Us
+    // and Contact had NO page title at all and the demo page had two, with
+    // nothing anywhere saying so.
+    const headed = (levels: (string | undefined)[], live = true): PageStackComponent => {
+      const c = build();
+      c.loading = false;
+      c.loadFailed = false;
+      c.sections = [{
+        key: 'a', type: SECTION_ARCHETYPE.SECTION, variant: 'columns', isActive: live,
+        columns: [{
+          key: 'c1',
+          pieces: levels.map((level, i) => ({
+            key: 'h' + i, kind: 'heading', level, text: 'A heading', isActive: true
+          }))
+        }]
+      }] as never;
+      return c;
+    };
+
+    it('says when a page has NO page title', () => {
+      const c = headed(['section', 'minor']);
+
+      expect(c.pageTitleCount).toBe(0);
+      expect(c.pageTitleProblem)
+        .withContext('a page with no h1 said nothing about it')
+        .toContain('Page title');
+    });
+
+    it('says when a page has more than one', () => {
+      const c = headed(['page', 'page']);
+
+      expect(c.pageTitleCount).toBe(2);
+      expect(c.pageTitleProblem).toContain('2 headings');
+    });
+
+    it('stays quiet on a page with exactly one', () => {
+      const c = headed(['page', 'section', 'minor']);
+
+      expect(c.pageTitleCount).toBe(1);
+      expect(c.pageTitleProblem).toBeNull();
+    });
+
+    it('ignores a heading in a switched-off section', () => {
+      // A section that is off draws nothing, so its heading is not on the
+      // page - counting it would call a page fixed that still has no title.
+      const c = headed(['page'], false);
+
+      expect(c.pageTitleCount).toBe(0);
+      expect(c.pageTitleProblem).toContain('Page title');
+    });
+
+    it('stays quiet on a page with no sections yet', () => {
+      const c = headed(['page']);
+      c.sections = [];
+
+      expect(c.pageTitleProblem).toBeNull();
+    });
+  });
 });

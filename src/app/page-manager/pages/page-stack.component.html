@@ -215,6 +215,17 @@
         </p>
       </div>
     }
+
+    <!-- ONE PAGE TITLE PER PAGE. Guaranteed for free until the fourteen
+         archetypes retired: the hero was a singleton and its heading was the
+         h1. This is the replacement the plan called for and nobody built -
+         by the time it was noticed, three live pages had no page title at
+         all and the demo page had two. -->
+    @if (pageTitleProblem) {
+      <div class="ps__empty ps__empty--warn">
+        <p>{{ pageTitleProblem }}</p>
+      </div>
+    }
   </div>
 
   <!-- THE PREVIEW FOLDS AWAY, in the same rail six other screens use

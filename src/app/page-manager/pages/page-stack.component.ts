@@ -453,6 +453,53 @@ export class PageStackComponent implements OnChanges {
       && this.isPublished && this.sections.length > 0 && this.liveCount === 0;
   }
 
+  /**
+   * How many PAGE-LEVEL headings the live sections carry.
+   *
+   * THE GUARD THAT WENT MISSING IN THE REFACTOR. One per page used to be
+   * guaranteed for free, because the hero archetype was a singleton and its
+   * heading was the <h1>. Fourteen archetypes became two, the singleton went
+   * with them, and the replacement warning - which the plan called for - was
+   * never built. By 2026-09-01 three live pages had NO page title at all
+   * (Home, About Us, Contact) and the demo page had two, and nothing
+   * anywhere said so.
+   *
+   * Counted off the LIVE sections only: a switched-off section draws
+   * nothing, so its heading is not on the page.
+   */
+  get pageTitleCount(): number {
+    let found = 0;
+    for (const section of this.liveSections) {
+      for (const column of section.columns ?? []) {
+        for (const piece of column?.pieces ?? []) {
+          if (piece?.kind === 'heading' && piece.level === 'page' && piece.isActive !== false) {
+            found++;
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  /** What to say about it, or null when there is nothing to say. Written as
+   *  one getter so the message and the condition cannot disagree. */
+  get pageTitleProblem(): string | null {
+    if (this.loading || this.loadFailed || !this.sections.length) {
+      return null;
+    }
+    const n = this.pageTitleCount;
+    if (n === 0) {
+      return 'Nothing on this page is set as the Page title, so search engines '
+        + 'have no heading to read it by. Open a heading and set its size to '
+        + '“Page title”.';
+    }
+    if (n > 1) {
+      return `${n} headings on this page are set as the Page title. A page has `
+        + 'one; the rest should be Section headings.';
+    }
+    return null;
+  }
+
 
   canEdit(): boolean {
     return this.permissionService.canEdit(this.screenKey);
