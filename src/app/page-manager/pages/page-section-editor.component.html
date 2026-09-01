@@ -130,13 +130,13 @@
 
 
 
-    <!-- Only where the copy ACTUALLY HAS A LIST in it. Offering a bullet
-         style for a passage with no bullets is a control that cannot do
     <!-- THE PICTURE-SIDE AND STACKING-ORDER CONTROLS lived here until
          2026-09-01. They asked which archetype this was to decide whether a
          side or an order applied. A Section says which side its picture is
          on by which COLUMN holds it, and a centred column says so itself. -->
 
+    <!-- Only where the copy ACTUALLY HAS A LIST in it. Offering a bullet
+         style for a passage with no bullets is a control that cannot do
          anything, and staff reasonably read that as broken. Owner's call,
          2026-08-31. -->
     @if (copyHasBullets) {
@@ -155,7 +155,6 @@
 
 
 
-  <!-- WHICH form this section shows - picked from the forms that exist in
   <!-- THE TWO-COLUMN AND GRID GROUND CONTROLS lived here until 2026-09-01.
        They painted a box behind each half of a listColumns band and behind
        a listGrid's tiles - six fields between them: leftGround, leftInk,
@@ -165,6 +164,7 @@
        six were trying to say without admitting there were columns - and it
        works for a third column, which nine more fields would have been. -->
 
+  <!-- WHICH form this section shows - picked from the forms that exist in
        Form Builder, by name. The id is stored, never typed: the old rule's
        whole rationale was that a retyped id is a blank widget nobody can
        diagnose, and a picker cannot mistype. A select renders its options in

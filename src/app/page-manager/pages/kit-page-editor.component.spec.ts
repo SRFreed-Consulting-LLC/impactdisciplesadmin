@@ -140,6 +140,31 @@ describe('the per-leaf page editor', () => {
     expect(deleted).toEqual(['mens-retreat']);
     expect(navigated.length).withContext('stayed on an editor for a deleted page').toBe(1);
   });
+
+  it('names the page it DELETED, not the one it landed on', async () => {
+    // THE BUG THIS EXISTS FOR (2026-09-01). `page` is bound to a live
+    // Firestore stream, so deleting the document re-emits and this editor
+    // rebinds to whatever comes next. The message read `page.title` AFTER
+    // the delete, so deleting a test page announced "Home" deleted - a
+    // sentence that sends somebody hunting for a backup they do not need.
+    const { component, messages } = build();
+    component.page = { id: 'mens-retreat', title: "Men's Retreat", blocks: [] } as never;
+
+    const service = TestBed.inject(PageContentService);
+    // Exactly what the stream does: by the time the message is built, this
+    // editor is showing a different page.
+    (service as unknown as { delete: (id: string) => Promise<void> }).delete = () => {
+      component.page = { id: 'home', title: 'Home', blocks: [] } as never;
+      return Promise.resolve();
+    };
+
+    await component.remove();
+
+    expect(messages.join(' '))
+      .withContext('announced the page it rebound to instead of the one it deleted')
+      .toContain("Men's Retreat");
+    expect(messages.join(' ')).not.toContain('"Home" deleted');
+  });
 });
 
 // The comparison's own specs lived here until every page migrated

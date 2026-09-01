@@ -157,9 +157,15 @@ export class KitPageEditorComponent implements OnChanges {
     if (!ok) {
       return;
     }
+    // READ THE TITLE FIRST. `page` is bound to a live Firestore stream, so
+    // deleting the document re-emits and this editor rebinds to whatever it
+    // shows next - and the message then names THAT page. Deleting a test
+    // page announced "Home" deleted on 2026-09-01, which is a sentence that
+    // sends somebody looking for a backup they do not need.
+    const deleted = this.page.title;
     try {
       await this.service.delete(this.slug);
-      this.snackbar.success(`"${this.page.title}" deleted`);
+      this.snackbar.success(`"${deleted}" deleted`);
       // The leaf removes itself via the Firestore stream; this editor is now
       // showing a page that does not exist, so leave it.
       this.router.navigate(['/page-manager'], { replaceUrl: true });
