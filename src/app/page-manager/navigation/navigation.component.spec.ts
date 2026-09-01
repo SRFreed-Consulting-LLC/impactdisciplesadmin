@@ -16,6 +16,12 @@ interface Harness {
   screen: NavigationComponent;
   saved: SiteNavItem[][];
   said: string[];
+  /** What the confirm dialog was asked, so a test can assert the wording a
+   *  person actually reads before agreeing. */
+  asked: string[];
+  /** Answer the next confirm with this. Removing an item asks since
+   *  2026-09-01; everything else here never opens a dialog. */
+  setConfirm: (answer: boolean) => void;
 }
 
 const route = (key: string) => SITE_ROUTES.find((r) => r.key === key)!;
@@ -37,8 +43,28 @@ function setup(items: SiteNavItem[] | null = [], failLoad = false, failSave = fa
     success: (m: string) => said.push('ok: ' + m),
     error: (m: string) => said.push('err: ' + m)
   };
-  return { screen: new NavigationComponent(service as never, snackbar as never), saved, said };
+  const asked: string[] = [];
+  let confirmAnswer = true;
+  const confirm = {
+    confirm: (message: string, title: string) => {
+      asked.push(title + ' | ' + message);
+      return Promise.resolve(confirmAnswer);
+    }
+  };
+  // The pages this admin has made. Offered in the Add menu since 2026-09-01;
+  // before that the picker could only see the hand-written SITE_ROUTES.
+  const sitePages = { pages: madePages };
+  return {
+    screen: new NavigationComponent(
+      service as never, snackbar as never, confirm as never, sitePages as never
+    ),
+    saved, said, asked,
+    setConfirm: (answer: boolean) => { confirmAnswer = answer; }
+  };
 }
+
+/** Pages staff created, as the picker sees them. Set per test. */
+let madePages: { slug: string; title: string; isPublished: boolean }[] = [];
 
 /** Loads the screen the way it really loads. */
 async function opened(items: SiteNavItem[] | null = [], failLoad = false, failSave = false): Promise<Harness> {
@@ -256,10 +282,14 @@ describe('Page Manager > Navigation', () => {
     });
 
     it('leaves editing when the item being edited is deleted', async () => {
-      const { screen } = await opened([page('a', 'give')]);
+      const { screen, setConfirm } = await opened([page('a', 'give')]);
+      setConfirm(true);
       screen.edit(screen.items[0]);
 
-      screen.remove(screen.items[0]);
+      // AWAITED since 2026-09-01. Removal asks first now, so nothing at all
+      // happens synchronously - the un-awaited call this used to make would
+      // assert against a screen that had not been asked yet.
+      await screen.remove(screen.items[0]);
 
       expect(screen.editing).toBeNull();
     });
@@ -374,6 +404,186 @@ describe('Page Manager > Navigation', () => {
 
       expect(screen.problems.length).toBe(1);
       expect(screen.problems[0]).toContain('nothing in it');
+    });
+  });
+
+  describe('DONE, which used to discard what you wrote', () => {
+    it('WRITES the item instead of dropping it', async () => {
+      // THE BUG THIS EXISTS FOR (2026-09-01). DONE called closeEditor()
+      // straight, which does not save - and clears the snapshot on the way
+      // out, so hasUnsavedChanges() went false and the leave-guard stopped
+      // defending the wording too. A new link, named and addressed, simply
+      // vanished; the list kept showing it until the next reload, so the
+      // screen said "9 of 9 showing on the site" about something the site
+      // had never been told about.
+      const { screen, saved } = await opened([]);
+      screen.addLink();
+      screen.editing!.title = 'Men’s Retreat';
+      screen.onUrlChange(screen.editing!, '/mens-retreat');
+
+      await screen.onDoneClicked();
+
+      expect(saved.length).withContext('DONE wrote nothing at all').toBe(1);
+      expect(saved[0][0].title).toBe('Men’s Retreat');
+      expect(saved[0][0].url).toBe('/mens-retreat');
+      expect(screen.editingId).withContext('saved but never closed').toBeNull();
+    });
+
+    it('stays OPEN when what is written cannot be saved', async () => {
+      // A link with no address fails the validator. Closing over the top of
+      // that is exactly how the wording went missing before, so DONE has to
+      // keep somebody here to fix it.
+      const { screen, saved } = await opened([]);
+      screen.addLink();
+      screen.editing!.title = 'Half a link';
+
+      await screen.onDoneClicked();
+
+      expect(saved.length).withContext('stored a link with no address').toBe(0);
+      expect(screen.editingId).withContext('closed over an unsaveable item').not.toBeNull();
+    });
+  });
+
+  describe('whether a link opens in a new tab', () => {
+    it('leaves an address on THIS site in the same tab', async () => {
+      // Every custom link was created external: true, so a link to a page on
+      // this site rendered <a target="_blank"> and the top menu opened a
+      // second browser tab instead of moving through the site (2026-09-01).
+      const { screen } = await opened([]);
+      screen.addLink();
+
+      screen.onUrlChange(screen.editing!, '/give');
+
+      expect(screen.editing!.external)
+        .withContext('an address on this site opened a new tab')
+        .toBeFalse();
+    });
+
+    it('sends an address somewhere else to a new tab', async () => {
+      const { screen } = await opened([]);
+      screen.addLink();
+
+      screen.onUrlChange(screen.editing!, 'https://events.golfstatus.com/event/x');
+
+      expect(screen.editing!.external).toBeTrue();
+    });
+
+    it('stops guessing once somebody has said which they want', async () => {
+      // The address decides UNTIL a person decides. Someone who deliberately
+      // wants an internal page in a new tab must be able to have it without
+      // the next keystroke overruling them.
+      const { screen } = await opened([]);
+      screen.addLink();
+      screen.onUrlChange(screen.editing!, '/give');
+
+      screen.onExternalChange(screen.editing!, true);
+      screen.onUrlChange(screen.editing!, '/give-monthly');
+
+      expect(screen.editing!.external)
+        .withContext('overruled a deliberate choice')
+        .toBeTrue();
+    });
+  });
+
+  describe('pages made in this admin', () => {
+    beforeEach(() => {
+      madePages = [
+        { slug: 'mens-retreat', title: "Men's Retreat", isPublished: true },
+        { slug: 'half-written', title: 'Half Written', isPublished: false }
+      ];
+    });
+    afterEach(() => { madePages = []; });
+
+    it('offers them, which is the whole point of the page builder', async () => {
+      // THE BUG THIS EXISTS FOR (2026-09-01). The picker's only source was
+      // SITE_ROUTES - a hand-written list in the shared submodule that a
+      // staff-created page cannot get into without a code change and three
+      // deploys. So "make a page without a developer" stopped one step
+      // short of anybody being able to find the page.
+      const { screen } = await opened([]);
+
+      expect(screen.createdPages.map((p) => p.slug))
+        .withContext('a page made here was not offered anywhere in the Add menu')
+        .toEqual(['mens-retreat', 'half-written']);
+    });
+
+    it('stores an ADDRESS, because a key it invented would resolve nowhere', async () => {
+      // A `page` item resolves its routeKey through SITE_ROUTES, and a key
+      // that is not in there resolves to '' - a dead menu item on the live
+      // site. The slug is the document id and cannot be changed after the
+      // page is created, so this address cannot go stale.
+      const { screen, saved } = await opened([]);
+
+      await screen.addCreatedPage(screen.createdPages[0]);
+
+      const added = saved[0][0];
+      expect(added.kind).toBe('custom');
+      expect(added.url).toBe('/mens-retreat');
+      expect(added.title).toBe("Men's Retreat");
+      expect(added.external).withContext('a page on this site opened a new tab').toBeFalse();
+    });
+
+    it('greys one out once it is already in the menu', async () => {
+      const { screen } = await opened([]);
+      await screen.addCreatedPage(screen.createdPages[0]);
+
+      expect(screen.isPageInMenu(screen.createdPages[0])).toBeTrue();
+      expect(screen.isPageInMenu(screen.createdPages[1])).toBeFalse();
+    });
+
+    it('recognises one already inside a dropdown too', async () => {
+      const { screen } = await opened([group('g', [])]);
+      await screen.addCreatedPageToGroup(screen.createdPages[0], screen.items[0]);
+
+      expect(screen.isPageInMenu(screen.createdPages[0]))
+        .withContext('offered a second copy of a page already in a dropdown')
+        .toBeTrue();
+    });
+
+    it('carries the draft flag, so the picker can say so', async () => {
+      // A menu item pointing at an unpublished page sends every visitor to
+      // Page Not Found. The picker shows drafts but marks them.
+      const { screen } = await opened([]);
+
+      expect(screen.createdPages.find((p) => p.slug === 'half-written')?.isPublished).toBeFalse();
+    });
+  });
+
+  describe('removing something from the menu', () => {
+    it('ASKS before taking a link off the site', async () => {
+      // One click used to remove a nav item and write that immediately, with
+      // no confirmation - while deleting a PAGE gets a full warning. Same
+      // kind of loss, and this one changes what every visitor can find.
+      const { screen, saved, asked, setConfirm } = await opened([page('a', 'give')]);
+      setConfirm(false);
+
+      await screen.remove(screen.items[0]);
+
+      expect(asked.length).withContext('removed without asking').toBe(1);
+      expect(saved.length).withContext('wrote despite a declined confirm').toBe(0);
+      expect(screen.items.length).toBe(1);
+    });
+
+    it('says how many links go with a dropdown', async () => {
+      // The part somebody would not otherwise realise they were agreeing to.
+      const { screen, asked, setConfirm } = await opened([
+        group('g', [page('a', 'give'), page('b', 'team')])
+      ]);
+      setConfirm(true);
+
+      await screen.remove(screen.items[0]);
+
+      expect(asked[0]).toContain('2 links');
+    });
+
+    it('removes it once agreed', async () => {
+      const { screen, saved, setConfirm } = await opened([page('a', 'give')]);
+      setConfirm(true);
+
+      await screen.remove(screen.items[0]);
+
+      expect(screen.items.length).toBe(0);
+      expect(saved.length).toBe(1);
     });
   });
 });

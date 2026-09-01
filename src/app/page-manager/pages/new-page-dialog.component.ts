@@ -44,7 +44,11 @@ export class NewPageDialogComponent {
 
   constructor(
     private dialog: MatDialogRef<NewPageDialogComponent, NewPageResult>,
-    @Inject(MAT_DIALOG_DATA) public data: { existingSlugs: readonly string[] }
+    // A FUNCTION rather than an array, so the answer is whatever the pages
+    // stream has delivered by the time it is asked. Handed an array, this
+    // dialog held whatever existed the instant it opened - which on a cold
+    // load is nothing at all.
+    @Inject(MAT_DIALOG_DATA) public data: { existingSlugs: () => readonly string[] }
   ) {}
 
   onTitle(value: string): void {
@@ -83,7 +87,7 @@ export class NewPageDialogComponent {
       return 'Use lower-case letters, numbers and single hyphens - no spaces, '
         + 'slashes or punctuation.';
     }
-    if (this.data.existingSlugs.includes(this.slug)) {
+    if (this.data.existingSlugs().includes(this.slug)) {
       return `There is already a page at /${this.slug}.`;
     }
     return null;

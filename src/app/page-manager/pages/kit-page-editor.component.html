@@ -52,6 +52,10 @@
          drew the same document the same way. The component and the web
          /kit-preview route are still in the tree and now unreachable -
          they go with the fourteen archetypes in the retirement pass. -->
-    <app-page-stack [page]="editablePage"></app-page-stack>
+    <!-- The stack needs to know whether the PAGE is on the site so it can
+         say when a live page has nothing switched on to draw - the gap
+         somebody falls into on their first page. -->
+    <app-page-stack [page]="editablePage"
+                    [isPublished]="page?.isPublished !== false"></app-page-stack>
   </div>
 }

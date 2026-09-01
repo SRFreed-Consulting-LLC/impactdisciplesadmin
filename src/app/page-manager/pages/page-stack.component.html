@@ -200,6 +200,21 @@
         </p>
       </div>
     }
+
+    <!-- A LIVE PAGE WITH NOTHING SWITCHED ON. Said out loud because the two
+         switches are a long way apart: a section is added switched off on
+         purpose, and somebody who then fills it in, saves it and turns the
+         PAGE on reasonably expects to see it. The empty-page message above
+         does not fire, because the page is not empty. -->
+    @if (publishedButBlank) {
+      <div class="ps__empty ps__empty--warn">
+        <p>
+          This page is on the site, but every section on it is switched off,
+          so <strong>visitors see an empty page</strong>. Turn one on with
+          its <strong>Live</strong> switch, on the right of its row above.
+        </p>
+      </div>
+    }
   </div>
 
   <!-- THE PREVIEW FOLDS AWAY, in the same rail six other screens use

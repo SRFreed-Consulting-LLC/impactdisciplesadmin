@@ -13,8 +13,13 @@
     <mat-label>Web address</mat-label>
     <span matTextPrefix class="npd__prefix">/</span>
     <input matInput [ngModel]="slug" (ngModelChange)="onSlug($event)" placeholder="mens-retreat">
+    <!-- A HINT, NOT A mat-error. Material only paints an error subscript when
+         the form CONTROL is in an error state, and `slugProblem` is a plain
+         getter with no validator behind it - so this said nothing at all,
+         and the Create button greyed out with no explanation anywhere on
+         screen. `npd__hint--bad` carries the error colour instead. -->
     @if (slugProblem) {
-      <mat-error>{{ slugProblem }}</mat-error>
+      <mat-hint class="npd__hint--bad">{{ slugProblem }}</mat-hint>
     } @else {
       <!-- Said plainly and up front: this is the one decision on this screen
            that cannot be undone later without breaking every link to the

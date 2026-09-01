@@ -189,3 +189,20 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* "draft" beside a page in the Add menu. A menu item pointing at an
+   unpublished page sends every visitor to Page Not Found, so the picker
+   says which ones those are rather than letting somebody find out from a
+   visitor. --app-attention is a real token; --app-warn is not declared
+   anywhere and would fall back to nothing. */
+.nav-draft {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-attention);
+  border: 1px solid var(--app-attention);
+}

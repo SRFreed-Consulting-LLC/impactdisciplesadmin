@@ -56,9 +56,49 @@ export class SitePagesNavService {
    *  first emission lands - the drawer simply shows the static leaves. */
   leaves: NavLeaf[] = [];
 
+  /**
+   * THE SAME PAGES, FOR THE MENU PICKER, carrying the one extra thing it
+   * needs: whether the page is actually on the site.
+   *
+   * Separate from `leaves` because NavLeaf is the PERMISSION REGISTRY's
+   * type - its fields are screen keys and roles, and a published flag has no
+   * business there. The menu picker cares because a menu item pointing at an
+   * unpublished page sends every visitor to Page Not Found.
+   *
+   * Same underlying stream, so this opens no second Firestore listener.
+   */
+  readonly pages$: Observable<CreatedPage[]> = this.pageContent.streamAll().pipe(
+    map((pages) => (pages ?? [])
+      .filter((page) => isKitPage(page) && !!page.id)
+      .map((page): CreatedPage => ({
+        slug: page.id ?? '',
+        title: page.title ?? page.id ?? '',
+        // Pages written before the flag existed have no `isPublished` and
+        // are served, so absent means published - the same reading the
+        // public site's own route takes.
+        isPublished: page.isPublished !== false
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title))
+    ),
+    shareReplay({ bufferSize: 1, refCount: false })
+  );
+
+  /** Synchronous snapshot, for the same reason as `leaves`. */
+  pages: CreatedPage[] = [];
+
   constructor() {
     this.leaves$.subscribe((leaves) => {
       this.leaves = leaves;
     });
+    this.pages$.subscribe((pages) => {
+      this.pages = pages;
+    });
   }
+}
+
+/** A page staff created, as the menu picker needs to see it. */
+export interface CreatedPage {
+  slug: string;
+  title: string;
+  isPublished: boolean;
 }

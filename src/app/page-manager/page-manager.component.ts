@@ -119,7 +119,13 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
       const result: NewPageResult | undefined = await firstValueFrom(
         this.dialog
           .open(NewPageDialogComponent, {
-            data: { existingSlugs: this.sitePagesNav.leaves.map((leaf) => leaf.slug) }
+            // A FUNCTION, not the array. Read once at open time, this was
+            // EMPTY on a cold load - the pages stream had not landed yet -
+            // and stayed empty for the life of the dialog, so it offered to
+            // create a page over the top of one that already existed. Called
+            // per change-detection pass, it answers with whatever has
+            // arrived by the time somebody finishes typing.
+            data: { existingSlugs: () => this.sitePagesNav.leaves.map((leaf) => leaf.slug) }
           })
           .afterClosed()
       );
@@ -128,6 +134,27 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
         // Cancelled - clear ?new=1 so the row can be clicked again and a
         // reload does not resurrect the dialog.
         this.router.navigate(['/page-manager'], { replaceUrl: true });
+        return;
+      }
+
+      // THE LAST WORD BEFORE THE WRITE, and the guard that actually matters.
+      //
+      // `update()` is setDoc with NO MERGE, so creating a page whose slug is
+      // already taken does not fail - it REPLACES that page. Its sections,
+      // its title, its theme and its published flag are gone, with no undo.
+      //
+      // The dialog's own list is a courtesy: it tells somebody the name is
+      // taken while they are still typing. It cannot be the only thing
+      // standing between a typo and a destroyed page, because it is read
+      // from a stream that may not have arrived. This asks the database, on
+      // the way to writing to it, and is the check that cannot be raced.
+      const clash = await this.pageContent.getById(result.slug);
+      if (clash) {
+        this.snackbar.error(
+          `There is already a page at /${result.slug} - nothing was changed`
+        );
+        this.router.navigate(['/page-manager'],
+          { queryParams: { tab: result.slug }, replaceUrl: true });
         return;
       }
 

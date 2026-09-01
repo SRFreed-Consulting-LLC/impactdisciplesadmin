@@ -273,6 +273,23 @@
   margin: 0;
 }
 
+/* THE LIVE-BUT-BLANK WARNING. Solid rather than dashed, and in the attention
+   colour, because this one is about a page visitors can already reach - the
+   dashed grey box above is a state, this is a problem.
+
+   --app-attention is a real token (#d79b2e). --app-warn and --app-danger are
+   not declared anywhere in this app and fall back silently to nothing. */
+.ps__empty--warn {
+  margin-top: 12px;
+  border-style: solid;
+  border-color: var(--app-attention);
+  color: var(--app-ink);
+}
+
+.ps__empty--warn strong {
+  color: var(--app-attention);
+}
+
 /* A FIXED RAIL, not a flexible column. Without this the preview took two
    thirds of the screen and squeezed the section rows to 287px, which wrapped
    every label onto three lines and collapsed the summary to 15px wide -

@@ -53,6 +53,10 @@ export class PageStackComponent implements OnChanges {
 
   @Input({ required: true }) page!: EditablePage;
 
+  /** Whether the PAGE is on the site. Only used to say when a live page has
+   *  nothing switched on to draw - see `publishedButBlank`. */
+  @Input() isPublished = false;
+
   sections: PageContentBlock[] = [];
 
   loading = true;
@@ -430,6 +434,23 @@ export class PageStackComponent implements OnChanges {
   /** What the public page would draw - the preview shows exactly this. */
   get liveSections(): PageContentBlock[] {
     return this.sections.filter((s) => this.isLive(s));
+  }
+
+  /**
+   * A page that IS on the site but has nothing switched on to draw.
+   *
+   * The gap somebody falls into on their first page (2026-09-01): a section
+   * is added switched OFF on purpose, so half-written work never reaches the
+   * site. But then they fill it in, save it, turn the page on - and the
+   * public page is still blank, because the section's own Live toggle is a
+   * separate thing on a row they have scrolled past. The empty-page message
+   * does not fire either, since the page is not empty.
+   *
+   * Nothing here changes what is stored; it only says so out loud.
+   */
+  get publishedButBlank(): boolean {
+    return !this.loading && !this.loadFailed
+      && this.isPublished && this.sections.length > 0 && this.liveCount === 0;
   }
 
 

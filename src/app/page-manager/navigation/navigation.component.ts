@@ -2,7 +2,9 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { SiteNavigationService } from 'src/app/common/services/data/site-navigation.service';
+import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
+import { CreatedPage, SitePagesNavService } from '../pages/site-pages-nav.service';
 import {
   SiteNavItem,
   liveNavItems,
@@ -128,7 +130,9 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   constructor(
     private service: SiteNavigationService,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private confirm: ConfirmService,
+    private sitePages: SitePagesNavService
   ) {}
 
   ngOnInit(): void {
@@ -246,7 +250,30 @@ export class NavigationComponent implements OnInit, OnDestroy {
     await this.persist(item.visible ? 'Showing in the menu' : 'Taken out of the menu');
   }
 
+  /**
+   * Removes an item, ASKING FIRST.
+   *
+   * It did not ask until 2026-09-01: one click on the bin took a link out of
+   * the public site's menu and wrote that immediately. Deleting a PAGE gets
+   * a full warning naming what goes with it; this is a smaller loss but the
+   * same kind, and a mis-click here quietly changes what visitors can find.
+   *
+   * A dropdown says how many links go with it - that is the part somebody
+   * would not otherwise realise they were agreeing to.
+   */
   async remove(item: SiteNavItem): Promise<void> {
+    const children = (item.children ?? []).length;
+    const alsoGoes = children
+      ? ` The ${children === 1 ? 'link' : `${children} links`} inside will go with it.`
+      : '';
+    const ok = await this.confirm.confirm(
+      `“${item.title}” will be taken out of the site's menu.${alsoGoes}`,
+      'Remove this from the menu?'
+    );
+    if (!ok) {
+      return;
+    }
+
     this.items = this.items
       .filter((entry) => entry.id !== item.id)
       .map((entry) => entry.children
@@ -262,6 +289,74 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   routesIn(group: SiteRoute['group']): CatalogueRoute[] {
     return SITE_ROUTES.filter((route) => route.group === group);
+  }
+
+  // ---- pages staff created ----
+
+  /**
+   * THE PAGES THIS ADMIN MADE, offered in the Add menu beside the built-in
+   * routes.
+   *
+   * They were not offered at all until 2026-09-01, and could not be: the
+   * picker's only source is SITE_ROUTES, a hand-written list in the shared
+   * submodule that a staff-created page cannot get into without a code
+   * change and three deploys. So the whole point of the page builder - make
+   * a page without a developer - stopped one step short of anyone finding
+   * the page.
+   *
+   * STORED AS AN ADDRESS, not a routeKey, and that is deliberate. A `page`
+   * item resolves its key through SITE_ROUTES, and a key that is not in
+   * there resolves to '' - a dead menu item. The usual objection to storing
+   * a URL is that routes move; a created page's slug is its document id and
+   * the New Page dialog refuses to change it after creation, so this one
+   * cannot move. The picker still does the typing, which is what kept
+   * hand-typed addresses out.
+   */
+  get createdPages(): CreatedPage[] {
+    return this.sitePages.pages;
+  }
+
+  /** Where a created page lives. One definition, used to add and to
+   *  recognise, so the two cannot drift apart. */
+  private pathOf(page: CreatedPage): string {
+    return '/' + page.slug;
+  }
+
+  /** Already in the menu, at either level - the same greying-out the
+   *  built-in routes get. */
+  isPageInMenu(page: CreatedPage): boolean {
+    const path = this.pathOf(page);
+    for (const item of this.items) {
+      if (item.url === path) return true;
+      for (const child of item.children ?? []) {
+        if (child.url === path) return true;
+      }
+    }
+    return false;
+  }
+
+  private createdPageItem(page: CreatedPage): SiteNavItem {
+    return {
+      id: this.newId(page.slug),
+      title: page.title,
+      kind: 'custom',
+      url: this.pathOf(page),
+      // On this site, so it moves through the app rather than reloading it.
+      external: false,
+      visible: true
+    } as SiteNavItem;
+  }
+
+  async addCreatedPage(page: CreatedPage): Promise<void> {
+    this.items = [...this.items, this.createdPageItem(page)];
+    await this.persist(`“${page.title}” added`);
+  }
+
+  async addCreatedPageToGroup(page: CreatedPage, parent: SiteNavItem): Promise<void> {
+    const children = parent.children ?? (parent.children = []);
+    children.push(this.createdPageItem(page));
+    this.items = [...this.items];
+    await this.persist(`“${page.title}” added`);
   }
 
   /** Already in the menu at either level - the add menu greys these out
@@ -290,7 +385,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
   addLink(): void {
     const item: SiteNavItem = {
       id: this.newId('link'), title: 'New link', kind: 'custom',
-      url: '', external: true, visible: true
+      url: '', external: false, visible: true
     };
     this.items = [...this.items, item];
     // Straight into the editor - it has no address yet. NOT persisted first:
@@ -340,6 +435,73 @@ export class NavigationComponent implements OnInit, OnDestroy {
     this.editingSnapshot = JSON.stringify(item);
   }
 
+  // ---- where a link goes, and whether that is off this site ----
+
+  /**
+   * Ids whose "opens in a new tab" the person has set for themselves.
+   *
+   * Session-only, and deliberately not stored: it exists so the address
+   * field stops overruling a deliberate choice while that choice is being
+   * made. Once the editor closes there is nothing left to arbitrate.
+   */
+  private readonly externalChosen = new Set<string>();
+
+  /**
+   * Whether an address leaves this site. A scheme or a protocol-relative
+   * `//host` does; anything starting `/` is a page here.
+   */
+  private isOffSite(url: string): boolean {
+    return /^([a-z][a-z0-9+.-]*:)?\/\//i.test((url ?? '').trim());
+  }
+
+  /**
+   * THE ADDRESS DECIDES, until somebody decides for themselves.
+   *
+   * Every custom link was created `external: true`, so a link to a page on
+   * this site rendered `<a target="_blank">` and the top menu opened a
+   * second browser tab instead of moving through the site (2026-09-01).
+   * Creation now defaults it off, and typing an address off-site turns it
+   * back on - which is the answer that is right without anybody thinking
+   * about it.
+   */
+  onUrlChange(item: SiteNavItem, url: string): void {
+    item.url = url;
+    if (!this.externalChosen.has(item.id)) {
+      item.external = this.isOffSite(url);
+    }
+  }
+
+  onExternalChange(item: SiteNavItem, value: boolean): void {
+    this.externalChosen.add(item.id);
+    item.external = value;
+  }
+
+  /**
+   * DONE. Commits what is open, THEN closes it.
+   *
+   * IT USED TO BE `closeEditor()` ALONE, and that lost work silently. A new
+   * link added, named, given an address and DONE'd was never written: the
+   * close cleared `editingSnapshot`, so `hasUnsavedChanges()` went false and
+   * the route guard stopped defending the wording as well. The list went on
+   * showing the item until the next reload, so the screen read "9 of 9
+   * showing on the site" about something the site had never been told about
+   * (found 2026-09-01; the database still had 8).
+   *
+   * A failed save keeps the editor OPEN - a link with no address cannot be
+   * stored, and closing over the top of that is how it went missing before.
+   * The snackbar has already said what is wrong.
+   */
+  async onDoneClicked(): Promise<void> {
+    if (this.hasUnsavedChanges()) {
+      try {
+        await this.save();
+      } catch {
+        return;
+      }
+    }
+    this.closeEditor();
+  }
+
   closeEditor(): void {
     // Back to the dropdown you came from rather than all the way out, when
     // there is one - editing three children in a row should not mean three
@@ -379,7 +541,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     const children = parent.children ?? (parent.children = []);
     const child: SiteNavItem = {
       id: this.newId('link'), title: 'New link', kind: 'custom',
-      url: '', external: true, visible: true
+      url: '', external: false, visible: true
     };
     children.push(child);
     this.items = [...this.items];

@@ -658,4 +658,58 @@ describe('dropping a section into the page', () => {
       expect(component.sections[2].type).toBe(SECTION_ARCHETYPE.SECTION);
     });
   });
+
+  describe('a live page with nothing switched on', () => {
+    // THE GAP SOMEBODY FALLS INTO ON THEIR FIRST PAGE (2026-09-01). A
+    // section is added switched OFF on purpose, so half-written work never
+    // reaches the site. They then fill it in, save it, turn the PAGE on -
+    // and the public page is still blank, because the section's own Live
+    // switch is a separate thing on a row they have scrolled past. The
+    // empty-page message does not fire, because the page is not empty.
+    // Sections assigned directly rather than loaded, so this reads the same
+    // whichever describe it sits in - and `loading` is cleared explicitly,
+    // because ngOnChanges returns void and awaiting IT does not wait for the
+    // load it started.
+    const stack = (over: { isPublished: boolean; live: boolean }): PageStackComponent => {
+      const c = build();
+      c.loading = false;
+      c.loadFailed = false;
+      c.isPublished = over.isPublished;
+      c.sections = [
+        { key: 'a', type: SECTION_ARCHETYPE.SECTION, variant: 'columns', isActive: over.live },
+        { key: 'b', type: SECTION_ARCHETYPE.SECTION, variant: 'columns', isActive: over.live }
+      ] as never;
+      return c;
+    };
+
+    it('says so when the page is on the site and no section is', () => {
+      const c = stack({ isPublished: true, live: false });
+
+      expect(c.publishedButBlank)
+        .withContext('a live page drawing nothing said nothing about it')
+        .toBeTrue();
+    });
+
+    it('stays quiet while the page is still a draft', () => {
+      // Nobody can see it, so there is nothing to warn about - and a warning
+      // on every half-built page is one people learn to ignore.
+      const c = stack({ isPublished: false, live: false });
+
+      expect(c.publishedButBlank).toBeFalse();
+    });
+
+    it('stays quiet once a section is switched on', () => {
+      const c = stack({ isPublished: true, live: true });
+
+      expect(c.publishedButBlank).toBeFalse();
+    });
+
+    it('stays quiet on a page with no sections at all', () => {
+      // That page has its own message, which says the right thing already.
+      const c = stack({ isPublished: true, live: false });
+      c.sections = [];
+
+      expect(c.publishedButBlank).toBeFalse();
+    });
+  });
 });

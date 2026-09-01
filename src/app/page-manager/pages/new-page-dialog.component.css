@@ -48,6 +48,30 @@
   color: var(--app-muted);
 }
 
+/* WHY THIS IS A HINT AND NOT A mat-error.
+   The reason the Create button could grey out with no explanation for weeks:
+   Material paints an error subscript only when the form CONTROL is in an
+   error state, and the slug check is a plain getter with no validator behind
+   it. The message rendered into a <mat-error> was therefore never displayed.
+   As a hint it always shows; this only has to colour it.
+
+   --app-attention is a real token (#d79b2e). --app-danger and --app-warn are
+   NOT declared anywhere and fall back silently to nothing, which is how a
+   message like this goes invisible a second time. */
+.npd__hint--bad {
+  color: var(--app-attention);
+  font-weight: 500;
+}
+
+/* The field itself, so the eye lands on the control and not only the line
+   under it. Referenced from the template since it was written; it had no
+   rule to match until 2026-09-01, so it did nothing. */
+.npd__field--bad .mat-mdc-text-field-wrapper {
+  outline: 1px solid var(--app-attention);
+  outline-offset: -1px;
+  border-radius: var(--app-radius-control);
+}
+
 @media (max-width: 560px) {
   .npd {
     min-width: 0;
