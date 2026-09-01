@@ -1,0 +1,16 @@
+<div class="manager-content">
+  <!-- The bottom of every page, in two parts: the footer, which is part of
+       the page and scrolls with it, and the docking bar, which is fixed to
+       the bottom of the WINDOW and sits over whatever is behind it. -->
+  @if (selectedTab === 'Footer') {
+    <app-site-footer></app-site-footer>
+  }
+
+  <!-- Came from Web Config on 2026-09-01. It was two tabs deep in a settings
+       form - site furniture living among the phone number and the PayPal
+       client id, which is the same complaint that moved Privacy Policy and
+       Terms out to pages of their own. -->
+  @if (selectedTab === 'Docking Bar') {
+    <app-docking-bar></app-docking-bar>
+  }
+</div>

@@ -233,7 +233,13 @@ describe('NAV_CONFIG', () => {
     // outside the granular permission system entirely
     // (buildPermissionTree() skips groups with no items), so one appearing
     // by accident silently makes a screen Admin-only and ungrantable.
-    const FLAT_LINKS = ['home', 'navigation', 'footer'];
+    // FOOTER LEFT THIS LIST on 2026-09-01, when the docking bar moved out of
+    // Web Config and became its second leaf. That is not a cosmetic change:
+    // a flat link is outside the granular permission system entirely, so
+    // both the footer editor and the dock became grantable to an Employee
+    // for the first time. No stored grant was affected - nothing in dev or
+    // prod held one mentioning footer, checked before the move.
+    const FLAT_LINKS = ['home', 'navigation'];
 
     it('has exactly these flat links, and they really have no sub-items', () => {
       const flat = groups.filter((g) => !g.items).map((g) => g.id);

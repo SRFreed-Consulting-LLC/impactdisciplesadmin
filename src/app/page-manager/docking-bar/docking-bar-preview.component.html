@@ -1,0 +1,40 @@
+<!-- The bar's own markup, matching library-dock.component.html in the web
+     app class for class, so the styles beside this can be a straight copy of
+     that component's and stay readable against it. -->
+<div class="dockprev">
+  <div class="dockprev__head">
+    <span class="dockprev__title">The bar</span>
+    <span class="dockprev__note">As the site draws it, across the bottom of every page</span>
+  </div>
+
+  @if (empty) {
+    <!-- Said rather than drawn. An empty bar looks like a styling fault; a
+         bar with nothing to announce simply does not appear on the site. -->
+    <p class="dockprev__blank">
+      Nothing to announce yet &mdash; write a message below and it appears here.
+    </p>
+  } @else {
+    <div class="dockprev__stage">
+      <div class="library-dock">
+        <div class="library-dock__inner">
+          <p class="library-dock__message">
+            @if (dock.label) {
+              <span class="library-dock__eyebrow">{{ dock.label }}</span>
+            }
+            <span class="library-dock__headline">
+              {{ dock.message }}@if (dock.note) {<span class="library-dock__muted"> {{ dock.note }}</span>}
+            </span>
+          </p>
+
+          <div class="library-dock__actions">
+            @for (title of buttons; track $index; let last = $last) {
+              <span class="library-dock__btn" [class.library-dock__btn--ghost]="!last">{{ title }}</span>
+            }
+          </div>
+
+          <span class="library-dock__close" aria-hidden="true">&times;</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

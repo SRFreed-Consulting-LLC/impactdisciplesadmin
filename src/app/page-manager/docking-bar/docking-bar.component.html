@@ -6,6 +6,13 @@
 
 <app-list-header [title]="itemType"></app-list-header>
 
+<!-- THE BAR, AT THE TOP, as the site draws it - the same place the Header
+     screen puts its own preview. It follows the form rather than what is
+     saved, so a message that is too long shows as too long before it is
+     written. See the preview component for why it draws the bar itself
+     instead of framing the real site. -->
+<app-docking-bar-preview [dock]="preview"></app-docking-bar-preview>
+
 <div class="tab-content-wrap">
   <div class="tab-content" [formGroup]="form">
 

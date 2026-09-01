@@ -296,14 +296,23 @@ export const NAV_CONFIG: NavGroup[] = [
     // cannot be granted to an Employee, where it could be as a leaf. If an
     // Employee ever needs the menu, it has to grow a leaf of its own.
     id: 'navigation',
-    label: 'NAVIGATION',
+    // 'HEADER', not 'NAVIGATION' (owner, 2026-09-01). It edits the site's
+    // top bar, and it sits beside FOOTER and DOCKING BAR - three bands of
+    // site furniture that read as a set only if each is named after the
+    // band it edits. The id stays `navigation`: it is the first segment of
+    // every screenKey under it and renaming it would orphan any grant.
+    label: 'HEADER',
     icon: 'menu',
     roles: [Role.ADMIN],
     section: 'site'
   },
   {
     id: 'page-manager',
-    label: 'PAGE MANAGER',
+    // 'PAGES', not 'PAGE MANAGER' (owner, 2026-09-01). displayGroupLabel()
+    // strips a trailing " Manager", so the drawer was rendering the plural
+    // group as the singular "PAGE". Its leaves are pages, and there is more
+    // than one of them. The id stays `page-manager` for the screenKeys.
+    label: 'PAGES',
     icon: 'handyman',
     roles: [Role.ADMIN],
     // The SITE tab - everything that decides what a visitor to
@@ -383,7 +392,26 @@ export const NAV_CONFIG: NavGroup[] = [
     label: 'FOOTER',
     icon: 'vertical_align_bottom',
     roles: [Role.ADMIN],
-    section: 'site'
+    section: 'site',
+    // IT STOPPED BEING A FLAT LINK on 2026-09-01, when the docking bar
+    // moved here out of Web Config. Two consequences worth knowing:
+    //
+    // The footer editor is now a LEAF rather than the group itself, so
+    // reaching it is one click further - the trade for the dock having a
+    // home that is not a settings form.
+    //
+    // A flat link is outside the granular permission system entirely
+    // (buildPermissionTree skips groups with no items), so both screens
+    // become grantable to an Employee for the first time. No stored grant
+    // was affected: nothing in dev OR prod held one mentioning footer.
+    items: [
+      { label: 'Footer', slug: 'footer' },
+      // The strip fixed to the bottom of every page. It was two tabs deep
+      // in Web Config - site furniture living in a settings form, which is
+      // the same complaint that moved Privacy Policy and Terms out to
+      // pages of their own.
+      { label: 'Docking Bar', slug: 'docking-bar' }
+    ]
   },
   {
     // DATA (2026-08-30, owner's call) - the RECORDS the public site is built
