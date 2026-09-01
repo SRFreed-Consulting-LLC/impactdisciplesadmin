@@ -774,5 +774,35 @@ describe('dropping a section into the page', () => {
 
       expect(c.pageTitleProblem).toBeNull();
     });
+
+    it('excuses HOME, which deliberately has none', () => {
+      // Shane's call, 2026-09-01. Home opens on a full-width slider, and the
+      // only way to give it a heading is a band of words above that slider -
+      // which is what the fix did, and it looked wrong. He would rather Home
+      // had no page title than carry that band.
+      const c = headed(['section']);
+      c.page = { ...c.page, slug: 'home' };
+
+      expect(c.pageTitleCount).toBe(0);
+      expect(c.pageTitleProblem)
+        .withContext('nagged about the one page that is allowed to have none')
+        .toBeNull();
+    });
+
+    it('still tells HOME about TWO page titles', () => {
+      // The exception excuses having none. It does not excuse having two,
+      // which is a different mistake and still worth saying.
+      const c = headed(['page', 'page']);
+      c.page = { ...c.page, slug: 'home' };
+
+      expect(c.pageTitleProblem).toContain('2 headings');
+    });
+
+    it('excuses nothing else', () => {
+      const c = headed(['section']);
+      c.page = { ...c.page, slug: 'about-us' };
+
+      expect(c.pageTitleProblem).toContain('Page title');
+    });
   });
 });
