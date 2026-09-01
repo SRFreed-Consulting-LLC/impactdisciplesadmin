@@ -208,8 +208,10 @@ export interface EditablePage {
 
 /** The figures a price line can name. Their VALUES live in Web Config. */
 export const WEB_CONFIG_AMOUNTS: readonly { key: string; label: string }[] = [
-  { key: 'equippingGroupTotalCost', label: 'Equipping group — full payment' },
-  { key: 'equippingGroupPaymentCost', label: 'Equipping group — monthly plan' },
+  // The two equipping-group figures were offered here until 2026-08-31.
+  // They are typed into the two headings that used them now - see
+  // WebConfigModel for why - so offering them would name a figure that no
+  // longer exists, and a price tile pointing at one draws nothing.
   { key: 'inpersonSeminarCost', label: 'Seminar — in person' },
   { key: 'onlineSeminarCost', label: 'Seminar — online video training' }
 ];
