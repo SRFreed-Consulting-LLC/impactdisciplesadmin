@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Remove pieces the migration created with nothing in them.
  *
@@ -69,7 +70,7 @@ if (/a82a8/.test(projectId) || projectArg === 'prod') {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('page_content').get();
+  const snap = await tenantCollection(db, "page_content").get();
 
   let droppedPieces = 0;
   let droppedColumns = 0;

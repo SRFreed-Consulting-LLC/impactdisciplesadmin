@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) hardening of `locations.organization` for the
 // 2026-08 restructure (locations become child records of organizations):
 //   1. Normalizes object-shaped `organization` values (old form saves stored
@@ -58,8 +59,8 @@ function pointOfContactFrom(contactName) {
   const db = getFirestoreFor(resolveProjectId(project));
 
   const [locSnap, orgSnap] = await Promise.all([
-    db.collection('locations').get(),
-    db.collection('organizations').get(),
+    tenantCollection(db, "locations").get(),
+    tenantCollection(db, "organizations").get(),
   ]);
   const orgIds = new Set(orgSnap.docs.map((d) => d.id));
   const orgsByNorm = new Map();
@@ -122,7 +123,7 @@ function pointOfContactFrom(contactName) {
         created++;
         console.log(`${dryRun ? '[dry-run] would create' : 'create'} org from ${label}: ${JSON.stringify({ name: org.name, contactName: org.contactName })}`);
         if (!dryRun) {
-          const ref = await db.collection('organizations').add(org);
+          const ref = await tenantCollection(db, "organizations").add(org);
           update.organization = ref.id;
           orgIds.add(ref.id);
           orgsByNorm.set(norm(org.name), { id: ref.id, data: () => org });

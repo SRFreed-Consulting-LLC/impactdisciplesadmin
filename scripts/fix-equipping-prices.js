@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Put the COST section on the equipping pages that ACTUALLY had one, and
  * take it off the one that did not.
@@ -106,7 +107,7 @@ function costSection() {
 
   // ---------------------------------------------------- take the wrong one off
   {
-    const ref = db.collection('page_content').doc(REMOVE_FROM);
+    const ref = tenantCollection(db, "page_content").doc(REMOVE_FROM);
     const blocks = (await ref.get()).data()?.blocks ?? [];
     const at = blocks.findIndex((b) => b.key === KEY);
     console.log('\n### ' + REMOVE_FROM);
@@ -126,7 +127,7 @@ function costSection() {
 
   // -------------------------------------------------- put it where it belongs
   for (const slug of ADD_TO) {
-    const ref = db.collection('page_content').doc(slug);
+    const ref = tenantCollection(db, "page_content").doc(slug);
     const doc = await ref.get();
     console.log('\n### ' + slug);
     if (!doc.exists) {

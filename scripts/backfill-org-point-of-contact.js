@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) backfill for the 2026-08 restructure: split each
 // organization's legacy free-text `contactName` into the new structured
 // `pointOfContact` {firstName, lastName} - only where contactName is set
@@ -24,7 +25,7 @@ const arg = (name) => {
   const dryRun = !!arg('dry-run');
   const db = getFirestoreFor(resolveProjectId(project));
 
-  const snap = await db.collection('organizations').get();
+  const snap = await tenantCollection(db, "organizations").get();
   let updated = 0;
   for (const doc of snap.docs) {
     const data = doc.data();

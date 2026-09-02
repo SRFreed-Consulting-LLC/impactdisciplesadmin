@@ -1,3 +1,4 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -203,7 +204,8 @@ export const purchaseGroupLicenses = onCall(
     }
     const unitPrice = effectivePrice(product);
 
-    const tiersSnap = await libraryDb.collection("bulkDiscountTiers").get();
+    const tiersSnap =
+      await libraryDb.collection(tenantPath("bulkDiscountTiers")).get();
     const tiers = tiersSnap.docs.map((d) => d.data() as BulkDiscountTier);
     // The SHARED tier lookup (submodule, copied in by sync-shared.js) - the
     // reader app prices its own purchase preview with the exact same

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Cuts ONE approved original page over to the section kit (2026-08-30).
 //
 //   node scripts/cutover-page.js --page=lunch-and-learns --project=dev
@@ -82,7 +83,7 @@ async function main() {
 
   const {toKitBlocks} = loadKit();
   const db = getFirestoreFor(projectId);
-  const ref = db.collection('page_content').doc(pageArg);
+  const ref = tenantCollection(db, "page_content").doc(pageArg);
   const doc = await ref.get();
   if (!doc.exists || !doc.data().blocks?.length) {
     console.error('REFUSED: ' + pageArg + ' has no blocks to flip.');

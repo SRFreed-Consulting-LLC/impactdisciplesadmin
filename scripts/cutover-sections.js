@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Cuts ONE approved page from the fourteen archetypes onto the two members
 // that replace them - Section and List (2026-08-31).
 //
@@ -66,7 +67,7 @@ function describe(block) {
 }
 
 async function migrate(db, kit, slug, execute) {
-  const ref = db.collection('page_content').doc(slug);
+  const ref = tenantCollection(db, "page_content").doc(slug);
   const doc = await ref.get();
 
   if (!doc.exists || !doc.data().blocks?.length) {
@@ -136,7 +137,7 @@ async function main() {
   const db = getFirestoreFor(projectId);
 
   const slugs = all
-    ? (await db.collection('page_content').get()).docs.map((d) => d.id).sort()
+    ? (await tenantCollection(db, "page_content").get()).docs.map((d) => d.id).sort()
     : [pageArg];
 
   console.log('project:', projectId, execute ? '(EXECUTE)' : '(dry run)');

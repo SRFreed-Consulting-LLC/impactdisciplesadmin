@@ -1014,6 +1014,69 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isBusinessStaff();
       }
+
+      // ---- Wave 1: reference data ----------------------------------------
+      // Each of these MIRRORS the permissions its top-level twin still has,
+      // deliberately and exactly. A migration is the wrong moment to change
+      // who can read something: if a rule looks wrong here it was wrong
+      // before the move too, and fixing it in the same change makes it
+      // impossible to tell a migration bug from a policy edit.
+      //
+      // Both paths stay permitted until --drop-originals, so nothing is
+      // denied while the code and the data are landing.
+      match /commonTranslations/{id} {
+        allow read: if signedIn();
+        allow write: if isLibraryStaff();
+      }
+      match /titleTranslations/{id} {
+        allow read: if signedIn();
+        allow write: if isLibraryStaff();
+      }
+      match /coaches/{id} {
+        allow read: if true;                  // documentId()-in queries = list
+        allow write: if isBusinessStaff();
+      }
+      match /organizations/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /locations/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /product_categories/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /series/{id} {                    // Store Manager's Product Series
+        allow read: if true;                  // NOT librarySeries
+        allow write: if isBusinessStaff();
+      }
+      match /product_tags/{id} {
+        allow read: if isBusinessStaff();
+        allow write: if isBusinessStaff();
+      }
+      match /forms/{id} {
+        allow get: if true;                   // the public renderer fetches one
+        allow list: if isBusinessStaff();     // enumerating them is staff-only
+        allow write: if isBusinessStaff();
+      }
+      match /bulkDiscountTiers/{id} {
+        allow read: if signedIn();            // patrons price group licenses
+        allow write: if isAdminRole();
+      }
+      match /subtemplates/{id} {
+        allow read, write: if isLibraryStaff();
+      }
+      match /popup_templates/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /appConfig/{id} {
+        allow read: if signedIn();
+        allow write: if false;                // functions-written
+      }
+      match /lessonTemplates/{id} {
+        allow read, write: if isLibraryStaff();
+      }
     }
 
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Let a section FOLLOW ITS PAGE where it already looks the same.
  *
@@ -51,7 +52,7 @@ if (/a82a8/.test(projectId) || projectArg === 'prod') {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('page_content').get();
+  const snap = await tenantCollection(db, "page_content").get();
 
   let freed = 0;
   let kept = 0;

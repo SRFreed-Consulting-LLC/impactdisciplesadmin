@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Put the equipping group's PRICES back on the equipping pages.
  *
@@ -101,7 +102,7 @@ const section = {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const ref = db.collection('page_content').doc(SLUG);
+  const ref = tenantCollection(db, "page_content").doc(SLUG);
   const doc = await ref.get();
   if (!doc.exists) {
     console.error('REFUSED: no ' + SLUG + ' page.');

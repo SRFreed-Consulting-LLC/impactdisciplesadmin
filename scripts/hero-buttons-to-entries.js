@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // Turns a hero band's two fixed button slots into ENTRIES.
 //
 //   node scripts/hero-buttons-to-entries.js --project=dev            (dry run)
@@ -68,7 +69,7 @@ async function main() {
   }
 
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('page_content').get();
+  const snap = await tenantCollection(db, "page_content").get();
   const writes = [];
 
   for (const doc of snap.docs) {

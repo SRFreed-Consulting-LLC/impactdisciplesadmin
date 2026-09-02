@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) pinning of THE Summit venue for the 2026-08
 // restructure: Summit events always happen at Crossroads Church HWY 16
 // Campus - the one `locations` doc that carries trainingrooms. Sets
@@ -24,7 +25,7 @@ const arg = (name) => {
   const dryRun = !!arg('dry-run');
   const db = getFirestoreFor(resolveProjectId(project));
 
-  const locSnap = await db.collection('locations').get();
+  const locSnap = await tenantCollection(db, "locations").get();
   const withRooms = locSnap.docs.filter((d) => (d.data().trainingrooms ?? []).length > 0);
   const flagged = locSnap.docs.filter((d) => d.data().isSummitVenue === true);
 

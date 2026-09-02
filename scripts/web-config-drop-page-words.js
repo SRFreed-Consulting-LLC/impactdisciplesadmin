@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Clear the Privacy Policy and Terms wording out of Web Config.
  *
@@ -74,7 +75,7 @@ function wordsOn(page) {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const doc = (await db.collection('config').get()).docs[0];
+  const doc = (await tenantCollection(db, "config").get()).docs[0];
   if (!doc) {
     console.error('REFUSED: no Web Config document.');
     process.exit(1);
@@ -91,7 +92,7 @@ function wordsOn(page) {
       continue;
     }
 
-    const page = (await db.collection('page_content').doc(slug).get()).data();
+    const page = (await tenantCollection(db, "page_content").doc(slug).get()).data();
     const onPage = wordsOn(page);
     const inConfig = here.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
       .split(' ').filter(Boolean).length;

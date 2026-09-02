@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // Turns the hardcoded consultation banner into an ordinary photo band.
 //
 //   node scripts/merge-consultation-band.js --project=dev            (dry run)
@@ -69,7 +70,7 @@ async function main() {
   }
 
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('page_content').get();
+  const snap = await tenantCollection(db, "page_content").get();
   const writes = [];
 
   for (const doc of snap.docs) {

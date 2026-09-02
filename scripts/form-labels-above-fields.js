@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Show a form's field LABELS instead of hiding them in the placeholder.
  *
@@ -65,7 +66,7 @@ function walk(fields, visit) {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('forms').get();
+  const snap = await tenantCollection(db, "forms").get();
 
   let changedForms = 0;
   let changedFields = 0;

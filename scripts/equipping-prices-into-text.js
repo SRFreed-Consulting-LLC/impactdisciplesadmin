@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Type the equipping-group prices into the headings, and retire the two
  * Web Config figures they used to come from.
@@ -57,7 +58,7 @@ if (/a82a8/.test(projectId) || projectArg === 'prod') {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const configDoc = (await db.collection('config').get()).docs[0];
+  const configDoc = (await tenantCollection(db, "config").get()).docs[0];
   const config = configDoc.data();
 
   // Read the figures BEFORE removing them - they are the only copy.
@@ -75,7 +76,7 @@ if (/a82a8/.test(projectId) || projectArg === 'prod') {
   let edits = 0;
 
   for (const slug of PAGES) {
-    const ref = db.collection('page_content').doc(slug);
+    const ref = tenantCollection(db, "page_content").doc(slug);
     const blocks = (await ref.get()).data()?.blocks ?? [];
     const changed = [];
 

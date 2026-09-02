@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time bulk activation for the `coaches` collection - the user wants
 // every breakout-only coach live on the public web (a "Coaches" display
 // sorted by `sortOrder`), so isActive needs to be true across the board
@@ -36,7 +37,7 @@ async function main() {
 
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
-  const snap = await db.collection("coaches").get();
+  const snap = await tenantCollection(db, "coaches").get();
   const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const toActivate = all.filter((c) => c.isActive !== true);
 
@@ -62,7 +63,7 @@ async function main() {
   let batchesFlushed = 0;
 
   for (const coach of toActivate) {
-    batch.update(db.collection("coaches").doc(coach.id), { isActive: true });
+    batch.update(tenantCollection(db, "coaches").doc(coach.id), { isActive: true });
     opsInBatch++;
     if (opsInBatch >= 400) {
       await batch.commit();

@@ -51,7 +51,7 @@ async function main() {
 
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
-  const coachesSnap = await db.collection("coaches").get();
+  const coachesSnap = await tenantCollection(db, "coaches").get();
   const allCoaches = coachesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
   const toMove = allCoaches.filter((c) => typeof c.teamPageSortOrder === "number");
@@ -88,7 +88,7 @@ async function main() {
     };
 
     batch.set(tenantCollection(db, "impact_team").doc(id), impactTeamDoc);
-    batch.delete(db.collection("coaches").doc(id));
+    batch.delete(tenantCollection(db, "coaches").doc(id));
     opsInBatch += 2;
 
     if (opsInBatch >= 400) {

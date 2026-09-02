@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Turn the Privacy Policy and Terms of Use into ORDINARY PAGES.
  *
@@ -109,7 +110,7 @@ function blocksFor(page, html) {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const config = (await db.collection('config').get()).docs[0];
+  const config = (await tenantCollection(db, "config").get()).docs[0];
   if (!config) {
     console.error('REFUSED: no Web Config document to read the words out of.');
     process.exit(1);
@@ -128,7 +129,7 @@ function blocksFor(page, html) {
       continue;
     }
 
-    const ref = db.collection('page_content').doc(page.slug);
+    const ref = tenantCollection(db, "page_content").doc(page.slug);
     const existing = await ref.get();
     if (existing.exists && existing.data().title) {
       console.error('  REFUSED: a page already exists at this slug. Not writing over it.');

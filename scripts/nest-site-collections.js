@@ -34,26 +34,24 @@ const {getFirestoreFor, resolveProjectId} =
 /** Firestore's own per-commit ceiling is 500; this leaves headroom. */
 const BATCH = 400;
 
-// Hand-carried from the shared submodule rather than imported: this is a
-// plain node script and src/common is TypeScript. The spec in
-// tenancy.spec.ts pins the list on that side; a mismatch here shows up
-// immediately as a collection this script does not mention.
-const TENANT_ID = "impactdisciples.com";
+// FROM THE SEAM, not a third copy of the list.
+//
+// This carried its own hand-maintained copy until 2026-09-02, on the
+// reasoning that a plain node script cannot import TypeScript. True, but the
+// conclusion was wrong: scripts/lib/tenancy.js is the JS mirror, and
+// functions/test/tenancy-mirror.test.js compares it to the TypeScript so the
+// two cannot drift.
+//
+// The cost of the old arrangement showed up the moment Wave 1 began. Fourteen
+// collections were added to the real list, this file still named nine, and
+// the migration reported "0 documents in total" - a completely successful run
+// that moved nothing. Exactly the silent no-op this whole exercise exists to
+// stamp out, in the tool doing the stamping.
+const {TENANT_ID, TENANT_COLLECTIONS} = require("./lib/tenancy");
 const SITE_HOSTNAMES = [
   "impactdisciples.com",
   "www.impactdisciples.com",
   "impactdisciplesdev-public.web.app",
-];
-const TENANT_COLLECTIONS = [
-  "page_content",
-  "site_navigation",
-  "site_footer",
-  "dock_bar",
-  "config",
-  "testimonials",
-  "impact_team",
-  "dmms",
-  "faq",
 ];
 
 /**

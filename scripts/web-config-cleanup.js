@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 /**
  * Web Config: seed the logo, drop the fields nothing reads.
  *
@@ -61,7 +62,7 @@ if (/a82a8/.test(projectId) || projectArg === 'prod') {
 
 (async () => {
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('config').get();
+  const snap = await tenantCollection(db, "config").get();
   if (snap.empty) {
     console.error('REFUSED: no Web Config document.');
     process.exit(1);

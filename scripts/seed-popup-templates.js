@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Campaign Manager v2, Phase 5: seeds the popup_templates collection (the
 // popup recipe library) - popup-shaped descendants of the v1 campaign
 // gallery's six recipe consts (campaign-template.model.ts, removed in
@@ -69,14 +70,14 @@ const TEMPLATES = [
 (async () => {
   const db = getFirestoreFor(resolveProjectId(args.project));
   const existing = new Set(
-    (await db.collection("popup_templates").get()).docs.map((d) => d.data().name));
+    (await tenantCollection(db, "popup_templates").get()).docs.map((d) => d.data().name));
   for (const template of TEMPLATES) {
     if (existing.has(template.name)) {
       console.log(`SKIP (exists): ${template.name}`);
       continue;
     }
     if (args.execute) {
-      await db.collection("popup_templates").add(template);
+      await tenantCollection(db, "popup_templates").add(template);
       console.log(`SEEDED: ${template.name}`);
     } else {
       console.log(`WOULD SEED: ${template.name}`);

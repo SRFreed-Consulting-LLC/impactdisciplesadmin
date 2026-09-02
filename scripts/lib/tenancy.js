@@ -21,6 +21,7 @@ const TENANT_ID = "impactdisciples.com";
 
 /** The collections that live under the tenant. Mirror of TENANT_COLLECTIONS. */
 const TENANT_COLLECTIONS = [
+  // Wave 0
   "page_content",
   "site_navigation",
   "site_footer",
@@ -30,6 +31,21 @@ const TENANT_COLLECTIONS = [
   "impact_team",
   "dmms",
   "faq",
+  // Wave 1 - reference data
+  "commonTranslations",
+  "titleTranslations",
+  "coaches",
+  "organizations",
+  "locations",
+  "product_categories",
+  "series",
+  "product_tags",
+  "forms",
+  "bulkDiscountTiers",
+  "subtemplates",
+  "popup_templates",
+  "appConfig",
+  "lessonTemplates",
 ];
 
 /**

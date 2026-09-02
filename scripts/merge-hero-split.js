@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // Folds the HERO_SPLIT archetype into HERO_BAND as a second look.
 //
 //   node scripts/merge-hero-split.js --project=dev            (dry run)
@@ -56,7 +57,7 @@ async function main() {
   }
 
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection('page_content').get();
+  const snap = await tenantCollection(db, "page_content").get();
   const writes = [];
 
   for (const doc of snap.docs) {
