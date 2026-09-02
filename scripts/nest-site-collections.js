@@ -117,7 +117,20 @@ async function main() {
    * @return {Promise<Array<{src: object, dst: object, snap: object}>>} Nodes.
    */
   async function walkTree(srcCol, dstCol) {
-    const snap = await srcCol.get();
+    // listDocuments(), NOT get(). A query returns documents that have
+    // FIELDS; a document with no fields but with subcollections under it is
+    // invisible to one and returned by the other. Firestore creates exactly
+    // that shape whenever a parent is deleted and its children are not -
+    // which this database has, five times over, in `discussionGroups`.
+    //
+    // With get() the parent is not copied, its ten children are not copied,
+    // and neither is deleted either, because the drop walks the same blind
+    // list. Nothing is lost, but nothing moves, and the collection quietly
+    // stays at the top level with no document a query can see - the exact
+    // shape that made a previous migration here miss a set of lesson
+    // highlights and read 0 while doing it.
+    const refs = await srcCol.listDocuments();
+    const snap = {docs: await Promise.all(refs.map((r) => r.get()))};
     const out = [];
     // PROBED IN PARALLEL, and that is not a micro-optimisation. There is one
     // round-trip per document and no way around it, so `customers` alone is
@@ -167,6 +180,10 @@ async function main() {
         const slice = nodes.slice(i, i + CHUNK);
         const snaps = await db.getAll(...slice.map((n) => n.dst));
         slice.forEach((n, j) => {
+          // A phantom parent has nothing to compare - it is not copied, so
+          // its absence at the target is correct rather than missing. Its
+          // CHILDREN are separate nodes and are still checked.
+          if (!n.snap.exists) return;
           checked++;
           if (n.src.parent.id !== name) subs++;
           const other = snaps[j];
@@ -199,14 +216,36 @@ async function main() {
         db.collection(name), site.collection(name));
       // Every node, not just the parents - a count check that ignored
       // children would happily green-light deleting the only copy of them.
-      for (const n of nodes) {
-        const other = await n.dst.get();
-        if (!other.exists || !same(n.snap.data(), other.data())) {
-          console.log(`  REFUSING ${name}: ${n.src.path} is missing or ` +
-            "differs under the tenant. Run --verify.");
-          process.exitCode = 1;
-          return;
+      //
+      // BATCHED, for the same reason --verify is. Read one at a time this is
+      // 15,728 sequential round-trips: it does not fail, it just never
+      // visibly finishes, so it reads as a hung command and gets killed
+      // half-way. That is worse than an error - the delete never runs and
+      // nothing says why. --verify was batched and this was not, which is
+      // exactly the kind of half-applied fix that wastes an afternoon.
+      const CHUNK = 300;
+      for (let i = 0; i < nodes.length; i += CHUNK) {
+        const slice = nodes.slice(i, i + CHUNK);
+        const snaps = await db.getAll(...slice.map((n) => n.dst));
+        for (let j = 0; j < slice.length; j++) {
+          const n = slice[j];
+          // Same reasoning as --verify: a phantom parent was never copied,
+          // so there is nothing to insist on at the target. Deleting it is
+          // still safe - a delete of a document with no fields is a no-op
+          // once its children are gone.
+          if (!n.snap.exists) continue;
+          if (!snaps[j].exists || !same(n.snap.data(), snaps[j].data())) {
+            console.log(`  REFUSING ${name}: ${n.src.path} is missing or ` +
+              "differs under the tenant. Run --verify.");
+            process.exitCode = 1;
+            return;
+          }
         }
+      }
+      if (!execute) {
+        removed += nodes.length;
+        console.log(`  would drop ${name} (${nodes.length}) - verified`);
+        continue;
       }
       // CHILDREN BEFORE PARENTS, the reverse of the copy order. Deleting a
       // parent first leaves its subcollections as orphans that no
@@ -220,6 +259,12 @@ async function main() {
       }
       removed += nodes.length;
       console.log(`  dropped ${name} (${nodes.length})`);
+    }
+    if (!execute) {
+      console.log(`\n  ${removed} document(s) would be removed, all ` +
+        "verified present under the tenant.");
+      console.log("Dry run. Re-run with --execute to delete.");
+      return;
     }
     console.log(`\n  ${removed} original document(s) removed.`);
     return;
@@ -257,7 +302,7 @@ async function main() {
   // meant to be independent of.
   fs.writeFileSync(out, JSON.stringify(
     Object.fromEntries(plan.map((p) => [
-      p.name, p.nodes.map((n) => ({
+      p.name, p.nodes.filter((n) => n.snap.exists).map((n) => ({
         path: n.src.path,
         id: n.src.id,
         data: n.snap.data(),
@@ -290,6 +335,12 @@ async function main() {
     for (const n of nodes) {
       // JSON length is an approximation of the wire size, not the wire size
       // - which is exactly why the ceiling below is a third of the real one.
+      // A PHANTOM PARENT carries no fields to copy - writing `undefined`
+      // throws, and writing `{}` would invent a document that never existed.
+      // Skipping it is correct and loses nothing: Firestore materialises the
+      // parent implicitly the moment one of its children is written, which
+      // the walk has already queued behind it.
+      if (!n.snap.exists) continue;
       const size = JSON.stringify(n.snap.data() ?? {}).length;
       if (ops > 0 && (ops >= BATCH || bytes + size > MAX_BATCH_BYTES)) {
         await batch.commit();
