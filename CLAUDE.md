@@ -47,6 +47,16 @@ npm run build-dev
 npm run build-prod
 
 # Deploy (builds, switches `firebase use`, deploys hosting only)
+# Both build-deploy scripts run `check-functions` FIRST - functions/'s own
+# lint + tsc - even though they only deploy hosting. That is deliberate:
+# functions/ compiles the shared slice with noUnusedLocals, the app does
+# not, and a hosting-only deploy never touched functions/ at all. On
+# 2026-09-01 three declarations left behind by a refactor broke the
+# functions build and it went unnoticed for a full day across several
+# hosting deploys, because nothing in the normal flow compiled it. A
+# functions deploy would have failed on its predeploy hook; nobody ran one.
+# It costs a few seconds and turns that silence into a red build.
+npm run check-functions                 # lint + tsc functions/, deploys nothing
 npm run build-deploy-dev                # -> impactdisciplesdev project, hosting:development target
 npm run build-deploy-prod               # -> impactdisciples-a82a8 project, hosting:production target
 
