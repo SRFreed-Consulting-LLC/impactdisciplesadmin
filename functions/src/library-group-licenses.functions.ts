@@ -15,6 +15,11 @@ import {
   getOrderCapture,
   resolvePaypalEnvironment,
 } from "./library-paypal";
+import * as logger from "firebase-functions/logger";
+import {
+  findOrCreateCustomer,
+  isPlausibleEmail,
+} from "./utils/customer-match.functions";
 import {applyLicenseGrant} from "./library-group-license-grant";
 import {
   CouponDoc,
@@ -541,8 +546,69 @@ export const assignGroupLicense = onCall(async (request):
     });
   });
 
+  await recordLicenceRecipientAsContact(recipient);
+
   return {success: true};
 });
+
+/**
+ * Makes the recipient of a group licence a contact.
+ *
+ * WHY THIS EXISTS: contacts are created automatically from storefront checkout
+ * and event registrations, both of which begin with the person TRANSACTING
+ * with us. Receiving a group licence is the one route into the library that
+ * involves no transaction of their own - the leader bought the licences, so
+ * the leader became the contact and the reader did not. An audit on 2026-09-02
+ * found three people reading our books, inside groups, who appeared in no
+ * contact list at all.
+ *
+ * Deliberately runs AFTER the transaction rather than inside it. The licence
+ * is what the leader asked for; the contact is bookkeeping. If this throws,
+ * the member keeps their book and we lose a contact row - the other ordering
+ * would risk failing an assignment over a CRM write, which is the wrong thing
+ * to lose. Hence the catch: it logs and returns.
+ *
+ * findOrCreateCustomer dedupes by email, so a recipient who is already a
+ * contact - from a purchase, an event, or an earlier licence - is matched
+ * rather than duplicated, and nothing on their existing record is touched.
+ * The seed applies only to a brand-new one.
+ *
+ * @param {string} recipientEmail Normalized address of the member receiving
+ *   the licence.
+ * @return {Promise<void>} Resolves once the contact exists, or immediately
+ *   when the address is not usable.
+ */
+async function recordLicenceRecipientAsContact(
+  recipientEmail: string
+): Promise<void> {
+  try {
+    if (!isPlausibleEmail(recipientEmail)) {
+      return;
+    }
+    // The name comes from the reader's own profile where there is one: a
+    // licence assignment carries no name of its own, and a contact with an
+    // empty name is still worth more than no contact.
+    const profileSnap = await libraryDb
+      .collection(LIBRARY_USERS)
+      .doc(recipientEmail)
+      .get();
+    const profile = profileSnap.data() ?? {};
+
+    const {created} = await findOrCreateCustomer(libraryDb, recipientEmail, {
+      firstName: profile.firstName ?? "",
+      lastName: profile.lastName ?? "",
+      source: "group-license",
+    });
+    if (created) {
+      logger.info("group licence recipient added as a contact",
+        {email: recipientEmail});
+    }
+  } catch (error) {
+    // Never fails the assignment - see the ordering note above.
+    logger.error("could not record licence recipient as a contact",
+      {email: recipientEmail, error: String(error)});
+  }
+}
 
 /**
  * Takes back a previously-assigned GroupLicense, freeing it into the

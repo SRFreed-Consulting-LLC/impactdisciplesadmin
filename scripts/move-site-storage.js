@@ -175,7 +175,12 @@ async function main() {
     process.exit(1);
   }
   const db = getFirestoreFor(resolveProjectId(env));
+  // BOTH apps, whichever environment's documents we are rewriting. The
+  // Storage handles below need an initialised app per bucket, and a source
+  // URL can still name the dev bucket whoever is running this - so
+  // initialising only the chosen project throws on the first such URL.
   getFirestoreFor(resolveProjectId("prod"));
+  getFirestoreFor(resolveProjectId("dev"));
   const prodBucket = getStorage(getApp(`${PROD}::(default)`))
     .bucket(`${PROD}.appspot.com`);
   const devBucket = getStorage(getApp(`${DEV}::(default)`))
