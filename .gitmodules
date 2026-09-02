@@ -2,3 +2,4 @@
 [submodule "src/common"]
 	path = src/common
 	url = https://github.com/sfreed/impact-discipleship-library-common.git
+	branch = development
