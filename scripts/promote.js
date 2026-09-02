@@ -123,6 +123,10 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const execute = !!args.execute;
   const forceConflicts = !!args["force-conflicts"];
+  // Recursion is the default: a promotion that silently skips nested data is
+  // the failure this tool had. --no-recurse is the escape hatch when a run
+  // is known to be flat and the metadata calls are not worth the time.
+  const recurse = !args["no-recurse"];
 
   const devDb = getFirestoreFor("impactdisciplesdev");
   const prodDb = getFirestoreFor("impactdisciples-a82a8");
@@ -148,9 +152,35 @@ async function main() {
 
   const totals = {new: 0, unchanged: 0, conflict: 0};
   const conflictDetails = [];
+  let probed = 0;
 
-  for (const name of collectionNames) {
-    const devSnap = await devDb.collection(name).get();
+  /**
+   * Promotes ONE collection, then every subcollection beneath its documents.
+   *
+   * SUBCOLLECTIONS WERE INVISIBLE TO THIS TOOL until 2026-09-02. It walked a
+   * flat list of collection names and copied their documents, so a document
+   * with children came across as an empty shell - and reported success. That
+   * was survivable while nothing nested; the site's own content now lives
+   * under `sites/{siteId}/...`, where the parent document is little more
+   * than a name and every word of the website is in the children. Promoting
+   * that flat would have created the site and none of its pages, and said it
+   * worked.
+   *
+   * THE COST, stated rather than hidden: finding out whether a document has
+   * children means asking, one metadata call per document. On a full run
+   * that is a call for every customer and every purchase. Promotion is a
+   * rare, deliberate operation and silently missing data is far worse than
+   * being slow, so it recurses by default - `--no-recurse` restores the old
+   * behaviour when speed matters more than completeness.
+   *
+   * @param {FirebaseFirestore.CollectionReference} devCol Source collection.
+   * @param {FirebaseFirestore.CollectionReference} prodCol Its Prod twin.
+   * @param {string} label Path as printed, e.g. "sites/x/page_content".
+   * @return {Promise<void>}
+   */
+  async function promoteCollection(devCol, prodCol, label) {
+    const name = label;
+    const devSnap = await devCol.get();
     const devDocs = devSnap.docs;
 
     // Fetch the corresponding Prod docs (if any) via chunked getAll(), far
@@ -160,7 +190,7 @@ async function main() {
     for (let i = 0; i < devDocs.length; i += CHUNK) {
       const chunkRefs = devDocs
         .slice(i, i + CHUNK)
-        .map((d) => prodDb.collection(name).doc(d.id));
+        .map((d) => prodCol.doc(d.id));
       if (chunkRefs.length === 0) continue;
       const snaps = await prodDb.getAll(...chunkRefs);
       snaps.forEach((s) => {
@@ -192,7 +222,7 @@ async function main() {
       }
 
       if (execute && shouldWrite) {
-        batch.set(prodDb.collection(name).doc(doc.id), devData, {merge: true});
+        batch.set(prodCol.doc(doc.id), devData, {merge: true});
         opsInBatch++;
         if (opsInBatch >= 400) {
           await batch.commit();
@@ -214,6 +244,31 @@ async function main() {
         `  ${name}: ${newCount} new, ${unchangedCount} unchanged, ${conflictCount} conflict(s)`
       );
     }
+
+    if (!recurse) return;
+
+    // Children, after the parents - a subcollection under a document that
+    // does not exist yet is legal in Firestore but leaves an orphan in the
+    // console, and on a DRY run the parent has not been written at all.
+    for (const doc of devDocs) {
+      probed++;
+      const subs = await doc.ref.listCollections();
+      for (const sub of subs) {
+        await promoteCollection(
+          sub,
+          prodCol.doc(doc.id).collection(sub.id),
+          `${name}/${doc.id}/${sub.id}`
+        );
+      }
+    }
+  }
+
+  for (const name of collectionNames) {
+    await promoteCollection(devDb.collection(name), prodDb.collection(name), name);
+  }
+
+  if (recurse) {
+    console.log(`\n  probed ${probed} document(s) for subcollections`);
   }
 
   console.log("");
