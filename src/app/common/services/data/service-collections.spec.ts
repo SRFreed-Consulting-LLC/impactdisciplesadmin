@@ -8,13 +8,11 @@ import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service'
 import { LibraryActivityLogService } from 'src/app/common/services/data/library/library-activity-log.service';
 import { LoggerService } from 'src/app/common/services/data/logger.service';
 import { AdminUserService } from 'src/app/common/services/data/admin-user.service';
-import { AffilliatePaymentsService } from 'src/app/common/services/data/affiliate-payment.service';
 import { AffilliateSalesService } from 'src/app/common/services/data/affiliate-sales.service';
 import { CampaignEmailService } from 'src/app/common/services/data/campaign-email.service';
 import { CampaignPopupService } from 'src/app/common/services/data/campaign-popup.service';
 import { CampaignService } from 'src/app/common/services/data/campaign.service';
 import { CoachService } from 'src/app/common/services/data/coach.service';
-import { CoachingPageService } from 'src/app/common/services/data/coaching-page.service';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
@@ -24,7 +22,6 @@ import { EventService } from 'src/app/common/services/data/event.service';
 import { FAQService } from 'src/app/common/services/data/faq.service';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
-import { HomePageImageService } from 'src/app/common/services/data/home-page-images.service';
 import { ImpactTeamService } from 'src/app/common/services/data/impact-team.service';
 import { LibraryLessonTemplateService } from 'src/app/common/services/data/library/library-lesson-template.service';
 import { LibrarySubtemplateService } from 'src/app/common/services/data/library/library-subtemplate.service';
@@ -39,7 +36,6 @@ import { ShippingLabelService } from 'src/app/common/services/data/shipping-labe
 import { TagApplicationService } from 'src/app/common/services/data/tag-application.service';
 import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
-import { UserPermissionService } from 'src/app/common/services/data/user-permissions.service';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
 
 // Every BaseService subclass in the app, checked for the one thing that
@@ -70,13 +66,11 @@ interface ServiceRow { service: ServiceCtor; table: string; name: string; }
 
 const SERVICE_TABLES: ServiceRow[] = [
   { service: AdminUserService, table: 'admin_users', name: 'AdminUserService' },
-  { service: AffilliatePaymentsService, table: 'affilliate_payments', name: 'AffilliatePaymentsService' },
   { service: AffilliateSalesService, table: 'affilliate_sales', name: 'AffilliateSalesService' },
   { service: CampaignEmailService, table: 'campaign_emails', name: 'CampaignEmailService' },
   { service: CampaignPopupService, table: 'campaign_popups', name: 'CampaignPopupService' },
   { service: CampaignService, table: 'campaigns', name: 'CampaignService' },
   { service: CoachService, table: 'coaches', name: 'CoachService' },
-  { service: CoachingPageService, table: 'coaching_page', name: 'CoachingPageService' },
   { service: ContactService, table: 'customers', name: 'ContactService' },
   { service: CouponService, table: 'coupons', name: 'CouponService' },
   { service: DMMService, table: 'dmms', name: 'DMMService' },
@@ -86,7 +80,6 @@ const SERVICE_TABLES: ServiceRow[] = [
   { service: FAQService, table: 'faq', name: 'FAQService' },
   { service: FormDefinitionService, table: 'forms', name: 'FormDefinitionService' },
   { service: FormSubmissionService, table: 'form_submissions', name: 'FormSubmissionService' },
-  { service: HomePageImageService, table: 'home_page_images', name: 'HomePageImageService' },
   { service: ImpactTeamService, table: 'impact_team', name: 'ImpactTeamService' },
   { service: LibraryLessonTemplateService, table: 'lessonTemplates', name: 'LibraryLessonTemplateService' },
   { service: LibrarySubtemplateService, table: 'subtemplates', name: 'LibrarySubtemplateService' },
@@ -102,7 +95,6 @@ const SERVICE_TABLES: ServiceRow[] = [
   { service: TagApplicationService, table: 'tag_applications', name: 'TagApplicationService' },
   { service: TagRuleService, table: 'tag_rules', name: 'TagRuleService' },
   { service: TestimonialService, table: 'testimonials', name: 'TestimonialService' },
-  { service: UserPermissionService, table: 'user_permissions', name: 'UserPermissionService' },
   { service: WebConfigService, table: 'config', name: 'WebConfigService' },
 ];
 

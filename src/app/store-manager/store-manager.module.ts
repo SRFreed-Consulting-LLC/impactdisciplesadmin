@@ -8,7 +8,6 @@ import { SharedModule } from '../shared/shared.module';
 import { CouponsComponent } from './coupons/coupons.component';
 import { CouponDialogComponent } from './coupons/coupon-dialog.component';
 import { AffiliateSalesComponent } from './affiliate-sales/affiliate-sales.component';
-import { AffilliattePaymentsComponent } from './affilliatte-payments/affilliatte-payments.component';
 // This app's own Material file browser, replacing the DevExtreme
 // dx-file-manager-backed app-image-uploader from impactdisciplescommon -
 // see src/app/shared/image-uploader/ for the full rationale (built during
@@ -40,8 +39,7 @@ import { QuillModule } from 'ngx-quill';
     StoreManagerComponent,
     CouponsComponent,
     CouponDialogComponent,
-    AffiliateSalesComponent,
-    AffilliattePaymentsComponent
+    AffiliateSalesComponent
   ],
   imports: [
     CommonModule,

@@ -1,6 +1,5 @@
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { MailTemplateModel, EMailModel, MessageModel, TemplateModel } from 'src/app/common/models/admin/mail.model';
-import { UserPermission } from 'src/app/common/models/admin/user-permission.model';
 import { CampaignEmailModel } from 'src/app/common/models/domain/campaign-email.model';
 import { CampaignPopupModel, PopupTemplateModel } from 'src/app/common/models/domain/campaign-popup.model';
 import { BookSeriesModel } from 'src/app/common/models/domain/library/book-series.model';
@@ -12,7 +11,6 @@ import { LibraryUnitModel } from 'src/app/common/models/domain/library/library-u
 import { TagRuleModel } from 'src/app/common/models/domain/tag-rule.model';
 import { ContactNoteModel } from 'src/app/common/models/domain/utils/contact-note.model';
 import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
-import { AffilliatePaymentModel } from 'src/app/common/models/utils/affilliate-payment.model';
 import { FileItem } from 'src/app/common/models/utils/file-item.model';
 
 // Breadth pass over the app's plain data models (2026-08-22).
@@ -43,7 +41,6 @@ const MODELS: ModelRow[] = [
   { name: 'EMailModel', make: () => new EMailModel() },
   { name: 'MessageModel', make: () => new MessageModel() },
   { name: 'TemplateModel', make: () => new TemplateModel() },
-  { name: 'UserPermission', make: () => new UserPermission() },
   { name: 'CampaignEmailModel', make: () => new CampaignEmailModel() },
   { name: 'CampaignPopupModel', make: () => new CampaignPopupModel() },
   { name: 'PopupTemplateModel', make: () => new PopupTemplateModel() },
@@ -56,7 +53,6 @@ const MODELS: ModelRow[] = [
   { name: 'TagRuleModel', make: () => new TagRuleModel() },
   { name: 'ContactNoteModel', make: () => new ContactNoteModel() },
   { name: 'ContactModel', make: () => new ContactModel() },
-  { name: 'AffilliatePaymentModel', make: () => new AffilliatePaymentModel() },
   { name: 'FileItem', make: () => new FileItem() },
 ];
 

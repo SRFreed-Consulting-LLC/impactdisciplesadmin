@@ -42,14 +42,19 @@
 
   <app-tag-chips formControlName="tags" [options]="couponTags" label="Item Tags" placeholder="Tag this Coupon..."></app-tag-chips>
 
-  <!-- Only affiliate coupons that have already been saved (and so have a
-  stable code to query sales/payments by) show these panels - the
-  original always rendered them, even for a brand-new blank coupon,
-  which meant two guaranteed-empty tables on every "Add" flow. -->
+  <!-- Only an affiliate coupon that has already been saved (and so has a
+  stable code to query sales by) shows this - the original rendered it even
+  for a brand-new blank coupon, which meant a guaranteed-empty table on
+  every "Add" flow.
+
+  A PAYMENTS PANEL SAT BESIDE THIS UNTIL 2026-09-01. It read
+  `affilliate_payments`, a collection that never existed in either project,
+  and nothing anywhere could create a record - the service was read-only. So
+  every affiliate coupon showed a permanently empty table next to this
+  working one. Sales takes the full width now. -->
   @if (isEdit && form.get('isAffilliate')?.value) {
     <div class="affiliate-panels">
       <app-affiliate-sales class="affiliate-panels__sales" [code]="data.item?.code" [paypalAccount]="form.get('affiliatePaypalAccount')?.value"></app-affiliate-sales>
-      <app-affilliatte-payments class="affiliate-panels__payments" [code]="data.item?.code"></app-affilliatte-payments>
     </div>
   }
 </mat-dialog-content>

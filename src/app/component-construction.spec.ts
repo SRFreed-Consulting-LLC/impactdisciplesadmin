@@ -15,7 +15,6 @@ import { AddressFieldComponent } from 'src/app/shared/address-field/address-fiel
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
 import { AdminUsersComponent } from 'src/app/admin-manager/admin-users/admin-users.component';
 import { AffiliateSalesComponent } from 'src/app/store-manager/affiliate-sales/affiliate-sales.component';
-import { AffilliattePaymentsComponent } from 'src/app/store-manager/affilliatte-payments/affilliatte-payments.component';
 import { AgendaCanvasComponent } from 'src/app/events-manager/events/event-agenda/agenda-canvas/agenda-canvas.component';
 import { AgendaGridComponent } from 'src/app/events-manager/events/event-agenda/agenda-grid/agenda-grid.component';
 import { AgendaItemDialogComponent } from 'src/app/events-manager/events/event-agenda/agenda-item-dialog.component';
@@ -227,7 +226,6 @@ const CONSTRUCTIBLE: ComponentRow[] = [
   { name: 'AdminManagerComponent', type: AdminManagerComponent },
   { name: 'AdminUsersComponent', type: AdminUsersComponent },
   { name: 'AffiliateSalesComponent', type: AffiliateSalesComponent },
-  { name: 'AffilliattePaymentsComponent', type: AffilliattePaymentsComponent },
   { name: 'AgendaCanvasComponent', type: AgendaCanvasComponent },
   { name: 'AgendaGridComponent', type: AgendaGridComponent },
   { name: 'AgendaItemDialogComponent', type: AgendaItemDialogComponent },

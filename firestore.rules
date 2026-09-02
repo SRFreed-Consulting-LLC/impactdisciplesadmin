@@ -135,12 +135,10 @@ service cloud.firestore {
       allow read: if isBusinessStaff();
       allow write: if isBusinessStaff();
     }
-    // The sales collection is RETIRED (Campaign Manager v3) - discounts now
-    // live on campaign_offers above. Deny-all so the two dormant documents
-    // left in each project are unreachable rather than quietly public.
-    match /sales/{id} {
-      allow read, write: if false;
-    }
+    // 'sales' had a deny-all block here until 2026-09-01, guarding "the two
+    // dormant documents left in each project". Those documents are gone from
+    // both, so the rule guarded nothing; the default deny at the foot of this
+    // file covers the name if it ever returns.
     match /series/{id} {                    // Store Manager's Product Series -
       allow read: if true;                  // NOT library series (librarySeries)
       allow write: if isBusinessStaff();
@@ -507,10 +505,10 @@ service cloud.firestore {
       allow update: if isAdminRole() || (isOwnStaffDoc() && onlyOwnPrefsChanged());
       allow create, delete: if false;
     }
-    match /user_permissions/{id} {          // legacy per-user grants, loaded
-      allow read: if isStaffAny();          // at sign-in for every role
-      allow write: if isAdminRole();
-    }
+    // 'user_permissions' is gone (2026-09-01). It never existed in either
+    // project, nothing subscribed to the observable built from it, and its
+    // service is deleted - real permissions are ScreenPermission grants on
+    // the admin_users doc above.
     match /customers/{id} {
       allow read, write: if isBusinessStaff();
     }
@@ -548,9 +546,9 @@ service cloud.firestore {
     match /shipping-label-batches/{id} {
       allow read, write: if isBusinessStaff();
     }
-    match /affilliate_payments/{id} {
-      allow read, write: if isBusinessStaff();
-    }
+    // 'affilliate_payments' is gone (2026-09-01). The collection never
+    // existed in either project and nothing could create a record; the panel
+    // that read it showed staff a permanently empty table.
     match /campaigns/{id} {
       allow read, write: if isBusinessStaff();
     }

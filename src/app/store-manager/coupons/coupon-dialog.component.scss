@@ -19,12 +19,9 @@
   margin-top: 16px;
 }
 
+// One panel now, so it takes the row. It shared it 3:2 with a Payments
+// panel until 2026-09-01 - see the template for why that one is gone.
 .affiliate-panels__sales {
-  flex: 3 1 0;
-  min-width: 0;
-}
-
-.affiliate-panels__payments {
-  flex: 2 1 0;
+  flex: 1 1 0;
   min-width: 0;
 }

@@ -1,9 +1,0 @@
-<h3 class="panel-header__title">Affiliate Payments</h3>
-
-<app-data-grid
-  [showHeader]="false"
-  [showFilterRow]="false"
-  [columns]="columns"
-  [rows]="(affiliatePayments$ | async) ?? []"
-  tableClass="payments-table">
-</app-data-grid>

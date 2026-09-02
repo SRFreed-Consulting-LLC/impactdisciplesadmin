@@ -7,9 +7,7 @@ import { Auth } from '@angular/fire/auth';
 import { AuthProvider, browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
   setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut, updatePassword, User, UserCredential } from 'firebase/auth';
 import { BehaviorSubject, Observable, ReplaySubject, fromEventPattern, of } from 'rxjs';
-import { UserPermissionService } from '../services/data/user-permissions.service';
 import { map, mergeMap, share, shareReplay } from 'rxjs/operators';
-import { UserPermission } from '../models/admin/user-permission.model';
 import { AdminUser } from '../models/admin/admin-user.model';
 import { AdminUserService } from '../services/data/admin-user.service';
 import { CookieService } from 'ngx-cookie-service';
@@ -27,7 +25,6 @@ export class FireAuthDao {
   public authSate$ = new BehaviorSubject<boolean>(false);
   public currentUser$: Observable<User>;
   public loggedInUser$: Observable<AdminUser | undefined>;
-  public readonly userPermissions$: Observable<UserPermission[]>;
 
   public currentAgent$ = new BehaviorSubject<AdminUser>(undefined);
 
@@ -36,8 +33,7 @@ export class FireAuthDao {
     public router: Router,
     public ngZone: NgZone,
     public userService: AdminUserService,
-    private cookieService: CookieService,
-    private userPermissionService: UserPermissionService
+    private cookieService: CookieService
   ) {
     this.authSate$.next(this.cookieService.check(ID_TOKEN_COOKIE_NAME));
 
@@ -129,17 +125,16 @@ export class FireAuthDao {
       share({ connector: () => new ReplaySubject(1), resetOnError: true, resetOnComplete: false, resetOnRefCountZero: false })
     );
 
-    this.userPermissions$ = this.loggedInUser$.pipe(
-      mergeMap((agent) => {
-        // Signed out - loggedInUser$ can now legitimately emit undefined
-        // (see its own mergeMap's guard above); nothing to fetch
-        // permissions for.
-        if (!agent) {
-          return of([]);
-        }
-        return this.userPermissionService.getAllByValue('owner', agent.id);
-      })
-    );
+    // `userPermissions$` was built here until 2026-09-01, from a
+    // UserPermissionService reading a `user_permissions` collection.
+    //
+    // NOTHING EVER SUBSCRIBED TO IT, the collection has never existed in
+    // either project, and the service's two questions
+    // (isUserPermittedinCRM / isUserPermittedinAdminApp) were never asked.
+    // It is the shape of an older permission system that was replaced and
+    // not removed - the live one is PermissionService over the nav-config
+    // screen registry - and it made this authentication DAO depend on a
+    // service it did not use.
   }
 
   public signIn(email: string, password: string): Promise<UserCredential> {

@@ -70,7 +70,6 @@ import { FolderPickerDialogComponent } from 'src/app/shared/image-uploader/folde
 import { FormTestSubmitDialogComponent } from 'src/app/data-manager/form-builder/form-test-submit-dialog.component';
 import { getLibraryLanguageOptions } from 'src/app/common/services/data/library/library-language-options.util';
 import { ImageUploaderModule } from 'src/app/shared/image-uploader/image-uploader.module';
-import { IMPACT_APPLICATIONS } from 'src/app/common/lists/impact_applications.enum';
 import { ImpactDisciplesCommonModule } from 'src/app/common/impactdisciples.common.module';
 import { InfiniteScrollDirective } from 'src/app/shared/infinite-scroll.directive';
 import { lessonEditorCanDeactivateGuard } from 'src/app/library-manager/lesson-editor/lesson-editor.guard';
@@ -271,7 +270,6 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'FormTestSubmitDialogComponent', value: FormTestSubmitDialogComponent },
   { name: 'getLibraryLanguageOptions', value: getLibraryLanguageOptions },
   { name: 'ImageUploaderModule', value: ImageUploaderModule },
-  { name: 'IMPACT_APPLICATIONS', value: IMPACT_APPLICATIONS },
   { name: 'ImpactDisciplesCommonModule', value: ImpactDisciplesCommonModule },
   { name: 'InfiniteScrollDirective', value: InfiniteScrollDirective },
   { name: 'lessonEditorCanDeactivateGuard', value: lessonEditorCanDeactivateGuard },
