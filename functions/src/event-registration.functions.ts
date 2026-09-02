@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onRequest} from "firebase-functions/v2/https";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -493,7 +494,7 @@ async function computeSessionCounts(
  * serve time.
  */
 export const onEventRegistrationSessionCounts = onDocumentWritten(
-  "event-registrations/{id}",
+  triggerPath("event-registrations", "{id}"),
   async (event) => {
     const beforeSnap = event.data?.before;
     const afterSnap = event.data?.after;

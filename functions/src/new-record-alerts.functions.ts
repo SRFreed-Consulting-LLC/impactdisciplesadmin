@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {
   onDocumentCreated,
   onDocumentUpdated,
@@ -43,7 +44,10 @@ function registerNewRecordTriggers(
   collectionPath: string,
   countField: string
 ) {
-  const docPath = `${collectionPath}/{id}`;
+  // Through the seam, so the three collections registered below follow
+  // their data if it ever moves under the tenant. This one call covers SIX
+  // deployed triggers - the factory is why they cannot drift apart.
+  const docPath = triggerPath(collectionPath, "{id}");
 
   const onCreate = onDocumentCreated(docPath, async (event) => {
     const snap = event.data;

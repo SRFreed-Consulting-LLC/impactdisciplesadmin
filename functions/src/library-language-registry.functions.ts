@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {onCall} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -45,7 +46,8 @@ async function mergeLocale(
 // language is rare, and a stale entry just offers an empty language, not a
 // leak). rebuildLanguageRegistry (below) is the authoritative recompute.
 export const onTranslationLocaleRegistry = onDocumentWritten(
-  "librarySeries/{s}/books/{b}/units/{u}/lessons/{l}/translations/{t}",
+  triggerPath("librarySeries",
+    "{s}/books/{b}/units/{u}/lessons/{l}/translations/{t}"),
   async (event) => {
     const after = event.data?.after?.exists ?
       event.data.after.data() :

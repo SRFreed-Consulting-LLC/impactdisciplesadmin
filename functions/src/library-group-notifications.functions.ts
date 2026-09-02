@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {
   onDocumentCreated,
   onDocumentWritten,
@@ -54,7 +55,7 @@ async function getGroupForPush(
 
 /** Group chat message -> every approved member except the sender. */
 export const notifyGroupChatMessage = onDocumentCreated(
-  "discussionGroups/{groupId}/chatMessages/{messageId}",
+  triggerPath("discussionGroups", "{groupId}/chatMessages/{messageId}"),
   async (event) => {
     const message = event.data?.data();
     if (!message) {
@@ -91,8 +92,8 @@ export const notifyGroupChatMessage = onDocumentCreated(
  *  email, so: member sent it -> notify the creator; creator sent it ->
  *  notify the member. */
 export const notifyConversationMessage = onDocumentCreated(
-  "discussionGroups/{groupId}/conversations/{otherEmail}" +
-    "/messages/{messageId}",
+  triggerPath("discussionGroups",
+    "{groupId}/conversations/{otherEmail}/messages/{messageId}"),
   async (event) => {
     const message = event.data?.data();
     if (!message) {
@@ -140,7 +141,7 @@ export const notifyConversationMessage = onDocumentCreated(
  * server-side regardless of write ordering.
  */
 export const onGroupMembershipCountChanged = onDocumentWritten(
-  "discussionGroups/{groupId}/members/{email}",
+  triggerPath("discussionGroups", "{groupId}/members/{email}"),
   async (event) => {
     const beforeStatus = event.data?.before.exists ?
       (event.data.before.data()?.status as string | undefined) :
@@ -196,7 +197,7 @@ export const onGroupMembershipCountChanged = onDocumentWritten(
  *  copyGroupMembers clones, and acceptGroupInvite all CREATE docs already
  *  'approved' (a bulk clone must not spam), and deletes are leave/remove. */
 export const notifyJoinRequestActivity = onDocumentWritten(
-  "discussionGroups/{groupId}/members/{email}",
+  triggerPath("discussionGroups", "{groupId}/members/{email}"),
   async (event) => {
     const before = event.data?.before;
     const after = event.data?.after;
@@ -254,7 +255,7 @@ export const notifyJoinRequestActivity = onDocumentWritten(
  *  correct, each group's members get their own group-titled
  *  notification. */
 export const notifyPrayerRequestShared = onDocumentCreated(
-  "discussionGroups/{groupId}/prayerRequests/{requestId}",
+  triggerPath("discussionGroups", "{groupId}/prayerRequests/{requestId}"),
   async (event) => {
     const prayer = event.data?.data();
     if (!prayer) {

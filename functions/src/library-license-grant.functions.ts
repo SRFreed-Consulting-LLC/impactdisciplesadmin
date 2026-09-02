@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions";
 import {isPlausibleEmail} from "./utils/customer-match.functions";
@@ -89,7 +90,7 @@ export function digitalBookGrants(
 // access after a sale.
 export const onPurchaseGrantLibraryLicenses = onDocumentCreated(
   {
-    document: "purchases/{id}",
+    document: triggerPath("purchases", "{id}"),
     retry: true,
   },
   async (event) => {

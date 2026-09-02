@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {getFirestore} from "firebase-admin/firestore";
 import {
@@ -36,7 +37,7 @@ import {
 // from registrations that predate this trigger.
 
 export const onEventRegistrationCustomerUpsert = onDocumentCreated(
-  "event-registrations/{id}",
+  triggerPath("event-registrations", "{id}"),
   async (event) => {
     const data = event.data?.data();
     const email = typeof data?.email === "string" ?

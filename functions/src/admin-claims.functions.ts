@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import {getAuth} from "firebase-admin/auth";
@@ -31,7 +32,7 @@ const VALID_ROLES = new Set([
 ]);
 
 export const onAdminUserRoleSync = onDocumentWritten(
-  "admin_users/{id}",
+  triggerPath("admin_users", "{id}"),
   async (event) => {
     const before = event.data?.before?.exists ?
       event.data.before.data() :

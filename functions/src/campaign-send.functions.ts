@@ -726,6 +726,12 @@ async function finalizeSendingTouches(
 // Guarded on deliveredAt for idempotence across extension retries.
 
 export const onCampaignMailDelivered = onDocumentUpdated(
+  // A LITERAL ON PURPOSE, and the only trigger in the repo that keeps one.
+  // `mail` belongs to the firestore-send-email extension, whose own watch
+  // path is configured in Firebase rather than in this repository - so the
+  // collection cannot move even if we wanted it to, and routing this through
+  // triggerPath() would imply otherwise. tenancy.spec.ts pins `mail` out of
+  // TENANT_COLLECTIONS so the two statements cannot disagree.
   "mail/{id}",
   async (event) => {
     const before = event.data?.before?.data();

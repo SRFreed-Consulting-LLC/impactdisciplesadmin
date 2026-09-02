@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {Timestamp} from "firebase-admin/firestore";
 import {hasPhysicalItem} from "./utils/cart-items.functions";
@@ -33,7 +34,7 @@ import {hasPhysicalItem} from "./utils/cart-items.functions";
 // pickup/hand-delivery override.
 
 export const onPurchaseFulfillmentEligible = onDocumentCreated(
-  "purchases/{id}",
+  triggerPath("purchases", "{id}"),
   async (event) => {
     const snap = event.data;
     const data = snap?.data();

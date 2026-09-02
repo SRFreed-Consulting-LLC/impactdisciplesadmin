@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {getFirestore} from "firebase-admin/firestore";
 import {hasPhysicalItem} from "./utils/cart-items.functions";
@@ -56,7 +57,7 @@ import {
 // customer-dialog.component.ts for the admin-side resolution flow.
 
 export const onPurchaseCustomerUpsert = onDocumentCreated(
-  "purchases/{id}",
+  triggerPath("purchases", "{id}"),
   async (event) => {
     const data = event.data?.data();
     const email = typeof data?.email === "string" ?

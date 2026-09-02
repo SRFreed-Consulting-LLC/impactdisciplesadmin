@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
@@ -120,7 +121,7 @@ export const lookupCoupon = onCall(async (request):
  * the SAME transaction as the total, makes a redelivered event a no-op.
  */
 export const onPurchaseTaxSummary = onDocumentCreated(
-  "purchases/{id}",
+  triggerPath("purchases", "{id}"),
   async (event) => {
     const snap = event.data;
     const data = snap?.data();

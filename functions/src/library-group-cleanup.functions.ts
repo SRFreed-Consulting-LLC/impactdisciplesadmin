@@ -1,3 +1,4 @@
+import {triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentDeleted} from "firebase-functions/v2/firestore";
 import {getFirestore} from "firebase-admin/firestore";
 
@@ -57,7 +58,7 @@ export function shouldDetachLicense(
 }
 
 export const onGroupDeletedCleanup = onDocumentDeleted(
-  "discussionGroups/{groupId}",
+  triggerPath("discussionGroups", "{groupId}"),
   async (event) => {
     const groupId = event.params.groupId;
 
