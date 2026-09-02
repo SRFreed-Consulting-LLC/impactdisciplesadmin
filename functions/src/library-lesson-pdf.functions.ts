@@ -18,22 +18,11 @@ import {
   EmailLessonPdfResult,
 } from "./common/shared/contract/library-callables.types";
 import {mayReadBook} from "./library-access";
+import {exceedsAttachmentLimit} from "./lesson-pdf/limits";
 import {buildLessonDoc} from "./lesson-pdf/lesson-doc";
 import {renderLessonPdf} from "./lesson-pdf/render-pdf";
 
 const db = getFirestore();
-
-/**
- * Ceiling for the attached PDF.
- *
- * The mail doc is a Firestore document, capped at 1MB, and base64 inflates by
- * a third. Real lessons render at 11-15KB, so this is a guard rail rather than
- * a limit anyone should meet; if it ever trips, the fix is to put the file in
- * Cloud Storage and attach a signed URL instead - which is what this used to
- * do, and was dropped because signing needs iam.serviceAccounts.signBlob,
- * a permission the default runtime service account does not hold.
- */
-const MAX_PDF_BYTES = 700 * 1024;
 
 export const emailLessonPdf = onCall(
   // pdfkit plus a lesson's embedded images needs more than the default 256MB,
@@ -98,7 +87,7 @@ export const emailLessonPdf = onCall(
 
     const title = String(found.lesson["title"] ?? "lesson");
     const fileName = `${safeName(title)}.pdf`;
-    if (pdf.length > MAX_PDF_BYTES) {
+    if (exceedsAttachmentLimit(pdf.length)) {
       logger.error("emailLessonPdf too large", {lessonId, bytes: pdf.length});
       throw new HttpsError(
         "resource-exhausted",
