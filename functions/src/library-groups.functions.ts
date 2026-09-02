@@ -151,6 +151,27 @@ export const createGroup = onCall(async (request):
       "This account's library access has been revoked."
     );
   }
+
+  // Whether this patron may START a group at all. The intent is that only
+  // someone who has worked through all four Impact books leads one; until
+  // that data exists every account carries true.
+  //
+  // ABSENT MEANS ALLOWED - only an explicit false withholds it, so a profile
+  // written before this field existed does not lock anyone out of something
+  // they could do yesterday. Read !== false, never === true.
+  //
+  // Checked HERE and not only in the app: the reader hides Start, Clone and
+  // Promote, but a hidden button is not a control - this callable is the only
+  // thing standing between the flag and a group being created.
+  //
+  // Gates CREATION only. Nothing else a leader does with a group they already
+  // run is affected, or a live group could be stranded mid-study.
+  if (profile.canLeadGroups === false) {
+    throw new HttpsError(
+      "permission-denied",
+      "Your account is not set up to start Impact Groups."
+    );
+  }
   const licensed = Array.isArray(profile.licensedBookIds) &&
     profile.licensedBookIds.includes(bookId);
   if (!licensed && profile.internationalUser !== true) {

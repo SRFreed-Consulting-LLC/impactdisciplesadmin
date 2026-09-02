@@ -168,6 +168,10 @@ export const recordMyLogin = onCall(async (request):
       internationalUser: true,
       bookLicenses: [],
       licensedBookIds: [],
+      // Matches every existing account for now. When the four-book completion
+      // data arrives, THIS is the line to revisit - a new signup should then
+      // start false and be granted, not the other way round.
+      canLeadGroups: true,
       createdAt: now,
       updatedAt: now,
     });
@@ -217,7 +221,12 @@ export const createMyReaderProfile = onCall(async (request):
       updatedAt: now,
       ...(location ? {location} : {}),
       ...(isInternational ? {internationalUser: true} : {}),
-      ...(existing.exists ? {} : {bookLicenses: [], licensedBookIds: []}),
+      ...(existing.exists ?
+        {} :
+      // Matches every existing account for now. When the four-book completion
+      // data arrives, THIS is the line to revisit - a new signup should then
+      // start false and be granted, not the other way round.
+        {bookLicenses: [], licensedBookIds: [], canLeadGroups: true}),
     },
     {merge: true}
   );
