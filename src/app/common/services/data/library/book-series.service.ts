@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, collection, doc, getDoc, getDocs } from '@angular/fire/firestore';
 import { BookSeriesModel } from 'src/app/common/models/domain/library/book-series.model';
@@ -23,7 +24,7 @@ export class BookSeriesService {
   constructor(private firestore: Firestore) {}
 
   private collectionRef() {
-    return collection(this.firestore, 'librarySeries');
+    return collection(this.firestore, tenantPath('librarySeries'));
   }
 
   async getAll(): Promise<BookSeriesModel[]> {
@@ -32,7 +33,7 @@ export class BookSeriesService {
   }
 
   async getById(id: string): Promise<BookSeriesModel | undefined> {
-    const snap = await getDoc(doc(this.firestore, 'librarySeries', id));
+    const snap = await getDoc(doc(this.firestore, tenantPath('librarySeries'), id));
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as BookSeriesModel) : undefined;
   }
 }

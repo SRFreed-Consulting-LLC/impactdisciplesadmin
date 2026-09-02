@@ -113,7 +113,18 @@ function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "common") continue;
+      // SKIP BY PATH, NOT BY NAME. This skipped any directory called
+      // "common", meaning to skip the shared submodule at src/common - and
+      // silently skipped `src/app/common` too, which is where FirebaseDAO
+      // and EVERY entity service live. The check was blind to the heart of
+      // the data layer for four waves; FormSubmissionService declares
+      // `this.table = 'form_submissions'` in there and was never once
+      // reported. The same one-word skip cost a dead-file sweep its answer
+      // in an earlier session - it reported 0 orphans with 6 in the tree.
+      const rel = path.relative(WORKSPACE, full);
+      if (entry.name === "node_modules") continue;
+      if (/[\\/]src[\\/]common([\\/]|$)/.test(rel) &&
+        !/queries/.test(rel)) continue;
       walk(full, out);
     } else if (/\.(ts|js)$/.test(entry.name) && !/\.spec\./.test(entry.name)) {
       out.push(full);
@@ -171,8 +182,18 @@ test("no app names a moved collection by string literal", () => {
           new RegExp(`(collection|doc|collectionGroup)\\([^)]*${q}`),
           // db.collection("config")
           new RegExp(`\\.(collection|doc)\\(\\s*${q}`),
-          // this.table = 'config'  (the BaseService declaration)
-          new RegExp(`\\btable\\s*[:=]\\s*${q}`),
+          // NOT `this.table = 'config'`. That WAS a pattern here and it was
+          // wrong: a BaseService declaring its table is the sanctioned way to
+          // name a collection, because FirebaseDAO.path() puts it through
+          // tenantPath() on every read and write. The declaration is the
+          // seam's INPUT, not a bypass of it.
+          //
+          // It never fired only because the walker was skipping
+          // `src/app/common` - so the day that skip was fixed, 36 correct
+          // services reported themselves as offenders. Two bugs cancelling
+          // out is not the same as no bugs: with the skip fixed and this
+          // pattern kept, the check would have been unusable and switched
+          // off, taking the 13 REAL findings underneath with it.
         ];
         if (patterns.some((p) => p.test(src))) {
           offenders.push(`${path.relative(WORKSPACE, file)} -> ${name}`);

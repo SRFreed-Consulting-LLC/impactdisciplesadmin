@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import {
@@ -68,7 +69,7 @@ export class LibraryUserService {
    *  listener down once nothing is subscribed, rather than leaking it for
    *  the rest of the session. */
   private readonly libraryUsers$ = (
-    collectionData(collection(this.firestore, 'libraryUsers'), {
+    collectionData(collection(this.firestore, tenantPath('libraryUsers')), {
       idField: 'id',
     }) as Observable<LibraryUser[]>
   ).pipe(
@@ -104,7 +105,7 @@ export class LibraryUserService {
     }
     constraints.push(limit(pageSize));
 
-    const snap = await getDocs(query(collection(this.firestore, 'libraryUsers'), ...constraints));
+    const snap = await getDocs(query(collection(this.firestore, tenantPath('libraryUsers')), ...constraints));
     const items = snap.docs.map((d) => ({ ...(d.data() as LibraryUser), id: d.id }));
     return {
       items,
@@ -114,7 +115,7 @@ export class LibraryUserService {
   }
 
   getLibraryUser(email: string): Observable<LibraryUser | undefined> {
-    const ref = doc(this.firestore, 'libraryUsers', email.trim().toLowerCase());
+    const ref = doc(this.firestore, tenantPath('libraryUsers'), email.trim().toLowerCase());
     return docData(ref, { idField: 'id' }) as Observable<LibraryUser | undefined>;
   }
 
@@ -123,7 +124,7 @@ export class LibraryUserService {
    *  history list" safety-net pattern as this app's own activity log -
    *  broadcasts are infrequent in practice. */
   getAdminMessages(): Observable<AdminMessage[]> {
-    const ref = collection(this.firestore, 'adminMessages');
+    const ref = collection(this.firestore, tenantPath('adminMessages'));
     return collectionData(query(ref, orderBy('sentAt', 'desc'), limit(500)), {
       idField: 'id',
     }) as Observable<AdminMessage[]>;

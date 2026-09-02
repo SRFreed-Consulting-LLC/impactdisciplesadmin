@@ -210,6 +210,24 @@ async function main() {
 
   // ---- drop: remove the top-level originals, once verified
   if (drop) {
+    // THE DESTINATION IS ALLOWED TO BE AHEAD, in exactly one way.
+    // move-site-storage.js re-parents the images and rewrites the URLs that
+    // name them, and it only ever rewrites the LIVE copy - so a healthy
+    // migration ends with some documents differing and this guard, doing its
+    // job, refusing. On production that was one photoUrl on one team member.
+    //
+    // A --force would answer that by switching the check off for every case,
+    // including the one it exists to catch. This normalises away the storage
+    // prefix and token and compares everything else strictly, so a document
+    // that diverged for any OTHER reason still stops the drop.
+    const lenient = process.argv.includes("--ignore-storage-prefix");
+    // Key-sorted, like same() above, so field ORDER never reads as a
+    // difference - this file has no toPortable and does not need one.
+    const normalised = (v) =>
+      JSON.stringify(v, Object.keys(v || {}).sort())
+        .replace(/(sites|tenants)%2F[^%]+%2F/g, "")
+        .replace(/token=[0-9a-f-]{36}/g, "token=X");
+    let forgiven = 0;
     let removed = 0;
     for (const name of TENANT_COLLECTIONS) {
       const nodes = await walkTree(
@@ -235,6 +253,11 @@ async function main() {
           // once its children are gone.
           if (!n.snap.exists) continue;
           if (!snaps[j].exists || !same(n.snap.data(), snaps[j].data())) {
+            if (lenient && snaps[j].exists &&
+              normalised(n.snap.data()) === normalised(snaps[j].data())) {
+              forgiven++;
+              continue;
+            }
             console.log(`  REFUSING ${name}: ${n.src.path} is missing or ` +
               "differs under the tenant. Run --verify.");
             process.exitCode = 1;
@@ -265,6 +288,10 @@ async function main() {
         "verified present under the tenant.");
       console.log("Dry run. Re-run with --execute to delete.");
       return;
+    }
+    if (forgiven) {
+      console.log(`  ${forgiven} document(s) differed ONLY by the storage ` +
+        "prefix - the destination was ahead, as expected after a re-parent.");
     }
     console.log(`\n  ${removed} original document(s) removed.`);
     return;

@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable, signal } from '@angular/core';
 import { Firestore, doc, runTransaction } from '@angular/fire/firestore';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -197,7 +198,7 @@ export class LibraryPermissionService {
     changes: Partial<Pick<LibraryNodePermission, 'view' | 'add' | 'edit' | 'delete'>>,
     context: { targetName: string; nodeTitle: string }
   ): Promise<void> {
-    const ref = doc(this.firestore, 'admin_users', docId);
+    const ref = doc(this.firestore, tenantPath('admin_users'), docId);
     let updated!: LibraryNodePermission;
 
     await runTransaction(this.firestore, async (transaction) => {

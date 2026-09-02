@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, addDoc, collection, collectionData, deleteDoc, doc, limit, orderBy, query } from '@angular/fire/firestore';
 import { Observable, firstValueFrom } from 'rxjs';
@@ -51,7 +52,7 @@ export class LibraryActivityLogService {
       detail: context.detail ?? null,
       timestamp: Date.now()
     };
-    await addDoc(collection(this.firestore, 'activityLog'), entry);
+    await addDoc(collection(this.firestore, tenantPath('activityLog')), entry);
   }
 
   /** All events across every user, most recent first - backs the Activity
@@ -61,7 +62,7 @@ export class LibraryActivityLogService {
   getAllActivity(max = 500): Observable<LibraryActivityLogEntry[]> {
     return collectionData(
       query(
-        collection(this.firestore, 'activityLog'),
+        collection(this.firestore, tenantPath('activityLog')),
         orderBy('timestamp', 'desc'),
         limit(max),
       ),
@@ -72,7 +73,7 @@ export class LibraryActivityLogService {
   /** Admin-only (see firestore.rules) - the Activity Log screen's per-row
    *  and bulk delete. */
   deleteEntry(id: string): Promise<void> {
-    return deleteDoc(doc(this.firestore, 'activityLog', id));
+    return deleteDoc(doc(this.firestore, tenantPath('activityLog'), id));
   }
 
   async deleteEntries(ids: string[]): Promise<void> {

@@ -84,6 +84,9 @@ const TENANT_COLLECTIONS = [
   "libraryUsers",
   "discussionGroups",
   "librarySeries",
+  // Wave 4 - production-only and live
+  "email_lists",
+  "form_submissions",
 ];
 
 /**

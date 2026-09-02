@@ -54,9 +54,57 @@ function timestampForDirName() {
  * @param {string} outDir Directory to write <collectionName>.json into.
  * @return {Promise<number>} Number of docs exported.
  */
+/**
+ * Every document under a collection INCLUDING its descendants, each keyed by
+ * its full path.
+ *
+ * THIS EXPORT WAS FLAT UNTIL 2026-09-02, and the gap was invisible because
+ * the counts looked right: `libraryUsers` reported 96 documents and there
+ * genuinely are 96 - it just also has 289 more beneath them. A patron's
+ * lesson submissions, their highlights, their progress markers; a group's
+ * members, chat and prayer requests; the whole books/units/lessons/
+ * translations tree under `librarySeries`. None of it was in the file
+ * anybody would reach for in an emergency.
+ *
+ * Keyed by PATH rather than by id, because an id alone no longer says where
+ * a document belongs - `submissions/lesson-3` exists under every patron who
+ * ever opened lesson 3. A backup that cannot be restored to the right place
+ * is not a backup.
+ *
+ * listDocuments(), not get(): a query returns documents that have FIELDS, and
+ * a parent with none but with children beneath it is invisible to one and
+ * returned by the other. Firestore makes that shape whenever a parent is
+ * deleted and its children are not - production had five such documents.
+ *
+ * @param {object} col A collection reference.
+ * @param {Array<object>} out Accumulator.
+ * @return {Promise<Array<object>>} out
+ */
+async function collectTree(col, out = []) {
+  const refs = await col.listDocuments();
+  const LANES = 40;
+  for (let i = 0; i < refs.length; i += LANES) {
+    const slice = refs.slice(i, i + LANES);
+    const [snaps, subLists] = await Promise.all([
+      Promise.all(slice.map((r) => r.get())),
+      Promise.all(slice.map((r) => r.listCollections())),
+    ]);
+    for (let j = 0; j < slice.length; j++) {
+      if (snaps[j].exists) {
+        out.push({
+          path: slice[j].path,
+          id: slice[j].id,
+          data: toPortable(snaps[j].data()),
+        });
+      }
+      for (const sub of subLists[j]) await collectTree(sub, out);
+    }
+  }
+  return out;
+}
+
 async function exportCollection(db, collectionName, outDir) {
-  const snap = await db.collection(collectionName).get();
-  const docs = snap.docs.map((d) => ({id: d.id, data: toPortable(d.data())}));
+  const docs = await collectTree(db.collection(collectionName));
   fs.writeFileSync(
     path.join(outDir, `${collectionName}.json`),
     JSON.stringify(docs, null, 2)

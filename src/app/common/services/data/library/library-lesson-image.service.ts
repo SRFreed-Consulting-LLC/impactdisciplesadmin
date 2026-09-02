@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -30,7 +31,7 @@ export class LibraryLessonImageService {
 
   async uploadImage(dataUri: string): Promise<string> {
     const id = libraryHashText(dataUri);
-    const ref = doc(this.firestore, 'lessonImages', id);
+    const ref = doc(this.firestore, tenantPath('lessonImages'), id);
     const existing = await getDoc(ref);
     if (!existing.exists()) {
       const contentType = /^data:([^;]+);/.exec(dataUri)?.[1] ?? 'application/octet-stream';
@@ -53,7 +54,7 @@ export class LibraryLessonImageService {
    *  exist. For callers working directly with extracted translation strings
    *  (not a Form.io schema) - see LessonTranslationComponent. */
   async getImageDataUri(id: string): Promise<string | undefined> {
-    const snap = await getDoc(doc(this.firestore, 'lessonImages', id));
+    const snap = await getDoc(doc(this.firestore, tenantPath('lessonImages'), id));
     return snap.exists() ? ((snap.data()['dataUri'] as string) ?? undefined) : undefined;
   }
 

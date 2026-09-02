@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
@@ -42,7 +43,7 @@ export class LibraryTitleTranslationService {
   async getKnownLocales(): Promise<{ locale: string; localeLabel: string }[]> {
     const fs = this.firestore;
     const [fromTitles, fromContent] = await Promise.all([
-      getDocs(collection(fs, 'titleTranslations')),
+      getDocs(collection(fs, tenantPath('titleTranslations'))),
       getDocs(collectionGroup(fs, 'translations')),
     ]);
     const byLocale = new Map<string, string>();
@@ -65,7 +66,7 @@ export class LibraryTitleTranslationService {
     title: string,
     nodeTitle: string
   ): Promise<void> {
-    const ref = doc(this.firestore, 'titleTranslations', titleTranslationId(nodeType, nodeId, locale));
+    const ref = doc(this.firestore, tenantPath('titleTranslations'), titleTranslationId(nodeType, nodeId, locale));
     const existing = await getDoc(ref);
     const now = Date.now();
     const uid = await this.uid();
@@ -93,7 +94,7 @@ export class LibraryTitleTranslationService {
     localeLabel: string,
     nodeTitle: string
   ): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'titleTranslations', titleTranslationId(nodeType, nodeId, locale)));
+    await deleteDoc(doc(this.firestore, tenantPath('titleTranslations'), titleTranslationId(nodeType, nodeId, locale)));
     await this.activityLog.log('translation_deleted', {
       targetName: nodeTitle,
       detail: `Title translation (${localeLabel})`

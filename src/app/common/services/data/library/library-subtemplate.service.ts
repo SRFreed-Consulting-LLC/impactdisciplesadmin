@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, addDoc, collection, deleteDoc, doc, updateDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
@@ -36,7 +37,7 @@ export class LibrarySubtemplateService extends BaseService<LibrarySubtemplateMod
   }
 
   async createSubtemplate(title: string, type: LibrarySubtemplateType): Promise<string> {
-    const docRef = await addDoc(collection(this.firestore, 'subtemplates'), {
+    const docRef = await addDoc(collection(this.firestore, tenantPath('subtemplates')), {
       title,
       type,
       formSchema: null,
@@ -60,7 +61,7 @@ export class LibrarySubtemplateService extends BaseService<LibrarySubtemplateMod
     type: LibrarySubtemplateType,
     title: string
   ): Promise<void> {
-    const ref = doc(this.firestore, 'subtemplates', subtemplateId);
+    const ref = doc(this.firestore, tenantPath('subtemplates'), subtemplateId);
     await updateDoc(ref, { formSchema, type, title, updatedAt: Date.now(), updatedBy: await this.uid() });
     await this.activityLog.log('template_updated', {
       targetName: title,
@@ -73,7 +74,7 @@ export class LibrarySubtemplateService extends BaseService<LibrarySubtemplateMod
     title: string,
     type: LibrarySubtemplateType
   ): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'subtemplates', subtemplateId));
+    await deleteDoc(doc(this.firestore, tenantPath('subtemplates'), subtemplateId));
     await this.activityLog.log('template_deleted', {
       targetName: title,
       detail: `Subtemplate (${type})`

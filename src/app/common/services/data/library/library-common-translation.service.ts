@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, collectionGroup, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
@@ -114,7 +115,7 @@ export class LibraryCommonTranslationService {
     localeLabel: string,
     translatedText: string
   ): Promise<void> {
-    const ref = doc(this.firestore, 'commonTranslations', commonTranslationId(originalText, locale));
+    const ref = doc(this.firestore, tenantPath('commonTranslations'), commonTranslationId(originalText, locale));
     const existing = await getDoc(ref);
     const now = Date.now();
     const uid = await this.uid();
@@ -136,7 +137,7 @@ export class LibraryCommonTranslationService {
   }
 
   async deleteCommonTranslation(originalText: string, locale: string, localeLabel: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'commonTranslations', commonTranslationId(originalText, locale)));
+    await deleteDoc(doc(this.firestore, tenantPath('commonTranslations'), commonTranslationId(originalText, locale)));
     await this.activityLog.log('translation_deleted', {
       targetName: originalText.slice(0, 60),
       detail: `Common translation (${localeLabel})`

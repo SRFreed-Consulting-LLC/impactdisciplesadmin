@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, addDoc, collection, deleteDoc, doc, updateDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
@@ -37,7 +38,7 @@ export class LibraryLessonTemplateService extends BaseService<LibraryLessonTempl
   }
 
   async createLessonTemplate(title: string): Promise<string> {
-    const docRef = await addDoc(collection(this.firestore, 'lessonTemplates'), {
+    const docRef = await addDoc(collection(this.firestore, tenantPath('lessonTemplates')), {
       title,
       headerSubtemplateId: null,
       layoutSubtemplateId: null,
@@ -58,13 +59,13 @@ export class LibraryLessonTemplateService extends BaseService<LibraryLessonTempl
     slots: LibraryLessonTemplateSlots,
     title: string
   ): Promise<void> {
-    const ref = doc(this.firestore, 'lessonTemplates', lessonTemplateId);
+    const ref = doc(this.firestore, tenantPath('lessonTemplates'), lessonTemplateId);
     await updateDoc(ref, { ...slots, title, updatedAt: Date.now(), updatedBy: await this.uid() });
     await this.activityLog.log('template_updated', { targetName: title, detail: 'Lesson Template' });
   }
 
   async deleteLessonTemplate(lessonTemplateId: string, title: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'lessonTemplates', lessonTemplateId));
+    await deleteDoc(doc(this.firestore, tenantPath('lessonTemplates'), lessonTemplateId));
     await this.activityLog.log('template_deleted', { targetName: title, detail: 'Lesson Template' });
   }
 }

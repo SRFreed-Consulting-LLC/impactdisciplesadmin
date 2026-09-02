@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable, signal } from '@angular/core';
 import { DocumentReference, Firestore, doc, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
 import { Functions, httpsCallable } from '@angular/fire/functions';
@@ -120,7 +121,7 @@ export class LibraryImportBookService {
     this.setProgress('writing', 'Creating series and book…', 0, lessonsTotal);
     const seriesId = await this.ensureSeries(request, code, stamp);
     const bookId = `${code}-book`;
-    const bookRef = doc(this.firestore, 'librarySeries', seriesId, 'books', bookId);
+    const bookRef = doc(this.firestore, tenantPath('librarySeries'), seriesId, 'books', bookId);
     await this.guardedWrite(bookRef, stamp, {
       title: plan.book.title,
       description: plan.book.description ?? '',
@@ -210,7 +211,7 @@ export class LibraryImportBookService {
       return request.series.seriesId;
     }
     const seriesId = `${code}-series`;
-    const seriesRef = doc(this.firestore, 'librarySeries', seriesId);
+    const seriesRef = doc(this.firestore, tenantPath('librarySeries'), seriesId);
     await this.guardedWrite(seriesRef, stamp, {
       title: request.series.newSeriesTitle ?? plannedSeriesFallback(request),
       description: request.series.newSeriesDescription ?? '',

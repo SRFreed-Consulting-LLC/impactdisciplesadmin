@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import { Firestore, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
@@ -33,7 +34,7 @@ export class LibraryBulkDiscountTierService {
 
   async getTiers(): Promise<BulkDiscountTier[]> {
     const snap = await getDocs(
-      query(collection(this.firestore, 'bulkDiscountTiers'), orderBy('numberOfBooks')),
+      query(collection(this.firestore, tenantPath('bulkDiscountTiers')), orderBy('numberOfBooks')),
     );
     return snap.docs.map((d) => d.data() as BulkDiscountTier);
   }
@@ -41,7 +42,7 @@ export class LibraryBulkDiscountTierService {
   /** Rejects if a tier for this numberOfBooks already exists - use
    *  updateTier to change an existing row's percentOff instead. */
   async createTier(numberOfBooks: number, percentOff: number): Promise<void> {
-    const ref = doc(this.firestore, 'bulkDiscountTiers', String(numberOfBooks));
+    const ref = doc(this.firestore, tenantPath('bulkDiscountTiers'), String(numberOfBooks));
     if ((await getDoc(ref)).exists()) {
       throw new Error(`A discount tier for ${numberOfBooks} books already exists.`);
     }
@@ -55,7 +56,7 @@ export class LibraryBulkDiscountTierService {
   /** numberOfBooks can't change here - the doc id is derived from it, so
    *  changing the count means deleting this row and creating a new one. */
   async updateTier(numberOfBooks: number, percentOff: number): Promise<void> {
-    const ref = doc(this.firestore, 'bulkDiscountTiers', String(numberOfBooks));
+    const ref = doc(this.firestore, tenantPath('bulkDiscountTiers'), String(numberOfBooks));
     await setDoc(ref, { numberOfBooks, percentOff, updatedAt: Date.now(), updatedBy: await this.uid() });
     await this.activityLog.log('config_tier_updated', {
       targetName: `${numberOfBooks} books`,
@@ -64,7 +65,7 @@ export class LibraryBulkDiscountTierService {
   }
 
   async deleteTier(numberOfBooks: number): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'bulkDiscountTiers', String(numberOfBooks)));
+    await deleteDoc(doc(this.firestore, tenantPath('bulkDiscountTiers'), String(numberOfBooks)));
     await this.activityLog.log('config_tier_deleted', { targetName: `${numberOfBooks} books` });
   }
 }

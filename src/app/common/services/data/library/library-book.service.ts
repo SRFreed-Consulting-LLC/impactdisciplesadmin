@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import {
   DocumentReference,
@@ -79,7 +80,7 @@ export class LibraryBookService {
     published: boolean,
     title: string
   ): Promise<void> {
-    await updateDoc(doc(this.firestore, 'librarySeries', seriesId, 'books', bookId), {
+    await updateDoc(doc(this.firestore, tenantPath('librarySeries'), seriesId, 'books', bookId), {
       published,
       updatedAt: Date.now(),
       updatedBy: await this.uid()
@@ -162,7 +163,7 @@ export class LibraryBookService {
   }
 
   getBySeries(seriesId: string): Promise<LibraryBookModel[]> {
-    return getDocs(collection(this.firestore, 'librarySeries', seriesId, 'books')).then((snap) =>
+    return getDocs(collection(this.firestore, tenantPath('librarySeries'), seriesId, 'books')).then((snap) =>
       snap.docs.map((d) => ({ id: d.id, seriesId, ...d.data() }) as LibraryBookModel),
     );
   }
@@ -171,7 +172,7 @@ export class LibraryBookService {
    *  resolved from a lesson/unit's own hydrated ancestor ids) - no
    *  collectionGroup scan needed, unlike the bare getById above. */
   async getByIdInSeries(seriesId: string, bookId: string): Promise<LibraryBookModel | undefined> {
-    const snap = await getDoc(doc(this.firestore, 'librarySeries', seriesId, 'books', bookId));
+    const snap = await getDoc(doc(this.firestore, tenantPath('librarySeries'), seriesId, 'books', bookId));
     return snap.exists() ? ({ id: snap.id, seriesId, ...snap.data() } as LibraryBookModel) : undefined;
   }
 }
