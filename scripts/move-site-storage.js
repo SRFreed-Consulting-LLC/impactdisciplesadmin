@@ -160,13 +160,27 @@ async function main() {
     process.exit(1);
   }
 
-  const devDb = getFirestoreFor(resolveProjectId("dev"));
+  // WHICH ENVIRONMENT'S DOCUMENTS. The objects always live in the PROD
+  // bucket - that was the deliberate choice, one copy of every image and no
+  // rewrite at cutover - but the DOCUMENTS that name them exist separately
+  // in each environment and each set has to be repointed on its own.
+  //
+  // This defaulted to dev and had no way to say otherwise, which was fine
+  // until production's own forty image URLs needed moving and the only
+  // honest answer was "the script cannot do that yet".
+  const env = (process.argv.find((a) => a.startsWith("--project=")) || "")
+    .split("=")[1] || "dev";
+  if (!["dev", "prod"].includes(env)) {
+    console.error(`Unknown --project=${env}. Use dev or prod.`);
+    process.exit(1);
+  }
+  const db = getFirestoreFor(resolveProjectId(env));
   getFirestoreFor(resolveProjectId("prod"));
   const prodBucket = getStorage(getApp(`${PROD}::(default)`))
     .bucket(`${PROD}.appspot.com`);
   const devBucket = getStorage(getApp(`${DEV}::(default)`))
     .bucket(`${DEV}.appspot.com`);
-  const site = devDb.collection("tenants").doc(TENANT_ID);
+  const site = db.collection("tenants").doc(TENANT_ID);
 
   // ---- what the site actually names
   const referenced = new Set();
@@ -315,7 +329,7 @@ async function main() {
       return [v, 0];
     };
 
-    console.log(`${execute ? "REPOINTING" : "dry run"} dev's site documents\n`);
+    console.log(`${execute ? "REPOINTING" : "dry run"} ${env}'s site documents\n`);
     let total = 0;
     for (const c of COLS) {
       const snap = await site.collection(c).get();
