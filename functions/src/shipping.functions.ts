@@ -9,6 +9,7 @@ import {
   sanitizeRateRequest,
   toShipEngineAddress,
   buildLabelShipment,
+  phoneDigits,
 } from "./utils/shipping-request";
 
 type Dict = Record<string, unknown>;
@@ -20,16 +21,38 @@ interface BuiltShipment {
 }
 
 /**
+ * A shipment, or the reason there isn't one.
+ *
+ * THE REASON IS THE POINT. Every refusal used to collapse into the single
+ * message "Purchase is not shippable.", which tells an operator holding a
+ * perfectly good order nothing about what to do next - and the failure
+ * they actually hit was worse still, a 502 that named no cause at all.
+ * Each branch below says which of the four preconditions is missing.
+ *
+ * Exactly one of the two is set. Written as optional fields rather than a
+ * discriminated union on purpose: this project compiles with
+ * `strict: false`, under which TypeScript will not narrow a union by a
+ * boolean literal, so the tidier shape does not actually typecheck here.
+ */
+interface ShipmentResult {
+  /** The shipment, when there is one. */
+  built?: BuiltShipment;
+  /** Why there is not, in words an operator can act on. */
+  message?: string;
+}
+
+/**
  * Builds the shipment for a purchase's label out of SERVER-held values:
- * the purchase's own shipping address, the org address from `config`, and
- * weights re-read from the product docs. Nothing comes from the request
- * body except the purchase id (finding S3).
+ * the purchase's own shipping address, the org address from `config`,
+ * weights re-read from the product docs, and the service level from the
+ * rate stored at checkout. Nothing comes from the request body except the
+ * purchase id (finding S3).
  * @param {string} purchaseId The purchase to ship.
- * @return {Promise<BuiltShipment|undefined>} The shipment, or undefined.
+ * @return {Promise<ShipmentResult>} The shipment, or why there is none.
  */
 async function buildShipmentForPurchase(
   purchaseId: string
-): Promise<BuiltShipment | undefined> {
+): Promise<ShipmentResult> {
   const db = getFirestore();
   const [purchaseSnap, configSnap] = await Promise.all([
     db.collection(PURCHASES).doc(purchaseId).get(),
@@ -37,7 +60,9 @@ async function buildShipmentForPurchase(
   ]);
 
   const purchase = purchaseSnap.data();
-  if (!purchaseSnap.exists || !purchase) return undefined;
+  if (!purchaseSnap.exists || !purchase) {
+    return {message: "That order no longer exists."};
+  }
   const config = configSnap.docs[0]?.data() ?? {};
 
   const items = Array.isArray(purchase.cartItems) ? purchase.cartItems : [];
@@ -72,7 +97,20 @@ async function buildShipmentForPurchase(
 
   const name = [purchase.firstName, purchase.lastName]
     .filter((p) => typeof p === "string" && p.trim()).join(" ");
-  const phone = (purchase.phone as Dict | undefined)?.number;
+
+  // The customer's own phone, falling back to the ORG's. UPS refuses a
+  // label whose ShipTo phone is under ten characters, and a fifth of these
+  // orders carry no phone at all - so the choice is our number on the
+  // label or no label. Ours means a delivery exception rings the office
+  // rather than the customer, which is the better of the two.
+  const phone = phoneDigits((purchase.phone as Dict | undefined)?.number) ??
+    phoneDigits(config.phone);
+
+  // Service level and billing account come from the rate the shopper was
+  // quoted at checkout. Neither names an address, so neither can redirect
+  // postage - the whole of what finding S3 was about. See
+  // buildLabelShipment for why the vendor cannot be called without them.
+  const rate = purchase.shippingRateId as Dict | undefined;
 
   const shipment = buildLabelShipment({
     shipTo: toShipEngineAddress(purchase.shippingAddress, name, phone),
@@ -80,13 +118,41 @@ async function buildShipmentForPurchase(
       config.address, "Impact Disciples", config.phone
     ),
     totalWeightOunces,
+    serviceCode: rate?.serviceCode,
+    carrierId: rate?.carrierId,
   });
-  if (!shipment) return undefined;
+
+  if (!shipment) {
+    // Work out which precondition failed, so the operator is told what to
+    // fix rather than that something is wrong.
+    if (!toShipEngineAddress(purchase.shippingAddress, name, phone)) {
+      return {
+        message: "This order has no street address or ZIP to ship to.",
+      };
+    }
+    if (!toShipEngineAddress(config.address, "Impact Disciples")) {
+      return {
+        message: "The organization's ship-from address is not configured.",
+      };
+    }
+    if (!(totalWeightOunces > 0)) {
+      return {
+        message: "Nothing on this order has a shipping weight.",
+      };
+    }
+    return {
+      message: "This order has no shipping service on it - it was placed " +
+        "without a shipping quote. Buy the label from Tools > Shipping " +
+        "Labels instead.",
+    };
+  }
 
   const quoted = Number(purchase.shippingRate);
   return {
-    shipment,
-    quotedShipping: Number.isFinite(quoted) ? quoted : 0,
+    built: {
+      shipment,
+      quotedShipping: Number.isFinite(quoted) ? quoted : 0,
+    },
   };
 }
 
@@ -226,14 +292,15 @@ exports.get_shipping_label = onRequest(
         if (purchaseId) {
           // S3 path: build the shipment from what the SERVER has stored
           // against this purchase. The caller's rate id is not used.
-          built = await buildShipmentForPurchase(purchaseId);
-          if (!built) {
+          const outcome = await buildShipmentForPurchase(purchaseId);
+          if (!outcome.built) {
             response.status(400).send({
               code: 400,
-              error: {message: "Purchase is not shippable."},
+              error: {message: outcome.message},
             });
             return;
           }
+          built = outcome.built;
           result = await shipengine.createLabelFromShipmentDetails({
             shipment: built.shipment,
             ...labelOptions,
@@ -260,9 +327,22 @@ exports.get_shipping_label = onRequest(
         }
       } catch (err) {
         console.error("get_shipping_label failed", err);
+        // The vendor's own words, for a caller who is verified staff.
+        // Unlike get_shipping_rates - which is anonymous, and whose
+        // redaction is load-bearing (S4: it was a rate-id oracle) - the
+        // person reading this is the one who has to act on it, and
+        // ShipEngine's messages are the actionable kind: "Address appears
+        // to be a PO Box", "PhoneNumber must be at least 10 characters".
+        // Swallowing them is what made a fixable order look like an
+        // outage. Capped, and only ever the message.
+        const vendor = err instanceof Error ? err.message.slice(0, 300) : "";
         response.status(502).send({
           code: 502,
-          error: {message: "Unable to purchase a shipping label."},
+          error: {
+            message: vendor ?
+              `The carrier refused this label: ${vendor}` :
+              "Unable to purchase a shipping label.",
+          },
         });
         return;
       }

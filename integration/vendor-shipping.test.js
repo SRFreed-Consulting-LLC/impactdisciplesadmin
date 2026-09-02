@@ -241,8 +241,17 @@ const seedShippablePurchase = async (db, overrides = {}) => {
     cartItems: [{id: "product-s3", orderQuantity: 2, isEvent: false}],
     // What the shopper was charged at checkout.
     shippingRate: 4.25,
-    // The planted rate id. It must never be used.
-    shippingRateId: {rateId: "se-rate-attacker", shippingAmount: {amount: 1}},
+    // The planted rate id. It must never be used. serviceCode and carrierId
+    // beside it MUST be - they are what the vendor buys the label with, and
+    // real purchases carry them (401 of 401 with a stored rate on prod).
+    // The fixture lacked them until 2026-09-02, which is half the reason
+    // the missing-carrier bug survived a passing suite.
+    shippingRateId: {
+      rateId: "se-rate-attacker",
+      shippingAmount: {amount: 1},
+      serviceCode: "ups_ground",
+      carrierId: "se-1047625",
+    },
     ...overrides,
   });
 };
@@ -288,6 +297,10 @@ test("an attacker's destination on the purchase cannot redirect postage",
       shippingRateId: {
         rateId: "se-rate-attacker",
         shipTo: {postalCode: ATTACKER_ZIP},
+        // The service level is read from here; the address next to it is
+        // not, and that is exactly what this test proves.
+        serviceCode: "ups_ground",
+        carrierId: "se-1047625",
       },
     }, {merge: true});
 
@@ -349,6 +362,123 @@ test("an unknown purchase id buys nothing", async () => {
   );
   assert.equal(res.status, 400);
   assert.equal((await fakeVendors.log("shipengine")).length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// REGRESSION, 2026-09-02: the label with no carrier
+// ---------------------------------------------------------------------------
+//
+// Between the S3 deploy (2026-08-28 21:50 UTC) and this fix, EVERY Print
+// Label click on production failed. The shipment carried no carrier_id and
+// no service_code - ShipEngine 400s without them - and the operator saw
+// only "Unable to purchase a shipping label."
+//
+// It survived a green suite because both of the things that should have
+// caught it were blind: the SDK client is typed `any` (it is lazily
+// require()d), so the vendor's own required-field types never applied, and
+// scripts/fake-vendors.js answered 200 to any body at all. The fake is
+// strict now, which is what gives the first test below its teeth.
+
+test("the label carries the carrier and service level from the stored rate",
+  async () => {
+    const db = getDb();
+    await seedShippablePurchase(db);
+
+    const res = await callHttp(
+      "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+      {Authorization: `Bearer ${staffToken}`}
+    );
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+
+    const sent = (await fakeVendors.log("shipengine"))
+      .find((c) => c.op === "label-from-shipment");
+    // Without these two the vendor refuses the buy. This is the assertion
+    // whose absence let the bug ship.
+    assert.equal(sent.serviceCode, "ups_ground");
+    assert.equal(sent.carrierId, "se-1047625");
+    // No ship date: the SDK drops the field even though its own types call
+    // it required, and ShipEngine defaults it to today. See the note in
+    // shipping-request.ts.
+    assert.equal(sent.shipDate, undefined);
+  });
+
+test("an order with no shipping service is refused with a reason, and " +
+  "buys nothing", async () => {
+  const db = getDb();
+  // 163 truly-physical orders on prod are in this state: placed without a
+  // shipping quote, so there is no service level to buy. They were never
+  // labellable from this screen - the point is that the operator is now
+  // told WHY, and pointed at the screen that can do it.
+  await seedShippablePurchase(db, {
+    shippingRateId: {rateId: "se-rate-attacker"},
+  });
+
+  const res = await callHttp(
+    "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+
+  assert.equal(res.status, 400);
+  assert.match(res.body.error.message, /no shipping service/i);
+  assert.match(res.body.error.message, /Shipping Labels/);
+  assert.equal((await fakeVendors.log("shipengine")).length, 0,
+    "the vendor was called for a shipment it cannot buy");
+});
+
+test("each refusal names its own cause rather than one generic message",
+  async () => {
+    const db = getDb();
+    const ask = async () => {
+      const res = await callHttp(
+        "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+        {Authorization: `Bearer ${staffToken}`}
+      );
+      assert.equal(res.status, 400);
+      return res.body.error.message;
+    };
+
+    // No address to ship to.
+    await seedShippablePurchase(db, {shippingAddress: {city: "Newnan"}});
+    assert.match(await ask(), /address or ZIP/i);
+
+    // Nothing on the order weighs anything.
+    await seedShippablePurchase(db, {
+      cartItems: [{id: "product-weightless", orderQuantity: 1}],
+    });
+    assert.match(await ask(), /weight/i);
+
+    // These are the messages an operator reads at 9pm with a parcel in
+    // hand. "Purchase is not shippable." was true of all three.
+    assert.equal((await fakeVendors.log("shipengine")).length, 0);
+  });
+
+test("the customer's phone reaches the carrier, and the org's stands in " +
+  "when there is none", async () => {
+  const db = getDb();
+
+  await seedShippablePurchase(db);
+  await callHttp(
+    "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  let sent = (await fakeVendors.log("shipengine"))
+    .find((c) => c.op === "label-from-shipment");
+  // The seeded customer phone is 555-0199 - EIGHT digits. UPS refuses a
+  // ShipTo phone under ten characters, so it is dropped rather than sent,
+  // and the org's number stands in. A short phone used to cost the whole
+  // label: one of dev's four stranded orders died on exactly that.
+  assert.ok(sent.phone === undefined || sent.phone.length >= 10,
+    `an undialable phone reached the carrier: ${sent.phone}`);
+
+  await fakeVendors.reset();
+  await seedShippablePurchase(db, {phone: {number: "(770) 555-0142"}});
+  await callHttp(
+    "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  sent = (await fakeVendors.log("shipengine"))
+    .find((c) => c.op === "label-from-shipment");
+  assert.equal(sent.phone, "7705550142");
 });
 
 test("the label is bought against the RATE the caller chose, with the " +

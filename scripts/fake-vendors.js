@@ -600,8 +600,37 @@ function shipEngineLabelFromShipment(req, res, body) {
     postalCode: shipTo.postal_code,
     addressLine1: shipTo.address_line1,
     name: shipTo.name,
+    phone: shipTo.phone,
+    serviceCode: shipment.service_code,
+    carrierId: shipment.carrier_id,
+    shipDate: shipment.ship_date,
     weight,
   });
+
+  // REQUIRED BY THE REAL VENDOR, so required here.
+  //
+  // This fake answered 200 to ANY body until 2026-09-02, and that is how a
+  // label with no service_code and no carrier_id shipped to production and
+  // broke every Print Label click for five days while the whole suite
+  // stayed green. A fake that accepts more than the vendor does is not a
+  // cheaper vendor, it is a worse one: it certifies exactly the requests
+  // that will fail. ShipEngine's own shape for the refusal, so the code
+  // path under test is the one that runs in production.
+  const missing = [];
+  if (!shipment.service_code) missing.push("shipment.service_code");
+  if (!shipment.carrier_id) missing.push("shipment.carrier_id");
+  if (missing.length) {
+    return send(res, 400, {
+      request_id: "se-fake-request",
+      errors: missing.map((field) => ({
+        error_source: "shipengine",
+        error_type: "validation",
+        error_code: "field_value_required",
+        message: `A value is required for ${field}.`,
+      })),
+    });
+  }
+
   return shipEngineLabel(req, res, "(from-shipment-details)", body);
 }
 

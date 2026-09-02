@@ -264,7 +264,23 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   // Fulfillment workflow) as part of the same write - see cart.model.ts's
   // own comment on that field for why it's a separate concern from this
   // method's primary job of getting the label downloaded.
+  //
+  // A FAILED ATTEMPT IS NOT A LABEL. Until 2026-09-02 a failure was assigned
+  // to item.shippingLabel just like a success, which had two consequences,
+  // both live: every later click took the "already has a label" branch and
+  // re-printed the stale message without retrying, and because update() is a
+  // whole-document setDoc of `item`, the very next workflow action (Received,
+  // Packaged) persisted the error blob onto the purchase - after which the
+  // order could never be labelled again from any screen. Four purchases on
+  // dev are in exactly that state. A failure now leaves the field alone, and
+  // a stored failure is treated as no label so the retry can happen.
   async getShippingLabel(item: CheckoutForm): Promise<void> {
+    // A stored error (from before that fix, or written by an older client)
+    // must not block a retry - it is a record of a failure, not a label.
+    if (item.shippingLabel?.code || item.shippingLabel?.error) {
+      item.shippingLabel = undefined;
+    }
+
     if (!item.shippingLabel) {
       const idToken = await this.authService.dao.auth.currentUser?.getIdToken();
 
@@ -288,8 +304,10 @@ export class PurchasesService extends BaseService<CheckoutForm>{
       // error payload down the download path and blow up on an undefined
       // labelDownload.
       if (!request.ok || response.code >= 400) {
+        // Deliberately NOT assigned to item.shippingLabel - see the note on
+        // this method. The order stays retryable, and nothing writes a
+        // failure onto the purchase document.
         this.snackbar.error(response.error?.message ?? 'Failed to buy a shipping label.');
-        item.shippingLabel = response;
       } else {
         item.shippingLabel = response;
         // The function has already written the drift to the purchase.
@@ -308,10 +326,13 @@ export class PurchasesService extends BaseService<CheckoutForm>{
           this.downloadShippingLabel(saved!.shippingLabel.labelDownload.pdf);
         });
       }
-    } else if (item.shippingLabel?.code) {
-      this.snackbar.error(item.shippingLabel.error.message);
-    } else {
+    } else if (item.shippingLabel?.labelDownload?.pdf) {
       this.downloadShippingLabel(item.shippingLabel.labelDownload.pdf);
+    } else {
+      // A label with no download link is not something to re-download and
+      // not something to retry silently - say so rather than throwing on an
+      // undefined pdf, which is what this branch used to do.
+      this.snackbar.error('This order has a label on file with no download link.');
     }
   }
 

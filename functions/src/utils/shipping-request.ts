@@ -170,13 +170,34 @@ export function sanitizeRateRequest(body: unknown): Dict | null {
 //
 // The fix is not to validate the rate id but to stop using it. The label is
 // bought from SHIPMENT DETAILS we build here out of the purchase's own
-// stored address and its products' own weights. The only thing carried over
-// from the stored rate is service_code, which names a service level and
-// carries no address, so trusting it costs nothing.
+// stored address and its products' own weights. The only things carried over
+// from the stored rate are service_code and carrier_id, which name a service
+// level and our own billing account and carry no address, so trusting them
+// costs nothing. (Carrying them was always the intent; until 2026-09-02 this
+// comment described it and the code did not do it - see buildLabelShipment.)
 //
 // Chosen over re-quoting because it is the same ONE vendor call the old
 // code made - re-quoting would have doubled rate requests per shipped
 // order for no additional safety (owner's call, 2026-08-28).
+
+/**
+ * Normalises a phone into the digits a carrier will accept, or undefined.
+ *
+ * TWO REASONS THIS IS NOT JUST str(). The org phone is stored in `config`
+ * as a NUMBER (6788549322), and str() rejects anything that is not a
+ * string - so the ship-from phone was being silently dropped on every
+ * label. And UPS rejects a label whose ShipTo phone is under ten
+ * alphanumeric characters, which is a vendor 400 the operator sees as a
+ * generic failure; a value too short to be dialled is worth dropping here
+ * so the rest of the label still buys.
+ * @param {unknown} v A phone as stored - string, number or absent.
+ * @return {string|undefined} Ten-plus digits, or undefined.
+ */
+export function phoneDigits(v: unknown): string | undefined {
+  if (typeof v !== "string" && typeof v !== "number") return undefined;
+  const digits = String(v).replace(/\D/g, "");
+  return digits.length >= 10 ? digits.slice(0, MAX_STR) : undefined;
+}
 
 /**
  * Maps an Address (address1/city/state/zip) onto ShipEngine's field
@@ -208,7 +229,7 @@ export function toShipEngineAddress(
   const line2 = str(addr.address2);
   const city = str(addr.city);
   const state = str(addr.state);
-  const tel = str(phone);
+  const tel = phoneDigits(phone);
   if (line2) out.addressLine2 = line2;
   if (city) out.cityLocality = city;
   if (state) out.stateProvince = state;
@@ -216,19 +237,47 @@ export function toShipEngineAddress(
   return out;
 }
 
+// NO SHIP DATE IS SENT, AND ONE CANNOT BE.
+//
+// The SDK's own Shipment type declares `shipDate: string` as REQUIRED, but
+// its formatParams() does not map the field at all - it is dropped between
+// the call and the wire. ShipEngine defaults ship_date to today when it is
+// absent, which is what we want anyway: the rate on the purchase was quoted
+// when the shopper checked out, possibly days before anyone presses Print,
+// and a carrier refuses a ship date in the past.
+//
+// Setting it here would look like it was being sent and would not be - the
+// exact shape of the bug this file was just fixed for. Left off, and
+// written down instead.
+
 /**
  * Builds the shipment a label is bought from, entirely out of values the
  * SERVER read back from Firestore.
+ *
+ * WHY carrierId AND serviceCode ARE REQUIRED HERE. ShipEngine's
+ * POST /v1/labels answers 400 without them - they are what decides who
+ * carries the parcel and at what service level, and there is no default.
+ * Between 2026-08-28 and 2026-09-02 this function omitted both: the SDK
+ * client is typed `any` (it is lazily require()d, see shipping.functions),
+ * so nothing caught it at compile time, the fake vendor returned 200 for
+ * any body so nothing caught it in test, and EVERY label bought from the
+ * Purchases workflow failed with a generic "Unable to purchase a shipping
+ * label." Refusing here, before the vendor is called, is what turns that
+ * back into a message that names the cause.
  * @param {object} input Server-sourced pieces of the shipment.
  * @param {Dict|undefined} input.shipTo Recipient, already mapped.
  * @param {Dict|undefined} input.shipFrom Origin, already mapped.
  * @param {number} input.totalWeightOunces Recomputed order weight.
+ * @param {unknown} input.serviceCode Carrier service, e.g. "ups_ground".
+ * @param {unknown} input.carrierId The ShipEngine carrier account billed.
  * @return {Dict|null} A shipment for createLabelFromShipmentDetails.
  */
 export function buildLabelShipment(input: {
   shipTo: Dict | undefined;
   shipFrom: Dict | undefined;
   totalWeightOunces: number;
+  serviceCode?: unknown;
+  carrierId?: unknown;
 }): Dict | null {
   const {shipTo, shipFrom, totalWeightOunces} = input;
   if (!shipTo || !shipFrom) return null;
@@ -237,8 +286,14 @@ export function buildLabelShipment(input: {
   // buying a label for it and finding out at the counter.
   if (weight === undefined || weight <= 0) return null;
 
+  const serviceCode = str(input.serviceCode);
+  const carrierId = str(input.carrierId);
+  if (!serviceCode || !carrierId) return null;
+
   return {
     validateAddress: "no_validation",
+    carrierId,
+    serviceCode,
     shipTo,
     shipFrom,
     packages: [{weight: {value: weight, unit: "ounce"}}],

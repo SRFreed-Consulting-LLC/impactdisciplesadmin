@@ -83,6 +83,17 @@ const ALLOWED = [
   path.join("scripts", "migrate-highlights-from-backup"),
   path.join("scripts", "migrate-library-content-dev-to-prod"),
   path.join("scripts", "rename-prod-users-to-admin-users"),
+
+  // STRADDLES THE MOVE ON PURPOSE, and unlike the one-offs above it is
+  // meant to be run again. dev keeps `purchases` under the tenant and prod
+  // is still flat, so this repair tool probes BOTH paths and says which one
+  // it found documents in. Seaming it would make it read an empty
+  // collection on prod and report "nothing to do" - the exact silent
+  // success this whole check exists to prevent.
+  //
+  // Remove this entry once prod is migrated and the flat probe is dead
+  // code.
+  path.join("scripts", "clear-failed-shipping-labels"),
 ];
 
 /**

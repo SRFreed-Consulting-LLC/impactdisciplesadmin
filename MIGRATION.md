@@ -8,6 +8,42 @@ every call site.
 
 ---
 
+## CLEANUP: failed shipping labels persisted onto purchases (2026-09-02)
+
+`purchase.shippingLabel` is meant to hold a bought label. The admin app used
+to assign the FAILURE response to the same field, and because
+`PurchasesService.update()` is a whole-document `setDoc` of the in-memory
+order, the operator's next workflow action wrote that error blob onto the
+document - after which the order read as "already has a label" everywhere and
+could never be labelled again.
+
+Fixed in the client (a stored failure is now cleared and retried), so nothing
+is stuck. The wrong data is still there:
+
+```
+node scripts/clear-failed-shipping-labels.js --project=dev   # then --execute
+node scripts/clear-failed-shipping-labels.js --project=prod  # then --execute
+```
+
+**dev: 4 documents. prod: 5** - one of them, `jbM8QXMRX5PgO4Too1dK`, is an
+order stranded by the missing-carrier bug itself (status `received`, 502
+"Unable to purchase a shipping label"). Idempotent; a second run finds none.
+
+The script probes BOTH the tenant path and the flat one and prints which it
+used, because dev is migrated and prod is not - and it is allow-listed in
+`tenancy-unseamed-access.test.js` for exactly that reason. Remove the flat
+probe, and that allow-list entry, once prod is under the tenant.
+
+**AND THE REASON THAT MATTERS MORE:** prod's Cloud Functions are still the
+2026-08-28 build, from before the tenancy seam. Anything built from
+`development` today resolves `purchases` to
+`tenants/impactdisciples.com/purchases`, which **prod has not got** - so a
+functions deploy or an admin hosting deploy to prod right now points every
+read at an empty collection. Prod cannot take a deploy from this branch until
+its data is migrated. See the tenancy waves in the log.
+
+---
+
 ## DEPLOY RUNBOOK: the site's frame moves into Firestore (2026-08-29/30)
 
 **Nothing below has been done on production.** Dev is fully seeded and its

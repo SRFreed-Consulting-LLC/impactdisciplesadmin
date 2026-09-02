@@ -15,9 +15,11 @@ describe('PurchasesService', () => {
   let templates: { html?: string; subject?: string }[];
   let templatesById: Record<string, { html?: string; subject?: string } | null>;
   let sentEmails: { to: string; subject: string; html: string }[];
+  let snackbarErrors: string[];
 
   beforeEach(() => {
     updates = [];
+    snackbarErrors = [];
     loggedInUser = { firstName: 'Ada', lastName: 'Admin', email: 'ada@test.local' };
     templates = [];
     templatesById = {};
@@ -29,8 +31,14 @@ describe('PurchasesService', () => {
         return Promise.resolve(value);
       },
     };
-    const authService = { getLoggedInUser: () => loggedInUser };
-    const snackbar = {};
+    const authService = {
+      getLoggedInUser: () => loggedInUser,
+      // getShippingLabel sends a real Firebase ID token - the Cloud
+      // Function's staff gate is the only thing standing between a caller
+      // and the org's postage balance.
+      dao: { auth: { currentUser: { getIdToken: () => Promise.resolve('id-token') } } },
+    };
+    const snackbar = { error: (message: string) => snackbarErrors.push(message) };
     const emailService = {
       sendHtmlEmail: (to: string, subject: string, html: string) => {
         sentEmails.push({ to, subject, html });
@@ -208,6 +216,95 @@ describe('PurchasesService', () => {
       expect(service.getFulfillmentStatusLabel('awaiting_shipping')).toBe('Awaiting Shipping');
       expect(service.getFulfillmentStatusLabel('shipped_via_amazon')).toBe('Shipped via Amazon');
       expect(service.getFulfillmentStatusLabel(undefined)).toBe('Unknown');
+    });
+  });
+
+  // A failed label attempt is a failure, not a label. Until 2026-09-02 it was
+  // assigned to item.shippingLabel exactly like a success, and both halves of
+  // that hurt: the next click re-printed the stale message instead of
+  // retrying, and because update() is a whole-document setDoc of `item`, the
+  // next workflow action persisted the error blob onto the purchase - after
+  // which the order could never be labelled from ANY screen. Four purchases
+  // on dev reached that state before anyone noticed.
+  //
+  // All four entry points (dashboard workflow dialog, Fulfillment, order
+  // details, Purchases list) delegate here, so these are the only tests that
+  // need to exist for the behaviour.
+  describe('getShippingLabel', () => {
+    let fetchCalls: number;
+
+    const respondWith = (status: number, body: unknown) => {
+      fetchCalls = 0;
+      spyOn(window, 'fetch').and.callFake(() => {
+        fetchCalls++;
+        return Promise.resolve({ ok: status < 400, json: () => Promise.resolve(body) } as Response);
+      });
+    };
+
+    beforeEach(() => {
+      fetchCalls = 0;
+      // A successful buy ends in an anchor click to download the PDF. Left
+      // alone that is a real navigation attempt from inside the test runner.
+      spyOn(HTMLAnchorElement.prototype, 'click');
+    });
+
+    it('a failure is NOT written onto the order, and the reason is shown', async () => {
+      respondWith(400, { code: 400, error: { message: 'This order has no shipping service on it.' } });
+      const item = order({ fulfillmentStatus: 'received' });
+
+      await service.getShippingLabel(item);
+
+      expect(snackbarErrors).toEqual(['This order has no shipping service on it.']);
+      // The whole regression in one assertion.
+      expect(item.shippingLabel).toBeUndefined();
+      // Nothing was saved, so the failure cannot be persisted by a later
+      // whole-document write, and the status did not advance.
+      expect(updates.length).toBe(0);
+      expect(item.fulfillmentStatus).toBe('received');
+    });
+
+    it('a second click RETRIES rather than replaying the first failure', async () => {
+      respondWith(502, { code: 502, error: { message: 'The carrier refused this label: PO Box.' } });
+      const item = order({ fulfillmentStatus: 'received' });
+
+      await service.getShippingLabel(item);
+      await service.getShippingLabel(item);
+
+      expect(fetchCalls).toBe(2);
+      expect(snackbarErrors.length).toBe(2);
+    });
+
+    it('an error persisted by an OLDER client does not block the retry', async () => {
+      // The four stranded orders on dev look exactly like this.
+      respondWith(200, { labelDownload: { pdf: 'https://example.test/l.pdf' }, trackingNumber: 'T1' });
+      const item = order({
+        fulfillmentStatus: 'received',
+        shippingLabel: { code: 502, error: { message: 'Unable to purchase a shipping label.' } },
+      } as Partial<CheckoutForm>);
+
+      await service.getShippingLabel(item);
+
+      expect(fetchCalls).toBe(1);
+      expect(item.shippingLabel['trackingNumber']).toBe('T1');
+      expect(item.fulfillmentStatus).toBe('shipping_label_printed');
+      expect(updates.length).toBe(1);
+    });
+
+    it('a success advances the workflow and records the cost drift', async () => {
+      respondWith(200, {
+        labelDownload: { pdf: 'https://example.test/l.pdf' },
+        shippingCostDrift: { quoted: 4.25, actual: 9.42, drift: 5.17 },
+      });
+      const item = order({ fulfillmentStatus: 'received' });
+
+      await service.getShippingLabel(item);
+
+      expect(item.fulfillmentStatus).toBe('shipping_label_printed');
+      const written = updates[0].value as CheckoutForm & { shippingCostDrift?: { drift: number } };
+      // Carried onto the in-memory copy BEFORE the setDoc, or the write
+      // would clobber the record the server just made.
+      expect(written.shippingCostDrift!.drift).toBe(5.17);
+      expect(snackbarErrors).toEqual([]);
     });
   });
 });

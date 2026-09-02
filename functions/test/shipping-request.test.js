@@ -16,7 +16,15 @@ const {
   sanitizeRateRequest,
   toShipEngineAddress,
   buildLabelShipment,
+  phoneDigits,
 } = require("../lib/utils/shipping-request");
+
+// The vendor SDK's own request formatter. Used by exactly one test, which
+// pins the fact that it silently drops fields our shipment does not send -
+// including two the SDK's TYPES declare as required.
+const {
+  formatParams,
+} = require("shipengine/cjs/create-label-from-shipment-details/format-params");
 
 /**
  * The body both storefronts actually POST.
@@ -230,8 +238,14 @@ test("toShipEngineAddress defaults country and name sensibly", () => {
 
 const ADDR = {addressLine1: "1 A St", postalCode: "30263", name: "X"};
 
+// The two fields the vendor cannot buy a label without. Every shipment
+// below carries them, because a shipment without them is not a shipment -
+// see the regression test at the bottom of this file.
+const SERVICE = {serviceCode: "ups_ground", carrierId: "se-1047625"};
+
 test("buildLabelShipment assembles a shipment from server values", () => {
   const out = buildLabelShipment({
+    ...SERVICE,
     shipTo: {...ADDR, postalCode: "30263"},
     shipFrom: {...ADDR, postalCode: "30277"},
     totalWeightOunces: 24,
@@ -243,7 +257,7 @@ test("buildLabelShipment assembles a shipment from server values", () => {
 });
 
 test("buildLabelShipment refuses what cannot be shipped", () => {
-  const ok = {shipTo: ADDR, shipFrom: ADDR, totalWeightOunces: 10};
+  const ok = {...SERVICE, shipTo: ADDR, shipFrom: ADDR, totalWeightOunces: 10};
   assert.ok(buildLabelShipment(ok));
 
   assert.equal(buildLabelShipment({...ok, shipTo: undefined}), null);
@@ -257,8 +271,79 @@ test("buildLabelShipment refuses what cannot be shipped", () => {
 
 test("buildLabelShipment carries no rate id - that is the point", () => {
   const out = buildLabelShipment({
-    shipTo: ADDR, shipFrom: ADDR, totalWeightOunces: 8,
+    ...SERVICE, shipTo: ADDR, shipFrom: ADDR, totalWeightOunces: 8,
   });
-  const raw = JSON.stringify(out);
-  assert.ok(!raw.includes("rate"), "a rate reference survived into the buy");
+  // service_code and carrier_id name a service level and our own billing
+  // account. Neither is the rate id, and neither carries an address - which
+  // is what makes carrying them over safe.
+  assert.equal(out.serviceCode, "ups_ground");
+  assert.equal(out.carrierId, "se-1047625");
+  assert.ok(!JSON.stringify(out).includes("rateId"),
+    "a rate reference survived into the buy");
 });
+
+// ---------------------------------------------------------------------------
+// REGRESSION, 2026-09-02: the label with no carrier
+// ---------------------------------------------------------------------------
+//
+// Shipped on 2026-08-28 and broke every Print Label click on production for
+// five days. ShipEngine's POST /v1/labels needs carrier_id and service_code;
+// this builder omitted both. Nothing caught it: the SDK client is typed
+// `any`, so the vendor's own required-field types never applied, and the
+// fake vendor answered 200 to any body. The operator saw only "Unable to
+// purchase a shipping label."
+//
+// Refusing locally is the point - it costs no vendor round-trip and it lets
+// the caller say WHICH precondition is missing.
+
+test("buildLabelShipment refuses a shipment with no carrier or service",
+  () => {
+    const ok = {
+      ...SERVICE, shipTo: ADDR, shipFrom: ADDR, totalWeightOunces: 10,
+    };
+    assert.equal(buildLabelShipment({...ok, serviceCode: undefined}), null);
+    assert.equal(buildLabelShipment({...ok, carrierId: undefined}), null);
+    assert.equal(buildLabelShipment({...ok, serviceCode: ""}), null);
+    assert.equal(buildLabelShipment({...ok, carrierId: "   "}), null);
+    // A number is not a service code. str() rejects it, and silently
+    // sending one is how this failed the first time.
+    assert.equal(buildLabelShipment({...ok, serviceCode: 7}), null);
+  });
+
+test("no ship date is set, because the SDK would drop it anyway", () => {
+  const out = buildLabelShipment({
+    ...SERVICE, shipTo: ADDR, shipFrom: ADDR, totalWeightOunces: 8,
+  });
+  // The SDK's Shipment type declares shipDate as REQUIRED and its
+  // formatParams() does not map the field at all - it never reaches the
+  // wire. ShipEngine defaults it to today, which is what we want: the rate
+  // was quoted when the shopper checked out, possibly days earlier, and a
+  // carrier refuses a ship date in the past. Setting it here would look
+  // like it was being sent and would not be, which is precisely the shape
+  // of the bug this file was fixed for.
+  assert.equal(out.shipDate, undefined);
+  assert.equal(formatParams({shipment: out}).shipment.ship_date, undefined,
+    "the SDK started mapping shipDate - send one deliberately now");
+});
+
+// ---------------------------------------------------------------------------
+// Phone numbers
+// ---------------------------------------------------------------------------
+
+test("phoneDigits keeps what a carrier can dial and drops what it cannot",
+  () => {
+    assert.equal(phoneDigits("(678) 854-9322"), "6788549322");
+    // The org phone is stored in `config` as a NUMBER. str() rejected it,
+    // so the ship-from phone was dropped from every label ever bought.
+    assert.equal(phoneDigits(6788549322), "6788549322");
+    assert.equal(phoneDigits("+1 678-854-9322"), "16788549322");
+
+    // UPS refuses a ShipTo phone under ten characters - better to omit the
+    // field than to have the vendor reject the whole label for it.
+    assert.equal(phoneDigits("555-0199"), undefined);
+    assert.equal(phoneDigits("n/a"), undefined);
+    assert.equal(phoneDigits(""), undefined);
+    assert.equal(phoneDigits(undefined), undefined);
+    assert.equal(phoneDigits(null), undefined);
+    assert.equal(phoneDigits({number: "6788549322"}), undefined);
+  });
