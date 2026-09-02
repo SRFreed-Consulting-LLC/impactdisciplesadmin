@@ -22,7 +22,8 @@ test("htmlToBlocks: paragraphs become separate blocks", () => {
 });
 
 test("htmlToBlocks: bold and italic survive as run styles", () => {
-  const blocks = htmlToBlocks("<p>a <strong>bold</strong> <em>slanted</em></p>");
+  const blocks =
+    htmlToBlocks("<p>a <strong>bold</strong> <em>slanted</em></p>");
   const bold = blocks[0].runs.find((r) => r.text.includes("bold"));
   const italic = blocks[0].runs.find((r) => r.text.includes("slanted"));
   assert.ok(bold.bold, "strong should mark its run bold");
