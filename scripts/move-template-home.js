@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Moves one mail_template out of the System Templates list by setting its
 // kind to the SCREEN THAT OWNS IT - for a template that now has an editor
 // beside the button that sends it.
@@ -68,7 +69,7 @@ async function main() {
   }
 
   const db = getFirestoreFor(projectId);
-  const snap = await db.collection("mail_templates").where("name", "==", name).get();
+  const snap = await tenantCollection(db, "mail_templates").where("name", "==", name).get();
   if (snap.empty) throw new Error(`No template named "${name}"`);
   if (snap.size > 1) throw new Error(`${snap.size} templates named "${name}" - resolve the duplicate first`);
 

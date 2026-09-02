@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Read-only. Sizes the damage from the createGroup `locationType` bug
 // before we decide whether a backfill is worth writing.
 //
@@ -77,7 +78,7 @@ async function main() {
   const projectId = resolveProjectId(args.project);
   const db = getFirestoreFor(projectId);
 
-  const snap = await db.collection("discussionGroups").get();
+  const snap = await tenantCollection(db, "discussionGroups").get();
   const groups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const total = groups.length;
 

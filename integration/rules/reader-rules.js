@@ -28,6 +28,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { tenantPath } = require('../../scripts/lib/tenancy');
+
+/** A slash-joined path with its first segment through the tenancy seam.
+ *  See firestore-rules.test.js for why every path here goes through it. */
+const p = (s) => {
+  const i = s.indexOf('/');
+  return i === -1 ? tenantPath(s) : tenantPath(s.slice(0, i)) + s.slice(i);
+};
 const {
   initializeTestEnvironment,
   assertSucceeds,
@@ -116,20 +124,20 @@ async function seedLibrary() {
     await setDoc(doc(db, LESSON), { title: 'Lesson 1' });
     await setDoc(doc(db, TRANSLATION), { locale: 'fr', text: 'secret full text' });
     // Licensed patron.
-    await setDoc(doc(db, 'libraryUsers/licensed@example.com'), {
+    await setDoc(doc(db, p('libraryUsers/licensed@example.com')), {
       licensedBookIds: ['BOOK_A'],
     });
     // Unlicensed patron (has a profile, but no license to BOOK_A).
-    await setDoc(doc(db, 'libraryUsers/nolicense@example.com'), {
+    await setDoc(doc(db, p('libraryUsers/nolicense@example.com')), {
       licensedBookIds: ['SOME_OTHER_BOOK'],
     });
     // International patron - all-book access, no explicit license.
-    await setDoc(doc(db, 'libraryUsers/intl@example.com'), {
+    await setDoc(doc(db, p('libraryUsers/intl@example.com')), {
       licensedBookIds: [],
       internationalUser: true,
     });
     // Revoked patron - HAS the license but access is revoked.
-    await setDoc(doc(db, 'libraryUsers/revoked@example.com'), {
+    await setDoc(doc(db, p('libraryUsers/revoked@example.com')), {
       licensedBookIds: ['BOOK_A'],
       revoked: true,
     });
@@ -194,14 +202,14 @@ async function main() {
   // ---- libraryUsers profile: read-scope + write lockdown ----------------
   describe('libraryUsers profile - owner read, writes are functions-only');
   await it('the owner may read their own profile', async () => {
-    await assertSucceeds(getDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com')));
+    await assertSucceeds(getDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com'))));
   });
   await it('a different patron may NOT read someone else\'s profile', async () => {
-    await assertFails(getDoc(doc(patron('nolicense@example.com'), 'libraryUsers/licensed@example.com')));
+    await assertFails(getDoc(doc(patron('nolicense@example.com'), p('libraryUsers/licensed@example.com'))));
   });
   await it('NO client may write a profile (self-license-grant lockdown)', async () => {
     await assertFails(
-      setDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com'), {
+      setDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com')), {
         licensedBookIds: ['BOOK_A', 'BOOK_STOLEN'],
       }),
     );
@@ -211,14 +219,14 @@ async function main() {
   describe('Owner study data - submissions subcollection');
   await it('the owner may write their own submission', async () => {
     await assertSucceeds(
-      setDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com/submissions/L1'), {
+      setDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com/submissions/L1')), {
         answers: { q1: 'a' },
       }),
     );
   });
   await it('another patron may NOT write into someone else\'s submissions', async () => {
     await assertFails(
-      setDoc(doc(patron('nolicense@example.com'), 'libraryUsers/licensed@example.com/submissions/L1'), {
+      setDoc(doc(patron('nolicense@example.com'), p('libraryUsers/licensed@example.com/submissions/L1')), {
         answers: { q1: 'hijack' },
       }),
     );
@@ -227,51 +235,51 @@ async function main() {
   // ---- Inbox messages: read-flip + delete-read-only ---------------------
   describe('Inbox messages - constrained owner mutations');
   await seed(async (db) => {
-    await setDoc(doc(db, 'libraryUsers/licensed@example.com/messages/M_unread'), {
+    await setDoc(doc(db, p('libraryUsers/licensed@example.com/messages/M_unread')), {
       text: 'hi', read: false,
     });
-    await setDoc(doc(db, 'libraryUsers/licensed@example.com/messages/M_read'), {
+    await setDoc(doc(db, p('libraryUsers/licensed@example.com/messages/M_read')), {
       text: 'hi', read: true,
     });
   });
   await it('the owner may flip an unread message to read', async () => {
     await assertSucceeds(
-      updateDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com/messages/M_unread'), {
+      updateDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com/messages/M_unread')), {
         read: true,
       }),
     );
   });
   await it('the owner may NOT edit message content', async () => {
     await assertFails(
-      updateDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com/messages/M_read'), {
+      updateDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com/messages/M_read')), {
         text: 'tampered',
       }),
     );
   });
   await it('the owner may delete a READ message but not an UNREAD one', async () => {
     await assertFails(
-      deleteDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com/messages/M_unread2')),
+      deleteDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com/messages/M_unread2'))),
     );
     // seed a fresh unread to be sure delete is denied on unread
     await seed(async (db) =>
-      setDoc(doc(db, 'libraryUsers/licensed@example.com/messages/M_unread2'), { text: 'x', read: false }),
+      setDoc(doc(db, p('libraryUsers/licensed@example.com/messages/M_unread2')), { text: 'x', read: false }),
     );
     await assertFails(
-      deleteDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com/messages/M_unread2')),
+      deleteDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com/messages/M_unread2'))),
     );
     await assertSucceeds(
-      deleteDoc(doc(patron('licensed@example.com'), 'libraryUsers/licensed@example.com/messages/M_read')),
+      deleteDoc(doc(patron('licensed@example.com'), p('libraryUsers/licensed@example.com/messages/M_read'))),
     );
   });
 
   // ---- Discussion group content: membership gating ----------------------
   describe('Discussion groups - membership-gated content + DM push-hole');
   await seed(async (db) => {
-    await setDoc(doc(db, 'discussionGroups/G1'), {
+    await setDoc(doc(db, p('discussionGroups/G1')), {
       creatorEmail: 'leader@example.com',
       status: 'open',
     });
-    await setDoc(doc(db, 'discussionGroups/G1/members/member@example.com'), {
+    await setDoc(doc(db, p('discussionGroups/G1/members/member@example.com')), {
       email: 'member@example.com',
       status: 'approved',
     });
@@ -279,7 +287,7 @@ async function main() {
 
   await it('an approved member may post a chat message as themselves', async () => {
     await assertSucceeds(
-      setDoc(doc(patron('member@example.com'), 'discussionGroups/G1/chatMessages/c1'), {
+      setDoc(doc(patron('member@example.com'), p('discussionGroups/G1/chatMessages/c1')), {
         senderEmail: 'member@example.com',
         text: 'hello group',
       }),
@@ -287,73 +295,73 @@ async function main() {
   });
   await it('a chat message over the 4000-char cap is rejected', async () => {
     await assertFails(
-      setDoc(doc(patron('member@example.com'), 'discussionGroups/G1/chatMessages/c2'), {
+      setDoc(doc(patron('member@example.com'), p('discussionGroups/G1/chatMessages/c2')), {
         senderEmail: 'member@example.com',
         text: 'x'.repeat(4000),
       }),
     );
   });
   await it('a non-member may NOT read group chat (private pastoral content)', async () => {
-    await assertFails(getDoc(doc(patron('outsider@example.com'), 'discussionGroups/G1/chatMessages/c1')));
+    await assertFails(getDoc(doc(patron('outsider@example.com'), p('discussionGroups/G1/chatMessages/c1'))));
   });
   await it('the group creator may open a 1:1 conversation with a member', async () => {
     await assertSucceeds(
-      setDoc(doc(patron('leader@example.com'), 'discussionGroups/G1/conversations/member@example.com'), {
+      setDoc(doc(patron('leader@example.com'), p('discussionGroups/G1/conversations/member@example.com')), {
         lastMessageAt: 1,
       }),
     );
   });
   await it('a random patron may NOT open a conversation to push at an arbitrary user (the closed hole)', async () => {
     await assertFails(
-      setDoc(doc(patron('attacker@example.com'), 'discussionGroups/G1/conversations/victim@example.com'), {
+      setDoc(doc(patron('attacker@example.com'), p('discussionGroups/G1/conversations/victim@example.com')), {
         lastMessageAt: 1,
       }),
     );
   });
   await it('a third party may NOT read a conversation they are not part of', async () => {
     await assertFails(
-      getDoc(doc(patron('outsider@example.com'), 'discussionGroups/G1/conversations/member@example.com')),
+      getDoc(doc(patron('outsider@example.com'), p('discussionGroups/G1/conversations/member@example.com'))),
     );
   });
 
   // ---- License / invite enumeration lockdown ----------------------------
   describe('groupLicenses / groupInvites - owner-scoped reads, no client writes');
   await seed(async (db) => {
-    await setDoc(doc(db, 'groupLicenses/GL1'), {
+    await setDoc(doc(db, p('groupLicenses/GL1')), {
       leaderEmail: 'leader@example.com',
       assignedToEmail: 'assignee@example.com',
     });
-    await setDoc(doc(db, 'groupInvites/GI1'), {
+    await setDoc(doc(db, p('groupInvites/GI1')), {
       leaderEmail: 'leader@example.com',
       inviteeEmail: 'invitee@example.com',
       status: 'pending',
     });
   });
   await it('the leader may read their own group license; a stranger may not', async () => {
-    await assertSucceeds(getDoc(doc(patron('leader@example.com'), 'groupLicenses/GL1')));
-    await assertFails(getDoc(doc(patron('stranger@example.com'), 'groupLicenses/GL1')));
+    await assertSucceeds(getDoc(doc(patron('leader@example.com'), p('groupLicenses/GL1'))));
+    await assertFails(getDoc(doc(patron('stranger@example.com'), p('groupLicenses/GL1'))));
   });
   await it('no client may write a group license', async () => {
     await assertFails(
-      setDoc(doc(patron('leader@example.com'), 'groupLicenses/GL2'), { leaderEmail: 'leader@example.com' }),
+      setDoc(doc(patron('leader@example.com'), p('groupLicenses/GL2')), { leaderEmail: 'leader@example.com' }),
     );
   });
   await it('a stranger may NOT enumerate an invite (invitee email + status)', async () => {
-    await assertFails(getDoc(doc(patron('stranger@example.com'), 'groupInvites/GI1')));
+    await assertFails(getDoc(doc(patron('stranger@example.com'), p('groupInvites/GI1'))));
   });
 
   // ---- Coupons: no client enumeration -----------------------------------
   describe('coupons - no client read (discount-code enumeration closed)');
-  await seed(async (db) => setDoc(doc(db, 'coupons/SAVE50'), { percent: 50 }));
+  await seed(async (db) => setDoc(doc(db, p('coupons/SAVE50')), { percent: 50 }));
   await it('a signed-in patron may NOT read a coupon', async () => {
-    await assertFails(getDoc(doc(patron('licensed@example.com'), 'coupons/SAVE50')));
+    await assertFails(getDoc(doc(patron('licensed@example.com'), p('coupons/SAVE50'))));
   });
 
   // ---- errorLogs: the pre-auth exception, tightly scoped ----------------
   describe('errorLogs - pre-auth failed-login logging, scoped');
   await it('an anonymous client may log a failed LOGIN attempt', async () => {
     await assertSucceeds(
-      setDoc(doc(anon(), 'errorLogs/e1'), {
+      setDoc(doc(anon(), p('errorLogs/e1')), {
         message: 'bad password',
         location: 'login',
         app: 'reader',
@@ -363,7 +371,7 @@ async function main() {
   });
   await it('an anonymous client may NOT log from an arbitrary location (no spoofing app errors)', async () => {
     await assertFails(
-      setDoc(doc(anon(), 'errorLogs/e2'), {
+      setDoc(doc(anon(), p('errorLogs/e2')), {
         message: 'x',
         location: 'dashboard',
         app: 'reader',
@@ -374,7 +382,7 @@ async function main() {
   await it('a signed-in user may log their OWN error (self-attributed uid)', async () => {
     const uid = 'licensedexamplecom';
     await assertSucceeds(
-      setDoc(doc(patron('licensed@example.com'), 'errorLogs/e3'), {
+      setDoc(doc(patron('licensed@example.com'), p('errorLogs/e3')), {
         message: 'boom',
         location: 'lesson-view',
         app: 'reader',
@@ -384,7 +392,7 @@ async function main() {
   });
   await it('a signed-in user may NOT forge an error under someone else\'s uid', async () => {
     await assertFails(
-      setDoc(doc(patron('licensed@example.com'), 'errorLogs/e4'), {
+      setDoc(doc(patron('licensed@example.com'), p('errorLogs/e4')), {
         message: 'boom',
         location: 'lesson-view',
         app: 'reader',

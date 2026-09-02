@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: the public event-registration flow, end to end through the
 // REAL Cloud Functions running in the emulator (registerForEventHttp,
 // checkRegistrationExistsHttp, updateMySessionsHttp, getSessionCountsHttp)
@@ -17,7 +18,7 @@ let db;
 // race that backlog. settleCounts() waits for the counter doc to reach an
 // exact expected state.
 const settleCounts = (expected, label) => waitFor(async () => {
-  const meta = await db.collection("eventSessionCounts").doc(SUMMIT).get();
+  const meta = await db.collection(tenantPath("eventSessionCounts")).doc(SUMMIT).get();
   const counts = meta.data()?.counts ?? {};
   return Object.entries(expected).every(([k, v]) => counts[k] === v) &&
     Object.keys(counts).every((k) => expected[k] !== undefined ?
@@ -45,7 +46,7 @@ test("register_for_event creates the doc with the lastNameLower sort key " +
   assert.equal(res.status, 200);
   assert.ok(res.body.registrationId);
 
-  const doc = await db.collection("event-registrations")
+  const doc = await db.collection(tenantPath("event-registrations"))
     .doc(res.body.registrationId).get();
   const data = doc.data();
   assert.equal(data.firstName, "Nina"); // trimmed
@@ -111,7 +112,7 @@ test("register_for_event is idempotent and cannot amplify email at a " +
   });
   assert.equal(renamed.body.alreadyRegistered, true);
 
-  const regs = await db.collection("event-registrations")
+  const regs = await db.collection(tenantPath("event-registrations"))
     .where("eventId", "==", SUMMIT).where("email", "==", victim).get();
   assert.equal(regs.size, 1, "duplicate roster rows were created");
 
@@ -179,7 +180,7 @@ test("update_my_sessions arrayUnions/arrayRemoves and the counts trigger " +
 
   // The counter trigger sees the change: seeded b=8, plus Quinn = 9.
   await waitFor(async () => {
-    const meta = await db.collection("eventSessionCounts").doc(SUMMIT).get();
+    const meta = await db.collection(tenantPath("eventSessionCounts")).doc(SUMMIT).get();
     return meta.data()?.counts?.["agenda-breakout-b"] === 9;
   }, {timeoutMs: 60000, intervalMs: 1000, label: "breakout-b count to reach 9"});
 
@@ -188,7 +189,7 @@ test("update_my_sessions arrayUnions/arrayRemoves and the counts trigger " +
   });
   assert.deepEqual(remove.body.trainingSessions, []);
   await waitFor(async () => {
-    const meta = await db.collection("eventSessionCounts").doc(SUMMIT).get();
+    const meta = await db.collection(tenantPath("eventSessionCounts")).doc(SUMMIT).get();
     return meta.data()?.counts?.["agenda-breakout-b"] === 8;
   }, {timeoutMs: 60000, intervalMs: 1000, label: "breakout-b count back to 8"});
 

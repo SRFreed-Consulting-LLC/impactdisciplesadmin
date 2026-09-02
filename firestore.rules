@@ -83,15 +83,15 @@ service cloud.firestore {
     // ---- staff checks swapped from the dead adminUsers lookup to claims) --
     function hasBookLicense(bookId) {
       return signedIn() &&
-        exists(/databases/$(database)/documents/libraryUsers/$(callerEmail())) &&
-        get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.get('revoked', false) != true &&
-        bookId in get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.licensedBookIds;
+        exists(/databases/$(database)/documents/tenants/impactdisciples.com/libraryUsers/$(callerEmail())) &&
+        get(/databases/$(database)/documents/tenants/impactdisciples.com/libraryUsers/$(callerEmail())).data.get('revoked', false) != true &&
+        bookId in get(/databases/$(database)/documents/tenants/impactdisciples.com/libraryUsers/$(callerEmail())).data.licensedBookIds;
     }
     function isInternationalPatron() {
       return signedIn() &&
-        exists(/databases/$(database)/documents/libraryUsers/$(callerEmail())) &&
-        get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.get('revoked', false) != true &&
-        get(/databases/$(database)/documents/libraryUsers/$(callerEmail())).data.get('internationalUser', false) == true;
+        exists(/databases/$(database)/documents/tenants/impactdisciples.com/libraryUsers/$(callerEmail())) &&
+        get(/databases/$(database)/documents/tenants/impactdisciples.com/libraryUsers/$(callerEmail())).data.get('revoked', false) != true &&
+        get(/databases/$(database)/documents/tenants/impactdisciples.com/libraryUsers/$(callerEmail())).data.get('internationalUser', false) == true;
     }
     function canReadBook(bookId) {
       return isLibraryStaff() || isInternationalPatron() || hasBookLicense(bookId);
@@ -100,12 +100,12 @@ service cloud.firestore {
     // prayer content writes.
     function isApprovedGroupMember(groupId) {
       return signedIn() &&
-        exists(/databases/$(database)/documents/discussionGroups/$(groupId)/members/$(callerEmail())) &&
-        get(/databases/$(database)/documents/discussionGroups/$(groupId)/members/$(callerEmail())).data.status == 'approved';
+        exists(/databases/$(database)/documents/tenants/impactdisciples.com/discussionGroups/$(groupId)/members/$(callerEmail())) &&
+        get(/databases/$(database)/documents/tenants/impactdisciples.com/discussionGroups/$(groupId)/members/$(callerEmail())).data.status == 'approved';
     }
     function isGroupCreator(groupId) {
       return signedIn() &&
-        get(/databases/$(database)/documents/discussionGroups/$(groupId)).data.creatorEmail == callerEmail();
+        get(/databases/$(database)/documents/tenants/impactdisciples.com/discussionGroups/$(groupId)).data.creatorEmail == callerEmail();
     }
     // A member doc EXISTS for this email in this group, ANY status. Weaker
     // than isApprovedGroupMember on purpose: a conversation with a pending or
@@ -113,7 +113,7 @@ service cloud.firestore {
     // a total non-member must not.
     function groupMemberExists(groupId, email) {
       return signedIn() &&
-        exists(/databases/$(database)/documents/discussionGroups/$(groupId)/members/$(email));
+        exists(/databases/$(database)/documents/tenants/impactdisciples.com/discussionGroups/$(groupId)/members/$(email));
     }
 
     // ========================================================================
@@ -1174,6 +1174,248 @@ service cloud.firestore {
         allow get: if signedIn();
         allow list: if isLibraryStaff();
         allow write: if isLibraryStaff();
+      }
+
+      // ---- Wave 3: the entangled ones -----------------------------------
+      // MIRRORED FROM THE TOP-LEVEL BLOCKS BY SCRIPT, not retyped.
+      // libraryUsers and discussionGroups carry owner-scoped match blocks
+      // for their subcollections; a condition mistyped in here either locks
+      // a patron out of a book they paid for or hands them someone else's
+      // study notes. Identical text is the point.
+      match /purchases/{id} {
+        allow read, update: if isBusinessStaff();
+        allow create, delete: if false;
+      }
+
+      match /event-registrations/{id} {
+        allow read, update, delete: if isBusinessStaff();
+        allow create: if false;
+      }
+
+      match /admin_users/{id} {
+        // SELF-ACCOUNT CARVE-OUT (2026-08-29). Every staff tier may save its
+        // OWN preferences and its OWN display name - and nothing else - on its
+        // OWN document. Everything that decides what a person can DO or how
+        // the app identifies them (role, permissions, libraryPermissions,
+        // email, firebaseUID) stays Admin/Root, so the anti-self-escalation
+        // property is unchanged: an Employee still cannot grant themselves a
+        // screen, and the role claim that onAdminUserRoleSync propagates is
+        // not in the allow-list.
+        //
+        // firstName/lastName are in the list because they are the person's own
+        // name (owner's call: "a user should be able to save to their own
+        // accounts"); Settings > My Profile is the screen that writes them.
+        // Note the name is NOT purely cosmetic - it is what other staff see
+        // against records - which is why it stops at the name and does not
+        // extend to email, the key the whole app resolves an account by.
+        //
+        // Needed because these preferences are written by the CLIENT, from the
+        // person they belong to. Before this, an Employee or Editor resizing
+        // the nav, pinning a screen or picking a theme had the write rejected
+        // and the UI silently revert - most visibly with drag-to-resize, where
+        // the whole drawer snaps back on release.
+        //
+        // This is also the one place the file's "rules cannot look admin_users
+        // up by uid" caveat does not bite: on a per-document update `resource`
+        // is already in hand, so firebaseUID can be compared directly.
+        function isOwnStaffDoc() {
+          return isStaffAny() && resource.data.firebaseUID == request.auth.uid;
+        }
+        // hasOnly, not hasAny: the write must touch NOTHING outside this list.
+        // Note this requires a PARTIAL update (updateDoc) - a whole-record
+        // setDoc would list every field as changed and be denied, which is
+        // why the client writes these with BaseService.updateFields().
+        function onlyOwnPrefsChanged() {
+          return request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['drawerWidth', 'drawerPinned', 'pinnedScreens', 'colorTheme', 'darkMode',
+                      'firstName', 'lastName']);
+        }
+
+        allow read: if isStaffAny();
+        allow update: if isAdminRole() || (isOwnStaffDoc() && onlyOwnPrefsChanged());
+        allow create, delete: if false;
+      }
+
+      match /mail_templates/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+
+      match /event-announcements/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+
+      match /groupLicenses/{id} {
+        allow read: if isAdminRole() ||
+          resource.data.leaderEmail == callerEmail() ||
+          resource.data.assignedToEmail == callerEmail();
+        allow write: if false;
+      }
+
+      match /groupInvites/{id} {
+        allow read: if isAdminRole() ||
+          resource.data.leaderEmail == callerEmail();
+        allow write: if false;
+      }
+
+      match /libraryUsers/{email} {
+        allow read: if callerEmail() == email || isAdminRole();
+        allow write: if false;
+
+        // Stay-direct owner subcollections (offline-preserving split): the
+        // owner's own study data, path-scoped - identity is the PATH, not a
+        // spoofable field.
+        match /lessonStatus/{lessonId} {
+          allow read: if callerEmail() == email || isAdminRole();
+          allow write: if callerEmail() == email;
+        }
+        match /lessonHighlights/{lessonId} {
+          allow read: if callerEmail() == email || isAdminRole();
+          allow write: if callerEmail() == email;
+        }
+        match /submissions/{lessonId} {
+          allow read: if callerEmail() == email || isAdminRole();
+          allow write: if callerEmail() == email;
+        }
+        match /fcmTokens/{token} {
+          allow read, write: if callerEmail() == email;
+        }
+        // Inbox copies are function-written (sendLibraryUserMessage). The
+        // owner's permitted mutations, restored from the pre-consolidation
+        // rules (the port had closed delete entirely, silently breaking the
+        // reader's inbox delete action - MessageService.deleteMessage):
+        // flipping `read` to true (never editing content or un-reading), and
+        // deleting a message they have ALREADY READ - an unread announcement
+        // can't be dismissed unseen, and the adminMessages summary keeps the
+        // sent record either way.
+        match /messages/{id} {
+          allow read: if callerEmail() == email;
+          allow update: if callerEmail() == email &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+            request.resource.data.read == true;
+          allow delete: if callerEmail() == email && resource.data.read == true;
+          allow create: if false;
+        }
+      }
+
+      match /discussionGroups/{groupId} {
+        // Browse/detail for any signed-in patron; membership create/update
+        // and group create/close go through Cloud Functions (Phase 6).
+        // Admin's Groups screen still edits/deletes groups directly.
+        allow read: if signedIn();
+        allow update, delete: if isAdminRole();
+        allow create: if false;
+
+        // Roster read is membership-gated (sweep 2026-08-17): a member doc
+        // is keyed by email and carries email/name/status - a bare signedIn()
+        // read let any account enumerate every group's roster. The reader
+        // only ever lists a group's members for a group the caller is in
+        // (getGroupMembers), so gating to member/creator/admin breaks no
+        // legitimate query. "My memberships" across groups is served
+        // separately by the email-filtered collection-group rule below.
+        match /members/{memberEmail} {
+          allow read: if isAdminRole() || isGroupCreator(groupId) ||
+            isApprovedGroupMember(groupId);
+          allow delete: if isAdminRole();     // admin hard-delete cleanup
+          allow create, update: if false;     // functions only
+        }
+        // Stay-direct interactive content: authored-as-self by an approved
+        // member (one get() per write - the price of instant local echo).
+        // Reads are membership-gated (sweep 2026-08-17): private pastoral
+        // content (chat + prayer requests) must not be readable by any
+        // signed-in account. isApprovedGroupMember(groupId) is evaluable at
+        // query time (no resource.data reference), so the reader's unfiltered
+        // per-group list queries still pass for an actual member.
+        match /chatMessages/{id} {
+          allow read: if isAdminRole() || isGroupCreator(groupId) ||
+            isApprovedGroupMember(groupId);
+          allow create: if isApprovedGroupMember(groupId) &&
+            request.resource.data.senderEmail == callerEmail() &&
+            request.resource.data.text is string &&
+            request.resource.data.text.size() < 4000;
+          allow update: if false;
+          allow delete: if isAdminRole();
+        }
+        match /prayerRequests/{id} {
+          allow read: if isAdminRole() || isGroupCreator(groupId) ||
+            isApprovedGroupMember(groupId);
+          allow create: if isApprovedGroupMember(groupId) &&
+            request.resource.data.authorEmail == callerEmail() &&
+            request.resource.data.text is string &&
+            request.resource.data.text.size() < 4000;
+          allow update: if false;
+          // Author OR the group creator (moderation) OR admin. The creator
+          // term was missing (Sweep 3, 2026-08-17): the reader shows a Remove
+          // button on any prayer to the leader, but every leader-moderation
+          // delete threw permission-denied and logged an error.
+          allow delete: if resource.data.authorEmail == callerEmail() ||
+            isGroupCreator(groupId) || isAdminRole();
+        }
+        // 1:1 leader<->member conversations: the conversation doc id is the
+        // NON-creator participant's email; the thread is always between the
+        // creator and that one member. Membership-gated (Sweep 3, 2026-08-17):
+        // the otherEmail participant must have a member doc, and the caller
+        // must be either that participant or the creator. Without this, any
+        // signed-in patron could DM (and, via notifyConversationMessage, push
+        // to) any leader, and a creator could open conversations/{anyEmail} to
+        // push arbitrary text at any user whose email they know. isAdminRole()
+        // read/delete lets moderation hard-delete the subtree.
+        match /conversations/{otherEmail} {
+          allow read: if isAdminRole() ||
+            (groupMemberExists(groupId, otherEmail) &&
+              (callerEmail() == otherEmail || isGroupCreator(groupId)));
+          allow create, update: if groupMemberExists(groupId, otherEmail) &&
+            (callerEmail() == otherEmail || isGroupCreator(groupId));
+          allow delete: if isAdminRole();
+
+          match /messages/{id} {
+            allow read: if isAdminRole() ||
+              (groupMemberExists(groupId, otherEmail) &&
+                (callerEmail() == otherEmail || isGroupCreator(groupId)));
+            allow create: if groupMemberExists(groupId, otherEmail) &&
+              (callerEmail() == otherEmail || isGroupCreator(groupId)) &&
+              request.resource.data.senderEmail == callerEmail() &&
+              request.resource.data.text is string &&
+              request.resource.data.text.size() < 4000;
+            allow update: if false;
+            allow delete: if isAdminRole();     // moderation hard-delete
+          }
+        }
+      }
+
+      match /librarySeries/{seriesId} {
+        allow read: if signedIn();
+        allow write: if isLibraryStaff();
+
+        // Book metadata is readable by any signed-in patron regardless of
+        // license (Groups needs titles for unowned books); lesson CONTENT is
+        // license-gated below. bookId is the rules PATH variable - always
+        // present, no denormalized field or get() needed.
+        match /books/{bookId} {
+          allow read: if signedIn();
+          allow write: if isLibraryStaff();
+
+          match /units/{unitId} {
+            allow read: if canReadBook(bookId);
+            allow write: if isLibraryStaff();
+
+            match /lessons/{lessonId} {
+              allow read: if canReadBook(bookId);
+              allow write: if isLibraryStaff();
+
+              // License-gated (sweep 2026-08-17): a translation doc carries
+              // the FULL original + translated lesson text, so it must be
+              // gated exactly like the lesson above it - a bare signedIn()
+              // read was a paywall bypass for every translated book. The
+              // reader's language picker no longer scans these (see the
+              // appConfig/availableLanguages registry below).
+              match /translations/{translationId} {
+                allow read: if canReadBook(bookId);
+                allow write: if isLibraryStaff();
+              }
+            }
+          }
+        }
       }
     }
 

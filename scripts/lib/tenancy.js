@@ -71,6 +71,19 @@ const TENANT_COLLECTIONS = [
   "pending_orders",
   "events",
   "lessonImages",
+  // Wave 3 - trigger-backed and rules-entangled. These are the ones with
+  // SUBCOLLECTIONS, which is why the migration tool had to learn to recurse.
+  "purchases",
+  "event-registrations",
+  "admin_users",
+  "eventSessionCounts",
+  "mail_templates",
+  "event-announcements",
+  "groupLicenses",
+  "groupInvites",
+  "libraryUsers",
+  "discussionGroups",
+  "librarySeries",
 ];
 
 /**

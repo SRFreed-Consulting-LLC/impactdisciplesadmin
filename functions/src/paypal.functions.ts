@@ -2,6 +2,7 @@ import {tenantPath} from "./common/shared/lists/tenancy";
 const PENDING_ORDERS = tenantPath("pending_orders");
 const LOG_MESSAGES = tenantPath("log-messages");
 const AFFILIATE_SALES = tenantPath("affilliate_sales");
+const PURCHASES = tenantPath("purchases");
 import {onRequest} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
@@ -541,7 +542,7 @@ exports.create_paypal_order = onRequest(
           let docRef;
           try {
             docRef = await getFirestore()
-              .collection("purchases")
+              .collection(PURCHASES)
               .add({...checkoutForm, source: PURCHASE_SOURCE_WEB});
           } catch (err) {
             console.error("Failed to save free/coupon order", err);
@@ -711,7 +712,7 @@ exports.capture_paypal_order = onRequest(
         // of double-capturing with PayPal or double-writing a Purchase.
         if (pending.status === "captured" && pending.purchaseId) {
           const purchaseSnap = await getFirestore()
-            .collection("purchases").doc(pending.purchaseId).get();
+            .collection(PURCHASES).doc(pending.purchaseId).get();
           response.send({
             checkoutForm: purchaseSnap.exists ?
               {...purchaseSnap.data(), id: purchaseSnap.id} :
@@ -779,7 +780,7 @@ exports.capture_paypal_order = onRequest(
         // through, recording it hit a problem, here's who to contact.
         try {
           const docRef = await getFirestore()
-            .collection("purchases")
+            .collection(PURCHASES)
             .add({...checkoutForm, source: PURCHASE_SOURCE_WEB});
 
           await pendingRef.update({

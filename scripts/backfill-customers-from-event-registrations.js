@@ -97,7 +97,7 @@ async function main() {
     if (email) byEmail.set(email, { ...data, __id: doc.id, __existed: true });
   });
 
-  const regSnap = await db.collection("event-registrations").get();
+  const regSnap = await tenantCollection(db, "event-registrations").get();
   const allRegs = regSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const regs = allRegs
     .filter((r) => isPlausibleEmail(r.email))

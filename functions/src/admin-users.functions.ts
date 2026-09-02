@@ -1,3 +1,5 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const ADMIN_USERS = tenantPath("admin_users");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {getFirestore} from "firebase-admin/firestore";
@@ -32,7 +34,7 @@ export async function requireAdminRole(
   }
 
   const snap = await getFirestore()
-    .collection("admin_users")
+    .collection(ADMIN_USERS)
     .where("firebaseUID", "==", callerUid)
     .limit(1)
     .get();
@@ -102,7 +104,7 @@ export const createAdminUser = onCall(async (request):
   // style deleteAdminUser already uses below.
   let docRef;
   try {
-    docRef = await getFirestore().collection("admin_users").add({
+    docRef = await getFirestore().collection(ADMIN_USERS).add({
       email,
       firstName,
       lastName,
@@ -143,7 +145,7 @@ export const deleteAdminUser = onCall(async (request):
     throw new HttpsError("invalid-argument", "docId is required.");
   }
 
-  const docRef = getFirestore().collection("admin_users").doc(docId);
+  const docRef = getFirestore().collection(ADMIN_USERS).doc(docId);
   const snap = await docRef.get();
   if (!snap.exists) {
     throw new HttpsError("not-found", "Admin User not found.");

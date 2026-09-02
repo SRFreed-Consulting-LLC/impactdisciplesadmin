@@ -1,4 +1,5 @@
-import {triggerPath} from "./common/shared/lists/tenancy";
+import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
+const GROUPS = tenantPath("discussionGroups");
 import {
   onDocumentCreated,
   onDocumentWritten,
@@ -40,7 +41,7 @@ async function getGroupForPush(
   groupId: string
 ): Promise<{ title: string; creatorEmail: string } | null> {
   const snap = await libraryDb
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .get();
   const data = snap.data();
@@ -176,7 +177,7 @@ export const onGroupMembershipCountChanged = onDocumentWritten(
 
     const {groupId} = event.params;
     try {
-      await libraryDb.doc(`discussionGroups/${groupId}`).update(updates);
+      await libraryDb.doc(`${GROUPS}/${groupId}`).update(updates);
     } catch (err) {
       // The group itself may have just been hard-deleted (Groups admin's
       // deleteGroup removes members before the group doc) - nothing to

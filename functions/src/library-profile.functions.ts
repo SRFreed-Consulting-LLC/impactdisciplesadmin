@@ -1,3 +1,5 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import {getFirestore} from "firebase-admin/firestore";
 import {
@@ -153,7 +155,7 @@ export const recordMyLogin = onCall(async (request):
   const serverCountry = await resolveCountryFromIp(request);
   const isInternational = !!serverCountry && serverCountry !== "US";
 
-  const ref = db.collection("libraryUsers").doc(email);
+  const ref = db.collection(LIBRARY_USERS).doc(email);
   const now = Date.now();
   const snap = await ref.get();
   if (!snap.exists) {
@@ -207,7 +209,7 @@ export const createMyReaderProfile = onCall(async (request):
   const serverCountry = await resolveCountryFromIp(request);
   const isInternational = !!serverCountry && serverCountry !== "US";
 
-  const ref = db.collection("libraryUsers").doc(email);
+  const ref = db.collection(LIBRARY_USERS).doc(email);
   const now = Date.now();
   const existing = await ref.get();
   await ref.set(
@@ -273,7 +275,7 @@ export const updateMyPreferences = onCall(async (request):
     throw new HttpsError("invalid-argument", "Nothing to update.");
   }
 
-  const ref = db.collection("libraryUsers").doc(email);
+  const ref = db.collection(LIBRARY_USERS).doc(email);
   const now = Date.now();
   const existing = await ref.get();
   await ref.set(

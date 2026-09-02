@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: emailLessonPdf and createGroup's permission gates, driven
 // through the REAL callables in the emulator over the onCall protocol, with a
 // real signed-in ID token.
@@ -134,7 +135,7 @@ test("emailLessonPdf sends to the CALLER, never to an address in the request", a
 
 test("createGroup refuses a patron whose canLeadGroups is false", async () => {
   // Every account carries true today, so this is the path nothing else runs.
-  const ref = getDb().collection("libraryUsers").doc(PATRON);
+  const ref = getDb().collection(tenantPath("libraryUsers")).doc(PATRON);
   await ref.update({canLeadGroups: false});
   try {
     const res = await callCallable(
@@ -183,7 +184,7 @@ test("createGroup allows a patron with the field absent entirely", async () => {
       paths: [path.join(__dirname, "..", "functions")],
     })
   );
-  const ref = getDb().collection("libraryUsers").doc(PATRON);
+  const ref = getDb().collection(tenantPath("libraryUsers")).doc(PATRON);
   await ref.update({canLeadGroups: FieldValue.delete()});
 
   const res = await callCallable(

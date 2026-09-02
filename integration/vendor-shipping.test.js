@@ -231,7 +231,7 @@ const seedShippablePurchase = async (db, overrides = {}) => {
   await db.collection(tenantPath("products")).doc("product-s3").set({
     title: "Heavy Book", isActive: true, weight: 12,
   });
-  await db.collection("purchases").doc(VICTIM_PURCHASE).set({
+  await db.collection(tenantPath("purchases")).doc(VICTIM_PURCHASE).set({
     firstName: "Pat", lastName: "Buyer", email: "pat@buyer.test",
     phone: {number: "555-0199"},
     shippingAddress: {
@@ -284,7 +284,7 @@ test("an attacker's destination on the purchase cannot redirect postage",
     await seedShippablePurchase(db);
     // Even if the planted rate claims Anchorage, we ship where the
     // purchase says. The rate id is never dereferenced.
-    await db.collection("purchases").doc(VICTIM_PURCHASE).set({
+    await db.collection(tenantPath("purchases")).doc(VICTIM_PURCHASE).set({
       shippingRateId: {
         rateId: "se-rate-attacker",
         shipTo: {postalCode: ATTACKER_ZIP},
@@ -315,7 +315,7 @@ test("the shipping cost drift is recorded on the purchase", async () => {
   );
   assert.equal(res.status, 200);
 
-  const saved = (await db.collection("purchases")
+  const saved = (await db.collection(tenantPath("purchases"))
     .doc(VICTIM_PURCHASE).get()).data();
   assert.ok(saved.shippingCostDrift, "drift was not recorded");
   assert.equal(saved.shippingCostDrift.quoted, 4.25);

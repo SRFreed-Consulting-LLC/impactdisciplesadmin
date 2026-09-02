@@ -74,7 +74,7 @@ async function main() {
   const {toKitHomeBlocks} = loadKit();
   const db = getFirestoreFor(projectId);
 
-  const existing = await db.doc('page_content/home').get();
+  const existing = await tenantCollection(db, 'page_content').doc('home').get();
   if (existing.exists && !args.includes('--force')) {
     console.error(
       'REFUSED: page_content/home already exists. Home has been cut over.\n'
@@ -142,7 +142,7 @@ async function main() {
     return;
   }
 
-  await db.doc('page_content/home').set({
+  await tenantCollection(db, 'page_content').doc('home').set({
     title: 'Home',
     theme: {surface: 'light', banding: false},
     blocks

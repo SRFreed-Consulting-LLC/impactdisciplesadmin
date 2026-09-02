@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Seeds (and removes) disposable Impact Groups so the web app's public
 // finder has something deterministic to assert against.
 //
@@ -136,7 +137,7 @@ async function main() {
   if (args.remove) {
     let removed = 0;
     for (const id of Object.keys(docs)) {
-      const ref = db.collection("discussionGroups").doc(id);
+      const ref = tenantCollection(db, "discussionGroups").doc(id);
       const snap = await ref.get();
       if (!snap.exists) continue;
       if (snap.data().e2eFixture !== true) {
@@ -162,7 +163,7 @@ async function main() {
     console.log(`     status=${doc.status} visibility=${doc.groupVisibility} ` +
       `-> ${visible ? "SHOWS publicly" : "must stay HIDDEN"}`);
     if (execute) {
-      await db.collection("discussionGroups").doc(id).set(doc);
+      await tenantCollection(db, "discussionGroups").doc(id).set(doc);
     }
   }
   if (execute) {

@@ -1,5 +1,8 @@
 import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
 const EVENTS = tenantPath("events");
+const REGISTRATIONS = tenantPath("event-registrations");
+const SESSION_COUNTS = tenantPath("eventSessionCounts");
+const TEMPLATES = tenantPath("mail_templates");
 import {onRequest} from "firebase-functions/v2/https";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -106,7 +109,7 @@ async function queueConfirmationEmail(
       return undefined;
     }
     const templateSnap = await db
-      .collection("mail_templates")
+      .collection(TEMPLATES)
       .where("name", "==", templateName)
       .limit(1)
       .get();
@@ -265,7 +268,7 @@ export const registerForEventHttp = onRequest(PUB_FN, (request, response) => {
     // ignore the body and only await the promise, so answering without an
     // id costs them nothing.
     const existing = await db
-      .collection("event-registrations")
+      .collection(REGISTRATIONS)
       .where("eventId", "==", eventId)
       .where("email", "==", email)
       .limit(1)
@@ -276,7 +279,7 @@ export const registerForEventHttp = onRequest(PUB_FN, (request, response) => {
       return;
     }
 
-    const registrationRef = await db.collection("event-registrations").add({
+    const registrationRef = await db.collection(REGISTRATIONS).add({
       firstName,
       lastName,
       // Case-insensitive sort key for the admin Attendees table's paged
@@ -342,7 +345,7 @@ export const getEventRegistrationHttp = onRequest((request, response) => {
       return;
     }
     const snap = await db
-      .collection("event-registrations")
+      .collection(REGISTRATIONS)
       .doc(registrationId)
       .get();
     const data = snap.data();
@@ -387,7 +390,7 @@ export const updateMySessionsHttp = onRequest(PUB_FN, (request, response) => {
       });
       return;
     }
-    const ref = db.collection("event-registrations").doc(registrationId);
+    const ref = db.collection(REGISTRATIONS).doc(registrationId);
     const snap = await ref.get();
     if (!snap.exists) {
       response.status(404).send({error: "Registration not found."});
@@ -425,7 +428,7 @@ export const checkRegistrationExistsHttp = onRequest((request, response) => {
       return;
     }
     const snap = await db
-      .collection("event-registrations")
+      .collection(REGISTRATIONS)
       .where("eventId", "==", eventId)
       .where("email", "==", email)
       .limit(1)
@@ -467,7 +470,7 @@ async function computeSessionCounts(
   tx?: FirebaseFirestore.Transaction
 ): Promise<Record<string, number>> {
   const query = db
-    .collection("event-registrations")
+    .collection(REGISTRATIONS)
     .where("eventId", "==", eventId)
     .select("trainingSessions");
   const snap = tx ? await tx.get(query) : await query.get();
@@ -554,7 +557,7 @@ export const onEventRegistrationSessionCounts = onDocumentWritten(
       if (!hasDelta) {
         continue;
       }
-      await db.collection("eventSessionCounts").doc(eventId).set(
+      await db.collection(SESSION_COUNTS).doc(eventId).set(
         {counts, updatedAt: Timestamp.now()},
         {merge: true}
       );
@@ -586,7 +589,7 @@ export const getSessionCountsHttp = onRequest((request, response) => {
       response.status(400).send({error: "eventId is required."});
       return;
     }
-    const metaRef = db.collection("eventSessionCounts").doc(eventId);
+    const metaRef = db.collection(SESSION_COUNTS).doc(eventId);
     const counts = await db.runTransaction(async (tx) => {
       const metaSnap = await tx.get(metaRef);
       const meta = metaSnap.exists ? metaSnap.data() : undefined;

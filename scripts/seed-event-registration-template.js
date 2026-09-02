@@ -167,7 +167,7 @@ async function main() {
   fs.writeFileSync(preview, html, "utf8");
   console.log(`  preview  : ${preview}`);
 
-  const existing = await db.collection("mail_templates")
+  const existing = await tenantCollection(db, "mail_templates")
     .where("name", "==", NAME).get();
   if (existing.size > 1) {
     throw new Error(`${existing.size} templates already named "${NAME}".`);
@@ -201,7 +201,7 @@ async function main() {
   const value = { name: NAME, subject: SUBJECT, kind: "event", html, design, attachments: [] };
   let id;
   if (existing.empty) {
-    id = (await db.collection("mail_templates").add(value)).id;
+    id = (await tenantCollection(db, "mail_templates").add(value)).id;
   } else {
     id = existing.docs[0].id;
     await existing.docs[0].ref.update(value);

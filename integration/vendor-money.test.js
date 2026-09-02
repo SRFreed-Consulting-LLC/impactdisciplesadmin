@@ -63,7 +63,7 @@ const orderBody = (overrides) => ({
 const BOOK = {id: "prod-book-physical", orderQuantity: 2};
 
 const purchasesByEmail = async (email) =>
-  (await db.collection("purchases").where("email", "==", email).get()).docs;
+  (await db.collection(tenantPath("purchases")).where("email", "==", email).get()).docs;
 
 const pendingOrder = async (orderId) =>
   (await db.collection(tenantPath("pending_orders")).doc(orderId).get());

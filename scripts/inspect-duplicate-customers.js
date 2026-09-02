@@ -61,7 +61,7 @@ async function main() {
   const duplicates = [...byEmail.entries()].filter(([, docs]) => docs.length > 1);
   console.log(`${duplicates.length} email(s) with more than one customer doc\n`);
 
-  const purchasesSnap = await db.collection("purchases").get();
+  const purchasesSnap = await tenantCollection(db, "purchases").get();
   const purchaseCountByEmail = new Map();
   purchasesSnap.docs.forEach((doc) => {
     const email = (doc.data().email || "").trim().toLowerCase();

@@ -45,7 +45,7 @@ const orderBody = (overrides) => ({
 });
 
 const purchasesByEmail = async (email) =>
-  (await db.collection("purchases").where("email", "==", email).get()).docs;
+  (await db.collection(tenantPath("purchases")).where("email", "==", email).get()).docs;
 
 before(async () => {
   await preflight();
@@ -75,7 +75,7 @@ test("FREE100 on an event zeroes the order server-side; tampered client " +
   assert.equal(res.body.free, true);
   assert.ok(res.body.checkoutForm.id, "free order returns the purchase id");
 
-  const doc = await db.collection("purchases")
+  const doc = await db.collection(tenantPath("purchases"))
     .doc(res.body.checkoutForm.id).get();
   assert.ok(doc.exists);
   const form = doc.data();
@@ -133,7 +133,7 @@ test("a genuinely $0 order takes the FREE ONLY path and validated " +
   assert.equal(res.status, 200);
   assert.equal(res.body.free, true);
 
-  const doc = await db.collection("purchases")
+  const doc = await db.collection(tenantPath("purchases"))
     .doc(res.body.checkoutForm.id).get();
   const form = doc.data();
   assert.equal(form.receipt, "FREE ONLY"); // no coupon involved
@@ -164,7 +164,7 @@ test("unknown and inactive coupon codes are silently ignored, not " +
   }));
   assert.equal(unknown.status, 200);
   assert.equal(unknown.body.free, true);
-  const doc1 = await db.collection("purchases")
+  const doc1 = await db.collection(tenantPath("purchases"))
     .doc(unknown.body.checkoutForm.id).get();
   assert.equal(doc1.data().receipt, "FREE ONLY");
   assert.equal(doc1.data().couponCode, undefined);
@@ -178,7 +178,7 @@ test("unknown and inactive coupon codes are silently ignored, not " +
   }));
   assert.equal(inactive.status, 200);
   assert.equal(inactive.body.free, true);
-  const doc2 = await db.collection("purchases")
+  const doc2 = await db.collection(tenantPath("purchases"))
     .doc(inactive.body.checkoutForm.id).get();
   assert.equal(doc2.data().receipt, "FREE ONLY");
   assert.equal(doc2.data().couponCode, undefined);
@@ -453,7 +453,7 @@ test("a client-supplied followUpEmailId is ignored: buying a product whose " +
   assert.equal(res.status, 200, JSON.stringify(res.body));
   assert.equal(res.body.free, true);
 
-  const form = (await db.collection("purchases")
+  const form = (await db.collection(tenantPath("purchases"))
     .doc(res.body.checkoutForm.id).get()).data();
   assert.equal(form.cartItems[0].followUpEmailId, null,
     "the client's template id must not reach the purchase doc");
@@ -483,7 +483,7 @@ test("the product's own followUpEmailId is used even when the request omits " +
   assert.equal(res.status, 200, JSON.stringify(res.body));
   assert.equal(res.body.free, true);
 
-  const form = (await db.collection("purchases")
+  const form = (await db.collection(tenantPath("purchases"))
     .doc(res.body.checkoutForm.id).get()).data();
   assert.equal(form.cartItems[0].followUpEmailId, "tmpl-followup",
     "the product's template id, not the request's");
@@ -525,7 +525,7 @@ test("the stored purchase email is NORMALIZED, not the casing typed", async () =
   }));
 
   assert.equal(res.status, 200);
-  const form = (await db.collection("purchases")
+  const form = (await db.collection(tenantPath("purchases"))
     .doc(res.body.checkoutForm.id).get()).data();
   assert.equal(form.email, typed.toLowerCase(),
     "purchases.email must be stored lowercased");

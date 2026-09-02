@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Stamps `source: 'web' | 'reader'` onto historic `purchases` documents
 // (2026-08-21, bucket C item 1).
 //
@@ -63,7 +64,7 @@ async function main() {
       `${strictReader ? '  [--strict-reader]' : ''}`
   );
 
-  const snap = await db.collection('purchases').get();
+  const snap = await tenantCollection(db, "purchases").get();
   const counts = { web: 0, reader: 0, skipped: 0 };
   let batch = db.batch();
   let pending = 0;

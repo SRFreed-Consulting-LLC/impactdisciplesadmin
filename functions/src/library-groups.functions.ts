@@ -1,3 +1,7 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const GROUP_INVITES = tenantPath("groupInvites");
+const LIBRARY_USERS = tenantPath("libraryUsers");
+const GROUPS = tenantPath("discussionGroups");
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import {getFirestore} from "firebase-admin/firestore";
 import {
@@ -79,7 +83,7 @@ async function requireCreator(
   email: string,
   groupId: string
 ): Promise<FirebaseFirestore.DocumentData> {
-  const snap = await db.collection("discussionGroups").doc(groupId).get();
+  const snap = await db.collection(GROUPS).doc(groupId).get();
   const group = snap.data();
   if (!snap.exists || !group) {
     throw new HttpsError("not-found", "Impact Group not found.");
@@ -144,7 +148,7 @@ export const createGroup = onCall(async (request):
   // `revoked` is second-layer defense: setLibraryUserRevoked also disables
   // the Auth account, but a live token can outlast that by up to an hour.
   const profileSnap =
-    await db.collection("libraryUsers").doc(email).get();
+    await db.collection(LIBRARY_USERS).doc(email).get();
   const profile = profileSnap.data() ?? {};
   if (profile.revoked === true) {
     throw new HttpsError(
@@ -185,7 +189,7 @@ export const createGroup = onCall(async (request):
   const location = normalizeGroupLocation(data.location, cleanText);
 
   const now = Date.now();
-  const groupRef = db.collection("discussionGroups").doc();
+  const groupRef = db.collection(GROUPS).doc();
   const batch = db.batch();
   batch.set(groupRef, {
     bookId,
@@ -233,7 +237,7 @@ export const requestToJoinGroup = onCall(async (request):
     throw new HttpsError("invalid-argument", "groupId is required.");
   }
   const groupSnap = await db
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .get();
   const groupData = groupSnap.data();
@@ -275,7 +279,7 @@ export const approveGroupMembership = onCall(async (request):
   const group = await requireCreator(email, groupId);
   const normalized = memberEmail.trim().toLowerCase();
   const memberRef = db
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .collection("members")
     .doc(normalized);
@@ -292,7 +296,7 @@ export const approveGroupMembership = onCall(async (request):
   const maxMembers = group.maxMembers as number | undefined;
   if (maxMembers) {
     const membersSnap = await db
-      .collection("discussionGroups")
+      .collection(GROUPS)
       .doc(groupId)
       .collection("members")
       .get();
@@ -301,7 +305,7 @@ export const approveGroupMembership = onCall(async (request):
         d.data().status === "approved" && d.data().email !== group.creatorEmail
     ).length;
     if (approvedCount >= maxMembers) {
-      await db.collection("discussionGroups").doc(groupId).update({
+      await db.collection(GROUPS).doc(groupId).update({
         status: "closed",
         closedAt: Date.now(),
         updatedAt: Date.now(),
@@ -327,7 +331,7 @@ export const rejectGroupMembership = onCall(async (request):
   await requireCreator(email, groupId);
   const normalized = memberEmail.trim().toLowerCase();
   const memberRef = db
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .collection("members")
     .doc(normalized);
@@ -349,7 +353,7 @@ export const closeMyGroup = onCall(async (request):
     throw new HttpsError("invalid-argument", "groupId is required.");
   }
   await requireCreator(email, groupId);
-  await db.collection("discussionGroups").doc(groupId).update({
+  await db.collection(GROUPS).doc(groupId).update({
     status: "closed",
     closedAt: Date.now(),
     updatedAt: Date.now(),
@@ -374,7 +378,7 @@ export const sendGroupInvite = onCall(async (request):
   const group = await requireCreator(email, groupId);
   const leaderDisplayName =
     (group.creatorDisplayName as string | undefined) ?? email;
-  const ref = await db.collection("groupInvites").add({
+  const ref = await db.collection(GROUP_INVITES).add({
     groupId,
     groupTitle: group.title,
     bookId: group.bookId,
@@ -469,7 +473,7 @@ export const cancelGroupInvite = onCall(async (request):
   if (!inviteId) {
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }
-  const ref = db.collection("groupInvites").doc(inviteId);
+  const ref = db.collection(GROUP_INVITES).doc(inviteId);
   const snap = await ref.get();
   const invite = snap.data();
   if (!snap.exists || !invite) {

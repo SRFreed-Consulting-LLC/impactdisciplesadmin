@@ -1,3 +1,4 @@
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Injectable } from '@angular/core';
 import {
   DocumentReference,
@@ -73,7 +74,7 @@ export class LibraryDiscussionGroupService {
    *  `location` (or its absence). Creator/leader is intentionally not
    *  editable here. */
   async updateGroup(groupId: string, input: GroupWizardResult): Promise<void> {
-    await updateDoc(doc(this.firestore, 'discussionGroups', groupId), {
+    await updateDoc(doc(this.firestore, tenantPath('discussionGroups'), groupId), {
       bookId: input.bookId,
       title: input.title,
       description: input.description ?? deleteField(),
@@ -108,25 +109,25 @@ export class LibraryDiscussionGroupService {
     // the moderation action.
     let title = groupId;
     try {
-      const snap = await getDoc(doc(firestore, 'discussionGroups', groupId));
+      const snap = await getDoc(doc(firestore, tenantPath('discussionGroups'), groupId));
       title = (snap.data()?.['title'] as string) || groupId;
     } catch {
       // Keep the id as the label.
     }
     const refs: DocumentReference[] = [];
     for (const sub of ['members', 'chatMessages', 'prayerRequests']) {
-      const snap = await getDocs(collection(firestore, 'discussionGroups', groupId, sub));
+      const snap = await getDocs(collection(firestore, tenantPath('discussionGroups'), groupId, sub));
       refs.push(...snap.docs.map((d) => d.ref));
     }
     const conversationsSnap = await getDocs(
-      collection(firestore, 'discussionGroups', groupId, 'conversations'),
+      collection(firestore, tenantPath('discussionGroups'), groupId, 'conversations'),
     );
     const conversationMessageSnaps = await Promise.all(
       conversationsSnap.docs.map((conversationDoc) =>
         getDocs(
           collection(
             firestore,
-            'discussionGroups',
+            tenantPath('discussionGroups'),
             groupId,
             'conversations',
             conversationDoc.id,
@@ -138,7 +139,7 @@ export class LibraryDiscussionGroupService {
     conversationsSnap.docs.forEach((conversationDoc, i) => {
       refs.push(...conversationMessageSnaps[i].docs.map((d) => d.ref), conversationDoc.ref);
     });
-    refs.push(doc(firestore, 'discussionGroups', groupId));
+    refs.push(doc(firestore, tenantPath('discussionGroups'), groupId));
     await this.commitDeletesInChunks(refs);
     // The only destructive action in the library area, and it takes every
     // message, prayer request and conversation with it - so the count goes

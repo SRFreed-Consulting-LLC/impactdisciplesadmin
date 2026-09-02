@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Moves stored permission grants from `tools-manager.system-templates` to
 // `tools-manager.email-designer`.
 //
@@ -47,7 +48,7 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const db = getFirestoreFor(projectId);
-  const admins = await db.collection("admin_users").get();
+  const admins = await tenantCollection(db, "admin_users").get();
 
   console.log(`${projectId}  (${execute ? "LIVE" : "dry run"})`);
   console.log(`  ${OLD_KEY}`);
@@ -104,11 +105,11 @@ async function main() {
     if (!row.already) {
       next.push({ ...row.old, screenKey: NEW_KEY });
     }
-    await db.collection("admin_users").doc(row.id).update({ permissions: next });
+    await tenantCollection(db, "admin_users").doc(row.id).update({ permissions: next });
   }
   console.log(`  migrated ${plan.length} admin(s).`);
 
-  const after = await db.collection("admin_users").get();
+  const after = await tenantCollection(db, "admin_users").get();
   let stillOld = 0; let haveNew = 0;
   after.forEach((d) => {
     const p = d.data().permissions;

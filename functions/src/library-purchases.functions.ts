@@ -1,6 +1,8 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
 const COUPONS = tenantPath("coupons");
 const PRODUCTS = tenantPath("products");
+const PURCHASES = tenantPath("purchases");
+const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {defineSecret} from "firebase-functions/params";
@@ -235,7 +237,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     // storefront's checkout collects, best-effort from the patron's own
     // library profile (customer-upsert tolerates their absence).
     const profileSnap = await libraryDb
-      .collection("libraryUsers")
+      .collection(LIBRARY_USERS)
       .doc(email)
       .get();
     const profile = profileSnap.exists ?
@@ -248,7 +250,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
 
     const now = Date.now();
     const receipt = payPalOrderId ?? (coupon ? "COUPON" : "FREE ONLY");
-    const purchaseRef = libraryDb.collection("purchases").doc();
+    const purchaseRef = libraryDb.collection(PURCHASES).doc();
 
     // The purchase record - written BEFORE the direct grant below so the
     // onPurchaseGrantLibraryLicenses trigger (retry: true) is a safety
@@ -285,7 +287,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       ...(payPalOrderId ? {paypalEnvironment: env} : {}),
     });
 
-    const recipientRef = libraryDb.collection("libraryUsers").doc(email);
+    const recipientRef = libraryDb.collection(LIBRARY_USERS).doc(email);
     let result: { granted: string[]; skipped: string[] } = {
       granted: [],
       skipped: [],

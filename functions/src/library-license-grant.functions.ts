@@ -1,4 +1,5 @@
-import {triggerPath} from "./common/shared/lists/tenancy";
+import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
+const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions";
 import {isPlausibleEmail} from "./utils/customer-match.functions";
@@ -146,7 +147,7 @@ export const onPurchaseGrantLibraryLicenses = onDocumentCreated(
       return;
     }
 
-    const recipientRef = libraryDb.collection("libraryUsers").doc(email);
+    const recipientRef = libraryDb.collection(LIBRARY_USERS).doc(email);
     const now = Date.now();
     let result = {granted: [] as string[], skipped: [] as string[]};
     await libraryDb.runTransaction(async (transaction) => {

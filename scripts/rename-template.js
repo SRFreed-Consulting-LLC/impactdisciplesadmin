@@ -59,12 +59,12 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const db = getFirestoreFor(projectId);
 
-  const snap = await db.collection("mail_templates").where("name", "==", from).get();
+  const snap = await tenantCollection(db, "mail_templates").where("name", "==", from).get();
   if (snap.empty) throw new Error(`No template named "${from}" on ${projectId}.`);
   if (snap.size > 1) throw new Error(`${snap.size} templates named "${from}".`);
 
   // A duplicate name is worse than a bad one: every lookup then has to guess.
-  const clash = await db.collection("mail_templates").where("name", "==", to).get();
+  const clash = await tenantCollection(db, "mail_templates").where("name", "==", to).get();
   if (!clash.empty) {
     throw new Error(`A template named "${to}" already exists (${clash.docs[0].id}).`);
   }
@@ -121,7 +121,7 @@ async function main() {
   console.log(`  renamed. now: "${(await doc.ref.get()).data().name}"`);
 
   // Prove it: nothing may be left naming a template that does not exist.
-  const after = await db.collection("mail_templates").get();
+  const after = await tenantCollection(db, "mail_templates").get();
   const names = new Set();
   after.forEach((d) => names.add(d.data().name));
   const dangling = [];

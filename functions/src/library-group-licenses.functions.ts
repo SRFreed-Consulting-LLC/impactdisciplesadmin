@@ -1,6 +1,11 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
 const COUPONS = tenantPath("coupons");
 const PRODUCTS = tenantPath("products");
+const PURCHASES = tenantPath("purchases");
+const GROUP_LICENSES = tenantPath("groupLicenses");
+const GROUP_INVITES = tenantPath("groupInvites");
+const LIBRARY_USERS = tenantPath("libraryUsers");
+const GROUPS = tenantPath("discussionGroups");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -128,7 +133,7 @@ async function requireGroupLeader(
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
   const groupSnap = await libraryDb
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .get();
   const group = groupSnap.data();
@@ -306,7 +311,7 @@ export const purchaseGroupLicenses = onCall(
       const prior = await findPriorPurchaseByReceipt(libraryDb, payPalOrderId);
       if (prior) {
         const priorId = prior.id;
-        const priorLicenses = await libraryDb.collection("groupLicenses")
+        const priorLicenses = await libraryDb.collection(GROUP_LICENSES)
           .where("purchaseId", "==", priorId).get();
         return {
           purchaseId: priorId,
@@ -316,9 +321,9 @@ export const purchaseGroupLicenses = onCall(
     }
 
     const now = Date.now();
-    const purchaseRef = libraryDb.collection("purchases").doc();
+    const purchaseRef = libraryDb.collection(PURCHASES).doc();
     const licenseRefs = Array.from({length: quantity}, () =>
-      libraryDb.collection("groupLicenses").doc()
+      libraryDb.collection(GROUP_LICENSES).doc()
     );
     // Group-license sales land in the shared `purchases` table like every
     // other sale (2026-08-17 direction), so they show in admin's
@@ -331,7 +336,7 @@ export const purchaseGroupLicenses = onCall(
     // personally granted the book) and hasPhysicalItem (so fulfillment
     // auto-closes it instead of queueing a shippable order).
     const leaderProfileSnap = await libraryDb
-      .collection("libraryUsers")
+      .collection(LIBRARY_USERS)
       .doc(email)
       .get();
     const leaderProfile = leaderProfileSnap.exists ?
@@ -414,7 +419,7 @@ export const purchaseGroupLicenses = onCall(
     // alreadyLicensedFor for why granting anyway would be worse than
     // wasteful.
     let selfAssignedLicenseId: string | undefined;
-    const leaderRef = libraryDb.collection("libraryUsers").doc(email);
+    const leaderRef = libraryDb.collection(LIBRARY_USERS).doc(email);
     await libraryDb.runTransaction(async (transaction) => {
       const leaderSnap = await transaction.get(leaderRef);
       if (alreadyLicensedFor(leaderSnap, bookId)) {
@@ -470,13 +475,13 @@ export const assignGroupLicense = onCall(async (request):
   const group = await requireGroupLeader(email, groupId);
   const recipient = recipientEmail.trim().toLowerCase();
 
-  const licenseRef = libraryDb.collection("groupLicenses").doc(licenseId);
+  const licenseRef = libraryDb.collection(GROUP_LICENSES).doc(licenseId);
   const memberRef = libraryDb
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .collection("members")
     .doc(recipient);
-  const recipientRef = libraryDb.collection("libraryUsers").doc(recipient);
+  const recipientRef = libraryDb.collection(LIBRARY_USERS).doc(recipient);
 
   await libraryDb.runTransaction(async (transaction) => {
     const [licenseSnap, memberSnap, recipientSnap] = await Promise.all([
@@ -557,7 +562,7 @@ export const revokeGroupLicense = onCall(async (request):
     throw new HttpsError("invalid-argument", "licenseId is required.");
   }
 
-  const licenseRef = libraryDb.collection("groupLicenses").doc(licenseId);
+  const licenseRef = libraryDb.collection(GROUP_LICENSES).doc(licenseId);
 
   await libraryDb.runTransaction(async (transaction) => {
     const licenseSnap = await transaction.get(licenseRef);
@@ -583,7 +588,7 @@ export const revokeGroupLicense = onCall(async (request):
     }
 
     const groupSnap = await transaction.get(
-      libraryDb.collection("discussionGroups").doc(license.assignedGroupId)
+      libraryDb.collection(GROUPS).doc(license.assignedGroupId)
     );
     const group = groupSnap.exists ? groupSnap.data() : undefined;
     // A DELETED group is deliberately not the same case as a closed one.
@@ -597,7 +602,7 @@ export const revokeGroupLicense = onCall(async (request):
     // revoking automatically, leaving it the leader's deliberate choice.
     if (!group) {
       const recipientRef = libraryDb
-        .collection("libraryUsers")
+        .collection(LIBRARY_USERS)
         .doc(license.assignedToEmail);
       const recipientSnap = await transaction.get(recipientRef);
       applyLicenseRevoke({
@@ -622,7 +627,7 @@ export const revokeGroupLicense = onCall(async (request):
     }
 
     const recipientRef = libraryDb
-      .collection("libraryUsers")
+      .collection(LIBRARY_USERS)
       .doc(license.assignedToEmail);
     const recipientSnap = await transaction.get(recipientRef);
     applyLicenseRevoke({
@@ -655,7 +660,7 @@ export const leaveGroupAndRevokeLicense = onCall(async (request):
     throw new HttpsError("invalid-argument", "groupId is required.");
   }
 
-  const groupRef = libraryDb.collection("discussionGroups").doc(groupId);
+  const groupRef = libraryDb.collection(GROUPS).doc(groupId);
   const memberRef = groupRef.collection("members").doc(email);
 
   await libraryDb.runTransaction(async (transaction) => {
@@ -665,7 +670,7 @@ export const leaveGroupAndRevokeLicense = onCall(async (request):
     if (group && group["status"] === "open") {
       const licenseQuerySnap = await transaction.get(
         libraryDb
-          .collection("groupLicenses")
+          .collection(GROUP_LICENSES)
           .where("assignedGroupId", "==", groupId)
           .where("assignedToEmail", "==", email)
           .where("status", "==", "assigned")
@@ -674,7 +679,7 @@ export const leaveGroupAndRevokeLicense = onCall(async (request):
       if (!licenseQuerySnap.empty) {
         const licenseDoc = licenseQuerySnap.docs[0];
         const license = licenseDoc.data();
-        const recipientRef = libraryDb.collection("libraryUsers").doc(email);
+        const recipientRef = libraryDb.collection(LIBRARY_USERS).doc(email);
         const recipientSnap = await transaction.get(recipientRef);
         applyLicenseRevoke({
           transaction,
@@ -732,12 +737,12 @@ export const copyGroupMembers = onCall(async (request):
 
   const [sourceMembersSnap, targetMembersSnap] = await Promise.all([
     libraryDb
-      .collection("discussionGroups")
+      .collection(GROUPS)
       .doc(sourceGroupId)
       .collection("members")
       .get(),
     libraryDb
-      .collection("discussionGroups")
+      .collection(GROUPS)
       .doc(targetGroupId)
       .collection("members")
       .get(),
@@ -758,7 +763,7 @@ export const copyGroupMembers = onCall(async (request):
 
   const now = Date.now();
   const targetMembersRef = libraryDb
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(targetGroupId)
     .collection("members");
   const batch = libraryDb.batch();
@@ -783,7 +788,7 @@ export const copyGroupMembers = onCall(async (request):
   const newApprovedCount = existingApprovedExcludingCaller + toCopy.length;
   if (maxMembers && newApprovedCount >= maxMembers) {
     await libraryDb
-      .collection("discussionGroups")
+      .collection(GROUPS)
       .doc(targetGroupId)
       .update({status: "closed", closedAt: now, updatedAt: now});
   }
@@ -803,7 +808,7 @@ export const getInviteDetails = onCall(async (request):
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }
   const inviteSnap = await libraryDb
-    .collection("groupInvites")
+    .collection(GROUP_INVITES)
     .doc(inviteId)
     .get();
   const invite = inviteSnap.data();
@@ -816,7 +821,7 @@ export const getInviteDetails = onCall(async (request):
   // rather than a direct doc() lookup. Fine at this library's real scale
   // (a handful of books total).
   const [groupSnap, booksSnap] = await Promise.all([
-    libraryDb.collection("discussionGroups").doc(invite.groupId).get(),
+    libraryDb.collection(GROUPS).doc(invite.groupId).get(),
     libraryDb.collectionGroup("books").get(),
   ]);
   // .data() already returns undefined for a non-existent doc, so this is
@@ -864,7 +869,7 @@ export const declineGroupInvite = onCall(async (request):
   // patron-authored text field in this feature (chat/prayer).
   const trimmedReason =
     typeof reason === "string" ? reason.trim().slice(0, 4000) : undefined;
-  const inviteRef = libraryDb.collection("groupInvites").doc(inviteId);
+  const inviteRef = libraryDb.collection(GROUP_INVITES).doc(inviteId);
   const inviteSnap = await inviteRef.get();
   const invite = inviteSnap.data();
   if (!inviteSnap.exists || !invite) {
@@ -926,7 +931,7 @@ export const acceptGroupInvite = onCall(async (request):
     throw new HttpsError("invalid-argument", "inviteId is required.");
   }
 
-  const inviteRef = libraryDb.collection("groupInvites").doc(inviteId);
+  const inviteRef = libraryDb.collection(GROUP_INVITES).doc(inviteId);
   const inviteSnap = await inviteRef.get();
   const invite = inviteSnap.data();
   if (!inviteSnap.exists || !invite) {
@@ -962,7 +967,7 @@ export const acceptGroupInvite = onCall(async (request):
   // group no longer studies. assignGroupLicense already guards this.
   if (isPending) {
     const groupBookSnap = await libraryDb
-      .collection("discussionGroups")
+      .collection(GROUPS)
       .doc(groupId)
       .get();
     // The group must still EXIST. Without this the accept ran on regardless
@@ -988,7 +993,7 @@ export const acceptGroupInvite = onCall(async (request):
     }
   }
   const memberRef = libraryDb
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .collection("members")
     .doc(email);
@@ -1000,7 +1005,7 @@ export const acceptGroupInvite = onCall(async (request):
   let candidateLicenseId: string | undefined;
   if (invite.licenseIntent) {
     const candidateSnap = await libraryDb
-      .collection("groupLicenses")
+      .collection(GROUP_LICENSES)
       .where("leaderEmail", "==", invite.leaderEmail)
       .where("bookId", "==", bookId)
       .where("status", "==", "unassigned")
@@ -1011,9 +1016,9 @@ export const acceptGroupInvite = onCall(async (request):
 
   const result = await libraryDb.runTransaction(async (transaction) => {
     const licenseRef = candidateLicenseId ?
-      libraryDb.collection("groupLicenses").doc(candidateLicenseId) :
+      libraryDb.collection(GROUP_LICENSES).doc(candidateLicenseId) :
       undefined;
-    const recipientRef = libraryDb.collection("libraryUsers").doc(email);
+    const recipientRef = libraryDb.collection(LIBRARY_USERS).doc(email);
 
     const [memberSnap, licenseSnap, recipientSnap] = await Promise.all([
       transaction.get(memberRef),
@@ -1079,7 +1084,7 @@ export const acceptGroupInvite = onCall(async (request):
   });
 
   const groupSnap = await libraryDb
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .get();
   return {

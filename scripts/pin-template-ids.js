@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Re-creates the two CODE-OWNED mail_templates under fixed, known document
 // ids, so the send paths can stop resolving them by name.
 //
@@ -59,8 +60,8 @@ async function main() {
 
   const plan = [];
   for (const target of PINNED) {
-    const pinned = await db.collection("mail_templates").doc(target.id).get();
-    const byName = await db.collection("mail_templates")
+    const pinned = await tenantCollection(db, "mail_templates").doc(target.id).get();
+    const byName = await tenantCollection(db, "mail_templates")
       .where("name", "==", target.name).get();
 
     const others = byName.docs.filter((d) => d.id !== target.id);
@@ -115,11 +116,11 @@ async function main() {
       console.log("");
       console.log(`  backed up ${step.source.id} to ${backup}`);
 
-      await db.collection("mail_templates").doc(step.target.id).set(data);
+      await tenantCollection(db, "mail_templates").doc(step.target.id).set(data);
 
       // VERIFY before deleting anything. A copy that did not land exactly is
       // the one case where deleting the original loses the template.
-      const check = await db.collection("mail_templates").doc(step.target.id).get();
+      const check = await tenantCollection(db, "mail_templates").doc(step.target.id).get();
       if (!check.exists || stable(check.data()) !== stable(data)) {
         throw new Error(
           `Copy to ${step.target.id} did not read back identical - ` +
@@ -130,15 +131,15 @@ async function main() {
     }
 
     for (const id of step.deleteIds) {
-      await db.collection("mail_templates").doc(id).delete();
+      await tenantCollection(db, "mail_templates").doc(id).delete();
       console.log(`  deleted old document ${id}`);
     }
   }
 
   console.log("");
   for (const target of PINNED) {
-    const doc = await db.collection("mail_templates").doc(target.id).get();
-    const dupes = (await db.collection("mail_templates")
+    const doc = await tenantCollection(db, "mail_templates").doc(target.id).get();
+    const dupes = (await tenantCollection(db, "mail_templates")
       .where("name", "==", target.name).get()).docs.filter((d) => d.id !== target.id);
     console.log(`  ${target.id}: exists=${doc.exists} name=${JSON.stringify(doc.data()?.name)} strays=${dupes.length}`);
   }

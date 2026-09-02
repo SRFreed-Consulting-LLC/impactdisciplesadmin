@@ -1,5 +1,7 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
 const ADMIN_MESSAGES = tenantPath("adminMessages");
+const ADMIN_USERS = tenantPath("admin_users");
+const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldPath, FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
@@ -104,7 +106,7 @@ export const updateLibraryUser = onCall(async (request):
   }
 
   const normalized = email.trim().toLowerCase();
-  const ref = libraryDb.collection("libraryUsers").doc(normalized);
+  const ref = libraryDb.collection(LIBRARY_USERS).doc(normalized);
   await libraryDb.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
     if (!snap.exists) {
@@ -148,7 +150,7 @@ export const setLibraryUserRevoked = onCall(async (request):
     throw new HttpsError("invalid-argument", "email and revoked are required.");
   }
   const normalized = email.trim().toLowerCase();
-  const ref = libraryDb.collection("libraryUsers").doc(normalized);
+  const ref = libraryDb.collection(LIBRARY_USERS).doc(normalized);
   const snap = await ref.get();
   if (!snap.exists) {
     throw new HttpsError("not-found", "No library user record for that email.");
@@ -235,7 +237,7 @@ export const grantLibraryUserLicenses = onCall(async (request):
   }
 
   const normalized = email.trim().toLowerCase();
-  const ref = libraryDb.collection("libraryUsers").doc(normalized);
+  const ref = libraryDb.collection(LIBRARY_USERS).doc(normalized);
   const now = Date.now();
   let granted: string[] = [];
   let skipped: string[] = [];
@@ -306,7 +308,7 @@ export const revokeAdminGrantedLicense = onCall(async (request):
     throw new HttpsError("invalid-argument", "email and bookId are required.");
   }
   const normalized = email.trim().toLowerCase();
-  const ref = libraryDb.collection("libraryUsers").doc(normalized);
+  const ref = libraryDb.collection(LIBRARY_USERS).doc(normalized);
   let removed = false;
   await libraryDb.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
@@ -405,7 +407,7 @@ export const sendLibraryUserMessage = onCall(
     // requireAdminRole above already did, repeated here for the sender's
     // display name rather than threading it back out of that helper.
     const senderSnap = await getFirestore()
-      .collection("admin_users")
+      .collection(ADMIN_USERS)
       .where("firebaseUID", "==", request.auth.uid)
       .limit(1)
       .get();
@@ -436,7 +438,7 @@ export const sendLibraryUserMessage = onCall(
       let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
       for (;;) {
         let pageQuery = libraryDb
-          .collection("libraryUsers")
+          .collection(LIBRARY_USERS)
           .select("revoked")
           .orderBy(FieldPath.documentId())
           .limit(PAGE_SIZE);
@@ -465,7 +467,7 @@ export const sendLibraryUserMessage = onCall(
         )
       );
       const snaps = await Promise.all(
-        emails.map((e) => libraryDb.collection("libraryUsers").doc(e).get())
+        emails.map((e) => libraryDb.collection(LIBRARY_USERS).doc(e).get())
       );
       const unknown = emails.filter((_, i) => !snaps[i].exists);
       if (unknown.length > 0) {
@@ -487,7 +489,7 @@ export const sendLibraryUserMessage = onCall(
     for (const recipientEmail of emails) {
       writer.set(
         libraryDb
-          .collection("libraryUsers")
+          .collection(LIBRARY_USERS)
           .doc(recipientEmail)
           .collection("messages")
           .doc(messageId),

@@ -40,7 +40,7 @@ let leaderToken;
 /** The leader's own group. Not in the shared fixtures because no other suite
  *  needs one, and requireGroupLeader only reads creatorEmail + bookId. */
 async function seedGroup() {
-  await db.collection("discussionGroups").doc(GROUP_ID).set({
+  await db.collection(tenantPath("discussionGroups")).doc(GROUP_ID).set({
     title: "Coupon Test Group",
     creatorEmail: LEADER,
     bookId: BOOK,
@@ -88,7 +88,7 @@ test("a 100% coupon beats the bulk tier and buys the licenses for $0", async () 
   assert.equal(res.result.bulkBeatsCoupon, false);
   assert.equal(res.result.licenseIds.length, 3);
 
-  const purchase = await db.collection("purchases").doc(res.result.purchaseId).get();
+  const purchase = await db.collection(tenantPath("purchases")).doc(res.result.purchaseId).get();
   assert.equal(purchase.data().total, 0);
   assert.equal(purchase.data().discountSource, "coupon");
   assert.equal(purchase.data().couponApplied, true);
@@ -105,7 +105,7 @@ test("the bulk tier wins over a weaker coupon, and says so", async () => {
   assert.match(res.error.message, /payPalOrderId is required/);
 
   // Nothing was minted on the way to that refusal.
-  const licenses = await db.collection("groupLicenses")
+  const licenses = await db.collection(tenantPath("groupLicenses"))
     .where("groupId", "==", GROUP_ID).get();
   assert.equal(licenses.size, 0);
 });
@@ -149,7 +149,7 @@ test("an EXPIRED coupon is refused", async () => {
   assert.equal(res.status, 400);
   assert.match(res.error.message, /Invalid, inactive or expired coupon code/);
   // Critically: it did not fall through and mint 3 free licenses.
-  const licenses = await db.collection("groupLicenses")
+  const licenses = await db.collection(tenantPath("groupLicenses"))
     .where("groupId", "==", GROUP_ID).get();
   assert.equal(licenses.size, 0);
 });

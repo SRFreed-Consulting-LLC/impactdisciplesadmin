@@ -1,3 +1,7 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const GROUP_INVITES = tenantPath("groupInvites");
+const LIBRARY_USERS = tenantPath("libraryUsers");
+const GROUPS = tenantPath("discussionGroups");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {getFirestore} from "firebase-admin/firestore";
@@ -46,7 +50,7 @@ export const deleteMyAccount = onCall(async (request):
   // delete the membership doc itself.
   const writer = db.bulkWriter();
   const createdGroups = await db
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .where("creatorEmail", "==", email)
     .get();
   for (const groupDoc of createdGroups.docs) {
@@ -63,7 +67,7 @@ export const deleteMyAccount = onCall(async (request):
   // 2. Un-answered invites they sent (accepted/declined ones are kept as
   // historical records).
   const invites = await db
-    .collection("groupInvites")
+    .collection(GROUP_INVITES)
     .where("leaderEmail", "==", email)
     .where("status", "==", "pending")
     .get();
@@ -73,7 +77,7 @@ export const deleteMyAccount = onCall(async (request):
   await writer.close();
 
   // 3. The profile doc + ALL its subcollections in one recursive pass.
-  await db.recursiveDelete(db.collection("libraryUsers").doc(email));
+  await db.recursiveDelete(db.collection(LIBRARY_USERS).doc(email));
 
   // 4. The Auth account itself, last - tolerant of an already-missing
   // account so a retry after a partial failure still converges.

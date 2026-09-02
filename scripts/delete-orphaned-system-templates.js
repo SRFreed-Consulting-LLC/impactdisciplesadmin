@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Deletes SYSTEM templates nothing can reach any more (2026-08-21).
 //
 // Three templates outlived the code that sent them:
@@ -69,7 +70,7 @@ async function main() {
 
   console.log(`\nProject: ${projectId}${execute ? '  (EXECUTE)' : '  (dry run)'}\n`);
 
-  const candidates = (await db.collection('mail_templates').get()).docs
+  const candidates = (await tenantCollection(db, "mail_templates").get()).docs
     .filter((d) => TARGET_NAMES.has(d.data().name));
 
   if (candidates.length === 0) {

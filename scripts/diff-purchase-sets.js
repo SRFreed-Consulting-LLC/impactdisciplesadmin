@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Ad-hoc, read-only: set difference of purchases doc ids between dev and
 // prod, both directions (promote.js only ever looks at dev->prod).
 const { getFirestoreFor } = require("./lib/firestore-admin");
@@ -8,8 +9,8 @@ async function main() {
   const prodDb = getFirestoreFor("impactdisciples-a82a8");
 
   const [devRefs, prodRefs] = await Promise.all([
-    devDb.collection("purchases").listDocuments(),
-    prodDb.collection("purchases").listDocuments(),
+    tenantCollection(devDb, "purchases").listDocuments(),
+    tenantCollection(prodDb, "purchases").listDocuments(),
   ]);
   const devIds = new Set(devRefs.map((r) => r.id));
   const prodIds = new Set(prodRefs.map((r) => r.id));

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time-per-environment migration completing the processedStatus ->
 // fulfillmentStatus consolidation (see this repo's commit removing
 // CheckoutForm.processedStatus and functions/src/purchase-fulfillment.
@@ -60,7 +61,7 @@ async function main() {
   const execute = !!args.execute;
   const db = getFirestoreFor(projectId);
 
-  const snap = await db.collection("purchases").get();
+  const snap = await tenantCollection(db, "purchases").get();
 
   let processedStatusRemoved = 0;
   let fulfillmentBackfilled = 0;

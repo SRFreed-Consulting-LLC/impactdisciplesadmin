@@ -37,7 +37,7 @@ test("a purchase with a brand-new email seeds a full customer record " +
     address1: "2 Oak St", address2: "", city: "Sharpsburg",
     state: "GA", zip: "30277", country: "US",
   };
-  await db.collection("purchases").add({
+  await db.collection(tenantPath("purchases")).add({
     // Mixed case on purpose - the trigger lowercases before matching.
     email: "Ursula-New@Upserts.TEST",
     firstName: "Ursula",
@@ -73,7 +73,7 @@ test("isShippingSameAsBilling seeds the billing address from shipping",
       address1: "9 Mirror Rd", city: "Macon",
       state: "GA", zip: "31201", country: "US",
     };
-    await db.collection("purchases").add({
+    await db.collection(tenantPath("purchases")).add({
       email: "same-as@upserts.test",
       firstName: "Sam", lastName: "Same",
       shippingAddress: shipping,
@@ -92,7 +92,7 @@ test("isShippingSameAsBilling seeds the billing address from shipping",
 test("a second purchase with a genuinely different lastName queues a " +
   "pendingChanges entry instead of overwriting - while normalized-equal " +
   "name/phone/address values are NOT flagged", async () => {
-  const secondRef = await db.collection("purchases").add({
+  const secondRef = await db.collection(tenantPath("purchases")).add({
     email: "ursula-new@upserts.test",
     // Normalized-same as "Ursula" (case + whitespace) - must NOT flag.
     firstName: "  URSULA ",
@@ -132,7 +132,7 @@ test("a second purchase with a genuinely different lastName queues a " +
 
 test("a third conflicting purchase REPLACES the pending entry for that " +
   "field rather than accumulating duplicates", async () => {
-  await db.collection("purchases").add({
+  await db.collection(tenantPath("purchases")).add({
     email: "ursula-new@upserts.test",
     firstName: "Ursula",
     lastName: "Third",
@@ -148,7 +148,7 @@ test("a third conflicting purchase REPLACES the pending entry for that " +
 });
 
 test("an implausible email ('x') creates NO customer record", async () => {
-  await db.collection("purchases").add({
+  await db.collection(tenantPath("purchases")).add({
     email: "x",
     firstName: "Bogus", lastName: "Data",
     cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
@@ -157,7 +157,7 @@ test("an implausible email ('x') creates NO customer record", async () => {
   // Sentinel purchase created AFTER the junk one: once ITS customer
   // exists the trigger queue has drained past the junk purchase, so the
   // negative assertion below isn't just "didn't wait long enough".
-  await db.collection("purchases").add({
+  await db.collection(tenantPath("purchases")).add({
     email: "sentinel@upserts.test",
     firstName: "Sen", lastName: "Tinel",
     cartItems: [{id: "prod-shirt", orderQuantity: 1}],
@@ -171,7 +171,7 @@ test("an implausible email ('x') creates NO customer record", async () => {
 
 test("an event registration creates a names-only customer (no phone, no " +
   "addresses - registrations never carry them)", async () => {
-  await db.collection("event-registrations").add({
+  await db.collection(tenantPath("event-registrations")).add({
     firstName: "Rina",
     lastName: "Registrant",
     lastNameLower: "registrant",
@@ -197,7 +197,7 @@ test("an event registration creates a names-only customer (no phone, no " +
 
 test("a conflicting registration for an existing customer queues a " +
   "pendingChanges entry with source eventRegistration", async () => {
-  const regRef = await db.collection("event-registrations").add({
+  const regRef = await db.collection(tenantPath("event-registrations")).add({
     firstName: "Rina",
     lastName: "Married",
     lastNameLower: "married",

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Converts a legacy Quill (html-only) mail_template into a BUILDER template,
 // by authoring its content as real designer blocks and stamping `design` +
 // a recompiled `html`.
@@ -513,7 +514,7 @@ function backupPath(name, projectId) {
 }
 
 async function findTemplate(db, name) {
-  const snap = await db.collection("mail_templates").where("name", "==", name).get();
+  const snap = await tenantCollection(db, "mail_templates").where("name", "==", name).get();
   if (snap.empty) throw new Error(`No template named "${name}" on this project.`);
   if (snap.size > 1) throw new Error(`${snap.size} templates named "${name}" - resolve the duplicate first.`);
   return snap.docs[0];

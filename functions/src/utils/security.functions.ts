@@ -1,3 +1,5 @@
+import {tenantPath} from "../common/shared/lists/tenancy";
+const ADMIN_USERS = tenantPath("admin_users");
 import * as functions from "firebase-functions";
 
 // Known origins allowed to call these HTTP functions from a browser. Update
@@ -136,7 +138,7 @@ export async function requireStaffAuth(
   const decoded = await getAuth().verifyIdToken(match[1]);
 
   const users = await getFirestore()
-    .collection("admin_users")
+    .collection(ADMIN_USERS)
     .where("email", "==", decoded.email)
     .limit(1)
     .get();

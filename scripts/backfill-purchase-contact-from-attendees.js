@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time fix for purchases with a blank email/firstName/lastName that
 // nonetheless have a real attendee on one of their cartItems (event ticket
 // purchases capture the attendee's name/email on the cart item itself, but
@@ -49,7 +50,7 @@ async function main() {
 
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
-  const purchasesSnap = await db.collection("purchases").get();
+  const purchasesSnap = await tenantCollection(db, "purchases").get();
   const candidates = [];
 
   purchasesSnap.docs.forEach((doc) => {
@@ -89,7 +90,7 @@ async function main() {
   console.log(`\nWriting ${candidates.length} purchase(s)...`);
   const batch = db.batch();
   for (const c of candidates) {
-    batch.update(db.collection("purchases").doc(c.id), {
+    batch.update(tenantCollection(db, "purchases").doc(c.id), {
       firstName: c.firstName,
       lastName: c.lastName,
       email: c.email

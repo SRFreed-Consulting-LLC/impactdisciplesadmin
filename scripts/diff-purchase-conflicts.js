@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Ad-hoc, read-only: for a handful of purchases doc ids that promote.js
 // flagged as conflicting, print exactly which fields differ between dev and
 // prod (after the same ignore-list promote.js itself applies), so a human
@@ -28,8 +29,8 @@ async function main() {
 
   for (const id of ids) {
     const [devSnap, prodSnap] = await Promise.all([
-      devDb.collection("purchases").doc(id).get(),
-      prodDb.collection("purchases").doc(id).get(),
+      tenantCollection(devDb, "purchases").doc(id).get(),
+      tenantCollection(prodDb, "purchases").doc(id).get(),
     ]);
     console.log(`\n=== ${id} ===`);
     if (!devSnap.exists || !prodSnap.exists) {

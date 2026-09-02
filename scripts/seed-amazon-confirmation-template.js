@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Seeds the "Amazon Shipping Confirmation" mail_templates doc - the
 // template PurchasesService.sendAmazonConfirmation() renders when an
 // order takes the Amazon fulfillment branch (2026-08-19 workflow change).
@@ -38,7 +39,7 @@ const HTML =
 
 (async () => {
   const db = getFirestoreFor(resolveProjectId(args.project));
-  const existing = await db.collection("mail_templates")
+  const existing = await tenantCollection(db, "mail_templates")
     .where("name", "==", NAME).limit(1).get();
   if (!existing.empty) {
     console.log(`SKIP (exists): ${NAME} (${existing.docs[0].id})`);
@@ -48,7 +49,7 @@ const HTML =
     console.log(`WOULD SEED: ${NAME}`);
     return;
   }
-  const ref = await db.collection("mail_templates").add({
+  const ref = await tenantCollection(db, "mail_templates").add({
     name: NAME,
     subject: "Your Impact Disciples order is on its way!",
     html: HTML,

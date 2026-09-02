@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time backfill: stamps the `role` custom claim onto every Firebase
 // Auth account referenced by an admin_users doc's firebaseUID field -
 // seeding the accounts that existed before the onAdminUserRoleSync
@@ -33,7 +34,7 @@ async function main() {
   const db = getFirestoreFor(projectId);
   const auth = getAuth(getApp(`${projectId}::(default)`));
 
-  const snap = await db.collection("admin_users").get();
+  const snap = await tenantCollection(db, "admin_users").get();
   console.log(
     `${execute ? "EXECUTE" : "DRY RUN"} - ${snap.size} admin_users docs ` +
     `in ${projectId}`

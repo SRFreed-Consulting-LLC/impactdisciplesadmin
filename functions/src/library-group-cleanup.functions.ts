@@ -1,4 +1,6 @@
-import {triggerPath} from "./common/shared/lists/tenancy";
+import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
+const GROUP_LICENSES = tenantPath("groupLicenses");
+const GROUP_INVITES = tenantPath("groupInvites");
 import {onDocumentDeleted} from "firebase-functions/v2/firestore";
 import {getFirestore} from "firebase-admin/firestore";
 
@@ -64,7 +66,7 @@ export const onGroupDeletedCleanup = onDocumentDeleted(
 
     // Pending invites: hard delete, exactly what cancelGroupInvite does.
     const invites = await db()
-      .collection("groupInvites")
+      .collection(GROUP_INVITES)
       .where("groupId", "==", groupId)
       .get();
     const doomed = invites.docs.filter((d) =>
@@ -72,7 +74,7 @@ export const onGroupDeletedCleanup = onDocumentDeleted(
 
     // Assigned licenses: mark, don't revoke - see shouldDetachLicense.
     const licenses = await db()
-      .collection("groupLicenses")
+      .collection(GROUP_LICENSES)
       .where("assignedGroupId", "==", groupId)
       .get();
     const detachable = licenses.docs.filter((d) =>

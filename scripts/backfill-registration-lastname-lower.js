@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) backfill: lastNameLower = lastName.toLowerCase() on
 // every event-registrations doc missing it - the case-insensitive sort key
 // the admin Attendees table's paged orderBy uses (Firestore sorts by code
@@ -23,7 +24,7 @@ const arg = (name) => {
   }
   const dryRun = !!arg('dry-run');
   const db = getFirestoreFor(resolveProjectId(project));
-  const snap = await db.collection('event-registrations').get();
+  const snap = await tenantCollection(db, "event-registrations").get();
   let updated = 0;
   for (const doc of snap.docs) {
     const data = doc.data();

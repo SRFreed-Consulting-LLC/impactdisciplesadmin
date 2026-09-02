@@ -66,7 +66,7 @@ async function main() {
   console.log(`\nProject: ${projectId}${execute ? '  (EXECUTE)' : '  (dry run)'}\n`);
 
   const [templates, events, products, campaignEmails] = await Promise.all([
-    db.collection('mail_templates').get(),
+    tenantCollection(db, "mail_templates").get(),
     tenantCollection(db, "events").get(),
     tenantCollection(db, "products").get(),
     tenantCollection(db, "campaign_emails").get(),

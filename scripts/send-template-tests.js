@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Sends a test copy of every mail_template to one address, rendered with
 // realistic sample data, so the whole set can be looked at in a real inbox
 // rather than in a preview pane.
@@ -127,7 +128,7 @@ async function main() {
     "<div style=\"margin-top:12px;font-size:13px;color:#6a7280;\">" +
     "Confirmation Id: <b>IMP-TEST-0001</b></div>";
 
-  const snap = await db.collection("mail_templates").get();
+  const snap = await tenantCollection(db, "mail_templates").get();
   const templates = [];
   snap.forEach((d) => {
     const t = d.data();

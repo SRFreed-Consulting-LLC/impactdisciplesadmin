@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time-per-environment purchases cleanup, run after the fulfillment
 // feature (onPurchaseFulfillmentEligible, functions/src/purchase-
 // fulfillment.functions.ts) went live for the first time tonight. That
@@ -54,7 +55,7 @@ async function main() {
 
   const cutoffMs = Date.now() - 2 * 24 * 60 * 60 * 1000;
 
-  const snap = await db.collection("purchases").get();
+  const snap = await tenantCollection(db, "purchases").get();
 
   let oldToComplete = 0;
   let oldAlreadyComplete = 0;

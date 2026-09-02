@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Exports, then deletes, the three imported-from-Mailchimp CAMPAIGN
 // templates: "Event Invite (Mailchimp)", "Newsletter 2021 (Mailchimp)" and
 // "Impact Live Template (Mailchimp)".
@@ -48,7 +49,7 @@ async function main() {
   const projectId = resolveProjectId(String(args.project || "dev"));
   const db = getFirestoreFor(projectId);
 
-  const snap = await db.collection("mail_templates").get();
+  const snap = await tenantCollection(db, "mail_templates").get();
   const targets = snap.docs.filter((d) => {
     const data = d.data();
     return NAMES.includes(data.name) && data.kind === "campaign";

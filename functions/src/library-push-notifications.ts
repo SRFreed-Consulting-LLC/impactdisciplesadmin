@@ -1,3 +1,6 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const LIBRARY_USERS = tenantPath("libraryUsers");
+const GROUPS = tenantPath("discussionGroups");
 import {Firestore} from "firebase-admin/firestore";
 import {Messaging} from "firebase-admin/messaging";
 import * as logger from "firebase-functions/logger";
@@ -94,7 +97,7 @@ export async function sendLibraryPushToUser(
   payload: LibraryPushPayload
 ): Promise<number> {
   const normalized = email.trim().toLowerCase();
-  const userRef = db.collection("libraryUsers").doc(normalized);
+  const userRef = db.collection(LIBRARY_USERS).doc(normalized);
   const userSnap = await userRef.get();
   if (userSnap.data()?.notificationsEnabled === false) {
     return 0;
@@ -157,7 +160,7 @@ export async function getApprovedMemberEmails(
   // the wire on every chat message / prayer-request share, not just the
   // `status` filter field.
   const snap = await db
-    .collection("discussionGroups")
+    .collection(GROUPS)
     .doc(groupId)
     .collection("members")
     .where("status", "==", "approved")

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // READ-ONLY: the Amazon Shipping Confirmation template, in full.
 const { resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
 (async () => {
   const project = resolveProjectId(process.argv[2]);
   const db = getFirestoreFor(project);
-  const snap = await db.collection("mail_templates").where("name", "==", "Amazon Shipping Confirmation").get();
+  const snap = await tenantCollection(db, "mail_templates").where("name", "==", "Amazon Shipping Confirmation").get();
   console.log(`${project}: ${snap.size} match(es)`);
   snap.forEach((d) => {
     const t = d.data();

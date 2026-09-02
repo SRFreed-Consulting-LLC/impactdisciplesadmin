@@ -1,5 +1,6 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
 const LESSON_IMAGES = tenantPath("lessonImages");
+const LIBRARY_USERS = tenantPath("libraryUsers");
 /**
  * Emails a reader a PDF of one lesson, with their own saved answers in it.
  *
@@ -44,7 +45,7 @@ export const emailLessonPdf = onCall(
       );
     }
 
-    const profileSnap = await db.collection("libraryUsers").doc(email).get();
+    const profileSnap = await db.collection(LIBRARY_USERS).doc(email).get();
     if (!profileSnap.exists) {
       throw new HttpsError("permission-denied", "No reader profile.");
     }
@@ -66,7 +67,7 @@ export const emailLessonPdf = onCall(
       throw new HttpsError("not-found", "That lesson no longer exists.");
     }
 
-    const submissionSnap = await db.collection("libraryUsers").doc(email)
+    const submissionSnap = await db.collection(LIBRARY_USERS).doc(email)
       .collection("submissions").doc(lessonId).get();
     const answers = (submissionSnap.data()?.["data"] ?? {}) as
       Record<string, unknown>;

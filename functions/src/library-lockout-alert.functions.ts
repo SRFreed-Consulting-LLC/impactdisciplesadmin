@@ -1,4 +1,5 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
+const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {getFirestore} from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";
@@ -96,7 +97,7 @@ export const lockedOutPatronAlert = onSchedule(
 
     // libraryUsers ids are emails; capture licence counts from the same read.
     const [usersSnap, authEmails] = await Promise.all([
-      db.collection("libraryUsers").get(),
+      db.collection(LIBRARY_USERS).get(),
       listAllAuthEmails(),
     ]);
     const licenceCountByEmail = new Map<string, number>();

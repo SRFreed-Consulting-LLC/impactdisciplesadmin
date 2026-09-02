@@ -1,4 +1,5 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
+const TEMPLATES = tenantPath("mail_templates");
 import {Timestamp} from "firebase-admin/firestore";
 import {renderEmailBody} from "./utils/merge-tags.functions";
 import {
@@ -530,7 +531,7 @@ export async function queueWebOrderEmails(
   const followUps = (form.cartItems ?? [])
     .filter((item) => !!item.followUpEmailId);
   await Promise.all(followUps.map(async (item) => {
-    const followUpSnap = await db.collection("mail_templates")
+    const followUpSnap = await db.collection(TEMPLATES)
       .doc(item.followUpEmailId as string).get();
     if (!followUpSnap.exists) {
       // Also loud, for the same reason as the receipt above: a product whose

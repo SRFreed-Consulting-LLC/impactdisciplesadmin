@@ -59,7 +59,7 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const db = getFirestoreFor(projectId);
 
-  const snap = await db.collection("mail_templates").where("name", "==", name).get();
+  const snap = await tenantCollection(db, "mail_templates").where("name", "==", name).get();
   if (snap.empty) throw new Error(`No template named "${name}" on ${projectId}.`);
   if (snap.size > 1) throw new Error(`${snap.size} templates named "${name}".`);
   const doc = snap.docs[0];
@@ -125,7 +125,7 @@ async function main() {
         "them pointing at nothing, and a registration then sends no email at all."
       );
     }
-    const targetSnap = await db.collection("mail_templates")
+    const targetSnap = await tenantCollection(db, "mail_templates")
       .where("name", "==", reassignTo).get();
     if (targetSnap.empty) throw new Error(`No template named "${reassignTo}" to reassign to.`);
     if (targetSnap.size > 1) throw new Error(`${targetSnap.size} templates named "${reassignTo}".`);
@@ -165,7 +165,7 @@ async function main() {
   const gone = !(await doc.ref.get()).exists;
   console.log(`  deleted "${name}": ${gone}`);
 
-  const left = await db.collection("mail_templates").get();
+  const left = await tenantCollection(db, "mail_templates").get();
   const system = [];
   left.forEach((d) => {
     const k = d.data().kind ?? "system";

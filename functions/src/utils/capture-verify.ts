@@ -1,3 +1,5 @@
+import {tenantPath} from "../common/shared/lists/tenancy";
+const PURCHASES = tenantPath("purchases");
 import {HttpsError} from "firebase-functions/v2/https";
 import {OrderCapture} from "../library-paypal";
 
@@ -93,7 +95,7 @@ export async function findPriorPurchaseByReceipt(
   db: FirebaseFirestore.Firestore,
   payPalOrderId: string
 ): Promise<FirebaseFirestore.QueryDocumentSnapshot | null> {
-  const prior = await db.collection("purchases")
+  const prior = await db.collection(PURCHASES)
     .where("receipt", "==", payPalOrderId).limit(1).get();
   return prior.empty ? null : prior.docs[0];
 }

@@ -121,7 +121,7 @@ async function seedCollections() {
   }
   // Library content is a nested tree: librarySeries/{s}/books/{b}/units/{u}/lessons/{l}
   for (const [seriesId, series] of Object.entries(fixtures.librarySeriesTree)) {
-    const seriesRef = db.collection("librarySeries").doc(seriesId);
+    const seriesRef = tenantCollection(db, "librarySeries").doc(seriesId);
     batch.set(seriesRef, withTimestamps(series.doc));
     count++; inBatch++; await commitIfFull();
     for (const [bookId, book] of Object.entries(series.books)) {
@@ -154,7 +154,7 @@ async function seedCollections() {
 async function settleTriggerBacklog() {
   const signature = async () => {
     const [counts, customers, mail] = await Promise.all([
-      db.collection("eventSessionCounts").get(),
+      tenantCollection(db, "eventSessionCounts").get(),
       tenantCollection(db, "customers").count().get(),
       db.collection("mail").count().get(),
     ]);
@@ -190,7 +190,7 @@ async function writeSessionCountTruth() {
     }
   }
   for (const [eventId, counts] of Object.entries(byEvent)) {
-    await db.collection("eventSessionCounts").doc(eventId).set({
+    await tenantCollection(db, "eventSessionCounts").doc(eventId).set({
       counts, seeded: true, updatedAt: Timestamp.fromDate(new Date()),
     });
   }

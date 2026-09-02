@@ -1,3 +1,5 @@
+import {tenantPath} from "../common/shared/lists/tenancy";
+const TEMPLATES = tenantPath("mail_templates");
 // The two mail_templates that no DATA points at - the send paths name them
 // in code - and how to find them without depending on their name.
 //
@@ -45,12 +47,12 @@ export async function resolveCodeTemplate(
   id: string,
   name: string
 ): Promise<ResolvedTemplate | null> {
-  const byId = await db.collection("mail_templates").doc(id).get();
+  const byId = await db.collection(TEMPLATES).doc(id).get();
   if (byId.exists) {
     return {id: byId.id, data: byId.data() as ResolvedTemplate["data"]};
   }
 
-  const byName = await db.collection("mail_templates")
+  const byName = await db.collection(TEMPLATES)
     .where("name", "==", name).get();
 
   if (byName.empty) {

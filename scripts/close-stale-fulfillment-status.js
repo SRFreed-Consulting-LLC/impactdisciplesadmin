@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Fixes a bug in migrate-processed-status-to-fulfillment.js's inference:
 // it set fulfillmentStatus="shipping_label_printed" for any purchase with
 // an existing shippingLabel, regardless of age - so old (already actually
@@ -38,7 +39,7 @@ async function main() {
 
   const cutoffMs = Date.now() - 2 * 24 * 60 * 60 * 1000;
 
-  const snap = await db.collection("purchases").where("fulfillmentStatus", "!=", "closed").get();
+  const snap = await tenantCollection(db, "purchases").where("fulfillmentStatus", "!=", "closed").get();
 
   const toClose = [];
   const statusCounts = {};

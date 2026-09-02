@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) migration of stored ScreenPermission.screenKey
 // values in `admin_users` after the 2026-08-19 Contacts & Events
 // restructure (same shape as migrate-screenkey-renames.js, the
@@ -35,7 +36,7 @@ function renameKey(key) {
   }
   const dryRun = !!arg('dry-run');
   const db = getFirestoreFor(resolveProjectId(project));
-  const snap = await db.collection('admin_users').get();
+  const snap = await tenantCollection(db, "admin_users").get();
   let changed = 0;
   for (const doc of snap.docs) {
     const data = doc.data();

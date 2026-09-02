@@ -43,7 +43,7 @@ async function main() {
   const db = getFirestoreFor(projectId);
 
   const [templates, events, products] = await Promise.all([
-    db.collection("mail_templates").get(),
+    tenantCollection(db, "mail_templates").get(),
     tenantCollection(db, "events").get(),
     tenantCollection(db, "products").get()
   ]);

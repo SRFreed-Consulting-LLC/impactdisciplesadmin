@@ -1,5 +1,6 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
 const PRODUCTS = tenantPath("products");
+const PURCHASES = tenantPath("purchases");
 import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
@@ -31,7 +32,7 @@ async function buildShipmentForPurchase(
 ): Promise<BuiltShipment | undefined> {
   const db = getFirestore();
   const [purchaseSnap, configSnap] = await Promise.all([
-    db.collection("purchases").doc(purchaseId).get(),
+    db.collection(PURCHASES).doc(purchaseId).get(),
     db.collection(tenantPath("config")).limit(1).get(),
   ]);
 
@@ -118,7 +119,7 @@ async function recordShippingCostDrift(
     at: Timestamp.now(),
   };
 
-  await getFirestore().collection("purchases").doc(purchaseId).set(
+  await getFirestore().collection(PURCHASES).doc(purchaseId).set(
     {shippingCostDrift: drift}, {merge: true}
   );
   return drift;

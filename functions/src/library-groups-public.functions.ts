@@ -1,3 +1,5 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const GROUPS = tenantPath("discussionGroups");
 /* eslint-disable camelcase -- endpoint names are URL-visible and follow
    the repo's snake_case onRequest convention (newsletter_archive,
    lookup_coupon, ...). */
@@ -233,7 +235,7 @@ async function loadPublicGroups(): Promise<PublicGroupSummary[]> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) {
     return cache.groups;
   }
-  const snap = await db().collection("discussionGroups")
+  const snap = await db().collection(GROUPS)
     .orderBy("startDate")
     .limit(SCAN_LIMIT)
     .get();

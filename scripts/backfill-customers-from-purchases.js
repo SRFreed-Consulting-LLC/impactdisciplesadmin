@@ -147,7 +147,7 @@ async function main() {
   }
 
   // ---- Load purchases, oldest first ----
-  const purchasesSnap = await db.collection("purchases").get();
+  const purchasesSnap = await tenantCollection(db, "purchases").get();
   const allPurchases = purchasesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const purchases = allPurchases
     .filter((p) => isPlausibleEmail(p.email))

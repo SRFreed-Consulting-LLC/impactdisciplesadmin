@@ -32,7 +32,9 @@
     "coverage:check": "node scripts/check-coverage.js",
     "coverage:baseline": "node scripts/check-coverage.js --update",
     "e2e:publish": "node scripts/publish-e2e-run.js",
-    "e2e:admin:publish": "node scripts/publish-e2e-run.js --suite=e2e-admin --project=dev --from-dashboard=e2e-admin/results/dashboard.json"
+    "e2e:admin:publish": "node scripts/publish-e2e-run.js --suite=e2e-admin --project=dev --from-dashboard=e2e-admin/results/dashboard.json",
+    "check-tenancy": "node --test functions/test/tenancy-mirror.test.js functions/test/tenancy-unseamed-access.test.js",
+    "verify-wave": "npm run check-tenancy && npm run check-functions && npm run test:rules && npm run test:integration && node --test integration/trigger-liveness.test.js"
   },
   "private": true,
   "dependencies": {

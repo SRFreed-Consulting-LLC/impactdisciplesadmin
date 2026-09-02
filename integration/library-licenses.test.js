@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: library license lifecycle through the REAL Cloud Functions
 // in the emulator - the onPurchaseGrantLibraryLicenses purchases trigger
 // (library-license-grant.functions.ts / library-store-license-grant.ts)
@@ -21,7 +22,7 @@ let db;
 let adminToken;
 
 const libUser = async (email) =>
-  (await db.collection("libraryUsers").doc(email).get()).data();
+  (await db.collection(tenantPath("libraryUsers")).doc(email).get()).data();
 const entriesFor = (user, bookId) =>
   (user.bookLicenses ?? []).filter((l) => l.bookId === bookId);
 
@@ -45,7 +46,7 @@ before(async () => {
 
 test("a digital-book purchase grants the license: libraryUsers/{email} " +
   "created with the flat id and a source:'store-purchase' entry", async () => {
-  await db.collection("purchases").doc("lib-purch-0001").set(
+  await db.collection(tenantPath("purchases")).doc("lib-purch-0001").set(
     digitalPurchase("NewReader@Library.TEST", {
       cartItems: [{
         id: "prod-book-digital", isDigitalBook: true,
@@ -76,10 +77,10 @@ test("a replayed delivery of the SAME purchase re-grants nothing " +
   // same purchaseId (purchases has no delete trigger, verified in
   // functions/src/index.ts). A sentinel purchase created afterwards
   // proves the trigger queue drained past the replay.
-  await db.collection("purchases").doc("lib-purch-0001").delete();
-  await db.collection("purchases").doc("lib-purch-0001").set(
+  await db.collection(tenantPath("purchases")).doc("lib-purch-0001").delete();
+  await db.collection(tenantPath("purchases")).doc("lib-purch-0001").set(
     digitalPurchase("newreader@library.test"));
-  await db.collection("purchases").doc("lib-purch-sentinel").set(
+  await db.collection(tenantPath("purchases")).doc("lib-purch-sentinel").set(
     digitalPurchase("sentinel-reader@library.test"));
   await waitFor(() => libUser("sentinel-reader@library.test"),
     {timeoutMs: 60000, intervalMs: 1000, label: "sentinel grant"});
@@ -91,7 +92,7 @@ test("a replayed delivery of the SAME purchase re-grants nothing " +
   // Different purchase, same book: a new entry with its own
   // storePurchaseId (each provenance is revoked independently); the flat
   // id list stays deduped.
-  await db.collection("purchases").doc("lib-purch-0002").set(
+  await db.collection(tenantPath("purchases")).doc("lib-purch-0002").set(
     digitalPurchase("newreader@library.test"));
   user = await waitFor(async () => {
     const u = await libUser("newreader@library.test");
@@ -132,7 +133,7 @@ test("revokeAdminGrantedLicense drops the flat id only when NO other " +
   "source still covers the book", async () => {
   // Construct dual-source coverage first: patron holds BOOK1 via the
   // seeded admin-grant; add a store purchase of the same book.
-  await db.collection("purchases").doc("lib-purch-patron").set(
+  await db.collection(tenantPath("purchases")).doc("lib-purch-patron").set(
     digitalPurchase(PATRON));
   await waitFor(async () => {
     const u = await libUser(PATRON);

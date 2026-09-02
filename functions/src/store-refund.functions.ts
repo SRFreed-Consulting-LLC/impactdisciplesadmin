@@ -1,4 +1,6 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
+const PURCHASES = tenantPath("purchases");
+const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -181,7 +183,7 @@ async function stripStorePurchaseLicenses(
   onlyBookId?: string
 ): Promise<string[]> {
   const db = getFirestore();
-  const ref = db.collection("libraryUsers").doc(email);
+  const ref = db.collection(LIBRARY_USERS).doc(email);
   const removedIds: string[] = [];
   await db.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
@@ -260,7 +262,7 @@ export const refundStorePurchase = onCall(
     }
 
     const db = getFirestore();
-    const purchaseRef = db.collection("purchases").doc(purchaseId);
+    const purchaseRef = db.collection(PURCHASES).doc(purchaseId);
     const purchaseSnap = await purchaseRef.get();
     if (!purchaseSnap.exists) {
       throw new HttpsError("not-found", "Purchase not found.");

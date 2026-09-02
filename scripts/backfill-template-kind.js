@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time classification of every existing mail_templates doc into
 // kind: 'system' | 'campaign' (2026-08-21).
 //
@@ -51,7 +52,7 @@ async function main() {
 
   console.log(`\nProject: ${projectId}${execute ? '  (EXECUTE)' : '  (dry run)'}\n`);
 
-  const snap = await db.collection('mail_templates').get();
+  const snap = await tenantCollection(db, "mail_templates").get();
   const planned = { system: [], campaign: [] };
   const skipped = [];
 

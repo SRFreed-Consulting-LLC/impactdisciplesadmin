@@ -93,6 +93,56 @@ async function main() {
   const db = getFirestoreFor(projectId);
   const site = db.collection("tenants").doc(TENANT_ID);
 
+  /**
+   * Every document under a collection, INCLUDING descendants, paired with
+   * where each belongs at the target. Parents before children.
+   *
+   * THIS SCRIPT WAS FLAT UNTIL WAVE 3, and that was survivable only by
+   * accident: the first 35 collections it moved happened to have no
+   * subcollections at all. `libraryUsers` has four - a patron's lesson
+   * submissions, their highlights, their progress markers, their push token -
+   * `discussionGroups` has four more, and `librarySeries` is a whole
+   * books/units/lessons/translations tree. A flat copy takes the parent
+   * documents, leaves 208+ children behind, and prints "copied". Then
+   * --verify agrees, because it compared flat too. Then --drop-originals
+   * deletes the only remaining copy.
+   *
+   * Firestore has no "copy this subtree" call and a document's children are
+   * only discoverable by asking it, one metadata round-trip per document -
+   * so this is slow on a large collection and that is the price of not
+   * silently discarding a patron's study history.
+   *
+   * @param {object} srcCol Source collection reference.
+   * @param {object} dstCol Its twin under the tenant.
+   * @return {Promise<Array<{src: object, dst: object, snap: object}>>} Nodes.
+   */
+  async function walkTree(srcCol, dstCol) {
+    const snap = await srcCol.get();
+    const out = [];
+    // PROBED IN PARALLEL, and that is not a micro-optimisation. There is one
+    // round-trip per document and no way around it, so `customers` alone is
+    // 5,450 of them; done one at a time the dry run did not finish inside ten
+    // minutes, which is the kind of slow that gets a safety check skipped.
+    const LANES = 40;
+    for (let i = 0; i < snap.docs.length; i += LANES) {
+      const slice = snap.docs.slice(i, i + LANES);
+      const subLists = await Promise.all(
+        slice.map((d) => d.ref.listCollections()));
+      for (let j = 0; j < slice.length; j++) {
+        const d = slice[j];
+        const dst = dstCol.doc(d.id);
+        out.push({src: d.ref, dst, snap: d});
+        // Recursion stays sequential: it is only reached by the handful of
+        // documents that actually HAVE children, so the parallelism that
+        // matters is the probe above, not this.
+        for (const sub of subLists[j]) {
+          out.push(...await walkTree(sub, dst.collection(sub.id)));
+        }
+      }
+    }
+    return out;
+  }
+
   const mode = drop ? "DROPPING ORIGINALS" :
     verify ? "VERIFYING" : execute ? "COPYING" : "dry run";
   console.log(`${projectId} (${mode})`);
@@ -104,22 +154,34 @@ async function main() {
     let differs = 0;
     let checked = 0;
     for (const name of TENANT_COLLECTIONS) {
-      const from = await db.collection(name).get();
-      const to = await site.collection(name).get();
-      const toById = new Map(to.docs.map((d) => [d.id, d.data()]));
+      const nodes = await walkTree(
+        db.collection(name), site.collection(name));
       let bad = 0;
-      from.forEach((d) => {
-        checked++;
-        if (!toById.has(d.id)) {
-          missing++;
-          bad++;
-        } else if (!same(d.data(), toById.get(d.id))) {
-          differs++;
-          bad++;
-        }
-      });
-      console.log(`  ${name.padEnd(18)} ${String(from.size).padStart(3)} source ` +
-        `-> ${String(to.size).padStart(3)} nested  ${bad ? `${bad} PROBLEM(S)` : "ok"}`);
+      let subs = 0;
+      // getAll() in chunks, not one read per document. Sequentially this was
+      // 13,422 round-trips and did not finish inside ten minutes - and a
+      // safety check nobody has the patience to run is a safety check that
+      // does not exist.
+      const CHUNK = 300;
+      for (let i = 0; i < nodes.length; i += CHUNK) {
+        const slice = nodes.slice(i, i + CHUNK);
+        const snaps = await db.getAll(...slice.map((n) => n.dst));
+        slice.forEach((n, j) => {
+          checked++;
+          if (n.src.parent.id !== name) subs++;
+          const other = snaps[j];
+          if (!other.exists) {
+            missing++;
+            bad++;
+          } else if (!same(n.snap.data(), other.data())) {
+            differs++;
+            bad++;
+          }
+        });
+      }
+      const depth = subs ? ` (+${subs} in subcollections)` : "";
+      console.log(`  ${name.padEnd(18)} ${String(nodes.length).padStart(4)} ` +
+        `document(s)${depth}  ${bad ? `${bad} PROBLEM(S)` : "ok"}`);
     }
     console.log(`\n  ${checked} document(s) checked, ${missing} missing, ` +
       `${differs} different.`);
@@ -133,21 +195,31 @@ async function main() {
   if (drop) {
     let removed = 0;
     for (const name of TENANT_COLLECTIONS) {
-      const from = await db.collection(name).get();
-      const to = await site.collection(name).get();
-      if (from.size && to.size < from.size) {
-        console.log(`  REFUSING ${name}: ${from.size} at the top level but ` +
-          `only ${to.size} nested. Run --verify.`);
-        process.exitCode = 1;
-        return;
+      const nodes = await walkTree(
+        db.collection(name), site.collection(name));
+      // Every node, not just the parents - a count check that ignored
+      // children would happily green-light deleting the only copy of them.
+      for (const n of nodes) {
+        const other = await n.dst.get();
+        if (!other.exists || !same(n.snap.data(), other.data())) {
+          console.log(`  REFUSING ${name}: ${n.src.path} is missing or ` +
+            "differs under the tenant. Run --verify.");
+          process.exitCode = 1;
+          return;
+        }
       }
-      for (let i = 0; i < from.docs.length; i += BATCH) {
+      // CHILDREN BEFORE PARENTS, the reverse of the copy order. Deleting a
+      // parent first leaves its subcollections as orphans that no
+      // listCollections() from the top will ever reach again - they do not
+      // show in the console and nothing enumerates them.
+      const ordered = [...nodes].reverse();
+      for (let i = 0; i < ordered.length; i += BATCH) {
         const batch = db.batch();
-        from.docs.slice(i, i + BATCH).forEach((d) => batch.delete(d.ref));
+        ordered.slice(i, i + BATCH).forEach((n) => batch.delete(n.src));
         await batch.commit();
       }
-      removed += from.size;
-      console.log(`  dropped ${name} (${from.size})`);
+      removed += nodes.length;
+      console.log(`  dropped ${name} (${nodes.length})`);
     }
     console.log(`\n  ${removed} original document(s) removed.`);
     return;
@@ -157,10 +229,13 @@ async function main() {
   const plan = [];
   let total = 0;
   for (const name of TENANT_COLLECTIONS) {
-    const snap = await db.collection(name).get();
-    plan.push({name, docs: snap.docs});
-    total += snap.size;
-    console.log(`  ${name.padEnd(18)} ${String(snap.size).padStart(3)} document(s)`);
+    const nodes = await walkTree(db.collection(name), site.collection(name));
+    if (!nodes.length) continue;
+    plan.push({name, nodes});
+    total += nodes.length;
+    const subs = nodes.filter((n) => n.src.parent.id !== name).length;
+    console.log(`  ${name.padEnd(18)} ${String(nodes.length).padStart(4)} ` +
+      `document(s)${subs ? ` (+${subs} in subcollections)` : ""}`);
   }
   console.log(`\n  ${total} document(s) in total`);
 
@@ -174,9 +249,19 @@ async function main() {
   const out = path.join(__dirname, "backups",
     `site-collections-${projectId}-before-nesting.json`);
   fs.mkdirSync(path.dirname(out), {recursive: true});
+  // BY FULL PATH, not by id. Once subcollections are in scope an id alone no
+  // longer says where a document belongs - `submissions/lesson-3` exists
+  // under every patron who ever opened lesson 3. A backup that cannot be
+  // restored to the right place is not a backup, and this file is the only
+  // thing standing behind --drop-originals other than the nested copy it is
+  // meant to be independent of.
   fs.writeFileSync(out, JSON.stringify(
     Object.fromEntries(plan.map((p) => [
-      p.name, p.docs.map((d) => ({id: d.id, data: d.data()})),
+      p.name, p.nodes.map((n) => ({
+        path: n.src.path,
+        id: n.src.id,
+        data: n.snap.data(),
+      })),
     ])), null, 1));
   console.log(`\n  backed up to ${path.relative(process.cwd(), out)}`);
 
@@ -196,26 +281,28 @@ async function main() {
   // "Request payload size exceeds the limit" and left 1,096 documents
   // behind. The count cap alone is a limit that works until the day the
   // documents get big.
-  for (const {name, docs} of plan) {
+  for (const {name, nodes} of plan) {
     let batch = db.batch();
     let ops = 0;
     let bytes = 0;
-    for (const d of docs) {
+    // Walk order is parents-first, so a child is never written before the
+    // document it hangs from exists.
+    for (const n of nodes) {
       // JSON length is an approximation of the wire size, not the wire size
       // - which is exactly why the ceiling below is a third of the real one.
-      const size = JSON.stringify(d.data() ?? {}).length;
+      const size = JSON.stringify(n.snap.data() ?? {}).length;
       if (ops > 0 && (ops >= BATCH || bytes + size > MAX_BATCH_BYTES)) {
         await batch.commit();
         batch = db.batch();
         ops = 0;
         bytes = 0;
       }
-      batch.set(site.collection(name).doc(d.id), d.data());
+      batch.set(n.dst, n.snap.data());
       ops++;
       bytes += size;
     }
     if (ops > 0) await batch.commit();
-    console.log(`  copied ${name} (${docs.length})`);
+    console.log(`  copied ${name} (${nodes.length})`);
   }
 
   console.log("\n  Originals are UNTOUCHED. Deploy, check the site, then " +

@@ -35,7 +35,15 @@ function tsStringArray(src, name) {
   // `readonly string[]`, whose bracket comes first and yields an empty list.
   const open = block.indexOf("= [") + 2;
   const body = block.slice(open, block.indexOf("]", open) + 1);
-  return [...body.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  // COMMENT LINES OUT FIRST. The list is documented inline, and an ordinary
+  // English apostrophe - "a patron's submissions" - opens a string as far as
+  // a quote-matching regex is concerned, swallowing everything to the next
+  // one and reporting a drift that is not there. Cost a real-looking red on
+  // a check whose whole job is to be believed.
+  const code = body.split("\n")
+    .filter((l) => !/^\s*\/\//.test(l))
+    .join("\n");
+  return [...code.matchAll(/'([^']+)'/g)].map((m) => m[1]);
 }
 
 test("scripts/lib/tenancy.js has not drifted from tenancy.ts", () => {

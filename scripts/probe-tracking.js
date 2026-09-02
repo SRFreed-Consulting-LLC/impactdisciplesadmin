@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // READ-ONLY: how often does an Amazon shipping confirmation carry a tracking
 // number? amazonTracking is written only by sendAmazonConfirmation(), so its
 // presence is a direct record of whether the dialog's optional field was used.
@@ -11,7 +12,7 @@ const has = (v) => typeof v === "string" && v.trim() !== "";
   const db = getFirestoreFor(projectId);
 
   const rows = [];
-  (await db.collection("purchases").get()).forEach((d) => rows.push({ id: d.id, ...d.data() }));
+  (await tenantCollection(db, "purchases").get()).forEach((d) => rows.push({ id: d.id, ...d.data() }));
 
   // An order that went down the Amazon path has the field present at all -
   // sendAmazonConfirmation writes `amazonTracking: value || null`, so a null

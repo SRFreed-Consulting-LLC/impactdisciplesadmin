@@ -1,7 +1,7 @@
 import {tenantPath} from "../common/shared/lists/tenancy";
 const COUPONS = tenantPath("coupons");
-const EVENTS = tenantPath("events");
 const PRODUCTS = tenantPath("products");
+const EVENTS = tenantPath("events");
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {
   bestOfferPrice,
