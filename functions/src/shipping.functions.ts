@@ -1,3 +1,4 @@
+import {tenantPath} from "./common/shared/lists/site_tenancy";
 import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
@@ -30,7 +31,7 @@ async function buildShipmentForPurchase(
   const db = getFirestore();
   const [purchaseSnap, configSnap] = await Promise.all([
     db.collection("purchases").doc(purchaseId).get(),
-    db.collection("config").limit(1).get(),
+    db.collection(tenantPath("config")).limit(1).get(),
   ]);
 
   const purchase = purchaseSnap.data();

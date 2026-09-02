@@ -1,3 +1,4 @@
+import {tenantPath} from "../common/shared/lists/site_tenancy";
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {
   bestOfferPrice,
@@ -229,7 +230,7 @@ export async function computeOrderPricing(
   // parallel so the public checkout path pays one round trip, not one per
   // read. The pricing logic itself below is unchanged.
   const [configSnap, activeOffers, couponSnap, itemSnaps] = await Promise.all([
-    db.collection("config").limit(1).get(),
+    db.collection(tenantPath("config")).limit(1).get(),
     getActiveOffers(),
     request.couponCode ?
       db.collection("coupons").get() :

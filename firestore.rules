@@ -945,6 +945,74 @@ service cloud.firestore {
     }
 
     // ========================================================================
+    // A SITE'S OWN CONTENT - sites/{siteId}/...
+    //
+    // The nine collections the public site renders and Page Manager edits,
+    // nested under one document. See the shared site_tenancy.ts for why;
+    // the short version is that `promote.js` scopes a dev->prod promotion to
+    // collections that ALREADY EXIST in prod, so a new top-level collection
+    // is never carried across unless somebody remembers - which is exactly
+    // how production ended up with no page_content, no site_navigation and
+    // no site_footer while the admin happily edited all three.
+    //
+    // THE TOP-LEVEL COPIES ABOVE STAY UNTIL THE MOVE IS VERIFIED. Both sets
+    // are legal on purpose: data is copied to the new paths, the apps are
+    // deployed, the new paths are checked against the live site, and only
+    // then are the originals and their rules removed. Rules must be the
+    // FIRST thing deployed and the LAST thing narrowed, or there is a window
+    // where a read is denied.
+    //
+    // EVERY COLLECTION IS LISTED. No `match /{collection}/{id}` wildcard,
+    // deliberately: Firestore ORs its rules rather than taking the most
+    // specific, so a wildcard granting isBusinessStaff() would WIDEN config
+    // - which is admin-only to write - rather than being overridden by it.
+    // ========================================================================
+    match /sites/{siteId} {
+      allow read: if true;                    // the site document itself:
+      allow write: if isAdminRole();          // name + hostnames, admin only
+
+      // Business figures and the store's own settings. Admin-only to write,
+      // exactly as `config` was at the top level.
+      match /config/{id} {
+        allow read: if true;
+        allow write: if isAdminRole();
+      }
+
+      match /page_content/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /site_navigation/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /site_footer/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /dock_bar/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /testimonials/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /impact_team/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /dmms/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /faq/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+    }
+
+    // ========================================================================
     // Default deny - any collection not explicitly matched above.
     // ========================================================================
     match /{document=**} {

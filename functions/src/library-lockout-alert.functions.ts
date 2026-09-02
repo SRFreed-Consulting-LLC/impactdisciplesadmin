@@ -1,3 +1,4 @@
+import {tenantPath} from "./common/shared/lists/site_tenancy";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {getFirestore} from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";
@@ -119,7 +120,8 @@ export const lockedOutPatronAlert = onSchedule(
     const decision = decideLockoutAlert(currentLockedOut, prev, Date.now());
 
     if (decision.email) {
-      const configSnap = await db.collection("config").limit(1).get();
+      const configRef = db.collection(tenantPath("config"));
+      const configSnap = await configRef.limit(1).get();
       const raw = configSnap.empty ?
         "" :
         ((configSnap.docs[0].data().lockedOutAlertEmail as

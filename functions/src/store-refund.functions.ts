@@ -1,3 +1,4 @@
+import {tenantPath} from "./common/shared/lists/site_tenancy";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -296,7 +297,8 @@ export const refundStorePurchase = onCall(
           paypalSandboxSecret.value();
         accessToken = await getAccessToken(env, secret);
       } else {
-        const configSnap = await db.collection("config").limit(1).get();
+        const configRef = db.collection(tenantPath("config"));
+        const configSnap = await configRef.limit(1).get();
         const clientId = configSnap.docs[0]?.data()?.paypalClientId;
         if (!clientId) {
           throw new HttpsError(

@@ -1,3 +1,4 @@
+import {tenantPath} from "./common/shared/lists/site_tenancy";
 import {onRequest} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
@@ -97,7 +98,8 @@ async function getPaypalClientId(): Promise<string> {
   // document when there is more than one. Silently picking the wrong config
   // in production means charging against the wrong PayPal app - read the
   // collection and refuse to guess instead.
-  const configSnap = await getFirestore().collection("config").get();
+  const configRef = getFirestore().collection(tenantPath("config"));
+  const configSnap = await configRef.get();
   if (configSnap.size > 1) {
     throw new Error(
       `Expected a single config document, found ${configSnap.size} ` +

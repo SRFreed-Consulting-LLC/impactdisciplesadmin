@@ -1,3 +1,4 @@
+import {tenantPath} from "./common/shared/lists/site_tenancy";
 import {Timestamp} from "firebase-admin/firestore";
 import {renderEmailBody} from "./utils/merge-tags.functions";
 import {
@@ -49,7 +50,7 @@ export const UNSUBSCRIBE_URL =
 async function freeEbookUrl(
   db: FirebaseFirestore.Firestore
 ): Promise<string | null> {
-  const snap = await db.collection("config").get();
+  const snap = await db.collection(tenantPath("config")).get();
   if (snap.empty || snap.size > 1) {
     console.error(
       `freeEbookUrl: expected one config document, found ${snap.size} - ` +
