@@ -137,6 +137,13 @@ exports.onPurchaseGrantLibraryLicenses =
 const libraryLockoutAlert = require("./library-lockout-alert.functions");
 exports.lockedOutPatronAlert = libraryLockoutAlert.lockedOutPatronAlert;
 
+// The Trigger Email extension never clears its own queue: `mail` reached
+// 7,792 documents in prod, oldest delivered September 2024, before a one-off
+// prune on 2026-09-01. This keeps 90 days of delivered mail and every
+// failure, however old - see mail-retention.functions.ts.
+const mailRetention = require("./mail-retention.functions");
+exports.pruneSentMail = mailRetention.pruneSentMail;
+
 const bookImport = require("./book-import.functions");
 exports.importBookFromPdf = bookImport.importBookFromPdf;
 
