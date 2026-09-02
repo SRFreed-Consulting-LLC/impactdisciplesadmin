@@ -1,4 +1,4 @@
-// Copies a site's own content under one document - sites/{siteId}/...
+// Copies a site's own content under one document - tenants/{tenantId}/...
 //
 //   node scripts/nest-site-collections.js --project=dev
 //   node scripts/nest-site-collections.js --project=dev --execute
@@ -24,7 +24,7 @@
 //   4. this script --verify, and check the live site
 //   5. this script --drop-originals
 //
-// See the shared site_tenancy.ts for what moves and why.
+// See the shared tenancy.ts for what moves and why.
 
 const fs = require("fs");
 const path = require("path");
@@ -36,15 +36,15 @@ const BATCH = 400;
 
 // Hand-carried from the shared submodule rather than imported: this is a
 // plain node script and src/common is TypeScript. The spec in
-// site_tenancy.spec.ts pins the list on that side; a mismatch here shows up
+// tenancy.spec.ts pins the list on that side; a mismatch here shows up
 // immediately as a collection this script does not mention.
-const SITE_ID = "impactdisciples.com";
+const TENANT_ID = "impactdisciples.com";
 const SITE_HOSTNAMES = [
   "impactdisciples.com",
   "www.impactdisciples.com",
   "impactdisciplesdev-public.web.app",
 ];
-const SITE_COLLECTIONS = [
+const TENANT_COLLECTIONS = [
   "page_content",
   "site_navigation",
   "site_footer",
@@ -84,19 +84,19 @@ async function main() {
   const drop = process.argv.includes("--drop-originals");
   const projectId = resolveProjectId(arg("project"));
   const db = getFirestoreFor(projectId);
-  const site = db.collection("sites").doc(SITE_ID);
+  const site = db.collection("tenants").doc(TENANT_ID);
 
   const mode = drop ? "DROPPING ORIGINALS" :
     verify ? "VERIFYING" : execute ? "COPYING" : "dry run";
   console.log(`${projectId} (${mode})`);
-  console.log(`  target: sites/${SITE_ID}\n`);
+  console.log(`  target: tenants/${TENANT_ID}\n`);
 
   // ---- verify: every source document present and identical at the target
   if (verify) {
     let missing = 0;
     let differs = 0;
     let checked = 0;
-    for (const name of SITE_COLLECTIONS) {
+    for (const name of TENANT_COLLECTIONS) {
       const from = await db.collection(name).get();
       const to = await site.collection(name).get();
       const toById = new Map(to.docs.map((d) => [d.id, d.data()]));
@@ -125,7 +125,7 @@ async function main() {
   // ---- drop: remove the top-level originals, once verified
   if (drop) {
     let removed = 0;
-    for (const name of SITE_COLLECTIONS) {
+    for (const name of TENANT_COLLECTIONS) {
       const from = await db.collection(name).get();
       const to = await site.collection(name).get();
       if (from.size && to.size < from.size) {
@@ -149,7 +149,7 @@ async function main() {
   // ---- copy
   const plan = [];
   let total = 0;
-  for (const name of SITE_COLLECTIONS) {
+  for (const name of TENANT_COLLECTIONS) {
     const snap = await db.collection(name).get();
     plan.push({name, docs: snap.docs});
     total += snap.size;
@@ -180,7 +180,7 @@ async function main() {
     hostnames: SITE_HOSTNAMES,
     isActive: true,
   }, {merge: true});
-  console.log(`  wrote sites/${SITE_ID}`);
+  console.log(`  wrote tenants/${TENANT_ID}`);
 
   for (const {name, docs} of plan) {
     for (let i = 0; i < docs.length; i += BATCH) {

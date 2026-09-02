@@ -6,7 +6,7 @@
     "build-local": "ng build --configuration=local",
     "start-dev": "ng serve --configuration=development --port=5200",
     "build-dev": "ng build --configuration=development",
-    "check-functions": "npm --prefix functions run lint && npm --prefix functions run build",
+    "check-functions": "npm --prefix functions run lint && npm --prefix functions run build && npm --prefix functions test",
     "build-deploy-dev": "npm run check-functions && ng build --configuration=development && firebase use impactdisciplesdev && firebase deploy --only hosting:development",
     "start-prod": "ng serve --configuration=production --port=5200",
     "build-prod": "ng build --configuration=production",

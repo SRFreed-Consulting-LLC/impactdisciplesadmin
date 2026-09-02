@@ -1,4 +1,4 @@
-import {tenantPath} from "../common/shared/lists/site_tenancy";
+import {tenantPath} from "../common/shared/lists/tenancy";
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {
   bestOfferPrice,

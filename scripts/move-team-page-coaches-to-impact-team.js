@@ -30,6 +30,7 @@
 //   node scripts/move-team-page-coaches-to-impact-team.js --project=dev --execute
 
 const { resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
+const { tenantCollection } = require("./lib/tenancy");
 
 function parseArgs(argv) {
   const args = {};
@@ -86,7 +87,7 @@ async function main() {
       fullname: `${rest.firstName || ""} ${rest.lastName || ""}`.trim()
     };
 
-    batch.set(db.collection("impact_team").doc(id), impactTeamDoc);
+    batch.set(tenantCollection(db, "impact_team").doc(id), impactTeamDoc);
     batch.delete(db.collection("coaches").doc(id));
     opsInBatch += 2;
 

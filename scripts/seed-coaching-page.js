@@ -27,6 +27,7 @@
 "use strict";
 
 const { resolveProjectId, getFirestoreFor } = require("./lib/firestore-admin");
+const { tenantCollection } = require("./lib/tenancy");
 
 const TYPE = "Coaching with Impact";
 const PAGE_DOC = "current";
@@ -134,7 +135,7 @@ async function main() {
   // ---------------------------------------------------------- testimonials
   console.log(`testimonials (${TESTIMONIALS.length}, type "${TYPE}"):`);
   for (const t of TESTIMONIALS) {
-    const ref = db.collection("testimonials").doc(t.id);
+    const ref = tenantCollection(db, "testimonials").doc(t.id);
     const existing = await ref.get();
     const text = t.paragraphs.join("\n\n");
 

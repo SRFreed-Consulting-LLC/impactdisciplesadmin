@@ -967,12 +967,16 @@ service cloud.firestore {
     // specific, so a wildcard granting isBusinessStaff() would WIDEN config
     // - which is admin-only to write - rather than being overridden by it.
     // ========================================================================
-    match /sites/{siteId} {
-      allow read: if true;                    // the site document itself:
+    // BOTH ROOTS ARE PERMITTED, on purpose and temporarily. `sites` was the
+    // right noun while the only thing under it was a website; it is being
+    // renamed to `tenants` now, before the rest of the ministry's data moves
+    // under it and makes the copy 200x larger. Rules are deployed FIRST and
+    // narrowed LAST, or there is a window where a read is denied. Delete the
+    // `sites` block below once --drop-source has run.
+    match /tenants/{tenantId} {
+      allow read: if true;                    // the tenant document itself:
       allow write: if isAdminRole();          // name + hostnames, admin only
 
-      // Business figures and the store's own settings. Admin-only to write,
-      // exactly as `config` was at the top level.
       match /config/{id} {
         allow read: if true;
         allow write: if isAdminRole();
@@ -1011,6 +1015,7 @@ service cloud.firestore {
         allow write: if isBusinessStaff();
       }
     }
+
 
     // ========================================================================
     // Default deny - any collection not explicitly matched above.

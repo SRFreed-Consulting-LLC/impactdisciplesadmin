@@ -1,4 +1,4 @@
-import {tenantPath} from "./common/shared/lists/site_tenancy";
+import {tenantPath} from "./common/shared/lists/tenancy";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {getFirestore} from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";

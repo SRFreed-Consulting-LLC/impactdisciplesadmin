@@ -5,7 +5,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot, WriteBatch } from 'firebase/firestore';
 import { BaseModel } from '@impact-common/shared/models/base.model';
-import { tenantPath } from '@impact-common/shared/lists/site_tenancy';
+import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Unsubscribe } from 'firebase/auth';
 
 // One page of a getPage() call. cursor is the raw QueryDocumentSnapshot for
@@ -30,8 +30,8 @@ export class FirebaseDAO<T extends BaseModel> {
    * Where a collection actually lives.
    *
    * EVERY path in this class goes through here. A site's own content is
-   * nested under `sites/{siteId}`; everything else is returned unchanged.
-   * See site_tenancy.ts for why, and for the list - the list is the whole
+   * nested under `tenants/{tenantId}`; everything else is returned unchanged.
+   * See tenancy.ts for why, and for the list - the list is the whole
    * of the decision, so nothing in this file needs to know which is which.
    *
    * The leading slash is kept because that is how every call site already

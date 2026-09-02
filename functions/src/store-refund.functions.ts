@@ -1,4 +1,4 @@
-import {tenantPath} from "./common/shared/lists/site_tenancy";
+import {tenantPath} from "./common/shared/lists/tenancy";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";

@@ -25,8 +25,16 @@ const LIVE_URL =
   "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8" +
   ".appspot.com/o/EBooks%2FM-7-Journal.pdf?alt=media&token=test-token";
 
+// THROUGH THE SEAM, not a literal. This stub matched a bare "config" until
+// 2026-09-02, and the day the production code started resolving that name
+// through tenantPath() these four tests began failing silently - `npm test`
+// is not part of `check-functions`, which runs lint and build only. Matching
+// on the same function the code calls means the stub cannot drift from it
+// again, whatever the path becomes.
+const {tenantPath} = require("../lib/common/shared/lists/tenancy");
+
 /**
- * A Firestore stand-in returning `configDocs` for collection("config") and
+ * A Firestore stand-in returning `configDocs` for the config collection and
  * capturing whatever gets added to collection("mail").
  * @param {Array<object>} configDocs Config documents to serve.
  * @return {object} The fake db plus the captured mail.
@@ -35,7 +43,7 @@ function fakeDb(configDocs) {
   const queued = [];
   const db = {
     collection(name) {
-      if (name === "config") {
+      if (name === tenantPath("config")) {
         return {
           get: async () => ({
             empty: configDocs.length === 0,

@@ -1,5 +1,5 @@
 // Gathers a site's images under one Storage prefix -
-// sites/{siteId}/... - and repoints the documents that name them.
+// tenants/{tenantId}/... - and repoints the documents that name them.
 //
 //   node scripts/move-site-storage.js --copy
 //   node scripts/move-site-storage.js --copy --execute
@@ -45,10 +45,37 @@ const {getFirestoreFor, resolveProjectId, getApp} =
 const {getStorage} = require(require.resolve("firebase-admin/storage",
   {paths: [path.join(__dirname, "..", "functions")]}));
 
-const SITE_ID = "impactdisciples.com";
-const PREFIX = `sites/${SITE_ID}`;
+const TENANT_ID = "impactdisciples.com";
+const PREFIX = `tenants/${TENANT_ID}`;
 const DEV = "impactdisciplesdev";
 const PROD = "impactdisciples-a82a8";
+
+/**
+ * Prefixes this script has used BEFORE, which must be stripped rather than
+ * nested under.
+ *
+ * The root was `sites/{id}` until the rename on 2026-09-02, and the
+ * documents were repointed at it before that happened - so the object paths
+ * this script now reads out of Firestore already carry the old prefix.
+ * Prepending the new one to them yields
+ * `tenants/x/sites/x/Web-Pages/...`, an object that exists, resolves, and is
+ * wrong: every later run would bury it one level deeper again.
+ *
+ * Kept as a LIST rather than removed once used, because the same thing is
+ * true of any future rename and the cost of carrying it is one array.
+ */
+const OLD_PREFIXES = [`sites/${TENANT_ID}/`];
+
+/**
+ * The object's path with any previous tenant prefix removed, so a re-run
+ * re-parents rather than re-nests.
+ * @param {string} objectPath A path read from a stored download URL.
+ * @return {string} The path as it was before any prefixing.
+ */
+function unprefixed(objectPath) {
+  const hit = OLD_PREFIXES.find((p) => objectPath.startsWith(p));
+  return hit ? objectPath.slice(hit.length) : objectPath;
+}
 
 /** Folders that belong wholly to the site, copied entire. */
 const SITE_FOLDERS = ["Web-Pages/", "Coaching-With-Impact/", "Headshots/", "Icons/"];
@@ -113,7 +140,11 @@ function downloadUrl(bucket, objectPath, token) {
 
 /** @return {boolean} Whether this object belongs to the business, not us. */
 function businessOwned(objectPath) {
-  return NOT_OURS.some((p) => objectPath.startsWith(p)) ||
+  // Tested against the UNPREFIXED path: an object already parked under an
+  // old tenant root still belongs to whoever it belonged to before, and
+  // `Store/x.png` and `sites/id/Store/x.png` must reach the same verdict.
+  const bare = unprefixed(objectPath);
+  return NOT_OURS.some((p) => bare.startsWith(p)) ||
     objectPath.startsWith(`${PREFIX}/`);
 }
 
@@ -135,7 +166,7 @@ async function main() {
     .bucket(`${PROD}.appspot.com`);
   const devBucket = getStorage(getApp(`${DEV}::(default)`))
     .bucket(`${DEV}.appspot.com`);
-  const site = devDb.collection("sites").doc(SITE_ID);
+  const site = devDb.collection("tenants").doc(TENANT_ID);
 
   // ---- what the site actually names
   const referenced = new Set();
@@ -166,10 +197,20 @@ async function main() {
 
   // ---- copy
   if (doCopy) {
-    const work = new Map(); // sourceKey -> {bucket, objectPath}
+    // KEYED BY DESTINATION, not by source. The same picture is reached two
+    // ways - once because a document names it, once because the folder scan
+    // walks it - and after a re-parent those two arrive under different
+    // names (`Web-Pages/x.png` and `sites/id/Web-Pages/x.png`) that resolve
+    // to one target. Keying by source counted it twice and reported 218
+    // objects where there were 172.
+    const work = new Map(); // targetPath -> {bucketName, objectPath}
     const add = (bucketName, objectPath) => {
       if (businessOwned(objectPath)) return;
-      work.set(`${bucketName}|${objectPath}`, {bucketName, objectPath});
+      const target = `${PREFIX}/${unprefixed(objectPath)}`;
+      // First writer wins, and the reference scan runs first - so the path a
+      // document actually names is preferred over the one the folder walk
+      // guessed at.
+      if (!work.has(target)) work.set(target, {bucketName, objectPath});
     };
 
     // Everything the site names...
@@ -203,7 +244,9 @@ async function main() {
     let skipped = 0;
     for (const {bucketName, objectPath} of work.values()) {
       const from = bucketName.startsWith(DEV) ? devBucket : prodBucket;
-      const target = `${PREFIX}/${objectPath}`;
+      // Re-PARENT, never re-nest: strip any earlier tenant root first, or a
+      // second run buries the object one level deeper and still "works".
+      const target = `${PREFIX}/${unprefixed(objectPath)}`;
       const dest = prodBucket.file(target);
 
       const [exists] = await dest.exists();

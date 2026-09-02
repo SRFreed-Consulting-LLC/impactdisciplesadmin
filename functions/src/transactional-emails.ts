@@ -1,4 +1,4 @@
-import {tenantPath} from "./common/shared/lists/site_tenancy";
+import {tenantPath} from "./common/shared/lists/tenancy";
 import {Timestamp} from "firebase-admin/firestore";
 import {renderEmailBody} from "./utils/merge-tags.functions";
 import {

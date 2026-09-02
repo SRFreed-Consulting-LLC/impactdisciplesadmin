@@ -1,4 +1,4 @@
-import {tenantPath} from "./common/shared/lists/site_tenancy";
+import {tenantPath} from "./common/shared/lists/tenancy";
 import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";

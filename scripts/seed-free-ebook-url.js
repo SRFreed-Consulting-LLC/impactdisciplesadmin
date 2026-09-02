@@ -23,6 +23,7 @@
 // seeding a dead link is the one outcome worse than leaving the constant.
 
 const {resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {tenantCollection} = require("./lib/tenancy");
 
 const args = {};
 for (const raw of process.argv.slice(2)) {
@@ -64,7 +65,7 @@ async function verifyUrl(target) {
   // Same rule getPaypalClientId uses: `config` is a singleton by convention
   // and nothing enforces it, so read the collection and refuse to guess
   // rather than limit(1) onto an arbitrary document.
-  const snap = await db.collection("config").get();
+  const snap = await tenantCollection(db, "config").get();
   if (snap.empty) {
     console.error(`  No config document on ${projectId}.`);
     process.exit(1);

@@ -21,6 +21,7 @@
 //   node scripts/seed-dock-bar.js --project=prod --execute --force
 
 const {resolveProjectId, getFirestoreFor} = require("./lib/firestore-admin");
+const {tenantCollection} = require("./lib/tenancy");
 
 const DOC_ID = "current";
 
@@ -49,7 +50,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const projectId = resolveProjectId(args.project);
   const db = getFirestoreFor(projectId);
-  const ref = db.collection("dock_bar").doc(DOC_ID);
+  const ref = tenantCollection(db, "dock_bar").doc(DOC_ID);
 
   const existing = await ref.get();
 

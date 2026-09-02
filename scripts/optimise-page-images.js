@@ -34,6 +34,7 @@ const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const {getFirestoreFor, resolveProjectId} = require("./lib/firestore-admin");
+const {tenantCollection} = require("./lib/tenancy");
 
 const READER = path.join(__dirname, "..", "..", "impact-discipleship-library-new");
 const {chromium} = require(require.resolve("playwright", {paths: [READER]}));
@@ -188,7 +189,7 @@ async function main() {
 
   console.log(`${projectId} ${execute ? "(EXECUTING)" : "(dry run)"}\n`);
 
-  const snap = await db.collection("page_content").get();
+  const snap = await tenantCollection(db, "page_content").get();
   // One file can be used by several pages - About Us and the demo page share
   // story-3.jpg. Convert each ONCE and repoint every user at the result.
   const converted = new Map();
