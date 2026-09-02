@@ -26,7 +26,7 @@ test("an empty render is not treated as oversized", () => {
   assert.equal(exceedsAttachmentLimit(0), false);
 });
 
-test("the ceiling leaves real headroom under Firestore's 1MB document cap", () => {
+test("the ceiling leaves headroom under the 1MB document cap", () => {
   // The point of the number. base64 inflates by a third, and the document
   // carries an html body and fields besides the attachment - so the encoded
   // attachment has to stay comfortably below 1,048,576, not merely under it.
