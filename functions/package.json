@@ -22,7 +22,8 @@
     "@anthropic-ai/sdk": "^0.68.0",
     "firebase-admin": "^14.3.0",
     "firebase-functions": "^7.3.2",
-    "shipengine": "^1.0.7"
+    "shipengine": "^1.0.7",
+    "pdfkit": "^0.15.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
@@ -31,7 +32,8 @@
     "eslint-config-google": "^0.14.0",
     "globals": "^16.0.0",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.35.0"
+    "typescript-eslint": "^8.35.0",
+    "@types/pdfkit": "^0.13.5"
   },
   "private": true,
   "overrides": {

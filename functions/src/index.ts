@@ -208,6 +208,9 @@ const libraryPurchases = require("./library-purchases.functions");
 exports.verifyAndGrantReaderStorePurchase =
   libraryPurchases.verifyAndGrantReaderStorePurchase;
 
+const libraryLessonPdf = require("./library-lesson-pdf.functions");
+exports.emailLessonPdf = libraryLessonPdf.emailLessonPdf;
+
 const libraryAccount = require("./library-account.functions");
 exports.deleteMyAccount = libraryAccount.deleteMyAccount;
 
