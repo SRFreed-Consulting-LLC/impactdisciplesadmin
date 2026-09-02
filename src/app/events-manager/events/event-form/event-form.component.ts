@@ -13,6 +13,7 @@ import { SnackbarService } from '../../../shared/snackbar.service';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
 import { toTimeValue } from '../event-time.util';
+import { extractYouTubeVideoId, youTubeVideoIdValidator } from 'src/app/common/utils/youtube-video-id';
 
 // The event editor - the densest form in the app, extracted from
 // EventsComponent 2026-08-21 (bucket A item #5, option 2). That component
@@ -199,7 +200,9 @@ export class EventFormComponent implements OnInit {
       endDate: raw.endDate,
       checkIn: raw.checkIn,
       description: raw.description,
-      videoId: raw.videoId,
+      // Stored as the bare id whatever was pasted, so the public page's
+      // `<youtube-player [videoId]>` gets what it can actually play.
+      videoId: extractYouTubeVideoId(raw.videoId) ?? '',
       imageUrl: this.card.imageUrl ?? null,
       venue: this.resolveVenue(raw),
       costInDollars: raw.costInDollars,
@@ -296,7 +299,7 @@ export class EventFormComponent implements OnInit {
       costInDollars: [item.costInDollars ?? 0],
       isSummit: [item.isSummit ?? false],
       earlyRegistration: [item.earlyRegistration ?? false],
-      videoId: [item.videoId ?? ''],
+      videoId: [item.videoId ?? '', youTubeVideoIdValidator],
       isOnline: [item.isOnline ?? false],
       isKajabiCourse: [item.isKajabiCourse ?? false],
       kajabiPurchaseURL: [item.kajabiPurchaseURL ?? ''],

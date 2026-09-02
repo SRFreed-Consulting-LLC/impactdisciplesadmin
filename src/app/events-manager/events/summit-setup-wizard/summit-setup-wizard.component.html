@@ -94,8 +94,12 @@
             <button mat-stroked-button type="button" (click)="showImageUploader()">{{ card.imageUrl?.name ? 'Change Image' : 'Upload Image' }}</button>
           </div>
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Promo Video Id (YouTube)</mat-label>
-            <input matInput formControlName="videoId" placeholder="e.g. dQw4w9WgXcQ">
+            <mat-label>Promo Video (YouTube)</mat-label>
+            <input matInput formControlName="videoId" placeholder="Paste the YouTube link, or just the video ID">
+            <mat-hint>Either works — the link is trimmed down to the ID when you save.</mat-hint>
+            @if (form.get('videoId')?.hasError('youtubeVideoId')) {
+              <mat-error>That isn't a YouTube video. Paste the link from the video's Share button, or the 11-character ID.</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Web Description</mat-label>

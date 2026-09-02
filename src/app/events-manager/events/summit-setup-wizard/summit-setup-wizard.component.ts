@@ -19,6 +19,7 @@ import { Instructor } from '../event-agenda/session-block.util';
 import { VenueRoomsDialogComponent } from '../venue-rooms-dialog.component';
 import { SummitPreviewData } from '../summit-preview/summit-preview.component';
 import { copyAgendaSkeleton, copySummitContent } from './summit-copy.util';
+import { extractYouTubeVideoId, youTubeVideoIdValidator } from 'src/app/common/utils/youtube-video-id';
 
 interface WizardStep {
   key: string;
@@ -109,7 +110,7 @@ export class SummitSetupWizardComponent implements OnInit {
       endDate: [''],
       checkIn: [''],
       costInDollars: [0],
-      videoId: [''],
+      videoId: ['', youTubeVideoIdValidator],
       description: [''],
       emailTemplate: [null]
     });
@@ -227,7 +228,7 @@ export class SummitSetupWizardComponent implements OnInit {
       endDate: raw.endDate,
       checkIn: raw.checkIn,
       description: raw.description,
-      videoId: raw.videoId,
+      videoId: extractYouTubeVideoId(raw.videoId) ?? '',
       imageUrl: this.card.imageUrl ?? null,
       venue: this.venueSnapshot(),
       costInDollars: raw.costInDollars,
@@ -286,7 +287,9 @@ export class SummitSetupWizardComponent implements OnInit {
       endDate: raw.endDate ? new Date(raw.endDate) : undefined,
       checkIn: raw.checkIn || null,
       costInDollars: raw.costInDollars ?? 0,
-      videoId: raw.videoId ?? '',
+      // Normalized on the way out, same as the draft above - this is the
+      // path that actually writes the event.
+      videoId: extractYouTubeVideoId(raw.videoId) ?? '',
       description: raw.description ?? '',
       emailTemplate: raw.emailTemplate ?? null,
       isSummit: true,
