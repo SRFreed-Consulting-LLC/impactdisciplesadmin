@@ -1,4 +1,6 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
+const COUPONS = tenantPath("coupons");
+const PRODUCTS = tenantPath("products");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -185,7 +187,7 @@ export const purchaseGroupLicenses = onCall(
     // to 1000 licenses. verifyAndGrantReaderStorePurchase already rebuilds
     // from `products`; this now matches.)
     const productsSnap = await libraryDb
-      .collection("products")
+      .collection(PRODUCTS)
       .where("digitalBookId", "==", bookId)
       .get();
     // Keep the doc ID, not just the data: a coupon's `tags` reference
@@ -229,7 +231,7 @@ export const purchaseGroupLicenses = onCall(
     let couponPercentOff: number | null = null;
     const trimmedCode = (couponCode ?? "").trim();
     if (trimmedCode) {
-      const couponsSnap = await libraryDb.collection("coupons").get();
+      const couponsSnap = await libraryDb.collection(COUPONS).get();
       const coupon = pickActiveCoupon(
         couponsSnap.docs.map((d) => d.data()),
         trimmedCode

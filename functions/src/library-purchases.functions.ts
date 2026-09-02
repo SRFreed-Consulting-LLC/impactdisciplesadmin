@@ -1,3 +1,6 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const COUPONS = tenantPath("coupons");
+const PRODUCTS = tenantPath("products");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {defineSecret} from "firebase-functions/params";
@@ -98,7 +101,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     // Server-side product truth - price, digitalBookId, active status all
     // come from the product docs, never from the client's claims.
     const productSnaps = await Promise.all(
-      productIds.map((id) => libraryDb.collection("products").doc(id).get())
+      productIds.map((id) => libraryDb.collection(PRODUCTS).doc(id).get())
     );
     const products = productSnaps.map((snap, i) => {
       const data = snap.exists ? (snap.data() as ProductDoc) : undefined;
@@ -150,7 +153,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     let coupon: CouponDoc | undefined;
     const trimmedCode = (couponCode ?? "").trim();
     if (trimmedCode) {
-      const couponsSnap = await libraryDb.collection("coupons").get();
+      const couponsSnap = await libraryDb.collection(COUPONS).get();
       coupon = pickActiveCoupon(
         couponsSnap.docs.map((d) => d.data()),
         trimmedCode

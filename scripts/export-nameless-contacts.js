@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Exports every `customers` record with NO firstName and NO lastName, and
 // reports what else in the database points at them - so a decision to delete
 // is made with the consequences visible rather than on a count.
@@ -38,7 +39,7 @@ async function main() {
   const projectId = resolveProjectId(args.project);
   const db = getFirestoreFor(projectId);
 
-  const snap = await db.collection("customers").get();
+  const snap = await tenantCollection(db, "customers").get();
   const nameless = [];
   let total = 0;
   snap.forEach((d) => {

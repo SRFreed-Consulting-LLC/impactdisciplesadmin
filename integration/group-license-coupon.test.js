@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: a group leader's BULK LICENSE PURCHASE with a coupon, through
 // the real purchaseGroupLicenses callable in the emulator.
 //
@@ -112,7 +113,7 @@ test("the bulk tier wins over a weaker coupon, and says so", async () => {
 test("a coupon that only ties the bulk tier does not beat it", async () => {
   // 10 books = 20%; a 20% coupon must NOT win (ties go to bulk) and must not
   // stack into 40%. $100 - 20% = $80, still needing PayPal.
-  await db.collection("coupons").doc("coupon-tie").set({
+  await db.collection(tenantPath("coupons")).doc("coupon-tie").set({
     isActive: true, code: "TIE20", percentOff: 20, isAffilliate: false,
   });
 
@@ -135,7 +136,7 @@ test("an EXPIRED coupon is refused", async () => {
   // when all four coupon paths moved onto the shared pickActiveCoupon
   // (utils/coupons.ts), which checks code (case-insensitively), isActive and
   // expiry together. Kept because expiry is still worth pinning here.
-  await db.collection("coupons").doc("coupon-past").set({
+  await db.collection(tenantPath("coupons")).doc("coupon-past").set({
     isActive: true,
     code: "LASTYEAR",
     percentOff: 100,
@@ -165,7 +166,7 @@ test("a coupon tagged to other products does not discount this book", async () =
   // so it applies to nothing here. It is IGNORED rather than refused (the
   // Store behaves the same way), leaving the purchase at full price - which
   // for 3 books is $30, so PayPal is required.
-  await db.collection("coupons").doc("coupon-elsewhere").set({
+  await db.collection(tenantPath("coupons")).doc("coupon-elsewhere").set({
     isActive: true,
     code: "OTHERBOOK",
     percentOff: 100,

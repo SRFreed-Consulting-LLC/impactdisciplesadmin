@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: the PAID checkout path, end to end, through the real
 // create_paypal_order / capture_paypal_order Cloud Functions in the
 // emulator - with PayPal and the apilayer tax service standing in as
@@ -65,7 +66,7 @@ const purchasesByEmail = async (email) =>
   (await db.collection("purchases").where("email", "==", email).get()).docs;
 
 const pendingOrder = async (orderId) =>
-  (await db.collection("pending_orders").doc(orderId).get());
+  (await db.collection(tenantPath("pending_orders")).doc(orderId).get());
 
 /** Runs a full create -> capture for a paid cart, returning both responses. */
 async function createAndCapture(email, overrides = {}) {
@@ -359,7 +360,7 @@ test("a PayPal order-creation failure fails clean - nothing staged, no " +
     code: 400, error: "Failed to create PayPal order",
   });
   assert.equal((await purchasesByEmail(email)).length, 0);
-  const staged = await db.collection("pending_orders")
+  const staged = await db.collection(tenantPath("pending_orders"))
     .where("checkoutForm.email", "==", email).get();
   assert.equal(staged.size, 0);
 });

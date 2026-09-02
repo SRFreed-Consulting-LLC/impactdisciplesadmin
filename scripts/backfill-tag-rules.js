@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Retroactively applies tag rules across historic purchases and
 // event-registrations, by running the REAL sweep logic - it requires
 // runRuleBackfill() from the COMPILED functions output (functions/lib), so
@@ -36,7 +37,7 @@ async function main() {
   const projectId = resolveProjectId(args.project);
   const db = getFirestoreFor(projectId);
 
-  let query = db.collection("tag_rules");
+  let query = tenantCollection(db, "tag_rules");
   const snap = await query.get();
   let rules = snap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
   if (args.rule) {

@@ -1,3 +1,5 @@
+import {tenantPath} from "../common/shared/lists/tenancy";
+const OFFERS = tenantPath("campaign_offers");
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {toMillis} from "./date-normalize.functions";
 
@@ -42,7 +44,7 @@ function round2(value: number): number {
  */
 export async function getActiveOffers(): Promise<OfferDoc[]> {
   const snap = await getFirestore()
-    .collection("campaign_offers")
+    .collection(OFFERS)
     .where("isActive", "==", true)
     .get();
   return snap.docs.map((d) => d.data() as DocumentData as OfferDoc);

@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: the two ShipEngine-backed Cloud Functions
 // (functions/src/shipping.functions.ts) in the emulator, with ShipEngine
 // standing in as scripts/fake-vendors.js.
@@ -227,7 +228,7 @@ const ATTACKER_ZIP = "99501"; // Anchorage - nowhere near the seeded org
 const CUSTOMER_ZIP = "30263";
 
 const seedShippablePurchase = async (db, overrides = {}) => {
-  await db.collection("products").doc("product-s3").set({
+  await db.collection(tenantPath("products")).doc("product-s3").set({
     title: "Heavy Book", isActive: true, weight: 12,
   });
   await db.collection("purchases").doc(VICTIM_PURCHASE).set({

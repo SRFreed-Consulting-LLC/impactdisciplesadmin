@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Retires a mail_template: repoints whatever still references it, then
 // deletes it.
 //
@@ -82,8 +83,8 @@ async function main() {
   // DOC ID. Both are checked - a script that only knew about one would
   // cheerfully delete a template a product still sends.
   const [events, products] = await Promise.all([
-    db.collection("events").get(),
-    db.collection("products").get()
+    tenantCollection(db, "events").get(),
+    tenantCollection(db, "products").get()
   ]);
 
   const usingEvents = [];
@@ -154,7 +155,7 @@ async function main() {
   // Reassign BEFORE deleting, so there is never a moment where an event
   // points at a name that does not exist.
   for (const e of usingEvents) {
-    await db.collection("events").doc(e.id).update({ emailTemplate: reassignTo });
+    await tenantCollection(db, "events").doc(e.id).update({ emailTemplate: reassignTo });
   }
   if (usingEvents.length) {
     console.log(`  reassigned ${usingEvents.length} event(s) to "${reassignTo}"`);

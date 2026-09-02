@@ -34,6 +34,15 @@ const {getFirestoreFor, resolveProjectId} =
 /** Firestore's own per-commit ceiling is 500; this leaves headroom. */
 const BATCH = 400;
 
+/**
+ * The OTHER per-commit ceiling, and the one that actually bit. Firestore
+ * rejects a commit over ~11.5MB of payload regardless of how few writes it
+ * holds. Deliberately a third of that: JSON.stringify measures the shape of
+ * the data, not the encoded wire size, so the margin absorbs the difference
+ * rather than pretending the estimate is exact.
+ */
+const MAX_BATCH_BYTES = 4 * 1024 * 1024;
+
 // FROM THE SEAM, not a third copy of the list.
 //
 // This carried its own hand-maintained copy until 2026-09-02, on the
@@ -180,14 +189,32 @@ async function main() {
   }, {merge: true});
   console.log(`  wrote tenants/${TENANT_ID}`);
 
+  // BATCHED BY BYTES AS WELL AS BY COUNT. Firestore caps a commit at 500
+  // writes AND at ~11.5MB of payload, and only the first of those is
+  // obvious. `campaign_emails` holds whole rendered HTML email bodies, so
+  // 400 of them is tens of megabytes - the copy died mid-collection with
+  // "Request payload size exceeds the limit" and left 1,096 documents
+  // behind. The count cap alone is a limit that works until the day the
+  // documents get big.
   for (const {name, docs} of plan) {
-    for (let i = 0; i < docs.length; i += BATCH) {
-      const batch = db.batch();
-      docs.slice(i, i + BATCH).forEach((d) => {
-        batch.set(site.collection(name).doc(d.id), d.data());
-      });
-      await batch.commit();
+    let batch = db.batch();
+    let ops = 0;
+    let bytes = 0;
+    for (const d of docs) {
+      // JSON length is an approximation of the wire size, not the wire size
+      // - which is exactly why the ceiling below is a third of the real one.
+      const size = JSON.stringify(d.data() ?? {}).length;
+      if (ops > 0 && (ops >= BATCH || bytes + size > MAX_BATCH_BYTES)) {
+        await batch.commit();
+        batch = db.batch();
+        ops = 0;
+        bytes = 0;
+      }
+      batch.set(site.collection(name).doc(d.id), d.data());
+      ops++;
+      bytes += size;
     }
+    if (ops > 0) await batch.commit();
     console.log(`  copied ${name} (${docs.length})`);
   }
 

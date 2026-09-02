@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: server-side checkout pricing through the REAL
 // create_paypal_order Cloud Function (paypal.functions.ts +
 // utils/checkout-pricing.functions.ts) in the emulator.
@@ -110,7 +111,7 @@ test("FREE100 on an event zeroes the order server-side; tampered client " +
     "Your Impact Disciples receipt");
 
   // Affiliate sale recorded server-side from server-computed numbers.
-  const aff = await db.collection("affilliate_sales")
+  const aff = await db.collection(tenantPath("affilliate_sales"))
     .where("code", "==", "FREE100").get();
   assert.equal(aff.size, 1);
   assert.equal(aff.docs[0].data().totalBeforeDiscount, 10);
@@ -141,11 +142,11 @@ test("a genuinely $0 order takes the FREE ONLY path and validated " +
 
   // recordPurchaseAttribution is awaited before the response - the
   // campaign funnel bump is already visible.
-  const camp = await db.collection("campaigns").doc("camp-live").get();
+  const camp = await db.collection(tenantPath("campaigns")).doc("camp-live").get();
   assert.equal(camp.data().stats.purchases, 1);
   assert.equal(camp.data().stats.revenue, 0); // $0 order bumps no revenue
 
-  const events = await db.collection("campaign_events")
+  const events = await db.collection(tenantPath("campaign_events"))
     .where("campaignId", "==", "camp-live")
     .where("type", "==", "purchase").get();
   assert.equal(events.size, 1);
@@ -183,7 +184,7 @@ test("unknown and inactive coupon codes are silently ignored, not " +
   assert.equal(doc2.data().couponCode, undefined);
 
   // Neither ignored code produced an affiliate-sale row.
-  const aff = await db.collection("affilliate_sales").get();
+  const aff = await db.collection(tenantPath("affilliate_sales")).get();
   assert.ok(aff.docs.every((d) =>
     d.data().code !== "NO-SUCH-CODE" && d.data().code !== "OLDCODE"));
 });
@@ -213,12 +214,12 @@ async () => {
   // (see vendor-money.test.js). What DOES exist now is the staged
   // pending_order - which only appears once PayPal has accepted the order.
   assert.equal((await purchasesByEmail(email)).length, 0);
-  const pending = await db.collection("pending_orders")
+  const pending = await db.collection(tenantPath("pending_orders"))
     .doc(res.body.orderId).get();
   assert.equal(pending.exists, true);
   assert.equal(pending.data().status, "created");
   assert.equal(pending.data().amount, "44.50");
-  const aff = await db.collection("affilliate_sales")
+  const aff = await db.collection(tenantPath("affilliate_sales"))
     .where("code", "==", "SAVE10").get();
   assert.equal(aff.size, 0);
 });
@@ -251,7 +252,7 @@ async () => {
   // The offer is created and removed HERE rather than seeded, so it cannot
   // change the pricing every other test in this file depends on.
   const email = "offer-wins@money.test";
-  const offerRef = db.collection("campaign_offers").doc("camp-money-test");
+  const offerRef = db.collection(tenantPath("campaign_offers")).doc("camp-money-test");
 
   await offerRef.set({
     campaignId: "camp-money-test",
@@ -293,7 +294,7 @@ test("an offer that requires attribution is refused to a buyer who did " +
   // in the storefront. Without attribution the buyer pays full price, so
   // FREE100 still zeroes the line and the order completes free.
   const email = "unattributed@money.test";
-  const offerRef = db.collection("campaign_offers").doc("camp-gated-test");
+  const offerRef = db.collection(tenantPath("campaign_offers")).doc("camp-gated-test");
 
   await offerRef.set({
     campaignId: "camp-gated-test",
@@ -343,7 +344,7 @@ test("an INACTIVE product is REFUSED - a delisted item cannot be bought " +
   assert.equal((await purchasesByEmail(email)).length, 0);
   // Scoped to THIS buyer, not the whole collection: earlier tests in this
   // file now legitimately reach PayPal and stage their own pending orders.
-  const staged = await db.collection("pending_orders")
+  const staged = await db.collection(tenantPath("pending_orders"))
     .where("checkoutForm.email", "==", email).get();
   assert.equal(staged.size, 0);
 });
@@ -532,7 +533,7 @@ test("the stored purchase email is NORMALIZED, not the casing typed", async () =
   // And the customer the upsert trigger creates must be findable by it -
   // the whole point of normalizing at the write.
   await waitFor(async () => {
-    const snap = await db.collection("customers")
+    const snap = await db.collection(tenantPath("customers"))
       .where("email", "==", typed.toLowerCase()).get();
     return !snap.empty;
   }, {label: "customer created for the normalized address"});

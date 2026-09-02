@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: Campaign Manager v2's unified send engine + tracking,
 // through the REAL Cloud Functions in the emulator -
 // campaign-send.functions.ts (enqueueCampaignEmail /
@@ -30,11 +31,11 @@ let adminToken;
 const httpGet = (name, query) =>
   fetch(`${FN_BASE}/${name}?${query}`, {redirect: "manual"});
 const touchData = async () =>
-  (await db.collection("campaign_emails").doc(TOUCH).get()).data();
+  (await db.collection(tenantPath("campaign_emails")).doc(TOUCH).get()).data();
 const campaignStats = async () =>
-  (await db.collection("campaigns").doc(CAMPAIGN).get()).data().stats;
+  (await db.collection(tenantPath("campaigns")).doc(CAMPAIGN).get()).data().stats;
 const ledgerFor = async (email) =>
-  (await db.collection("campaign_sends").doc(`${TOUCH}__${email}`).get())
+  (await db.collection(tenantPath("campaign_sends")).doc(`${TOUCH}__${email}`).get())
     .data();
 
 before(async () => {
@@ -82,7 +83,7 @@ test("enqueueCampaignEmail rejects unauthenticated and non-Admin-role " +
 test("enqueue mode 'now': one ledger doc per recipient ({touch}__{email} " +
   "ids with tokens), immediate drain, tracked+footered mail docs, link " +
   "map stored, sent counters bumped", async () => {
-  await db.collection("campaign_emails").doc(TOUCH).set({
+  await db.collection(tenantPath("campaign_emails")).doc(TOUCH).set({
     campaignId: CAMPAIGN,
     label: "Integration send",
     subject: "Hello *|FNAME|*",
@@ -104,7 +105,7 @@ test("enqueue mode 'now': one ledger doc per recipient ({touch}__{email} " +
     {recipients: 6, queued: 6, sentImmediately: 6});
 
   // Ledger: at-most-once per recipient, deterministic ids, each tokened.
-  const ledgers = await db.collection("campaign_sends")
+  const ledgers = await db.collection(tenantPath("campaign_sends"))
     .where("emailId", "==", TOUCH).get();
   assert.equal(ledgers.size, 6);
   for (const email of NEWSLETTER_EMAILS) {
@@ -162,14 +163,14 @@ test("re-enqueueing the same touch creates no duplicate ledger docs and " +
 
   // ...and even forced back to draft, the ledger's atomic create() is the
   // at-most-once lock: ALREADY_EXISTS is skipped, nothing re-queues.
-  await db.collection("campaign_emails").doc(TOUCH)
+  await db.collection(tenantPath("campaign_emails")).doc(TOUCH)
     .update({status: "draft"});
   const res = await callCallable("enqueueCampaignEmail",
     {emailId: TOUCH}, adminToken);
   assert.deepEqual(res.result,
     {recipients: 6, queued: 0, sentImmediately: 0});
 
-  const ledgers = await db.collection("campaign_sends")
+  const ledgers = await db.collection(tenantPath("campaign_sends"))
     .where("emailId", "==", TOUCH).get();
   assert.equal(ledgers.size, 6); // still 6, no dupes
   const mail = await db.collection("mail")
@@ -184,7 +185,7 @@ test("an unsubscribed recipient is skipped at send time (ledger status " +
   // casey09 is NOT newsletter-subscribed; a list-mode audience still
   // resolves them, and the send-time re-check skips them.
   const touchId = "cemail-int-skip";
-  await db.collection("campaign_emails").doc(touchId).set({
+  await db.collection(tenantPath("campaign_emails")).doc(touchId).set({
     campaignId: CAMPAIGN,
     subject: "You should never get this",
     html: "<p>marketing</p>",
@@ -197,13 +198,13 @@ test("an unsubscribed recipient is skipped at send time (ledger status " +
     {emailId: touchId}, adminToken);
   assert.equal(res.result.recipients, 1);
 
-  const ledger = (await db.collection("campaign_sends")
+  const ledger = (await db.collection(tenantPath("campaign_sends"))
     .doc(`${touchId}__casey09@contacts.test`).get()).data();
   assert.equal(ledger.status, "skipped");
   assert.match(ledger.error, /unsubscribed/);
   assert.equal((await db.collection("mail")
     .where("campaignMeta.emailId", "==", touchId).get()).size, 0);
-  assert.equal((await db.collection("campaign_emails").doc(touchId).get())
+  assert.equal((await db.collection(tenantPath("campaign_emails")).doc(touchId).get())
     .data().stats.sent, 0);
 });
 
@@ -285,7 +286,7 @@ test("sendCampaignTestEmail queues one [TEST] mail with no ledger and no " +
   assert.equal(mailDoc.message.subject, "[TEST] Hello Alex");
   assert.equal(mailDoc.campaignMeta, undefined); // never in any funnel
 
-  const ledgers = await db.collection("campaign_sends")
+  const ledgers = await db.collection(tenantPath("campaign_sends"))
     .where("emailId", "==", TOUCH).get();
   assert.equal(ledgers.size, 6); // unchanged
   assert.equal((await touchData()).stats.sent, statsBefore.sent);

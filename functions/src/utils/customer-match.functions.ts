@@ -1,3 +1,5 @@
+import {tenantPath} from "../common/shared/lists/tenancy";
+const CUSTOMERS = tenantPath("customers");
 // Shared by customer-upsert.functions.ts (purchases) and
 // event-registration-customer-upsert.functions.ts (event registrations) -
 // both compare an incoming record's name against a "customers" doc using
@@ -93,7 +95,7 @@ export async function findOrCreateCustomer(
   created: boolean;
   data: FirebaseFirestore.DocumentData;
 }> {
-  const matching = db.collection("customers")
+  const matching = db.collection(CUSTOMERS)
     .where("email", "==", email)
     .limit(1);
 
@@ -103,7 +105,7 @@ export async function findOrCreateCustomer(
       const doc = snap.docs[0];
       return {ref: doc.ref, created: false, data: doc.data()};
     }
-    const ref = db.collection("customers").doc();
+    const ref = db.collection(CUSTOMERS).doc();
     const data = {
       ...seed,
       email,

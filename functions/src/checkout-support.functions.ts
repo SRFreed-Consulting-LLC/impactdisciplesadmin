@@ -1,4 +1,6 @@
-import {triggerPath} from "./common/shared/lists/tenancy";
+import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
+const COUPONS = tenantPath("coupons");
+const TAX_SUMMARIES = tenantPath("tax_rate_summaries");
 import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
@@ -60,7 +62,7 @@ async function findCouponByCode(
   if (!code) {
     return null;
   }
-  const snap = await db.collection("coupons").get();
+  const snap = await db.collection(COUPONS).get();
   const match = snap.docs.find(
     (d) => ((d.data().code as string) ?? "").toLowerCase() === code
   );
@@ -157,13 +159,13 @@ export const onPurchaseTaxSummary = onDocumentCreated(
       }
       const existing = await transaction.get(
         db
-          .collection("tax_rate_summaries")
+          .collection(TAX_SUMMARIES)
           .where("year", "==", year)
           .where("zip", "==", zip)
           .limit(1)
       );
       if (existing.empty) {
-        transaction.create(db.collection("tax_rate_summaries").doc(), {
+        transaction.create(db.collection(TAX_SUMMARIES).doc(), {
           year,
           zip,
           total: taxes,

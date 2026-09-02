@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) backfill: customers.email = email.trim().toLowerCase().
 //
 // WHY. Both customer-upsert triggers normalize the address they SEARCH for
@@ -41,7 +42,7 @@ const normalize = (value) => String(value ?? '').trim().toLowerCase();
   }
   const execute = !!arg('execute');
   const db = getFirestoreFor(resolveProjectId(project));
-  const snap = await db.collection('customers').select('email').get();
+  const snap = await tenantCollection(db, "customers").select('email').get();
 
   // Group by normalized address so a rewrite that would collide is visible
   // BEFORE anything is written.

@@ -1,3 +1,9 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const EMAILS = tenantPath("campaign_emails");
+const SENDS = tenantPath("campaign_sends");
+const CAMPAIGN_EVENTS = tenantPath("campaign_events");
+const CAMPAIGNS = tenantPath("campaigns");
+const COUPONS = tenantPath("coupons");
 /* eslint-disable camelcase -- endpoint names are URL-visible and follow
    the repo's snake_case onRequest convention (subscribe_to_email_list,
    create_paypal_order, ...). */
@@ -49,7 +55,7 @@ async function ledgerByToken(
   if (!token || token.length < 10) {
     return null;
   }
-  const snap = await db.collection("campaign_sends")
+  const snap = await db.collection(SENDS)
     .where("token", "==", token).limit(1).get();
   return snap.empty ? null : snap.docs[0];
 }
@@ -64,7 +70,7 @@ async function recordEvent(
   db: FirebaseFirestore.Firestore,
   event: Record<string, unknown>
 ): Promise<void> {
-  await db.collection("campaign_events").add({
+  await db.collection(CAMPAIGN_EVENTS).add({
     ...event,
     at: Timestamp.now(),
   }).catch((err) => console.error("campaign_events write failed", err));
@@ -130,7 +136,7 @@ export async function recordCampaignConversion(
   }
 ): Promise<void> {
   try {
-    const campaignRef = db.collection("campaigns").doc(input.campaignId);
+    const campaignRef = db.collection(CAMPAIGNS).doc(input.campaignId);
     if (!(await campaignRef.get()).exists) {
       return; // junk/expired id - credit nothing
     }
@@ -148,7 +154,7 @@ export async function recordCampaignConversion(
     }
     await campaignRef.update(bump);
     if (input.emailId) {
-      await db.collection("campaign_emails").doc(input.emailId)
+      await db.collection(EMAILS).doc(input.emailId)
         .update(bump).catch(() => undefined);
     }
     await recordEvent(db, {
@@ -181,12 +187,12 @@ export async function campaignForCoupon(
     if (!couponCode?.trim()) {
       return null;
     }
-    const couponSnap = await db.collection("coupons")
+    const couponSnap = await db.collection(COUPONS)
       .where("code", "==", couponCode.trim()).limit(1).get();
     if (couponSnap.empty) {
       return null;
     }
-    const campaignSnap = await db.collection("campaigns")
+    const campaignSnap = await db.collection(CAMPAIGNS)
       .where("couponId", "==", couponSnap.docs[0].id).limit(5).get();
     for (const doc of campaignSnap.docs) {
       const data = doc.data();
@@ -228,9 +234,9 @@ export const campaign_open = onRequest(async (request, response) => {
       if (firstOpen) {
         bump["stats.uniqueOpens"] = FieldValue.increment(1);
       }
-      await db.collection("campaign_emails").doc(ledger.emailId)
+      await db.collection(EMAILS).doc(ledger.emailId)
         .update(bump).catch(() => undefined);
-      await db.collection("campaigns").doc(ledger.campaignId)
+      await db.collection(CAMPAIGNS).doc(ledger.campaignId)
         .update(bump).catch(() => undefined);
       await recordEvent(db, {
         type: "open",
@@ -265,7 +271,7 @@ export const campaign_web_event = onRequest(async (request, response) => {
       return;
     }
     const db = getFirestore();
-    const campaignSnap = await db.collection("campaigns").doc(cid).get();
+    const campaignSnap = await db.collection(CAMPAIGNS).doc(cid).get();
     const data = campaignSnap.data();
     if (campaignSnap.exists && data) {
       const now = Date.now();
@@ -304,7 +310,7 @@ export const campaign_click = onRequest(async (request, response) => {
     const ledgerDoc = await ledgerByToken(db, String(request.query.t ?? ""));
     if (ledgerDoc) {
       const ledger = ledgerDoc.data();
-      const touchSnap = await db.collection("campaign_emails")
+      const touchSnap = await db.collection(EMAILS)
         .doc(ledger.emailId).get();
       const mapped = touchSnap.data()?.links?.[linkId];
       if (typeof mapped === "string" && /^https?:\/\//.test(mapped)) {
@@ -334,9 +340,9 @@ export const campaign_click = onRequest(async (request, response) => {
       if (backfillOpen) {
         bump["stats.uniqueOpens"] = FieldValue.increment(1);
       }
-      await db.collection("campaign_emails").doc(ledger.emailId)
+      await db.collection(EMAILS).doc(ledger.emailId)
         .update(bump).catch(() => undefined);
-      await db.collection("campaigns").doc(ledger.campaignId)
+      await db.collection(CAMPAIGNS).doc(ledger.campaignId)
         .update(bump).catch(() => undefined);
       await recordEvent(db, {
         type: "click",

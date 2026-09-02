@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Renames a mail_template AND repoints everything bound to the old name, in
 // that order.
 //
@@ -69,7 +70,7 @@ async function main() {
   }
 
   const doc = snap.docs[0];
-  const events = await db.collection("events").get();
+  const events = await tenantCollection(db, "events").get();
   const bound = [];
   events.forEach((d) => {
     if (d.data().emailTemplate === from) {
@@ -112,7 +113,7 @@ async function main() {
   // closes it. The reverse order would leave a real gap where a registration
   // silently sends nothing.
   for (const e of bound) {
-    await db.collection("events").doc(e.id).update({ emailTemplate: to });
+    await tenantCollection(db, "events").doc(e.id).update({ emailTemplate: to });
   }
   if (bound.length) console.log(`  repointed ${bound.length} event(s)`);
 
@@ -124,7 +125,7 @@ async function main() {
   const names = new Set();
   after.forEach((d) => names.add(d.data().name));
   const dangling = [];
-  (await db.collection("events").get()).forEach((d) => {
+  (await tenantCollection(db, "events").get()).forEach((d) => {
     const n = d.data().emailTemplate;
     if (n && !names.has(n)) dangling.push(`${d.data().eventName ?? d.id} -> ${n}`);
   });

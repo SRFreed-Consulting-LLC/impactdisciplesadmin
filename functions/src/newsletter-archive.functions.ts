@@ -1,3 +1,5 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const EMAILS = tenantPath("campaign_emails");
 /* eslint-disable camelcase -- endpoint names are URL-visible and follow
    the repo's snake_case onRequest convention (subscribe_to_email_list,
    campaign_web_event, ...). */
@@ -144,7 +146,7 @@ export const newsletter_archive = onRequest(async (request, response) => {
         response.status(404).type("text/plain").send("Not found");
         return;
       }
-      const snap = await db.collection("campaign_emails").doc(id).get();
+      const snap = await db.collection(EMAILS).doc(id).get();
       const data = snap.data();
       if (!snap.exists || !data || !isPublishedTouch(data)) {
         response.status(404).type("text/plain").send("Not found");
@@ -161,7 +163,7 @@ export const newsletter_archive = onRequest(async (request, response) => {
     // Composite index: campaign_emails(publishToWeb ASC, sentAt DESC).
     // Status is filtered in code so the index stays two-field (and
     // because publishToWeb is only ever set on sent/sending touches).
-    const snap = await db.collection("campaign_emails")
+    const snap = await db.collection(EMAILS)
       .where("publishToWeb", "==", true)
       .orderBy("sentAt", "desc")
       .limit(ARCHIVE_LIMIT)

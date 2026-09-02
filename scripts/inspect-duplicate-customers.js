@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Read-only inspection of the duplicate-email customer records flagged by
 // backfill-customers-from-purchases.js's dry-run - for the "what should we
 // actually do about these" conversation, not for fixing anything itself.
@@ -47,7 +48,7 @@ async function main() {
 
   console.log(`Inspecting duplicate customer emails in "${projectId}"\n`);
 
-  const customersSnap = await db.collection("customers").get();
+  const customersSnap = await tenantCollection(db, "customers").get();
   const byEmail = new Map();
   customersSnap.docs.forEach((doc) => {
     const data = doc.data();

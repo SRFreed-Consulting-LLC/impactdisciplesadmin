@@ -37,6 +37,15 @@ const ROOTS = [
   path.join(WORKSPACE, "impactdisciples - web", "src", "app"),
   path.join(WORKSPACE, "impact-discipleship-library-new", "src", "app"),
   path.join(REPO, "src", "common", "src", "queries"),
+  // THE TESTS THEMSELVES, added after they proved they needed it. The
+  // trigger-liveness suite queried `customers` by literal while asserting
+  // that a trigger had written it - so the day `customers` moved, the suite
+  // would have looked in the old place and failed, or worse, found a stale
+  // document there and passed. A test that hardcodes a path it is supposed
+  // to be checking is the least useful kind of green.
+  path.join(REPO, "integration"),
+  path.join(REPO, "e2e-admin"),
+  path.join(REPO, "e2e-cross"),
 ];
 
 /** Files that are allowed to say the names out loud. */

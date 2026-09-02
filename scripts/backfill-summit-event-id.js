@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) repair: repoint every reference to the RETIRED
 // Disciple-Making Summit event id at the live one.
 //
@@ -91,7 +92,7 @@ function deepReplace(value) {
   const db = getFirestoreFor(resolveProjectId(project));
 
   // Confirm the destination exists before repointing anything at it.
-  const target = await db.collection("events").doc(NEW_ID).get();
+  const target = await tenantCollection(db, "events").doc(NEW_ID).get();
   if (!target.exists) {
     console.error(`ABORT: events/${NEW_ID} does not exist in this project.`);
     process.exit(1);

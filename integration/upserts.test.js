@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: the two customer auto-upsert triggers, through the REAL
 // Cloud Functions in the emulator - onPurchaseCustomerUpsert
 // (customer-upsert.functions.ts, onCreate purchases/{id}) and
@@ -13,7 +14,7 @@ const {getDb, preflight, reseed, waitFor} = require("./helpers/emulator");
 let db;
 
 const customerByEmail = async (email) => {
-  const snap = await db.collection("customers")
+  const snap = await db.collection(tenantPath("customers"))
     .where("email", "==", email).get();
   return snap.empty ?
     null :

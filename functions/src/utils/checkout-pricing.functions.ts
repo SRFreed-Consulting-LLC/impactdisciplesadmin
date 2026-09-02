@@ -1,4 +1,7 @@
 import {tenantPath} from "../common/shared/lists/tenancy";
+const COUPONS = tenantPath("coupons");
+const EVENTS = tenantPath("events");
+const PRODUCTS = tenantPath("products");
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {
   bestOfferPrice,
@@ -233,10 +236,10 @@ export async function computeOrderPricing(
     db.collection(tenantPath("config")).limit(1).get(),
     getActiveOffers(),
     request.couponCode ?
-      db.collection("coupons").get() :
+      db.collection(COUPONS).get() :
       Promise.resolve(undefined),
     Promise.all(request.cartItems.map((input) =>
-      db.collection(input.isEvent ? "events" : "products")
+      db.collection(input.isEvent ? EVENTS : PRODUCTS)
         .doc(input.id).get()
     )),
   ]);
@@ -264,7 +267,9 @@ export async function computeOrderPricing(
   const pricedItems: PricedCartItem[] = [];
 
   for (const [index, input] of request.cartItems.entries()) {
-    const collectionName = input.isEvent ? "events" : "products";
+    // The bare NAME, for the error message only - a reader chasing
+    // "products abc not found" wants the word, not the storage path.
+    const collectionName = input.isEvent ? "an event" : "a product";
     const docSnap = itemSnaps[index];
 
     if (!docSnap.exists) {

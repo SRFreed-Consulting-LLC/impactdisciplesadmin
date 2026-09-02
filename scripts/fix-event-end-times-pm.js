@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) repair: 13 events whose endDate lost its PM.
 //
 // WHAT HAPPENED. A time written on a 24-hour clock stores 3pm as 15:00.
@@ -53,7 +54,7 @@ const stamp = (date) => local(date, { dateStyle: "medium", timeStyle: "short" })
   const db = getFirestoreFor(resolveProjectId(project));
   const { Timestamp } = firestore;
 
-  const snap = await db.collection("events").get();
+  const snap = await tenantCollection(db, "events").get();
   const plan = [];
   const skipped = [];
 

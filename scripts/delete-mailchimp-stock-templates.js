@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Deletes the imported Mailchimp STOCK templates from mail_templates
 // (2026-08-21).
 //
@@ -66,9 +67,9 @@ async function main() {
 
   const [templates, events, products, campaignEmails] = await Promise.all([
     db.collection('mail_templates').get(),
-    db.collection('events').get(),
-    db.collection('products').get(),
-    db.collection('campaign_emails').get(),
+    tenantCollection(db, "events").get(),
+    tenantCollection(db, "products").get(),
+    tenantCollection(db, "campaign_emails").get(),
   ]);
 
   const eventTemplateNames = new Set();

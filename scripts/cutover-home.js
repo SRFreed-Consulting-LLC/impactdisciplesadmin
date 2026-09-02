@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // Moves the HOME page onto the section kit.
 //
 //   node scripts/cutover-home.js --project=dev            (dry run)
@@ -86,7 +87,7 @@ async function main() {
   const [sectionSnap, slideSnap, eventSnap] = await Promise.all([
     db.collection('home_sections').get(),
     db.collection('home_page_images').get(),
-    db.collection('events').where('isSummit', '==', true).get()
+    tenantCollection(db, "events").where('isSummit', '==', true).get()
   ]);
 
   // Only what a visitor sees, in the order they see it - the same rule the

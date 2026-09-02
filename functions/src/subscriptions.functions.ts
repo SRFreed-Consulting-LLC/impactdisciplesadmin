@@ -1,3 +1,7 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const CUSTOMERS = tenantPath("customers");
+const CAMPAIGNS = tenantPath("campaigns");
+const COUPONS = tenantPath("coupons");
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
@@ -83,7 +87,7 @@ async function signupRewardFor(
   campaignId: string
 ): Promise<SignupReward | null> {
   try {
-    const campaignSnap = await db.collection("campaigns").doc(campaignId).get();
+    const campaignSnap = await db.collection(CAMPAIGNS).doc(campaignId).get();
     if (!campaignSnap.exists) {
       return null;
     }
@@ -97,7 +101,7 @@ async function signupRewardFor(
       return null;
     }
 
-    const couponSnap = await db.collection("coupons").doc(couponId).get();
+    const couponSnap = await db.collection(COUPONS).doc(couponId).get();
     if (!couponSnap.exists) {
       return null;
     }
@@ -164,7 +168,7 @@ exports.subscribe_to_email_list = onRequest(
         const {flagField, dateField} = fieldsForType(type);
         const now = Timestamp.now();
         const db = getFirestore();
-        const existingSnap = await db.collection("customers")
+        const existingSnap = await db.collection(CUSTOMERS)
           .where("email", "==", email)
           .limit(1)
           .get();
@@ -178,7 +182,7 @@ exports.subscribe_to_email_list = onRequest(
         let alreadySubscribed = false;
 
         if (existingSnap.empty) {
-          await db.collection("customers").add({
+          await db.collection(CUSTOMERS).add({
             firstName,
             lastName,
             email,
@@ -281,7 +285,7 @@ exports.unsubscribe_from_email_list = onRequest(
         // unsubscribe link still matches instead of silently no-op'ing.
         const normalizedEmail = email.trim().toLowerCase();
         const db = getFirestore();
-        const matches = await db.collection("customers")
+        const matches = await db.collection(CUSTOMERS)
           .where("email", "==", normalizedEmail)
           .get();
 

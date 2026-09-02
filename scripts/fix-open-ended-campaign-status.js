@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Repairs the six long-running series that the Mailchimp regroup left
 // marked ENDED (2026-08-22).
 //
@@ -47,7 +48,7 @@ async function main() {
 
   let changed = 0;
   for (const id of CAMPAIGN_IDS) {
-    const ref = db.collection('campaigns').doc(id);
+    const ref = tenantCollection(db, "campaigns").doc(id);
     const snap = await ref.get();
 
     if (!snap.exists) {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // READ-ONLY. Answers one question: are people still subscribing to the
 // newsletter, i.e. is queueSubscriptionConfirmation (and the free-ebook link
 // inside it) still a live path worth protecting?
@@ -43,7 +44,7 @@ function toMillis(value) {
   const db = getFirestoreFor(projectId);
   console.log(`  project: ${projectId}`);
 
-  const snap = await db.collection("customers")
+  const snap = await tenantCollection(db, "customers")
     .where("subscribedToNewsletter", "==", true).get();
 
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;

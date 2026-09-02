@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Seeds (and removes) a disposable campaign popup so the web app's
 // Playwright suite has something deterministic to assert against.
 //
@@ -79,7 +80,7 @@ async function main() {
   }
   const db = getFirestoreFor(projectId);
   const { firestore } = require("./lib/firestore-admin");
-  const ref = db.collection("campaign_popups").doc(FIXTURE_ID);
+  const ref = tenantCollection(db, "campaign_popups").doc(FIXTURE_ID);
   const execute = args.execute === true;
 
   if (args.remove) {

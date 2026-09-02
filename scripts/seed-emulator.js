@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // Seeds the Firebase Emulator Suite with the deterministic fixture world in
 // scripts/fixtures/emulator-fixtures.js. EMULATOR-ONLY by construction: it
 // forces the emulator host env vars and the demo-impact project id before
@@ -101,10 +102,19 @@ async function seedCollections() {
       inBatch = 0;
     }
   };
+  // THROUGH THE SEAM, and this one is invisible to the unseamed-access
+  // check: that scans for collection names written as string LITERALS, and
+  // here the name is a variable off the fixture map. So the fixtures kept
+  // seeding the top level while the functions had moved to reading the
+  // tenant - twenty-five integration tests failed at once with things like
+  // "No active digital-book product exists", which reads as a product bug
+  // rather than a path one. A grep cannot catch this shape; only running
+  // the suite can.
   for (const [collection, docs] of Object.entries(fixtures.collections)) {
     const keepStrings = STRING_DATE_COLLECTIONS.has(collection);
     for (const [id, data] of Object.entries(docs)) {
-      batch.set(db.collection(collection).doc(id), keepStrings ? data : withTimestamps(data));
+      batch.set(tenantCollection(db, collection).doc(id),
+        keepStrings ? data : withTimestamps(data));
       count++; inBatch++;
       await commitIfFull();
     }
@@ -145,7 +155,7 @@ async function settleTriggerBacklog() {
   const signature = async () => {
     const [counts, customers, mail] = await Promise.all([
       db.collection("eventSessionCounts").get(),
-      db.collection("customers").count().get(),
+      tenantCollection(db, "customers").count().get(),
       db.collection("mail").count().get(),
     ]);
     return JSON.stringify({

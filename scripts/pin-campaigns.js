@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Pins the two ongoing series staff open constantly - Monthly Newsletter and
 // Prayer Letter - to the top of the Campaigns screen (2026-08-21).
 //
@@ -32,7 +33,7 @@ async function main() {
 
   let changed = 0;
   for (const id of CAMPAIGN_IDS) {
-    const ref = db.collection('campaigns').doc(id);
+    const ref = tenantCollection(db, "campaigns").doc(id);
     const snap = await ref.get();
 
     if (!snap.exists) {

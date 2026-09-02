@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time repair: transaction records whose `email` is not an email.
 //
 // Twelve purchases/registrations/affiliate-sales carry something else in the
@@ -130,7 +131,7 @@ const norm = (v) => String(v ?? "").trim().toLowerCase();
   // retroactively build one. Report which addresses still have no contact.
   const emails = [...new Set(plan.map((p) => p.to))];
   for (const email of emails) {
-    const found = await db.collection("customers").where("email", "==", email).limit(1).get();
+    const found = await tenantCollection(db, "customers").where("email", "==", email).limit(1).get();
     console.log(`   ${email}: ${found.empty ? "NO contact record - order stays unlinked" : "contact exists, now linked"}`);
   }
 })().catch((e) => { console.error(e); process.exit(1); });

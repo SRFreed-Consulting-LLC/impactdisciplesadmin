@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Clears every product's stored salePrice (Campaign Manager v3, 2026-08-22).
 //
 // Until now a product carried its own salePrice, typed into the Products form
@@ -36,7 +37,7 @@ async function main() {
 
   console.log(`\nProject: ${projectId}${execute ? '  (EXECUTE)' : '  (dry run)'}`);
 
-  const snap = await db.collection('products').get();
+  const snap = await tenantCollection(db, "products").get();
   console.log(`  ${snap.size} product(s) in the collection\n`);
 
   let cleared = 0;

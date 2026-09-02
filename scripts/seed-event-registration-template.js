@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Creates "Event Registration Confirmation" - a GENERIC registration
 // confirmation that works for any event, authored as email-builder blocks.
 //
@@ -174,7 +175,7 @@ async function main() {
   console.log(`  action   : ${existing.empty ? "CREATE" : `update ${existing.docs[0].id}`}`);
 
   // Who would be pointed at it.
-  const events = await db.collection("events").get();
+  const events = await tenantCollection(db, "events").get();
   const toAssign = [];
   events.forEach((d) => {
     const e = d.data();
@@ -214,7 +215,7 @@ async function main() {
     const log = path.join(OUT_DIR, `event-template-reassign-${projectId}.json`);
     fs.writeFileSync(log, JSON.stringify({ project: projectId, to: NAME, events: toAssign }, null, 2), "utf8");
     for (const e of toAssign) {
-      await db.collection("events").doc(e.id).update({ emailTemplate: NAME });
+      await tenantCollection(db, "events").doc(e.id).update({ emailTemplate: NAME });
     }
     console.log(`  reassigned ${toAssign.length} event(s). Undo list: ${log}`);
   }

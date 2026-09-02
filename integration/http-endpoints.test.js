@@ -1,3 +1,4 @@
+const {tenantPath} = require("../scripts/lib/tenancy");
 // Integration: the HTTP endpoints in subscriptions/shipping/youtube
 // (+ capture_paypal_order's pre-PayPal validation) through the REAL
 // functions in the emulator.
@@ -31,7 +32,7 @@ const SUBSCRIBED_NEWSLETTER = "casey01@contacts.test";
 const NO_LISTS = "casey10@contacts.test";
 
 const customerByEmail = async (email) => {
-  const snap = await db.collection("customers")
+  const snap = await db.collection(tenantPath("customers"))
     .where("email", "==", email).limit(1).get();
   return snap.empty ? null : snap.docs[0].data();
 };
@@ -73,12 +74,12 @@ test("subscribing someone already on the list reports alreadySubscribed " +
 test("subscribe normalizes the email before matching", async () => {
   // A padded, mixed-case address must land on the EXISTING customer doc
   // rather than creating a duplicate.
-  const countBefore = (await db.collection("customers").get()).size;
+  const countBefore = (await db.collection(tenantPath("customers")).get()).size;
   const res = await callHttp("subscribe_to_email_list", {
     email: `  ${SUBSCRIBED_NEWSLETTER.toUpperCase()}  `, type: "prayer",
   });
   assert.equal(res.status, 200);
-  const countAfter = (await db.collection("customers").get()).size;
+  const countAfter = (await db.collection(tenantPath("customers")).get()).size;
   assert.equal(countAfter, countBefore, "no duplicate customer created");
 
   const customer = await customerByEmail(SUBSCRIBED_NEWSLETTER);

@@ -1,3 +1,9 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const CUSTOMERS = tenantPath("customers");
+const COUPONS = tenantPath("coupons");
+const EVENTS = tenantPath("events");
+const TAG_RULES = tenantPath("tag_rules");
+const TAG_APPLICATIONS = tenantPath("tag_applications");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {
   Timestamp,
@@ -258,7 +264,7 @@ export function activityFromRegistration(
 export async function loadCouponCodesUpper(
   db: FirebaseFirestore.Firestore
 ): Promise<Set<string>> {
-  const snap = await db.collection("coupons").select("code").get();
+  const snap = await db.collection(COUPONS).select("code").get();
   const codes = new Set<string>();
   for (const doc of snap.docs) {
     const code = doc.data().code;
@@ -295,7 +301,7 @@ export async function enrichRegistrationForSummitRules(
   }
   if (!caches.isSummitByEventId.has(activity.eventId)) {
     const eventSnap =
-      await db.collection("events").doc(activity.eventId).get();
+      await db.collection(EVENTS).doc(activity.eventId).get();
     caches.isSummitByEventId.set(
       activity.eventId, eventSnap.exists && !!eventSnap.data()?.isSummit
     );
@@ -319,7 +325,7 @@ export async function enrichRegistrationForSummitRules(
 export async function loadActiveRules(
   db: FirebaseFirestore.Firestore
 ): Promise<TagRuleDoc[]> {
-  const snap = await db.collection("tag_rules")
+  const snap = await db.collection(TAG_RULES)
     .where("active", "==", true).get();
   return snap.docs.map((doc) => ({id: doc.id, ...doc.data()} as TagRuleDoc));
 }
@@ -348,7 +354,7 @@ async function applyOneTag(
     tags: FieldValue.arrayUnion(tag),
   });
   try {
-    await db.collection("tag_applications")
+    await db.collection(TAG_APPLICATIONS)
       .doc(tagApplicationId(activity.email, tag))
       .create({
         email: activity.email,
@@ -477,7 +483,7 @@ export async function runRuleBackfill(
         continue;
       }
       matched++;
-      const customerSnap = await db.collection("customers")
+      const customerSnap = await db.collection(CUSTOMERS)
         .where("email", "==", email).limit(1).get();
       if (customerSnap.empty) {
         skippedNoCustomer++;
@@ -523,7 +529,7 @@ export const applyTagRuleRetroactively = onCall(
       throw new HttpsError("invalid-argument", "ruleId is required.");
     }
     const db = getFirestore();
-    const ruleSnap = await db.collection("tag_rules").doc(ruleId).get();
+    const ruleSnap = await db.collection(TAG_RULES).doc(ruleId).get();
     if (!ruleSnap.exists) {
       throw new HttpsError("not-found", "Tag rule not found.");
     }

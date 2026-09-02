@@ -1077,6 +1077,104 @@ service cloud.firestore {
       match /lessonTemplates/{id} {
         allow read, write: if isLibraryStaff();
       }
+
+      // ---- Wave 2: business data ------------------------------------------
+      // Mirrors of the top-level twins, same rule as Wave 1: a migration is
+      // the wrong moment to change who can read something.
+      match /customers/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /tag_applications/{id} {
+        allow read, create, delete: if isBusinessStaff();
+        allow update: if false;             // append-only by design
+      }
+      match /tag_rules/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /affilliate_sales/{id} {        // sic - the field name's spelling
+        allow create, read, update, delete: if isBusinessStaff();
+      }
+      match /campaign_emails/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /campaigns/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /campaign_events/{id} {
+        allow read: if isBusinessStaff();
+        allow write: if false;              // functions-written
+      }
+      match /campaign_sends/{id} {
+        allow read: if isBusinessStaff();
+        allow write: if false;              // the at-most-once send ledger
+      }
+      match /campaign_offers/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /campaign_popups/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /log-messages/{id} {
+        // The public site writes these anonymously, so the shape is pinned
+        // field by field rather than trusted - unchanged from the top-level
+        // rule, which is the point.
+        allow create: if
+          request.resource.data.keys().hasOnly([
+            'id', 'date', 'type', 'message', 'data', 'error_code', 'archived'
+          ]) &&
+          request.resource.data.id is string &&
+          request.resource.data.id.size() <= 100 &&
+          request.resource.data.date is timestamp &&
+          request.resource.data.type is string &&
+          request.resource.data.type.size() <= 500 &&
+          request.resource.data.message is string &&
+          request.resource.data.message.size() <= 10000 &&
+          request.resource.data.error_code is string &&
+          request.resource.data.error_code.size() <= 500 &&
+          request.resource.data.archived is bool;
+        allow read, update, delete: if isAdminRole();
+      }
+      match /activityLog/{id} {
+        allow create: if isLibraryStaff();   // content-edit audit entries
+        allow read, delete: if isAdminRole();
+        allow update: if false;
+      }
+      match /adminMessages/{id} {
+        allow read: if isAdminRole();
+        allow write: if false;
+      }
+      match /tax_rate_summaries/{id} {
+        allow read: if isBusinessStaff();
+        allow write: if false;
+      }
+      match /shipping-labels/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /shipping-label-batches/{id} {
+        allow read, write: if isBusinessStaff();
+      }
+      match /products/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /coupons/{id} {
+        allow read: if isBusinessStaff();    // codes are not enumerable
+        allow write: if isAdminRole();
+      }
+      match /pending_orders/{id} {
+        allow read, write: if false;         // functions only, both ways
+      }
+      match /events/{id} {
+        allow read: if true;
+        allow write: if isBusinessStaff();
+      }
+      match /lessonImages/{id} {
+        allow get: if signedIn();
+        allow list: if isLibraryStaff();
+        allow write: if isLibraryStaff();
+      }
     }
 
 

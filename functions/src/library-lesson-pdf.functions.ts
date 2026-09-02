@@ -1,3 +1,5 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const LESSON_IMAGES = tenantPath("lessonImages");
 /**
  * Emails a reader a PDF of one lesson, with their own saved answers in it.
  *
@@ -175,7 +177,7 @@ async function hydrateImages(schema: unknown): Promise<unknown> {
   if (!ids.length) return schema;
 
   const snaps = await Promise.all(
-    ids.map((id) => db.collection("lessonImages").doc(id).get())
+    ids.map((id) => db.collection(LESSON_IMAGES).doc(id).get())
   );
   let hydrated = json;
   snaps.forEach((snap, index) => {

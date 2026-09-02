@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Seeds the 2026-08-20 tag-rule set (user-specified: Impact 1-4 books,
 // Digital, DMC books, COACH, Summit paid/free, DMP events, DMC events)
 // into `tag_rules`. Deterministic doc ids make re-runs idempotent (a
@@ -181,8 +182,8 @@ async function main() {
   for (const {docId, rule} of RULES) {
     // Explicit nulls for the unused shape fields (Firestore write gotcha:
     // never a literal undefined) + preserve createdDate on re-runs.
-    const existing = await db.collection("tag_rules").doc(docId).get();
-    await db.collection("tag_rules").doc(docId).set({
+    const existing = await tenantCollection(db, "tag_rules").doc(docId).get();
+    await tenantCollection(db, "tag_rules").doc(docId).set({
       name: rule.name,
       trigger: rule.trigger,
       productId: null,

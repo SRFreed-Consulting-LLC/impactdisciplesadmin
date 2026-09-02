@@ -53,7 +53,7 @@ const arg = (name) => {
     console.log(`flagged ${venue.id}`);
   }
 
-  const summits = await db.collection('events').where('isSummit', '==', true).get();
+  const summits = await tenantCollection(db, "events").where('isSummit', '==', true).get();
   for (const ev of summits.docs) {
     const loc = ev.data().location;
     const locId = typeof loc === 'string' ? loc : loc?.id;

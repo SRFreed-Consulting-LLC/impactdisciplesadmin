@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Puts back contacts deleted by delete-nameless-contacts.js, from the export
 // that deletion required.
 //
@@ -47,7 +48,7 @@ async function main() {
   const toWrite = [];
   let existing = 0;
   for (const rec of exported.records) {
-    const ref = db.collection("customers").doc(rec.id);
+    const ref = tenantCollection(db, "customers").doc(rec.id);
     if ((await ref.get()).exists) { existing++; continue; }
     // Strip the fields the export added for reporting - they are not part of
     // the record and must not be written back into it.
@@ -65,7 +66,7 @@ async function main() {
     toWrite.slice(i, i + BATCH).forEach((w) => batch.set(w.ref, w.data));
     await batch.commit();
   }
-  const after = await db.collection("customers").count().get();
+  const after = await tenantCollection(db, "customers").count().get();
   console.log(`  restored ${toWrite.length}. customers now: ${after.data().count}`);
 }
 

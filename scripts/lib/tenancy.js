@@ -46,6 +46,31 @@ const TENANT_COLLECTIONS = [
   "popup_templates",
   "appConfig",
   "lessonTemplates",
+  // Wave 2 - business data functions read and write, but no trigger watches.
+  // libraryUsers / discussionGroups / groupLicenses / groupInvites are held
+  // back to Wave 3: they are named inside firestore.rules HELPER functions,
+  // not just match blocks.
+  "customers",
+  "tag_applications",
+  "tag_rules",
+  "affilliate_sales",
+  "campaign_emails",
+  "campaigns",
+  "campaign_events",
+  "campaign_sends",
+  "campaign_offers",
+  "campaign_popups",
+  "log-messages",
+  "activityLog",
+  "adminMessages",
+  "tax_rate_summaries",
+  "shipping-labels",
+  "shipping-label-batches",
+  "products",
+  "coupons",
+  "pending_orders",
+  "events",
+  "lessonImages",
 ];
 
 /**

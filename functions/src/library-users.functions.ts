@@ -1,3 +1,5 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const ADMIN_MESSAGES = tenantPath("adminMessages");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldPath, FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
@@ -478,7 +480,7 @@ export const sendLibraryUserMessage = onCall(
     }
 
     const now = Date.now();
-    const summaryRef = libraryDb.collection("adminMessages").doc();
+    const summaryRef = libraryDb.collection(ADMIN_MESSAGES).doc();
     const messageId = summaryRef.id;
 
     const writer = libraryDb.bulkWriter();

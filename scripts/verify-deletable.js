@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // READ-ONLY cross-check of the deletion set, done WITHOUT relying on an `in`
 // query: loads every purchase and registration email, lowercases both sides,
 // and intersects. A case mismatch in an `in` query fails silently and would
@@ -26,7 +27,7 @@ const norm = (v) => String(v ?? "").trim().toLowerCase();
   }
   console.log(`  emails stored with upper-case characters: ${mixedCase}`);
 
-  const snap = await db.collection("customers").get();
+  const snap = await tenantCollection(db, "customers").get();
   const noLast = [];
   snap.forEach((d) => { const c = d.data(); if (blank(c.lastName)) noLast.push({ id: d.id, ...c }); });
 

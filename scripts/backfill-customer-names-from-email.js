@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) backfill for the 285 `customers` docs that arrived
 // through the Mailchimp audience reconcile carrying an email address and
 // nothing else - no firstName, no lastName, no phone, no address. The only
@@ -66,7 +67,7 @@ async function main() {
   const skipped = { missing: 0, emailMismatch: 0, alreadyNamed: 0 };
 
   for (const entry of plan) {
-    const snap = await db.collection("customers").doc(entry.id).get();
+    const snap = await tenantCollection(db, "customers").doc(entry.id).get();
     if (!snap.exists) {
       skipped.missing++;
       console.log(`skip ${entry.email} - doc ${entry.id} no longer exists`);

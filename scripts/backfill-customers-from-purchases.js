@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time backfill for the "customers" collection - applies the exact same
 // logic as functions/src/customer-upsert.functions.ts's
 // onPurchaseCustomerUpsert trigger to every EXISTING purchase, oldest first,
@@ -114,7 +115,7 @@ async function main() {
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
   // ---- Load existing customers, detect duplicate emails up front ----
-  const existingSnap = await db.collection("customers").get();
+  const existingSnap = await tenantCollection(db, "customers").get();
   const byEmail = new Map();
   const duplicateEmails = new Map(); // email -> extra doc ids not kept
 
@@ -318,10 +319,10 @@ async function main() {
     delete clean.__dirty;
 
     if (c.__new) {
-      const ref = db.collection("customers").doc();
+      const ref = tenantCollection(db, "customers").doc();
       batch.set(ref, clean);
     } else {
-      const ref = db.collection("customers").doc(c.__id);
+      const ref = tenantCollection(db, "customers").doc(c.__id);
       // Full field set (not just pendingChanges) - fillField() above may
       // have mutated firstName/lastName/phone/shippingAddress/
       // billingAddress in-memory too.

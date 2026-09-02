@@ -109,7 +109,7 @@ test("trigger liveness", {concurrency: false}, async (t) => {
 
     // 3. onPurchaseCustomerUpsert - creates the customer from the purchase.
     await waitFor(async () => {
-      const found = await db().collection("customers")
+      const found = await db().collection(tenantPath("customers"))
         .where("email", "==", email).limit(1).get();
       return !found.empty;
     }, {timeoutMs: 45000, intervalMs: 500,
@@ -153,7 +153,7 @@ test("trigger liveness", {concurrency: false}, async (t) => {
       "onEventRegistrationCreated to stamp newRecordStatus");
 
     await waitFor(async () => {
-      const found = await db().collection("customers")
+      const found = await db().collection(tenantPath("customers"))
         .where("email", "==", email).limit(1).get();
       return !found.empty;
     }, {timeoutMs: 45000, intervalMs: 500,
@@ -166,7 +166,7 @@ test("trigger liveness", {concurrency: false}, async (t) => {
     // if it silently stops running, group licences are stranded assigned to
     // a group that no longer exists and nothing says so.
     const groupRef = db().collection(tenantPath("discussionGroups")).doc();
-    const licenceRef = db().collection("groupLicenses").doc();
+    const licenceRef = db().collection(tenantPath("groupLicenses")).doc();
 
     await groupRef.set({
       title: uniq("group"),

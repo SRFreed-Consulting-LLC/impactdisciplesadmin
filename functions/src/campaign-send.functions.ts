@@ -1,3 +1,9 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const CUSTOMERS = tenantPath("customers");
+const EMAILS = tenantPath("campaign_emails");
+const SENDS = tenantPath("campaign_sends");
+const CAMPAIGNS = tenantPath("campaigns");
+const TAG_APPLICATIONS = tenantPath("tag_applications");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
@@ -150,7 +156,7 @@ async function ensureLinkMap(
   }
   touch.links = links;
   if (Object.keys(links).length > 0) {
-    await db.collection("campaign_emails").doc(touch.id)
+    await db.collection(EMAILS).doc(touch.id)
       .update({links}).catch(() => undefined);
   }
 }
@@ -228,20 +234,20 @@ export async function resolveAudience(
   };
 
   if (audience.mode === "everyone") {
-    (await db.collection("customers").get()).docs
+    (await db.collection(CUSTOMERS).get()).docs
       .forEach((d) => addDoc(d.data()));
   } else if (audience.mode === "flags") {
     const flags = (audience.flags ?? []).filter((f) =>
       f === "subscribedToNewsletter" || f === "subscribedToPrayerTeam");
     for (const flag of flags) {
-      (await db.collection("customers").where(flag, "==", true).get())
+      (await db.collection(CUSTOMERS).where(flag, "==", true).get())
         .docs.forEach((d) => addDoc(d.data()));
     }
   } else if (audience.mode === "tags") {
     const tags = (audience.tags ?? []).filter(Boolean);
     // array-contains-any accepts at most 10 values per query.
     for (let i = 0; i < tags.length; i += 10) {
-      (await db.collection("customers")
+      (await db.collection(CUSTOMERS)
         .where("tags", "array-contains-any", tags.slice(i, i + 10)).get())
         .docs.forEach((d) => addDoc(d.data()));
     }
@@ -317,7 +323,7 @@ async function enqueueTouch(
   });
   for (const email of recipients) {
     writer.create(
-      db.collection("campaign_sends").doc(`${touch.id}__${email}`),
+      db.collection(SENDS).doc(`${touch.id}__${email}`),
       {
         campaignId: campaign.id,
         emailId: touch.id,
@@ -331,14 +337,14 @@ async function enqueueTouch(
   }
   await writer.close();
 
-  await db.collection("campaign_emails").doc(touch.id).update({
+  await db.collection(EMAILS).doc(touch.id).update({
     status: "sending",
     recipientCount: recipients.length,
   });
   // A sending campaign is live (drafts only; regrouped history that gets a
   // fresh touch keeps its own stored status).
   if (campaign.status === "draft") {
-    await db.collection("campaigns").doc(campaign.id).update({
+    await db.collection(CAMPAIGNS).doc(campaign.id).update({
       status: "live",
       startDate: Timestamp.now(),
     });
@@ -368,7 +374,7 @@ async function sendLedgerDoc(
 
     let touch = touchCache.get(ledger.emailId);
     if (touch === undefined) {
-      const snap = await db.collection("campaign_emails")
+      const snap = await db.collection(EMAILS)
         .doc(ledger.emailId).get();
       touch = snap.exists ? {id: snap.id, ...snap.data()} as TouchDoc : null;
       touchCache.set(ledger.emailId, touch);
@@ -379,7 +385,7 @@ async function sendLedgerDoc(
       return;
     }
 
-    const customerSnap = await db.collection("customers")
+    const customerSnap = await db.collection(CUSTOMERS)
       .where("email", "==", email).limit(1).get();
     const customer = customerSnap.empty ? {} : customerSnap.docs[0].data();
 
@@ -442,10 +448,10 @@ async function sendLedgerDoc(
       sentAt: Timestamp.now(),
       mailDocId,
     });
-    await db.collection("campaign_emails").doc(ledger.emailId).update({
+    await db.collection(EMAILS).doc(ledger.emailId).update({
       "stats.sent": FieldValue.increment(1),
     });
-    await db.collection("campaigns").doc(ledger.campaignId).update({
+    await db.collection(CAMPAIGNS).doc(ledger.campaignId).update({
       "stats.sent": FieldValue.increment(1),
     });
   } catch (err) {
@@ -471,7 +477,7 @@ async function drainQueued(
   if (budget <= 0) {
     return 0;
   }
-  const snap = await db.collection("campaign_sends")
+  const snap = await db.collection(SENDS)
     .where("status", "==", "queued")
     .orderBy("createdAt", "asc")
     .limit(budget)
@@ -497,7 +503,7 @@ export const enqueueCampaignEmail = onCall(
       throw new HttpsError("invalid-argument", "emailId is required.");
     }
     const db = getFirestore();
-    const touchSnap = await db.collection("campaign_emails").doc(emailId).get();
+    const touchSnap = await db.collection(EMAILS).doc(emailId).get();
     if (!touchSnap.exists) {
       throw new HttpsError("not-found", "Email not found.");
     }
@@ -506,7 +512,7 @@ export const enqueueCampaignEmail = onCall(
       throw new HttpsError("failed-precondition",
         `Email is ${touch.status} - only drafts/scheduled emails can be sent.`);
     }
-    const campaignSnap = await db.collection("campaigns")
+    const campaignSnap = await db.collection(CAMPAIGNS)
       .doc(touch.campaignId ?? "").get();
     if (!campaignSnap.exists) {
       throw new HttpsError("not-found",
@@ -546,7 +552,7 @@ export const sendCampaignTestEmail = onCall(async (request):
       "emailId and a valid 'to' are required.");
   }
   const db = getFirestore();
-  const touchSnap = await db.collection("campaign_emails").doc(emailId).get();
+  const touchSnap = await db.collection(EMAILS).doc(emailId).get();
   if (!touchSnap.exists) {
     throw new HttpsError("not-found", "Email not found.");
   }
@@ -579,7 +585,7 @@ export const campaignSendScheduler = onSchedule(
     // 1. Stale 'pending' reservations (a crashed run) go back to queued -
     //    same at-most-once-ish tradeoff the v1 scheduler documented.
     const staleCutoff = Date.now() - PENDING_RETRY_AGE_MS;
-    const pendingSnap = await db.collection("campaign_sends")
+    const pendingSnap = await db.collection(SENDS)
       .where("status", "==", "pending").get();
     for (const doc of pendingSnap.docs) {
       const createdAt = doc.data().createdAt as Timestamp;
@@ -589,7 +595,7 @@ export const campaignSendScheduler = onSchedule(
     }
 
     // 2. Scheduled touches whose time has arrived get enqueued.
-    const scheduledSnap = await db.collection("campaign_emails")
+    const scheduledSnap = await db.collection(EMAILS)
       .where("status", "==", "scheduled").get();
     for (const doc of scheduledSnap.docs) {
       const touch = {id: doc.id, ...doc.data()} as TouchDoc;
@@ -598,7 +604,7 @@ export const campaignSendScheduler = onSchedule(
       if (!at || at > Date.now()) {
         continue;
       }
-      const campaignSnap = await db.collection("campaigns")
+      const campaignSnap = await db.collection(CAMPAIGNS)
         .doc(touch.campaignId ?? "").get();
       if (!campaignSnap.exists) {
         continue;
@@ -617,7 +623,7 @@ export const campaignSendScheduler = onSchedule(
 
     // 3. Tag-triggered touches reserve newly-eligible recipients (ported
     //    from the v1 auto scheduler; the tag IS the audience).
-    const triggeredSnap = await db.collection("campaign_emails")
+    const triggeredSnap = await db.collection(EMAILS)
       .where("status", "==", "sending").get();
     for (const doc of triggeredSnap.docs) {
       const touch = {id: doc.id, ...doc.data()} as TouchDoc;
@@ -628,7 +634,7 @@ export const campaignSendScheduler = onSchedule(
       if (!trigger?.tags?.length || trigger.afterDays == null) {
         continue;
       }
-      const campaignSnap = await db.collection("campaigns")
+      const campaignSnap = await db.collection(CAMPAIGNS)
         .doc(touch.campaignId ?? "").get();
       const campaign =
         {id: campaignSnap.id, ...campaignSnap.data()} as CampaignDoc;
@@ -652,7 +658,7 @@ export const campaignSendScheduler = onSchedule(
         Date.now() - trigger.afterDays * DAY_MS);
       for (const tag of trigger.tags) {
         // Composite index tag_applications(tag, anchorDate).
-        const apps = await db.collection("tag_applications")
+        const apps = await db.collection(TAG_APPLICATIONS)
           .where("tag", "==", tag)
           .where("anchorDate", "<=", cutoff)
           .orderBy("anchorDate", "asc")
@@ -664,7 +670,7 @@ export const campaignSendScheduler = onSchedule(
             continue;
           }
           try {
-            await db.collection("campaign_sends")
+            await db.collection(SENDS)
               .doc(`${touch.id}__${email}`).create({
                 campaignId: campaign.id,
                 emailId: touch.id,
@@ -698,7 +704,7 @@ export const campaignSendScheduler = onSchedule(
 async function finalizeSendingTouches(
   db: FirebaseFirestore.Firestore
 ): Promise<void> {
-  const sendingSnap = await db.collection("campaign_emails")
+  const sendingSnap = await db.collection(EMAILS)
     .where("status", "==", "sending").get();
   for (const doc of sendingSnap.docs) {
     const mode = (doc.data().sendConfig ?? {}).mode;
@@ -706,7 +712,7 @@ async function finalizeSendingTouches(
       continue;
     }
     // Composite index campaign_sends(emailId, status).
-    const open = await db.collection("campaign_sends")
+    const open = await db.collection(SENDS)
       .where("emailId", "==", doc.id)
       .where("status", "in", ["queued", "pending"])
       .limit(1)
@@ -743,16 +749,16 @@ export const onCampaignMailDelivered = onDocumentUpdated(
       return;
     }
     const db = getFirestore();
-    const ledgerRef = db.collection("campaign_sends").doc(meta.sendId);
+    const ledgerRef = db.collection(SENDS).doc(meta.sendId);
     const ledger = await ledgerRef.get();
     if (!ledger.exists || ledger.data()?.deliveredAt) {
       return;
     }
     await ledgerRef.update({deliveredAt: Timestamp.now()});
-    await db.collection("campaign_emails").doc(meta.emailId).update({
+    await db.collection(EMAILS).doc(meta.emailId).update({
       "stats.delivered": FieldValue.increment(1),
     }).catch(() => undefined);
-    await db.collection("campaigns").doc(meta.campaignId).update({
+    await db.collection(CAMPAIGNS).doc(meta.campaignId).update({
       "stats.delivered": FieldValue.increment(1),
     }).catch(() => undefined);
   }

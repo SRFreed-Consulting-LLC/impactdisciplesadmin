@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Deletes `customers` records that have NO LAST NAME and have never bought
 // anything or attended an event (owner's rule, 2026-08-27). A newsletter
 // subscription does not protect a record.
@@ -63,7 +64,7 @@ async function main() {
   const toDelete = [];
   const skipped = { missing: 0, gainedName: 0, gainedHistory: 0 };
   for (const id of ids) {
-    const ref = db.collection("customers").doc(id);
+    const ref = tenantCollection(db, "customers").doc(id);
     const snap = await ref.get();
     if (!snap.exists) { skipped.missing++; continue; }
     const c = snap.data();
@@ -90,7 +91,7 @@ async function main() {
     await batch.commit();
   }
 
-  const after = await db.collection("customers").count().get();
+  const after = await tenantCollection(db, "customers").count().get();
   console.log("");
   console.log(`  deleted ${toDelete.length}. customers now: ${after.data().count}`);
   console.log(`  restore with: node scripts/restore-contacts.js --project=${args.project} --from=${args.from} --execute`);

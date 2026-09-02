@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // READ-ONLY census of every mail_template still sitting in the System
 // Templates list, with the two facts that decide whether it can move:
 //
@@ -43,8 +44,8 @@ async function main() {
 
   const [templates, events, products] = await Promise.all([
     db.collection("mail_templates").get(),
-    db.collection("events").get(),
-    db.collection("products").get()
+    tenantCollection(db, "events").get(),
+    tenantCollection(db, "products").get()
   ]);
 
   // Who points at what. Events bind BY NAME (emailTemplate), products bind

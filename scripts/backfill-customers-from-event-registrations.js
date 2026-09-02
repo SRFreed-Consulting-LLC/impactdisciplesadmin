@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time backfill for the "customers" collection from "event-registrations"
 // - the event-registration counterpart to backfill-customers-from-purchases.js,
 // mirroring functions/src/event-registration-customer-upsert.functions.ts's
@@ -88,7 +89,7 @@ async function main() {
 
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
-  const existingSnap = await db.collection("customers").get();
+  const existingSnap = await tenantCollection(db, "customers").get();
   const byEmail = new Map();
   existingSnap.docs.forEach((doc) => {
     const data = doc.data();
@@ -222,10 +223,10 @@ async function main() {
     delete clean.__dirty;
 
     if (c.__new) {
-      const ref = db.collection("customers").doc();
+      const ref = tenantCollection(db, "customers").doc();
       batch.set(ref, clean);
     } else {
-      const ref = db.collection("customers").doc(c.__id);
+      const ref = tenantCollection(db, "customers").doc(c.__id);
       // Only firstName/lastName/pendingChanges can ever have changed here -
       // registrations never touch phone/address.
       batch.update(ref, {

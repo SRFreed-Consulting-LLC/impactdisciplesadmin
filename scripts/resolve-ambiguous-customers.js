@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Applies the 25 human decisions made interactively (see the session that
 // produced this file) for the "different names, same email" duplicates
 // inspect-duplicate-customers.js/merge-duplicate-customers.js deliberately
@@ -101,7 +102,7 @@ async function main() {
 
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
-  const customersSnap = await db.collection("customers").get();
+  const customersSnap = await tenantCollection(db, "customers").get();
   const byEmail = new Map();
   customersSnap.docs.forEach((doc) => {
     const data = doc.data();
@@ -173,9 +174,9 @@ async function main() {
   for (const p of plan) {
     const clean = { ...p.merged };
     delete clean.id;
-    batch.update(db.collection("customers").doc(p.survivorId), clean);
+    batch.update(tenantCollection(db, "customers").doc(p.survivorId), clean);
     for (const loserId of p.loserIds) {
-      batch.delete(db.collection("customers").doc(loserId));
+      batch.delete(tenantCollection(db, "customers").doc(loserId));
     }
   }
   await batch.commit();

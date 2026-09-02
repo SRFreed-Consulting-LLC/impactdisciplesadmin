@@ -1,3 +1,7 @@
+import {tenantPath} from "./common/shared/lists/tenancy";
+const EMAILS = tenantPath("campaign_emails");
+const POPUPS = tenantPath("campaign_popups");
+const CAMPAIGNS = tenantPath("campaigns");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {requireAdminRole} from "./admin-users.functions";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -125,10 +129,10 @@ async function load(
   campaignId: string
 ): Promise<Loaded> {
   const [campaign, touchesSnap, popup] = await Promise.all([
-    db.collection("campaigns").doc(campaignId).get(),
-    db.collection("campaign_emails")
+    db.collection(CAMPAIGNS).doc(campaignId).get(),
+    db.collection(EMAILS)
       .where("campaignId", "==", campaignId).get(),
-    db.collection("campaign_popups").doc(campaignId).get(),
+    db.collection(POPUPS).doc(campaignId).get(),
   ]);
   if (!campaign.exists) {
     throw new HttpsError("not-found", "Campaign not found.");

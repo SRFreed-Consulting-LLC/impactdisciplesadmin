@@ -1,4 +1,5 @@
-import {triggerPath} from "./common/shared/lists/tenancy";
+import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
+const EVENTS = tenantPath("events");
 import {onRequest} from "firebase-functions/v2/https";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -239,7 +240,7 @@ export const registerForEventHttp = onRequest(PUB_FN, (request, response) => {
       return;
     }
 
-    const eventSnap = await db.collection("events").doc(eventId).get();
+    const eventSnap = await db.collection(EVENTS).doc(eventId).get();
     const eventData = eventSnap.data();
     // Live OR early-registration accepts - see utils/sellable.ts, which now
     // owns this rule because the PAID checkout path has to apply the very

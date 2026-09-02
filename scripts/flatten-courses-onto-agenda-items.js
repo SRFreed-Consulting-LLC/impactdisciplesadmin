@@ -1,3 +1,4 @@
+const {tenantCollection} = require("./lib/tenancy");
 // One-time (idempotent) backfill for the 2026-08 Courses retirement: copy
 // each course-backed agenda item's display data from its courses/{id} doc
 // onto the item itself, so breakouts are self-contained:
@@ -38,7 +39,7 @@ const arg = (name) => {
 
   const [courseSnap, eventSnap] = await Promise.all([
     db.collection('courses').get(),
-    db.collection('events').get(),
+    tenantCollection(db, "events").get(),
   ]);
   const courses = new Map(courseSnap.docs.map((d) => [d.id, d.data()]));
   console.log(`${courses.size} courses, ${eventSnap.size} events`);

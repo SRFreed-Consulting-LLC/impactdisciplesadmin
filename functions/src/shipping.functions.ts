@@ -1,4 +1,5 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
+const PRODUCTS = tenantPath("products");
 import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
@@ -47,7 +48,7 @@ async function buildShipmentForPurchase(
   // product cannot strand an order that still has to be posted.
   const productSnaps = await Promise.all(
     shippable.map((i: Dict) => typeof i.id === "string" ?
-      db.collection("products").doc(i.id).get() :
+      db.collection(PRODUCTS).doc(i.id).get() :
       Promise.resolve(undefined))
   );
 

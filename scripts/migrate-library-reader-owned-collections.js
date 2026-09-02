@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // Phase 3 (consolidation plan) follow-up to migrate-library-content-to-
 // nested.js and migrate-library-flat-collections.js: copies the
 // reader-app-OWNED collections (this app only reads/administers them, the
@@ -170,9 +171,9 @@ async function main() {
   queueCopies(submissionsSnap, targetDb.collection("submissions"), writes);
 
   // adminMessages - top-level.
-  const adminMessagesSnap = await sourceDb.collection("adminMessages").get();
+  const adminMessagesSnap = await tenantCollection(sourceDb, "adminMessages").get();
   counts.adminMessages = adminMessagesSnap.size;
-  queueCopies(adminMessagesSnap, targetDb.collection("adminMessages"), writes);
+  queueCopies(adminMessagesSnap, tenantCollection(targetDb, "adminMessages"), writes);
 
   console.log("Source counts:");
   console.log(`  libraryUsers:               ${counts.libraryUsers}`);

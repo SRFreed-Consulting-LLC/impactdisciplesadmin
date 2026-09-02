@@ -1,4 +1,7 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
+const PENDING_ORDERS = tenantPath("pending_orders");
+const LOG_MESSAGES = tenantPath("log-messages");
+const AFFILIATE_SALES = tenantPath("affilliate_sales");
 import {onRequest} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
@@ -339,7 +342,7 @@ async function recordAffiliateSale(
     checkoutForm.total : 0;
   const discount = typeof checkoutForm.discount === "number" ?
     checkoutForm.discount : 0;
-  await getFirestore().collection("affilliate_sales").add({
+  await getFirestore().collection(AFFILIATE_SALES).add({
     code,
     date: Timestamp.now(),
     email: checkoutForm.email ?? "",
@@ -458,7 +461,7 @@ async function logCheckoutFailure(
 ): Promise<string> {
   const errorCode = generateErrorCode();
   try {
-    await getFirestore().collection("log-messages").add({
+    await getFirestore().collection(LOG_MESSAGES).add({
       id: errorCode,
       date: Timestamp.now(),
       type: "CHECKOUT",
@@ -643,7 +646,7 @@ exports.create_paypal_order = onRequest(
         }
 
         await getFirestore()
-          .collection("pending_orders").doc(orderData.id).set({
+          .collection(PENDING_ORDERS).doc(orderData.id).set({
             status: "created",
             createdAt: Timestamp.now(),
             capturedAt: null,
@@ -688,7 +691,7 @@ exports.capture_paypal_order = onRequest(
         }
 
         const pendingRef = getFirestore()
-          .collection("pending_orders").doc(orderId);
+          .collection(PENDING_ORDERS).doc(orderId);
         const pendingSnap = await pendingRef.get();
 
         if (!pendingSnap.exists) {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // One-time backfill for the `subscriptions` -> `customers` flag migration -
 // see MIGRATION.md's "Newsletter/Prayer Team subscribers: collection merged
 // into `customers` flags" section for the full writeup. Mirrors
@@ -59,7 +60,7 @@ async function main() {
   console.log(`${execute ? "LIVE RUN" : "DRY RUN"} against "${projectId}"\n`);
 
   // ---- Load existing customers, keyed by lowercased email ----
-  const existingSnap = await db.collection("customers").get();
+  const existingSnap = await tenantCollection(db, "customers").get();
   const byEmail = new Map();
   const duplicateEmails = new Map();
 
@@ -173,10 +174,10 @@ async function main() {
     delete clean.__dirty;
 
     if (c.__new) {
-      const ref = db.collection("customers").doc();
+      const ref = tenantCollection(db, "customers").doc();
       batch.set(ref, clean);
     } else {
-      const ref = db.collection("customers").doc(c.__id);
+      const ref = tenantCollection(db, "customers").doc(c.__id);
       // Partial update (Admin SDK's update() merges, unlike the Angular
       // app's own setDoc()-based BaseService.update() - see firebase.dao.ts)
       // - only the 4 subscription fields, never touching name/email/notes/

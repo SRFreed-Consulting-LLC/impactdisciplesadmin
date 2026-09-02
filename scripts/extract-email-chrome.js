@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const {tenantCollection} = require("./lib/tenancy");
 // READ-ONLY: mines the archived campaign emails for the HEADER and FOOTER
 // markup that actually recurs, so the email builder can offer real ones as
 // starting points instead of a blank canvas.
@@ -157,7 +158,7 @@ async function main() {
   const db = getFirestoreFor(projectId);
 
   const sinceYear = Number(args.since ?? 2025);
-  const snap = await db.collection("campaign_emails").get();
+  const snap = await tenantCollection(db, "campaign_emails").get();
   console.log(`${projectId}: ${snap.size} archived emails`);
   console.log(`  mining sends from ${sinceYear} onward`);
 
