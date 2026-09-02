@@ -169,14 +169,14 @@ test("anon: the retired sales collection is closed to everyone", async () => {
   // campaign_offers now. The rule is deny-all so the leftover documents are
   // unreachable rather than quietly public while they wait to be deleted.
   await assertFails(getDoc(doc(anon(), p("sales/s1"))));
-  await assertFails(getDocs(collection(anon(), "sales")));
+  await assertFails(getDocs(collection(anon(), p("sales"))));
 });
 
 test("anon: campaign offers are public to read, never writable", async () => {
   // A price a shopper sees has to be readable without auth - campaign docs
   // are staff-only, so the offer is what the storefront reads instead.
   await assertSucceeds(getDoc(doc(anon(), p("campaign_offers/camp1"))));
-  await assertSucceeds(getDocs(collection(anon(), "campaign_offers")));
+  await assertSucceeds(getDocs(collection(anon(), p("campaign_offers"))));
   // ...but nobody unauthenticated may mint themselves a discount.
   await assertFails(setDoc(doc(anon(), p("campaign_offers/camp-new")), {
     campaignId: "camp-new", isActive: true,
@@ -187,7 +187,7 @@ test("anon: campaign offers are public to read, never writable", async () => {
 
 test("anon: coupons are NOT enumerable (code enumeration lockdown)", async () => {
   await assertFails(getDoc(doc(anon(), p("coupons/FREE"))));
-  await assertFails(getDocs(collection(anon(), "coupons")));
+  await assertFails(getDocs(collection(anon(), p("coupons"))));
 });
 
 test("anon: customers, purchases, event-registrations all closed", async () => {

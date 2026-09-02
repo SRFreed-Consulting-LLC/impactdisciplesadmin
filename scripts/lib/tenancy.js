@@ -85,7 +85,8 @@ const TENANT_COLLECTIONS = [
   "discussionGroups",
   "librarySeries",
   // Wave 4 - production-only and live
-  "email_lists",
+  // Wave 4 - production-only. email_lists is deliberately absent: no rule,
+  // no reader, no writer - a leftover of the removed saved-lists feature.
   "form_submissions",
 ];
 

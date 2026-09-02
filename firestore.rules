@@ -119,51 +119,11 @@ service cloud.firestore {
     // ========================================================================
     // SECTION 1 - Public catalog (web site reads anonymously; staff author)
     // ========================================================================
-    match /config/{id} {
-      allow read: if true;                  // paypalClientId, business info -
-      allow write: if isAdminRole();        // model docs say: NO secrets here
-    }
-    match /products/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /product_categories/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /product_tags/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if isBusinessStaff();
-    }
     // 'sales' had a deny-all block here until 2026-09-01, guarding "the two
     // dormant documents left in each project". Those documents are gone from
     // both, so the rule guarded nothing; the default deny at the foot of this
     // file covers the name if it ever returns.
-    match /series/{id} {                    // Store Manager's Product Series -
-      allow read: if true;                  // NOT library series (librarySeries)
-      allow write: if isBusinessStaff();
-    }
-    match /events/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     match /courses/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /coaches/{id} {
-      allow read: if true;                  // documentId()-in queries = list
-      allow write: if isBusinessStaff();
-    }
-    match /impact_team/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /locations/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /testimonials/{id} {
       allow read: if true;
       allow write: if isBusinessStaff();
     }
@@ -175,10 +135,6 @@ service cloud.firestore {
     // for the same reason campaign_popups is: the public site has no Firebase
     // Auth at all, so anything it renders has to be world-readable. Nothing
     // sensitive belongs on this document - see DockBarModel.
-    match /dock_bar/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // The Coaching with Impact page's editable content (one doc, id
     // `current`): its video, which coach testimonials it shows and in what
     // order, and the "A movement of multiplication" screenshots. Same
@@ -221,10 +177,6 @@ service cloud.firestore {
     // Angular's [innerHTML], which sanitises. Write is staff-only, so this
     // is not a public injection surface - but it IS why write must stay
     // staff-only rather than being widened for any future public form.
-    match /page_content/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // The public site's TOP NAVIGATION - one document, `main`, holding the
     // whole ordered menu (2026-08-29). Both the desktop header and the
     // mobile off-canvas menu render from it; it replaces two hand-maintained
@@ -241,10 +193,6 @@ service cloud.firestore {
     // destination URLs, so a public write path here would let anyone point
     // the site's own navigation at somewhere of their choosing. That is a
     // phishing surface, not a content one.
-    match /site_navigation/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // The public site's FOOTER - one document, `main`, holding its headings,
     // link columns and copyright lines (2026-08-30). Same reasoning as
     // site_navigation above in every respect: world-readable because the
@@ -255,35 +203,14 @@ service cloud.firestore {
     // The address, phone, email and social links are NOT here - they are on
     // `config` (web_config), which the footer now reads instead of the
     // hardcoded copy it used to.
-    match /site_footer/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /dmms/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // `monthly-newsletter` (public list of Mailchimp links) retired
     // 2026-08-20 - the public Monthly Newsletter page reads flagged
     // campaign_emails touches through the newsletter_archive function.
     // No rule = no access; the collection is deleted once prod is
     // backfilled (MIGRATION.md).
-    match /faq/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // Dynamic form definitions: public pages load ONE form by id; only staff
     // may browse the registry.
-    match /forms/{id} {
-      allow get: if true;
-      allow list: if isBusinessStaff();
-      allow write: if isBusinessStaff();
-    }
     // Read by the web's client-side email sender (template by name/id).
-    match /mail_templates/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // Staff-only since pre-prod hardening #5: both storefronts resolve a
     // single code through the lookup_coupon/lookupCoupon functions now, so
     // nothing legitimate lists this collection from a client any more (a
@@ -298,10 +225,6 @@ service cloud.firestore {
     // Employee-tier staff exist today, so this costs nobody. If one is
     // added who needs coupon management, put that behind a callable
     // rather than widening this rule back.
-    match /coupons/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if isAdminRole();
-    }
 
     // ========================================================================
     // SECTION 2 - Anonymous-write flows the public site depends on.
@@ -364,10 +287,6 @@ service cloud.firestore {
     // disclosure reduced to per-session counts. The old anonymous
     // read/create/update surface (roster enumeration, whole-doc
     // overwrites, email-as-credential lookups) is closed.
-    match /event-registrations/{id} {
-      allow read, update, delete: if isBusinessStaff();
-      allow create: if false;
-    }
     // eventSessionCounts (per-event session-count counters, maintained by
     // the onEventRegistrationSessionCounts trigger and served through
     // get_session_counts) is functions-only - unmatched here on purpose, so
@@ -415,39 +334,10 @@ service cloud.firestore {
     // arbitrary diagnostic JSON, left untyped, with Firestore's 1MB doc
     // limit as the backstop). The LogMessage constructor never assigns its
     // created_by param, so no writer sends that field.
-    match /log-messages/{id} {
-      allow create: if
-        request.resource.data.keys().hasOnly([
-          'id', 'date', 'type', 'message', 'data', 'error_code', 'archived'
-        ]) &&
-        request.resource.data.id is string &&
-        request.resource.data.id.size() <= 100 &&
-        request.resource.data.date is timestamp &&
-        request.resource.data.type is string &&
-        request.resource.data.type.size() <= 500 &&
-        request.resource.data.message is string &&
-        request.resource.data.message.size() <= 10000 &&
-        request.resource.data.error_code is string &&
-        request.resource.data.error_code.size() <= 500 &&
-        request.resource.data.archived is bool;
-      allow read, update, delete: if isAdminRole();
-    }
-    match /affilliate_sales/{id} {          // (sic - 3 L's, matches the code)
-      // Anonymous create CLOSED (sweep 2026-08-17): the web checkout used
-      // to write this client-side, which let anyone forge affiliate
-      // attribution. The checkout Cloud Function (paypal.functions.ts,
-      // recordAffiliateSale) writes it server-side now from the
-      // server-computed order.
-      allow create, read, update, delete: if isBusinessStaff();
-    }
     // Closed since pre-prod hardening #4: totals are rolled up SERVER-side
     // by the onPurchaseTaxSummary purchases trigger now (idempotent,
     // derived from the purchase doc itself) - the old checkout-success
     // anonymous read-modify-write is gone. Staff can read for reporting.
-    match /tax_rate_summaries/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if false;
-    }
     // impact-users (the LEGACY digital-library license store) was retired
     // 2026-08-17 (pre-prod #3): verified write-only-with-no-reader across
     // all repos, empty in this database, and its checkout-success write
@@ -462,65 +352,12 @@ service cloud.firestore {
     // client updates; create/delete go through Cloud Functions (Admin SDK).
     // A write here propagates into the role CLAIM via onAdminUserRoleSync -
     // that's why update is the only client verb and is admin-gated.
-    match /admin_users/{id} {
-      // SELF-ACCOUNT CARVE-OUT (2026-08-29). Every staff tier may save its
-      // OWN preferences and its OWN display name - and nothing else - on its
-      // OWN document. Everything that decides what a person can DO or how
-      // the app identifies them (role, permissions, libraryPermissions,
-      // email, firebaseUID) stays Admin/Root, so the anti-self-escalation
-      // property is unchanged: an Employee still cannot grant themselves a
-      // screen, and the role claim that onAdminUserRoleSync propagates is
-      // not in the allow-list.
-      //
-      // firstName/lastName are in the list because they are the person's own
-      // name (owner's call: "a user should be able to save to their own
-      // accounts"); Settings > My Profile is the screen that writes them.
-      // Note the name is NOT purely cosmetic - it is what other staff see
-      // against records - which is why it stops at the name and does not
-      // extend to email, the key the whole app resolves an account by.
-      //
-      // Needed because these preferences are written by the CLIENT, from the
-      // person they belong to. Before this, an Employee or Editor resizing
-      // the nav, pinning a screen or picking a theme had the write rejected
-      // and the UI silently revert - most visibly with drag-to-resize, where
-      // the whole drawer snaps back on release.
-      //
-      // This is also the one place the file's "rules cannot look admin_users
-      // up by uid" caveat does not bite: on a per-document update `resource`
-      // is already in hand, so firebaseUID can be compared directly.
-      function isOwnStaffDoc() {
-        return isStaffAny() && resource.data.firebaseUID == request.auth.uid;
-      }
-      // hasOnly, not hasAny: the write must touch NOTHING outside this list.
-      // Note this requires a PARTIAL update (updateDoc) - a whole-record
-      // setDoc would list every field as changed and be denied, which is
-      // why the client writes these with BaseService.updateFields().
-      function onlyOwnPrefsChanged() {
-        return request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['drawerWidth', 'drawerPinned', 'pinnedScreens', 'colorTheme', 'darkMode',
-                    'firstName', 'lastName']);
-      }
-
-      allow read: if isStaffAny();
-      allow update: if isAdminRole() || (isOwnStaffDoc() && onlyOwnPrefsChanged());
-      allow create, delete: if false;
-    }
     // 'user_permissions' is gone (2026-09-01). It never existed in either
     // project, nothing subscribed to the observable built from it, and its
     // service is deleted - real permissions are ScreenPermission grants on
     // the admin_users doc above.
-    match /customers/{id} {
-      allow read, write: if isBusinessStaff();
-    }
     // Created by Cloud Functions only (PayPal checkout, reader store, group
     // licenses); staff update fulfillment fields from the admin UI.
-    match /purchases/{id} {
-      allow read, update: if isBusinessStaff();
-      allow create, delete: if false;
-    }
-    match /pending_orders/{id} {            // functions-only staging
-      allow read, write: if false;
-    }
     match /meta/{id} {                      // newRecordCounts alert counters -
       allow read: if isBusinessStaff();     // written by functions only
       allow write: if false;
@@ -540,119 +377,41 @@ service cloud.firestore {
     }
     // `integration_settings` (only ever held the Mailchimp audience-sync
     // config) retired 2026-08-20 with the sync. No rule = no access.
-    match /shipping-labels/{id} {
-      allow read, write: if isBusinessStaff();
-    }
-    match /shipping-label-batches/{id} {
-      allow read, write: if isBusinessStaff();
-    }
     // 'affilliate_payments' is gone (2026-09-01). The collection never
     // existed in either project and nothing could create a record; the panel
     // that read it showed staff a permanently empty table.
-    match /campaigns/{id} {
-      allow read, write: if isBusinessStaff();
-    }
     // The email body behind a type-'email' campaign (Sent Emails history) -
     // same doc id as the campaign doc. Imported by the Admin SDK
     // (scripts/import-mailchimp-campaigns.js); staff read for preview/
     // start-from, staff write so future in-app one-time sends can record
     // their own history the same way.
-    match /campaign_emails/{id} {
-      allow read, write: if isBusinessStaff();
-    }
     // Customer tag rules (Campaigns Manager > Tag Rules) - staff-authored.
-    match /tag_rules/{id} {
-      allow read, write: if isBusinessStaff();
-    }
     // Per-(customer, tag) application record - when/why a tag landed, and
     // the anchor date the auto-campaign scheduler counts from. Normally
     // written by the Admin SDK (upsert triggers / retroactive sweep); the
     // client's only legitimate writes are the manual add/remove on the
     // customer-details tag chips. Updates never happen (a tag application
     // is immutable - remove and re-add instead).
-    match /tag_applications/{id} {
-      allow read, create, delete: if isBusinessStaff();
-      allow update: if false;
-    }
     // Per-recipient campaign send ledger - send-engine-only writes
     // (Admin SDK); staff can read it for auditing.
-    match /campaign_sends/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if false;
-    }
     // Raw engagement event stream (opens/clicks/attribution) - written
     // only by the tracking endpoints (Admin SDK); staff read for audit.
-    match /campaign_events/{id} {
-      allow read: if isBusinessStaff();
-      allow write: if false;
-    }
     // Web-campaign popup config, doc id = campaignId. PUBLIC-readable
     // (the storefront renders these for anonymous visitors - same tier as
     // home_page_popups) - which is exactly why popups live in their own
     // collection: campaign docs (audience emails, revenue) stay staff-only,
     // and a popup doc must NEVER carry audience or stats.
-    match /campaign_popups/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // A campaign's OFFER - what a shopper pays, doc id = campaignId
     // (Campaign Manager v3). PUBLIC-readable for the same reason popups are:
     // campaign docs stay staff-only, so anything a PRICE depends on has to be
     // published here for the storefront to read. Like the popup doc, it must
     // NEVER carry audience, stats or coupon codes. Replaces the sales
     // collection, whose single global percentage overwrote every product.
-    match /campaign_offers/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
     // Reusable popup recipes - the popup equivalent of mail_templates.
-    match /popup_templates/{id} {
-      allow read, write: if isBusinessStaff();
-    }
-    match /organizations/{id} {
-      allow read, write: if isBusinessStaff();
-    }
-    match /event-announcements/{id} {
-      allow read, write: if isBusinessStaff();
-    }
 
     // ========================================================================
     // SECTION 4 - Library content (nested schema, Phase 3)
     // ========================================================================
-    match /librarySeries/{seriesId} {
-      allow read: if signedIn();
-      allow write: if isLibraryStaff();
-
-      // Book metadata is readable by any signed-in patron regardless of
-      // license (Groups needs titles for unowned books); lesson CONTENT is
-      // license-gated below. bookId is the rules PATH variable - always
-      // present, no denormalized field or get() needed.
-      match /books/{bookId} {
-        allow read: if signedIn();
-        allow write: if isLibraryStaff();
-
-        match /units/{unitId} {
-          allow read: if canReadBook(bookId);
-          allow write: if isLibraryStaff();
-
-          match /lessons/{lessonId} {
-            allow read: if canReadBook(bookId);
-            allow write: if isLibraryStaff();
-
-            // License-gated (sweep 2026-08-17): a translation doc carries
-            // the FULL original + translated lesson text, so it must be
-            // gated exactly like the lesson above it - a bare signedIn()
-            // read was a paywall bypass for every translated book. The
-            // reader's language picker no longer scans these (see the
-            // appConfig/availableLanguages registry below).
-            match /translations/{translationId} {
-              allow read: if canReadBook(bookId);
-              allow write: if isLibraryStaff();
-            }
-          }
-        }
-      }
-    }
     // Collection-group translations read is STAFF-ONLY now (sweep
     // 2026-08-17). It used to be signedIn() to serve the reader's
     // "which languages exist" discovery, which exposed every translated
@@ -666,10 +425,6 @@ service cloud.firestore {
     // by the onTranslationLocaleRegistry trigger. Holds only locale
     // codes/labels - no lesson content - so it's safe for any signed-in
     // patron to read; writes are the trigger's (Admin SDK) alone.
-    match /appConfig/{id} {
-      allow read: if signedIn();
-      allow write: if false;
-    }
     // Collection-group reads - the nested match blocks above do NOT apply
     // to collectionGroup() queries. `books` stays signedIn-open: book
     // METADATA is readable by any patron regardless of license (Groups
@@ -698,40 +453,12 @@ service cloud.firestore {
     }
 
     // Library staff authoring artifacts.
-    match /subtemplates/{id} {
-      allow read, write: if isLibraryStaff();
-    }
-    match /lessonTemplates/{id} {
-      allow read, write: if isLibraryStaff();
-    }
-    match /titleTranslations/{id} {
-      allow read: if signedIn();
-      allow write: if isLibraryStaff();
-    }
-    match /commonTranslations/{id} {
-      allow read: if signedIn();
-      allow write: if isLibraryStaff();
-    }
     // Image docs are only ever fetched by known doc id (a content hash the
     // reader resolves from a license-gated lesson's own 'lessonimage:{id}'
     // schema placeholders, verified across the reader/manager/admin apps -
     // no client lists this collection). A signedIn() LIST would have let
     // any patron enumerate every book's lesson images without a license,
     // so listing is staff-only.
-    match /lessonImages/{id} {
-      allow get: if signedIn();
-      allow list: if isLibraryStaff();
-      allow write: if isLibraryStaff();
-    }
-    match /bulkDiscountTiers/{id} {
-      allow read: if signedIn();            // patrons price group licenses
-      allow write: if isAdminRole();
-    }
-    match /activityLog/{id} {
-      allow create: if isLibraryStaff();    // content-edit audit entries
-      allow read, delete: if isAdminRole();
-      allow update: if false;
-    }
     // Basic type/size bounds on a logged error entry - the pre-auth create
     // path below needs no signed-in identity at all, so without this an
     // anonymous caller could write unbounded message/stack strings or a
@@ -788,133 +515,10 @@ service cloud.firestore {
     // grant/revoke functions. Nothing client-written remains on the doc, so
     // client writes are closed entirely: the old self-license-granting
     // vulnerability class is structurally gone.
-    match /libraryUsers/{email} {
-      allow read: if callerEmail() == email || isAdminRole();
-      allow write: if false;
-
-      // Stay-direct owner subcollections (offline-preserving split): the
-      // owner's own study data, path-scoped - identity is the PATH, not a
-      // spoofable field.
-      match /lessonStatus/{lessonId} {
-        allow read: if callerEmail() == email || isAdminRole();
-        allow write: if callerEmail() == email;
-      }
-      match /lessonHighlights/{lessonId} {
-        allow read: if callerEmail() == email || isAdminRole();
-        allow write: if callerEmail() == email;
-      }
-      match /submissions/{lessonId} {
-        allow read: if callerEmail() == email || isAdminRole();
-        allow write: if callerEmail() == email;
-      }
-      match /fcmTokens/{token} {
-        allow read, write: if callerEmail() == email;
-      }
-      // Inbox copies are function-written (sendLibraryUserMessage). The
-      // owner's permitted mutations, restored from the pre-consolidation
-      // rules (the port had closed delete entirely, silently breaking the
-      // reader's inbox delete action - MessageService.deleteMessage):
-      // flipping `read` to true (never editing content or un-reading), and
-      // deleting a message they have ALREADY READ - an unread announcement
-      // can't be dismissed unseen, and the adminMessages summary keeps the
-      // sent record either way.
-      match /messages/{id} {
-        allow read: if callerEmail() == email;
-        allow update: if callerEmail() == email &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
-          request.resource.data.read == true;
-        allow delete: if callerEmail() == email && resource.data.read == true;
-        allow create: if false;
-      }
-    }
     // Cross-user highlight discovery is not a thing; but lessonStatus etc.
     // are only ever read via their owner's path above - no collectionGroup
     // reads needed for patron data.
 
-    match /discussionGroups/{groupId} {
-      // Browse/detail for any signed-in patron; membership create/update
-      // and group create/close go through Cloud Functions (Phase 6).
-      // Admin's Groups screen still edits/deletes groups directly.
-      allow read: if signedIn();
-      allow update, delete: if isAdminRole();
-      allow create: if false;
-
-      // Roster read is membership-gated (sweep 2026-08-17): a member doc
-      // is keyed by email and carries email/name/status - a bare signedIn()
-      // read let any account enumerate every group's roster. The reader
-      // only ever lists a group's members for a group the caller is in
-      // (getGroupMembers), so gating to member/creator/admin breaks no
-      // legitimate query. "My memberships" across groups is served
-      // separately by the email-filtered collection-group rule below.
-      match /members/{memberEmail} {
-        allow read: if isAdminRole() || isGroupCreator(groupId) ||
-          isApprovedGroupMember(groupId);
-        allow delete: if isAdminRole();     // admin hard-delete cleanup
-        allow create, update: if false;     // functions only
-      }
-      // Stay-direct interactive content: authored-as-self by an approved
-      // member (one get() per write - the price of instant local echo).
-      // Reads are membership-gated (sweep 2026-08-17): private pastoral
-      // content (chat + prayer requests) must not be readable by any
-      // signed-in account. isApprovedGroupMember(groupId) is evaluable at
-      // query time (no resource.data reference), so the reader's unfiltered
-      // per-group list queries still pass for an actual member.
-      match /chatMessages/{id} {
-        allow read: if isAdminRole() || isGroupCreator(groupId) ||
-          isApprovedGroupMember(groupId);
-        allow create: if isApprovedGroupMember(groupId) &&
-          request.resource.data.senderEmail == callerEmail() &&
-          request.resource.data.text is string &&
-          request.resource.data.text.size() < 4000;
-        allow update: if false;
-        allow delete: if isAdminRole();
-      }
-      match /prayerRequests/{id} {
-        allow read: if isAdminRole() || isGroupCreator(groupId) ||
-          isApprovedGroupMember(groupId);
-        allow create: if isApprovedGroupMember(groupId) &&
-          request.resource.data.authorEmail == callerEmail() &&
-          request.resource.data.text is string &&
-          request.resource.data.text.size() < 4000;
-        allow update: if false;
-        // Author OR the group creator (moderation) OR admin. The creator
-        // term was missing (Sweep 3, 2026-08-17): the reader shows a Remove
-        // button on any prayer to the leader, but every leader-moderation
-        // delete threw permission-denied and logged an error.
-        allow delete: if resource.data.authorEmail == callerEmail() ||
-          isGroupCreator(groupId) || isAdminRole();
-      }
-      // 1:1 leader<->member conversations: the conversation doc id is the
-      // NON-creator participant's email; the thread is always between the
-      // creator and that one member. Membership-gated (Sweep 3, 2026-08-17):
-      // the otherEmail participant must have a member doc, and the caller
-      // must be either that participant or the creator. Without this, any
-      // signed-in patron could DM (and, via notifyConversationMessage, push
-      // to) any leader, and a creator could open conversations/{anyEmail} to
-      // push arbitrary text at any user whose email they know. isAdminRole()
-      // read/delete lets moderation hard-delete the subtree.
-      match /conversations/{otherEmail} {
-        allow read: if isAdminRole() ||
-          (groupMemberExists(groupId, otherEmail) &&
-            (callerEmail() == otherEmail || isGroupCreator(groupId)));
-        allow create, update: if groupMemberExists(groupId, otherEmail) &&
-          (callerEmail() == otherEmail || isGroupCreator(groupId));
-        allow delete: if isAdminRole();
-
-        match /messages/{id} {
-          allow read: if isAdminRole() ||
-            (groupMemberExists(groupId, otherEmail) &&
-              (callerEmail() == otherEmail || isGroupCreator(groupId)));
-          allow create: if groupMemberExists(groupId, otherEmail) &&
-            (callerEmail() == otherEmail || isGroupCreator(groupId)) &&
-            request.resource.data.senderEmail == callerEmail() &&
-            request.resource.data.text is string &&
-            request.resource.data.text.size() < 4000;
-          allow update: if false;
-          allow delete: if isAdminRole();     // moderation hard-delete
-        }
-      }
-    }
 
     // License pool: every mutation is a Cloud Function. Reads are
     // owner-scoped (sweep 2026-08-17): a bare signedIn() read let any
@@ -922,27 +526,12 @@ service cloud.firestore {
     // reader only ever queries its own, filtered by leaderEmail == me or
     // assignedToEmail == me, so those equality filters make an owner-scoped
     // read rule provable; admin sees all.
-    match /groupLicenses/{id} {
-      allow read: if isAdminRole() ||
-        resource.data.leaderEmail == callerEmail() ||
-        resource.data.assignedToEmail == callerEmail();
-      allow write: if false;
-    }
     // Send/cancel are functions now; leaders list their own sent invites
     // (leaderEmail-filtered). Invitee preview/accept/decline all go through
     // functions (getInviteDetails/accept/decline), so a direct read is only
     // ever a leader listing their own - scope it (sweep 2026-08-17): a bare
     // signedIn() read let anyone enumerate every invite (invitee emails +
     // status) and mine invite ids for decline-griefing.
-    match /groupInvites/{id} {
-      allow read: if isAdminRole() ||
-        resource.data.leaderEmail == callerEmail();
-      allow write: if false;
-    }
-    match /adminMessages/{id} {             // broadcast history (admin screen)
-      allow read: if isAdminRole();
-      allow write: if false;
-    }
 
     // ========================================================================
     // A SITE'S OWN CONTENT - sites/{siteId}/...
@@ -1416,6 +1005,51 @@ service cloud.firestore {
             }
           }
         }
+      }
+
+      // ---- Wave 4 ------------------------------------------------------
+      // Mirrored from the top-level block, which STAYS until the web
+      // deploy that starts writing here. The public create is
+      // constrained field by field and an old bundle sends a shape the
+      // narrowed rule refuses.
+      match /form_submissions/{id} {
+        allow create: if
+          // newRecordStatus is NOT in this list, and that is the finding.
+          //
+          // S7, completed 2026-08-28. onFormSubmissionCreated treats a doc
+          // that ARRIVES carrying newRecordStatus as one it has already
+          // counted and skips it. So the field had two problems at once:
+          // a submission POSTed with 'seen' suppressed the staff alert bell
+          // (notification suppression - exactly the primitive someone
+          // probing the public forms wants), AND the three writers that
+          // legitimately sent 'new' - web's dynamic-form.component.ts and
+          // campaign-popup.component.ts, and admin's form-test-submit-dialog
+          // - meant no public submission was EVER counted.
+          //
+          // The first half shipped earlier as a value constraint ('new'
+          // only). This is the second half: all three writers stopped
+          // sending it, so the trigger is now the field's sole writer and
+          // the key can be refused outright.
+          //
+          // DEPLOY ORDER MATTERS: web hosting must ship BEFORE these rules.
+          // A running old bundle still sends the field, and rules that
+          // refuse it would reject every public form submission. The
+          // standing order (functions -> hosting -> rules LAST) already
+          // does this - do not shortcut it for a "rules-only" change.
+          request.resource.data.keys().hasOnly([
+            'formId', 'formName', 'fieldSnapshot', 'values', 'submittedAt',
+            'isTest'
+          ]) &&
+          request.resource.data.formId is string &&
+          request.resource.data.formId.size() <= 500 &&
+          request.resource.data.formName is string &&
+          request.resource.data.formName.size() <= 500 &&
+          request.resource.data.fieldSnapshot is list &&
+          request.resource.data.values is map &&
+          request.resource.data.submittedAt is timestamp &&
+          (!('isTest' in request.resource.data) ||
+            request.resource.data.isTest is bool);
+        allow read, update, delete: if isBusinessStaff();
       }
     }
 
