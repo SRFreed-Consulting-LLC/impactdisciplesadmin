@@ -4,6 +4,7 @@ import {
   escapeHtml,
   queueGroupInviteEmail,
 } from "./transactional-emails";
+import {mayCreateGroupForBook, mayLeadGroups} from "./library-access";
 import {normalizeGroupLocation} from "./library-group-location";
 import {
   ApproveGroupMembershipRequest,
@@ -166,15 +167,13 @@ export const createGroup = onCall(async (request):
   //
   // Gates CREATION only. Nothing else a leader does with a group they already
   // run is affected, or a live group could be stranded mid-study.
-  if (profile.canLeadGroups === false) {
+  if (!mayLeadGroups(profile)) {
     throw new HttpsError(
       "permission-denied",
       "Your account is not set up to start Impact Groups."
     );
   }
-  const licensed = Array.isArray(profile.licensedBookIds) &&
-    profile.licensedBookIds.includes(bookId);
-  if (!licensed && profile.internationalUser !== true) {
+  if (!mayCreateGroupForBook(profile, bookId)) {
     throw new HttpsError(
       "permission-denied",
       "You need a license for this book to start an Impact Group around it."

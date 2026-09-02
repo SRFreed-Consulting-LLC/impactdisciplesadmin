@@ -17,6 +17,7 @@ import {
   EmailLessonPdfRequest,
   EmailLessonPdfResult,
 } from "./common/shared/contract/library-callables.types";
+import {mayReadBook} from "./library-access";
 import {buildLessonDoc} from "./lesson-pdf/lesson-doc";
 import {renderLessonPdf} from "./lesson-pdf/render-pdf";
 
@@ -58,16 +59,11 @@ export const emailLessonPdf = onCall(
     }
     const profile = profileSnap.data() ?? {};
 
-    // Mirrors firestore.rules' canReadBook: staff and international patrons
-    // read everything, everyone else needs the book on their licence list.
     // Checked here rather than trusted from the client - this function runs
     // with admin credentials and would otherwise happily mail any lesson in
-    // the library to anyone with an account.
-    const licensed = profile["licensedBookIds"];
-    const allowed = licensed === "all" ||
-      profile["internationalUser"] === true ||
-      (Array.isArray(licensed) && licensed.includes(bookId));
-    if (!allowed) {
+    // the library to anyone with an account. The rule itself lives in
+    // library-access.ts, where it is tested.
+    if (!mayReadBook(profile, bookId)) {
       throw new HttpsError(
         "permission-denied",
         "You do not have access to this book."
