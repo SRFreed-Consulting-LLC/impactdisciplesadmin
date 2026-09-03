@@ -18,6 +18,7 @@
 // than as a type error. shipping-request.test.js is the guard.
 
 import {Countries} from "../common/shared/lists/countries.enum";
+import {States} from "../common/shared/lists/states.enum";
 
 type Dict = Record<string, unknown>;
 
@@ -98,6 +99,41 @@ export function countryCode(v: unknown): string {
   return CODE_BY_NAME.get(s.toLowerCase()) ?? s;
 }
 
+// State NAME -> USPS two-letter code, lower-cased, built once from the
+// shared States enum (keys are the codes, values the names the storefront's
+// dropdown shows and stores).
+const STATE_BY_NAME = new Map<string, string>(
+  Object.entries(States).map(([code, name]) => [name.toLowerCase(), code])
+);
+const KNOWN_STATES = new Set(Object.keys(States));
+
+/**
+ * Normalises a stored US state into the two-letter code ShipEngine wants.
+ *
+ * REGRESSION, 2026-09-03 - the SECOND half of the countryCode() fix above,
+ * found within the hour on production. The storefront stores the state as
+ * the dropdown's display value ("Georgia"). While the country went over as
+ * "United States" ShipEngine ran no US-specific checks and accepted the
+ * name; the moment countryCode() started sending "US" it enforced
+ * "ship_to state_province must be two characters when ship_to country_code
+ * equals US", and EVERY rate quote on production 502'd - a shopper stuck on
+ * "Setting up payment...". Rates had returned 200 the day before.
+ *
+ * Same contract as countryCode(): a code in any case, a name in any case,
+ * or anything unrecognised passed through unchanged (a Canadian province is
+ * not in the enum and must reach the vendor as typed). No default: an
+ * absent state stays absent.
+ * @param {unknown} v A state as stored - code, name or absent.
+ * @return {string|undefined} A two-letter code, or the unrecognised input.
+ */
+export function stateCode(v: unknown): string | undefined {
+  const s = str(v);
+  if (!s) return undefined;
+  const upper = s.toUpperCase();
+  if (KNOWN_STATES.has(upper)) return upper;
+  return STATE_BY_NAME.get(s.toLowerCase()) ?? s;
+}
+
 /**
  * Accepts a finite, non-negative number. Rejects NaN/Infinity, which
  * would otherwise serialise into the vendor payload as null.
@@ -126,6 +162,11 @@ function address(v: unknown): Dict | undefined {
   // endpoint did not, and depending on the difference is not a plan.
   if (out.countryCode !== undefined) {
     out.countryCode = countryCode(out.countryCode);
+  }
+  // And the state: "Georgia" -> "GA". Sending "US" above is what made the
+  // vendor start refusing the name - see stateCode().
+  if (out.stateProvince !== undefined) {
+    out.stateProvince = stateCode(out.stateProvince);
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
@@ -272,7 +313,9 @@ export function toShipEngineAddress(
   };
   const line2 = str(addr.address2);
   const city = str(addr.city);
-  const state = str(addr.state);
+  // Stored as "Georgia" by the storefront; the vendor wants "GA" once the
+  // country is "US" - see stateCode().
+  const state = stateCode(addr.state);
   const tel = phoneDigits(phone);
   if (line2) out.addressLine2 = line2;
   if (city) out.cityLocality = city;

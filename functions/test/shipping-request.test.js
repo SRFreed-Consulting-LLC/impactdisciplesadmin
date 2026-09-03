@@ -18,8 +18,10 @@ const {
   buildLabelShipment,
   phoneDigits,
   countryCode,
+  stateCode,
 } = require("../lib/utils/shipping-request");
 const {Countries} = require("../lib/common/shared/lists/countries.enum");
+const {States} = require("../lib/common/shared/lists/states.enum");
 
 // What the storefront's checkout ACTUALLY stores in shippingAddress.country
 // - the dropdown's display value, not a code. Every real purchase on prod
@@ -27,6 +29,10 @@ const {Countries} = require("../lib/common/shared/lists/countries.enum");
 // with "US" is how the 2026-09-03 bug passed every test (see the regression
 // block at the bottom).
 const STORED_COUNTRY = "United States";
+// Likewise the state: the dropdown's display value, never the code. The
+// fixture said "GA" until 2026-09-03, which is how the second half of that
+// bug (see the regression block) passed every test too.
+const STORED_STATE = "Georgia";
 
 // The vendor SDK's own request formatter. Used by exactly one test, which
 // pins the fact that it silently drops fields our shipment does not send -
@@ -49,9 +55,9 @@ function realBody() {
         phone: "5551234567",
         addressLine1: "12 Main St",
         cityLocality: "Newnan",
-        stateProvince: "GA",
+        // The web client copies shippingAddress.state/country straight in.
+        stateProvince: STORED_STATE,
         postalCode: "30263",
-        // The web client copies shippingAddress.country straight in here.
         countryCode: STORED_COUNTRY,
         addressResidentialIndicator: "yes",
       },
@@ -79,6 +85,7 @@ test("a real storefront body survives intact", () => {
   assert.equal(out.shipment.shipTo.postalCode, "30263");
   assert.equal(out.shipment.shipTo.name, "Jane Buyer");
   assert.equal(out.shipment.shipTo.countryCode, "US");
+  assert.equal(out.shipment.shipTo.stateProvince, "GA");
   assert.equal(out.shipment.shipFrom.companyName, "Impact Disciples");
   assert.equal(out.shipment.shipFrom.addressLine2, "Suite 2");
   assert.deepEqual(out.shipment.packages, [
@@ -434,6 +441,80 @@ test("a label shipment is domestic when both ends are stored as names",
     assert.equal(wire.ship_to.country_code, "US");
     assert.equal(wire.ship_from.country_code, "US");
   });
+
+// ---------------------------------------------------------------------------
+// REGRESSION 2026-09-03, second half: the STATE is stored as a name too
+// ---------------------------------------------------------------------------
+//
+// Sending "US" (above) is what made ShipEngine start enforcing "ship_to
+// state_province must be two characters when ship_to country_code equals
+// US". Every production rate quote 502'd within the hour of that deploy;
+// the day before, the same request with country "United States" and state
+// "Georgia" had returned 200. The fixture's stateProvince said "GA", so
+// nothing here could go red.
+
+test("STORED_STATE is still what the checkout dropdown produces", () => {
+  assert.equal(States.GA, STORED_STATE);
+});
+
+test("stateCode accepts a code or a name in any case", () => {
+  assert.equal(stateCode("GA"), "GA");
+  assert.equal(stateCode("ga"), "GA");
+  assert.equal(stateCode(" GA "), "GA");
+  assert.equal(stateCode("Georgia"), "GA");
+  assert.equal(stateCode("georgia"), "GA");
+  assert.equal(stateCode("GEORGIA"), "GA");
+  assert.equal(stateCode("New Hampshire"), "NH");
+});
+
+test("stateCode has NO default - an absent state stays absent", () => {
+  assert.equal(stateCode(undefined), undefined);
+  assert.equal(stateCode(null), undefined);
+  assert.equal(stateCode(""), undefined);
+  assert.equal(stateCode("   "), undefined);
+  assert.equal(stateCode(13), undefined);
+});
+
+test("stateCode passes an unrecognised region through unchanged", () => {
+  // A Canadian province is not in the US enum and must reach the vendor
+  // exactly as typed, for the vendor to accept or refuse by name.
+  assert.equal(stateCode("Ontario"), "Ontario");
+  assert.equal(stateCode("ON"), "ON");
+});
+
+test("every state name in the shared enum round-trips to its code", () => {
+  for (const [code, name] of Object.entries(States)) {
+    assert.equal(stateCode(name), code, `name "${name}"`);
+    assert.equal(stateCode(code), code, `code "${code}"`);
+  }
+});
+
+test("the rate-quote sanitiser sends a two-letter state with a US country",
+  () => {
+    // The exact production request that 502'd: both stored as names.
+    const body = realBody();
+    body.shipment.shipTo.stateProvince = "Georgia";
+    body.shipment.shipTo.countryCode = "United States";
+    body.shipment.shipFrom.stateProvince = "georgia";
+    const out = sanitizeRateRequest(body);
+    assert.equal(out.shipment.shipTo.countryCode, "US");
+    assert.equal(out.shipment.shipTo.stateProvince, "GA");
+    assert.equal(out.shipment.shipFrom.stateProvince, "GA");
+  });
+
+test("a label address sends a two-letter state on the wire", () => {
+  const out = toShipEngineAddress(
+    {address1: "12 Main St", city: "Newnan", state: STORED_STATE,
+      zip: "30263", country: STORED_COUNTRY}, "X"
+  );
+  assert.equal(out.stateProvince, "GA");
+  const shipment = buildLabelShipment({
+    ...SERVICE, shipTo: out, shipFrom: out, totalWeightOunces: 8,
+  });
+  const wire = formatParams({shipment}).shipment;
+  assert.equal(wire.ship_to.state_province, "GA");
+  assert.equal(wire.ship_to.country_code, "US");
+});
 
 // ---------------------------------------------------------------------------
 // Phone numbers
