@@ -97,6 +97,32 @@ describe('PermissionService', () => {
     });
   });
 
+  describe('the Site tab, delegated by screen (2026-09-03)', () => {
+    const grants: ScreenPermission[] = [
+      { screenKey: 'page-manager.coaching-with-impact', view: true, add: true, edit: true, delete: true },
+      { screenKey: 'data.disciple-making-minute', view: true, add: false, edit: true, delete: false }
+    ];
+
+    it('an Employee sees exactly the Site screens they hold a grant on', () => {
+      const service = new PermissionService(employeeWith(grants));
+      expect(service.canView('page-manager.coaching-with-impact')).toBeTrue();
+      expect(service.canView('data.disciple-making-minute')).toBeTrue();
+      // The group headers inherit view, so the drawer can show the way in.
+      expect(service.canView('page-manager')).toBeTrue();
+      expect(service.canView('data')).toBeTrue();
+      // Neighbours on the same tab, same groups: refused.
+      expect(service.canView('page-manager.about-us')).toBeFalse();
+      expect(service.canView('data.products')).toBeFalse();
+      expect(service.canView('footer.docking-bar')).toBeFalse();
+    });
+
+    it('an Editor is still kept off the Site tab, grants or not', () => {
+      const service = new PermissionService(authServiceWith({ role: Role.EDITOR, permissions: grants }));
+      expect(service.canView('page-manager.coaching-with-impact')).toBeFalse();
+      expect(service.canView('data.disciple-making-minute')).toBeFalse();
+    });
+  });
+
   describe('employeeGrantable hard block', () => {
     it('blocks view even with a direct grant on that exact key', () => {
       const service = new PermissionService(employeeWith([
@@ -119,6 +145,32 @@ describe('PermissionService', () => {
 
       expect(tree.some((n) => n.key === 'home')).toBeFalse();
       expect(tree.some((n) => n.key === 'admin-manager.admin-users')).toBeFalse();
+    });
+
+    it('lists streamed page leaves under PAGES so ONE page can be granted', () => {
+      // PAGES has no static leaves - every page is a page_content document
+      // (SitePagesNavService). Without this the editor offered the group as
+      // a whole and never a page, and a page is the unit of delegation on
+      // the Site tab since 2026-09-03.
+      const service = new PermissionService(authServiceWith({ role: Role.ADMIN }));
+      const tree = service.buildPermissionTree({
+        'page-manager': [
+          { label: 'Coaching with Impact', slug: 'coaching-with-impact' },
+          { label: 'About Us', slug: 'about-us' }
+        ]
+      });
+
+      expect(tree.some((n) => n.key === 'page-manager' && n.depth === 0)).toBeTrue();
+      const coaching = tree.find((n) => n.key === 'page-manager.coaching-with-impact');
+      expect(coaching?.label).toBe('Coaching with Impact');
+      expect(coaching?.depth).toBe(1);
+      expect(tree.some((n) => n.key === 'page-manager.about-us')).toBeTrue();
+    });
+
+    it('offers no PAGES rows at all when no pages have streamed in yet', () => {
+      const service = new PermissionService(authServiceWith({ role: Role.ADMIN }));
+      const tree = service.buildPermissionTree();
+      expect(tree.some((n) => n.key.startsWith('page-manager'))).toBeFalse();
     });
 
     it('includes Events\' tabs as depth-2 rows under the Events screen', () => {

@@ -284,8 +284,18 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // A created page whose slug collides with a static leaf is not listed
     // twice - the static one wins, since it is the one the router and the
     // permission registry know.
+    //
+    // Streamed leaves go through the SAME grant check the static ones did in
+    // secureNav above (canViewNavItem). Until 2026-09-03 the Site tab was
+    // Admin/Root only, so nobody who reached this line could be denied a
+    // page; an Employee granted a single page can now, and must see only it.
     const taken = new Set(items.map((item) => item.slug));
-    return [...items, ...this.sitePagesNav.leaves.filter((leaf) => !taken.has(leaf.slug))];
+    return [
+      ...items,
+      ...this.sitePagesNav.leaves.filter(
+        (leaf) => !taken.has(leaf.slug) && this.permissionService.canViewNavItem(group, leaf)
+      )
+    ];
   }
 
   // Library renders as one flat list with no group header - the tab already

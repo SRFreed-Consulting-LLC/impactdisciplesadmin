@@ -102,9 +102,21 @@ export interface NavSectionDef {
 export const NAV_SECTIONS: NavSectionDef[] = [
   // The back office. Employees work here, subject to their own grants.
   { id: 'admin', label: 'Admin', roles: [Role.ADMIN, Role.EMPLOYEE] },
-  // The PUBLIC WEBSITE. Administrators and Root only - what a visitor sees
-  // is not delegated, whatever an Employee may be granted underneath.
-  { id: 'site', label: 'Site', roles: [Role.ADMIN] },
+  // The PUBLIC WEBSITE. Administrators and Root see all of it; an Employee
+  // sees exactly the Site screens they hold a grant on, and nothing else.
+  //
+  // Until 2026-09-03 this was Admin/Root only - "what a visitor sees is not
+  // delegated, whatever an Employee may be granted underneath" (owner,
+  // 2026-08-30). Reversed by the owner the same week, for an Employee who
+  // administers Coaching with Impact and Disciple Making Minute and nothing
+  // else: delegating PORTIONS of the site (a page, a record list) is the
+  // pattern going forward, the same way portions of the back office are.
+  // The tab-level gate still exists - it is what keeps Editors out - and the
+  // per-screen grant decides everything past it: the drawer, TabShell and
+  // PermissionService.canView() all filter Site leaves (the static ones and
+  // the pages streamed from page_content) through canViewNavItem(), so an
+  // Employee granted one page cannot reach a second by typing its URL.
+  { id: 'site', label: 'Site', roles: [Role.ADMIN, Role.EMPLOYEE] },
   // No role gate: everybody who has anything granted under Library sees it.
   // In practice that is Admin/Root and Editors, because every Library leaf
   // is employeeGrantable: false - but that is the ITEMS deciding, which is

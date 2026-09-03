@@ -37,10 +37,22 @@ const admin_users = {
     firstName: "Emmett",
     lastName: "Employee",
     role: "Employee",
-    // Narrow on purpose: store only - permission tests assert the fences.
+    // Narrow on purpose - permission tests assert the fences. The grant
+    // shape is ScreenPermission (view/add/edit/delete); until 2026-09-03
+    // this said `canView: true`, a field nothing reads, so the "Employee"
+    // fixture had NO effective grants and the fences were being proved
+    // against an account that could see nothing anyway.
+    //
+    // The pattern is the owner's first real delegated Employee (2026-09-03):
+    // two Site screens - a single page and a record list - plus one back-
+    // office screen. That is what makes the Site tab's per-screen gating
+    // testable: an Employee who can see Coaching with Impact must not see
+    // About Us, and one who can see Disciple Making Minute must not see
+    // Products beside it.
     permissions: [
-      {screenKey: "store-manager", canView: true},
-      {screenKey: "store-manager.products", canView: true},
+      {screenKey: "page-manager.coaching-with-impact", view: true, add: true, edit: true, delete: true},
+      {screenKey: "data.disciple-making-minute", view: true, add: true, edit: true, delete: true},
+      {screenKey: "campaigns-manager.website-newsletters", view: true, add: true, edit: true, delete: true},
     ],
   },
 };

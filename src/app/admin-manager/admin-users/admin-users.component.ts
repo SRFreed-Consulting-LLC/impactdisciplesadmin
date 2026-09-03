@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
 import { BehaviorSubject, Observable, filter, take, tap } from 'rxjs';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { ScreenPermission } from 'src/app/common/models/admin/screen-permission.model';
@@ -39,6 +40,12 @@ interface PermissionRow extends PermissionNode {
     standalone: false
 })
 export class AdminUsersComponent implements OnInit {
+  // The pages staff created, so the Permissions table can offer ONE page
+  // rather than only "PAGES" as a whole - the Site tab opened to granted
+  // Employees on 2026-09-03 and a page is the unit of delegation there.
+  // inject(), not a constructor parameter: new code, house style.
+  private readonly sitePagesNav = inject(SitePagesNavService);
+
   mode: 'list' | 'edit' = 'list';
 
   // ---- List state ----
@@ -194,7 +201,7 @@ export class AdminUsersComponent implements OnInit {
 
   private buildPermissionRows(item: AdminUser | null): void {
     const existing = item?.permissions ?? [];
-    this.permissionRows = this.permissionService.buildPermissionTree().map((node) => {
+    this.permissionRows = this.permissionService.buildPermissionTree({ 'page-manager': this.sitePagesNav.leaves }).map((node) => {
       const grant = existing.find((p) => p.screenKey === node.key);
       return { ...node, view: grant?.view ?? false, add: grant?.add ?? false, edit: grant?.edit ?? false, delete: grant?.delete ?? false };
     });

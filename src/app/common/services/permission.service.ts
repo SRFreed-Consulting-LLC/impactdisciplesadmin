@@ -219,7 +219,15 @@ export class PermissionService {
   // employeeGrantable: false leaf (Admin Users) - those never appear in the
   // editing UI at all, matching how canView() hard-blocks them regardless
   // of what a grant might say.
-  buildPermissionTree(): PermissionNode[] {
+  //
+  // `streamedLeaves` (2026-09-03): the leaves a group gets from Firestore
+  // rather than from nav-config - today only PAGES, whose every leaf is a
+  // page_content document (SitePagesNavService). Without them the editor
+  // could offer "PAGES" as a whole but never one page, and the Site tab
+  // opening to Employees is about granting ONE page. Keyed by group id; the
+  // caller hands in whatever snapshot it holds, and a static leaf wins a
+  // slug collision exactly as it does in the drawer and TabShell.
+  buildPermissionTree(streamedLeaves: Partial<Record<string, NavLeaf[]>> = {}): PermissionNode[] {
     const nodes: PermissionNode[] = [];
 
     for (const group of NAV_CONFIG) {
@@ -227,7 +235,9 @@ export class PermissionService {
         continue; // Home - flat link, not a manager, nothing to grant.
       }
 
-      const grantableItems = group.items.filter((item) => item.employeeGrantable !== false);
+      const taken = new Set(group.items.map((item) => item.slug));
+      const streamed = (streamedLeaves[group.id] ?? []).filter((leaf) => !taken.has(leaf.slug));
+      const grantableItems = [...group.items, ...streamed].filter((item) => item.employeeGrantable !== false);
       if (grantableItems.length === 0) {
         continue;
       }

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ADMIN_URL, EMPLOYEE_EMAIL, PASSWORD, loginAsAdmin } from './support/harness';
+import { ADMIN_URL, EMPLOYEE_EMAIL, loginAsAdmin } from './support/harness';
 
 // AREA: Access Control - can staff get in, and are Employees kept out of
 // what they were never granted.
@@ -48,6 +48,58 @@ test.describe('[access] Access Control', () => {
     // Admin Manager is never a visible group for anyone (both its items are
     // hideFromNav) - if it renders for an Employee, secureNav is broken.
     await expect(page.getByRole('button', { name: 'ADMIN MANAGER', exact: true })).toHaveCount(0);
+  });
+
+  // THE SITE TAB, DELEGATED BY SCREEN (2026-09-03). The fixture Employee
+  // holds exactly three grants: one page (Coaching with Impact), one Site
+  // record list (Disciple Making Minute) and one back-office screen (Website
+  // Newsletters). Each assertion below pairs what they CAN see with a
+  // neighbour they must NOT - the neighbour is the half that fails if the
+  // gate ever widens from "this screen" back to "this tab".
+  test('an Employee granted one page sees that page on the Site tab, and no other', async ({ page }) => {
+    await loginAsAdmin(page, EMPLOYEE_EMAIL);
+    await page.goto(`${ADMIN_URL}/home`);
+    await expect(page.locator('.impact-header__user')).toBeVisible({ timeout: 20_000 });
+
+    // The tab exists for them at all - it was Admin/Root only before.
+    await page.getByRole('radio', { name: 'Site' }).click();
+    await page.getByRole('button', { name: 'PAGES', exact: true }).click();
+    // Nav LEAVES are links - by role, because the dashboard behind the
+    // drawer has its own "Home" heading and would match by text.
+    await expect(page.getByRole('link', { name: 'Coaching with Impact', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('link', { name: 'About Us', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Home', exact: true })).toHaveCount(0);
+
+    // And the editor itself refuses a page they were not granted: a typed
+    // URL for About Us opens the editor on the granted page - the URL is
+    // left as typed (TabShell selects, it does not rewrite), so the proof
+    // is the editor's own slug crumb.
+    await page.goto(`${ADMIN_URL}/page-manager?tab=about-us`);
+    await expect(page.locator('.kp__slug')).toHaveText('/coaching-with-impact', { timeout: 20_000 });
+  });
+
+  test('an Employee granted one Site record list sees it, and not the lists beside it', async ({ page }) => {
+    await loginAsAdmin(page, EMPLOYEE_EMAIL);
+    await page.goto(`${ADMIN_URL}/data?tab=disciple-making-minute`);
+    await expect(page.locator('app-dmms')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('app-products')).toHaveCount(0);
+
+    // Products sits in the same DATA group; a typed URL must not open it.
+    await page.goto(`${ADMIN_URL}/data?tab=products`);
+    await page.waitForTimeout(3000);
+    await expect(page.locator('app-products')).toHaveCount(0);
+  });
+
+  test('an Employee granted one back-office screen sees only it under its group', async ({ page }) => {
+    await loginAsAdmin(page, EMPLOYEE_EMAIL);
+    await page.goto(`${ADMIN_URL}/home`);
+    await expect(page.locator('.impact-header__user')).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'CAMPAIGNS', exact: true }).click();
+    await expect(page.getByText('Website Newsletters', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Campaigns', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Tag Rules', { exact: true })).toHaveCount(0);
+    // Nothing granted under CONTACTS, so the group is not offered at all.
+    await expect(page.getByRole('button', { name: 'CONTACTS', exact: true })).toHaveCount(0);
   });
 
   test('signing out returns to login and the session does not survive it', async ({ page }) => {

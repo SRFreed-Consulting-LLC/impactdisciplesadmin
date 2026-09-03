@@ -1,6 +1,7 @@
 import {
   NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, keepsNavGroup, sectionOf
 } from './nav-config';
+import { Role } from '@impact-common/shared/lists/roles.enum';
 
 // NAV_CONFIG is not just the left nav - it doubles as the granular
 // PERMISSION REGISTRY (see its own header comment): a group/leaf/tab's
@@ -215,6 +216,19 @@ describe('NAV_CONFIG', () => {
         expect(section.label?.trim())
           .withContext(`the ${section.id} section has no label`).toBeTruthy();
       }
+    });
+
+    it('opens the Site tab to Employees (grant-gated) but never to Editors', () => {
+      // Owner's rule as of 2026-09-03: an Employee may administer PORTIONS of
+      // the public site - one page, one record list - so the tab-level gate
+      // must admit the role and leave the per-screen grant to decide. It
+      // was Admin/Root only from 2026-08-30 to that date. Editors stay out:
+      // PermissionService hard-scopes them to Library keys, and this is the
+      // gate that keeps a Site URL from reaching that check at all.
+      const site = NAV_SECTIONS.find((s) => s.id === 'site')!;
+      expect(site.roles).toContain(Role.EMPLOYEE);
+      expect(site.roles).toContain(Role.ADMIN);
+      expect(site.roles).not.toContain(Role.EDITOR);
     });
 
     it('keeps Library on its own section, since Editors can see nothing else', () => {
