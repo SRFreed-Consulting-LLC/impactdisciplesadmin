@@ -1,4 +1,4 @@
-import {triggerPath} from "./common/shared/lists/tenancy";
+import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {onCall} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
@@ -17,7 +17,16 @@ import {
 // back to being license-gated.
 
 const db = getFirestore();
-const REGISTRY_REF = "appConfig/availableLanguages";
+// THROUGH THE SEAM, not the literal it was until 2026-09-02. `appConfig`
+// moved under the tenant in the migration and the reader followed it
+// (translation.service.ts reads tenantPath('appConfig')), but this writer
+// did not - so both the trigger and the rebuild callable were writing to a
+// flat path nothing reads. Nobody noticed because the registry doc had
+// already been MIGRATED with the right three locales, so the reader kept
+// showing the correct answer from data written before the move. The first
+// translation authored in a NEW language would simply never have appeared,
+// and the rebuild button could not have repaired it.
+const REGISTRY_REF = `${tenantPath("appConfig")}/availableLanguages`;
 
 /**
  * Folds one translation doc's locale into the registry.

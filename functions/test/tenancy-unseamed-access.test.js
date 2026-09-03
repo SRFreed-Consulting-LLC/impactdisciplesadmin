@@ -36,6 +36,14 @@ const ROOTS = [
   path.join(REPO, "scripts"),
   path.join(WORKSPACE, "impactdisciples - web", "src", "app"),
   path.join(WORKSPACE, "impact-discipleship-library-new", "src", "app"),
+  // THE OTHER REPOS' SCRIPTS TOO. Only this repo's scripts/ was scanned,
+  // and the reader has its own - including verify-play-reviewer.js, which
+  // reads the flat `libraryUsers` and therefore reported the Play demo
+  // account missing when its profile was simply somewhere else. A release
+  // check that lies about the one account Google signs in with is worse
+  // than no check.
+  path.join(WORKSPACE, "impact-discipleship-library-new", "scripts"),
+  path.join(WORKSPACE, "impactdisciples - web", "scripts"),
   path.join(REPO, "src", "common", "src", "queries"),
   // THE TESTS THEMSELVES, added after they proved they needed it. The
   // trigger-liveness suite queried `customers` by literal while asserting

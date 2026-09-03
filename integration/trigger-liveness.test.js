@@ -26,11 +26,21 @@
 // the old path passes forever and proves nothing.
 //
 // NOT COVERED HERE, said plainly rather than left to be assumed:
-//   - the five discussionGroups subcollection notification triggers, which
-//     need FCM tokens and a seeded conversation
-//   - onTranslationWritten, whose path is five levels deep and needs a whole
-//     librarySeries/books/units/lessons fixture
-// Both still need liveness cover before their collections move.
+//
+//   - FOUR of the five discussionGroups notification triggers:
+//     notifyGroupChatMessage, notifyConversationMessage,
+//     notifyJoinRequestActivity, notifyPrayerRequestShared. Their ONLY
+//     Firestore side effect is deleting a token FCM rejects, so observing
+//     them means a real FCM round trip from a test - there is no messaging
+//     emulator. A check that needs the network to say "still alive" reports
+//     the network as often as the trigger, and a liveness suite that cries
+//     wolf gets ignored, which costs more than the gap. They were verified
+//     BY HAND against dev on 2026-09-02; that is a point-in-time fact, not
+//     ongoing cover, and it is written down rather than assumed.
+//
+// The fifth (onGroupMembershipCountChanged) and onTranslationLocaleRegistry
+// ARE covered, below - both write to Firestore, so both can be observed
+// honestly.
 
 const test = require("node:test");
 const assert = require("node:assert");
@@ -213,4 +223,72 @@ test("trigger liveness", {concurrency: false}, async (t) => {
     }, {timeoutMs: 45000, intervalMs: 500,
       label: "onAdminUserRoleSync to set the role custom claim"});
   });
+
+  await t.test("discussionGroups/members: the count trigger fires",
+    async () => {
+      // onGroupMembershipCountChanged is the ONE notification-family trigger
+      // with a Firestore side effect - it maintains memberCount/pendingCount
+      // on the group so the groups list does not read every members
+      // subcollection on every page load. That makes it the only one of the
+      // five observable without FCM, and it covers the SUBCOLLECTION path
+      // shape the other four share: if the parent collection moves and this
+      // trigger's literal does not follow, this goes red for all of them.
+      const groupRef = db().collection(tenantPath("discussionGroups")).doc();
+      await groupRef.set({
+        title: uniq("count-group"),
+        creatorEmail: "leader@test.local",
+        status: "open",
+        bookId: "book-liveness",
+      });
+
+      const memberRef = groupRef.collection("members").doc("m@test.local");
+      await memberRef.set({status: "approved", displayName: "Probe"});
+
+      await eventually(groupRef,
+        (d) => d.memberCount === 1,
+        "onGroupMembershipCountChanged to increment memberCount to 1");
+
+      // The other direction: approved -> pending must move BOTH counters.
+      // A trigger that only ever adds would pass a create-only assertion.
+      await memberRef.set({status: "pending", displayName: "Probe"});
+
+      await eventually(groupRef,
+        (d) => d.memberCount === 0 && d.pendingCount === 1,
+        "the status change to move memberCount->0 and pendingCount->1");
+    });
+
+  await t.test("translations: the language registry trigger fires",
+    async () => {
+      // FIVE LEVELS DEEP - librarySeries/{s}/books/{b}/units/{u}/lessons/{l}
+      // /translations/{t} - which is why this went uncovered for so long.
+      //
+      // IT ASSERTS THE PATH THE READER ACTUALLY READS. That is the whole
+      // value: on 2026-09-02 this trigger was found writing to a FLAT
+      // `appConfig/availableLanguages` while the reader read the tenant one.
+      // Nothing was visibly wrong, because the registry doc had been
+      // migrated already and still held the right three locales - the
+      // failure only appears the first time a NEW language is authored.
+      // This test is what turns that into a red line instead of a surprise.
+      const locale = `zz-${process.pid}-${++seq}`;
+      const label = `Liveness ${locale}`;
+
+      // Document-id prefixes below deliberately avoid bare collection names:
+      // uniq("series") tripped the unseamed-access guard, which cannot tell a
+      // doc-id prefix from a collection literal and should not have to.
+      const translation = db()
+        .collection(tenantPath("librarySeries")).doc(uniq("liveness-series"))
+        .collection("books").doc(uniq("book"))
+        .collection("units").doc(uniq("unit"))
+        .collection("lessons").doc(uniq("lesson"))
+        .collection("translations").doc(locale);
+
+      await translation.set({locale, localeLabel: label, title: "Probe"});
+
+      const registry = db().doc(
+        `${tenantPath("appConfig")}/availableLanguages`);
+
+      await eventually(registry,
+        (d) => (d.locales || {})[locale] === label,
+        `the registry the READER reads to gain locale ${locale}`);
+    });
 });
