@@ -11,9 +11,11 @@
 //   2. The "Reading & Lessons" row's media: dictation.mp4 -> dictation.jpg.
 //      The clip letterboxed into the phone-shaped media box with a grey
 //      block under the phone. A still fits exactly.
-//   3. The "Store" row's media: store.jpg -> store-v2.jpg. Recaptured from
+//   3. The "Store" row's media: store.jpg -> store-v3.jpg. Recaptured from
 //      the redesigned reader. NEW NAME because firebase.json serves assets
-//      immutable for a year - see web/src/assets/reader/README.md.
+//      immutable for a year - see web/src/assets/reader/README.md. (v2 was
+//      live for an hour and showed the products' "andd" typo; the data was
+//      fixed by fix-products-andd-typo.js and the still retaken.)
 //
 // DEPLOY ORDER: the web HOSTING deploy carrying the two new files must land
 // BEFORE this runs, or the page points at images that do not exist yet.
@@ -38,7 +40,7 @@ const PAGE_ID = "discipleship-library";
 
 const MEDIA = {
   "Reading & Lessons": "assets/reader/dictation.jpg",
-  "Store": "assets/reader/store-v2.jpg",
+  "Store": "assets/reader/store-v3.jpg",
 };
 const CTA_TITLE = "Open the Library";
 
