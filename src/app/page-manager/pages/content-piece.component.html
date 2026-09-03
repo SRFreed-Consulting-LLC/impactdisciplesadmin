@@ -128,6 +128,16 @@
                   (urlChange)="button.link = $event; changed.emit()"></app-destination-field>
               }
 
+              <!-- Per button, not per page: a donation button leaves for a
+                   payment provider and should keep the site open behind it;
+                   a "Learn more" to another page of this site should not. -->
+              <mat-slide-toggle class="cp__button-newtab"
+                                [checked]="button.newTab === true"
+                                (change)="button.newTab = $event.checked; changed.emit()"
+                                matTooltip="Open in a new browser tab, keeping this site open behind it">
+                New tab
+              </mat-slide-toggle>
+
               <button type="button" class="cp__icon-btn cp__icon-btn--danger"
                       matTooltip="Remove this button" (click)="removeButton($index)">
                 <mat-icon>delete_outline</mat-icon>

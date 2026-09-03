@@ -657,6 +657,17 @@
                       [url]="entry.ctaUrl"
                       (urlChange)="entry.ctaUrl = $event; edited()"></app-destination-field>
                   }
+
+                  <!-- Per button. The Give page's donation buttons leave for
+                       a payment provider and should keep the site open
+                       behind them; a button to another page here should
+                       not. Same switch as a buttons piece carries. -->
+                  <mat-slide-toggle class="psd__entry-newtab"
+                                    [checked]="entry.newTab === true"
+                                    (change)="entry.newTab = $event.checked; edited()"
+                                    matTooltip="Open in a new browser tab, keeping this site open behind it">
+                    Opens in a new tab
+                  </mat-slide-toggle>
                 </div>
               }
             </div>
