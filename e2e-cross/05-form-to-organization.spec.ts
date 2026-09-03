@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ADMIN_URL, loginAsAdmin, reseedEmulator } from './support/harness';
+import { ADMIN_URL, loginAsAdmin, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: Forms -> Organizations - an inbound "Seminar Request"
 // submission reviewed into a real Organization + Contact.
@@ -46,7 +46,7 @@ test.describe('seminar-request submission to organization + contact', () => {
     const snapshot = (id: string, label: string, type: string) => ({
       mapValue: { fields: { id: { stringValue: id }, label: { stringValue: label }, type: { stringValue: type } } },
     });
-    const res = await fetch(`${FS_DOCS}/form_submissions`, {
+    const res = await fetch(`${FS_DOCS}/${seamed('form_submissions')}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }, // no auth = anonymous under rules
       body: JSON.stringify({

@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { WEB_URL, firestoreOwnerFetch, reseedEmulator } from './support/harness';
+import { WEB_URL, firestoreOwnerFetch, queryEndpoint, reseedEmulator } from './support/harness';
 
 // Charter area: the PAID storefront checkout, driven through the real web UI
 // on :4200, end to end - cart, shipping quote, tax, and a PayPal order.
@@ -202,7 +202,7 @@ test.describe('paid storefront checkout through the web UI', () => {
     // intent to pay, and until capture_paypal_order verifies the captured
     // amount there must be no Purchase, no receipt and no fulfilment.
     const res = await fetch(
-      'http://127.0.0.1:8080/v1/projects/demo-impact/databases/(default)/documents:runQuery',
+      queryEndpoint('purchases'),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },

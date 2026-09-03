@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator } from './support/harness';
+import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: a campaign's OFFER, from the admin screen to the price a
 // shopper is actually shown (Campaign Manager v3).
@@ -33,7 +33,7 @@ const OFFER_PRICE = '$15.00';
 const CAMPAIGN_ID = 'camp-offer-cross';
 
 async function fsWrite(path: string, fields: unknown): Promise<void> {
-  const res = await fetch(`${FS_BASE}/${path}`, {
+  const res = await fetch(`${FS_BASE}/${seamed(path)}`, {
     method: 'PATCH',
     headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),

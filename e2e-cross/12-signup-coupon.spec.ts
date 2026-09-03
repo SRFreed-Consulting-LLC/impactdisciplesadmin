@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator } from './support/harness';
+import { ADMIN_URL, WEB_URL, loginAsAdmin, queryEndpoint, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: the THANK-YOU COUPON - a campaign rewarding a newsletter
 // signup with a discount code, delivered in the confirmation email.
@@ -32,7 +32,7 @@ const str = (stringValue: string) => ({ stringValue });
 const num = (n: number) => ({ integerValue: String(n) });
 
 async function fsWrite(path: string, fields: unknown): Promise<void> {
-  const res = await fetch(`${FS_BASE}/${path}`, {
+  const res = await fetch(`${FS_BASE}/${seamed(path)}`, {
     method: 'PATCH',
     headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),
@@ -58,7 +58,7 @@ async function seedCouponCampaign(): Promise<void> {
 
 /** The queued confirmation email for an address, or null. */
 async function queuedMailFor(email: string): Promise<string | null> {
-  const res = await fetch(`${FS_BASE.replace(/\/documents$/, '')}/documents:runQuery`, {
+  const res = await fetch(queryEndpoint('mail'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
     body: JSON.stringify({

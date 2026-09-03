@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator } from './support/harness';
+import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: a SERIES-targeted offer, admin to storefront.
 //
@@ -35,7 +35,7 @@ const bool = (booleanValue: boolean) => ({ booleanValue });
 const num = (n: number) => ({ integerValue: String(n) });
 
 async function fsWrite(path: string, fields: unknown): Promise<void> {
-  const res = await fetch(`${FS_BASE}/${path}`, {
+  const res = await fetch(`${FS_BASE}/${seamed(path)}`, {
     method: 'PATCH',
     headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),
@@ -81,7 +81,7 @@ async function productPageText(page: Page, productId: string, title: string): Pr
 
 /** Every published offer, flattened to just what this spec asserts on. */
 async function listOffers(): Promise<{ campaignId: string; targetId: string }[]> {
-  const res = await fetch(`${FS_BASE}/campaign_offers`, {
+  const res = await fetch(`${FS_BASE}/${seamed('campaign_offers')}`, {
     headers: { Authorization: 'Bearer owner' },
   });
   if (!res.ok) return [];

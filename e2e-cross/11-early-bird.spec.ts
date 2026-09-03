@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator } from './support/harness';
+import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: EARLY BIRD - an event price shown only to someone who reached
 // the event through the campaign.
@@ -35,7 +35,7 @@ const bool = (booleanValue: boolean) => ({ booleanValue });
 const num = (n: number) => ({ integerValue: String(n) });
 
 async function fsWrite(path: string, fields: unknown): Promise<void> {
-  const res = await fetch(`${FS_BASE}/${path}`, {
+  const res = await fetch(`${FS_BASE}/${seamed(path)}`, {
     method: 'PATCH',
     headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),

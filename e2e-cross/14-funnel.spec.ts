@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { WEB_URL, firestoreOwnerFetch, reseedEmulator } from './support/harness';
+import { WEB_URL, firestoreOwnerFetch, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: THE FUNNEL, end to end - the one flow the owner asked for on
 // 2026-08-25 and the one thing no other spec spans.
@@ -54,7 +54,7 @@ const num = (n: number) => ({ integerValue: String(n) });
 const ts = (ms: number) => ({ timestampValue: new Date(ms).toISOString() });
 
 async function fsWrite(path: string, fields: unknown): Promise<void> {
-  const res = await fetch(`${FS_BASE}/${path}`, {
+  const res = await fetch(`${FS_BASE}/${seamed(path)}`, {
     method: 'PATCH',
     headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),

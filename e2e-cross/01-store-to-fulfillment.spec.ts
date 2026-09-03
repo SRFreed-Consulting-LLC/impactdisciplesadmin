@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { ADMIN_URL, WEB_URL, loginAsAdmin } from './support/harness';
+import { ADMIN_URL, WEB_URL, loginAsAdmin, queryEndpoint, seamed } from './support/harness';
 
 // Charter area: Store -> Purchases -> Contacts, across both apps.
 //
@@ -58,7 +58,8 @@ async function fnPost(name: string, body: unknown): Promise<{ status: number; bo
 // full access) - used only to WAIT for slow trigger side effects before
 // asserting them in the real admin UI, never as the assertion itself.
 async function fsGetDoc(path: string): Promise<any | null> {
-  const res = await fetch(`${FS_BASE}/${path}`, {
+  // seamed(): purchases live under the tenant since 2026-09-02.
+  const res = await fetch(`${FS_BASE}/${seamed(path)}`, {
     headers: { Authorization: 'Bearer owner' },
   });
   if (!res.ok) return null;
@@ -66,7 +67,7 @@ async function fsGetDoc(path: string): Promise<any | null> {
 }
 
 async function fsQueryByField(collection: string, field: string, value: string): Promise<any[]> {
-  const res = await fetch(`${FS_BASE.replace(/\/documents$/, '')}/documents:runQuery`, {
+  const res = await fetch(queryEndpoint(collection), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
     body: JSON.stringify({

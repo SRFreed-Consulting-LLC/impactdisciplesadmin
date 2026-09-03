@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator } from './support/harness';
+import { ADMIN_URL, WEB_URL, loginAsAdmin, reseedEmulator, seamed } from './support/harness';
 
 // Charter area: Contacts / Subscribers / Campaigns - a public newsletter
 // signup flowing into the Subscribers report and the (cancelled) blast flow.
@@ -20,7 +20,7 @@ const TEST_SUBJECT = 'Cross-suite dry run (never sent)';
 
 // Emulator-owner REST read - proof-of-absence checks only.
 async function fsListCollection(collection: string): Promise<any[]> {
-  const res = await fetch(`${FS_ROOT}/documents/${collection}?pageSize=300`, {
+  const res = await fetch(`${FS_ROOT}/documents/${seamed(collection)}?pageSize=300`, {
     headers: { Authorization: 'Bearer owner' },
   });
   const body = await res.json().catch(() => ({}));

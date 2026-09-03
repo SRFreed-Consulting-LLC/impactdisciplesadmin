@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 import { Page, expect } from '@playwright/test';
+import { tenantPath } from '../../src/common/src/shared/lists/tenancy';
 
 // Shared helpers for the cross-app emulator flows. Everything here targets
 // the SEEDED EMULATOR accounts (scripts/fixtures/emulator-fixtures.js) -
@@ -62,14 +63,45 @@ export async function loginAsPatron(page: Page, email = PATRON_EMAIL): Promise<v
  * `Bearer owner` bypass (test-harness plumbing, same trust level as the
  * integration suite's Admin SDK writes - never usable outside an emulator).
  */
-export const FIRESTORE_REST =
-  'http://127.0.0.1:8080/v1/projects/demo-impact/databases/(default)/documents';
+export const FIRESTORE_DB = 'http://127.0.0.1:8080/v1/projects/demo-impact/databases/(default)';
+export const FIRESTORE_REST = `${FIRESTORE_DB}/documents`;
+
+/**
+ * EVERY RAW PATH GOES THROUGH THE TENANCY SEAM (2026-09-03), the same fix
+ * e2e-admin's harness got the day before. These helpers talk to the
+ * emulator's REST API directly, bypassing every seam the apps use - so
+ * after the 2026-09-02 tenant migration a spec that wrote
+ * `campaigns/{id}` seeded a document the admin never lists, one that wrote
+ * `purchases/{id}` never fired the purchase trigger, and one that read
+ * `pending_orders/{id}` got a 404. Ten cross-app specs failed with three
+ * different-looking symptoms, none of them a product defect. Routing here
+ * means no spec has to remember which collections moved.
+ * @param collectionPath `collection[/doc[/sub/...]]`, optionally with a
+ *   `?query`; the leading collection is mapped through tenantPath().
+ */
+export function seamed(collectionPath: string): string {
+  const [pathPart, query] = collectionPath.split('?');
+  const [head, ...rest] = pathPart.split('/');
+  const seamedPath = [tenantPath(head), ...rest].join('/');
+  return query ? `${seamedPath}?${query}` : seamedPath;
+}
+
+/**
+ * The `:runQuery` endpoint for a collection - the tenant DOCUMENT for a
+ * tenant collection, the database root otherwise. `from.collectionId` in
+ * the query body stays the bare collection name either way.
+ */
+export function queryEndpoint(collection: string): string {
+  const full = tenantPath(collection);
+  const parent = full === collection ? '' : full.slice(0, -(collection.length + 1));
+  return parent ? `${FIRESTORE_REST}/${parent}:runQuery` : `${FIRESTORE_REST}:runQuery`;
+}
 
 export async function firestoreOwnerFetch(
   pathAndQuery: string,
   init: { method?: string; body?: unknown } = {},
 ): Promise<{ status: number; body: any }> {
-  const res = await fetch(`${FIRESTORE_REST}/${pathAndQuery}`, {
+  const res = await fetch(`${FIRESTORE_REST}/${seamed(pathAndQuery)}`, {
     method: init.method ?? 'GET',
     headers: {
       'Content-Type': 'application/json',
