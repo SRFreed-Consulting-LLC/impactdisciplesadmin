@@ -540,9 +540,51 @@ const home_sections = Object.fromEntries(
 // This has to be here at all because Page Manager is data-driven now: with
 // the collection empty, all eleven screens render "there are no sections on
 // this page" and every e2e assertion about them passes vacuously.
+// EVERY PAGE NEEDS A TITLE, and not for display. isKitPage() is literally
+// `!!page.title` (kit-page.adapter.ts), and SitePagesNavService filters the
+// PAGES nav through it - so a seeded page WITHOUT a title is not a page as
+// far as the admin is concerned. It never becomes a nav leaf, `?tab=<slug>`
+// therefore resolves to nothing, and Page Manager renders an empty screen.
+//
+// That is what it did until 2026-09-03: the seed wrote `{blocks}` only, and
+// all thirteen section-stack e2e specs failed with `app-page-stack` simply
+// absent - thirteen timeouts from one missing field, and none of them
+// pointing at it. Production has a title on 16 of 16 page_content documents;
+// these match it exactly.
+const PAGE_TITLES = {
+  // Home is an ordinary kit page since 2026-08-31 (page_content/home), and
+  // SitePagesNavService pins it first in the drawer.
+  'home': 'Home',
+  'about-us': 'About Us',
+  'equipping-groups': 'Equipping Groups',
+  'equipping-groups-pastors': 'Equipping - Pastors',
+  'equipping-groups-leaders': 'Equipping - Leaders',
+  'equipping-groups-churches': 'Equipping - Churches',
+  'seminars': 'Seminars',
+  'lunch-and-learns': 'Lunch and Learns',
+  'give': 'Give',
+  'contact': 'Contact',
+  'discipleship-library': 'Discipleship Library',
+  'prayer-team': 'Prayer Team',
+  'coaching-with-impact': 'Coaching with Impact',
+};
+
 const page_content = Object.fromEntries(
   Object.entries(require('../page-content-seed-data.json'))
-    .map(([slug, blocks]) => [slug, {blocks}])
+    .map(([slug, blocks]) => {
+      const title = PAGE_TITLES[slug];
+      if (!title) {
+        // Loud on purpose. A new page added to the seed data without a title
+        // here would silently vanish from the nav, which is exactly the
+        // failure this map exists to prevent.
+        throw new Error(
+          `emulator-fixtures: page_content "${slug}" has no title in ` +
+          'PAGE_TITLES. Add one - a page without a title is invisible to ' +
+          'the admin (isKitPage).'
+        );
+      }
+      return [slug, {title, blocks}];
+    })
 );
 
 // The site's FRAME - its top menu and its footer, both one document, both

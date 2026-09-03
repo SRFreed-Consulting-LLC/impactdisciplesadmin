@@ -26,7 +26,10 @@ test.describe('[content] Website Content', () => {
   // own words. The group id is the route, so their entries carry it: see the
   // `screens` shape's third element.
   const screens: Array<[string, string, string, string]> = [
-    ['Disciple Making Minute', 'page-manager', 'disciple-making-minute', 'dmms-table'],
+    // DMM followed them to DATA on 2026-08-31 (nav-config.ts) - a list of
+    // records, not a page's own words. This entry still said 'page-manager'
+    // until 2026-09-03.
+    ['Disciple Making Minute', 'data', 'disciple-making-minute', 'dmms-table'],
     ['Testimonials', 'data', 'testimonials', 'testimonials-table'],
     ['Team Page', 'data', 'team-page', 'team-page-table'],
   ];
@@ -99,8 +102,14 @@ test.describe('[content] Website Content', () => {
     const stack = page.locator('app-page-stack');
     await expect(stack.locator('.ps__section').first()).toBeVisible({ timeout: 30_000 });
 
+    // DOUBLE-CLICK THE ROW. It was an edit button until the row itself
+    // became the control (page-stack.component.html says so out loud). The
+    // only `.ps__icon-btn` left on a row is `--danger`: "Delete this section
+    // for good". This spec was still clicking `.ps__icon-btn` and then
+    // waiting for an editor that could never open - it was pressing DELETE
+    // on every run, and only the emulator's wipe-first reseed hid it.
     await stack.locator('.ps__section', { hasText: 'Overview' }).first()
-      .locator('.ps__icon-btn').first().click();
+      .dblclick();
 
     await expect(page.locator('.ps--editing')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('app-page-section-editor')).toBeVisible();
@@ -118,8 +127,10 @@ test.describe('[content] Website Content', () => {
     await expect(page.locator('app-page-section-editor')).toHaveCount(0);
   });
 
+  // Web Config and the Docking Bar moved to DATA on 2026-08-31: they are
+  // site furniture, not any one page's content.
   test('Web Config loads', async ({ page }) => {
-    await gotoTab(page, 'page-manager', 'web-config');
+    await gotoTab(page, 'data', 'web-config');
     await expect(page.locator('app-web-config')).toBeVisible({ timeout: 30_000 });
   });
 
@@ -128,17 +139,36 @@ test.describe('[content] Website Content', () => {
   // every page - so it moved onto Web Config rather than onto Home. Pinned
   // because "the editor still exists, just somewhere else" is exactly the
   // move that goes missing silently.
-  test('the Docking Bar editor is reachable, on Web Config', async ({ page }) => {
-    await gotoTab(page, 'page-manager', 'web-config');
-    await page.getByRole('tab', { name: 'Docking Bar' }).click();
+  test('the Docking Bar editor is reachable, under Footer', async ({ page }) => {
+    // It moved AGAIN on 2026-09-01, out of Web Config and into the FOOTER
+    // group as a leaf of its own - site furniture, not a settings form (see
+    // nav-config.ts). It is no longer a tab, so there is nothing to click:
+    // the leaf IS the screen. This spec still looked for a "Docking Bar" tab
+    // on Web Config until 2026-09-03, which is exactly the silent move it
+    // was written to catch - it just caught the second one, not the first.
+    await gotoTab(page, 'footer', 'docking-bar');
     await expect(page.locator('app-docking-bar')).toBeVisible({ timeout: 30_000 });
   });
 
-  test('Home frames the slider and points at where the docking bar went', async ({ page }) => {
+  // HOME LOST ITS OWN SCREEN on 2026-08-31. It was a bespoke component
+  // (app-page-home, .home__section) that framed the slider and carried a
+  // note saying the docking bar had moved to Web Config. It is an ordinary
+  // kit page now - page_content/home, drawn by the same app-page-stack as
+  // the other twelve - and that component is deleted. These two specs still
+  // asserted the old screen until 2026-09-03; what is worth pinning is that
+  // Home is genuinely ordinary, and that its slider is still editable.
+  test('Home is an ordinary kit page, drawn by the same stack', async ({ page }) => {
     await gotoTab(page, 'page-manager', 'home');
-    await expect(page.locator('app-page-home')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('.home__section').first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('app-page-home')).toContainText('Web Config');
+    const stack = page.locator('app-page-stack');
+    await expect(stack).toBeVisible({ timeout: 30_000 });
+    await expect(stack.locator('.ps__section').first()).toBeVisible({ timeout: 30_000 });
+    // Same two guards the other pages get: read nothing, or could not read.
+    await expect(stack.locator('.ps__empty')).toHaveCount(0);
+    await expect(stack.locator('.ps__failed')).toHaveCount(0);
+    // And no section this build cannot name - Home carries the only `slides`
+    // list on the site, so it is the page most likely to drift out of the
+    // catalogue unnoticed.
+    await expect(stack.locator('.ps__type-icon--unknown')).toHaveCount(0);
   });
 
   test('the Home slider opens its slides full screen', async ({ page }) => {
@@ -150,13 +180,25 @@ test.describe('[content] Website Content', () => {
     // dropping the assertion, because "the grid still loads" is the one thing
     // worth knowing about it.
     await gotoTab(page, 'page-manager', 'home');
-    const sliderRow = page.locator('.home__section', { hasText: 'Slider' }).first();
+    const stack = page.locator('app-page-stack');
+    await expect(stack.locator('.ps__section').first()).toBeVisible({ timeout: 30_000 });
+
+    // A stack row is labelled by its KIND ('List'), not its variant, and its
+    // summary counts entries - so there is no "slides" anywhere in the DOM
+    // to match on. Home's first List is the slider; the entry count is
+    // asserted with it so that a Home whose shape changed fails here loudly
+    // rather than quietly opening whichever list came first.
+    const sliderRow = stack.locator('.ps__section', { hasText: 'List' }).first();
     await expect(sliderRow).toBeVisible({ timeout: 30_000 });
+    // "8 tiles", not "8 slides": the entry noun is set on the List MEMBER,
+    // so every variant of it counts in tiles whatever it actually draws as.
+    await expect(sliderRow).toContainText('8 tiles');
+    await sliderRow.dblclick();
 
-    await sliderRow.locator('.home__icon-btn').first().click();
-
-    await waitForGrid(page, 'images-table');
-    await expect(page.locator('.images-table')).toBeVisible();
+    await expect(page.locator('.ps--editing')).toBeVisible({ timeout: 30_000 });
+    // The slides themselves, still there and still editable - which is the
+    // one thing the retired `images-table` assertion was actually worth.
+    await expect(page.locator('.psd__entry').first()).toBeVisible({ timeout: 30_000 });
   });
 
   test('the old content-manager route still resolves', async ({ page }) => {

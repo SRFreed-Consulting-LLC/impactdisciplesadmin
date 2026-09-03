@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 import { Page, expect } from '@playwright/test';
+// ONE seam, borrowed rather than restated - the same list the app compiles in.
+import { tenantPath } from '../../src/common/src/shared/lists/tenancy';
 
 // Shared helpers for the ADMIN-ONLY emulator E2E suite.
 //
@@ -154,8 +156,27 @@ export function collectConsoleErrors(page: Page): string[] {
 export const FIRESTORE_REST =
   'http://127.0.0.1:8080/v1/projects/demo-impact/databases/(default)/documents';
 
+/**
+ * THROUGH THE TENANCY SEAM, so a caller cannot name a moved collection.
+ *
+ * These helpers take a bare collection name and talk to the emulator's REST
+ * API directly - which means they bypass every seam the app itself goes
+ * through. `listDocs('campaign_emails')` therefore read the pre-migration
+ * flat path and found nothing, while the app was writing correctly under
+ * tenants/impactdisciples.com. The spec reported "the draft was never
+ * saved"; the draft was saved, and the very next spec reopened it happily.
+ *
+ * The unseamed-access guard does scan e2e-admin/, but it looks for Firestore
+ * CALL SHAPES - a bare collection name handed to a helper is invisible to
+ * it. Routing it here means no caller has to remember.
+ */
+function seamed(collectionPath: string): string {
+  const [head, ...rest] = collectionPath.split('/');
+  return [tenantPath(head), ...rest].join('/');
+}
+
 export async function readDoc(collectionPath: string, id: string): Promise<any | null> {
-  const res = await fetch(`${FIRESTORE_REST}/${collectionPath}/${id}`, {
+  const res = await fetch(`${FIRESTORE_REST}/${seamed(collectionPath)}/${id}`, {
     headers: { Authorization: 'Bearer owner' },
   });
   if (!res.ok) return null;
@@ -163,7 +184,7 @@ export async function readDoc(collectionPath: string, id: string): Promise<any |
 }
 
 export async function listDocs(collectionPath: string): Promise<any[]> {
-  const res = await fetch(`${FIRESTORE_REST}/${collectionPath}?pageSize=300`, {
+  const res = await fetch(`${FIRESTORE_REST}/${seamed(collectionPath)}?pageSize=300`, {
     headers: { Authorization: 'Bearer owner' },
   });
   if (!res.ok) return [];
