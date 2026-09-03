@@ -249,7 +249,12 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       undefined;
 
     const now = Date.now();
-    const receipt = payPalOrderId ?? (coupon ? "COUPON" : "FREE ONLY");
+    // The receipt IS the coupon code on a coupon-covered order (owner,
+    // 2026-09-03; it used to be the literal "COUPON"). The canonical code
+    // off the coupon doc, not the casing the patron typed, so it joins
+    // exactly against coupons.code.
+    const canonicalCode = coupon ? String(coupon.code ?? trimmedCode) : "";
+    const receipt = payPalOrderId ?? (coupon ? canonicalCode : "FREE ONLY");
     const purchaseRef = libraryDb.collection(PURCHASES).doc();
 
     // The purchase record - written BEFORE the direct grant below so the
@@ -278,7 +283,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
       discount: discountTotal,
       total,
       receipt,
-      ...(coupon ? {couponCode: trimmedCode} : {}),
+      ...(coupon ? {couponCode: canonicalCode} : {}),
       // A Firestore Timestamp, NOT the raw ms number - the admin Purchases
       // list orders by dateProcessed and Firestore sorts mixed types by
       // TYPE (numbers before timestamps), so a number here buries the

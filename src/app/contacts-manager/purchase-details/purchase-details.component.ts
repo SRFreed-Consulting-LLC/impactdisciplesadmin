@@ -104,12 +104,17 @@ export class PurchaseDetailsComponent {
   }
 
   // Whether a real PayPal charge exists to partially refund - mirrors the
-  // server's needsPaypalRefund gate ($0/coupon orders can only be marked
-  // fully refunded, no amount entry).
+  // server's needsPaypalRefundFor() gate ($0/coupon orders can only be
+  // marked fully refunded, no amount entry). A coupon-covered order's
+  // receipt IS its coupon code since 2026-09-03 (the literal 'COUPON' is
+  // the pre-backfill form), so the receipt is compared against the
+  // order's own couponCode rather than against a sentinel word.
   private allowPartial(): boolean {
     const receipt = (this.selectedItem.receipt ?? '').trim();
-    return (this.selectedItem.total ?? 0) > 0 &&
-      receipt !== '' && receipt !== 'COUPON' && receipt !== 'FREE ONLY';
+    const couponCode = (this.selectedItem.couponCode ?? '').trim();
+    const isCouponReceipt =
+      receipt === 'COUPON' || (couponCode !== '' && receipt.toLowerCase() === couponCode.toLowerCase());
+    return (this.selectedItem.total ?? 0) > 0 && receipt !== '' && receipt !== 'FREE ONLY' && !isCouponReceipt;
   }
 
   async openRefundDialog(): Promise<void> {

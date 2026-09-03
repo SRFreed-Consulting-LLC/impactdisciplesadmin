@@ -240,6 +240,9 @@ export const purchaseGroupLicenses = onCall(
     // send the next reader looking for a bug that is fixed.
     let couponPercentOff: number | null = null;
     const trimmedCode = (couponCode ?? "").trim();
+    // The coupon's CANONICAL code - it becomes the receipt on a coupon-
+    // covered order, so it must join exactly against coupons.code.
+    let canonicalCode = "";
     if (trimmedCode) {
       const couponsSnap = await libraryDb.collection(COUPONS).get();
       const coupon = pickActiveCoupon(
@@ -252,6 +255,7 @@ export const purchaseGroupLicenses = onCall(
           "Invalid, inactive or expired coupon code."
         );
       }
+      canonicalCode = String(coupon.code ?? trimmedCode);
       // A tagged coupon only covers the products it names. An inapplicable
       // one is IGNORED rather than rejected - matching the Store, where a
       // coupon simply discounts nothing it does not cover - and stays null
@@ -381,12 +385,16 @@ export const purchaseGroupLicenses = onCall(
       bulkPercentOff: discountChoice.bulkPercentOff,
       ...(trimmedCode ?
         {
-          couponCode: trimmedCode,
+          couponCode: canonicalCode,
           couponPercentOff: discountChoice.couponPercentOff,
           couponApplied: discountChoice.source === "coupon",
         } :
         {}),
-      receipt: payPalOrderId ?? "FREE ONLY",
+      // The receipt IS the coupon code when the coupon covered the order
+      // (owner, 2026-09-03) - a $0 group order can only be a 100% coupon
+      // that WON over the bulk tier, so source === "coupon" is the test.
+      receipt: payPalOrderId ??
+        (discountChoice.source === "coupon" ? canonicalCode : "FREE ONLY"),
       // A Firestore Timestamp, NOT the raw ms number - the admin Purchases
       // list orders by dateProcessed and Firestore sorts mixed types by
       // TYPE (numbers before timestamps), so a number here buries the

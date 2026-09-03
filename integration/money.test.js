@@ -80,7 +80,9 @@ test("FREE100 on an event zeroes the order server-side; tampered client " +
   assert.ok(doc.exists);
   const form = doc.data();
   // Server-computed pricing (event-workshop costInDollars = 10):
-  assert.equal(form.receipt, "COUPON");
+  // The receipt IS the coupon code on a coupon-covered order (2026-09-03;
+  // it used to be the literal "COUPON" with the code beside it).
+  assert.equal(form.receipt, "FREE100");
   assert.equal(form.total, 10); // "total" = PRE-discount item subtotal
   assert.equal(form.discount, 10);
   assert.equal(form.couponCode, "FREE100");
@@ -116,7 +118,7 @@ test("FREE100 on an event zeroes the order server-side; tampered client " +
   assert.equal(aff.size, 1);
   assert.equal(aff.docs[0].data().totalBeforeDiscount, 10);
   assert.equal(aff.docs[0].data().totalAfterDiscount, 0);
-  assert.equal(aff.docs[0].data().receipt, "COUPON");
+  assert.equal(aff.docs[0].data().receipt, "FREE100");
 });
 
 test("a genuinely $0 order takes the FREE ONLY path and validated " +

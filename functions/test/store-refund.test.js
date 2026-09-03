@@ -13,7 +13,7 @@
 const {test} = require("node:test");
 const assert = require("node:assert/strict");
 
-const {chargedCents, computeRefundPlan} =
+const {chargedCents, computeRefundPlan, needsPaypalRefundFor} =
   require("../lib/store-refund.functions");
 
 /** A purchase whose PayPal receipt says it captured `value` dollars. */
@@ -178,4 +178,42 @@ test("the $0-charge guard does not fire for a genuinely free order", () => {
   // deliberately scoped to charged > 0, so a free order can still be marked
   // refunded exactly once.
   assert.doesNotThrow(() => computeRefundPlan({total: 0}, null, false));
+});
+
+// ------------------------------------------------- needsPaypalRefundFor
+//
+// The receipt decides whether PayPal is called. Since 2026-09-03 a
+// coupon-covered order's receipt is the coupon CODE (it used to be the
+// literal "COUPON"); `total` is the PRE-discount subtotal on a web checkout,
+// so it is > 0 on exactly the orders that must NOT reach PayPal.
+
+test("a PayPal order id with a positive total needs a PayPal refund", () => {
+  assert.equal(needsPaypalRefundFor({total: 20, receipt: "5AB12345XY678901Z"}),
+    true);
+  // A paid order that also used a partial coupon: the receipt is still the
+  // PayPal id, so money moved and must move back.
+  assert.equal(needsPaypalRefundFor({
+    total: 20, receipt: "5AB12345XY678901Z", couponCode: "SAVE10",
+  }), true);
+});
+
+test("a coupon-covered order does not, whichever form its receipt takes",
+  () => {
+    // Backfilled / new form: receipt IS the code (any casing the row holds).
+    assert.equal(needsPaypalRefundFor(
+      {total: 20, receipt: "FREE100", couponCode: "FREE100"}), false);
+    assert.equal(needsPaypalRefundFor(
+      {total: 20, receipt: "free100", couponCode: "FREE100"}), false);
+    // Pre-backfill form, still honoured.
+    assert.equal(needsPaypalRefundFor(
+      {total: 20, receipt: "COUPON", couponCode: "FREE100"}), false);
+  });
+
+test("a naturally free or receipt-less order does not", () => {
+  assert.equal(needsPaypalRefundFor({total: 0, receipt: "FREE ONLY"}), false);
+  assert.equal(needsPaypalRefundFor({total: 20, receipt: "FREE ONLY"}), false);
+  assert.equal(needsPaypalRefundFor({total: 20, receipt: ""}), false);
+  assert.equal(needsPaypalRefundFor({total: 20}), false);
+  assert.equal(needsPaypalRefundFor({total: 0, receipt: "5AB12345XY678901Z"}),
+    false);
 });

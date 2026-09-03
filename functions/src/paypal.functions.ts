@@ -530,7 +530,13 @@ exports.create_paypal_order = onRequest(
         const checkoutForm = buildCheckoutForm(body, pricing);
 
         if (pricing.total <= 0) {
-          checkoutForm.receipt = pricing.couponCode ? "COUPON" : "FREE ONLY";
+          // The receipt IS the coupon code on a coupon-covered order (owner,
+          // 2026-09-03) - it used to be the literal "COUPON", with the code
+          // beside it in couponCode. couponCode is still written for every
+          // coupon order (a paid order with a partial coupon has a PayPal id
+          // here and the code only there); the Purchases grid just no longer
+          // shows it. scripts/backfill-coupon-receipts.js moved the old rows.
+          checkoutForm.receipt = pricing.couponCode ?? "FREE ONLY";
           checkoutForm.dateProcessed = Timestamp.now();
           stampCartItems(
             pricing.cartItems as unknown as Array<Record<string, unknown>>

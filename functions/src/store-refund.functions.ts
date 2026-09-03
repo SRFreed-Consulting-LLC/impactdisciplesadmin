@@ -58,6 +58,7 @@ interface StatusHistoryEntryDoc {
 }
 
 interface PurchaseDoc {
+  couponCode?: string;
   email?: string;
   total?: number;
   discount?: number;
@@ -88,6 +89,32 @@ interface PurchaseDoc {
  * @param {PurchaseDoc} purchase The purchase doc.
  * @return {number} Charged amount in cents (never negative).
  */
+/**
+ * Whether money actually went through PayPal for this purchase - i.e.
+ * whether a refund has to call PayPal at all, or is only a bookkeeping
+ * mark. Decided from the RECEIPT, which is a PayPal order id on a paid
+ * order and, since 2026-09-03, the COUPON CODE on a coupon-covered one (it
+ * used to be the literal "COUPON", still honoured for rows the backfill
+ * did not reach). "FREE ONLY" is a naturally-$0 order.
+ *
+ * `total` is the PRE-discount subtotal on web checkouts, so it is > 0 on a
+ * coupon-covered order and cannot carry this decision alone - hence the
+ * receipt rules. Exported for its unit test; the client's allowPartial()
+ * (purchase-details) mirrors it.
+ * @param {PurchaseDoc} purchase The purchase document.
+ * @return {boolean} True when PayPal captured money for it.
+ */
+export function needsPaypalRefundFor(purchase: PurchaseDoc): boolean {
+  const receipt = (purchase.receipt ?? "").trim();
+  const total = typeof purchase.total === "number" ? purchase.total : 0;
+  const couponCode = (purchase.couponCode ?? "").trim();
+  const isCouponReceipt =
+    receipt === "COUPON" ||
+    (couponCode !== "" && receipt.toLowerCase() === couponCode.toLowerCase());
+  return total > 0 && receipt !== "" && receipt !== "FREE ONLY" &&
+    !isCouponReceipt;
+}
+
 export function chargedCents(purchase: PurchaseDoc): number {
   const receiptValue =
     purchase.payPalReceipt?.purchase_units?.[0]?.amount?.value;
@@ -270,10 +297,7 @@ export const refundStorePurchase = onCall(
     const purchase = purchaseSnap.data() as PurchaseDoc;
 
     const receipt = (purchase.receipt ?? "").trim();
-    const total = typeof purchase.total === "number" ? purchase.total : 0;
-    const needsPaypalRefund =
-      total > 0 && receipt !== "" &&
-      receipt !== "COUPON" && receipt !== "FREE ONLY";
+    const needsPaypalRefund = needsPaypalRefundFor(purchase);
 
     const plan = computeRefundPlan(purchase, amount, needsPaypalRefund);
 

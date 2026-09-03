@@ -54,8 +54,12 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     { key: 'billingCity', label: 'City', visible: false, filterable: false, value: (item) => item.billingAddress?.city },
     { key: 'billingState', label: 'State', visible: false, filterable: false, value: (item) => item.billingAddress?.state },
     { key: 'billingZip', label: 'Zip', visible: false, filterable: false, value: (item) => item.billingAddress?.zip },
+    // No Coupon column (owner, 2026-09-03): a coupon-covered order's receipt
+    // IS its coupon code now, so the column repeated the receipt. The field
+    // is still stored and still shown on the details page's discount
+    // breakdown, where a paid order's partial coupon is the one case it
+    // says something the receipt does not.
     { key: 'receipt', label: 'Receipt' },
-    { key: 'couponCode', label: 'Coupon' },
     { key: 'totalBeforeDiscount', label: 'Total', type: 'currency', value: (item) => this.service.getProductTotalDisplayAmount(item) },
     { key: 'discount', label: 'Discount', type: 'currency', value: (item) => this.service.getDiscountDisplayAmount(item) },
     { key: 'estimatedTaxes', label: 'Taxes', type: 'currency', value: (item) => this.service.getTaxesDisplayAmount(item) },

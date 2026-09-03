@@ -486,7 +486,11 @@ export async function computeOrderPricing(
     shippingDiscount,
     shippingDiscountReason,
     total,
-    couponCode: coupon ? request.couponCode : undefined,
+    // The coupon's CANONICAL code, not what the shopper typed - it is now
+    // also the purchase's receipt, so its casing must join exactly against
+    // coupons.code (the cart already persists the canonical form; this is
+    // the server-side guarantee).
+    couponCode: coupon ? String(coupon.code) : undefined,
     couponPercent: coupon ? clampPercent(coupon.percentOff) : undefined,
   };
 }
