@@ -39,6 +39,14 @@ const {Countries} = require(
 // regression block at the bottom of this file.
 const STORED_COUNTRY = Countries.US;
 
+// Likewise the state: the dropdown's display value ("Georgia"), never the
+// USPS code. The fixtures said "GA" until the afternoon of 2026-09-03, which
+// is how the second half of that day's bug - the vendor refusing a state
+// name once the country is "US" - passed the same green suite.
+const {States} = require("../functions/lib/common/shared/lists/states.enum");
+const STORED_STATE = States.GA;
+const STORED_STATE_CODE = "GA";
+
 // A rate request shaped the way impactdisciples-web's ShippingService builds
 // one (createRequest() -> ShippingRequest: shipment + rateOptions), since
 // that is the only real caller. The SDK reshapes this into ShipEngine's
@@ -50,7 +58,7 @@ const rateRequest = (weightOunces) => ({
       phone: "555-0101",
       addressLine1: "1 Peachtree St",
       cityLocality: "Atlanta",
-      stateProvince: "GA",
+      stateProvince: STORED_STATE,
       postalCode: "30301",
       countryCode: STORED_COUNTRY,
       addressResidentialIndicator: "yes",
@@ -60,7 +68,8 @@ const rateRequest = (weightOunces) => ({
       phone: "555-0100",
       addressLine1: "1 Test Way",
       cityLocality: "Atlanta",
-      stateProvince: "GA",
+      // The org's config address stores "Georgia" too (see the fixtures).
+      stateProvince: STORED_STATE,
       postalCode: "30301",
       countryCode: "US",
     },
@@ -250,7 +259,7 @@ const seedShippablePurchase = async (db, overrides = {}) => {
     firstName: "Pat", lastName: "Buyer", email: "pat@buyer.test",
     phone: {number: "555-0199"},
     shippingAddress: {
-      address1: "1 Peachtree St", city: "Newnan", state: "GA",
+      address1: "1 Peachtree St", city: "Newnan", state: STORED_STATE,
       zip: CUSTOMER_ZIP, country: STORED_COUNTRY,
     },
     cartItems: [{id: "product-s3", orderQuantity: 2, isEvent: false}],
@@ -602,6 +611,69 @@ test("a rate quote carrying the dropdown's country name is still domestic",
     assert.equal(call.op, "rates");
     assert.equal(call.countryCode, STORED_COUNTRY_CODE);
   });
+
+// ---------------------------------------------------------------------------
+// REGRESSION 2026-09-03 (afternoon): the STATE is stored as a name too
+// ---------------------------------------------------------------------------
+//
+// Once the country reached the vendor as "US", ShipEngine began enforcing
+// "ship_to state_province must be two characters when ship_to country_code
+// equals US" and every production rate quote 502'd for three and a half
+// hours. The fake now enforces the same rule (scripts/fake-vendors.js,
+// usStateViolation), so these go RED if the state ever reaches it as a name.
+
+test("STORED_STATE is still what the checkout dropdown produces", () => {
+  assert.equal(STORED_STATE, "Georgia");
+});
+
+test("a rate quote carrying the dropdown's STATE name reaches the carrier " +
+  "as the two-letter code, and is quoted", async () => {
+  // rateRequest() sends States.GA ("Georgia") in both addresses, exactly as
+  // the web client and the org config do. The production request that
+  // 502'd, through the real function, against a fake that refuses it.
+  const res = await callHttp("get_shipping_rates", rateRequest(16));
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  const [call] = await fakeVendors.log("shipengine");
+  assert.equal(call.op, "rates");
+  assert.equal(call.stateProvince, STORED_STATE_CODE);
+  assert.equal(call.countryCode, STORED_COUNTRY_CODE);
+});
+
+test("a label for a purchase stored with the STATE name is bought, with " +
+  "the two-letter code on the wire", async () => {
+  const db = getDb();
+  await seedShippablePurchase(db); // shippingAddress.state = "Georgia"
+  const res = await callHttp(
+    "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  const sent = (await fakeVendors.log("shipengine"))
+    .find((c) => c.op === "label-from-shipment");
+  assert.ok(sent, "the vendor was never asked");
+  assert.equal(sent.stateProvince, STORED_STATE_CODE);
+  assert.equal(sent.countryCode, STORED_COUNTRY_CODE);
+});
+
+test("the fake refuses a state NAME with a US country, in the vendor's " +
+  "words - so the two tests above can actually fail", async () => {
+  // Straight at the fake, bypassing our sanitiser: proves the guard is
+  // real rather than the suite passing because nothing checks.
+  const res = await fetch("http://127.0.0.1:5055/v1/rates", {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body: JSON.stringify({shipment: {
+      ship_to: {state_province: "Georgia", country_code: "US",
+        postal_code: "30301"},
+      ship_from: {state_province: "GA", country_code: "US"},
+      packages: [{weight: {value: 1, unit: "ounce"}}],
+    }}),
+  });
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.errors[0].message,
+    /ship_to state_province must be two characters/);
+});
 
 // A spread of destinations a shopper could pick from the same dropdown. The
 // test walks the ENUM for each (code -> stored name) rather than typing the

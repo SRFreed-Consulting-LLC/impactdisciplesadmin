@@ -430,6 +430,34 @@ function seRate(rateId, amount, serviceCode, serviceType, days) {
   };
 }
 
+// ALSO REQUIRED BY THE REAL VENDOR, on BOTH the rates and the label routes.
+// Third lesson in three days (2026-09-03, the afternoon): the moment the
+// country went over as "US" (the morning's fix) ShipEngine began enforcing
+// its US-only rule that the state is the two-letter USPS code, and every
+// production rate quote 502'd for three and a half hours with the message
+// below - the storefront stores "Georgia". This fake accepted any state, so
+// the suite stayed green; the fixture said "GA" too, which no real purchase
+// holds. The message is the vendor's, verbatim, so the operator- and
+// shopper-facing paths under test are the ones that run for real.
+//
+// Returns the vendor's error body, or null when the address passes.
+function usStateViolation(addr, field) {
+  const country = addr && addr.country_code;
+  const state = addr && addr.state_province;
+  if (country !== "US" || !state || String(state).length === 2) return null;
+  return {
+    request_id: "se-fake-request",
+    errors: [{
+      error_source: "shipengine",
+      error_type: "business_rules",
+      error_code: "unspecified",
+      message:
+        `${field} state_province must be two characters when ` +
+        `${field} country_code equals US`,
+    }],
+  };
+}
+
 function shipEngineRates(req, res, body) {
   const packages = (body && body.shipment && body.shipment.packages) || [];
   const weight = packages.reduce(
@@ -437,14 +465,21 @@ function shipEngineRates(req, res, body) {
     0
   );
   const shipTo = (body && body.shipment && body.shipment.ship_to) || {};
+  const shipFrom = (body && body.shipment && body.shipment.ship_from) || {};
   log("shipengine", {
     op: "rates",
     weight,
     packages: packages.length,
-    // Recorded so a test can prove the stored display name ("United
-    // States") was normalised to a code before it reached the vendor.
+    // Recorded so a test can prove the stored display names ("United
+    // States", "Georgia") were normalised to codes before they reached
+    // the vendor.
     countryCode: shipTo.country_code,
+    stateProvince: shipTo.state_province,
   });
+
+  const stateError = usStateViolation(shipTo, "ship_to") ||
+    usStateViolation(shipFrom, "ship_from");
+  if (stateError) return send(res, 400, stateError);
 
   // A vendor-side failure. The body deliberately carries account-scoped
   // detail, because the assertion worth making is that NONE of it reaches
@@ -611,6 +646,7 @@ function shipEngineLabelFromShipment(req, res, body) {
     name: shipTo.name,
     phone: shipTo.phone,
     countryCode: shipTo.country_code,
+    stateProvince: shipTo.state_province,
     fromCountryCode: shipFrom.country_code,
     serviceCode: shipment.service_code,
     carrierId: shipment.carrier_id,
@@ -668,6 +704,12 @@ function shipEngineLabelFromShipment(req, res, body) {
       }],
     });
   }
+
+  // And the US state rule - see usStateViolation. Checked after the customs
+  // rule because that is the order the real vendor reports them in.
+  const stateError = usStateViolation(shipTo, "ship_to") ||
+    usStateViolation(shipFrom, "ship_from");
+  if (stateError) return send(res, 400, stateError);
 
   return shipEngineLabel(req, res, "(from-shipment-details)", body);
 }
