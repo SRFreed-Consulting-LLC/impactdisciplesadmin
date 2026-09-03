@@ -22,7 +22,7 @@ import { Role } from '@impact-common/shared/lists/roles.enum';
  *  was PARTIAL. A whole-record write here is the bug that had ThemeService
  *  and this component erasing each other's fields. */
 interface WriteLog {
-  calls: Array<{ method: string; id: string; payload: unknown }>;
+  calls: { method: string; id: string; payload: unknown }[];
 }
 
 function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {

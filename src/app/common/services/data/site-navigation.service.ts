@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { BaseService } from './base.service';
-import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
 import {
   SITE_NAVIGATION_COLLECTION,
   SITE_NAVIGATION_DOC_ID,

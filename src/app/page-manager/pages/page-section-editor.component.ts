@@ -381,14 +381,11 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
-  readonly titleTones = [
-    { key: 'ink', label: 'Ink' },
-    { key: 'brand', label: 'Brand blue' }
-  ] as const;
-
-  setTitleTone(which: 'left' | 'right', value: 'ink' | 'brand'): void {
-    this.edits.next();
-  }
+  // titleTones and setTitleTone lived here until 2026-09-03. Both were dead:
+  // nothing in any template or class referenced either, and setTitleTone
+  // ignored both of its arguments and simply pinged `edits`. They are the
+  // last remnant of the six left/right tone fields the two-member section kit
+  // replaced with per-column grounds.
 
   // isColumns and isGrid asked whether this section was one of two
   // archetypes, and both are gone. Nothing has asked since.

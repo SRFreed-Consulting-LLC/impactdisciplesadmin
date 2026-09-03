@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { SiteNavigationService } from 'src/app/common/services/data/site-navigation.service';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';

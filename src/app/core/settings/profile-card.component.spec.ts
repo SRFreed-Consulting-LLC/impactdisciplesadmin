@@ -22,7 +22,7 @@ import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 
 interface Harness {
   card: ProfileCardComponent;
-  writes: Array<{ id: string; payload: Record<string, unknown> }>;
+  writes: { id: string; payload: Record<string, unknown> }[];
   currentAgent$: BehaviorSubject<AdminUser | null>;
   reject: (err: unknown) => void;
 }
@@ -43,7 +43,7 @@ function setup(user: Partial<AdminUser> = {}, failWrite = false): Harness {
   const currentAgent$ = new BehaviorSubject<AdminUser | null>(
     { ...stored, drawerWidth: 999 } as AdminUser
   );
-  const writes: Array<{ id: string; payload: Record<string, unknown> }> = [];
+  const writes: { id: string; payload: Record<string, unknown> }[] = [];
 
   const authService = { dao: { loggedInUser$: of(stored), currentAgent$ } };
   const adminUserService = {
