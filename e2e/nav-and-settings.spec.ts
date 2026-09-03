@@ -31,44 +31,41 @@ test.describe('Left nav - collapsible manager groups', () => {
     // nav-accordion.spec.ts pins the unit-level rule. Store has no label
     // overlap with Contacts' items, unlike Reports (which also has its own
     // separate "Purchases" entry) - picked deliberately to avoid a two-match
-    // ambiguity here.
+    // ambiguity here. Its one leaf is Coupons: Products moved to the DATA
+    // group (Site section) on 2026-08-30, and this test looked for it under
+    // STORE until 2026-09-03.
     await page.getByRole('button', { name: 'STORE', exact: true }).click();
-    await expect(page.getByText('Products', { exact: true })).toBeVisible();
+    await expect(page.getByText('Coupons', { exact: true })).toBeVisible();
     await expect(page.getByText('Purchases', { exact: true })).toHaveCount(0);
 
     // Collapsing the open group leaves nothing open, deliberately - a group
     // that springs back when you close it reads as broken.
     await page.getByRole('button', { name: 'STORE', exact: true }).click();
-    await expect(page.getByText('Products', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Coupons', { exact: true })).toHaveCount(0);
   });
 
   test('clicking between sibling tabs switches content live', async ({ page }) => {
-    // Enter via a hard reload to a *light* route first (Home - no manager
-    // content of its own, see the other test in this file for why: Store
-    // Manager's default tab (Products) mounts 5 of its own streamAll()
-    // calls immediately on construction, adding to an already-heavy
-    // cold-load Firestore burst that FirebaseDAO's documented WebChannel-
-    // race retry doesn't fully absorb - a real, separately-tracked
-    // reliability gap, not something this test needs to also stress).
-    await page.goto('/home');
-    await page.getByRole('button', { name: 'STORE', exact: true }).click();
-    await page.getByText('Coupons', { exact: true }).click();
-    await expect(page.locator('app-coupons')).toBeVisible();
-
-    // This is the real regression risk this session's query-param handling
-    // fixed: clicking a sibling tab while already on this route is a
-    // same-route, query-param-only navigation - a one-time snapshot read
-    // (what this code used to do) would go stale here and never switch.
+    // Enter via a hard reload to a *light* route first (Home has no manager
+    // content of its own), then switch between two leaves of ONE group.
     //
-    // The sibling used to be Sales; that screen was retired 2026-08-22
-    // (a discount now comes from a campaign offer naming a product/series/
-    // event, so a sitewide sale had nothing left to do). Its unit specs
-    // went with it in that commit but this one was missed, so it sat here
-    // clicking a nav item that no longer exists. Products is now Store
-    // Manager's only other leaf, and it is the heavier of the two, which
-    // makes it the better proof that the switch really re-reads.
-    await page.getByText('Products', { exact: true }).click();
-    await expect(page.locator('app-products')).toBeVisible({ timeout: 15000 });
+    // This is the real regression risk the query-param handling fixed:
+    // clicking a sibling tab while already on this route is a same-route,
+    // query-param-only navigation - a one-time snapshot read (what this code
+    // used to do) would go stale here and never switch.
+    //
+    // The pair used to be Coupons -> Products under STORE. Sales was retired
+    // 2026-08-22 and Products moved to DATA on 2026-08-30, leaving STORE with
+    // a single leaf and nothing to switch between - so this test clicked a
+    // nav item that no longer existed until 2026-09-03. CONTACTS has four
+    // leaves; Purchases and Organizations are the two whose labels appear
+    // nowhere else in the open nav.
+    await page.goto('/home');
+    await page.getByRole('button', { name: 'CONTACTS', exact: true }).click();
+    await page.getByText('Organizations', { exact: true }).click();
+    await expect(page.locator('app-organizations')).toBeVisible({ timeout: 15000 });
+
+    await page.getByText('Purchases', { exact: true }).click();
+    await expect(page.locator('app-purchases')).toBeVisible({ timeout: 15000 });
   });
 });
 

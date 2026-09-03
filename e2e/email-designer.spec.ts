@@ -165,34 +165,13 @@ test.describe('Email designer', () => {
     await expect(page).toHaveURL(/email-designer\/new/);
   });
 
-  // Asserts the 2026-08-21 decision, which this test previously asserted the
-  // OPPOSITE of. Between 2026-08-17 and that date every template opened in
-  // the full-screen designer, legacy Quill ones included - which imported
-  // them as one text block and silently converted them to builder templates
-  // on first save. On a SYSTEM template (a placeholder document a Cloud
-  // Function substitutes into) that one-way door is a real hazard, so Edit
-  // now opens the editor that MATCHES the template and converting became an
-  // explicit "Convert to Email Builder" action. See
-  // email-templates.component.ts' showEditModal/openInBuilder.
-  test('legacy rich-text templates open in the rich-text dialog, NOT the designer', async ({ page }) => {
-    await page.goto('/tools-manager?tab=system-templates');
-    // Every legacy row shows Rich Text in the Editor column.
-    const legacyRow = page.locator('tr:has-text("Rich Text")').first();
-    await legacyRow.waitFor();
-    await legacyRow.dblclick();
-
-    // The Quill dialog, in place, with the template loaded.
-    const dialog = page.locator('mat-dialog-container');
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('EDIT EMAIL TEMPLATE');
-    await expect(dialog.locator('input[formcontrolname="name"]')).not.toHaveValue('');
-
-    // The important half: it did NOT navigate into the designer, because
-    // that is the path that rewrites the template on save.
-    await expect(page).toHaveURL(/tab=system-templates/);
-    await expect(page.locator('.designer-shell')).toHaveCount(0);
-
-    await dialog.getByRole('button', { name: 'Close' }).click();
-    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
-  });
+  // A test that pinned "legacy rich-text templates open in the rich-text
+  // dialog, NOT the designer" lived here until 2026-09-03. It navigated to
+  // /tools-manager?tab=system-templates, a screen removed on 2026-08-27 when
+  // every template gained a home on the screen that sends it, and had
+  // timed out on every run since. The emulator suite (e2e-admin/10-tools)
+  // dropped its twin for the same reason and records the consequence: the
+  // rich-text-to-builder conversion is still a one-way door, and it is now
+  // uncovered - a legacy template is only reachable through "Edit this
+  // email" on a workflow screen, which needs live data in a specific state.
 });

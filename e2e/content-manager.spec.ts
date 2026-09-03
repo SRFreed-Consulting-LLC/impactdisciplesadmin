@@ -1,67 +1,70 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './support/auth';
 
-// Page Manager (nee Web Manager -> Content Manager -> Page Manager, renamed
-// 2026-08-19 and again 2026-08-29) is a single route (PageManagerComponent)
-// that switches between screens client-side via the left nav's ?tab= query
-// param (see nav-config.ts), not a per-screen route or a tab bar - see
-// page-manager-routing.module.ts. Slugs here must match nav-config.ts's
-// 'page-manager' group.
+// Live-dev smoke over the site-content screens. Each is a single route that
+// switches screens client-side via the left nav's ?tab= query param (see
+// nav-config.ts), not a per-screen route - so the GROUP id is the route and
+// the leaf slug is the tab. Slugs here must match nav-config.ts.
 //
-// Retired screens, kept as a record of why this file is shorter than the
-// group: Home Page Popups (2026-08-19, web-campaign popups own that space -
-// see campaigns.spec.ts); Pod Casts (2026-08-26, moved to the public web
-// app's own component, only an `applePodCast` URL field remains in Web
-// Config); and 'Home Page Images' (2026-08-29), which is no longer a screen
-// of its own - it is the slider section of HOME.
-const TAB_SLUGS: Record<string, string> = {
-  'Disciple Making Minute': 'disciple-making-minute',
-  'Home': 'home',
-  'Web Config': 'web-config'
-};
+// This file described the pre-2026-08-29 layout until 2026-09-03 and had
+// been red on every run since the screens moved; the emulator suite
+// (e2e-admin/09-content.spec.ts) was corrected the same day the screens
+// moved, this one was not. Where things went:
+//   - Disciple Making Minute: Page Manager -> DATA (2026-08-31). A list of
+//     records, not a page's own words.
+//   - Home: its bespoke screen (app-page-home) is DELETED (2026-08-31); it
+//     is an ordinary kit page drawn by app-page-stack, and the slider is
+//     one List row of that stack whose entries open full screen.
+//   - Docking Bar: Web Config tab -> its own leaf under FOOTER (2026-09-01).
+//     Site furniture, not a settings form; the leaf IS the screen.
+// Retired screens, kept as a record: Home Page Popups (2026-08-19, campaign
+// popups own that space), Pod Casts (2026-08-26, only an applePodCast URL
+// remains in Web Config), Home Page Images (2026-08-29, the Home slider).
 
-async function openPageManagerTab(page: import('@playwright/test').Page, tabName: string) {
-  await page.goto(`/page-manager?tab=${TAB_SLUGS[tabName]}`);
+async function gotoTab(page: import('@playwright/test').Page, group: string, slug: string) {
+  await page.goto(`/${group}?tab=${slug}`);
 }
 
-test.describe('Page Manager - read-only smoke checks', () => {
+test.describe('Site content - read-only smoke checks', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
-  test('Disciple Making Minute list renders', async ({ page }) => {
-    await openPageManagerTab(page, 'Disciple Making Minute');
+  test('Disciple Making Minute list renders, under DATA', async ({ page }) => {
+    await gotoTab(page, 'data', 'disciple-making-minute');
 
-    await expect(page.locator('table.dmms-table')).toBeVisible();
+    await expect(page.locator('table.dmms-table')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
   });
 
-  test('Home lists the slider as a section, and its slides open in a dialog', async ({ page }) => {
-    // The slides table is IN A DIALOG since 2026-08-29 - the slider became one
-    // row of the Home section stack rather than a grid sitting on the screen.
-    // This test asserted `table.images-table` was visible on the page itself
-    // and had been red ever since; opening the row is the fix, not loosening
-    // the assertion.
-    await openPageManagerTab(page, 'Home');
+  test('Home is an ordinary kit page, and its slider opens its slides full screen', async ({ page }) => {
+    await gotoTab(page, 'page-manager', 'home');
 
-    await expect(page.locator('app-page-home')).toBeVisible();
-    const sliderRow = page.locator('.home__section', { hasText: 'Slider' }).first();
-    await expect(sliderRow).toBeVisible();
+    const stack = page.locator('app-page-stack');
+    await expect(stack).toBeVisible({ timeout: 15000 });
+    await expect(stack.locator('.ps__section').first()).toBeVisible({ timeout: 15000 });
+    // Read nothing, could not read, or a section this build cannot name -
+    // Home carries the only `slides` list on the site, so it is the page
+    // most likely to drift out of the catalogue unnoticed.
+    await expect(stack.locator('.ps__empty')).toHaveCount(0);
+    await expect(stack.locator('.ps__failed')).toHaveCount(0);
+    await expect(stack.locator('.ps__type-icon--unknown')).toHaveCount(0);
 
-    await sliderRow.locator('.home__icon-btn').first().click();
+    // A stack row is labelled by its KIND ('List'); Home's first List is the
+    // slider. Double-click opens it - the row's only single-click icon is
+    // Delete, which the pre-2026-09-03 version of this test clicked.
+    const sliderRow = stack.locator('.ps__section', { hasText: 'List' }).first();
+    await expect(sliderRow).toBeVisible({ timeout: 15000 });
+    await sliderRow.dblclick();
 
-    await expect(page.locator('table.images-table')).toBeVisible();
-    await expect(page.locator('app-table-loading-overlay .table-loading-overlay')).toHaveCount(0);
+    await expect(page.locator('.ps--editing')).toBeVisible({ timeout: 15000 });
+    // The slides themselves, still there and still editable - the one thing
+    // the retired `images-table` assertion was actually worth.
+    await expect(page.locator('.psd__entry').first()).toBeVisible({ timeout: 15000 });
   });
 
-  // The docking bar moved off its own screen onto Web Config on 2026-08-29 -
-  // it renders on every page of the public site, so it is site furniture
-  // rather than home-page content. Pinned here because an editor that still
-  // exists but has moved is the kind of change that goes missing quietly.
-  test('the Docking Bar editor lives on Web Config', async ({ page }) => {
-    await openPageManagerTab(page, 'Web Config');
-
-    await page.getByRole('tab', { name: 'Docking Bar' }).click();
-    await expect(page.locator('app-docking-bar')).toBeVisible();
+  test('the Docking Bar editor lives under Footer', async ({ page }) => {
+    await gotoTab(page, 'footer', 'docking-bar');
+    await expect(page.locator('app-docking-bar')).toBeVisible({ timeout: 15000 });
   });
 });
