@@ -1,7 +1,9 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { controlStyleVars, FormControlStyle, FormFieldDef } from '@impact-common/shared/models/domain/form-field.model';
-import { buildFormGroup } from './build-form-group';
+// ONE implementation, shared with the public site - see the file's own note
+// for why it stopped being a local copy on 2026-09-03.
+import { buildFormGroup } from '@impact-common/forms/build-form-group';
 
 // Renders a fields[] tree as an actual reactive form - used both for the
 // Form Builder's own Live Preview (mode 'preview', disabled - nothing is
@@ -37,7 +39,13 @@ export class FormRendererComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['fields'] || changes['mode']) {
-      this.form = buildFormGroup(this.fields ?? [], this.mode === 'fill');
+      // dateAs 'Date' because this side renders with mat-datepicker, which
+      // rejects an empty string. The web side uses a plain date input and
+      // takes the default.
+      this.form = buildFormGroup(this.fields ?? [], {
+        applyValidators: this.mode === 'fill',
+        dateAs: 'Date'
+      });
       if (this.mode === 'preview') {
         this.form.disable({ emitEvent: false });
       }
