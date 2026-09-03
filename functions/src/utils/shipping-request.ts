@@ -17,6 +17,8 @@
 // silently dropped, which surfaces as ShipEngine rejecting a quote rather
 // than as a type error. shipping-request.test.js is the guard.
 
+import {Countries} from "../common/shared/lists/countries.enum";
+
 type Dict = Record<string, unknown>;
 
 // Caps exist so a single anonymous request cannot turn into an expensive
@@ -61,6 +63,41 @@ function str(v: unknown): string | undefined {
   return s ? s.slice(0, MAX_STR) : undefined;
 }
 
+// Country NAME -> ISO alpha-2 code, lower-cased, built once from the shared
+// Countries enum (whose keys are the codes and values the names the
+// storefront's dropdown shows).
+const CODE_BY_NAME = new Map<string, string>(
+  Object.entries(Countries).map(([code, name]) => [name.toLowerCase(), code])
+);
+const KNOWN_CODES = new Set(Object.keys(Countries));
+
+/**
+ * Normalises a stored country into the ISO alpha-2 code ShipEngine wants.
+ *
+ * REGRESSION, 2026-09-03. The storefront's checkout stores the country as
+ * the dropdown's DISPLAY value - "United States" - and this file forwarded
+ * it verbatim as country_code. ShipEngine saw a ship-to country that did
+ * not equal the ship-from's "US", classified every parcel as international
+ * and refused each label with "Customs items are required". Every Print
+ * Label click on production failed. The unit test fed `country: "US"`, a
+ * shape no real purchase has, so it could not go red.
+ *
+ * Accepts a code in any case ("us"), a name in any case ("united states"),
+ * or nothing (defaults to US - the org ships domestically). Anything else
+ * is passed through UNCHANGED so the vendor refuses it with a message that
+ * names it; silently relabelling an unknown country as US would buy a
+ * domestic label for a foreign address.
+ * @param {unknown} v A country as stored - code, name or absent.
+ * @return {string} An ISO alpha-2 code, or the unrecognised input.
+ */
+export function countryCode(v: unknown): string {
+  const s = str(v);
+  if (!s) return "US";
+  const upper = s.toUpperCase();
+  if (KNOWN_CODES.has(upper)) return upper;
+  return CODE_BY_NAME.get(s.toLowerCase()) ?? s;
+}
+
 /**
  * Accepts a finite, non-negative number. Rejects NaN/Infinity, which
  * would otherwise serialise into the vendor payload as null.
@@ -83,6 +120,12 @@ function address(v: unknown): Dict | undefined {
   for (const key of ADDRESS_FIELDS) {
     const s = str(v[key]);
     if (s !== undefined) out[key] = s;
+  }
+  // The web client sends the stored display name here too ("United
+  // States"). The rates endpoint has tolerated that so far; the labels
+  // endpoint did not, and depending on the difference is not a plan.
+  if (out.countryCode !== undefined) {
+    out.countryCode = countryCode(out.countryCode);
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
@@ -223,7 +266,8 @@ export function toShipEngineAddress(
     name: str(name) ?? "Customer",
     addressLine1,
     postalCode,
-    countryCode: str(addr.country) ?? "US",
+    // Stored as "United States" by the storefront; the vendor wants "US".
+    countryCode: countryCode(addr.country),
     addressResidentialIndicator: "yes",
   };
   const line2 = str(addr.address2);

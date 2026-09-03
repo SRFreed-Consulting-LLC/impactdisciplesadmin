@@ -17,7 +17,16 @@ const {
   toShipEngineAddress,
   buildLabelShipment,
   phoneDigits,
+  countryCode,
 } = require("../lib/utils/shipping-request");
+const {Countries} = require("../lib/common/shared/lists/countries.enum");
+
+// What the storefront's checkout ACTUALLY stores in shippingAddress.country
+// - the dropdown's display value, not a code. Every real purchase on prod
+// carries this string. Fixtures below use it, not "US", because a fixture
+// with "US" is how the 2026-09-03 bug passed every test (see the regression
+// block at the bottom).
+const STORED_COUNTRY = "United States";
 
 // The vendor SDK's own request formatter. Used by exactly one test, which
 // pins the fact that it silently drops fields our shipment does not send -
@@ -42,7 +51,8 @@ function realBody() {
         cityLocality: "Newnan",
         stateProvince: "GA",
         postalCode: "30263",
-        countryCode: "US",
+        // The web client copies shippingAddress.country straight in here.
+        countryCode: STORED_COUNTRY,
         addressResidentialIndicator: "yes",
       },
       shipFrom: {
@@ -68,6 +78,7 @@ test("a real storefront body survives intact", () => {
   assert.deepEqual(out.rateOptions, {carrierIds: ["se-123456"]});
   assert.equal(out.shipment.shipTo.postalCode, "30263");
   assert.equal(out.shipment.shipTo.name, "Jane Buyer");
+  assert.equal(out.shipment.shipTo.countryCode, "US");
   assert.equal(out.shipment.shipFrom.companyName, "Impact Disciples");
   assert.equal(out.shipment.shipFrom.addressLine2, "Suite 2");
   assert.deepEqual(out.shipment.packages, [
@@ -204,7 +215,7 @@ test("toShipEngineAddress maps our Address onto the vendor's names", () => {
     city: "Newnan",
     state: "GA",
     zip: "30263",
-    country: "US",
+    country: STORED_COUNTRY,
   }, "Jane Buyer", "5551234567");
 
   assert.equal(out.addressLine1, "12 Main St");
@@ -325,6 +336,104 @@ test("no ship date is set, because the SDK would drop it anyway", () => {
   assert.equal(formatParams({shipment: out}).shipment.ship_date, undefined,
     "the SDK started mapping shipDate - send one deliberately now");
 });
+
+// ---------------------------------------------------------------------------
+// REGRESSION, 2026-09-03: "Customs items are required"
+// ---------------------------------------------------------------------------
+//
+// The storefront stores shippingAddress.country as the dropdown's DISPLAY
+// value, "United States". toShipEngineAddress forwarded it verbatim as
+// country_code, so the ship-to country never equalled the ship-from's "US",
+// ShipEngine classified every parcel as international and refused each label
+// for lacking customs items. Every Print Label click on production failed
+// from the S3 deploy until this fix.
+//
+// The test above this block used `country: "US"` - a value no real purchase
+// holds - so it was green throughout. These tests use what is stored.
+
+test("the storefront's stored country name becomes the vendor's ISO code",
+  () => {
+    const out = toShipEngineAddress(
+      {address1: "12 Main St", zip: "30263", country: STORED_COUNTRY}, "X"
+    );
+    assert.equal(out.countryCode, "US");
+  });
+
+test("STORED_COUNTRY is still what the checkout dropdown produces", () => {
+  // The web checkout defaults to Countries.US and stores the VALUE. If the
+  // enum's text ever changes, the fixtures in this file drift away from
+  // reality again - this pins them together.
+  assert.equal(Countries.US, STORED_COUNTRY);
+});
+
+test("countryCode accepts a code or a name in any case", () => {
+  assert.equal(countryCode("US"), "US");
+  assert.equal(countryCode("us"), "US");
+  assert.equal(countryCode(" US "), "US");
+  assert.equal(countryCode("United States"), "US");
+  assert.equal(countryCode("united states"), "US");
+  assert.equal(countryCode("UNITED STATES"), "US");
+  // Not US-specific: any name the dropdown offers maps to its code.
+  assert.equal(countryCode("Canada"), "CA");
+  assert.equal(countryCode(Countries.GB), "GB");
+});
+
+test("countryCode defaults an absent country to US", () => {
+  assert.equal(countryCode(undefined), "US");
+  assert.equal(countryCode(null), "US");
+  assert.equal(countryCode(""), "US");
+  assert.equal(countryCode("   "), "US");
+  assert.equal(countryCode(840), "US"); // not a string: treated as absent
+});
+
+test("countryCode passes an unrecognised country through unchanged", () => {
+  // Deliberate: silently mapping this to US would buy a DOMESTIC label for
+  // a foreign address. Let the vendor refuse it with a message naming it.
+  assert.equal(countryCode("Narnia"), "Narnia");
+  assert.equal(countryCode("USA"), "USA");
+});
+
+test("every country name in the shared enum round-trips to its code", () => {
+  // The whole dropdown, not a sample - a duplicate name or a typo'd code
+  // anywhere in the enum would surface here rather than at a carrier.
+  for (const [code, name] of Object.entries(Countries)) {
+    assert.equal(countryCode(name), code, `name "${name}"`);
+    assert.equal(countryCode(code), code, `code "${code}"`);
+  }
+});
+
+test("the rate-quote sanitiser normalises the country too", () => {
+  // The web client copies the stored name into the rate request as well.
+  const body = realBody();
+  body.shipment.shipTo.countryCode = "united states";
+  body.shipment.shipFrom.countryCode = "US";
+  const out = sanitizeRateRequest(body);
+  assert.equal(out.shipment.shipTo.countryCode, "US");
+  assert.equal(out.shipment.shipFrom.countryCode, "US");
+});
+
+test("a label shipment is domestic when both ends are stored as names",
+  () => {
+    // The end-to-end shape of the bug: both addresses off Firestore, both
+    // holding display names, must come out equal so the vendor treats the
+    // parcel as domestic and asks for no customs items.
+    const shipTo = toShipEngineAddress(
+      {address1: "12 Main St", zip: "30263", country: STORED_COUNTRY}, "X"
+    );
+    const shipFrom = toShipEngineAddress(
+      {address1: "1 Ministry Way", zip: "30265", country: STORED_COUNTRY},
+      "Impact Disciples"
+    );
+    const out = buildLabelShipment({
+      ...SERVICE, shipTo, shipFrom, totalWeightOunces: 8,
+    });
+    assert.equal(out.shipTo.countryCode, "US");
+    assert.equal(out.shipFrom.countryCode, "US");
+    // And through the SDK's own formatter, on the wire, as country_code.
+    const wire = formatParams({shipment: out}).shipment;
+    assert.equal(wire.ship_to.country_code, "US");
+    assert.equal(wire.ship_from.country_code, "US");
+  });
 
 // ---------------------------------------------------------------------------
 // Phone numbers

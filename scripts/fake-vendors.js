@@ -436,7 +436,15 @@ function shipEngineRates(req, res, body) {
     (sum, p) => sum + Number((p && p.weight && p.weight.value) || 0),
     0
   );
-  log("shipengine", { op: "rates", weight, packages: packages.length });
+  const shipTo = (body && body.shipment && body.shipment.ship_to) || {};
+  log("shipengine", {
+    op: "rates",
+    weight,
+    packages: packages.length,
+    // Recorded so a test can prove the stored display name ("United
+    // States") was normalised to a code before it reached the vendor.
+    countryCode: shipTo.country_code,
+  });
 
   // A vendor-side failure. The body deliberately carries account-scoped
   // detail, because the assertion worth making is that NONE of it reaches
@@ -590,6 +598,7 @@ function shipEngineLabel(req, res, rateId, body) {
 function shipEngineLabelFromShipment(req, res, body) {
   const shipment = (body && body.shipment) || {};
   const shipTo = shipment.ship_to || {};
+  const shipFrom = shipment.ship_from || {};
   const packages = shipment.packages || [];
   const weight = packages.reduce(
     (sum, p) => sum + Number((p && p.weight && p.weight.value) || 0),
@@ -601,6 +610,8 @@ function shipEngineLabelFromShipment(req, res, body) {
     addressLine1: shipTo.address_line1,
     name: shipTo.name,
     phone: shipTo.phone,
+    countryCode: shipTo.country_code,
+    fromCountryCode: shipFrom.country_code,
     serviceCode: shipment.service_code,
     carrierId: shipment.carrier_id,
     shipDate: shipment.ship_date,
@@ -628,6 +639,33 @@ function shipEngineLabelFromShipment(req, res, body) {
         error_code: "field_value_required",
         message: `A value is required for ${field}.`,
       })),
+    });
+  }
+
+  // ALSO REQUIRED BY THE REAL VENDOR. Same lesson, one day later
+  // (2026-09-03): ShipEngine treats a ship_to country that differs from
+  // ship_from as an international parcel and refuses the label without
+  // customs declarations. The storefront stores "United States", the org
+  // address is "US", the two never matched, and every production label
+  // failed with the message below - while this fake bought them all. The
+  // message is the vendor's, verbatim, so the operator-facing path under
+  // test is the one that runs for real.
+  const toCountry = shipTo.country_code;
+  const fromCountry = shipFrom.country_code;
+  const isInternational = !!toCountry && !!fromCountry &&
+    toCountry !== fromCountry;
+  const hasCustoms = !!(shipment.customs && shipment.customs.contents);
+  if (isInternational && !hasCustoms) {
+    return send(res, 400, {
+      request_id: "se-fake-request",
+      errors: [{
+        error_source: "shipengine",
+        error_type: "validation",
+        error_code: "field_value_required",
+        message:
+          "Customs items are required and must be specified with " +
+          "customs information or package product listings (but not both)",
+      }],
     });
   }
 

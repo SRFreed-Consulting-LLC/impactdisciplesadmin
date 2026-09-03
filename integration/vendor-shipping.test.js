@@ -23,6 +23,21 @@ const {
   preflight, reseed, callHttp, signIn, getDb,
   fakeVendors, preflightFakeVendors,
 } = require("./helpers/emulator");
+// The country dropdown the storefront checkout renders, as compiled for the
+// functions (the emulator runs lib/, so it is always built when this suite
+// can run at all). Keys are ISO codes, values are the display names the
+// checkout STORES. Read from here rather than retyped so the fixtures
+// below cannot drift from what the dropdown actually offers.
+const {Countries} = require(
+  "../functions/lib/common/shared/lists/countries.enum");
+
+// What the storefront's checkout stores in shippingAddress.country, and
+// copies verbatim into the rate request's shipTo.countryCode: the country
+// dropdown's DISPLAY value, not an ISO code. Every real purchase carries
+// this exact string. The fixtures here use it because fixtures that said
+// "US" are how the 2026-09-03 customs bug passed a green suite - see the
+// regression block at the bottom of this file.
+const STORED_COUNTRY = Countries.US;
 
 // A rate request shaped the way impactdisciples-web's ShippingService builds
 // one (createRequest() -> ShippingRequest: shipment + rateOptions), since
@@ -37,7 +52,7 @@ const rateRequest = (weightOunces) => ({
       cityLocality: "Atlanta",
       stateProvince: "GA",
       postalCode: "30301",
-      countryCode: "US",
+      countryCode: STORED_COUNTRY,
       addressResidentialIndicator: "yes",
     },
     shipFrom: {
@@ -236,7 +251,7 @@ const seedShippablePurchase = async (db, overrides = {}) => {
     phone: {number: "555-0199"},
     shippingAddress: {
       address1: "1 Peachtree St", city: "Newnan", state: "GA",
-      zip: CUSTOMER_ZIP, country: "US",
+      zip: CUSTOMER_ZIP, country: STORED_COUNTRY,
     },
     cartItems: [{id: "product-s3", orderQuantity: 2, isEvent: false}],
     // What the shopper was charged at checkout.
@@ -499,4 +514,153 @@ test("the label is bought against the RATE the caller chose, with the " +
   assert.equal(call.params.label_format, "pdf");
   assert.equal(call.params.label_download_type, "url");
   assert.equal(call.params.validate_address, "no_validation");
+});
+
+// ---------------------------------------------------------------------------
+// REGRESSION, 2026-09-03: "Customs items are required"
+// ---------------------------------------------------------------------------
+//
+// The storefront stores shippingAddress.country as the dropdown's display
+// value - "United States" - and the label builder forwarded it verbatim as
+// country_code. ShipEngine saw a ship-to country that was not equal to the
+// ship-from's "US", classified every parcel as international and refused
+// each label for lacking customs items. Every Print Label click on
+// production failed from the S3 deploy until this fix.
+//
+// It passed a green suite because every fixture in this file said
+// `country: "US"` - a value no real purchase holds - and because the fake
+// vendor bought a label for any pair of countries. Both are fixed: the
+// fixtures now hold what the dropdown stores, and the fake refuses an
+// international shipment without customs exactly as the vendor does.
+
+const STORED_COUNTRY_CODE = "US";
+
+test("a purchase stored with the dropdown's country name ships DOMESTIC",
+  async () => {
+    const db = getDb();
+    // seedShippablePurchase already stores Countries.US - said explicitly
+    // here because it is the whole point of the test.
+    await seedShippablePurchase(db, {
+      shippingAddress: {
+        address1: "1 Peachtree St", city: "Newnan", state: "GA",
+        zip: CUSTOMER_ZIP, country: Countries.US,
+      },
+    });
+
+    const res = await callHttp(
+      "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+      {Authorization: `Bearer ${staffToken}`}
+    );
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+
+    const sent = (await fakeVendors.log("shipengine"))
+      .find((c) => c.op === "label-from-shipment");
+    // Both ends as ISO codes, and EQUAL - that equality is what the vendor
+    // uses to decide whether customs declarations are needed.
+    assert.equal(sent.countryCode, STORED_COUNTRY_CODE);
+    assert.equal(sent.fromCountryCode, STORED_COUNTRY_CODE);
+    assert.notEqual(sent.countryCode, Countries.US,
+      "the display name reached the carrier as a country code");
+  });
+
+test("the org's ship-from country is normalised too, whatever config holds",
+  async () => {
+    const db = getDb();
+    // Web Config's address is edited by staff in the admin app - nothing
+    // stops it holding the display name either. The seeded fixture says
+    // "US"; this flips it to the name and expects the same domestic label.
+    const configRef = db.collection(tenantPath("config"));
+    const snap = await configRef.limit(1).get();
+    assert.ok(!snap.empty, "no seeded config doc");
+    const configDoc = snap.docs[0];
+    const original = configDoc.data().address;
+    try {
+      await configDoc.ref.set(
+        {address: {...original, country: Countries.US}}, {merge: true});
+      await seedShippablePurchase(db);
+
+      const res = await callHttp(
+        "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+        {Authorization: `Bearer ${staffToken}`}
+      );
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      const sent = (await fakeVendors.log("shipengine"))
+        .find((c) => c.op === "label-from-shipment");
+      assert.equal(sent.fromCountryCode, STORED_COUNTRY_CODE);
+    } finally {
+      await configDoc.ref.set({address: original}, {merge: true});
+    }
+  });
+
+test("a rate quote carrying the dropdown's country name is still domestic",
+  async () => {
+    // rateRequest() sends Countries.US in shipTo.countryCode, exactly as
+    // the web client does. The vendor must see "US".
+    const res = await callHttp("get_shipping_rates", rateRequest(16));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const [call] = await fakeVendors.log("shipengine");
+    assert.equal(call.op, "rates");
+    assert.equal(call.countryCode, STORED_COUNTRY_CODE);
+  });
+
+// A spread of destinations a shopper could pick from the same dropdown. The
+// test walks the ENUM for each (code -> stored name) rather than typing the
+// names, so it is testing what the dropdown produces, not what we assume it
+// does. Chosen to cover a neighbour, Europe, Asia-Pacific and a name with a
+// space in it.
+const FOREIGN = ["CA", "MX", "GB", "DE", "AU", "JP", "NZ"];
+
+for (const code of FOREIGN) {
+  const storedName = Countries[code];
+  test(`a shopper who picked "${storedName}" reaches the carrier as ` +
+    `${code}, and is refused for customs rather than shipped as domestic`,
+  async () => {
+    assert.ok(storedName, `Countries.${code} is not in the dropdown`);
+    const db = getDb();
+    await seedShippablePurchase(db, {
+      shippingAddress: {
+        address1: "1 Foreign Way", city: "Elsewhere",
+        zip: "00000", country: storedName,
+      },
+    });
+
+    const res = await callHttp(
+      "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+      {Authorization: `Bearer ${staffToken}`}
+    );
+
+    const sent = (await fakeVendors.log("shipengine"))
+      .find((c) => c.op === "label-from-shipment");
+    assert.ok(sent, "the vendor was never asked");
+    // The right ISO code - neither the display name nor a silent "US".
+    assert.equal(sent.countryCode, code);
+    assert.equal(sent.fromCountryCode, STORED_COUNTRY_CODE);
+
+    // We send no customs declarations, so the vendor refuses this - and
+    // the operator must be told WHY, in the vendor's words, rather than
+    // have a domestic label bought for a foreign address. Until the org
+    // ships internationally, this refusal is the correct outcome.
+    assert.equal(res.status, 502, JSON.stringify(res.body));
+    assert.match(res.body.error.message, /The carrier refused this label/);
+    assert.match(res.body.error.message, /Customs items are required/);
+  });
+}
+
+test("a country the dropdown does not offer is passed through, not " +
+  "guessed", async () => {
+  const db = getDb();
+  await seedShippablePurchase(db, {
+    shippingAddress: {
+      address1: "1 Nowhere Rd", zip: "00000", country: "Narnia",
+    },
+  });
+  await callHttp(
+    "get_shipping_label", {purchaseId: VICTIM_PURCHASE},
+    {Authorization: `Bearer ${staffToken}`}
+  );
+  const sent = (await fakeVendors.log("shipengine"))
+    .find((c) => c.op === "label-from-shipment");
+  // Relabelling an unknown country as US would buy a domestic label for a
+  // foreign address. It goes to the vendor as stored, to be refused by name.
+  assert.equal(sent.countryCode, "Narnia");
 });
