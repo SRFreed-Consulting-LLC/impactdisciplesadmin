@@ -21,6 +21,17 @@
       (load)="onLoad()"
     ></iframe>
 
+    <!-- The hovered section, outlined OVER the frame in this component's
+         own pixels - the site says where it is, this draws it. See the
+         component for why the site does not draw it itself. -->
+    @if (highlightBox; as box) {
+      <div class="apv-highlight" aria-hidden="true"
+           [style.top.px]="box.top"
+           [style.left.px]="box.left"
+           [style.width.px]="box.width"
+           [style.height.px]="box.height"></div>
+    }
+
     @if (!loaded) {
       <p class="apv-loading">Loading {{ label }}&hellip;</p>
     }

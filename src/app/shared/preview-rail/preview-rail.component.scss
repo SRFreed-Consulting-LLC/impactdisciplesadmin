@@ -113,6 +113,22 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  // THE SCROLLBAR'S SPACE IS RESERVED WHETHER OR NOT IT IS SHOWING, and this
+  // one line is what stops the page preview vibrating (Shane, 2026-09-02).
+  //
+  // The previewer scales the framed page to the width it measures here.
+  // On Windows a scrollbar takes 15px of that width when it appears - and
+  // whether it appears depends on how tall the scaled page is, which
+  // depends on the width. A page whose height straddled the rail's own
+  // toggled between the two widths several times a second as it loaded:
+  // recorded at frame rate, 413 -> 428 -> 413 with four scrollbar
+  // appearances in 1.2s. A stable gutter makes the width a constant, so
+  // nothing the previewer does can feed back into what it measures.
+  //
+  // The cost is 15px of gutter on every rail even when nothing scrolls,
+  // on every screen that uses this component. That is the right trade: a
+  // preview that never moves sideways is worth more than the strip.
+  scrollbar-gutter: stable;
   // The public site is light; previewing it on the navy admy surface would
   // misrepresent it, so the viewport is always white regardless of theme -
   // the same reasoning as the rich-text editors' light surface.

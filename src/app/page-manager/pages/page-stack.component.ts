@@ -1,7 +1,7 @@
 import { Component, Input, OnChanges, inject } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { BehaviorSubject } from 'rxjs';
-import { PageContentBlock, PageContentModel } from '@impact-common/shared/models/domain/page-content.model';
+import { PageContentBlock } from '@impact-common/shared/models/domain/page-content.model';
 import { PageContentService } from 'src/app/common/services/data/page-content.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
@@ -91,6 +91,12 @@ export class PageStackComponent implements OnChanges {
    * copy, which is also what gets posted into the frame.
    */
   editingLive: PageContentBlock | null = null;
+
+  /**
+   * The row under the pointer, handed to the previewer to outline on the
+   * page. Set and cleared by the template; nothing is stored.
+   */
+  hoverKey: string | null = null;
 
   // ngOnChanges, not ngOnInit. Today Page Manager gives each tab its own @if,
   // so switching pages destroys this component and builds another - and

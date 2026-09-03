@@ -110,12 +110,20 @@ async function seed(fn) {
   await testEnv.withSecurityRulesDisabled(async (ctx) => fn(ctx.firestore()));
 }
 
-// Common paths.
-const UNIT = 'librarySeries/S1/books/BOOK_A/units/U1';
-const LESSON = 'librarySeries/S1/books/BOOK_A/units/U1/lessons/L1';
+// Common paths. THROUGH p(), like every other path in this file.
+//
+// These four were raw literals until 2026-09-03, and the damage was not the
+// three tests that went red - it was the ones that stayed GREEN. librarySeries
+// moved under the tenant, the narrowed ruleset has no top-level match block
+// for it, so EVERY read here was denied. "an UNlicensed patron may NOT read
+// unit/lesson content" passed because the path was dead, not because the
+// paywall held. A deny-test that would pass with the paywall deleted is worse
+// than no test.
+const UNIT = p('librarySeries/S1/books/BOOK_A/units/U1');
+const LESSON = p('librarySeries/S1/books/BOOK_A/units/U1/lessons/L1');
 const TRANSLATION =
-  'librarySeries/S1/books/BOOK_A/units/U1/lessons/L1/translations/fr';
-const BOOK = 'librarySeries/S1/books/BOOK_A';
+  p('librarySeries/S1/books/BOOK_A/units/U1/lessons/L1/translations/fr');
+const BOOK = p('librarySeries/S1/books/BOOK_A');
 
 async function seedLibrary() {
   await seed(async (db) => {

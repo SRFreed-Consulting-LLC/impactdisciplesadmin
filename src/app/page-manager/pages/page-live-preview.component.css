@@ -6,6 +6,11 @@
 :host {
   display: block;
   min-height: 0;
+  /* The public site's accent - `$theme-color` in the web repo's
+     assets/styles/variables.scss. The one value borrowed from the other
+     application, because the outline is meant to read as the site's own
+     colour rather than the admin's. Change it there, change it here. */
+  --apv-site-accent: #ffcc00;
 }
 
 .apv {
@@ -16,7 +21,13 @@
 
 /* Reserves the SCALED height. A transform does not affect layout, so without
    this the frame keeps its full 1440-wide, several-thousand-tall box and the
-   source line below would sit underneath it. */
+   source line below would sit underneath it.
+
+   The height GLIDES rather than snaps. The framed page reports its height
+   several times while it loads - images and fonts land after the first
+   paint - and each report used to be a jump of hundreds of pixels while the
+   frame was already visible. Animated, the same reports read as the page
+   settling rather than the preview shaking. */
 .apv-stage {
   position: relative;
   overflow: hidden;
@@ -27,6 +38,7 @@
      rail - the scale is capped at 1 rather than stretching it. */
   margin: 0 auto;
   max-width: 100%;
+  transition: height 240ms ease;
 }
 
 .apv-frame {
@@ -46,8 +58,27 @@
   opacity: 1;
 }
 
+/* The hovered section's outline, over the frame. Drawn at THIS scale, so it
+   is the same 3px whether the page behind it is at 29% or 96% - an outline
+   the site drew on itself would be a hairline in the desktop view. Inset,
+   so it never widens the stage and never trips its overflow clip. */
+.apv-highlight {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 3px solid var(--apv-site-accent);
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+  transition: top 150ms ease, height 150ms ease, left 150ms ease, width 150ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .apv-frame {
+  .apv-frame,
+  .apv-stage,
+  .apv-highlight {
     transition: none;
   }
 }

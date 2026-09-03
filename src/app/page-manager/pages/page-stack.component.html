@@ -139,10 +139,17 @@
              a second way to say it. The controls that are NOT "open this"
              - delete, and the live toggle - are ignored by the handler
              rather than needing to stop the event themselves. -->
+        <!-- HOVERING A ROW OUTLINES ITS SECTION IN THE PREVIEW (Shane,
+             2026-09-02) - the one way to tell which band on the page a
+             row is. Cleared when a drag starts: the rows shuffle under a
+             drag and the pointer's row stops meaning anything. -->
         <div class="ps__section" cdkDrag
              [class.ps__section--off]="!isLive(section)"
              [class.ps__section--editable]="canEdit() && !loadFailed"
              [cdkDragDisabled]="!canEdit() || loadFailed"
+             (mouseenter)="hoverKey = section.key"
+             (mouseleave)="hoverKey = null"
+             (cdkDragStarted)="hoverKey = null"
              (dblclick)="editFromRow(section, $event)">
           <mat-icon class="ps__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
 
@@ -243,7 +250,8 @@
       [path]="page.path"
       [label]="page.label"
       [device]="rail.device === 'phone' ? 'mobile' : 'desktop'"
-      [revision]="previewRevision"></app-page-live-preview>
+      [revision]="previewRevision"
+      [highlightKey]="hoverKey"></app-page-live-preview>
 
     <p class="ps__preview-note">
       The real page, scaled &mdash; not a drawing of it, so it cannot drift.

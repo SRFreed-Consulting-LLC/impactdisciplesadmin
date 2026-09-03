@@ -127,4 +127,98 @@ describe('PageLivePreviewComponent', () => {
 
     expect(component.shownUrl).toBe(environment.previewSiteUrl);
   });
+
+  // -------------------------------------------------------------- hover
+  //
+  // Hovering a row in the section list outlines that section on the page.
+  // The site is asked WHERE the section is and answers with a rectangle in
+  // its own pixels; the outline is drawn here, scaled like the frame.
+
+  const SITE = new URL(environment.previewSiteUrl).origin;
+  const postFrom = (data: unknown, origin: string) =>
+    window.dispatchEvent(new MessageEvent('message', { data, origin }));
+  const hover = (key: string | null) => {
+    component.highlightKey = key;
+    component.ngOnChanges({ highlightKey: {} } as never);
+  };
+  const rect = (key: string) =>
+    ({ impactPreviewHighlightRect: { key, top: 1000, left: 0, width: 1440, height: 500 } });
+
+  it('does NOT reload the frame for a hover - it would blank on every mouse movement', () => {
+    component.ngOnChanges(reload);
+    const before = String(component.src);
+
+    hover('overview');
+    hover('faq');
+    hover(null);
+
+    expect(String(component.src)).toBe(before);
+  });
+
+  it('draws the outline where the site says the section is, at the frame\'s scale', () => {
+    component.device = 'desktop';
+    hover('overview');
+
+    postFrom(rect('overview'), SITE);
+
+    const s = 430 / 1440;
+    expect(component.highlightBox).toEqual({
+      top: Math.round(1000 * s), left: 0, width: 430, height: Math.round(500 * s)
+    });
+  });
+
+  it('ignores a rectangle for a row that is no longer hovered', () => {
+    // Replies arrive a round trip after the hover, so on a fast sweep down
+    // the list the answer to row three can land after row five is hovered.
+    hover('overview');
+    hover('faq');
+
+    postFrom(rect('overview'), SITE);
+
+    expect(component.highlightBox).toBeNull();
+  });
+
+  it('believes a rectangle only from the framed site', () => {
+    hover('overview');
+
+    postFrom(rect('overview'), 'https://somewhere-else.example');
+
+    expect(component.highlightBox).toBeNull();
+  });
+
+  it('takes the outline down the moment the hover ends, without waiting for a reply', () => {
+    hover('overview');
+    postFrom(rect('overview'), SITE);
+    expect(component.highlightBox).not.toBeNull();
+
+    hover(null);
+
+    expect(component.highlightBox).toBeNull();
+  });
+
+  it('drops the outline on a reload - it belonged to the page going away', () => {
+    hover('overview');
+    postFrom(rect('overview'), SITE);
+
+    component.revision++;
+    component.ngOnChanges(reload);
+
+    expect(component.highlightBox).toBeNull();
+  });
+
+  it('drops a rectangle that is not one', () => {
+    hover('overview');
+    for (const bad of [
+      null,
+      'overview',
+      { key: 'overview' },
+      { key: 'overview', top: -1, left: 0, width: 10, height: 10 },
+      { key: 'overview', top: 'a', left: 0, width: 10, height: 10 },
+      { key: '', top: 0, left: 0, width: 10, height: 10 }
+    ]) {
+      postFrom({ impactPreviewHighlightRect: bad }, SITE);
+    }
+
+    expect(component.highlightBox).toBeNull();
+  });
 });
