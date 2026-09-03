@@ -1,11 +1,15 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
+import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
+import { NAV_CONFIG, NavGroup, NavLeaf } from '../main-screen/nav-config';
 import {
   customerName as customerNameOf,
   isNewOrder,
   itemSummary as itemSummaryOf,
 } from 'src/app/contacts-manager/fulfillment/order-display.util';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, combineLatest, takeUntil } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { OrderWorkflowDialogComponent } from '../../shared/order-workflow-dialog/order-workflow-dialog.component';
 import { RouteRequestDialogComponent } from '../../shared/route-request-dialog/route-request-dialog.component';
@@ -44,6 +48,29 @@ interface DashboardRequestRow {
   raw: FormSubmissionModel;
 }
 
+/** One screen the signed-in person may open - the "Your screens" list an
+ *  Employee's Home is made of. */
+export interface DashboardScreenLink {
+  group: string;
+  label: string;
+  /** The group route, e.g. '/page-manager'. */
+  path: string;
+  /** The ?tab= value - the leaf slug. */
+  tab: string;
+}
+
+// The screen each preview section belongs to. A section shows only to
+// someone who could open that screen - the preview IS that screen's data
+// (customer names on orders, registrant counts, who submitted a request),
+// so showing it to an Employee granted none of them was the leak the
+// owner closed on 2026-09-03: "a Home with the things he's allowed to see,
+// that's it."
+export const DASHBOARD_SECTION_KEYS = {
+  orders: 'contacts-manager.fulfillment',
+  events: 'events-manager.events',
+  requests: 'data.custom-form-submissions'
+} as const;
+
 // Home - the app's landing page (routed at both '/' and '/home', see
 // app-routing.module.ts). 3 read-only preview sections, each pointing at
 // the real screen that owns the underlying data: Recent Orders (the
@@ -71,6 +98,21 @@ interface DashboardRequestRow {
     standalone: false
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  // inject(), not constructor parameters - new code, house style; declared
+  // FIRST because inject() runs in field-initializer order.
+  private readonly permissionService = inject(PermissionService);
+  private readonly authService = inject(AdminAuthService);
+  private readonly sitePagesNav = inject(SitePagesNavService);
+
+  /** Which preview sections this person may see - see DASHBOARD_SECTION_KEYS. */
+  access = { orders: false, events: false, requests: false };
+  /** Loads already started, so a re-emission of the user never restarts one. */
+  private started = { orders: false, events: false, requests: false };
+
+  /** An Employee's Home lists the screens they hold, in nav order. Empty
+   *  for Admin/Root, whose Home is the previews themselves. */
+  myScreens: DashboardScreenLink[] = [];
+
   recentOrders: CheckoutForm[] = [];
   ordersLoading = true;
   ordersFailed = false;
@@ -95,9 +137,74 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadRecentOrders();
-    this.loadUpcomingEvents();
-    this.loadNewRequests();
+    // Permission-driven, and LIVE: the same loggedInUser$ PermissionService
+    // reads, so the cold-load race (permissions landing after first render,
+    // live-diagnosed 2026-08-18 on the tab shells) resolves here too - a
+    // section appears the moment its grant is known, and a preview nobody
+    // may see is never loaded, not merely hidden.
+    //
+    // The streamed pages are in the combine too: on a cold load the user
+    // lands BEFORE page_content does, and a list built then would miss every
+    // page the person is granted - the first live run listed two screens of
+    // Kevin's three for exactly that reason.
+    combineLatest([this.authService.dao.loggedInUser$, this.sitePagesNav.leaves$])
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(() => this.applyAccess());
+  }
+
+  isFullAccess(): boolean {
+    return this.permissionService.isFullAccess();
+  }
+
+  private applyAccess(): void {
+    this.access = {
+      orders: this.permissionService.canView(DASHBOARD_SECTION_KEYS.orders),
+      events: this.permissionService.canView(DASHBOARD_SECTION_KEYS.events),
+      requests: this.permissionService.canView(DASHBOARD_SECTION_KEYS.requests)
+    };
+    if (this.access.orders && !this.started.orders) {
+      this.started.orders = true;
+      this.loadRecentOrders();
+    }
+    if (this.access.events && !this.started.events) {
+      this.started.events = true;
+      this.loadUpcomingEvents();
+    }
+    if (this.access.requests && !this.started.requests) {
+      this.started.requests = true;
+      this.loadNewRequests();
+    }
+    this.myScreens = this.isFullAccess() ? [] : this.grantedScreens();
+  }
+
+  /**
+   * Every leaf the signed-in person may open, walking NAV_CONFIG in drawer
+   * order and folding in the pages streamed from page_content under PAGES -
+   * the same two sources and the same canViewNavItem() gate the drawer uses,
+   * so Home and the drawer can never disagree about what somebody holds.
+   */
+  private grantedScreens(): DashboardScreenLink[] {
+    const links: DashboardScreenLink[] = [];
+    for (const group of NAV_CONFIG) {
+      if (!group.items) {
+        continue;
+      }
+      const taken = new Set(group.items.map((item) => item.slug));
+      const streamed = group.id === 'page-manager'
+        ? this.sitePagesNav.leaves.filter((leaf) => !taken.has(leaf.slug))
+        : [];
+      for (const leaf of [...group.items, ...streamed]) {
+        if (leaf.hideFromNav || !this.permissionService.canViewNavItem(group, leaf)) {
+          continue;
+        }
+        links.push(this.linkFor(group, leaf));
+      }
+    }
+    return links;
+  }
+
+  private linkFor(group: NavGroup, leaf: NavLeaf): DashboardScreenLink {
+    return { group: group.label, label: leaf.label, path: `/${group.id}`, tab: leaf.slug };
   }
 
   ngOnDestroy(): void {

@@ -78,6 +78,35 @@ test.describe('[access] Access Control', () => {
     await expect(page.locator('.kp__slug')).toHaveText('/coaching-with-impact', { timeout: 20_000 });
   });
 
+  test('an Employee\'s Home is the screens they hold - no orders, events or requests they cannot open', async ({ page }) => {
+    // Home used to render Recent Orders (customer names), Upcoming Events
+    // and New Requests to every Employee regardless of grants - it has no
+    // screen key of its own. Each preview is gated on the screen it belongs
+    // to now, and an Employee gets a list of their screens instead.
+    await loginAsAdmin(page, EMPLOYEE_EMAIL);
+    await page.goto(`${ADMIN_URL}/home`);
+    const mine = page.locator('[data-e2e="my-screens"]');
+    await expect(mine).toBeVisible({ timeout: 20_000 });
+    await expect(mine.getByRole('link', { name: /Coaching with Impact/ })).toBeVisible();
+    await expect(mine.getByRole('link', { name: /Disciple Making Minute/ })).toBeVisible();
+    await expect(mine.getByRole('link', { name: /Website Newsletters/ })).toBeVisible();
+    await expect(mine.getByRole('link')).toHaveCount(3);
+    await expect(page.getByText('Recent Orders')).toHaveCount(0);
+    await expect(page.getByText('Upcoming Events')).toHaveCount(0);
+    await expect(page.getByText('New Requests')).toHaveCount(0);
+
+    // And the Admin's Home is unchanged: all three previews, no list.
+    await page.locator('.impact-header__user').click();
+    await page.getByRole('menuitem', { name: 'Log Off' }).click();
+    await expect(page).toHaveURL(/\/login/, { timeout: 20_000 });
+    await loginAsAdmin(page);
+    await page.goto(`${ADMIN_URL}/home`);
+    await expect(page.getByText('Recent Orders')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Upcoming Events')).toBeVisible();
+    await expect(page.getByText('New Requests')).toBeVisible();
+    await expect(page.locator('[data-e2e="my-screens"]')).toHaveCount(0);
+  });
+
   test('an Employee granted one Site record list sees it, and not the lists beside it', async ({ page }) => {
     await loginAsAdmin(page, EMPLOYEE_EMAIL);
     await page.goto(`${ADMIN_URL}/data?tab=disciple-making-minute`);
@@ -95,9 +124,12 @@ test.describe('[access] Access Control', () => {
     await page.goto(`${ADMIN_URL}/home`);
     await expect(page.locator('.impact-header__user')).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: 'CAMPAIGNS', exact: true }).click();
-    await expect(page.getByText('Website Newsletters', { exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('Campaigns', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('Tag Rules', { exact: true })).toHaveCount(0);
+    // Scoped to the drawer: Home's own "Your screens" list names the same
+    // screen, so an unscoped text match resolves twice.
+    const drawer = page.getByRole('navigation');
+    await expect(drawer.getByRole('link', { name: 'Website Newsletters', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(drawer.getByRole('link', { name: 'Campaigns', exact: true })).toHaveCount(0);
+    await expect(drawer.getByRole('link', { name: 'Tag Rules', exact: true })).toHaveCount(0);
     // Nothing granted under CONTACTS, so the group is not offered at all.
     await expect(page.getByRole('button', { name: 'CONTACTS', exact: true })).toHaveCount(0);
   });

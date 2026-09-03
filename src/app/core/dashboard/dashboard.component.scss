@@ -105,6 +105,40 @@ $live: var(--app-attention);
   padding: 16px 4px;
 }
 
+// "Your screens" - an Employee's Home (2026-09-03). One stroked button per
+// granted screen, wrapped, the group name above the screen name so a
+// handful of them still read as a set.
+.my-screens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 0 10px;
+}
+
+.my-screens__link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  height: auto;
+  padding: 10px 16px;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.my-screens__group {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-card-muted);
+}
+
+.my-screens__label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .error-state {
   display: flex;
   align-items: center;

@@ -2,7 +2,37 @@
 
 <div class="dashboard-content">
 
+  <!-- ==================== Your screens (Employees) ==================== -->
+  <!-- An Employee's Home is the screens they hold and nothing else (owner,
+       2026-09-03). Each preview below is gated on the screen it belongs to
+       (DASHBOARD_SECTION_KEYS), so someone granted only a page and a record
+       list sees this list and no order, event or request they could not
+       open. Admin/Root never see this block - their Home is the previews. -->
+  @if (!isFullAccess()) {
+    <section class="dash-section" data-e2e="my-screens">
+      <div class="sec-head">
+        <span class="sec-head__title">Your screens @if (myScreens.length) {
+          <span class="sec-head__count">{{ myScreens.length }}</span>
+        }</span>
+      </div>
+      @if (myScreens.length === 0) {
+        <div class="empty-state">Nothing has been granted to this account yet - ask an administrator.</div>
+      }
+      @if (myScreens.length > 0) {
+        <div class="my-screens">
+          @for (screen of myScreens; track screen.path + screen.tab) {
+            <a mat-stroked-button class="my-screens__link" [routerLink]="screen.path" [queryParams]="{ tab: screen.tab }">
+              <span class="my-screens__group">{{ screen.group }}</span>
+              <span class="my-screens__label">{{ screen.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </section>
+  }
+
   <!-- ==================== Recent Orders (primary section) ==================== -->
+  @if (access.orders) {
   <section class="dash-section">
     <div class="sec-head">
       <span class="sec-head__title">Recent Orders @if (!ordersLoading) {
@@ -74,8 +104,10 @@
       }
     }
   </section>
+  }
 
   <!-- ==================== Upcoming Events ==================== -->
+  @if (access.events) {
   <section class="dash-section">
     <div class="sec-head">
       <span class="sec-head__title">Upcoming Events @if (!eventsLoading) {
@@ -141,8 +173,10 @@
       }
     }
   </section>
+  }
 
   <!-- ==================== New Requests ==================== -->
+  @if (access.requests) {
   <section class="dash-section">
     <div class="sec-head">
       <span class="sec-head__title">New Requests @if (!requestsLoading) {
@@ -209,5 +243,6 @@
       }
     }
   </section>
+  }
 
 </div>
