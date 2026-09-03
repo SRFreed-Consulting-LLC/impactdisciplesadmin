@@ -826,7 +826,13 @@ service cloud.firestore {
       }
 
       match /mail_templates/{id} {
-        allow read: if true;
+        // STAFF ONLY since 2026-09-03. It was `if true` - world-readable -
+        // and nothing needed that: the admin app is the only reader, and
+        // the web and reader apps never touch this collection. The public
+        // site has no Firebase Auth, which is the reason so much of SECTION
+        // 1 is open, but an email design is not something a visitor renders.
+        // Narrowed to match its own write rule.
+        allow read: if isBusinessStaff();
         allow write: if isBusinessStaff();
       }
 
