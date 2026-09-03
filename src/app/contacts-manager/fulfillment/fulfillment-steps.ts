@@ -12,6 +12,15 @@ import { FulfillmentStatus, StatusHistoryEntry } from '@impact-common/shared/mod
 // confirmation email, which closes the order). stepsFor() picks the right
 // array per order. 'received' -> 'closed' also remains a valid direct
 // jump (pickup/hand-delivery override, skips everything after).
+/** The actions staff can press on an open order. Each of the three surfaces
+ *  that renders the workflow (Fulfillment cards, the Dashboard's order
+ *  dialog, the purchase details page) tracks the one in flight by this key,
+ *  so the pressed button can show a spinner and its siblings disable until
+ *  the write - or the 1-3s ShipEngine purchase - actually completes. Until
+ *  2026-09-03 only Print Label had any in-flight state, and that was a
+ *  silent grey-out that read as a dead click. */
+export type WorkflowAction = 'acknowledge' | 'print' | 'amazon' | 'pickedUp' | 'packaged' | 'shipped';
+
 export interface FulfillmentStep {
   status: FulfillmentStatus;
   label: string; // what produced this status, e.g. "Shipping Label Printed"

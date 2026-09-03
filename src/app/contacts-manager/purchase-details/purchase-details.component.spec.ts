@@ -332,12 +332,43 @@ describe('PurchaseDetailsComponent (characterization, pre-split)', () => {
       expect(component.backSteps.map((s) => s.status)).toEqual(['received', 'new']);
     });
 
-    it('printShippingLabel clears its busy flag even if the call fails', async () => {
-      const { component } = makeComponent(aPurchase(), {
+    it('printShippingLabel clears its busy flag even if the call fails, and says so', async () => {
+      const { component, deps } = makeComponent(aPurchase(), {
         service: { ...makeDeps().service, getShippingLabel: () => Promise.reject(new Error('boom')) },
       });
-      await component.printShippingLabel().catch(() => undefined);
-      expect(component.printing).toBeFalse();
+      await component.printShippingLabel();
+      expect(component.busy).toBeNull();
+      expect(deps.snackbar.error).toHaveBeenCalled();
+    });
+
+    it('names the action in flight while it runs, and refuses a second press', async () => {
+      // The spinner and the disabled siblings both key off `busy`; a second
+      // click during the write must not fire the transition again.
+      let resolve!: (v: CheckoutForm) => void;
+      const pending = new Promise<CheckoutForm>((r) => { resolve = r; });
+      const { component, deps } = makeComponent(aPurchase(), {
+        service: { ...makeDeps().service, markPackaged: jasmine.createSpy('markPackaged').and.returnValue(pending) },
+      });
+      component.markPackaged();
+      expect(component.busy).toBe('packaged');
+      component.markPackaged();
+      component.markShipped();
+      expect(deps.service.markPackaged).toHaveBeenCalledTimes(1);
+      expect(deps.service.markShipped).not.toHaveBeenCalled();
+      resolve({ fulfillmentStatus: 'awaiting_shipping', statusHistory: [] } as unknown as CheckoutForm);
+      await flush();
+      expect(component.busy).toBeNull();
+      expect(component.selectedItem.fulfillmentStatus).toBe('awaiting_shipping');
+    });
+
+    it('a failed status write is reported instead of vanishing', async () => {
+      const { component, deps } = makeComponent(aPurchase(), {
+        service: { ...makeDeps().service, markShipped: () => Promise.reject(new Error('offline')) },
+      });
+      component.markShipped();
+      await flush();
+      expect(deps.snackbar.error).toHaveBeenCalled();
+      expect(component.busy).toBeNull();
     });
   });
 

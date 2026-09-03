@@ -510,3 +510,21 @@ td .mat-mdc-form-field,
 .impact-header .mat-mdc-form-field {
   margin-bottom: 0;
 }
+
+// An in-flight spinner standing in for a button's leading icon while its
+// action runs (the order workflow buttons on Fulfillment, the Dashboard's
+// order dialog and the purchase details page). Sized and spaced like the
+// mat-icon it replaces so the button does not reflow, and stroked in the
+// button's own text colour so it reads on a raised primary button and a
+// stroked one alike. Global rather than per component because three
+// components share the pattern and Material's button label is not reachable
+// from an emulated-encapsulation stylesheet.
+.mat-mdc-button-base .btn-spinner {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+
+  circle {
+    stroke: currentColor;
+  }
+}

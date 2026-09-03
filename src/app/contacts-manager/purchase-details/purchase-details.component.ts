@@ -11,7 +11,7 @@ import { EventService } from 'src/app/common/services/data/event.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from '@impact-common/shared/lists/roles.enum';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
-import { FulfillmentStep, stepsFor } from '../fulfillment/fulfillment-steps';
+import { FulfillmentStep, WorkflowAction, stepsFor } from '../fulfillment/fulfillment-steps';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
@@ -51,7 +51,9 @@ export class PurchaseDetailsComponent {
   // (a stale/expired role cookie throwing on a valid Firebase session).
   currentUserRole?: string;
 
-  printing = false;
+  // The workflow action in flight, if any - every action-bar button disables
+  // while one is, and the pressed one shows a spinner. See run().
+  busy: WorkflowAction | null = null;
   viewingCustomer = false;
   refunding = false;
 
@@ -315,55 +317,68 @@ export class PurchaseDetailsComponent {
   // component to embed here.
 
   acknowledgeOrder(): void {
-    this.service.acknowledgeOrder(this.selectedItem).then((saved) => {
-      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
-      this.selectedItem.statusHistory = saved.statusHistory;
-      this.snackbar.success('Order acknowledged');
-    });
+    void this.transition('acknowledge', () => this.service.acknowledgeOrder(this.selectedItem), 'Order acknowledged');
   }
 
-  async printShippingLabel(): Promise<void> {
-    this.printing = true;
-    try {
-      await this.service.getShippingLabel(this.selectedItem);
-    } finally {
-      this.printing = false;
-    }
+  // No success snackbar: the label PDF opening in a new tab IS the result.
+  printShippingLabel(): Promise<void> {
+    return this.run('print', () => this.service.getShippingLabel(this.selectedItem));
   }
 
   markPickedUp(): void {
-    this.service.markPickedUp(this.selectedItem).then((saved) => {
-      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
-      this.selectedItem.statusHistory = saved.statusHistory;
-      this.snackbar.success('Marked as picked up / delivered - order closed');
-    });
+    void this.transition('pickedUp', () => this.service.markPickedUp(this.selectedItem), 'Marked as picked up / delivered - order closed');
   }
 
   markPackaged(): void {
-    this.service.markPackaged(this.selectedItem).then((saved) => {
-      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
-      this.selectedItem.statusHistory = saved.statusHistory;
-      this.snackbar.success('Marked as packaged');
-    });
+    void this.transition('packaged', () => this.service.markPackaged(this.selectedItem), 'Marked as packaged');
   }
 
   markShipped(): void {
-    this.service.markShipped(this.selectedItem).then((saved) => {
-      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
-      this.selectedItem.statusHistory = saved.statusHistory;
-      this.snackbar.success('Marked as shipped - order closed');
-    });
+    void this.transition('shipped', () => this.service.markShipped(this.selectedItem), 'Marked as shipped - order closed');
   }
 
   // The Amazon branch (2026-08-19 workflow change): Amazon does the
   // shipping; the final step is the customer confirmation email, which
   // closes the order.
   markShippedViaAmazon(): void {
-    this.service.markShippedViaAmazon(this.selectedItem).then((saved) => {
+    void this.transition('amazon', () => this.service.markShippedViaAmazon(this.selectedItem), 'Marked as shipped via Amazon');
+  }
+
+  // A status transition: the service returns the saved purchase, and its
+  // status + history are copied back onto the bound item so the screen
+  // updates without a refetch.
+  private transition(
+    action: WorkflowAction,
+    work: () => Promise<CheckoutForm>,
+    successMessage: string
+  ): Promise<void> {
+    return this.run(action, async () => {
+      const saved = await work();
       this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
       this.selectedItem.statusHistory = saved.statusHistory;
-      this.snackbar.success('Marked as shipped via Amazon');
+      this.snackbar.success(successMessage);
     });
+  }
+
+  // The one place a workflow action runs: mark busy, do the work, report,
+  // and ALWAYS clear - so the spinner can never stick and a double-click
+  // cannot fire the same transition twice. Until 2026-09-03 only Print
+  // Label had any in-flight state here, and a rejected status write
+  // vanished silently - no snackbar, nothing - which the other two workflow
+  // surfaces had already fixed.
+  private async run(action: WorkflowAction, work: () => Promise<unknown>): Promise<void> {
+    if (this.busy) {
+      return;
+    }
+    this.busy = action;
+    try {
+      await work();
+    } catch (err) {
+      console.error('Fulfillment status update failed', err);
+      this.snackbar.error("Couldn't update this order - please try again.");
+    } finally {
+      this.busy = null;
+    }
   }
 
   // The template this workflow step sends, editable from here. Named by the

@@ -26,8 +26,8 @@
   <div class="order-workflow-dialog__actions">
     @switch (item.fulfillmentStatus) {
       @case ('new') {
-        <button mat-raised-button color="primary" type="button" (click)="acknowledgeOrder()">
-          <mat-icon>check_circle</mat-icon>
+        <button mat-raised-button color="primary" type="button" [disabled]="busy" (click)="acknowledgeOrder()">
+          @if (busy === 'acknowledge') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>check_circle</mat-icon> }
           Acknowledge Order
         </button>
       }
@@ -36,34 +36,35 @@
           mat-raised-button
           color="primary"
           type="button"
-          [disabled]="printing"
+          [disabled]="busy"
           (click)="printShippingLabel()">
-          <mat-icon>local_shipping</mat-icon>
+          @if (busy === 'print') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>local_shipping</mat-icon> }
           Print Shipping Label
         </button>
-        <button mat-stroked-button type="button" matTooltip="Amazon fulfills this order - the remaining step is the contact confirmation email" (click)="markShippedViaAmazon()">
-          <mat-icon>local_mall</mat-icon>
+        <button mat-stroked-button type="button" [disabled]="busy" matTooltip="Amazon fulfills this order - the remaining step is the contact confirmation email" (click)="markShippedViaAmazon()">
+          @if (busy === 'amazon') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>local_mall</mat-icon> }
           Shipped via Amazon
         </button>
-        <button mat-stroked-button type="button" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
+        <button mat-stroked-button type="button" [disabled]="busy" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp()">
+          @if (busy === 'pickedUp') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> }
           Mark as Picked Up / Delivered
         </button>
       }
       @case ('shipped_via_amazon') {
-        <button mat-raised-button color="primary" type="button" (click)="sendAmazonConfirmation()">
+        <button mat-raised-button color="primary" type="button" [disabled]="busy" (click)="sendAmazonConfirmation()">
           <mat-icon>mark_email_read</mat-icon>
           Send Confirmation Email to Contact
         </button>
       }
       @case ('shipping_label_printed') {
-        <button mat-raised-button color="primary" type="button" (click)="markPackaged()">
-          <mat-icon>inventory_2</mat-icon>
+        <button mat-raised-button color="primary" type="button" [disabled]="busy" (click)="markPackaged()">
+          @if (busy === 'packaged') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>inventory_2</mat-icon> }
           Mark as Packaged
         </button>
       }
       @case ('awaiting_shipping') {
-        <button mat-raised-button color="primary" type="button" (click)="markShipped()">
-          <mat-icon>local_shipping</mat-icon>
+        <button mat-raised-button color="primary" type="button" [disabled]="busy" (click)="markShipped()">
+          @if (busy === 'shipped') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>local_shipping</mat-icon> }
           Mark as Shipped
         </button>
       }

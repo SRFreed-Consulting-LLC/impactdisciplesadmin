@@ -8,7 +8,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { FulfillmentStep, segmentState, stepsFor } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, WorkflowAction, segmentState, stepsFor } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
 import { AmazonConfirmationDialogComponent } from '../amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { SnackbarService } from '../snackbar.service';
 
@@ -41,7 +41,9 @@ export interface OrderWorkflowDialogData {
 })
 export class OrderWorkflowDialogComponent {
   item: CheckoutForm;
-  printing = false;
+  // The action in flight, if any - every workflow button disables while one
+  // is, and the pressed one shows a spinner. See run().
+  busy: WorkflowAction | null = null;
 
   constructor(
     private dialogRef: MatDialogRef<OrderWorkflowDialogComponent, boolean>,
@@ -92,26 +94,19 @@ export class OrderWorkflowDialogComponent {
   }
 
   acknowledgeOrder(): void {
-    this.service.acknowledgeOrder(this.item)
-      .then(() => {
-        this.item.fulfillmentStatus = 'received';
-        this.snackbar.success('Order acknowledged');
-      })
-      .catch((err) => this.reportTransitionError(err));
+    void this.run('acknowledge', async () => {
+      await this.service.acknowledgeOrder(this.item);
+      this.item.fulfillmentStatus = 'received';
+      this.snackbar.success('Order acknowledged');
+    });
   }
 
-  async printShippingLabel(): Promise<void> {
-    this.printing = true;
-    try {
-      // Mutates this.item in place on success (shippingLabel + advances
-      // fulfillmentStatus 'received' -> 'shipping_label_printed') - see
-      // PurchasesService.getShippingLabel()'s own comment.
-      await this.service.getShippingLabel(this.item);
-    } catch (err) {
-      this.reportTransitionError(err);
-    } finally {
-      this.printing = false;
-    }
+  // Mutates this.item in place on success (shippingLabel + advances
+  // fulfillmentStatus 'received' -> 'shipping_label_printed') - see
+  // PurchasesService.getShippingLabel()'s own comment. No success snackbar:
+  // the PDF opening in a new tab is the result.
+  printShippingLabel(): Promise<void> {
+    return this.run('print', () => this.service.getShippingLabel(this.item));
   }
 
   // Terminal action (skips straight to closed) - close the dialog right
@@ -119,24 +114,22 @@ export class OrderWorkflowDialogComponent {
   // of the open-orders list, same as it would on the real Fulfillment
   // screen.
   markPickedUp(): void {
-    this.service.markPickedUp(this.item)
-      .then(() => {
-        this.snackbar.success('Marked as picked up / delivered - order closed');
-        this.dialogRef.close(true);
-      })
-      .catch((err) => this.reportTransitionError(err));
+    void this.run('pickedUp', async () => {
+      await this.service.markPickedUp(this.item);
+      this.snackbar.success('Marked as picked up / delivered - order closed');
+      this.dialogRef.close(true);
+    });
   }
 
   // The Amazon branch: Amazon does the shipping, so the only remaining
   // step is the customer confirmation email (which closes the order).
   markShippedViaAmazon(): void {
-    this.service.markShippedViaAmazon(this.item)
-      .then((saved) => {
-        this.item.fulfillmentStatus = saved.fulfillmentStatus;
-        this.item.statusHistory = saved.statusHistory;
-        this.snackbar.success('Marked as shipped via Amazon');
-      })
-      .catch((err) => this.reportTransitionError(err));
+    void this.run('amazon', async () => {
+      const saved = await this.service.markShippedViaAmazon(this.item);
+      this.item.fulfillmentStatus = saved.fulfillmentStatus;
+      this.item.statusHistory = saved.statusHistory;
+      this.snackbar.success('Marked as shipped via Amazon');
+    });
   }
 
   sendAmazonConfirmation(): void {
@@ -151,26 +144,42 @@ export class OrderWorkflowDialogComponent {
   }
 
   markPackaged(): void {
-    this.service.markPackaged(this.item)
-      .then(() => {
-        this.item.fulfillmentStatus = 'awaiting_shipping';
-        this.snackbar.success('Marked as packaged');
-      })
-      .catch((err) => this.reportTransitionError(err));
+    void this.run('packaged', async () => {
+      await this.service.markPackaged(this.item);
+      this.item.fulfillmentStatus = 'awaiting_shipping';
+      this.snackbar.success('Marked as packaged');
+    });
   }
 
   // Terminal action - see markPickedUp()'s own comment.
   markShipped(): void {
-    this.service.markShipped(this.item)
-      .then(() => {
-        this.snackbar.success('Marked as shipped - order closed');
-        this.dialogRef.close(true);
-      })
-      .catch((err) => this.reportTransitionError(err));
+    void this.run('shipped', async () => {
+      await this.service.markShipped(this.item);
+      this.snackbar.success('Marked as shipped - order closed');
+      this.dialogRef.close(true);
+    });
   }
 
   onClose(): void {
     this.dialogRef.close();
+  }
+
+  // The one place a workflow action runs: mark busy, do the work, report,
+  // and ALWAYS clear - so the spinner can never stick and a double-click
+  // cannot fire the same transition twice. Until 2026-09-03 only Print
+  // Label had any in-flight state here, and it was a silent grey-out.
+  private async run(action: WorkflowAction, work: () => Promise<unknown>): Promise<void> {
+    if (this.busy) {
+      return;
+    }
+    this.busy = action;
+    try {
+      await work();
+    } catch (err) {
+      this.reportTransitionError(err);
+    } finally {
+      this.busy = null;
+    }
   }
 
   // Same rationale as FulfillmentComponent's own reportTransitionError() -

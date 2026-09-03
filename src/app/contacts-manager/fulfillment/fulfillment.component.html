@@ -55,8 +55,8 @@
         <div class="order-card__actions">
           @switch (item.fulfillmentStatus) {
             @case ('new') {
-              <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="acknowledgeOrder(item)">
-                <mat-icon>check_circle</mat-icon>
+              <button mat-raised-button color="primary" type="button" [disabled]="isBusy(item) || !canEdit()" (click)="acknowledgeOrder(item)">
+                @if (isDoing(item, 'acknowledge')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>check_circle</mat-icon> }
                 Acknowledge Order
               </button>
             }
@@ -65,21 +65,22 @@
                 mat-raised-button
                 color="primary"
                 type="button"
-                [disabled]="printingIds.has(item.id!) || !canEdit()"
+                [disabled]="isBusy(item) || !canEdit()"
                 (click)="printShippingLabel(item)">
-                <mat-icon>local_shipping</mat-icon>
+                @if (isDoing(item, 'print')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>local_shipping</mat-icon> }
                 Print Shipping Label
               </button>
-              <button mat-stroked-button type="button" [disabled]="!canEdit()" matTooltip="Amazon fulfills this order - the remaining step is the contact confirmation email" (click)="markShippedViaAmazon(item)">
-                <mat-icon>local_mall</mat-icon>
+              <button mat-stroked-button type="button" [disabled]="isBusy(item) || !canEdit()" matTooltip="Amazon fulfills this order - the remaining step is the contact confirmation email" (click)="markShippedViaAmazon(item)">
+                @if (isDoing(item, 'amazon')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>local_mall</mat-icon> }
                 Shipped via Amazon
               </button>
-              <button mat-stroked-button type="button" [disabled]="!canEdit()" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp(item)">
+              <button mat-stroked-button type="button" [disabled]="isBusy(item) || !canEdit()" matTooltip="For orders picked up in person or hand-delivered - skips straight to Closed" (click)="markPickedUp(item)">
+                @if (isDoing(item, 'pickedUp')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> }
                 Mark as Picked Up / Delivered
               </button>
             }
             @case ('shipped_via_amazon') {
-              <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="sendAmazonConfirmation(item)">
+              <button mat-raised-button color="primary" type="button" [disabled]="isBusy(item) || !canEdit()" (click)="sendAmazonConfirmation(item)">
                 <mat-icon>mark_email_read</mat-icon>
                 Send Confirmation Email to Contact
               </button>
@@ -93,14 +94,14 @@
               }
             }
             @case ('shipping_label_printed') {
-              <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="markPackaged(item)">
-                <mat-icon>inventory_2</mat-icon>
+              <button mat-raised-button color="primary" type="button" [disabled]="isBusy(item) || !canEdit()" (click)="markPackaged(item)">
+                @if (isDoing(item, 'packaged')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>inventory_2</mat-icon> }
                 Mark as Packaged
               </button>
             }
             @case ('awaiting_shipping') {
-              <button mat-raised-button color="primary" type="button" [disabled]="!canEdit()" (click)="markShipped(item)">
-                <mat-icon>local_shipping</mat-icon>
+              <button mat-raised-button color="primary" type="button" [disabled]="isBusy(item) || !canEdit()" (click)="markShipped(item)">
+                @if (isDoing(item, 'shipped')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>local_shipping</mat-icon> }
                 Mark as Shipped
               </button>
             }
