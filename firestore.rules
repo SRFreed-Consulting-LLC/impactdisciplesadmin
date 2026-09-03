@@ -123,50 +123,26 @@ service cloud.firestore {
     // dormant documents left in each project". Those documents are gone from
     // both, so the rule guarded nothing; the default deny at the foot of this
     // file covers the name if it ever returns.
-    match /courses/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    match /home_page_images/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    // The public site's docking bar (one doc, id `current`). PUBLIC-readable
-    // for the same reason campaign_popups is: the public site has no Firebase
-    // Auth at all, so anything it renders has to be world-readable. Nothing
-    // sensitive belongs on this document - see DockBarModel.
-    // The Coaching with Impact page's editable content (one doc, id
-    // `current`): its video, which coach testimonials it shows and in what
-    // order, and the "A movement of multiplication" screenshots. Same
-    // reasoning as dock_bar - the public site has no Firebase Auth, so
-    // anything it renders has to be world-readable, and nothing sensitive
-    // belongs on this document. See CoachingPageModel.
+    // FOUR WORLD-READABLE BLOCKS WERE RETIRED HERE on 2026-09-03, for the
+    // same reason 'sales' went above: they guarded collections that no
+    // longer exist.
     //
-    // The quotes themselves are NOT here: testimonialIds points into
-    // `testimonials`, which is already public-readable above.
-    match /coaching_page/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
-    // The home page's section stack - one doc per section, carrying its
-    // type, its position and its editable content. Same reasoning as
-    // dock_bar and coaching_page: the public site has no Firebase Auth, so
-    // anything it renders has to be world-readable, and nothing sensitive
-    // belongs on these documents. See HomeSectionModel.
+    //   courses, home_page_images, coaching_page, home_sections
     //
-    // Not here, on purpose: the slider's SLIDES (home_page_images, already
-    // public above - a `slider` section only says where the carousel sits)
-    // and the quotes a `testimonials` section points at (`testimonials`,
-    // also already public above).
+    // All four were superseded by the page builder - every public page is a
+    // `page_content` document of kit sections now, including Home, whose
+    // slider is a `slides` list rather than its own image collection, and
+    // Coaching with Impact, which stopped being a bespoke screen on
+    // 2026-08-29. Verified absent before removal: nothing at the top level,
+    // nothing under the tenant, in BOTH dev and prod, and no reference left
+    // in any of the three apps.
     //
-    // DEPLOY NOTE: this is an ADDED permissive rule, so unlike a tightening
-    // it must ship BEFORE the web build that reads the collection. Web
-    // degrades to a hardcoded fallback stack if the read is denied, so the
-    // wrong order is a silently stale home page rather than a broken one.
-    match /home_sections/{id} {
-      allow read: if true;
-      allow write: if isBusinessStaff();
-    }
+    // Leaving them cost nothing today but was not harmless: each was
+    // `allow read: if true`, so anything that ever recreated one of those
+    // names - a stray script, a restored backup, a future feature reusing
+    // the word - would have been world-readable from its first document,
+    // silently. The default deny at the foot of this file now covers all
+    // four, which is the safe direction to fail in.
     // The editable content of the other public pages - one doc per page,
     // id = the page's route slug ('about-us', 'give', ...). Same reasoning
     // as home_sections and coaching_page: the public site has no Firebase
