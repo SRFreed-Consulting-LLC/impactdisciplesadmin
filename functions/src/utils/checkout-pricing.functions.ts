@@ -10,7 +10,11 @@ import {
 } from "./campaign-offers.functions";
 import {resolveVendorBase} from "./vendor-hosts";
 import {isEventRegistrationOpen, isProductSellable} from "./sellable";
-import {pickActiveCoupon} from "./coupons";
+import {
+  couponOverridesSale,
+  couponTagsCover,
+  pickActiveCoupon,
+} from "./coupons";
 
 // Shared server-side recompute logic for store checkout, used by both
 // create_paypal_order and capture_paypal_order (../paypal.functions.ts).
@@ -326,15 +330,20 @@ export async function computeOrderPricing(
     // validate against the sum of its own item/breakdown amounts.
     const effectivePrice = isOnSale ? effectiveSalePrice : round2(basePrice);
 
-    // A coupon only ever discounts an item that isn't already on sale --
-    // matches shopping-cart.component.ts#applyCoupon()'s "if (!item.salePrice)"
-    // guard exactly (sale always wins over coupon).
+    // A coupon only ever discounts an item that isn't already on sale (sale
+    // wins over coupon, never stacked) - EXCEPT a 100% coupon, which is a
+    // giveaway and must get the holder in free even during an early-bird
+    // offer. Scope (specific ids, or the all-events sentinel) is decided by
+    // the shared couponTagsCover, the same rule the web cart shows the
+    // shopper. effectivePrice is already the sale price when on sale, so
+    // 100% of it is exactly $0 - no separate math for the override.
     let discount = 0;
     let discountPrice: number | null = null;
-    if (coupon && !isOnSale) {
-      const tags = coupon.tags as {id?: string}[] | undefined;
-      const couponApplies = !tags || tags.length === 0 ||
-        tags.some((tag) => tag.id === input.id);
+    if (coupon && (!isOnSale || couponOverridesSale(coupon.percentOff))) {
+      const couponApplies = couponTagsCover(
+        coupon.tags as {id?: string}[] | undefined,
+        {id: input.id, isEvent: input.isEvent === true}
+      );
       if (couponApplies) {
         discount = round2(
           effectivePrice * clampPercent(coupon.percentOff) / 100

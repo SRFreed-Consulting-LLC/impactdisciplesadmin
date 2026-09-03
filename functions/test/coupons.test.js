@@ -13,9 +13,13 @@ const assert = require("node:assert/strict");
 const {Timestamp} = require("firebase-admin/firestore");
 
 const {
+  couponAppliesToProduct,
+  couponOverridesSale,
+  couponTagsCover,
   isCouponExpired,
   pickActiveCoupon,
 } = require("../lib/utils/coupons");
+const {ALL_EVENTS_TAG} = require("../lib/common/shared/lists/coupon-scope");
 
 const SAVE_15 = {code: "SAVE", percentOff: 15, isActive: true};
 const SAVE_10_RETIRED = {code: "SAVE", percentOff: 10, isActive: false};
@@ -114,4 +118,36 @@ test("an unparseable expiry is treated as no expiry", () => {
   // worse failure than honouring it.
   assert.equal(isCouponExpired("not a date"), false);
   assert.equal(isCouponExpired(0), false);
+});
+
+// ---- scope: the all-events sentinel (2026-09-03) -----------------------
+//
+// The rule itself is pinned in the submodule's coupon-scope.spec.ts; these
+// prove the functions build wires it in, on the two faces the reader and
+// the store checkout actually call.
+
+const EVENTS_FREE = {code: "EVENTSFREE", percentOff: 100};
+const ALL_EVENTS = [ALL_EVENTS_TAG];
+const BOOK = "prod-book-digital";
+
+test("the all-events sentinel never discounts a PRODUCT", () => {
+  // The reader Store and group-license paths only ever price products, so
+  // an events-only giveaway must be refused there - and it is, because
+  // couponAppliesToProduct never flags a line as an event.
+  const eventsOnly = {...EVENTS_FREE, tags: ALL_EVENTS};
+  assert.equal(couponAppliesToProduct(eventsOnly, BOOK), false);
+  assert.equal(couponAppliesToProduct({tags: []}, BOOK), true);
+  assert.equal(couponAppliesToProduct({tags: [{id: BOOK}]}, BOOK), true);
+});
+
+test("the all-events sentinel covers ANY event line at checkout", () => {
+  assert.equal(couponTagsCover(ALL_EVENTS, {id: "x", isEvent: true}), true);
+  assert.equal(couponTagsCover(ALL_EVENTS, {id: "x", isEvent: false}), false);
+  assert.equal(couponTagsCover(ALL_EVENTS, {id: "x"}), false);
+});
+
+test("only a 100% coupon overrides a sale", () => {
+  assert.equal(couponOverridesSale(100), true);
+  assert.equal(couponOverridesSale(99), false);
+  assert.equal(couponOverridesSale(null), false);
 });

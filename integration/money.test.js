@@ -242,18 +242,11 @@ async () => {
   assert.equal((await purchasesByEmail(email)).length, 1);
 });
 
-test("a campaign offer beats a coupon: while an offer names the product, " +
-  "FREE100 CANNOT zero it - the order stays paid",
-async () => {
-  // The precedence rule that outlived the sales collection: a coupon only
-  // ever discounts an item that is not already discounted. computeOrderPricing
-  // enforces it server-side, which is the only place it counts.
-  //
-  // The offer is created and removed HERE rather than seeded, so it cannot
-  // change the pricing every other test in this file depends on.
-  const email = "offer-wins@money.test";
+// A 25%-off offer on prod-book-physical (20 -> 15), created and removed per
+// test rather than seeded, so it cannot change the pricing every other test
+// in this file depends on.
+const withProductOffer = async (run) => {
   const offerRef = db.collection(tenantPath("campaign_offers")).doc("camp-money-test");
-
   await offerRef.set({
     campaignId: "camp-money-test",
     target: {kind: "product", id: "prod-book-physical"},
@@ -264,25 +257,130 @@ async () => {
     endsAt: null,
     requiresAttribution: false,
   });
-
   try {
+    await run();
+  } finally {
+    await offerRef.delete();
+  }
+};
+
+test("a campaign offer beats a coupon: while an offer names the product, " +
+  "SAVE10 does NOT stack on it - the order stays at the sale price",
+async () => {
+  // The precedence rule that outlived the sales collection: a coupon only
+  // ever discounts an item that is not already discounted. computeOrderPricing
+  // enforces it server-side, which is the only place it counts.
+  //
+  // Until 2026-09-03 this test used FREE100 and asserted the same thing;
+  // a 100% coupon now OVERRIDES the sale (next test), so the sub-100% rule
+  // is pinned with SAVE10 instead.
+  const email = "offer-wins@money.test";
+  await withProductOffer(async () => {
     const res = await callHttp("create_paypal_order", orderBody({
       email,
-      couponCode: "FREE100",
+      couponCode: "SAVE10",
       cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
     }));
 
-    // NOT {free:true}: the offer puts the item on sale (20 -> 15) and the
-    // coupon is refused on an already-discounted line, so the order is a
-    // real $15 charge. The 15 is the whole point of the test and used to be
-    // invisible - the assertion was only that SOMETHING went wrong at the
-    // vendor, which a mispriced order would have satisfied just as well.
+    // NOT {free:true} and NOT 13.50: the offer puts the item on sale
+    // (20 -> 15) and the coupon is refused on an already-discounted line,
+    // so the order is a real $15 charge. The 15 is the whole point of the
+    // test and used to be invisible - the assertion was only that SOMETHING
+    // went wrong at the vendor, which a mispriced order would have
+    // satisfied just as well.
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(res.body.free, false);
     assert.equal(res.body.breakdown.subtotal, 15);
     assert.equal(res.body.breakdown.total, 15);
     assert.equal(res.body.breakdown.totalDiscount, 0);
     assert.equal((await purchasesByEmail(email)).length, 0);
+  });
+});
+
+test("a 100% coupon OVERRIDES a campaign offer: FREE100 zeroes a product " +
+  "that is on sale, and the order completes free", async () => {
+  // Owner's rule (2026-09-03): a 100% coupon is a giveaway, and a giveaway
+  // must get the holder in free even while a sale or early-bird offer is
+  // running. The discount is taken off the SALE price (15), so the stored
+  // purchase shows the sale, the coupon, and a $0 total together.
+  const email = "giveaway-beats-offer@money.test";
+  await withProductOffer(async () => {
+    const res = await callHttp("create_paypal_order", orderBody({
+      email,
+      couponCode: "FREE100",
+      cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
+    }));
+
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.free, true);
+    const [doc] = await purchasesByEmail(email);
+    const form = doc.data();
+    assert.equal(form.total, 15); // sale-adjusted subtotal
+    assert.equal(form.discount, 15);
+    assert.equal(form.cartItems[0].salePrice, 15);
+    assert.equal(form.cartItems[0].discount, 15);
+    assert.equal(form.cartItems[0].discountPrice, 0);
+  });
+});
+
+test("EVENTSFREE (the all-events sentinel) zeroes an event it was never " +
+  "tagged to by id, and is refused on a product", async () => {
+  // The coupon's only tag is __all_events__ - no event id at all - so this
+  // proves the sentinel, not a coincidental id match. An event created after
+  // the coupon behaves identically, which is the reason the sentinel exists.
+  const eventRes = await callHttp("create_paypal_order", orderBody({
+    email: "events-free@money.test",
+    couponCode: "EVENTSFREE",
+    cartItems: [{id: "event-workshop", isEvent: true, orderQuantity: 1}],
+  }));
+  assert.equal(eventRes.status, 200, JSON.stringify(eventRes.body));
+  assert.equal(eventRes.body.free, true);
+  assert.equal(eventRes.body.checkoutForm.couponCode, "EVENTSFREE");
+  assert.equal(eventRes.body.checkoutForm.discount, 10);
+
+  // The same code on a PRODUCT line matches nothing: full price, no
+  // discount, a real charge. The cart-side check refuses it before this
+  // point in the real storefront; this is the boundary that counts.
+  const productRes = await callHttp("create_paypal_order", orderBody({
+    email: "events-free-product@money.test",
+    couponCode: "EVENTSFREE",
+    cartItems: [{id: "prod-book-physical", orderQuantity: 1}],
+  }));
+  assert.equal(productRes.status, 200, JSON.stringify(productRes.body));
+  assert.equal(productRes.body.free, false);
+  assert.equal(productRes.body.breakdown.totalDiscount, 0);
+  assert.equal(productRes.body.breakdown.total, 20);
+});
+
+test("EVENTSFREE beats an EARLY-BIRD offer on the event", async () => {
+  // The case the owner asked for by name: an event mid-early-bird must
+  // still admit a giveaway holder free. Attributed, so the early-bird price
+  // is genuinely in force when the coupon overrides it.
+  const email = "events-free-earlybird@money.test";
+  const offerRef = db.collection(tenantPath("campaign_offers")).doc("camp-earlybird-test");
+  await offerRef.set({
+    campaignId: "camp-earlybird-test",
+    target: {kind: "event", id: "event-workshop"},
+    discount: {type: "percentOff", value: 50},
+    freeShipping: false,
+    isActive: true,
+    startsAt: null,
+    endsAt: null,
+    requiresAttribution: true,
+  });
+  try {
+    const res = await callHttp("create_paypal_order", orderBody({
+      email,
+      couponCode: "EVENTSFREE",
+      attribution: {campaignId: "camp-earlybird-test"},
+      cartItems: [{id: "event-workshop", isEvent: true, orderQuantity: 1}],
+    }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.free, true);
+    const item = res.body.checkoutForm.cartItems[0];
+    assert.equal(item.salePrice, 5); // early-bird 10 -> 5 was in force
+    assert.equal(item.discount, 5); // and the giveaway took the rest
+    assert.equal(item.discountPrice, 0);
   } finally {
     await offerRef.delete();
   }

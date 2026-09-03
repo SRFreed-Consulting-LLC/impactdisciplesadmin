@@ -7,6 +7,15 @@
 // it wrong. See pickActiveCoupon for the three specific defects.
 import {DocumentData} from "firebase-admin/firestore";
 import {toMillis} from "./date-normalize.functions";
+import {
+  couponOverridesSale,
+  couponTagsCover,
+} from "../common/shared/lists/coupon-scope";
+
+// The tag-scope and sale-override rules live in the shared submodule so the
+// web cart's coupon box and this server agree by construction. Re-exported
+// so the pricing paths keep one import for everything coupon.
+export {couponOverridesSale, couponTagsCover};
 
 /**
  * Whether a coupon expiry has passed. Absent means it never expires, which
@@ -89,11 +98,13 @@ export interface CouponDoc {
  * Whether a coupon discounts a given product.
  *
  * A coupon with no tags applies to everything; a tagged one applies only to
- * products whose doc id is in its tag list.
+ * products whose doc id is in its tag list. The all-events sentinel never
+ * matches here - a product is not an event.
  *
  * Tag scoping was the last coupon rule still resolved by two private copies
  * after pickActiveCoupon was extracted (2026-08-27) - which is exactly why it
- * was next to drift the way that extraction existed to stop.
+ * was next to drift the way that extraction existed to stop. The rule itself
+ * now lives in the shared submodule (couponTagsCover).
  * @param {CouponDoc} coupon The coupon document's data.
  * @param {string} productId The product's document id.
  * @return {boolean} Whether the coupon discounts this product.
@@ -102,6 +113,5 @@ export function couponAppliesToProduct(
   coupon: CouponDoc,
   productId: string
 ): boolean {
-  return !coupon.tags?.length ||
-    coupon.tags.some((tag) => tag.id === productId);
+  return couponTagsCover(coupon.tags, {id: productId});
 }

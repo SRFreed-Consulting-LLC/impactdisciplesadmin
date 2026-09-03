@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subject, merge, takeUntil } from 'rxjs';
 import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
+import { ALL_EVENTS_TAG } from '@impact-common/shared/lists/coupon-scope';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
 import { TagModel } from '@impact-common/shared/models/domain/tag.model';
 import { ProductService } from 'src/app/common/services/data/product.service';
@@ -27,7 +28,12 @@ export class CouponDialogComponent extends BaseEntityDialogComponent<CouponModel
   // that doesn't match an existing option simply doesn't add a chip. That
   // matches the original: this dx-tag-box never had acceptCustomValue/
   // onCustomItemCreating, unlike Products' own Tags field.
-  couponTags: TagModel[] = [];
+  //
+  // "All events" leads the list: a sentinel tag (shared coupon-scope.ts)
+  // that the checkout prices as covering EVERY event, including ones created
+  // after the coupon - so a standing giveaway like EVENTSFREE needs no
+  // upkeep as events come and go.
+  couponTags: TagModel[] = [{ ...ALL_EVENTS_TAG }];
 
   readonly itemType = 'Coupon';
 

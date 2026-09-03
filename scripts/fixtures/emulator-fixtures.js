@@ -123,6 +123,13 @@ const coupons = {
   "coupon-free": {isActive: true, code: "FREE100", percentOff: 100, isAffilliate: false},
   "coupon-save10": {isActive: true, code: "SAVE10", percentOff: 10, isAffilliate: false},
   "coupon-expired": {isActive: false, code: "OLDCODE", percentOff: 50, isAffilliate: false},
+  // Tagged with the all-events SENTINEL (shared lists/coupon-scope.ts), not
+  // with any event id: covers every event including ones created later, and
+  // never a product. The shape the admin Coupons dialog writes.
+  "coupon-events-free": {
+    isActive: true, code: "EVENTSFREE", percentOff: 100, isAffilliate: false,
+    tags: [{id: "__all_events__", tag: "All events"}],
+  },
 };
 
 // ---- contacts world -----------------------------------------------------
