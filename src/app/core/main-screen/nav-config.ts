@@ -144,6 +144,19 @@ export function sectionOfKey(key: string): NavSection | undefined {
   return group ? sectionOf(group) : undefined;
 }
 
+/**
+ * The label a group is DISPLAYED under: "CUSTOMERS MANAGER" shows as
+ * "CUSTOMERS". A render-only diet - the labels here are untouched because
+ * they feed permission screenKeys and the Reports tab shell reads its group
+ * by label. Here rather than on the drawer component (2026-09-03) because
+ * Home's "Your screens" list names groups too, and the two must agree.
+ * @param {string} label A NavGroup.label.
+ * @return {string} The label as the drawer shows it.
+ */
+export function displayGroupLabel(label: string): string {
+  return label.replace(/\s+manager$/i, '');
+}
+
 /** The role gate on a tab, if it has one. */
 export function sectionRoles(section: NavSection | undefined): Role[] | undefined {
   return section ? NAV_SECTIONS.find((s) => s.id === section)?.roles : undefined;

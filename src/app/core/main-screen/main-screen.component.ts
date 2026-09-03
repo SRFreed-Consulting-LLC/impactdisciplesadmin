@@ -15,7 +15,7 @@ import { ScreenPermissionsDialogComponent } from './screen-permissions-dialog/sc
 import { hasRole, Role } from '@impact-common/shared/lists/roles.enum';
 import {
   NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, NavSection, NavSectionDef,
-  keepsNavGroup, sectionOf
+  displayGroupLabel, keepsNavGroup, sectionOf
 } from './nav-config';
 import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
 
@@ -359,11 +359,10 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   }
 
   // Render-only label diet for the navy redesign: "CUSTOMERS MANAGER" shows
-  // as "CUSTOMERS" in the drawer. Display concern only - nav-config labels
-  // themselves are untouched because they feed permission screenKeys and the
-  // Reports Manager tab shell reads its group by label conventions.
+  // as "CUSTOMERS" in the drawer. The rule lives in nav-config.ts since
+  // 2026-09-03 so Home's "Your screens" list names groups the same way.
   displayGroupLabel(label: string): string {
-    return label.replace(/\s+manager$/i, '');
+    return displayGroupLabel(label);
   }
 
   toggleGroup(id: string): void {

@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
-import { NAV_CONFIG, NavGroup, NavLeaf } from '../main-screen/nav-config';
+import { NAV_CONFIG, NavGroup, NavLeaf, displayGroupLabel } from '../main-screen/nav-config';
 import {
   customerName as customerNameOf,
   isNewOrder,
@@ -204,7 +204,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private linkFor(group: NavGroup, leaf: NavLeaf): DashboardScreenLink {
-    return { group: group.label, label: leaf.label, path: `/${group.id}`, tab: leaf.slug };
+    // The drawer's own label diet ("CAMPAIGNS", not "CAMPAIGNS MANAGER") so
+    // the list and the drawer name a group the same way.
+    return { group: displayGroupLabel(group.label), label: leaf.label, path: `/${group.id}`, tab: leaf.slug };
   }
 
   ngOnDestroy(): void {

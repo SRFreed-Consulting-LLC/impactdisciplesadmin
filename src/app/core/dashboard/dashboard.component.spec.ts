@@ -80,6 +80,8 @@ describe('DashboardComponent (permission-gated Home)', () => {
       '/data?tab=disciple-making-minute'
     ]);
     expect(component.myScreens[0].label).toBe('Coaching with Impact');
+    // Group names as the drawer shows them - "PAGES", never "PAGE MANAGER".
+    expect(component.myScreens.map((s) => s.group)).toEqual(['PAGES', 'DATA']);
   });
 
   it('an Employee granted Fulfillment sees and loads Recent Orders only', () => {
