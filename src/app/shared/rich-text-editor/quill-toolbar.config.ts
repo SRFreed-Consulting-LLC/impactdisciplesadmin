@@ -1,5 +1,4 @@
 import { QuillModules } from 'ngx-quill';
-import { RICH_TEXT_PASTE_MATCHERS } from './quill-paste-cleanup';
 
 // Toolbar approximating the original dx-html-editor toolbar used across Web
 // Config, DMM Service, and the newsletter/prayer-request "send" screens.
@@ -9,16 +8,25 @@ import { RICH_TEXT_PASTE_MATCHERS } from './quill-paste-cleanup';
 // Undo/redo also has no default toolbar button in Quill (only the
 // Ctrl+Z/Ctrl+Y keyboard shortcuts, via its built-in history module).
 //
-// IT CARRIES THE PASTE CLEANUP TOO (2026-09-04), which is why this is the
-// thing every editor imports rather than each one assembling its own modules
-// object. Copy pasted from a rendered page brings that page's ink with it -
-// `background-color: rgb(255, 255, 255); color: rgb(34, 34, 34)`, sixteen
-// times over in the case that prompted this - which overrides the surface a
-// section is drawn on. A cleanup is only worth anything if it is impossible
-// to leave off a new editor, so it travels with the toolbar rather than being
-// a second import to remember. See quill-paste-cleanup.ts for what it drops
-// and why, and quill-semantic-html.ts for the separate, larger half of that
-// incident, which paste had nothing to do with.
+// A PASTE-CLEANUP MATCHER LIVED HERE FOR A DAY (2026-09-04) and is gone.
+//
+// It stripped the inline `color`/`background-color` that copy lifted from a
+// rendered page carries, which is a real annoyance: it overrides the surface
+// a section is drawn on. The matcher was still wrong, and the reason is worth
+// keeping so nobody adds it back the same way.
+//
+// A CLIPBOARD MATCHER IS NOT A PASTE HOOK. ngx-quill's valueSetter loads a
+// stored value with `quill.clipboard.convert()` - the very same path a paste
+// takes - so the matcher ran every time an editor OPENED. A colour somebody
+// chose deliberately from this toolbar was stripped on the next load and the
+// next save persisted the loss. Quill gives a matcher no way to tell the two
+// apart.
+//
+// Anything attempting this again has to hook the paste EVENT rather than the
+// conversion, and has to answer what happens to colour the toolbar set on
+// purpose. See quill-semantic-html.ts for the separate, larger half of that
+// incident - the one that actually broke a page, and had nothing to do with
+// pasting.
 export const RICH_TEXT_TOOLBAR: QuillModules = {
   toolbar: [
     [{ header: [1, 2, 3, 4, 5, false] }],
@@ -29,6 +37,5 @@ export const RICH_TEXT_TOOLBAR: QuillModules = {
     ['blockquote', 'code-block'],
     ['link', 'image'],
     ['clean']
-  ],
-  clipboard: { matchers: RICH_TEXT_PASTE_MATCHERS }
+  ]
 };
