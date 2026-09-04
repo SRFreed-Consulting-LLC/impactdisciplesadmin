@@ -8,6 +8,81 @@ every call site.
 
 ---
 
+## OPEN: the store's files have not moved under the tenant (2026-09-04)
+
+**Nothing has been done. The survey below is real; the script does not exist
+yet.** Parked deliberately, with the admin already changed around it.
+
+The image picker now opens at `tenants/impactdisciples.com/` and treats it as
+a floor, so an upload lands in the tenant's folder without anyone navigating
+there first (see `image-uploader.component.ts`'s `root` input). Products and
+product-series are the exception: they pass `root=""` because their files are
+still where they always were, and rooting them at the tenant before the files
+move would simply hide them.
+
+**What is actually there**, measured against prod on 2026-09-04:
+
+```
+Store/     34 objects, 29.4 MB   all images (29 PNG, 1 JPEG, 2 WebP)
+EBooks/    11 objects, 67.7 MB   5 PDFs (64.2 MB) + 5 cover images + a placeholder
+```
+
+43 documents name them - 35 `products`, 8 `series`, 0 `product_categories`.
+
+**MOVE THE IMAGES, LEAVE THE PDFs.** This is the whole reason the job is not
+a one-line change to `move-site-storage.js`'s prefix list. `EBooks/` is a
+mix: the covers are page furniture, but the five PDFs are **the deliverables
+customers have paid for** - one is a 54MB Christ Map - reached by download
+links and by the fulfilment path. An image that moves and is repointed costs
+nothing if it goes wrong; a paid download that moves and is missed is
+somebody who bought something and cannot have it.
+
+`scripts/move-site-storage.js` is the pattern to copy: dry run by default,
+never deletes the original, repoints the documents in a separate `--repoint`
+pass, and has a `--verify`. Its own header explains why Store/ and EBooks/
+were left out originally - "a site page showing a product photo is a
+cross-reference to a business asset". That reasoning was about COPYING and
+the drift a second copy invites; moving them, with the documents repointed,
+has no second copy and no drift, and the tenant root was renamed from `sites`
+precisely because it means everything the ministry owns rather than just the
+website. So the exclusion is worth revisiting - which is the owner's call
+(Shane, 2026-09-04: "maybe we need to put the products and product series
+images in the tenants folder").
+
+**Both environments share the prod bucket** (see `move-site-storage.js`), so
+there is no safe rehearsal on dev: moving an object moves it for the live
+store too.
+
+When it is done, drop the `root=""` overrides in
+`products.component.html` and `series-modal/series-modal.component.html` -
+both carry a comment naming this entry.
+
+---
+
+## OPEN: two smaller threads parked the same day (2026-09-04)
+
+**`www.impactdisciples.com` returns a Firebase 404.** DNS is fine - it CNAMEs
+to the apex, which resolves to Hosting's `199.36.158.100` - but `www` is not
+attached as a custom domain on the `impactdisciples-public` site, so Firebase
+serves its own "Site Not Found" page. It predates this week: a hosting deploy
+cannot attach or detach a domain. It matters slightly more than a stray
+hostname because `SITE_HOSTNAMES` in the shared tenancy config lists
+`www.impactdisciples.com` as a hostname serving this tenant, so config and
+reality disagree. Fixing it is a Firebase console action - connect the
+domain, or drop it from `SITE_HOSTNAMES`.
+
+**Quill cannot express "align left".** Verified, not assumed: the toolbar's
+Center and Right write `<p style="text-align: ...">`, Left writes nothing at
+all, and a stored `text-align: left` is dropped on the way back in. The
+consequence is narrow but will look like a bug one day - inside a column
+whose "Centred" toggle is on, an author cannot range a single paragraph left.
+Centre and right work; outside a centred column it does not arise, left being
+the default. For LIST items Quill drops alignment in every direction, which
+is why the kit decides list alignment in CSS rather than leaving it to the
+editor.
+
+---
+
 ## RESOLVED: every space Quill saved was a `&nbsp;` (2026-09-04)
 
 **Both environments repaired the same day; the cause is fixed in the app.** Kept
