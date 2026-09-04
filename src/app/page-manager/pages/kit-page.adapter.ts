@@ -68,6 +68,24 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     descriptionLabel: 'Copy',
     imageLabel: 'Picture (square)'
   },
+  'list/quoteCards': {
+    noun: 'quote',
+    // The card puts the QUOTE first and the name under it, but this editor
+    // draws entry fields in one fixed order for every variant - title in the
+    // top row, the long fields below it. So the name sits above the quote
+    // HERE while the card reads the other way round, and the note says so
+    // rather than leaving staff to discover it from the preview. Swapping the
+    // two fields would line them up, but a quote needs the multi-line control
+    // and the title row is a single-line input.
+    note: 'The quote is the first thing on the card. Who said it reads as a '
+      + 'footnote underneath it, the way an attribution does - so a card can '
+      + 'be read as a quote first and a name second.',
+    fields: { image: true, title: true, description: true, body: true },
+    imageLabel: 'Photo (square)',
+    titleLabel: 'Who said it',
+    descriptionLabel: 'The quote',
+    bodyLabel: 'Their role or church (optional)'
+  },
   'list/icon': {
     noun: 'tile',
     fields: { title: true, icon: true, body: true, cta: true },
