@@ -80,11 +80,13 @@ const ENTRY_SPECS: Record<string, EntrySpec> = {
     note: 'The quote is the first thing on the card. Who said it reads as a '
       + 'footnote underneath it, the way an attribution does - so a card can '
       + 'be read as a quote first and a name second.',
-    fields: { image: true, title: true, description: true, body: true },
+    // No role/church line: a name under a quote is the whole attribution, and
+    // a second optional box that most cards leave empty is one more thing to
+    // decide about on every entry.
+    fields: { image: true, title: true, description: true },
     imageLabel: 'Photo (square)',
     titleLabel: 'Who said it',
-    descriptionLabel: 'The quote',
-    bodyLabel: 'Their role or church (optional)'
+    descriptionLabel: 'The quote'
   },
   'list/icon': {
     noun: 'tile',
