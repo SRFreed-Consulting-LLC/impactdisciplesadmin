@@ -254,7 +254,9 @@
                  list). A routerLink, not a dialog opened from here: the
                  dialog and the create logic belong to the lazily-loaded Page
                  Manager, and ?new=1 is how this row asks it to start. -->
-            @if (group.id === 'page-manager') {
+            <!-- Admin/Root only: an Employee granted a page may edit that
+                 page, not add to the site (2026-09-03). -->
+            @if (group.id === 'page-manager' && canCreatePages()) {
               <div class="impact-drawer__subitem">
                 <a
                   mat-list-item

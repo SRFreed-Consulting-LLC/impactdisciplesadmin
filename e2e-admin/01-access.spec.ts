@@ -69,6 +69,12 @@ test.describe('[access] Access Control', () => {
     await expect(page.getByRole('link', { name: 'Coaching with Impact', exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('link', { name: 'About Us', exact: true })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Home', exact: true })).toHaveCount(0);
+    // Editing a page is not adding to the site: no "+ New Page" row, and the
+    // ?new=1 the row would have sent opens nothing.
+    await expect(page.getByRole('link', { name: /New Page/ })).toHaveCount(0);
+    await page.goto(`${ADMIN_URL}/page-manager?new=1`);
+    await page.waitForTimeout(3000);
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
 
     // And the editor itself refuses a page they were not granted: a typed
     // URL for About Us opens the editor on the granted page - the URL is

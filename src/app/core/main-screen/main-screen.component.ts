@@ -365,6 +365,13 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     return displayGroupLabel(label);
   }
 
+  /** Whether the "+ New Page" row is offered: Admin/Root only. An Employee
+   *  granted a page may edit that page, not add to the site (2026-09-03);
+   *  PageManagerComponent refuses a typed ?new=1 on the same test. */
+  canCreatePages(): boolean {
+    return this.permissionService.isFullAccess();
+  }
+
   toggleGroup(id: string): void {
     if (this.expanded.has(id)) {
       // Collapsing the open group leaves NOTHING open, deliberately: a group

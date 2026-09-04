@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, map } from 'rxjs';
+import { PermissionService } from 'src/app/common/services/permission.service';
 import { NewRecordAlertsService, NewRecordCounts } from 'src/app/common/services/data/new-record-alerts.service';
 import { EventRegistrationService } from 'src/app/common/services/data/event-registration.service';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -12,6 +13,12 @@ import { NewRecordTracker } from '../new-record-tracking.util';
 interface AlertSource {
   key: keyof NewRecordCounts;
   label: string;
+  // The screen this source's records live on. An entry shows only to
+  // someone who could open that screen - a count of new purchases is a
+  // fact about purchases, and until 2026-09-03 the bell announced all
+  // three sources to every Employee regardless of grants (the same leak
+  // Home's previews had). Same keys as DASHBOARD_SECTION_KEYS.
+  screenKey: string;
   // Only Event Registrations still deep-links elsewhere - it has no live,
   // dedicated view on the Dashboard the way Purchases/Form Submissions
   // now do (Recent Orders / New Requests, both live - see
@@ -50,10 +57,16 @@ const ALERT_SOURCES: AlertSource[] = [
   // the real case looks the target event's own isSummit flag up and routes
   // to 'summit' instead of 'events' when it's a Summit event, now that
   // those are two separate nav items/screens (nav-config.ts).
-  { key: 'eventRegistrations', label: 'Event Registrations', route: ['/events-manager'], queryParams: { tab: 'events' } },
-  { key: 'formSubmissions', label: 'Form Submissions' },
-  { key: 'purchases', label: 'Purchases' }
+  { key: 'eventRegistrations', label: 'Event Registrations', screenKey: 'events-manager.events', route: ['/events-manager'], queryParams: { tab: 'events' } },
+  { key: 'formSubmissions', label: 'Form Submissions', screenKey: 'data.custom-form-submissions' },
+  { key: 'purchases', label: 'Purchases', screenKey: 'contacts-manager.fulfillment' }
 ];
+
+/** The sources the signed-in person may be told about - exported so a spec
+ *  can pin the gate without standing up the component's six services. */
+export function visibleAlertSources(canView: (screenKey: string) => boolean): AlertSource[] {
+  return ALERT_SOURCES.filter((source) => canView(source.screenKey));
+}
 
 interface AlertEntry extends AlertSource {
   count: number;
@@ -66,6 +79,10 @@ interface AlertEntry extends AlertSource {
     standalone: false
 })
 export class NewRecordAlertsComponent {
+  // inject(), not a constructor parameter: new code, house style; declared
+  // before entries$ is built in the constructor.
+  private readonly permissionService = inject(PermissionService);
+
   entries$: Observable<AlertEntry[]>;
   total$: Observable<number>;
 
@@ -77,8 +94,10 @@ export class NewRecordAlertsComponent {
     private formSubmissionService: FormSubmissionService,
     private router: Router
   ) {
+    // Re-evaluated per count emission, so a grant that lands after the
+    // first render (the cold-load race) is honoured on the next tick.
     this.entries$ = this.service.counts$.pipe(
-      map((counts) => ALERT_SOURCES
+      map((counts) => visibleAlertSources((key) => this.permissionService.canView(key))
         .map((source) => ({ ...source, count: counts[source.key] ?? 0 }))
         .filter((entry) => entry.count > 0)
       )

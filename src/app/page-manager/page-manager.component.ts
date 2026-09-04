@@ -107,7 +107,9 @@ export class PageManagerComponent extends TabShellComponent implements OnInit {
     this.route.queryParamMap
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((params) => {
-        if (params.get('new') === '1' && !this.newPageDialogOpen) {
+        // Admin/Root only - the drawer hides the row from everyone else,
+        // and a typed ?new=1 must not be the way round that (2026-09-03).
+        if (params.get('new') === '1' && !this.newPageDialogOpen && this.permissionService.isFullAccess()) {
           this.openNewPageDialog();
         }
       });
