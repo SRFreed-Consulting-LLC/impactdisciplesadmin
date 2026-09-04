@@ -55,6 +55,23 @@
           <mat-icon>mark_email_read</mat-icon>
           Send Confirmation Email to Contact
         </button>
+        <!-- The same decision, in the same place: shipped either way, and the
+             customer may already know. Confirms first - it tells them nothing. -->
+        <button mat-stroked-button type="button" [disabled]="busy"
+          matTooltip="Close this order without sending the contact an email"
+          (click)="closeWithoutEmail()">
+          @if (busy === 'closeNoEmail') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>done_all</mat-icon> }
+          Close Without Emailing
+        </button>
+        <!-- Change what that button sends, for good. Closes this dialog first -
+             the designer is a full-screen route. -->
+        @if (canEditConfirmationEmail) {
+          <button mat-button type="button" (click)="editConfirmationEmail()"
+            matTooltip="Edit the email this sends">
+            <mat-icon>edit</mat-icon>
+            Edit this email
+          </button>
+        }
       }
       @case ('shipping_label_printed') {
         <button mat-raised-button color="primary" type="button" [disabled]="busy" (click)="markPackaged()">

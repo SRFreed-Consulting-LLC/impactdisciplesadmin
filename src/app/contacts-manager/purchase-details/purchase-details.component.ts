@@ -409,6 +409,36 @@ export class PurchaseDetailsComponent {
     });
   }
 
+  /**
+   * Closes an Amazon order without emailing the customer.
+   *
+   * Offered beside Send Confirmation on all three workflow surfaces: the
+   * order shipped either way, and the customer may already have been told.
+   * Confirmed first because they are told nothing at all.
+   *
+   * Unlike the other two surfaces this screen STAYS OPEN afterwards - it is
+   * the record of one purchase, not a queue of work - so the local copy is
+   * updated from what was saved rather than the view being closed.
+   */
+  async closeWithoutEmail(): Promise<void> {
+    if (this.busy) {
+      return;
+    }
+    const proceed = await this.confirmService.confirm(
+      `Close this order without emailing <b>${this.selectedItem.email}</b>? ` +
+      'They will not be told their order shipped.',
+      'Close without emailing'
+    );
+    if (!proceed) {
+      return;
+    }
+    void this.run('closeNoEmail', async () => {
+      const saved = await this.service.closeWithoutConfirmation(this.selectedItem);
+      this.selectedItem.fulfillmentStatus = saved.fulfillmentStatus;
+      this.selectedItem.statusHistory = saved.statusHistory;
+      this.snackbar.success('Order closed - no email sent');
+    });
+  }
   // ---- Back-step (this screen only, per the user 2026-08-19) ----
   // The earlier steps of THIS order's path (Amazon vs standard), most
   // recent first - including reopening a closed order. Every move is

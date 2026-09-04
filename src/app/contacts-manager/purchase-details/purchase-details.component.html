@@ -223,6 +223,14 @@
             <mat-icon>mark_email_read</mat-icon>
             Send Confirmation Email to Contact
           </button>
+          <!-- The same decision, in the same place: shipped either way, and the
+               customer may already know. Confirms first - it tells them nothing. -->
+          <button mat-stroked-button type="button" [disabled]="busy"
+            matTooltip="Close this order without sending the contact an email"
+            (click)="closeWithoutEmail()">
+            @if (busy === 'closeNoEmail') { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>done_all</mat-icon> }
+            Close Without Emailing
+          </button>
           <!-- See (and change) what that button is about to send, without
                going hunting for it by name in System Templates. -->
           @if (canEditConfirmationEmail) {

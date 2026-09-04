@@ -11,6 +11,9 @@ import { PermissionService } from 'src/app/common/services/permission.service';
 import { FulfillmentStep, WorkflowAction, segmentState, stepsFor } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
 import { AmazonConfirmationDialogComponent } from '../amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { SnackbarService } from '../snackbar.service';
+import { ConfirmService } from '../confirm-dialog/confirm.service';
+import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
+import { AMAZON_CONFIRMATION_TEMPLATE_NAME } from 'src/app/common/services/data/purchases.service';
 
 export interface OrderWorkflowDialogData {
   item: CheckoutForm;
@@ -52,7 +55,9 @@ export class OrderWorkflowDialogComponent {
     private permissionService: PermissionService,
     private router: Router,
     private snackbar: SnackbarService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private confirmService: ConfirmService,
+    private templateEditor: EmailTemplateEditorService
   ) {
     this.item = data.item;
   }
@@ -143,6 +148,47 @@ export class OrderWorkflowDialogComponent {
     });
   }
 
+  get canEditConfirmationEmail(): boolean {
+    return this.templateEditor.canEdit();
+  }
+
+  /**
+   * Opens the designer on the template this step sends.
+   *
+   * Closes this dialog first, which the other two surfaces do not have to:
+   * the designer is a full-screen route, and navigating underneath a modal
+   * leaves it floating over the editor with no way back to the order.
+   */
+  editConfirmationEmail(): void {
+    this.dialogRef.close(false);
+    void this.templateEditor.openByName(AMAZON_CONFIRMATION_TEMPLATE_NAME, { from: 'fulfillment' });
+  }
+  /**
+   * Closes an Amazon order without emailing the customer.
+   *
+   * Same decision as Send Confirmation and offered in the same place: the
+   * order shipped either way, and the customer may already know. Confirmed
+   * first because they are told nothing at all, and terminal like the send -
+   * the dialog closes and the caller refreshes.
+   */
+  async closeWithoutEmail(): Promise<void> {
+    if (this.busy) {
+      return;
+    }
+    const proceed = await this.confirmService.confirm(
+      `Close this order without emailing <b>${this.item.email}</b>? ` +
+      'They will not be told their order shipped.',
+      'Close without emailing'
+    );
+    if (!proceed) {
+      return;
+    }
+    void this.run('closeNoEmail', async () => {
+      await this.service.closeWithoutConfirmation(this.item);
+      this.snackbar.success('Order closed - no email sent');
+      this.dialogRef.close(true);
+    });
+  }
   markPackaged(): void {
     void this.run('packaged', async () => {
       await this.service.markPackaged(this.item);
