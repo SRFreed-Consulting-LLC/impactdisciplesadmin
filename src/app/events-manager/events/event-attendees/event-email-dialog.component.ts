@@ -14,6 +14,7 @@ import { SnackbarService } from '../../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../../shared/rich-text-editor/variable-inserter.component';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
+import { sendResultMessage } from 'src/app/common/utils/email/send-result-message';
 
 export interface EventEmailDialogData {
   eventId: string | undefined;
@@ -232,9 +233,7 @@ export class EventEmailDialogComponent implements OnInit {
       });
 
       const result = await this.campaignService.enqueueEmail(touch.id!);
-      this.snackbar.success(
-        `Email queued to ${result.recipients} registrant(s) - ` +
-        `${result.sentImmediately} sent immediately.`);
+      this.snackbar.success(sendResultMessage(result));
       this.dialogRef.close(true);
     } catch (err) {
       this.snackbar.error('Send failed: ' + ((err as Error)?.message ?? err));

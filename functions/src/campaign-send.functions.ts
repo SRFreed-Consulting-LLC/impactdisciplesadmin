@@ -46,17 +46,155 @@ import {
 // and click-redirect endpoints resolve recipients by token so no email
 // address ever rides in a tracked URL.
 //
-// Pacing: MAX_SENDS_PER_RUN per hourly tick. The Trigger Email extension
-// relays through the org's OWN mail server (mail.impactdisciples.com:26 -
-// verified 2026-08-18), a shared-hosting-style server whose hourly cap is
-// unconfirmed; 200/hour is the conservative default until the hosting
-// provider confirms a number. A full-list blast (~2,400) therefore rolls
-// out over ~12 hours - accepted by the user (2026-08-18 Q&A).
+// PACING / THROTTLE (rewritten 2026-09-04, when the hosting provider
+// confirmed the real ceiling).
+//
+// The Trigger Email extension relays through the org's OWN mail server
+// (mail.impactdisciples.com:26), whose cap the provider has now confirmed at
+// 2,000 messages per hour. Until then this file carried a flat
+// MAX_SENDS_PER_RUN = 200 per hourly tick, chosen as a guess.
+//
+// THAT NUMBER WAS NEVER A THROTTLE, which is the thing to understand before
+// changing it. It bounded one code path - the scheduler's drain - while
+// three others reached the same relay uncounted:
+//   - enqueueCampaignEmail drains IMMEDIATE_DRAIN_BUDGET more on every
+//     "Send now", as many times an hour as an admin clicks;
+//   - sendCampaignTestEmail queues outside any budget;
+//   - every TRANSACTIONAL email (receipts, event confirmations, subscription
+//     confirmations, library invites, lockout alerts) and every admin-
+//     composed client-side send (Amazon shipping confirmations, route
+//     requests) writes `mail` directly and was never counted at all.
+// The real hourly rate was therefore "200 plus whatever else happened". That
+// was safe only because 200 sat an order of magnitude under the true cap -
+// raising the same constant to 2000 would have spent the entire margin on
+// campaign mail and let the uncounted paths push the total over the cap.
+//
+// So the budget is now measured, not assumed: WHAT WE COUNT IS THE `mail`
+// COLLECTION ITSELF (mailQueuedLastHour below), over a rolling 60 minutes.
+// Every email of every kind lands there - that collection IS what the relay
+// sees - so transactional mail, test sends and admin-composed sends all
+// consume budget automatically, and no future send path can be added that
+// quietly escapes the throttle. A rolling window is deliberately stricter
+// than a clock-hour one: any clock hour is itself a 60-minute window, so
+// holding every rolling window under the cap holds every clock hour under it
+// too, whichever way the provider measures.
+//
+// TRANSACTIONAL_RESERVE is the slice campaigns may never eat into. A receipt
+// is time-critical and a blast is not, so a customer who buys something
+// during a 2,000-recipient send must not wait behind it.
+//
+// Shape: small runs, often. MAX_SENDS_PER_RUN caps ONE tick; the rolling
+// count is what enforces the hour. Draining ~2,000 in a single hourly burst
+// would blow the function timeout (sendLedgerDoc is serial, ~6 Firestore
+// round trips each), leave hundreds of ledger docs stranded in 'pending'
+// until PENDING_RETRY_AGE_MS, and hammer the two denormalized stats counters
+// well past Firestore's ~1 write/sec per-document guidance. Six ticks an
+// hour of ~300 stays inside every one of those limits and reaches the same
+// 1,800/hour - and it makes scheduled touches punctual to 10 minutes rather
+// than 60 as a side benefit.
 
-const MAX_SENDS_PER_RUN = 200;
+/** The relay's confirmed ceiling (hosting provider, 2026-09-04). */
+const SMTP_HOURLY_CAP = 2000;
+/** Held back from campaign sends for transactional + ad-hoc staff mail. */
+const TRANSACTIONAL_RESERVE = 200;
+/** How often campaignSendScheduler ticks. Keep in step with the schedule
+ *  string on the function itself - MAX_SENDS_PER_RUN is sized against it. */
+const SCHEDULER_INTERVAL_MINUTES = 10;
+/** Campaign mail permitted per hour, once the reserve is set aside. */
+const CAMPAIGN_HOURLY_BUDGET = SMTP_HOURLY_CAP - TRANSACTIONAL_RESERVE;
+/** Ceiling for ONE tick - an even share of the hour across the ticks in it.
+ *  DERIVED rather than typed so the two cannot drift: halving the interval
+ *  without halving this would double the burst each run makes, and the
+ *  rolling counter would absorb it silently by simply going idle for the
+ *  rest of the hour, which is the lumpy shape this pacing exists to avoid.
+ *  The rolling-hour budget remains the real limit; this only shapes it. */
+const MAX_SENDS_PER_RUN = Math.ceil(
+  CAMPAIGN_HOURLY_BUDGET / (60 / SCHEDULER_INTERVAL_MINUTES)
+);
+/** Wall-clock the drain loop may spend, leaving room inside timeoutSeconds
+ *  to finish cleanly rather than being killed mid-send. */
+const DRAIN_TIME_BUDGET_MS = 3.5 * 60 * 1000;
+/** Budget assumed when the rolling count cannot be read (see
+ *  mailQueuedLastHour) - conservative, and below the flat per-tick rate this
+ *  engine already ran on safely. */
+const DEGRADED_RUN_BUDGET = 100;
+const HOUR_MS = 60 * 60 * 1000;
+
 const IMMEDIATE_DRAIN_BUDGET = 25;
 const PENDING_RETRY_AGE_MS = 2 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * How many sends this run may make: whatever the rolling hour has left,
+ * clamped to the per-run ceiling. Pure, so the arithmetic is unit-testable
+ * without an emulator (functions/test/campaign-pure.test.js).
+ * @param {number} queuedLastHour Mail docs created in the last 60 minutes.
+ * @param {number} runCeiling Max this single run may send.
+ * @return {number} Sends permitted now; 0 when the hour is spent.
+ */
+export function campaignSendBudget(
+  queuedLastHour: number,
+  runCeiling: number
+): number {
+  const remaining = CAMPAIGN_HOURLY_BUDGET - Math.max(0, queuedLastHour);
+  return Math.max(0, Math.min(runCeiling, remaining));
+}
+
+/**
+ * Counts every email queued in the last rolling hour.
+ *
+ * A count() aggregation, not a fetch - `mail` documents carry full message
+ * bodies, and reading a thousand of them to learn a number would cost more
+ * than the send. `date` is a single field, so Firestore's automatic index
+ * covers this; no composite index is needed.
+ *
+ * Both writers stamp `date` at queue time (queueMail here, EMailService in
+ * the Angular app), so this measures what we have HANDED to the relay rather
+ * than what it has finished sending - the conservative side, and the only
+ * side we control.
+ *
+ * Failure is swallowed on purpose: a throttle that cannot read its meter
+ * must not stall every campaign in the system. The caller falls back to
+ * DEGRADED_RUN_BUDGET and says so in the log.
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @return {Promise<number | null>} The count, or null when unreadable.
+ */
+async function mailQueuedLastHour(
+  db: FirebaseFirestore.Firestore
+): Promise<number | null> {
+  try {
+    const since = Timestamp.fromMillis(Date.now() - HOUR_MS);
+    // A LITERAL, like the onCampaignMailDelivered trigger below and for the
+    // same reason: `mail` belongs to the Trigger Email extension and is
+    // pinned out of TENANT_COLLECTIONS, so it cannot move.
+    const snap = await db.collection("mail")
+      .where("date", ">=", since).count().get();
+    return snap.data().count;
+  } catch (err) {
+    console.error(
+      "Could not measure the last hour of mail - falling back to a reduced " +
+      `budget of ${DEGRADED_RUN_BUDGET} sends for this run.`, err
+    );
+    return null;
+  }
+}
+
+/**
+ * The measured budget for one run, with the degraded fallback applied.
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @param {number} runCeiling Max this single run may send.
+ * @return {Promise<number>} Sends permitted now.
+ */
+async function currentSendBudget(
+  db: FirebaseFirestore.Firestore,
+  runCeiling: number
+): Promise<number> {
+  const queued = await mailQueuedLastHour(db);
+  if (queued === null) {
+    return Math.min(runCeiling, DEGRADED_RUN_BUDGET);
+  }
+  return campaignSendBudget(queued, runCeiling);
+}
 
 type AudienceSpec = {
   mode?: "everyone" | "flags" | "tags" | "list";
@@ -466,13 +604,23 @@ async function sendLedgerDoc(
 /**
  * Drains up to `budget` queued ledger docs, oldest first (composite index
  * campaign_sends(status, createdAt)).
+ *
+ * TIME-BOXED as well as count-boxed. sendLedgerDoc is serial and makes
+ * several Firestore round trips per email, so a large budget on a slow day
+ * can outlast the function timeout - and being killed mid-drain is the
+ * expensive failure here: every reservation already flipped to `pending`
+ * stays there until the stale-pending sweep reclaims it PENDING_RETRY_AGE_MS
+ * later. Stopping voluntarily just leaves the rest `queued` for the next
+ * tick, which is minutes away.
  * @param {FirebaseFirestore.Firestore} db Firestore.
  * @param {number} budget Max sends.
+ * @param {number} [timeBudgetMs] Wall-clock ceiling for the loop.
  * @return {Promise<number>} How many were processed.
  */
 async function drainQueued(
   db: FirebaseFirestore.Firestore,
-  budget: number
+  budget: number,
+  timeBudgetMs = DRAIN_TIME_BUDGET_MS
 ): Promise<number> {
   if (budget <= 0) {
     return 0;
@@ -483,10 +631,20 @@ async function drainQueued(
     .limit(budget)
     .get();
   const touchCache = new Map<string, TouchDoc | null>();
+  const deadline = Date.now() + timeBudgetMs;
+  let sent = 0;
   for (const doc of snap.docs) {
+    if (Date.now() >= deadline) {
+      console.warn(
+        `drainQueued: stopped after ${sent}/${snap.size} sends - out of time ` +
+        "this run; the remainder stays queued for the next tick."
+      );
+      break;
+    }
     await sendLedgerDoc(db, doc, touchCache);
+    sent++;
   }
-  return snap.size;
+  return sent;
 }
 
 // ---- Callables (Admin-role; the client wizard/editor gates further via
@@ -522,9 +680,13 @@ export const enqueueCampaignEmail = onCall(
       {id: campaignSnap.id, ...campaignSnap.data()} as CampaignDoc;
 
     const counts = await enqueueTouch(db, touch, campaign);
-    // Small sends feel instant; anything beyond the immediate budget
-    // drains on the hourly ticks.
-    const drained = await drainQueued(db, IMMEDIATE_DRAIN_BUDGET);
+    // Small sends feel instant; anything beyond the immediate budget drains
+    // on the scheduler ticks. Clamped by the SAME rolling-hour budget the
+    // scheduler uses - this path used to be pure addition on top of the
+    // hourly number, so an admin sending several touches in one hour could
+    // push the relay past its cap with nothing anywhere noticing.
+    const drained = await drainQueued(
+      db, await currentSendBudget(db, IMMEDIATE_DRAIN_BUDGET));
     await finalizeSendingTouches(db);
     return {...counts, sentImmediately: drained};
   }
@@ -574,13 +736,14 @@ export const sendCampaignTestEmail = onCall(async (request):
 
 export const campaignSendScheduler = onSchedule(
   {
-    schedule: "every 60 minutes",
+    // Six ticks an hour, not one - see the PACING / THROTTLE note at the
+    // top of this file. SCHEDULER_INTERVAL_MINUTES must match this string.
+    schedule: "every 10 minutes",
     timeZone: "America/New_York",
     timeoutSeconds: 300,
   },
   async () => {
     const db = getFirestore();
-    const budget = MAX_SENDS_PER_RUN;
 
     // 1. Stale 'pending' reservations (a crashed run) go back to queued -
     //    same at-most-once-ish tradeoff the v1 scheduler documented.
@@ -690,8 +853,23 @@ export const campaignSendScheduler = onSchedule(
     }
 
     // 4. Drain the queue within budget, then close out finished touches.
-    await drainQueued(db, budget);
+    // Measured HERE rather than at the top of the tick: steps 1-3 above scan
+    // collections and can take seconds, and a receipt queued in that window
+    // has to count. 0 means the hour is already spent, so this tick does the
+    // bookkeeping above and sends nothing.
+    const budget = await currentSendBudget(db, MAX_SENDS_PER_RUN);
+    const sent = await drainQueued(db, budget);
     await finalizeSendingTouches(db);
+    // One line per tick is what makes the throttle auditable after the
+    // fact - "did we stay under the cap last night?" should be answerable
+    // from the logs without reconstructing it from the mail collection.
+    if (sent > 0 || budget === 0) {
+      console.log(
+        `campaignSendScheduler: sent ${sent} of a ${budget} budget ` +
+        `(cap ${SMTP_HOURLY_CAP}/hour, ${TRANSACTIONAL_RESERVE} reserved ` +
+        "for transactional)."
+      );
+    }
   }
 );
 

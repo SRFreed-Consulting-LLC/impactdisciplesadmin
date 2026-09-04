@@ -35,6 +35,7 @@ import {
 } from 'src/app/tools-manager/email-designer/template-picker/template-picker-dialog.component';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { SaveAsTemplateDialogComponent } from './save-as-template-dialog.component';
+import { sendResultMessage } from 'src/app/common/utils/email/send-result-message';
 
 // ONE screen for a campaign email: design it and schedule it together
 // (2026-08-21). Replaces the old split where EmailTouchEditorComponent
@@ -511,7 +512,7 @@ export class CampaignEmailEditorComponent implements OnInit {
           return;
         }
         await this.persist('sending');
-        this.snackbar.success('Automation activated - the hourly scheduler owns it now.');
+        this.snackbar.success('Automation activated - the send scheduler owns it now.');
         this.backToCampaign();
         return;
       }
@@ -519,14 +520,14 @@ export class CampaignEmailEditorComponent implements OnInit {
       const preview = await this.campaignService.previewAudience(audience);
       const confirmed = await this.confirmService.confirm(
         `Send "${this.form.value.subject}" to <b>${preview.count}</b> recipient(s)? ` +
-        'Large sends roll out in paced hourly batches.', 'Confirm Send');
+        'Large sends roll out in paced batches, kept under the hourly sending limit.',
+        'Confirm Send');
       if (!confirmed) {
         return;
       }
       const saved = await this.persist();
       const result = await this.campaignService.enqueueEmail(saved.id!);
-      this.snackbar.success(
-        `Queued ${result.queued} of ${result.recipients} - ${result.sentImmediately} sent immediately.`);
+      this.snackbar.success(sendResultMessage(result));
       this.backToCampaign();
     } catch (err) {
       this.snackbar.error('Send failed: ' + ((err as Error)?.message ?? err));

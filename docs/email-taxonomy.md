@@ -52,7 +52,8 @@ log over `campaign_emails`.
 **Phase 2 (send engine, 2026-08-18)**: every campaign email sends through ONE server-side path,
 `functions/src/campaign-send.functions.ts` — callables `enqueueCampaignEmail` /
 `previewCampaignAudience` (same audience resolver as send-time, so previews can't lie) /
-`sendCampaignTestEmail`, plus hourly `campaignSendScheduler` (drains queued sends 200/hour,
+`sendCampaignTestEmail`, plus `campaignSendScheduler` every 10 minutes (drains queued sends
+under the rolling-hour throttle below,
 activates scheduled touches, runs tag-triggered automations — the old auto-campaign behavior is
 now a touch's `sendConfig.mode: 'tagTriggered'`; `campaign-auto-send.functions.ts` is deleted).
 Per-recipient ledger `campaign_sends/{emailDocId}__{email}` (atomic create = at-most-once per
@@ -60,8 +61,20 @@ touch; carries a crypto `token` for Phase 3 tracking + `unsubType`); `queueMail(
 `campaignMeta` and `onCampaignMailDelivered` (onDocumentUpdated mail/{id}) writes the Trigger
 Email extension's SUCCESS state back as delivered counts. Every campaign send gets an unsubscribe
 link (template's `*|UNSUB|*` or an appended fallback footer — never doubled). SMTP relay is the
-org's OWN server (`mail.impactdisciples.com:26`, verified) — hourly cap unconfirmed with the
-host; 200/hour pacing is deliberate. UI: campaign-wizard (goal/audience/window; web channel
+org's OWN server (`mail.impactdisciples.com:26`, verified). **Throttle (rewritten 2026-09-04, when
+the host confirmed the cap at 2,000/hour):** the old `MAX_SENDS_PER_RUN = 200` was a per-run
+budget on one code path, NOT a throttle — the +25 immediate drain on every "Send now", test
+sends, and every transactional and admin-composed email reached the same relay uncounted, so the
+real rate was "200 plus whatever else happened" and was safe only by sitting far under the cap.
+The budget is now MEASURED: `mailQueuedLastHour()` counts the `mail` collection itself over a
+rolling 60 minutes (a `count()` aggregation; `date` needs no composite index), so every send path
+consumes budget automatically and a new one cannot escape it. 200/hour is reserved for
+transactional mail, leaving campaigns 1,800 — spread over six ticks of ~300 rather than one burst,
+because ~2,000 serial sends would exceed the function timeout, strand ledger docs in `pending` for
+`PENDING_RETRY_AGE_MS`, and push the two denormalized stats counters past Firestore's ~1 write/sec
+per-document guidance. The drain loop is time-boxed for the same reason. `campaignSendBudget()` is
+a pure export, unit-tested in `functions/test/campaign-pure.test.js`. A full-list blast (~2,400)
+now rolls out in ~1.5 hours rather than ~12. UI: campaign-wizard (goal/audience/window; web channel
 visible but disabled until Phase 5) + email-touch-editor (template-snapshot content — editing a
 template later never rewrites campaign history; send now / schedule / tag-trigger; send-test).
 Composite indexes `campaign_sends(status, createdAt)` + `campaign_sends(emailId, status)`.

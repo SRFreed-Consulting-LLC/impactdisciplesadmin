@@ -14,6 +14,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { RICH_TEXT_TOOLBAR } from '../../shared/rich-text-editor/quill-toolbar.config';
 import { insertQuillVariable } from '../../shared/rich-text-editor/variable-inserter.component';
+import { sendResultMessage } from 'src/app/common/utils/email/send-result-message';
 
 export interface SendSubscriptionDialogData {
   // Which audience this send targets. Always the WHOLE audience for this
@@ -120,7 +121,8 @@ export class SendSubscriptionDialogComponent {
       const preview = await this.campaignService.previewAudience(audience);
       const confirmed = await this.confirmService.confirm(
         `Send "${subject}" to <b>${preview.count}</b> ${kindLabel.toLowerCase()} subscriber(s)? ` +
-        'Large sends roll out in paced hourly batches.', `Confirm ${kindLabel}`);
+        'Large sends roll out in paced batches, kept under the hourly sending limit.',
+        `Confirm ${kindLabel}`);
       if (!confirmed) {
         return;
       }
@@ -163,9 +165,7 @@ export class SendSubscriptionDialogComponent {
       });
 
       const result = await this.campaignService.enqueueEmail(touch.id!);
-      this.snackbar.success(
-        `${kindLabel} queued to ${result.recipients} recipient(s) - ` +
-        `${result.sentImmediately} sent immediately, the rest go out in hourly batches.`);
+      this.snackbar.success(sendResultMessage(result, kindLabel.toLowerCase()));
       this.dialogRef.close(true);
     } catch (err) {
       this.snackbar.error('Send failed: ' + ((err as Error)?.message ?? err));
