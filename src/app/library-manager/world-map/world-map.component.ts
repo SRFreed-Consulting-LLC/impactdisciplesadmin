@@ -21,6 +21,13 @@ interface UserLocation {
   country?: string;
 }
 
+/** CARTO Basemaps key. Since 2026 CARTO stamps "API KEY REQUIRED" across
+ *  every tile served without one (Shane saw the map covered in it on
+ *  2026-09-04). Free tier, 5M tiles/month, registered to the admin domains
+ *  and locked to them, so it is a public key like the Firebase apiKeys in
+ *  the shared config - fine to ship in the bundle. Regenerate at
+ *  carto.com/basemaps/apikey. */
+const CARTO_BASEMAPS_KEY = 'cb1_2wr3_1_c3522e86bdefd6fe319914bf';
 const COUNTRY_BORDERS_URL = 'assets/world-countries.geo.json';
 const COUNTRY_BORDER_COLOR = '#2f7dff';
 
@@ -111,7 +118,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // consistent one - a jarring, inconsistent mix of scripts across the
     // same map. Country shapes plus the blue borders overlay are enough to
     // orient by without needing place-name labels at all.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_BASEMAPS_KEY}`, {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 19,
