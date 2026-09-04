@@ -1,5 +1,8 @@
 import { Component, HostBinding } from '@angular/core';
 import { NavigationEnd, NavigationError, Router } from '@angular/router';
+import { filter, take } from 'rxjs';
+import { AppVersionService } from 'src/app/common/services/app-version.service';
+import { SnackbarService } from 'src/app/shared/snackbar.service';
 import { ScreenService } from 'src/app/common/services/utils/screen.service';
 import { ThemeService } from 'src/app/common/services/utils/theme.service';
 
@@ -25,7 +28,32 @@ export class AppComponent {
   // providedIn: 'root' service isn't constructed until something injects it,
   // and before this it was only injected by the Settings screen - so an
   // admin's saved theme wasn't applied until they happened to open Settings.
-  constructor(private screen: ScreenService, private router: Router, private theme: ThemeService) {
+  constructor(
+    private screen: ScreenService,
+    private router: Router,
+    private theme: ThemeService,
+    private version: AppVersionService,
+    private snackbar: SnackbarService
+  ) {
+    // The proactive half of the stale-chunk problem the recovery below handles
+    // reactively: tell people their tab is out of date BEFORE they press
+    // something that quietly fails, rather than hard-reloading them after a
+    // navigation has already broken. Only a route change reaches the recovery;
+    // a stale chunk inside a button handler reaches nothing at all.
+    //
+    // Never auto-reloads. Someone mid-form would lose what they had typed, and
+    // a prompt they chose to accept is the difference between a fix and the
+    // page vanishing under them.
+    this.version.newVersionAvailable$
+      .pipe(filter(Boolean), take(1))
+      .subscribe(() => {
+        this.snackbar
+          .persistent('A new version of the admin app is available.', 'RELOAD')
+          .onAction()
+          .subscribe(() => window.location.reload());
+      });
+    this.version.start();
+
     // Every lazy feature module (admin-manager, events-manager, ...) is a
     // content-hashed chunk baked into main.js at build time - see
     // app-routing.module.ts's loadChildren calls. Firebase Hosting deploys

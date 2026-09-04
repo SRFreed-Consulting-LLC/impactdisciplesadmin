@@ -336,7 +336,42 @@ export class CampaignDetailComponent implements OnInit {
       return false;
     }
     const status = effectiveStatus(this.campaign);
-    return status === 'draft' || status === 'scheduled';
+    // 'ended' is here as of 2026-09-04, and its absence was a dead end: END
+    // CAMPAIGN hides itself once a campaign is ended and ACTIVATE only offered
+    // itself to drafts, so an ended campaign showed NEITHER button and nothing
+    // else in the app writes `status`. Reopening one meant editing Firestore by
+    // hand, which is what actually happened to the Golf Tournament campaign
+    // before a send.
+    return status === 'draft' || status === 'scheduled' || status === 'ended';
+  }
+
+  /** Reopening an ended campaign, rather than starting a fresh one. */
+  isReopen(): boolean {
+    return effectiveStatus(this.campaign) === 'ended';
+  }
+
+  /** REOPEN reads differently from ACTIVATE, and the distinction is real. */
+  activateLabel(): string {
+    return this.isReopen() ? 'REOPEN' : 'ACTIVATE';
+  }
+
+  activateTooltip(): string {
+    return this.isReopen() ?
+      'Put this campaign back to live so it can send again' :
+      'Start this campaign - its popup and discount begin';
+  }
+
+  /**
+   * True when the end date is the ONLY thing keeping this campaign ended.
+   *
+   * effectiveStatus() derives 'ended' from a past endDate as well as from the
+   * stored field, so writing status:'live' on its own would be read straight
+   * back as 'ended' and the button would look broken. The date has to go with
+   * it - see activate().
+   */
+  private endDateHasPassed(): boolean {
+    const end = this.campaign.endDate ? toMillis(this.campaign.endDate) : 0;
+    return end > 0 && end < Date.now();
   }
 
   canEnd(): boolean {
@@ -379,6 +414,24 @@ export class CampaignDetailComponent implements OnInit {
       }
     }
 
+    // A past end date would re-derive 'ended' the instant we wrote 'live', so
+    // reopening has to clear it or the button silently does nothing. Asked
+    // rather than assumed: the end date is a real editorial decision, and
+    // wiping one without saying so is its own surprise.
+    const clearEndDate = this.isReopen() && this.endDateHasPassed();
+    if (clearEndDate) {
+      const when = dateFromTimestamp(this.campaign.endDate as never);
+      const proceed = await this.confirmService.confirm(
+        `This campaign ended on <b>${when ? when.toLocaleDateString('en-US') : 'a past date'}</b>. ` +
+        'Reopening will clear that end date so it stays live until you end it again. ' +
+        'Set a new end date afterwards with EDIT CAMPAIGN if you want one.',
+        'Reopen campaign'
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+
     const startMs = toMillis(this.campaign.startDate);
     const next: CampaignStatus = startMs > Date.now() ? 'scheduled' : 'live';
 
@@ -386,15 +439,34 @@ export class CampaignDetailComponent implements OnInit {
       // R1: the campaign-and-its-offer batch lives on CampaignService now -
       // see activateTo(), which carries the reasoning for why it must stay
       // ONE batch. This screen keeps only what is UI.
-      await this.campaignService.activateTo(this.campaign.id!, next);
+      await this.campaignService.activateTo(this.campaign.id!, next, { clearEndDate });
 
       // Only reflected locally once the write actually landed.
       this.campaign.status = next;
+      if (clearEndDate) {
+        this.campaign.endDate = null;
+      }
 
-      this.snackbar.success(next === 'live' ? 'Campaign is live' : 'Campaign scheduled');
+      this.snackbar.success(this.reopenedMessage(next, clearEndDate));
     } catch (err) {
       this.snackbar.error('Could not activate: ' + ((err as Error)?.message ?? err));
     }
+  }
+
+  /**
+   * What to say after the write landed. Separate so the wording is testable
+   * without a component fixture.
+   * @param next The status written.
+   * @param clearedEndDate Whether the stale end date was removed with it.
+   * @returns The snackbar text.
+   */
+  private reopenedMessage(next: CampaignStatus, clearedEndDate: boolean): string {
+    if (next === 'scheduled') {
+      return 'Campaign scheduled';
+    }
+    return clearedEndDate ?
+      'Campaign reopened - it is live with no end date' :
+      'Campaign is live';
   }
 
   /**

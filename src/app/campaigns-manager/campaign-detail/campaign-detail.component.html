@@ -43,8 +43,8 @@
        moment at which a discount was allowed to start. -->
   @if (canActivate()) {
     <button mat-flat-button color="primary" (click)="activate()"
-      matTooltip="Start this campaign - its popup and discount begin">
-      <mat-icon>play_arrow</mat-icon> ACTIVATE
+      [matTooltip]="activateTooltip()">
+      <mat-icon>{{ isReopen() ? 'restart_alt' : 'play_arrow' }}</mat-icon> {{ activateLabel() }}
     </button>
   }
   @if (canEnd()) {

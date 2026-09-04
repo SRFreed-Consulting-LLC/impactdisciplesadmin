@@ -314,6 +314,7 @@ describe('CampaignDetailComponent', () => {
 interface LifecycleStubs {
   status?: CampaignModel['status'];
   startDate?: Date | null;
+  endDate?: Date | null;
   couponId?: string | null;
   popup?: { isActive: boolean } | null;
   offer?: Record<string, unknown> | null;
@@ -463,6 +464,7 @@ function lifecycleSetup(stubs: LifecycleStubs = {}) {
     productId: 'prod-1',
     status: stubs.status ?? 'draft',
     startDate: stubs.startDate ?? null,
+    endDate: stubs.endDate ?? null,
     couponId: stubs.couponId ?? null,
   });
   component.popup = (stubs.popup ?? null) as never;
@@ -517,6 +519,82 @@ describe('CampaignDetailComponent status lifecycle', () => {
       await component.activate();
 
       expect(wrote('campaign')).toEqual([{ status: 'live' }]);
+    });
+
+    // REOPEN (2026-09-04). An ended campaign used to show NEITHER button:
+    // canActivate() offered itself only to drafts and canEnd() hides once a
+    // campaign is ended, so the only way back to live was editing Firestore by
+    // hand - which is exactly what had to be done to the Golf Tournament
+    // campaign minutes before a 5,607-recipient send.
+    it('offers REOPEN, not ACTIVATE, on an ended campaign', () => {
+      const { component } = lifecycleSetup({ status: 'ended' });
+
+      expect(component.canActivate()).toBeTrue();
+      expect(component.isReopen()).toBeTrue();
+      expect(component.activateLabel()).toBe('REOPEN');
+    });
+
+    it('still calls it ACTIVATE on a draft', () => {
+      const { component } = lifecycleSetup();
+
+      expect(component.isReopen()).toBeFalse();
+      expect(component.activateLabel()).toBe('ACTIVATE');
+    });
+
+    // The trap behind the missing button: effectiveStatus() derives 'ended'
+    // from a past end date as well as from the stored field, so writing
+    // status:'live' alone reads straight back as ended and REOPEN looks
+    // broken. The date has to be cleared IN THE SAME BATCH.
+    it('clears a past end date when reopening, in one batch with the status', async () => {
+      const { component, wrote, commits } = lifecycleSetup({
+        status: 'ended',
+        endDate: new Date(Date.now() - 30 * DAY),
+      });
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([{ status: 'live', endDate: null }]);
+      expect(commits.length).toBe(1);
+      expect(component.campaign.endDate).toBeNull();
+    });
+
+    it('asks before wiping the end date, and writes nothing if refused', async () => {
+      const { component, wrote, confirmed } = lifecycleSetup({
+        status: 'ended',
+        endDate: new Date(Date.now() - 30 * DAY),
+        confirmAnswer: false,
+      });
+
+      await component.activate();
+
+      expect(confirmed.join(' ')).toContain('clear that end date');
+      expect(wrote('campaign')).toEqual([]);
+      expect(component.campaign.status).toBe('ended');
+    });
+
+    // A campaign stored 'ended' whose end date is still ahead needs no date
+    // surgery - only the stored field is holding it back.
+    it('reopens without touching a future end date, and does not ask', async () => {
+      const { component, wrote, confirmed } = lifecycleSetup({
+        status: 'ended',
+        endDate: new Date(Date.now() + 30 * DAY),
+      });
+
+      await component.activate();
+
+      expect(wrote('campaign')).toEqual([{ status: 'live' }]);
+      expect(confirmed.join(' ')).not.toContain('end date');
+    });
+
+    it('says the end date is gone, so nobody goes looking for it', async () => {
+      const { component, successes } = lifecycleSetup({
+        status: 'ended',
+        endDate: new Date(Date.now() - DAY),
+      });
+
+      await component.activate();
+
+      expect(successes[0]).toBe('Campaign reopened - it is live with no end date');
     });
 
     it('schedules rather than starts when the start date is still ahead', async () => {
@@ -632,8 +710,19 @@ describe('CampaignDetailComponent status lifecycle', () => {
       expect(confirmed).toEqual([]);
     });
 
-    it('is unavailable once the campaign has ended', () => {
+    // This used to assert the OPPOSITE - that an ended campaign could not be
+    // activated. That was the bug, not the rule: paired with canEnd() hiding
+    // itself on an ended campaign, it left no button at all and no way back to
+    // live short of editing Firestore. Reopening is now offered (as REOPEN);
+    // what still must not happen is offering it to someone who cannot edit.
+    it('offers reopening once the campaign has ended', () => {
       const { component } = lifecycleSetup({ status: 'ended' });
+      expect(component.canActivate()).toBeTrue();
+    });
+
+    it('offers nothing at all to someone who cannot edit the campaign', () => {
+      const { component } = lifecycleSetup({ status: 'ended' });
+      spyOn(component, 'canEditCampaign').and.returnValue(false);
       expect(component.canActivate()).toBeFalse();
     });
   });

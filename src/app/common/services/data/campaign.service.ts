@@ -84,11 +84,25 @@ export class CampaignService extends BaseService<CampaignModel>{
    * read a campaign to find out whether one is running. Only a genuinely
    * live campaign discounts; a scheduled one waits.
    */
-  async activateTo(campaignId: string, next: CampaignStatus): Promise<void> {
+  async activateTo(
+    campaignId: string,
+    next: CampaignStatus,
+    opts: { clearEndDate?: boolean } = {}
+  ): Promise<void> {
     const offer = await this.offerService.forCampaign(campaignId);
 
     const batch = this.dao.batch();
-    this.dao.batchUpdateFields(batch, campaignId, 'campaigns', { status: next });
+    // clearEndDate rides in the SAME batch as the status on purpose. Reopening
+    // an ended campaign is only meaningful if both land: effectiveStatus()
+    // derives 'ended' from a past end date as well as from the stored field,
+    // so a status write that succeeded while the date write failed would leave
+    // the campaign reading as ended and the button looking broken.
+    // null, not a deleted key - a null endDate already means "long-running
+    // series" in this model, which is exactly what a reopened campaign is.
+    this.dao.batchUpdateFields(batch, campaignId, 'campaigns', {
+      status: next,
+      ...(opts.clearEndDate ? { endDate: null } : {})
+    });
     if (offer) {
       this.dao.batchUpdateFields(
         batch, campaignId, 'campaign_offers', { isActive: next === 'live' }
