@@ -5,10 +5,10 @@ import { AdminAuthService } from '../forms/admin/admin-auth.service';
 import { Role } from '@impact-common/shared/lists/roles.enum';
 import { NAV_SECTIONS } from '../../core/main-screen/nav-config';
 
-// THE TAB-LEVEL ROLE GATE (2026-08-30, owner's call):
+// THE TAB-LEVEL ROLE GATE (2026-08-30, owner's call; Site widened 2026-09-03):
 //
-//   Site     Administrators and Root only - what the public sees is not
-//            delegated, whatever an Employee may be granted underneath
+//   Site     Administrators, Root and Employees - and past the tab, the
+//            per-screen grant decides
 //   Admin    Administrators, Root and Employees
 //   Library  no gate; the items decide
 //
@@ -17,6 +17,20 @@ import { NAV_SECTIONS } from '../../core/main-screen/nav-config';
 // drawer. Hiding a tab stops nobody typing a URL - if this gate lived only in
 // MainScreenComponent, an Employee holding a grant on a Site screen would
 // still reach it, and the drawer would have told us it was safe.
+//
+// SITE USED TO BE ADMIN/ROOT ONLY, and this file asserted that in three
+// tests for four days after it stopped being true. The owner reversed it on
+// 2026-09-03 for an Employee who administers Coaching with Impact and
+// Disciple Making Minute and nothing else; delegating PORTIONS of the site is
+// the pattern going forward. The tests went red and stayed red, which is the
+// part worth not repeating: a red suite that everyone knows about protects
+// nothing, and this one guards who can edit the public website.
+//
+// So the SHAPE of what is guarded changed rather than the fact of it. The
+// blanket refusal is gone; what replaced it is narrower and needs saying
+// out loud - an Employee reaches exactly the Site screens they hold a grant
+// on, and no others, by URL or otherwise. That is now the test that matters
+// most in this file.
 //
 // TestBed-as-injector: PermissionService takes AdminAuthService through the
 // constructor and reads a stream from it, so it needs a real injector but no
@@ -51,27 +65,41 @@ describe('the tab-level role gate', () => {
     it('lets Root in, without Root being listed anywhere', () => {
       // hasRole() gives Root everything Admin has. Listing Root on each tab
       // would be a second place for that rule to drift.
-      expect(NAV_SECTIONS.find((s) => s.id === 'site')?.roles).toEqual([Role.ADMIN]);
+      expect(NAV_SECTIONS.find((s) => s.id === 'site')?.roles).toEqual([Role.ADMIN, Role.EMPLOYEE]);
       expect(serviceFor(Role.ROOT).canView('page-manager.give')).toBeTrue();
     });
 
-    it('REFUSES an Employee even when they hold a grant on the screen', () => {
-      // The whole point. A grant is not enough on this tab, and the grant is
-      // deliberately present so the refusal cannot come from anywhere else.
+    it('lets an Employee in on a screen they hold', () => {
+      // The 2026-09-03 reversal. Before it, a grant was not enough on this
+      // tab and this expectation was toBeFalse().
       const svc = serviceFor(Role.EMPLOYEE, granted('page-manager.give'));
-      expect(svc.canView('page-manager.give')).toBeFalse();
+      expect(svc.canView('page-manager.give')).toBeTrue();
     });
 
-    it('REFUSES an Employee on every group that sits on the Site tab', () => {
-      const svc = serviceFor(Role.EMPLOYEE, [
-        ...granted('page-manager.about-us'),
-        ...granted('data.products'),
-        ...granted('navigation'),
-        ...granted('footer')
-      ]);
-      for (const key of ['page-manager.about-us', 'data.products', 'navigation', 'footer']) {
+    it('REFUSES an Employee on a Site screen they do NOT hold', () => {
+      // WHAT NOW CARRIES THE WEIGHT the blanket refusal used to. Delegating
+      // one page must not delegate the site: this user administers Coaching
+      // with Impact and nothing else, and the URL of any other page has to
+      // stay shut. Enforced in canView() rather than only in the drawer,
+      // because a hidden row is not a closed door.
+      const svc = serviceFor(Role.EMPLOYEE, granted('page-manager.coaching-with-impact'));
+
+      expect(svc.canView('page-manager.coaching-with-impact')).toBeTrue();
+      for (const key of ['page-manager.about-us', 'page-manager.give', 'data.products',
+        'navigation', 'footer']) {
         expect(svc.canView(key)).withContext(`${key} let an Employee through`).toBeFalse();
       }
+    });
+
+    it('reaches each Site group only where the grant actually is', () => {
+      // The groups on this tab are four, and a grant on one must not carry
+      // to the others - they were a single Admin/Root decision until
+      // 2026-09-03 and are four independent ones now.
+      const svc = serviceFor(Role.EMPLOYEE, granted('data.products'));
+
+      expect(svc.canView('data.products')).toBeTrue();
+      expect(svc.canView('data.testimonials')).toBeFalse();
+      expect(svc.canView('page-manager.about-us')).toBeFalse();
     });
 
     it('REFUSES an Editor, who is scoped to Library anyway', () => {

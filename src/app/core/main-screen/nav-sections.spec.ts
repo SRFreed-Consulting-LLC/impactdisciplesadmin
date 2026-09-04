@@ -25,7 +25,7 @@ interface WriteLog {
   calls: { method: string; id: string; payload: unknown }[];
 }
 
-function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {
+function shell(writes: WriteLog = { calls: [] }, role: Role = Role.ADMIN): MainScreenComponent {
   const adminUserService = {
     update: (id: string, payload: unknown) => {
       writes.calls.push({ method: 'update', id, payload });
@@ -37,9 +37,28 @@ function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {
     }
   };
 
+  // PERMISSIONSERVICE WAS `null as never` HERE, and stayed that way through
+  // the change that made the drawer read it. `isFlatNav` (2026-09-03) calls
+  // isFullAccess(), so every spec touching showSectionTabs, isSectionFlattened
+  // or flatItems started throwing "Cannot read properties of null" - six of
+  // them, red for four days.
+  //
+  // Role-derived rather than a fixed `true`, so posing a non-Administrator
+  // poses ALL of what that means. A stub that always claimed full access
+  // would have made the flat-nav specs below silently test the tabbed drawer
+  // - which is the same class of mistake as the null was, one step quieter.
+  // What the person can SEE is still posed by visible()/everything(): these
+  // specs are about arrangement, and the grant system has its own suite in
+  // section-gate.spec.ts.
+  const permissionService = {
+    isFullAccess: () => role === Role.ADMIN || role === Role.ROOT,
+    canView: () => true,
+    canViewNavItem: () => true
+  };
+
   const nav = new MainScreenComponent(
     null as never, // AdminAuthService
-    null as never, // PermissionService
+    permissionService as never,
     null as never, // PermissionMigrationService
     adminUserService as never, // AdminUserService
     null as never, // MatDialog
@@ -48,11 +67,11 @@ function shell(writes: WriteLog = { calls: [] }): MainScreenComponent {
     { leaves: [] } as never // SitePagesNavService - no created pages in these specs
   );
 
-  // An Administrator. Every spec here is about which SECTION is showing,
-  // not about roles - and a tab carries a role gate since 2026-08-30, so a
-  // shell with no role correctly sees almost nothing. The gate has its own
-  // suite: section-gate.spec.ts.
-  nav.currentUser = { role: Role.ADMIN } as never;
+  // An Administrator unless a spec says otherwise. Most specs here are about
+  // which SECTION is showing rather than about roles - and a tab carries a
+  // role gate since 2026-08-30, so a shell with no role correctly sees almost
+  // nothing. The gate has its own suite: section-gate.spec.ts.
+  nav.currentUser = { role } as never;
   return nav;
 }
 
@@ -278,6 +297,90 @@ describe('drawer sections', () => {
         expect(entry.group.id).toBe('library-manager');
         expect(sectionOf(entry.group)).toBe('library');
       }
+    });
+  });
+
+  // ONE FLAT LIST FOR EVERYONE WHO IS NOT AN ADMINISTRATOR (owner,
+  // 2026-09-03). This block exists because the change that introduced
+  // isFlatNav landed with no coverage here at all - which is how the shell's
+  // `null as never` PermissionService went from harmless to throwing without
+  // anything saying so. The feature is now the thing holding that stub
+  // honest.
+  describe('the flat nav', () => {
+    const asEmployee = () => shell({ calls: [] }, Role.EMPLOYEE);
+
+    it('drops the tab strip - three links do not need two ranks of structure', () => {
+      const nav = asEmployee();
+      everything(nav);
+
+      expect(nav.isFlatNav).toBeTrue();
+      expect(nav.showSectionTabs).toBeFalse();
+    });
+
+    it('keeps the tabbed drawer for an Administrator', () => {
+      // The control. Without it the assertion above would pass just as well
+      // if isFlatNav were stuck true for everybody.
+      const nav = shell();
+      everything(nav);
+
+      expect(nav.isFlatNav).toBeFalse();
+      expect(nav.showSectionTabs).toBeTrue();
+    });
+
+    it('spans every tab at once, so nothing is behind a control that is gone', () => {
+      // The load-bearing one. A flat nav has no tab strip, so if its list
+      // were still filtered to activeSection, every screen on another tab
+      // would be unreachable - and the drawer would look complete.
+      //
+      // `data` rather than `page-manager` for the Site group: Page Manager's
+      // leaves all stream from page_content, and this shell is built with
+      // none, so it contributes no rows at all. Correct behaviour, and it
+      // would have made this assertion fail for a reason that has nothing to
+      // do with what it is testing.
+      const nav = asEmployee();
+      visible(nav, 'contacts-manager', 'data', 'library-manager');
+
+      const sections = new Set(nav.flatItems.map((entry) => sectionOf(entry.group)));
+
+      expect([...sections].sort()).toEqual(['admin', 'library', 'site']);
+    });
+
+    it('lists the same screens whichever section is notionally active', () => {
+      const nav = asEmployee();
+      visible(nav, 'contacts-manager', 'data');
+      const before = nav.flatItems.map((entry) => entry.item.slug);
+
+      expect(before.length).toBeGreaterThan(0);
+      nav.selectSection('site');
+
+      expect(nav.flatItems.map((entry) => entry.item.slug)).toEqual(before);
+    });
+
+    it('keeps every row bound to its real group, so routing still works', () => {
+      // Same rule as a flattened section: flattening is a drawing choice and
+      // never a change of identity - the row still navigates to
+      // /<group>?tab=<slug> and pins under the real screenKey.
+      const nav = asEmployee();
+      visible(nav, 'contacts-manager', 'data');
+
+      expect(nav.flatItems.length).toBeGreaterThan(0);
+      for (const entry of nav.flatItems) {
+        expect(['contacts-manager', 'data']).toContain(entry.group.id);
+        expect(NAV_CONFIG).toContain(entry.group);
+      }
+    });
+
+    it('un-flattens while COLLAPSED, so the icon rail is never blank', () => {
+      // The flat nav inherits the hazard the Library section already had: no
+      // group header means no icon, and a NavLeaf has none of its own, so a
+      // 64px rail would have nothing at all to draw.
+      const nav = asEmployee();
+      everything(nav);
+      nav.currentUser = { role: Role.EMPLOYEE, drawerPinned: false } as never;
+
+      expect(nav.drawerExpanded).toBeFalse();
+      expect(nav.isSectionFlattened).toBeFalse();
+      expect(nav.groupedNav.length).toBeGreaterThan(0);
     });
   });
 

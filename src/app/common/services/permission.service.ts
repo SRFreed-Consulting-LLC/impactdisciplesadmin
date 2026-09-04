@@ -163,14 +163,23 @@ export class PermissionService {
       return true;
     }
     // THE TAB-LEVEL GATE (2026-08-30, owner's call). A drawer tab can carry a
-    // role allow-list - the Site tab is Administrators and Root only, because
-    // "who can change the public website" is one decision rather than
-    // something inferred from whichever screens happen to be granted.
+    // role allow-list, which is how "who can touch this whole area" stays one
+    // decision rather than something inferred from whichever screens happen
+    // to be granted. Today it is what keeps an Editor out of the back office
+    // and out of the site.
+    //
+    // IT NO LONGER SHUTS AN EMPLOYEE OUT OF THE SITE. Until 2026-09-03 the
+    // Site tab was Admin/Root only - "what a visitor sees is not delegated" -
+    // and the owner reversed that for an Employee who administers two pages
+    // and nothing else. Portions of the site are delegated the same way
+    // portions of the back office already were, so the tab admits an Employee
+    // and the per-screen grant below decides everything past it.
     //
     // Enforced HERE and not only in the drawer, deliberately: hiding a tab is
-    // presentation, and without this an Employee holding a grant on, say,
-    // page-manager.give could still reach it by typing the URL. Full access
-    // short-circuits above, so this only ever narrows.
+    // presentation, and without this an Editor could reach a business screen -
+    // or, since the reversal, an Employee granted one page could reach a
+    // second - by typing the URL. Full access short-circuits above, so this
+    // only ever narrows.
     if (!this.allowedInSection(key)) {
       return false;
     }
