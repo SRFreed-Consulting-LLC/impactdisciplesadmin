@@ -71,6 +71,15 @@ hostname because `SITE_HOSTNAMES` in the shared tenancy config lists
 reality disagree. Fixing it is a Firebase console action - connect the
 domain, or drop it from `SITE_HOSTNAMES`.
 
+**The Coaching page's book covers are still oversized FILES.** Their display
+was fixed on 2026-09-04 (a height cap in the web repo's kit CSS), so the page
+looks right - but `Coaching-With-Impact-book-web.jpg` is 1707x2560 / 413KB
+painting at 347x520, about five times the pixels the page uses.
+`scripts/optimise-page-images.js` will not catch it: its cap is MAX_WIDTH
+2000 and this is already under that. Fixing it is the same shape of job as
+the store-images move above - resize the object, repoint the document, keep
+the original - and worth doing in the same pass.
+
 **Quill cannot express "align left".** Verified, not assumed: the toolbar's
 Center and Right write `<p style="text-align: ...">`, Left writes nothing at
 all, and a stored `text-align: left` is dropped on the way back in. The
