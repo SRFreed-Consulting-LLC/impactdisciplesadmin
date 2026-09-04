@@ -12,46 +12,6 @@
   box-sizing: border-box;
 }
 
-.criteria {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 24px;
-  background: var(--app-card);
-  border: 1px solid var(--app-card-border);
-  border-radius: 8px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-}
-
-.criteria__block {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.criteria__block--actions {
-  margin-left: auto;
-  align-items: center;
-}
-
-.state-field {
-  width: 220px;
-}
-
-.hint {
-  color: var(--app-card-muted);
-  font-size: 13px;
-  padding: 4px 4px 16px;
-}
-
-.loading-row {
-  display: flex;
-  justify-content: center;
-  padding: 32px 0;
-}
-
 .error-state {
   color: var(--mat-sys-error);
   background: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
@@ -63,20 +23,13 @@
   max-width: 640px;
 }
 
-.empty-state {
-  color: var(--app-card-muted);
-  font-size: 14px;
-  padding: 16px 4px;
-}
-
+// Sits BELOW the grid here, unlike the criteria-form reports which put the
+// count above their results - the grid brings its own header, and a count
+// wedged between that header and the table reads as part of the toolbar.
 .result-count {
   font-size: 12.5px;
   color: var(--app-card-muted);
-  margin-bottom: 8px;
-}
-
-.results-wrap {
-  overflow: auto;
+  margin-top: 8px;
 }
 
 // See purchase-report.component.scss's own comment - same override, same

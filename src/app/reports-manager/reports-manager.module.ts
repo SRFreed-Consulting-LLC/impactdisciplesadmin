@@ -25,6 +25,7 @@ import { SendSubscriptionDialogComponent } from './subscriber-report/send-subscr
 import { ContactReportComponent } from './contact-report/contact-report.component';
 import { EventReportComponent } from './event-report/event-report.component';
 import { DigitalBookUserReportComponent } from './digital-book-user-report/digital-book-user-report.component';
+import { CommissionsReportComponent } from './commissions-report/commissions-report.component';
 
 @NgModule({
   declarations: [
@@ -44,6 +45,7 @@ import { DigitalBookUserReportComponent } from './digital-book-user-report/digit
     // convention every screen added since the library-manager consolidation
     // follows, so it belongs in imports, not declarations.
     DigitalBookUserReportComponent,
+    CommissionsReportComponent,
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,

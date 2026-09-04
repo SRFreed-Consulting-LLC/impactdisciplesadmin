@@ -1,0 +1,193 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.report-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.criteria {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--app-card);
+  border: 1px solid var(--app-card-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.month-field { width: 180px; }
+.year-field { width: 120px; }
+
+.error-state {
+  color: var(--mat-sys-error);
+  background: color-mix(in srgb, var(--mat-sys-error) 14%, var(--app-card));
+  border: 1px solid color-mix(in srgb, var(--mat-sys-error) 30%, transparent);
+  border-radius: 6px;
+  font-size: 14px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  max-width: 640px;
+}
+
+.loading-row {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.empty-state {
+  color: var(--app-card-muted);
+  font-size: 14px;
+  padding: 16px 4px;
+}
+
+.summary {
+  font-size: 13px;
+  color: var(--app-card-muted);
+  margin-bottom: 12px;
+}
+
+.coupon {
+  border: 1px solid var(--app-card-border);
+  border-radius: 8px;
+  background: var(--app-card);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+// A <button> so the group toggles from the keyboard and announces itself,
+// reset back to looking like the bar it is.
+.coupon__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: color-mix(in srgb, var(--mat-sys-primary) 7%, var(--app-card));
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-primary) 12%, var(--app-card));
+  }
+}
+
+.coupon__chevron {
+  color: var(--app-card-muted);
+  flex: none;
+}
+
+.coupon__code {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.coupon__sub,
+.coupon__count {
+  font-size: 12.5px;
+  color: var(--app-card-muted);
+}
+
+.coupon__spacer { flex: 1 1 auto; }
+
+.coupon__total,
+.coupon__commission {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.coupon__total { font-size: 14px; }
+
+// The number the report exists to produce - the only thing on the bar that
+// is allowed to be emphatic.
+.coupon__commission {
+  font-size: 15px;
+  font-weight: 700;
+  margin-left: 18px;
+}
+
+.coupon__total-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-card-muted);
+  font-weight: 500;
+}
+
+.coupon__body {
+  padding: 4px 14px 12px;
+}
+
+.purchase {
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--app-card-border);
+  }
+}
+
+.purchase__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.purchase__name { font-weight: 600; font-size: 14px; }
+
+.purchase__date {
+  font-size: 12px;
+  color: var(--app-card-muted);
+}
+
+.lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  // Money columns line up under each other regardless of digit widths -
+  // the point of the column is that it visibly adds up.
+  font-variant-numeric: tabular-nums;
+}
+
+.lines td {
+  padding: 3px 6px;
+  vertical-align: top;
+}
+
+.lines__item { width: 100%; padding-left: 22px; }
+.lines__qty { text-align: right; white-space: nowrap; }
+.lines__unit,
+.lines__subtotal { text-align: right; white-space: nowrap; }
+
+.lines__empty {
+  color: var(--app-card-muted);
+  font-style: italic;
+}
+
+.lines__total-row td {
+  border-top: 1px solid var(--app-card-border);
+  padding-top: 6px;
+  font-weight: 600;
+}
+
+.lines__total-row td:first-child {
+  text-align: right;
+  color: var(--app-card-muted);
+  font-weight: 500;
+}

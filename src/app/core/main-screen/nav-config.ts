@@ -582,7 +582,12 @@ export const NAV_CONFIG: NavGroup[] = [
       // Reader-app patrons (`libraryUsers`), not this app's own staff
       // `admin_users` - a report over the same population the Library
       // Manager's Library Users roster lists, joined to Impact Groups.
-      { label: 'Digital Book Users', slug: 'digital-book-users' }
+      { label: 'Digital Book Users', slug: 'digital-book-users' },
+      // Purchases made against a coupon flagged isAffilliate, grouped by
+      // coupon with a per-affiliate total and commission, one month at a
+      // time. The LABEL is load-bearing: reports-manager.component.html
+      // selects on it.
+      { label: 'Commissions', slug: 'commissions' }
     ]
   },
   {

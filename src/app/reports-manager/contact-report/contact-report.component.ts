@@ -1,14 +1,11 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactService } from 'src/app/common/services/data/contact.service';
-import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
-import { stateVariants } from 'src/app/common/utils/state-variants';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
-import { ReportColumn, ReportColumnSet } from '../report-column-set';
 
-interface ReportRow {
+// Flat, report-specific row shape - not ContactModel itself, same
+// convention as the Purchase report's own ReportRow.
+export interface ContactReportRow {
   id: string;
   firstName: string;
   lastName: string;
@@ -25,18 +22,35 @@ interface ReportRow {
   pendingChangesCount: number;
 }
 
-// Reports Manager > Customers - a filterable export over the customers
-// collection. Deliberately no Date/List criteria and no group-by mode, both
-// present on Purchase Report and Subscriber Report: ContactModel has no
-// signup/created-date field at all (customer docs are upserted from
-// purchases/event registrations - see customer-upsert.functions.ts - with
-// no timestamp stamped anywhere), and there is no list-membership mechanism
-// wired to Customers today (the `email_lists` collection's `type:
-// 'customers'` entries referenced in an old subscriptions.component.ts
-// comment are not read by contacts.component.ts any more - dead
-// reference, not a live feature to build a filter against). State is the
-// only real queryable field left, same billing-or-shipping-match pattern
-// as Purchase Report's own State criterion.
+// Reports Manager > Contacts - every contact, in one list, exportable.
+//
+// REBUILT 2026-09-04 (owner: "I really just want them to see a list of all
+// the contacts"). It used to be a criteria form gating a State query behind
+// a Generate Report button, which meant the screen's resting state was an
+// empty page and a hint telling you to pick something - you could not
+// answer "how many contacts do we have" without first choosing a state.
+// There was never a date criterion to remove: ContactModel has no
+// signup/created date at all (customer docs are upserted from purchases and
+// event registrations - see functions/src/customer-upsert.functions.ts -
+// with no timestamp stamped anywhere), which is also why one cannot simply
+// be added back.
+//
+// The State criterion went with it, and this is NOT a loss of function: the
+// grid's own filter row filters any column, including both state columns,
+// and it does it without a round trip. The old query existed because
+// Firestore cannot OR across billingAddress.state and shippingAddress.state
+// in one go, so the screen ran two queries and deduped by id; filtering a
+// list already in memory has no such problem. It also stops depending on
+// stateVariants() to paper over "GA" vs "Georgia" - that split is being
+// normalized to 2-letter codes in the data itself
+// (scripts/normalize-address-codes.js).
+//
+// COST, stated plainly: this reads the whole `customers` collection on open
+// - 5,617 documents on production. That is deliberate for a REPORT, whose
+// job is to be exported whole, and it matches what the Digital Book Users
+// report already does. It is NOT the pattern for a list SCREEN; Contacts
+// under contacts-manager stays on PagedCollectionSource for exactly that
+// reason.
 @Component({
     selector: 'app-contact-report',
     templateUrl: './contact-report.component.html',
@@ -44,113 +58,57 @@ interface ReportRow {
     standalone: false
 })
 export class ContactReportComponent {
-  states: string[] = EnumHelper.getStateTypesAsArray();
+  private readonly service = inject(ContactService);
 
-  criteriaForm: FormGroup;
-
-  readonly columnSet = new ReportColumnSet<ReportRow>([
-    { key: 'lastName', label: 'Last Name', visible: true },
-    { key: 'firstName', label: 'First Name', visible: true },
-    { key: 'email', label: 'Email', visible: true },
-    { key: 'phone', label: 'Phone', visible: true },
+  // The grid owns filtering, sorting, the Columns menu and the Excel export
+  // (same call the old hand-rolled header made, over the FILTERED rows), so
+  // this report carries no ReportColumnSet of its own. The four
+  // criteria-form reports still do - see report-column-set.ts.
+  readonly columns: DataGridColumn<ContactReportRow>[] = [
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
     { key: 'billingAddress1', label: 'Billing Address', visible: false },
     { key: 'billingCity', label: 'Billing City', visible: false },
-    { key: 'billingState', label: 'Billing State', visible: true },
+    { key: 'billingState', label: 'Billing State' },
     { key: 'billingZip', label: 'Billing Zip', visible: false },
     { key: 'shippingAddress1', label: 'Shipping Address', visible: false },
     { key: 'shippingCity', label: 'Shipping City', visible: false },
     { key: 'shippingState', label: 'Shipping State', visible: false },
     { key: 'shippingZip', label: 'Shipping Zip', visible: false },
-    { key: 'pendingChangesCount', label: 'Pending Review', visible: true, type: 'number' }
-  ]);
+    { key: 'pendingChangesCount', label: 'Pending Review', type: 'number' }
+  ];
 
-  results: ReportRow[] = [];
-  loading = false;
-  generated = false;
-  errorMessage: string | null = null;
+  readonly rows = signal<ContactReportRow[]>([]);
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
 
-  constructor(private service: ContactService, private fb: FormBuilder) {
-    this.criteriaForm = this.fb.group({
-      stateEnabled: [false],
-      state: [null, Validators.required]
-    });
+  readonly totalCount = computed(() => this.rows().length);
+
+  constructor() {
+    void this.load();
   }
 
-  get canGenerate(): boolean {
-    return this.criteriaForm.value.stateEnabled;
-  }
-
-// Column visibility, grid columns and Excel export all live in
-  // ReportColumnSet (sweep P1) - these stay as members so the template
-  // bindings are unchanged.
-  get columns(): ReportColumn[] {
-    return this.columnSet.all;
-  }
-
-  get displayedColumns(): string[] {
-    return this.columnSet.displayedColumns;
-  }
-
-  toggleColumn(column: ReportColumn): void {
-    this.columnSet.toggleColumn(column);
-  }
-
-  columnLabel(key: string): string {
-    return this.columnSet.columnLabel(key);
-  }
-
-  get gridColumns(): DataGridColumn<ReportRow>[] {
-    return this.columnSet.gridColumns;
-  }
-
-  exportExcel(): void {
-    void this.columnSet.exportExcel(this.results, 'contact-report.xlsx');
-  }
-
-  async generateReport(): Promise<void> {
-    if (!this.canGenerate) {
-      return;
-    }
-
-    this.loading = true;
-    this.generated = false;
-    this.errorMessage = null;
-
+  async load(): Promise<void> {
+    this.loading.set(true);
+    this.errorMessage.set('');
     try {
-      const raw = await this.runQuery();
-      this.results = raw.map((item) => this.toRow(item));
-      this.generated = true;
+      const contacts = await this.service.getAll();
+      this.rows.set((contacts ?? []).map((item) => this.toRow(item)).sort(byLastThenFirst));
     } catch (err) {
-      this.errorMessage = (err as { message?: string })?.message ?? 'Something went wrong generating the report.';
+      // A failed load must not read as "there are no contacts" - the grid
+      // would otherwise show its empty message over a set it never got.
+      this.errorMessage.set(
+        'Could not load contacts. ' + ((err as { message?: string })?.message ?? 'Please try again.')
+      );
+      this.rows.set([]);
     } finally {
-      this.loading = false;
+      this.loading.set(false);
     }
   }
 
-  // Same billing-OR-shipping merge as Purchase Report's own runQuery() -
-  // one State value can't be expressed as a single query against two
-  // different fields, so this runs both and dedupes by id.
-  //
-  // Crossed with stateVariants() because `customers` overwhelmingly stores
-  // the 2-letter CODE while this screen's picker offers full names: before
-  // this, filtering by "Georgia" returned 266 contacts out of 2,184, the
-  // rest being stored as "GA". Two fields x two spellings = 4 queries, all
-  // served by the automatic single-field indexes.
-  private async runQuery(): Promise<ContactModel[]> {
-    const variants = stateVariants(this.criteriaForm.value.state);
-    const results = await Promise.all(
-      variants.flatMap((value) => [
-        this.service.queryAllByMultiValue([new QueryParam('billingAddress.state', WhereFilterOperandKeys.equal, value)]),
-        this.service.queryAllByMultiValue([new QueryParam('shippingAddress.state', WhereFilterOperandKeys.equal, value)])
-      ])
-    );
-
-    const byId = new Map<string, ContactModel>();
-    results.flat().forEach((item) => byId.set(item.id!, item));
-    return Array.from(byId.values());
-  }
-
-  private toRow(item: ContactModel): ReportRow {
+  private toRow(item: ContactModel): ContactReportRow {
     return {
       id: item.id!,
       firstName: item.firstName ?? '',
@@ -168,5 +126,14 @@ export class ContactReportComponent {
       pendingChangesCount: item.pendingChanges?.length ?? 0
     };
   }
-
 }
+
+// Surname order, the way a contact list is read. A contact with no last
+// name sorts to the end rather than to the top, where a run of blanks would
+// be the first thing anyone sees.
+const byLastThenFirst = (a: ContactReportRow, b: ContactReportRow): number => {
+  if (!a.lastName !== !b.lastName) {
+    return a.lastName ? -1 : 1;
+  }
+  return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+};

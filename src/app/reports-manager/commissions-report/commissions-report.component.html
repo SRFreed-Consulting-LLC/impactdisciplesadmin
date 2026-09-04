@@ -1,0 +1,129 @@
+<app-list-header title="Commissions">
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    [disabled]="purchaseCount() === 0"
+    (click)="exportExcel()">
+    <mat-icon>file_download</mat-icon>
+    Export to Excel
+  </button>
+</app-list-header>
+
+<div class="report-content">
+  <div class="criteria">
+    <mat-form-field appearance="outline" class="month-field">
+      <mat-label>Month</mat-label>
+      <mat-select [value]="month()" (valueChange)="month.set($event); load()">
+        @for (name of months; track name; let i = $index) {
+          <mat-option [value]="i">{{ name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="year-field">
+      <mat-label>Year</mat-label>
+      <mat-select [value]="year()" (valueChange)="year.set($event); load()">
+        @for (y of years; track y) {
+          <mat-option [value]="y">{{ y }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="error-state">{{ errorMessage() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading-row">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (!loading() && !errorMessage() && generated()) {
+    @if (groups().length === 0) {
+      <div class="empty-state">
+        No affiliate purchases in {{ monthLabel() }}.
+      </div>
+    } @else {
+      <div class="summary">
+        {{ purchaseCount() }} purchase{{ purchaseCount() === 1 ? '' : 's' }}
+        across {{ groups().length }} affiliate{{ groups().length === 1 ? '' : 's' }}
+        in {{ monthLabel() }} &mdash;
+        <strong>{{ grandTotal() | currency }}</strong> sold,
+        <strong>{{ grandCommission() | currency }}</strong> in commission
+      </div>
+
+      @for (group of groups(); track group.code) {
+        <section class="coupon">
+          <!-- The whole bar is the toggle, not just the chevron - it is the
+          biggest target on the row and people aim for the name. -->
+          <button type="button" class="coupon__bar" (click)="toggle(group.code)">
+            <mat-icon class="coupon__chevron">
+              {{ isCollapsed(group.code) ? 'chevron_right' : 'expand_more' }}
+            </mat-icon>
+            <span class="coupon__code">{{ group.affiliateName || group.code }}</span>
+            @if (group.affiliateName) {
+              <span class="coupon__sub">{{ group.code }}</span>
+            }
+            <span class="coupon__count">
+              {{ group.purchases.length }}
+              purchase{{ group.purchases.length === 1 ? '' : 's' }}
+            </span>
+            <span class="coupon__spacer"></span>
+            <span class="coupon__total">
+              <span class="coupon__total-label">Total</span>
+              {{ group.total | currency }}
+            </span>
+            <span class="coupon__commission">
+              <span class="coupon__total-label">Commission</span>
+              {{ group.commission | currency }}
+            </span>
+          </button>
+
+          @if (!isCollapsed(group.code)) {
+            <div class="coupon__body">
+              @for (purchase of group.purchases; track purchase.id) {
+                <div class="purchase">
+                  <div class="purchase__head">
+                    <span class="purchase__name">{{ purchase.purchaser }}</span>
+                    @if (purchase.dateProcessed) {
+                      <span class="purchase__date">
+                        {{ purchase.dateProcessed | date: 'MMM d, y' }}
+                      </span>
+                    }
+                  </div>
+
+                  <table class="lines">
+                    <tbody>
+                      @for (line of purchase.lines; track $index) {
+                        <tr>
+                          <td class="lines__item">{{ line.itemName }}</td>
+                          <td class="lines__qty">{{ line.quantity }}</td>
+                          <td class="lines__unit">{{ line.unitPrice | currency }}</td>
+                          <td class="lines__subtotal">{{ line.subtotal | currency }}</td>
+                        </tr>
+                      }
+                      @if (purchase.lines.length === 0) {
+                        <tr>
+                          <td class="lines__item lines__empty" colspan="4">
+                            This purchase recorded no line items.
+                          </td>
+                        </tr>
+                      }
+                      <tr class="lines__total-row">
+                        <td colspan="3">Purchase total</td>
+                        <td class="lines__subtotal">{{ purchase.total | currency }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+    }
+  }
+</div>
