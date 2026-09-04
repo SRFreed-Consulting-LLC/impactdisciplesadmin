@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
@@ -103,6 +104,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly permissionService = inject(PermissionService);
   private readonly authService = inject(AdminAuthService);
   private readonly sitePagesNav = inject(SitePagesNavService);
+  private readonly router = inject(Router);
+
+  /** Set once this Home has sent a non-Administrator on to their first
+   *  screen, so a later emission (the pages stream landing) cannot send
+   *  them a second time. */
+  private forwarded = false;
 
   /** Which preview sections this person may see - see DASHBOARD_SECTION_KEYS. */
   access = { orders: false, events: false, requests: false };
@@ -175,6 +182,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.loadNewRequests();
     }
     this.myScreens = this.isFullAccess() ? [] : this.grantedScreens();
+
+    // A NON-ADMINISTRATOR DOES NOT STAY ON HOME (owner, 2026-09-03): with
+    // one screen, Home is a detour to it; with several, the first in the
+    // list is where they start. The flat drawer carries no HOME row for
+    // them, so this is the only way Home is ever reached - the sign-in
+    // landing, the logo, a bookmark - and each of those should end on
+    // their first screen. Someone granted nothing yet stays here and reads
+    // the "ask an administrator" line instead of a blank page.
+    if (!this.isFullAccess() && this.myScreens.length > 0 && !this.forwarded) {
+      this.forwarded = true;
+      const first = this.myScreens[0];
+      void this.router.navigate([first.path], { queryParams: { tab: first.tab }, replaceUrl: true });
+    }
   }
 
   /**

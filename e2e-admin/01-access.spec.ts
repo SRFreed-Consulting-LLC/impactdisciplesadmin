@@ -70,7 +70,8 @@ test.describe('[access] Access Control', () => {
     await expect(drawer.getByRole('link', { name: 'Coaching with Impact', exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(drawer.getByRole('link', { name: 'Disciple Making Minute', exact: true })).toBeVisible();
     await expect(drawer.getByRole('link', { name: 'Website Newsletters', exact: true })).toBeVisible();
-    await expect(drawer.getByRole('link', { name: 'HOME', exact: true })).toBeVisible();
+    // No HOME row either: the list IS the nav (owner, 2026-09-03).
+    await expect(drawer.getByRole('link', { name: 'HOME', exact: true })).toHaveCount(0);
     // No tab strip, no group headers.
     await expect(page.getByRole('radio', { name: 'Site' })).toHaveCount(0);
     await expect(page.getByRole('radio', { name: 'Admin' })).toHaveCount(0);
@@ -95,19 +96,16 @@ test.describe('[access] Access Control', () => {
     await expect(page.locator('.kp__slug')).toHaveText('/coaching-with-impact', { timeout: 20_000 });
   });
 
-  test('an Employee\'s Home is the screens they hold - no orders, events or requests they cannot open', async ({ page }) => {
+  test('an Employee never sits on Home - sign-in lands on the first screen they hold', async ({ page }) => {
     // Home used to render Recent Orders (customer names), Upcoming Events
-    // and New Requests to every Employee regardless of grants - it has no
-    // screen key of its own. Each preview is gated on the screen it belongs
-    // to now, and an Employee gets a list of their screens instead.
+    // and New Requests to every Employee regardless of grants. Since
+    // 2026-09-03 a non-Administrator is forwarded from Home to the first
+    // screen in their list (Coaching with Impact for this fixture), so
+    // /home, the logo and a bookmark all end there.
     await loginAsAdmin(page, EMPLOYEE_EMAIL);
     await page.goto(`${ADMIN_URL}/home`);
-    const mine = page.locator('[data-e2e="my-screens"]');
-    await expect(mine).toBeVisible({ timeout: 20_000 });
-    await expect(mine.getByRole('link', { name: /Coaching with Impact/ })).toBeVisible();
-    await expect(mine.getByRole('link', { name: /Disciple Making Minute/ })).toBeVisible();
-    await expect(mine.getByRole('link', { name: /Website Newsletters/ })).toBeVisible();
-    await expect(mine.getByRole('link')).toHaveCount(3);
+    await expect(page).toHaveURL(/page-manager\?tab=coaching-with-impact/, { timeout: 20_000 });
+    await expect(page.locator('.kp__slug')).toHaveText('/coaching-with-impact', { timeout: 20_000 });
     await expect(page.getByText('Recent Orders')).toHaveCount(0);
     await expect(page.getByText('Upcoming Events')).toHaveCount(0);
     await expect(page.getByText('New Requests')).toHaveCount(0);

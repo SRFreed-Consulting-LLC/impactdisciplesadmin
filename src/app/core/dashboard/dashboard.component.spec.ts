@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { DASHBOARD_SECTION_KEYS, DashboardComponent } from './dashboard.component';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -27,7 +28,8 @@ describe('DashboardComponent (permission-gated Home)', () => {
     fullAccess: boolean;
     visible: string[];
     pages?: { label: string; slug: string }[];
-  }): { component: DashboardComponent; loads: jasmine.Spy[] } {
+  }): { component: DashboardComponent; loads: jasmine.Spy[]; navigate: jasmine.Spy } {
+    const navigate = jasmine.createSpy('navigate').and.returnValue(Promise.resolve(true));
     const permissionService = {
       isFullAccess: () => options.fullAccess,
       canView: (key: string) => options.fullAccess || options.visible.includes(key),
@@ -38,7 +40,8 @@ describe('DashboardComponent (permission-gated Home)', () => {
       providers: [
         { provide: PermissionService, useValue: permissionService },
         { provide: AdminAuthService, useValue: { dao: { loggedInUser$: of({ role: 'Employee' }) } } },
-        { provide: SitePagesNavService, useValue: { leaves: options.pages ?? [], leaves$: of(options.pages ?? []) } }
+        { provide: SitePagesNavService, useValue: { leaves: options.pages ?? [], leaves$: of(options.pages ?? []) } },
+        { provide: Router, useValue: { navigate } }
       ]
     });
     const component = TestBed.runInInjectionContext(() => new DashboardComponent(
@@ -55,14 +58,34 @@ describe('DashboardComponent (permission-gated Home)', () => {
       spyOn(component, 'loadNewRequests')
     ];
     component.ngOnInit();
-    return { component, loads };
+    return { component, loads, navigate };
   }
 
-  it('Admin/Root: every preview shows and loads, and there is no screen list', () => {
-    const { component, loads } = build({ fullAccess: true, visible: [] });
+  it('Admin/Root: every preview shows and loads, there is no screen list, and they stay on Home', () => {
+    const { component, loads, navigate } = build({ fullAccess: true, visible: [] });
     expect(component.access).toEqual({ orders: true, events: true, requests: true });
     loads.forEach((load) => expect(load).toHaveBeenCalledTimes(1));
     expect(component.myScreens).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('a non-Administrator is sent straight to the first screen they hold, once', () => {
+    // Owner's call, 2026-09-03: no HOME for them - one screen means land on
+    // it, several means land on the first. replaceUrl, so Back does not
+    // bounce through Home.
+    const { navigate } = build({
+      fullAccess: false,
+      visible: ['page-manager.coaching-with-impact', 'data.disciple-making-minute'],
+      pages: [{ label: 'Coaching with Impact', slug: 'coaching-with-impact' }]
+    });
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith(['/page-manager'], { queryParams: { tab: 'coaching-with-impact' }, replaceUrl: true });
+  });
+
+  it('a non-Administrator granted nothing stays on Home to read the message', () => {
+    const { component, navigate } = build({ fullAccess: false, visible: [] });
+    expect(component.myScreens).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('an Employee with no preview grants: nothing is loaded, not merely hidden', () => {

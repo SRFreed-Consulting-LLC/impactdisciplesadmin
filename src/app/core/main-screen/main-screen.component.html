@@ -120,18 +120,10 @@
       case; only the drawing differs. See NavSectionDef.flatten. -->
       @if (isSectionFlattened) {
         <div class="impact-drawer__flat">
-          <!-- A flat nav (every non-Administrator, 2026-09-03) has no Home
-               group row to click, so Home leads the list as a plain link. -->
-          @if (isFlatNav) {
-            <a
-              mat-list-item
-              [routerLink]="['/home']"
-              class="impact-drawer__link"
-              [class.impact-drawer__link--active]="activeGroupId === 'home'">
-              <mat-icon matListItemIcon>home</mat-icon>
-              <span matListItemTitle class="impact-drawer__link-text">HOME</span>
-            </a>
-          }
+          <!-- A flat nav (every non-Administrator, 2026-09-03) lists ONLY the
+               screens the person holds - no HOME row. Home itself sends them
+               to the first of those (DashboardComponent), so the list is the
+               whole nav and the first entry is where they land. -->
           @for (entry of flatItems; track entry.item) {
             <div class="impact-drawer__subitem">
               <a
