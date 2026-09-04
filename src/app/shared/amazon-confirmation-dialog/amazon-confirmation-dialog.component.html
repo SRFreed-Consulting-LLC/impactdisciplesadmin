@@ -10,45 +10,43 @@
     <!-- Refusing to send beats sending something we could not read. -->
     <p class="amazon-dialog__error">{{ loadError }}</p>
   } @else {
-    <p class="amazon-dialog__text">
-      Sends to <b>{{ recipient }}</b> and closes the order.
-      Edits here apply to <b>this order only</b> - the saved template is not changed.
-    </p>
-
-    <div class="amazon-dialog__split">
-      <div class="amazon-dialog__edit">
-        <mat-form-field appearance="outline" class="amazon-dialog__subject">
-          <mat-label>Subject</mat-label>
-          <input matInput [(ngModel)]="subject" name="subject">
-        </mat-form-field>
-
-        @for (block of blocks; track block.key) {
-          <div class="amazon-dialog__field-label" [id]="'blk-' + block.key">{{ block.label }}</div>
-          <!-- contenteditable, not a rich-text box: this edits ONE block of the
-               builder design, so the surrounding tables and Outlook markup stay
-               exactly as compiled. Output is sanitized on every keystroke. -->
-          <div class="amazon-dialog__editable"
-            contenteditable="true"
-            role="textbox"
-            aria-multiline="true"
-            [attr.aria-labelledby]="'blk-' + block.key"
-            [innerHTML]="block.html"
-            (input)="onBlockEdited(block, $any($event.target).innerHTML)"></div>
-        }
-
-        @if (!blocks.length) {
-          <p class="amazon-dialog__note">
-            This template has no editable text blocks, so it will be sent as it stands.
-          </p>
-        }
+    <!-- Who this is going to, answered before it is sent rather than after.
+         It matters most on the Dashboard, where this dialog opens from a list
+         of orders rather than from the card you were already looking at. -->
+    <div class="amazon-dialog__ctx">
+      <div class="amazon-dialog__ctx-item">
+        <span class="amazon-dialog__ctx-key">To</span>
+        <span class="amazon-dialog__ctx-val">{{ recipientName }}</span>
       </div>
-
-      <div class="amazon-dialog__preview">
-        <div class="amazon-dialog__field-label">Preview</div>
-        <!-- No scripts: an email preview must never run anything. -->
-        <iframe class="amazon-dialog__frame" title="Email preview"
-          sandbox="allow-same-origin" [srcdoc]="preview"></iframe>
+      <div class="amazon-dialog__ctx-item">
+        <span class="amazon-dialog__ctx-key">Address</span>
+        <span class="amazon-dialog__ctx-val">{{ recipientEmail }}</span>
       </div>
+      @if (orderRef) {
+        <div class="amazon-dialog__ctx-item">
+          <span class="amazon-dialog__ctx-key">Order</span>
+          <span class="amazon-dialog__ctx-val">{{ orderRef }}</span>
+        </div>
+      }
+    </div>
+
+    <mat-form-field appearance="outline" class="amazon-dialog__subject">
+      <mat-label>Subject</mat-label>
+      <input matInput [(ngModel)]="subject" name="subject">
+    </mat-form-field>
+
+    <div class="amazon-dialog__field">
+      <span class="amazon-dialog__label">Message</span>
+      <!-- Edits the BODY of the branded email. The logo header and the footer
+           are not here because they are not editable per order - the words in
+           the middle are recompiled into the template on send, so the layout
+           cannot be broken by anything typed here. -->
+      <quill-editor class="amazon-dialog__editor"
+        [(ngModel)]="message" name="message" [modules]="richTextModules"></quill-editor>
+      <p class="amazon-dialog__hint">
+        Sent inside the usual Impact Disciples email - logo above, address and
+        unsubscribe below. Changes here apply to <b>this order only</b>.
+      </p>
     </div>
   }
 </mat-dialog-content>

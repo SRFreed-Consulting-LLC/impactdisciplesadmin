@@ -93,14 +93,6 @@
                 @if (isDoing(item, 'closeNoEmail')) { <mat-spinner class="btn-spinner" diameter="18"></mat-spinner> } @else { <mat-icon>done_all</mat-icon> }
                 Close Without Emailing
               </button>
-              <!-- See (and change) what that button is about to send. -->
-              @if (canEditConfirmationEmail) {
-                <button mat-button type="button" (click)="editConfirmationEmail()"
-                  matTooltip="Edit the email this sends">
-                  <mat-icon>edit</mat-icon>
-                  Edit this email
-                </button>
-              }
             }
             @case ('shipping_label_printed') {
               <button mat-raised-button color="primary" type="button" [disabled]="isBusy(item) || !canEdit()" (click)="markPackaged(item)">

@@ -233,13 +233,6 @@
           </button>
           <!-- See (and change) what that button is about to send, without
                going hunting for it by name in System Templates. -->
-          @if (canEditConfirmationEmail) {
-            <button mat-button type="button" (click)="editConfirmationEmail()"
-              matTooltip="Edit the email this sends">
-              <mat-icon>edit</mat-icon>
-              Edit this email
-            </button>
-          }
         }
         @case ('shipping_label_printed') {
           <button mat-raised-button color="primary" type="button" [disabled]="busy" (click)="markPackaged()">

@@ -25,6 +25,11 @@ import { FormRendererFieldComponent } from './form-renderer/form-renderer-field.
 import { DateTimeFieldComponent } from './date-time-field/date-time-field.component';
 import { AmazonConfirmationDialogComponent } from './amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+// The confirmation dialog edits an email body here, and this module is
+// eager - which costs nothing extra: quill is already in the main bundle
+// via app.module.ts's quill-semantic-html import, so this brings only the
+// ngx-quill wrapper with it.
+import { QuillModule } from 'ngx-quill';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -79,6 +84,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    QuillModule,
     MatDialogModule,
     MatButtonModule,
     MatProgressSpinnerModule,

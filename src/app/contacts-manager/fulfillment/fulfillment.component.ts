@@ -8,8 +8,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
-import { AMAZON_CONFIRMATION_TEMPLATE_NAME, PurchasesService } from 'src/app/common/services/data/purchases.service';
-import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
+import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { MatDialog } from '@angular/material/dialog';
@@ -65,7 +64,7 @@ export class FulfillmentComponent implements OnInit {
 
   private readonly screenKey = 'contacts-manager.fulfillment';
 
-  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog, private templateEditor: EmailTemplateEditorService, private confirmService: ConfirmService) {}
+  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog, private confirmService: ConfirmService) {}
 
   // Path-aware per order (standard vs Amazon branch).
   stepsFor(item: CheckoutForm): FulfillmentStep[] {
@@ -207,16 +206,8 @@ export class FulfillmentComponent implements OnInit {
     }
   }
 
-  // The template this workflow step sends, editable from here. Named by the
-  // same constant PurchasesService looks it up by, so the two cannot drift.
 
-  get canEditConfirmationEmail(): boolean {
-    return this.templateEditor.canEdit();
-  }
 
-  editConfirmationEmail(): void {
-    void this.templateEditor.openByName(AMAZON_CONFIRMATION_TEMPLATE_NAME, { from: 'fulfillment' });
-  }
 
   /**
    * Closes an Amazon order without emailing the customer at all.
@@ -249,7 +240,7 @@ export class FulfillmentComponent implements OnInit {
     }
     // The dialog sends + closes the order; the live streamAll() drops the
     // card automatically once fulfillmentStatus flips to 'closed'.
-    this.dialog.open(AmazonConfirmationDialogComponent, { width: '520px', data: { item } });
+    this.dialog.open(AmazonConfirmationDialogComponent, { width: '720px', maxWidth: '95vw', data: { item } });
   }
 
   private newRank(item: CheckoutForm): number {

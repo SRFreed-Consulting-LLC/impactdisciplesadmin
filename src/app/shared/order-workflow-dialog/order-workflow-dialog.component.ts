@@ -12,8 +12,6 @@ import { FulfillmentStep, WorkflowAction, segmentState, stepsFor } from 'src/app
 import { AmazonConfirmationDialogComponent } from '../amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { SnackbarService } from '../snackbar.service';
 import { ConfirmService } from '../confirm-dialog/confirm.service';
-import { EmailTemplateEditorService } from 'src/app/common/services/email-template-editor.service';
-import { AMAZON_CONFIRMATION_TEMPLATE_NAME } from 'src/app/common/services/data/purchases.service';
 
 export interface OrderWorkflowDialogData {
   item: CheckoutForm;
@@ -56,8 +54,7 @@ export class OrderWorkflowDialogComponent {
     private router: Router,
     private snackbar: SnackbarService,
     private dialog: MatDialog,
-    private confirmService: ConfirmService,
-    private templateEditor: EmailTemplateEditorService
+    private confirmService: ConfirmService
   ) {
     this.item = data.item;
   }
@@ -139,7 +136,7 @@ export class OrderWorkflowDialogComponent {
 
   sendAmazonConfirmation(): void {
     this.dialog.open<AmazonConfirmationDialogComponent, { item: CheckoutForm }, CheckoutForm | null>(
-      AmazonConfirmationDialogComponent, { width: '520px', data: { item: this.item } }
+      AmazonConfirmationDialogComponent, { width: '720px', maxWidth: '95vw', data: { item: this.item } }
     ).afterClosed().subscribe((saved) => {
       if (saved) {
         // Terminal - same close-the-dialog behavior as markShipped().
@@ -148,21 +145,7 @@ export class OrderWorkflowDialogComponent {
     });
   }
 
-  get canEditConfirmationEmail(): boolean {
-    return this.templateEditor.canEdit();
-  }
 
-  /**
-   * Opens the designer on the template this step sends.
-   *
-   * Closes this dialog first, which the other two surfaces do not have to:
-   * the designer is a full-screen route, and navigating underneath a modal
-   * leaves it floating over the editor with no way back to the order.
-   */
-  editConfirmationEmail(): void {
-    this.dialogRef.close(false);
-    void this.templateEditor.openByName(AMAZON_CONFIRMATION_TEMPLATE_NAME, { from: 'fulfillment' });
-  }
   /**
    * Closes an Amazon order without emailing the customer.
    *

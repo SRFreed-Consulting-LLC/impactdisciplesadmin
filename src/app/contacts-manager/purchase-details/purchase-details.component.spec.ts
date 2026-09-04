@@ -76,9 +76,11 @@ function makeComponent(purchase: CheckoutForm = aPurchase(), overrides: Record<s
     d.customerService as never,
     d.eventService as never,
     d.dialog as never,
-    // Editing the bound template is a separate, opt-in action; these
-    // specs assert workflow behaviour, so it stays unavailable here.
-    { canEdit: () => false, openByName: async () => undefined } as never,
+    // The EmailTemplateEditorService argument went with the "Edit this email"
+    // pencil (2026-09-04). Changing the template for every future customer is
+    // a different job from writing one order's confirmation, and this screen
+    // now only does the second - the send dialog is where the words are
+    // written. A route back to the template itself is a separate piece of work.
   );
   component.selectedItem = purchase;
   return { component, deps: d };
