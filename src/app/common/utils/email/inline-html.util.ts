@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify';
 
-// Normalizes the inline editor's output before it's stored on a block:
+// Normalizes contenteditable output before it is stored on a design block:
 // email-safe tags only, no classes, no scripts. Everything the compiler
 // later receives for text/heading/footer fragments has passed through here.
 //
@@ -9,6 +9,9 @@ import DOMPurify from 'dompurify';
 // are imported into the designer as one text block - clicking into one to
 // edit must not strip the content the old editor legitimately created
 // (h1-h6, base64 <img>, blockquote, alignment/color styles).
+// Moved out of tools-manager/email-designer/inline-editor/ on 2026-09-04: the
+// fulfillment confirmation dialog edits design blocks too, and it lives in the
+// EAGER SharedModule, so the util could not stay inside a lazy feature folder.
 export function normalizeInlineHtml(html: string): string {
   return DOMPurify.sanitize(html ?? '', {
     ALLOWED_TAGS: [

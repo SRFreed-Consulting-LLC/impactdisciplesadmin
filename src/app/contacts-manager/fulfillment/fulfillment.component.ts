@@ -15,6 +15,7 @@ import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
 import { MatDialog } from '@angular/material/dialog';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
+import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { FulfillmentStep, WorkflowAction, completedStepCount, segmentState, stepsFor } from './fulfillment-steps';
 
 // Store Manager > Fulfillment - the 5-step physical-order workflow (see
@@ -64,7 +65,7 @@ export class FulfillmentComponent implements OnInit {
 
   private readonly screenKey = 'contacts-manager.fulfillment';
 
-  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog, private templateEditor: EmailTemplateEditorService) {}
+  constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog, private templateEditor: EmailTemplateEditorService, private confirmService: ConfirmService) {}
 
   // Path-aware per order (standard vs Amazon branch).
   stepsFor(item: CheckoutForm): FulfillmentStep[] {
@@ -217,6 +218,31 @@ export class FulfillmentComponent implements OnInit {
     void this.templateEditor.openByName(AMAZON_CONFIRMATION_TEMPLATE_NAME, { from: 'fulfillment' });
   }
 
+  /**
+   * Closes an Amazon order without emailing the customer at all.
+   *
+   * Sits beside Send Confirmation because the choice belongs at the same
+   * moment: the order is shipped either way, and sometimes the customer has
+   * already been told. Confirmed first - the customer is told NOTHING, and
+   * the card disappears the instant the status flips, so a misclick would
+   * leave no trace on the screen that anything happened.
+   * @param item The purchase to close.
+   */
+  async closeWithoutEmail(item: CheckoutForm): Promise<void> {
+    if (!this.canEdit() || this.isBusy(item)) {
+      return;
+    }
+    const proceed = await this.confirmService.confirm(
+      `Close this order without emailing <b>${item.email}</b>? ` +
+      'They will not be told their order shipped.',
+      'Close without emailing'
+    );
+    if (!proceed) {
+      return;
+    }
+    void this.run(item, 'closeNoEmail',
+      () => this.service.closeWithoutConfirmation(item), 'Order closed - no email sent');
+  }
   sendAmazonConfirmation(item: CheckoutForm): void {
     if (!this.canEdit()) {
       return;

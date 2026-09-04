@@ -105,7 +105,7 @@ import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { mergeSubtemplateIntoSchema } from 'src/app/common/services/data/library/library-template-merge.util';
 import { NewRecordAlertsService } from 'src/app/common/services/data/new-record-alerts.service';
 import { NewRecordTracker } from 'src/app/shared/new-record-tracking.util';
-import { normalizeInlineHtml } from 'src/app/tools-manager/email-designer/inline-editor/inline-html.util';
+import { normalizeInlineHtml } from 'src/app/common/utils/email/inline-html.util';
 import { notify } from 'src/app/common/utils/notify.util';
 import { OrderWorkflowDialogComponent } from 'src/app/shared/order-workflow-dialog/order-workflow-dialog.component';
 import { OrganizationLocationDialogComponent } from 'src/app/contacts-manager/organizations/organization-location-dialog.component';

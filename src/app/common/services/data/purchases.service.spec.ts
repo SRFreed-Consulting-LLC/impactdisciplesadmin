@@ -133,26 +133,62 @@ describe('PurchasesService', () => {
 
     it('renders merge tags, queues the email, then closes the order', async () => {
       templates = [{
-        html: '<p>Hi *|FNAME|*! *|TRACKING|No tracking available|*</p>',
+        html: '<p>Hi *|FNAME|*!</p>',
         subject: 'Shipped, *|FNAME|*',
       }];
-      await service.sendAmazonConfirmation(order(), ' TRK-99 ');
+      await service.sendAmazonConfirmation(order());
       expect(sentEmails.length).toBe(1);
       expect(sentEmails[0].to).toBe('buyer@test.local');
       expect(sentEmails[0].subject).toBe('Shipped, Bea');
       expect(sentEmails[0].html).toContain('Hi Bea!');
-      expect(sentEmails[0].html).toContain('Tracking: TRK-99');
-      const written = updates[0].value;
-      expect(written.fulfillmentStatus).toBe('closed');
-      expect(written.amazonTracking).toBe('TRK-99');
+      expect(updates[0].value.fulfillmentStatus).toBe('closed');
     });
 
-    it('no tracking -> the inline fallback renders and amazonTracking stores null', async () => {
-      templates = [{ html: '*|TRACKING|No tracking available|*' }];
+    // The dialog shows the real email and lets it be reworded per order, so it
+    // arrives with finished content. The stored template must not then be
+    // consulted at all - re-rendering it would silently discard the edit.
+    it('sends prepared content verbatim, without reading the template', async () => {
+      templatesById = {};
+      templates = []; // nothing to fall back to; only prepared content can work
+      await service.sendAmazonConfirmation(order(), {
+        subject: 'Reworded for this order',
+        html: '<p>A note just for Bea.</p>'
+      });
+      expect(sentEmails[0].subject).toBe('Reworded for this order');
+      expect(sentEmails[0].html).toBe('<p>A note just for Bea.</p>');
+      expect(updates[0].value.fulfillmentStatus).toBe('closed');
+    });
+
+    // Every caller that has not been given an editor still works, and a
+    // failure to build a preview can never leave an order unsendable.
+    it('falls back to the stored template when content is only half prepared', async () => {
+      templates = [{ html: 'FROM TEMPLATE', subject: 'Template subject' }];
+      await service.sendAmazonConfirmation(order(), { subject: 'Only a subject', html: '' });
+      expect(sentEmails[0].html).toBe('FROM TEMPLATE');
+      expect(sentEmails[0].subject).toBe('Template subject');
+    });
+
+    // amazonTracking was written from a prompt whose value reached no customer:
+    // the template holds *|FNAME|* and no *|TRACKING|* tag at all. The prompt
+    // is gone, and with it the write - historical values are left alone.
+    it('no longer writes amazonTracking', async () => {
+      templates = [{ html: 'x' }];
       await service.sendAmazonConfirmation(order());
-      expect(sentEmails[0].html).toBe('No tracking available');
-      expect(sentEmails[0].subject).toBe('Your order is on its way!');
-      expect(updates[0].value.amazonTracking).toBeNull();
+      expect('amazonTracking' in updates[0].value).toBeFalse();
+    });
+
+    it('closeWithoutConfirmation closes the order and sends nothing at all', async () => {
+      templates = [{ html: 'x' }];
+      await service.closeWithoutConfirmation(order());
+      expect(sentEmails.length).toBe(0);
+      expect(updates[0].value.fulfillmentStatus).toBe('closed');
+    });
+
+    it('closing without a confirmation still records who did it, and when', async () => {
+      await service.closeWithoutConfirmation(order());
+      const history = updates[0].value.statusHistory;
+      expect(history[history.length - 1].status).toBe('closed');
+      expect(history[history.length - 1].date).toBeTruthy();
     });
 
     // The template is addressed by PINNED DOCUMENT ID (2026-08-27). A name is

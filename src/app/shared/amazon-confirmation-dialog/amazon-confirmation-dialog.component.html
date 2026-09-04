@@ -1,18 +1,60 @@
 <app-popup-header title="SEND SHIPPING CONFIRMATION" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
 
 <mat-dialog-content class="amazon-dialog">
-  <p class="amazon-dialog__text">
-    Emails <b>{{ data.item.email }}</b> that their order shipped via Amazon
-    (using the "Amazon Shipping Confirmation" email template) and closes the order.
-  </p>
+  @if (loading) {
+    <div class="amazon-dialog__loading">
+      <mat-spinner diameter="28"></mat-spinner>
+      <span>Loading the confirmation email...</span>
+    </div>
+  } @else if (loadError) {
+    <!-- Refusing to send beats sending something we could not read. -->
+    <p class="amazon-dialog__error">{{ loadError }}</p>
+  } @else {
+    <p class="amazon-dialog__text">
+      Sends to <b>{{ recipient }}</b> and closes the order.
+      Edits here apply to <b>this order only</b> - the saved template is not changed.
+    </p>
 
-  <mat-form-field appearance="outline" class="amazon-dialog__tracking">
-    <mat-label>Amazon tracking number or link (optional)</mat-label>
-    <input matInput [(ngModel)]="tracking" placeholder="e.g. TBA123456789">
-  </mat-form-field>
+    <div class="amazon-dialog__split">
+      <div class="amazon-dialog__edit">
+        <mat-form-field appearance="outline" class="amazon-dialog__subject">
+          <mat-label>Subject</mat-label>
+          <input matInput [(ngModel)]="subject" name="subject">
+        </mat-form-field>
+
+        @for (block of blocks; track block.key) {
+          <div class="amazon-dialog__field-label" [id]="'blk-' + block.key">{{ block.label }}</div>
+          <!-- contenteditable, not a rich-text box: this edits ONE block of the
+               builder design, so the surrounding tables and Outlook markup stay
+               exactly as compiled. Output is sanitized on every keystroke. -->
+          <div class="amazon-dialog__editable"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            [attr.aria-labelledby]="'blk-' + block.key"
+            [innerHTML]="block.html"
+            (input)="onBlockEdited(block, $any($event.target).innerHTML)"></div>
+        }
+
+        @if (!blocks.length) {
+          <p class="amazon-dialog__note">
+            This template has no editable text blocks, so it will be sent as it stands.
+          </p>
+        }
+      </div>
+
+      <div class="amazon-dialog__preview">
+        <div class="amazon-dialog__field-label">Preview</div>
+        <!-- No scripts: an email preview must never run anything. -->
+        <iframe class="amazon-dialog__frame" title="Email preview"
+          sandbox="allow-same-origin" [srcdoc]="preview"></iframe>
+      </div>
+    </div>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
   <button mat-button type="button" (click)="onCancel()">Cancel</button>
-  <app-indicator-button title="SEND & CLOSE ORDER" [isInProgress]="sending" (clicked)="send()"></app-indicator-button>
+  <app-indicator-button title="SEND &amp; CLOSE ORDER" [isInProgress]="sending"
+    [disabled]="!canSend" (clicked)="send()"></app-indicator-button>
 </mat-dialog-actions>

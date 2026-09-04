@@ -12,6 +12,7 @@ import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
 import { BaseService } from './base.service';
 import { EMailService } from './email.service';
 import { EMailTemplatesService } from './email-templates.service';
+import { MailTemplateModel } from 'src/app/common/models/admin/mail.model';
 import { CALLABLE_FUNCTIONS } from '@impact-common/shared/contract/functions-contract';
 import {
   ShippingCostDrift,
@@ -378,24 +379,18 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     return this.update(item.id!, { ...item, fulfillmentStatus: 'shipped_via_amazon', statusHistory: this.withStatusHistory(item, 'shipped_via_amazon') });
   }
 
-  // The Amazon path's final step: render the "Amazon Shipping Confirmation"
-  // template (admin-editable in the designer; found BY NAME - renaming it
-  // breaks this, same convention as "Sales Receipt"), queue the email, and
-  // close the order in the same action. The optional tracking value renders
-  // through the *|TRACKING|...inline fallback...|* merge tag. Throws before
-  // any state change when the template is missing or the purchase has no
-  // email - the order only closes after the email actually queued.
-  async sendAmazonConfirmation(item: CheckoutForm, tracking?: string): Promise<CheckoutForm> {
-    const email = (item.email ?? '').trim();
-    if (!email.includes('@')) {
-      throw new Error('This purchase has no contact email address.');
-    }
-    // By pinned ID first: a name is an editable text field, and renaming this
-    // template used to stop the shipping confirmation with no error anywhere.
-    // The name lookup stays as a fallback so a project whose data has not
-    // been pinned yet still sends - unlike the receipt path this one THROWS
-    // when nothing resolves, because the admin is standing right there and
-    // the order must not close as "confirmation sent" when none was.
+  /**
+   * Loads the Amazon Shipping Confirmation template.
+   *
+   * By pinned ID first: a name is an editable text field, and renaming this
+   * template used to stop the shipping confirmation with no error anywhere.
+   * The name lookup stays as a fallback so a project whose data has not been
+   * pinned yet still sends. THROWS when nothing resolves - unlike the receipt
+   * path, the admin is standing right here and the order must not close as
+   * "confirmation sent" when none was.
+   * @returns The template document.
+   */
+  async loadAmazonConfirmationTemplate(): Promise<MailTemplateModel> {
     const byId = await this.emailTemplatesService.getById(AMAZON_CONFIRMATION_TEMPLATE_ID);
     const template = byId
       ?? (await this.emailTemplatesService.getAllByValue('name', AMAZON_CONFIRMATION_TEMPLATE_NAME))[0];
@@ -405,23 +400,83 @@ export class PurchasesService extends BaseService<CheckoutForm>{
         'create it under Store Manager, or run scripts/pin-template-ids.js.'
       );
     }
-    const templates = [template];
-    const trimmedTracking = tracking?.trim() || '';
-    const context = {
+    return template;
+  }
+
+  /** The merge values this email resolves, per purchase. */
+  amazonConfirmationContext(item: CheckoutForm): Record<string, string> {
+    return {
       firstName: item.firstName ?? '',
       lastName: item.lastName ?? '',
-      email,
-      date: new Date().toLocaleDateString('en-US'),
-      tracking: trimmedTracking ? 'Tracking: ' + trimmedTracking : undefined
+      email: (item.email ?? '').trim(),
+      date: new Date().toLocaleDateString('en-US')
     };
-    const html = renderMergeTags(templates[0].html ?? '', context);
-    const subject = renderMergeTags(templates[0].subject || 'Your order is on its way!', context);
+  }
+
+  // The Amazon path's final step: send the customer their confirmation and
+  // close the order in one action.
+  //
+  // 2026-09-04: `prepared` replaced a `tracking` argument. The dialog now shows
+  // the real email and lets the admin edit its wording per order, so the
+  // caller arrives with finished content rather than one value to merge.
+  //
+  // The tracking argument is gone rather than merely unused, and it is worth
+  // knowing why: the template contains ONE merge tag, *|FNAME|*. There is no
+  // *|TRACKING|*, and there never was - so every tracking number typed into
+  // that prompt was merged into a context nothing read, and no customer ever
+  // received one. It was still stored on the purchase as `amazonTracking`, and
+  // those historical values are left untouched; nothing writes the field now.
+  //
+  // Still throws before any state change when the purchase has no email
+  // address, so an order cannot close as "confirmation sent" when none was.
+  async sendAmazonConfirmation(
+    item: CheckoutForm,
+    prepared?: { subject: string; html: string }
+  ): Promise<CheckoutForm> {
+    const email = (item.email ?? '').trim();
+    if (!email.includes('@')) {
+      throw new Error('This purchase has no contact email address.');
+    }
+
+    // Falling back to the stored template keeps every caller that has not been
+    // given an editor working - and means a failure to build the preview can
+    // never leave an order unsendable.
+    let subject = prepared?.subject;
+    let html = prepared?.html;
+    if (!subject || !html) {
+      const template = await this.loadAmazonConfirmationTemplate();
+      const context = this.amazonConfirmationContext(item);
+      html = renderMergeTags(template.html ?? '', context);
+      subject = renderMergeTags(template.subject || 'Your order is on its way!', context);
+    }
+
     await this.emailService.sendHtmlEmail(email, subject, html);
 
     return this.update(item.id!, {
       ...item,
       fulfillmentStatus: 'closed',
-      amazonTracking: trimmedTracking || null,
+      statusHistory: this.withStatusHistory(item, 'closed')
+    });
+  }
+
+  /**
+   * Closes an Amazon order WITHOUT emailing the customer.
+   *
+   * The sibling of sendAmazonConfirmation for the case where the customer has
+   * already been told some other way, or does not need telling. It is a
+   * separate method rather than a flag because the two differ in the thing
+   * that matters: one of them sends mail on the ministry's domain and the
+   * other cannot.
+   *
+   * The status change is recorded in statusHistory exactly like the sending
+   * path, so the timeline still shows who closed the order and when.
+   * @param item The purchase to close.
+   * @returns The saved purchase.
+   */
+  closeWithoutConfirmation(item: CheckoutForm): Promise<CheckoutForm> {
+    return this.update(item.id!, {
+      ...item,
+      fulfillmentStatus: 'closed',
       statusHistory: this.withStatusHistory(item, 'closed')
     });
   }

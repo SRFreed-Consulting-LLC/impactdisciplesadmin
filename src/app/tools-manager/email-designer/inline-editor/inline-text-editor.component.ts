@@ -3,7 +3,7 @@ import Quill from 'quill';
 import { HeadingBlock, TextBlock } from 'src/app/common/models/admin/email-design.model';
 import { MergeTagDef, mergeTagToken, mergeTagsForKind } from 'src/app/common/utils/email/merge-tags';
 import { DesignerStateService } from '../designer-state.service';
-import { normalizeInlineHtml } from './inline-html.util';
+import { normalizeInlineHtml } from 'src/app/common/utils/email/inline-html.util';
 
 // The inline-STYLE attributor registration moved to the shared
 // quill-style-attributors util (2026-08-19) so the campaign popup editor

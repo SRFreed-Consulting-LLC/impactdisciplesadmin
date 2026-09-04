@@ -19,7 +19,7 @@ import { FulfillmentStatus, StatusHistoryEntry } from '@impact-common/shared/mod
  *  the write - or the 1-3s ShipEngine purchase - actually completes. Until
  *  2026-09-03 only Print Label had any in-flight state, and that was a
  *  silent grey-out that read as a dead click. */
-export type WorkflowAction = 'acknowledge' | 'print' | 'amazon' | 'pickedUp' | 'packaged' | 'shipped';
+export type WorkflowAction = 'acknowledge' | 'print' | 'amazon' | 'pickedUp' | 'packaged' | 'shipped' | 'closeNoEmail';
 
 export interface FulfillmentStep {
   status: FulfillmentStatus;
