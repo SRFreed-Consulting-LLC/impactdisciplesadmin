@@ -15,6 +15,7 @@ import { CookieService } from 'ngx-cookie-service';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './core/auth/auth.module';
+import { installQuillSemanticHtmlSpaceFix } from './shared/rich-text-editor/quill-semantic-html';
 
 @NgModule({
   declarations: [
@@ -94,4 +95,15 @@ import { AuthModule } from './core/auth/auth.module';
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+  // IN THE CONSTRUCTOR, not an APP_INITIALIZER, and not in the components
+  // that host an editor: it patches a Quill PROTOTYPE method, so the only
+  // requirement is that it runs before the first Quill is constructed, and
+  // the root module is built before any lazy feature module that could hold
+  // one. Putting it on the editors instead is the arrangement this exists to
+  // avoid - fifteen call sites, and the sixteenth silently writing broken
+  // HTML to a public page. See quill-semantic-html.ts.
+  constructor() {
+    installQuillSemanticHtmlSpaceFix();
+  }
+}

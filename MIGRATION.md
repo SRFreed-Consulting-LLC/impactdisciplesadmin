@@ -8,6 +8,68 @@ every call site.
 
 ---
 
+## RESOLVED: every space Quill saved was a `&nbsp;` (2026-09-04)
+
+**Both environments repaired the same day; the cause is fixed in the app.** Kept
+because the shape of the mistake is the useful part.
+
+Two sections on Coaching with Impact rendered with their copy off-centre while
+every other centred section on the page sat correctly. Nothing was configured
+wrong - both columns carried `align: 'centre'` and `measure: true`, the same
+pair as the section below them that looked right. Their stored HTML held 108 and
+154 `&nbsp;` and **not one ordinary space**, which makes a paragraph a single
+unbreakable "word" 718 and 1003 characters long. Text that cannot break cannot
+wrap, so it overflowed the column's 840px measure instead of laying out inside
+it and stopped sharing the page's centre.
+
+**IT LOOKED LIKE A PASTE AND IT WAS NOT.** That first diagnosis is worth
+recording because the wrong fix follows straight from it, and it survived a
+round of evidence: the damaged fields also carried
+`background-color: rgb(255, 255, 255); color: rgb(34, 34, 34)`, the copy had
+obviously come from a rendered page, and both facts pointed at the clipboard.
+
+The clipboard was innocent of the half that mattered. Quill 2.0.3's own
+`matchText` ends with `replaceAll('\u00A0', ' ')`
+(`modules/clipboard.js:472`) - it normalises nbsp **on the way in**. They arrive
+on the way **out**: `getSemanticHTML()` serialises a text blot as
+`escapedText.replaceAll(' ', '&nbsp;')` (`core/editor.js:298`),
+unconditionally, and ngx-quill's default `format: 'html'` reads the model value
+through exactly that method. **Every save through any Quill editor in this app
+wrote a value whose every space was non-breaking** - typed, pasted, or edited by
+one character.
+
+That is why the damage tracked which fields had been EDITED rather than which
+had been pasted into, and it is the tell worth remembering: `echs` and `contact`
+on the same page, never touched since seeding, were clean.
+
+Fixed in `src/app/shared/rich-text-editor/quill-semantic-html.ts` (one wrap of
+`Quill.prototype.getSemanticHTML`, installed in `AppModule`'s constructor -
+ngx-quill's `valueGetter` is per-component and its global `QuillConfig` has no
+equivalent, so fifteen call sites was the alternative). The pasted colours were
+real and are dropped by a clipboard matcher in `quill-paste-cleanup.ts`.
+
+Data repaired by `scripts/clean-pasted-rich-text.js`:
+
+```
+node scripts/clean-pasted-rich-text.js --project=dev|prod \
+  [--collection=page_content] [--doc=id,id] [--only=nbsp|ink] [--execute]
+```
+
+**dev: 2 fields / 2 documents. prod: 4 fields / 3 documents** - Coaching with
+Impact plus Privacy Policy and Terms, which carried the same pasted grey
+(`color: rgb(102, 102, 102)`) and a handful of nbsp. Stripping their colour was
+a deliberate call (Shane, 2026-09-04) rather than the script's default, which is
+why `--only` and `--doc` exist: unjoining words cannot make a page look worse,
+but restyling two legal pages while fixing a third page's layout would have been
+a worse bug than the one being fixed. Idempotent; a second run finds none.
+
+**Still worth doing:** an `overflow-wrap: anywhere` guard on `.kit-copy` in the
+web repo. It does not fix anything above - it stops the next unbreakable string,
+from wherever, from taking a page's layout with it rather than merely looking
+ugly.
+
+---
+
 ## CLEANUP: failed shipping labels persisted onto purchases (2026-09-02)
 
 `purchase.shippingLabel` is meant to hold a bought label. The admin app used
