@@ -16,6 +16,12 @@
       }
     }
   },
-  "etags": {},
+  "etags": {
+    "impactdisciples-a82a8": {
+      "extensionInstances": {
+        "firestore-send-email": "ed7d7e2fba0fe461e418d601f904e98d9d701bc9b0aaa6e8543707aa56a84ac1"
+      }
+    }
+  },
   "dataconnectEmulatorConfig": {}
 }

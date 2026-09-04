@@ -74,7 +74,29 @@ because ~2,000 serial sends would exceed the function timeout, strand ledger doc
 `PENDING_RETRY_AGE_MS`, and push the two denormalized stats counters past Firestore's ~1 write/sec
 per-document guidance. The drain loop is time-boxed for the same reason. `campaignSendBudget()` is
 a pure export, unit-tested in `functions/test/campaign-pure.test.js`. A full-list blast (~2,400)
-now rolls out in ~1.5 hours rather than ~12. UI: campaign-wizard (goal/audience/window; web channel
+now rolls out in ~1.5 hours rather than ~12.
+
+**Concurrency is a SEPARATE limit from volume, and it is the one that actually broke.**
+Forensics on the surviving `mail` documents (2026-09-04) put the problematic ~3,000-recipient
+blast in **June 2025**, and its signature was `421 Too many concurrent SMTP connections` - not an
+hourly cap - followed by ~3 months of `535 Incorrect authentication data`, consistent with the
+host throttling the account afterwards. The pre-2026-08-19 blast dialog sent via an un-awaited,
+unpaced client-side loop, so thousands of `mail` docs appeared at once and the extension opened
+connections to match.
+
+The rolling-hour throttle paces VOLUME. The ceiling on SIMULTANEOUS connections is
+`maxInstanceCount` on the extension's own queue processor
+(`ext-firestore-send-email-processqueue`), which serves one request per instance - so instances
+are connections. **Set to 5 on prod** (the platform default is 100, and was 3000 before the
+upgrade). Two traps: BOTH declarative routes - a
+`firebaseextensions.v1beta.v2function/maxInstances` line in `extensions/firestore-send-email.env`
+and a PATCH of `config.systemParams` through the Extensions REST API - accept the value and
+silently ignore it, so only a direct Cloud Function patch takes effect; and **an extension version
+change resets it** with no warning. Prod also had to be upgraded 0.1.34 -> 0.2.4 first, because
+the old 1st-gen instance ran decommissioned nodejs18 and refused every change with
+`DEPLOYS_NOT_ALLOWED` while still delivering mail quite happily. The full note, including why
+`AUTH_TYPE` must never be left to an `ext:update --force` default, is in
+`extensions/firestore-send-email.env`. UI: campaign-wizard (goal/audience/window; web channel
 visible but disabled until Phase 5) + email-touch-editor (template-snapshot content — editing a
 template later never rewrites campaign history; send now / schedule / tag-trigger; send-test).
 Composite indexes `campaign_sends(status, createdAt)` + `campaign_sends(emailId, status)`.
