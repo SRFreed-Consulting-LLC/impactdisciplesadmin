@@ -141,6 +141,11 @@ export class AdminAuthService {
     return this.loggerService
       .logMessage('LOGIN', email, failure.log, [{ ...err }])
       .pipe(
+        // The log is best-effort (LoggerService already swallows its own
+        // failures); this is the second guard, here because THIS is the
+        // observable the login screen waits on - if it ever errors, the
+        // screen spins forever with no message (2026-09-04).
+        catchError(() => of(true as string | boolean)),
         switchMap((reference: string | boolean) => {
           notify({
             message: failure.message(reference),

@@ -70,6 +70,11 @@ export class BaseService<T extends BaseModel> {
     return this.dao.add(value, this.table, this.fromFirestore);
   }
 
+  /** Create without reading back - see FirebaseDAO.create(). */
+  create(value: T): Promise<string> {
+    return this.dao.create(value, this.table);
+  }
+
   update(id: string, value: T): Promise<T>{
     return this.dao.update(id, value, this.table, this.fromFirestore);
   }

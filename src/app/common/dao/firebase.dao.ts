@@ -127,6 +127,22 @@ export class FirebaseDAO<T extends BaseModel> {
     });
   }
 
+  /**
+   * Creates a document and returns only its id - NO read-back.
+   *
+   * add() above reads the new document straight back, which needs READ
+   * permission on the collection. A write-only collection (log-messages:
+   * anonymous create, Admin-only read) refuses that read, and until
+   * 2026-09-04 the failed-login log used add(): the log line was WRITTEN,
+   * then the read-back threw "Missing or insufficient permissions", the
+   * rejection escaped, and the login screen spun forever on a wrong
+   * password with no message. Use this wherever the caller has no business
+   * reading what it just wrote.
+   */
+  public create(value: T, table: string): Promise<string> {
+    return addDoc(collection(this.fs, this.path(table)), value).then((ref) => ref.id);
+  }
+
   public async update(id: string, value: T, table: string, fromFirestore?): Promise<T>{
     await setDoc(doc(this.fs, this.path(table) + '/' + id), value);
 

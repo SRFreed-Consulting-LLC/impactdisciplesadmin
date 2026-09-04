@@ -269,6 +269,10 @@ test("anon: log-messages create allowed in shape (pre-auth failed logins)", asyn
     id: "l2", date: Timestamp.now(), type: "LOGIN",
     message: "x", error_code: "y", archived: false, extra: "nope",
   }));
+  // And the anonymous writer may NOT read it back - which is why
+  // LoggerService must create without a read-back (2026-09-04: add()'s
+  // read-back was refused here and left the login screen spinning).
+  await assertFails(getDoc(doc(anon(), p("log-messages/l1"))));
 });
 
 test("anon: eventSessionCounts falls to the default deny", async () => {

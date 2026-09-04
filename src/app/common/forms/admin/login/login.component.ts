@@ -59,13 +59,23 @@ export class LoginComponent implements OnDestroy {
     // its own [disabled]="isLoading" binding is unaffected.
     this.form.disable();
 
-    this.authService.logIn(email.toLowerCase(), password).pipe(takeUntil(this.ngUnsubscribe)).subscribe((result) => {
-      if (!result.isOk) {
-        this.snackbar.error('There was an error trying to log in: ' + result.message);
+    this.authService.logIn(email.toLowerCase(), password).pipe(takeUntil(this.ngUnsubscribe)).subscribe({
+      next: (result) => {
+        if (!result.isOk) {
+          this.snackbar.error('There was an error trying to log in: ' + result.message);
+        }
+        this.isLoading = false;
+        this.form.enable();
+      },
+      // The stream should never error (logIn catches its own failures), but
+      // it did until 2026-09-04 - a wrong password left the button spinning
+      // with no message. Whatever happens, the form comes back.
+      error: (err) => {
+        console.error('Login failed unexpectedly', err);
+        this.snackbar.error('Could not sign in - please try again.');
+        this.isLoading = false;
+        this.form.enable();
       }
-
-      this.isLoading = false;
-      this.form.enable();
     });
   }
 

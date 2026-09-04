@@ -5,7 +5,7 @@ import { FirebaseDAO } from '../../dao/firebase.dao';
 import { Timestamp } from "firebase/firestore";
 import { dateFromTimestamp } from "@impact-common/shared/utils/date-from-timestamp";
 import { BaseService } from "./base.service";
-import { Observable, from, map, of } from "rxjs";
+import { Observable, catchError, from, map, of } from "rxjs";
 
 @Injectable({
   providedIn: "root",
@@ -23,15 +23,25 @@ export class LoggerService extends BaseService<LogMessage> {
     return data;
   };
 
+  // A log line is best-effort and must NEVER break its caller: it resolves
+  // with the error code either way. Two things went wrong here until
+  // 2026-09-04, both on the pre-auth failed-login path: it used add(),
+  // which reads the new document back - a read log-messages refuses to
+  // anyone but an Admin, so the line was written and the read threw - and
+  // that rejection was allowed to escape, so a wrong password left the
+  // login screen spinning with no message. create() writes without reading
+  // back, and catchError keeps the promise the signature makes.
   logMessage(type: string, created_by: string, message: string, data?: unknown): Observable<string | boolean> {
     try {
       const ec = randomHexId(8);
       const logMessage: LogMessage = { ...new LogMessage(type, created_by, message, ec, LoggerService.sanitizeData(data)) };
       logMessage.id = randomHexId(8);
 
-      return from(this.add(logMessage)).pipe(
-        map(() => {
-          return ec;
+      return from(this.create(logMessage)).pipe(
+        map(() => ec),
+        catchError((err) => {
+          console.error('Could not write a log message', err);
+          return of(ec);
         })
       );
     } catch (err) {
