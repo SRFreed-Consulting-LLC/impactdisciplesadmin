@@ -15,6 +15,7 @@
 
 const {resolveProjectId, getFirestoreFor, firestore} = require("./lib/firestore-admin");
 const {normalizeDoc, FIELDS_BY_COLLECTION} = require("./lib/normalize-dates");
+const {tenantPath} = require("./lib/tenancy");
 
 /**
  * Parses simple --key=value / --flag CLI arguments.
@@ -48,7 +49,29 @@ async function main() {
   const allWarnings = [];
 
   for (const collectionName of Object.keys(FIELDS_BY_COLLECTION)) {
-    const snap = await db.collection(collectionName).get();
+    // THROUGH THE SEAM (fixed 2026-09-04). This read `db.collection(name)`
+    // with a bare name, and every collection it targets moved under
+    // `tenants/impactdisciples.com/` in the migration that finished on prod
+    // 2026-09-02. From that day it scanned three collections holding zero
+    // documents and printed "0/0 docs would be fixed" - which reads exactly
+    // like a clean bill of health, and is the precise failure mode
+    // scripts/lib/tenancy.js warns about in its own header.
+    //
+    // check-tenancy could not catch it: its scan looks for a quoted
+    // collection name next to a `.collection(` call, and here the name
+    // arrives in a variable while the literals live in normalize-dates.js
+    // as object keys, nowhere near a Firestore call. The empty-collection
+    // guard below is the belt to that missing brace - a collection that
+    // ought to have documents and has none now says so loudly.
+    const resolvedPath = tenantPath(collectionName);
+    const snap = await db.collection(resolvedPath).get();
+    if (snap.empty) {
+      console.log(
+        `  ${collectionName}: EMPTY at "${resolvedPath}" - not scanned. ` +
+        "If that is a surprise, the path is wrong, not the data."
+      );
+      continue;
+    }
     let changedCount = 0;
     let batch = db.batch();
     let opsInBatch = 0;

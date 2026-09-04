@@ -310,18 +310,61 @@ broken) version of this now imports it. This makes the *app* resilient
 regardless of which shape a given document happens to have - it does not
 fix the underlying data.
 
-**What a real fix would look like** (not done, needs a decision + a
-migration script, out of scope for incidental work):
-1. A one-time Firestore migration script (Admin SDK) that walks every
-   collection with a date-shaped field, detects shape #2 or #3, and
-   rewrites it as a real `Timestamp` (`admin.firestore.Timestamp.fromDate(...)`).
-   Should run against `impactdisciplesdev` first, verified, then `impactdisciples-a82a8` (prod) -
-   never done blind against prod.
-2. Find and fix whatever's *currently writing* shape #2/#3 - almost
-   certainly the storefront (`impactdisciples-web`, a separate repo this
-   session can't touch) for the `purchases`/`events` cases specifically.
-   Worth flagging to whoever owns that repo; otherwise the migration script
-   above just needs to run again periodically as new bad data accumulates.
+**RESOLVED IN THE DATA 2026-09-04, both projects.** Steps 1 and 2 below are
+done; step 3 is unchanged and still outstanding.
+
+`node scripts/fix-date-shapes.js --project=<dev|prod> --execute` was run
+against both, and a full-collection re-sweep of every date-named field in
+every collection afterwards found **zero** remaining maps or strings in
+either. Dev: 515 docs (purchases 478, events 28, event-registrations 8,
+customers 1). Prod: 480 docs (purchases 478, events 1, customers 1). A prod
+snapshot was taken first (`scripts/backups/impactdisciples-a82a8-2026-09-04T18-30-56Z`).
+Both runs are idempotent - a second dry run reports 0.
+
+Two things had to be fixed before that script could do anything at all, and
+both are worth remembering because both failed *silently*:
+
+- **It was reading collections that no longer exist.** It did
+  `db.collection("purchases")` with a bare name, and every collection it
+  targets moved under `tenants/impactdisciples.com/` in the migration that
+  finished on prod 2026-09-02. From that day it scanned three empty
+  collections and printed "0/0 docs would be fixed" - indistinguishable from
+  a clean bill of health. `npm run check-tenancy` could not catch it: its
+  scan looks for a quoted collection name beside a `.collection(` call, and
+  here the name arrives in a variable while the literals live in
+  `normalize-dates.js` as object keys, nowhere near a Firestore call. The
+  script now goes through `tenantPath()` and shouts if a collection it
+  expects to have documents comes back empty.
+- **The normaliser did not walk arrays, and by 2026-09-04 every remaining
+  bad value was inside one.** The old header said only top-level fields
+  belonged there and deliberately skipped
+  `purchases.cartItems[].dateProcessed` (882 maps) and `customers.notes[].date`,
+  on the grounds that nothing read the first. That reasoning had quietly
+  stopped being true of the SET: `purchases.dateProcessed` itself had been
+  cleaned before the tenancy cutover, so "we do not walk arrays" had become
+  "we do not fix anything". It now supports one `[]` segment per path
+  (`cartItems[].dateProcessed`), covered by
+  `functions/test/normalize-dates.test.js` (14 tests).
+
+**What is NOT in scope and must not be added:** the library/reader
+collections (`libraryUsers`, `discussionGroups`, `commonTranslations`,
+`titleTranslations`, `errorLogs`, `groupLicenses`, `subtemplates`,
+`lessonImages`, ...) store dates as bare **epoch-millisecond numbers** -
+roughly 3,400 fields. That is a consistent, deliberate convention on that
+side of the app and the reader reads them as numbers (see
+`DigitalBookUserReportComponent`, which does `new Date(user.createdAt)`
+precisely because of it). Converting them to Timestamps would break the
+reader, not fix it. `normalizeValue()` returns numbers untouched and says so.
+
+**Writers**: the admin app's own event editor and agenda dialogs already
+write real `Date` objects (`new Date(raw.startDate)`), which the client SDK
+stores as Timestamps - the strings found were legacy. One residual path
+worth knowing: `event-form.component.ts`'s save does
+`raw.endDate ? new Date(raw.endDate) : this.item?.endDate`, so an event
+whose end date control is disabled (online events) re-persists whatever
+`item.endDate` already held. Harmless now that no stored value is a string,
+but it is why the migration had to run before that mattered.
+
 3. Separately, `dateFromTimestamp()`'s own string-parsing path
    (`parseStringDate()`, same file) has a real bug independent of the above -
    its "is this MM/dd/yyyy" check (`/dd\/dd\/dddd/`) is a regex that can
@@ -335,6 +378,111 @@ migration script, out of scope for incidental work):
    in-session decision to guard locally rather than touch a helper a dozen
    other call sites depend on) - worth fixing at the source once someone's
    ready to verify all its callers.
+
+---
+
+## US states stored two ways ("GA" vs "Georgia")
+
+**Found**: 2026-08-28 while fixing a report filter that returned a fraction
+of its matches. **Resolved in the data 2026-09-04, both projects.**
+
+The two collections holding the most addresses disagreed with each other
+almost perfectly, because each was written by a different picker:
+
+| | `GA` | `Georgia` | junk |
+|---|---|---|---|
+| `customers` billing + shipping | 1,871 | 318 | 18 |
+| `purchases` billing + shipping | 2–3 | 1,715 | 0 |
+| `organizations` / `locations` | 19 | 10 | 0 |
+
+`EnumHelper.getState2LetterTypesAsArray()`'s own comment had said all along
+that the code is what gets stored and the name is what gets displayed. The
+Shipping Labels screen followed it; the admin's shared address form and the
+storefront's checkout both stored their picker's display value.
+
+**What it cost**, before anyone framed it as a data problem:
+
+- Reports Manager's State filter reached about 15% of the contacts it should
+  have. `src/app/common/utils/state-variants.ts` exists solely to query both
+  spellings, and its header carries the original counts.
+- **Two production outages in one hour on 2026-09-03.** Once
+  `countryCode()` started sending ShipEngine `"US"`, the vendor enforced
+  "ship_to state_province must be two characters" - every rate quote 502'd
+  (shoppers stuck on "Setting up payment...") and every Print Label failed.
+  `functions/src/utils/shipping-request.ts` grew `stateCode()` to translate
+  on the way out. That guard stays, but a vendor should not be the thing
+  that discovers our data is inconsistent.
+
+**Canonical form: the 2-letter USPS code** (owner decision, 2026-09-04).
+
+**Migration**: `node scripts/normalize-address-codes.js --project=<dev|prod> --execute`
+(named `normalize-state-spellings.js` for the state run itself; renamed the
+same day when country was added),
+dry-run by default, tenancy-aware, writing dotted leaf paths only (never a
+whole address or document, so a concurrent edit to a sibling field is not
+clobbered). Dev 1,316 docs, prod 1,320. Verified afterwards: **zero** full
+names remain in either project, and a re-run reports 0.
+
+`scripts/lib/state-code.js` classifies each value as `ok` / `converted` /
+`cleaned` / `unknown` rather than a bare "changed", because a migration over
+financial records that cannot tell "already correct" from "gave up" cannot
+be verified. Three things it knows that a naive mapper would not:
+
+- **`AA`, `AE`, `AP` are real USPS codes** (Armed Forces mail), and `DC` and
+  the territories are too. They are outside the 50-state enum and live on
+  real customer records; a normaliser that did not know them would mangle
+  them or flag them as junk forever.
+- **Compound junk.** Every bad value in this data carried a trailing quote
+  from some old import, and some were also a state+zip mash - `MO 65355"`.
+  Resolving only one layer left those unfixed while reporting the simpler
+  `NC"` beside them as fixed.
+- **It strips only wrapping punctuation, not `[^A-Za-z]`.** The eager
+  version turned `1234 Georgia` - a street address typed into the state box
+  - into `GA`, inventing a state nobody had established.
+
+**Still unresolved, deliberately: 6 field values across 3 contacts** - a
+bare `"` (x4) and `GUYANA"` (x2, a country). Left as stored and reported by
+every run; blanking them would lose an address a human can still read.
+
+**Writers fixed the same day**, so this does not re-drift:
+`src/app/shared/address-field/address-field.component.ts` (one component,
+10 screens, none overriding `[states]`) and the web repo's
+`checkout/checkout.component.ts`. Both now store the code and display the
+name. The admin form also carries the record's current value as an extra
+option when it is not in the list - a `mat-select` whose value matches no
+option renders **blank and saves that blank back**, so without it, opening a
+contact with an APO code would silently erase their state.
+
+**Country: done the same day**, immediately after, in the same walk. It was
+the simpler half - every writer stored the display name, so it was 100%
+names rather than a split - but it carried a third spelling nobody had
+catalogued: **`"USA"` on 11 documents** (organizations, locations, and the
+denormalised event venue), which is not in the Countries enum at all, so
+`countryCode()` would have passed it straight through to ShipEngine. That is
+the same failure as the 2026-09-03 label outage, sitting on a different set
+of records waiting for someone to ship from one.
+
+Normalized to ISO alpha-2 (`scripts/lib/country-code.js`, which carries the
+aliases the enum lacks - USA / U.S.A. / United States of America / UK /
+England). **8,903 values on dev, 8,918 on prod, all now 2-letter codes,
+zero left over.** The migration script was renamed
+`normalize-state-spellings.js` → **`normalize-address-codes.js`** and now
+does both fields in one pass, reporting them separately (a merged total
+cannot tell you whether the country half did anything).
+
+Three consequences worth knowing:
+
+- **`purchase-details.component.html` displays country raw**, so the admin's
+  Purchase Details panel now reads "US" rather than "United States", as it
+  already did for state. Cosmetic, and consistent.
+- **The web checkout's SEED had to change too**, not just its picker:
+  `checkoutForm.shippingAddress` was initialised with
+  `country: 'United States'`, which is what an untouched form submits. Fixing
+  the dropdown alone would have kept writing the old value.
+- **`libraryUsers` / `discussionGroups` location country was NOT touched** and
+  must not be. That is the reader side's patron geo-data, it already holds
+  ISO codes, and `functions/src/library-groups.functions.ts` compares one
+  against the literal `"US"`. Different field, same name.
 
 ---
 

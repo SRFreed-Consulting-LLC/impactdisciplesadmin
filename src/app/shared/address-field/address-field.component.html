@@ -18,8 +18,10 @@
     <mat-form-field appearance="outline" class="state-field">
       <mat-label>State</mat-label>
       <mat-select formControlName="state">
-        @for (state of states; track state) {
-          <mat-option [value]="state">{{ state }}</mat-option>
+        <!-- Stores the CODE, shows the NAME. Tracked by code, not by the
+        object, so the memoised list in stateOptions does not re-render. -->
+        @for (state of stateOptions; track state.code) {
+          <mat-option [value]="state.code">{{ state.name }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
@@ -34,8 +36,9 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Country</mat-label>
       <mat-select formControlName="country">
-        @for (country of countries; track country) {
-          <mat-option [value]="country">{{ country }}</mat-option>
+        <!-- Stores the ISO code, shows the name - same as state above. -->
+        @for (country of countryOptions; track country.code) {
+          <mat-option [value]="country.code">{{ country.name }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
