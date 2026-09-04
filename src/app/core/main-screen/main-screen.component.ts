@@ -247,10 +247,24 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * ONE FLAT LIST FOR EVERYONE WHO IS NOT AN ADMINISTRATOR (owner,
+   * 2026-09-03): an Employee or Editor holds a handful of screens, and a
+   * tab strip plus expandable group headers is two ranks of structure
+   * around three links. They get the screens they hold, in drawer order,
+   * with no tabs and no headers - the same rendering the Library section
+   * already used. Admin/Root keep the full tabbed drawer: at sixty-odd
+   * screens the structure is doing real work for them.
+   */
+  get isFlatNav(): boolean {
+    return !!this.currentUser && !this.permissionService.isFullAccess();
+  }
+
   // One tab is not a choice - render the nav on its own rather than a
-  // segmented control with a single segment nobody can move off.
+  // segmented control with a single segment nobody can move off. A flat
+  // nav has no tabs at all: its list spans every section.
   get showSectionTabs(): boolean {
-    return this.visibleSections.length > 1;
+    return !this.isFlatNav && this.visibleSections.length > 1;
   }
 
   /** The groups on the tab currently showing. Filtered from secureNav, so
@@ -310,7 +324,7 @@ export class MainScreenComponent implements OnInit, OnDestroy {
     // to the group-header row every other section already renders there;
     // hovering expands and swaps back to the flat list.
     return this.drawerExpanded
-      && NAV_SECTIONS.find((section) => section.id === this.activeSection)?.flatten === true;
+      && (this.isFlatNav || NAV_SECTIONS.find((section) => section.id === this.activeSection)?.flatten === true);
   }
 
   /** The groups to render as expandable headers - empty on a flattened
@@ -325,7 +339,15 @@ export class MainScreenComponent implements OnInit, OnDestroy {
    *  so pinning, permissions and routing all still work off the real group
    *  id - flattening is a rendering choice, not a change of identity. */
   get flatItems(): PinnedNavItem[] {
-    return this.sectionNav.flatMap((group) => (group.items ?? []).map((item) => ({ group, item })));
+    // A flat nav spans EVERY section the person has anything on; a
+    // flattened section (Library) is just the one tab. navItemsFor() rather
+    // than group.items so the pages streamed from page_content - already
+    // grant-filtered there - are listed exactly as the grouped drawer lists
+    // them.
+    const groups = this.isFlatNav ? this.secureNav : this.sectionNav;
+    return groups
+      .filter((group) => !!group.items)
+      .flatMap((group) => this.navItemsFor(group).map((item) => ({ group, item })));
   }
 
   selectSection(section: NavSection): void {

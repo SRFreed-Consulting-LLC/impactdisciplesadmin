@@ -56,19 +56,30 @@ test.describe('[access] Access Control', () => {
   // Newsletters). Each assertion below pairs what they CAN see with a
   // neighbour they must NOT - the neighbour is the half that fails if the
   // gate ever widens from "this screen" back to "this tab".
-  test('an Employee granted one page sees that page on the Site tab, and no other', async ({ page }) => {
+  test('an Employee gets ONE flat nav of the screens they hold - no tabs, no group headers', async ({ page }) => {
+    // Owner's call, 2026-09-03: a handful of links, not a tab strip and
+    // expandable headers around them. Admin/Root keep the tabbed drawer
+    // (the Admin test below still clicks CAMPAIGNS as a group).
     await loginAsAdmin(page, EMPLOYEE_EMAIL);
     await page.goto(`${ADMIN_URL}/home`);
     await expect(page.locator('.impact-header__user')).toBeVisible({ timeout: 20_000 });
+    const drawer = page.getByRole('navigation');
 
-    // The tab exists for them at all - it was Admin/Root only before.
-    await page.getByRole('radio', { name: 'Site' }).click();
-    await page.getByRole('button', { name: 'PAGES', exact: true }).click();
-    // Nav LEAVES are links - by role, because the dashboard behind the
-    // drawer has its own "Home" heading and would match by text.
-    await expect(page.getByRole('link', { name: 'Coaching with Impact', exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('link', { name: 'About Us', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Home', exact: true })).toHaveCount(0);
+    // Every granted screen is a direct link, whichever tab/group it lives
+    // on; nothing needs opening first.
+    await expect(drawer.getByRole('link', { name: 'Coaching with Impact', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(drawer.getByRole('link', { name: 'Disciple Making Minute', exact: true })).toBeVisible();
+    await expect(drawer.getByRole('link', { name: 'Website Newsletters', exact: true })).toBeVisible();
+    await expect(drawer.getByRole('link', { name: 'HOME', exact: true })).toBeVisible();
+    // No tab strip, no group headers.
+    await expect(page.getByRole('radio', { name: 'Site' })).toHaveCount(0);
+    await expect(page.getByRole('radio', { name: 'Admin' })).toHaveCount(0);
+    await expect(drawer.getByRole('button', { name: 'PAGES', exact: true })).toHaveCount(0);
+    await expect(drawer.getByRole('button', { name: 'CAMPAIGNS', exact: true })).toHaveCount(0);
+    // And nothing they were not granted.
+    await expect(drawer.getByRole('link', { name: 'About Us', exact: true })).toHaveCount(0);
+    await expect(drawer.getByRole('link', { name: 'Campaigns', exact: true })).toHaveCount(0);
+    await expect(drawer.getByRole('link', { name: 'Products', exact: true })).toHaveCount(0);
     // Editing a page is not adding to the site: no "+ New Page" row, and the
     // ?new=1 the row would have sent opens nothing.
     await expect(page.getByRole('link', { name: /New Page/ })).toHaveCount(0);
@@ -125,19 +136,18 @@ test.describe('[access] Access Control', () => {
     await expect(page.locator('app-products')).toHaveCount(0);
   });
 
-  test('an Employee granted one back-office screen sees only it under its group', async ({ page }) => {
+  test('an Employee\'s flat nav links straight into a back-office screen', async ({ page }) => {
     await loginAsAdmin(page, EMPLOYEE_EMAIL);
     await page.goto(`${ADMIN_URL}/home`);
     await expect(page.locator('.impact-header__user')).toBeVisible({ timeout: 20_000 });
-    await page.getByRole('button', { name: 'CAMPAIGNS', exact: true }).click();
     // Scoped to the drawer: Home's own "Your screens" list names the same
     // screen, so an unscoped text match resolves twice.
     const drawer = page.getByRole('navigation');
-    await expect(drawer.getByRole('link', { name: 'Website Newsletters', exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(drawer.getByRole('link', { name: 'Campaigns', exact: true })).toHaveCount(0);
+    await drawer.getByRole('link', { name: 'Website Newsletters', exact: true }).click();
+    await expect(page.locator('app-web-newsletters')).toBeVisible({ timeout: 20_000 });
     await expect(drawer.getByRole('link', { name: 'Tag Rules', exact: true })).toHaveCount(0);
-    // Nothing granted under CONTACTS, so the group is not offered at all.
-    await expect(page.getByRole('button', { name: 'CONTACTS', exact: true })).toHaveCount(0);
+    // Nothing granted under CONTACTS, so nothing of it is listed.
+    await expect(drawer.getByRole('link', { name: 'Purchases', exact: true })).toHaveCount(0);
   });
 
   test('signing out returns to login and the session does not survive it', async ({ page }) => {
