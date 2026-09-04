@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Admin back-office app for Impact Disciples (events, store, requests, subscriptions, web content) —
+Admin back-office app for Impact Disciples (events, store, contacts, campaigns, the public site's
+own pages and content, and the digital library) —
 Angular 20 + Angular Material, backed directly by Firebase (Firestore, Auth, Functions, Storage). No
 server tier of its own besides Cloud Functions in `functions/`. This app was recently migrated off
 DevExtreme onto Material (branch `migrate-from-devexpress`) — most list/table screens follow the
@@ -48,7 +49,7 @@ npm run build-prod
 
 # Deploy (builds, switches `firebase use`, deploys hosting only)
 # Both build-deploy scripts run `check-functions` FIRST - functions/'s own
-# lint + tsc - even though they only deploy hosting. That is deliberate:
+# lint + tsc + node:test suite - even though they only deploy hosting. That is deliberate:
 # functions/ compiles the shared slice with noUnusedLocals, the app does
 # not, and a hosting-only deploy never touched functions/ at all. On
 # 2026-09-01 three declarations left behind by a refactor broke the
@@ -56,7 +57,7 @@ npm run build-prod
 # hosting deploys, because nothing in the normal flow compiled it. A
 # functions deploy would have failed on its predeploy hook; nobody ran one.
 # It costs a few seconds and turns that silence into a red build.
-npm run check-functions                 # lint + tsc functions/, deploys nothing
+npm run check-functions                 # lint + tsc + test functions/, deploys nothing
 npm run build-deploy-dev                # -> impactdisciplesdev project, hosting:development target
 npm run build-deploy-prod               # -> impactdisciples-a82a8 project, hosting:production target
 
@@ -70,7 +71,7 @@ npm run format
 npm run format:check
 
 # Unit tests (Karma/Jasmine)
-npm run test                             # headless, watch=false (273+ specs)
+npm run test                             # headless, watch=false (~2170 specs)
 npm run test:watch
 ng test --include='**/products.component.spec.ts'   # single spec
 
@@ -95,6 +96,27 @@ npm run emu:seed                         # wipe + reseed the deterministic fixtu
 npm run test:integration                 # node:test over the REAL emulated functions
 npm run test:rules                       # firestore.rules tests (@firebase/rules-unit-testing)
 npm run e2e:cross                        # cross-app Playwright flows (admin+web+reader)
+npm run e2e:admin                        # one-app admin sweep, grouped by functional area
+npm run e2e:admin:dashboard              # render e2e-admin/results/dashboard.json to a page
+
+# Tenancy seam guards (see the Tenancy section) — plain node:test, NO emulator.
+# tenancy-mirror: scripts/lib/tenancy.js (hand-kept JS duplicate, because
+# scripts/ has no build step) still agrees with the TypeScript source of
+# truth. tenancy-unseamed-access: nothing anywhere names a MOVED collection
+# as a bare string literal instead of going through tenantPath().
+npm run check-tenancy
+
+# THE GATE for anything touching data paths, functions or rules. Runs
+# check-tenancy, check-functions, test:rules, test:integration and the
+# trigger-liveness test in that order — cheapest and most structural first,
+# so a wrong path fails in seconds rather than after a 300s emulator hang.
+# Emulator must be up for the last three.
+npm run verify-wave
+
+# Unit-test coverage against the committed floor (coverage-baseline.json)
+npm run test:coverage
+npm run coverage:check                   # fails if coverage drops below baseline
+npm run coverage:baseline                # --update: raise the floor deliberately
 ```
 
 Cloud Functions live in `functions/` and are a separate npm project:
@@ -143,7 +165,7 @@ Firebase deploys of `functions/` predeploy-run `functions/`'s own `lint` and `bu
 
 ## Test program (emulator-backed)
 
-Built 2026-08-19/20. FOUR layers, all runnable locally, none of which can touch
+Built 2026-08-19/20. FIVE layers, all runnable locally, none of which can touch
 impactdisciplesdev or prod (everything targets the local Emulator Suite under the fake
 project id `demo-impact`):
 
@@ -311,7 +333,58 @@ the Admin SDK and bypass rules entirely — `write: false` on a functions-writte
 intentional lockdown, not breakage. Read the rules file's own header comment before editing;
 `npm run test:rules` covers it. `storage.rules` is staff-gated as of 2026-08-20.
 
+Since the tenancy migration (see the Tenancy section) the rules are written against
+`/tenants/{tenantId}/...`, and **the rules helpers matter as much as the match blocks**:
+`hasBookLicense()`, `isApprovedGroupMember()` and friends resolve `libraryUsers` and
+`discussionGroups` with `get()`/`exists()` on full literal paths rather than through a match. That
+is why those two collections were held back to the last migration wave — their paths in this file
+had to move in the same change, or every licensed lesson read in the reader is denied. If you move
+a collection, grep this file for its name, not just for its match block.
+
 ## Architecture
+
+### Tenancy: where a collection actually lives (read this before writing any Firestore path)
+
+**Everything the ministry owns lives under one document — `tenants/impactdisciples.com/{collection}`
+— not as top-level collections.** Migrated in waves through late August 2026; **production was cut
+over 2026-09-02 (~22:00 UTC)**, so dev and prod are both under the tenant and `development` deploys
+to prod normally. (MIGRATION.md's account of the one day they disagreed, and the hotfix-branch
+pattern that bridged it, is kept deliberately — the next staged migration will need the same bridge.)
+
+The seam is ONE function, in the shared submodule:
+`tenantPath(table)` in `src/common/src/shared/lists/tenancy.ts`. It returns the nested path for a
+name in `TENANT_COLLECTIONS` and the name UNCHANGED for anything else, so adding a collection to
+that list is the whole of "move it", and leaving one out cannot half-migrate it. `FirebaseDAO`
+routes every read and write through it — a service that just sets `table` needs to know nothing.
+
+Rules for new code:
+
+- **Never write a collection path as a string literal** if the name is in `TENANT_COLLECTIONS`.
+  Go through `tenantPath()` (or the DAO, which already does). `npm run check-tenancy` greps for
+  exactly this. The bug that bought the check: the reader app has no DAO and built
+  `collection(firestore, 'config')` by hand, so after `config` moved its checkout could not find a
+  PayPal client id — nothing failed at build time and the migration plan had listed the reader as
+  unaffected.
+- **A Firestore trigger's document pattern goes through `triggerPath(table, rest)`**, same file.
+  This is the one place a wrong path is SILENT: every other consumer fails loudly (a read returns
+  nothing, a screen is visibly empty), but a trigger that stops matching simply never runs — no
+  error, successful deploy, empty logs, and a purchase that is never fulfilled and never grants the
+  licence somebody paid for. `integration/trigger-liveness.test.js` is the belt to that braces.
+- **Some names must never join the list**, and both failures are silent: anything a Firebase
+  Extension watches (`mail`, owned by `firestore-send-email`, whose watch path is configured in
+  the Firebase console, not this repo) and anything written before a caller is authenticated
+  (`errorLogs`, whose rules exception is keyed to the top-level path). Infrastructure that
+  describes the SYSTEM rather than the ministry stays top-level.
+- `scripts/lib/tenancy.js` is a hand-maintained duplicate for `scripts/` (plain Node, no build
+  step, cannot import the submodule's TypeScript). `functions/test/tenancy-mirror.test.js` compares
+  the two, because a script pointed at a collection that no longer exists reports "0 documents,
+  nothing to do" and exits zero — it reads exactly like success.
+
+**This is a data shape, not multi-tenancy.** One tenant, id is a constant. The second reason it
+earns its keep is `scripts/promote.js`: a dev→prod promotion is scoped to collections that already
+exist in prod, so a genuinely new collection was never promoted unless someone remembered `--only`
+— which is how prod ended up with no `page_content`, `site_navigation` or `site_footer` while the
+admin happily edited all three. Under one parent, every future collection rides along.
 
 ### Data access: DAO → Service → Component, one pattern for every collection
 
@@ -359,7 +432,7 @@ onto one-time paged fetches, to cut down on standing Firestore listeners:
   than reintroducing whole-collection `streamAll()`.
 - Customers is no longer a special case here (an earlier version of this doc said the grid pagination
   coexisted with a separate full `getAll()` backing "Filter by List"/"Save List" on that screen — that
-  affordance is gone post-redesign; `customers.component.ts` today is `PagedCollectionSource` only, no
+  affordance is gone post-redesign; `contacts.component.ts` today is `PagedCollectionSource` only, no
   `allCustomers`). List-membership filtering is now gone app-wide — the Subscribers report briefly
   carried a "Filter by List" criterion after absorbing the old screen, but that was dropped too
   (commit `8aa09f1`); there is no saved-list building anywhere. See that report's section below.
@@ -409,14 +482,46 @@ Columns, Export, feature-specific actions) uniformly.
 ### Module/routing structure
 
 Feature areas are lazy-loaded NgModules off `AppRoutingModule` (`src/app/app-routing.module.ts`),
-each gated by `authGuard`: `admin-manager` (Admin Users, Log Messages — both `hideFromNav`, reached
-from the user-menu dropdown, not the left nav), `events-manager`, `contacts-manager`,
-`content-manager`, `store-manager`, `tools-manager`, `reports-manager`. **App-wide vocabulary
+each gated by `authGuard`. The full set of routes today:
+
+| route | module | what it is |
+| --- | --- | --- |
+| `admin-manager` | `admin-manager/` | Admin Users, Log Messages, E2E Dashboard — all `hideFromNav`, reached from the user-menu dropdown |
+| `events-manager` | `events-manager/` | Summit + Events (one component, two modes), Coaches |
+| `contacts-manager` | `contacts-manager/` | Contacts, Organizations, Purchases, Fulfillment |
+| `store-manager` | `store-manager/` | Coupons |
+| `campaigns-manager` | `campaigns-manager/` | Campaigns, Status Board, Website Newsletters, Tag Rules |
+| `reports-manager` | `reports-manager/` | see below |
+| `tools-manager` | `tools-manager/` | Email Designer (`hideFromNav`), Shipping Labels |
+| `page-manager` | `page-manager/pages/` | the public site's pages — see the Page Manager section below |
+| `navigation` | `page-manager/navigation/` | the site's top menu |
+| `footer` | `page-manager/footer/` | site footer + Docking Bar |
+| `data` | `data-manager/` | the RECORDS the site is built from |
+| `library-manager` | `library-manager/` | the folded-in Library CMS |
+
+**Three of those are newer than most of this file and are the ones most likely to be misremembered.**
+`content-manager` became **`page-manager`** on 2026-08-29 (and `web-manager` before it — both old
+paths still redirect). **`navigation` and `footer` are top-level routes of their own**, not Page
+Manager tabs, though their files live under `page-manager/` — the menu and the footer are the
+site's *frame* rather than any one page's content. And **`data` (2026-08-30/31) gathered the record
+lists out of four different managers by what they ARE**: Products (from Store), Testimonials, Team
+Page, Disciple Making Minute and Web Config (from Page Manager), Form Submissions (from Contacts),
+Form Builder (from Tools). That move changed five screenKeys — `store-manager.products` became
+`data.products` and so on — migrated on dev by `scripts/migrate-screenkey-renames-3.js`;
+**the production run is written up in MIGRATION.md and has NOT been done.**
+
+Two leftovers worth knowing before you go looking: `store-manager/affiliate-sales/` is still
+declared in its module but no tab renders it, so it is unreachable in the app today; and Store
+Manager keeps only the money screens now — the product catalogue, its categories and its series all
+live under `data/`.
+
+**App-wide vocabulary
 rename 2026-08-19 (user-requested): "Customers" → "Contacts" and "Web Manager" → "Content
 Manager"** — `customers-manager` became `contacts-manager` (folder, module, routes, screenKeys,
 labels; the Customers screen is now Contacts, `CustomerService`/`CustomerModel` are
-`ContactService`/`ContactModel`), `web-manager` became `content-manager`, and Web Config moved
-from Tools Manager into Content Manager. The **Firestore collection is still `customers`**
+`ContactService`/`ContactModel`), `web-manager` became `content-manager` (and that in turn
+`page-manager` on 2026-08-29), and Web Config moved from Tools Manager into Content Manager (and on
+into `data` 2026-08-31). The **Firestore collection is still `customers`**
 (`ContactService.table`), the customer-upsert Cloud Functions keep their names, and the old
 routes redirect (`app-routing.module.ts`). Stored permission grants were key-migrated by
 `scripts/migrate-screenkey-renames.js` — already run on dev; **must be run on prod when this
@@ -443,18 +548,22 @@ admin-side contact creation, email-deduped, never overwrites existing profiles).
 screen, then that screen itself was removed outright 2026-08-15 once
 subscriber management folded into Reports Manager's own Subscribers report instead (see that
 section below) — there is no dedicated subscriber-management screen left anywhere, just that report.
-There is no `requests-manager` module either — its one surviving screen, Custom Form Submissions, has moved twice (originally its
-own module, briefly under `content-manager`) and now lives under `contacts-manager`
-(`custom-form-submissions/`) as of the August 2026 nav reorg; the other four Requests Manager
-screens (Consultation Requests/Surveys, Lunch and Learn, Seminar) were removed outright, superseded
-by the generic Form Builder (`tools-manager`) + Custom Form Submissions pair. `contacts-manager`
-also owns Purchases/Fulfillment, not `store-manager` — `store-manager` today is Products, Coupons,
-Sales, affiliate-sales/affiliate-payments, product-categories, product-series. `tools-manager` holds
-Email Templates, Shipping Labels, and Form Builder (Web Config moved to `content-manager`
-2026-08-19, see the rename note above); Mailchimp Settings moved to
-`campaigns-manager` 2026-08-18 (it's campaign-audience infrastructure — see the Email taxonomy
-note below). `reports-manager`
-is new — see below. `events-manager` exposes two separate nav screens, **Summit** and **Events** —
+There is no `requests-manager` module either — its one surviving screen, Custom Form Submissions,
+has moved three times (its own module, then `content-manager`, then `contacts-manager`) and now
+lives in `data-manager/custom-form-submissions/`; the other four Requests Manager screens
+(Consultation Requests/Surveys, Lunch and Learn, Seminar) were removed outright, superseded by the
+generic Form Builder + Form Submissions pair, which now sit beside each other under `data`. Its
+nav slug stays `custom-form-submissions` even though the label reads "Form Submissions", because
+`NewRecordAlertsComponent` navigates using that exact string. `contacts-manager` owns
+Purchases/Fulfillment, not `store-manager`. `tools-manager` is down to Shipping Labels plus the
+`hideFromNav` Email Designer — the flat System Templates list was removed 2026-08-27 once every
+`mail_template` carried a `kind` naming the screen that owns it and was edited from the process
+that sends it (an event's Info tab, a product's follow-up list, Products' Order Receipt); the
+designer needs its own grant because it is reachable from five managers and a direct URL has no
+calling screen to borrow permission from. Mailchimp Settings moved to `campaigns-manager`
+2026-08-18 and was then retired entirely 2026-08-20 with the sync itself (Campaign Manager v2
+Phase 7 — the app's own send engine plus the `customers` subscriber flags are the audience now).
+`reports-manager` is new — see below. `events-manager` exposes two separate nav screens, **Summit** and **Events** —
 both render the same `EventsComponent`, just with `[summitMode]` true/false: Summit is `isSummit`
 events only, Events is regular events, and each has its own permission grant (an existing Events
 grant deliberately does not carry over to Summit — see the comments in `nav-config.ts`). Regular
@@ -518,6 +627,80 @@ are read/enforced. `nav-config.ts`'s header comment documents the August 2026 re
 ("around what a screen actually IS rather than which internal app area happened to own it") — read
 it before adding a new screen or moving an existing one between modules.
 
+**The drawer is split into TABS (`NavSection`, 2026-08-29): Admin / Site / Library.** A group
+declares which one it lives under via `section?: NavSection` (omit for `admin`, which is most of
+them). This rank sits ABOVE the group, which is exactly what makes it cheap: a screenKey is still
+`group.id` + `.` + `leaf.slug`, so moving a manager to another tab changes NO identity — no route,
+no bookmark, not one stored grant. Moving a screen between GROUPS is the opposite: that IS an
+identity change and needs a grant migration (see the `data` move above).
+
+Three things about the tabs that are easy to get wrong:
+
+- **`NavSectionDef.roles` is enforced in TWO places, and it has to be.** `MainScreenComponent`
+  hides the tab; `PermissionService.canView()` refuses the screens under it. Hiding a tab is
+  presentation — without the second half a direct URL still lets a granted Employee into a Site
+  screen.
+- **Site is delegated per screen** (owner reversed the earlier Admin-only rule on 2026-09-03, for
+  an Employee who administers two pages and nothing else). The tab gate is what keeps Editors out;
+  the per-screen grant decides everything past it. Every Site leaf — the static ones and the pages
+  streamed from `page_content` — goes through `canViewNavItem()` in the drawer, in TabShell and in
+  `canView()`, so an Employee granted one page cannot reach a second by typing its URL.
+- **Library `flatten`s** (one group on the tab, so no header repeating the tab's own name), and it
+  is the whole of what a `Role.EDITOR` can see — `PermissionService` hard-scopes that role to
+  `library-manager` keys, the other two tabs come up empty for them and the tab strip hides itself.
+  A section holding two or more groups must never flatten or the groups merge into one
+  undifferentiated list; `nav-config.spec.ts` pins that, since the failure is silent.
+
+Two helpers that exist because the same rule is needed in more than one place, and both are tested:
+`displayGroupLabel()` strips a trailing " Manager" for RENDERING only (the stored labels feed
+screenKeys and the Reports tab shell selects by label, so they stay as they are) — it lives in
+nav-config rather than on the drawer because Home's "Your screens" list names groups too and the
+two must agree. `keepsNavGroup()` decides whether a group survives to be drawn: one with `items`
+defined but all of them filtered out (Admin Manager, whose screens are all `hideFromNav`) is
+dropped rather than rendered as an empty expandable header, while one with no `items` key at all
+is a flat link and always passes. It was extracted out of an inline predicate in a subscribe —
+which is why, the day Page Manager's last static leaf left, nothing could check that the group
+still appeared at all.
+
+**Page Manager's leaves come from FIRESTORE, not from this file** (`NAV_GROUPS_FILLED_FROM_DATA`).
+`SitePagesNavService` streams them from `page_content` and the drawer merges them in at render
+time, with a "+ New Page" row after them — there is no Pages list screen, the left nav IS the list
+(owner's call, 2026-08-30). A page staff create is data, not code, so it gets no NavLeaf.
+
+### Page Manager and the section kit (`src/app/page-manager/pages/`)
+
+**The public site's pages became Firestore data in late August 2026.** A page is one `page_content`
+document holding an ordered stack of section blocks; `<app-page-stack>` edits that stack with a
+live preview of the real page beside it, and `<app-kit-page-editor>` is the loading shell that
+opens the same editor from a nav leaf given only a slug. This replaced a slot editor showing a
+fixed set of named boxes — ten of those pages could not gain a section, lose one, or reorder two
+without a deploy.
+
+Things that will save you time here:
+
+- **`page-section-catalogue.ts` is the one list** driving each page's Add menu, every row's icon
+  and label, and which fields the pop-up editor shows. Adding a section type to a page is a line in
+  that page's `kinds`. A `type` names a section SHAPE, not a page — the same kind renders
+  differently per page because each page has its own component in the web app, so it can also carry
+  a different LABEL per page. (Its own header still says it drives the nav entries too; that went
+  stale when the leaves moved into `page_content` — the nav streams them now.)
+- **Order is never typed.** The array's order IS the page's order; nothing carries a number that
+  could disagree with its position. Reorder and the LIVE toggle write immediately; content is
+  edited in a dialog that hands back one section.
+- **A screen whose load FAILED refuses to save.** These documents are now the only copy of a page's
+  words — there is no template to fall back to — so saving over content it never read is how a page
+  gets silently emptied.
+- **What is deliberately NOT editable** is documented in the catalogue's header and each reason is
+  worth respecting: where a giving button goes (a free-text URL would let anyone who can edit
+  content redirect donations), which form a form section shows (a Firestore id retyped into a text
+  box is a blank widget nobody can diagnose), prices and the postal address/phone/socials (they
+  come from Web Config, so there is one number rather than two), and anything already editable
+  elsewhere — products, events, team, testimonials — because a second source of truth for a value
+  that already has one is worse than no editor at all.
+- **Deploy order matters when page data is involved:** `page_content` must exist before the web
+  build that reads it. See MIGRATION.md's runbook for the site-frame move — none of which has been
+  done on production.
+
 ### Reports Manager (`src/app/reports-manager/`)
 
 A report is a screen over one collection with its own filters/exports.
@@ -545,6 +728,15 @@ it is actually needed:
 - **`docs/email-builder.md`** - the drag/drop builder at
   `src/app/tools-manager/email-designer/`, its design JSON and the one-way
   legacy-template conversion.
+- **`src/app/shared/rich-text-editor/`** - the ONE place Quill is configured
+  app-wide. `RICH_TEXT_TOOLBAR` is what a `<quill-editor>` should take its
+  `[modules]` from (it carries the paste cleanup with it, so the cleanup
+  cannot be left off a new editor by forgetting a second import), and
+  `quill-semantic-html.ts` wraps `getSemanticHTML` because Quill serialises
+  EVERY space as `&nbsp;` and ngx-quill reads the model value through it -
+  which put an unbreakable 1000-character paragraph on a live page on
+  2026-09-04. Read that file's header before touching rich text; the incident
+  is written up in `MIGRATION.md`.
 - **`functions/CLAUDE.md`** - the Cloud Functions codebase layout,
   the shared-code sync, and how they are deployed. Picked up automatically
   when working in `functions/`.
@@ -576,7 +768,7 @@ and the 2 now-orphaned `onSubscriptionCreated`/`onSubscriptionUpdated` Cloud Fun
 `coaches` used to serve 2 unrelated purposes at once: driving the public site's "My Team" page
 (via a `teamPageSortOrder` field) AND providing Summit breakout-session instructors. Split 2026-08-15
 into `coaches` (Events Manager > Coaches - breakout-only now, no `teamPageSortOrder`) and `impact_team`
-(Web Manager > Team Page - the public-facing half, its own `sortOrder`; see `ImpactTeamMemberModel`/
+(Site > Data > Team Page - the public-facing half, its own `sortOrder`; see `ImpactTeamMemberModel`/
 `ImpactTeamService`). Anyone who had `teamPageSortOrder` set was moved (not copied) into `impact_team`
 under the same document id — see `scripts/move-team-page-coaches-to-impact-team.js` and `MIGRATION.md`
 — specifically so any existing `CourseModel.coachIds` referencing that id keeps resolving correctly
@@ -588,7 +780,7 @@ array assembled once in `event-agenda.component.ts`. Since the 2026-08-19 restru
 are created ONLY via the Summit agenda dialogs' "+ Add new coach to this event"
 (`coach-quick-create-dialog` — name + optional title, deliberately slim) and never Impact Team
 members; the Events Manager > Coaches roster is EDIT-ONLY (photo/bio/organization upkeep, no New
-action), and Impact Team members are administered via Content Manager > Team Page.
+action), and Impact Team members are administered via Site > Data > Team Page.
 `impactdisciples-web`'s own "My Team" page (`team.component.ts`/
 `team-details.component.ts`) was updated separately, same day, to read `impact_team` instead of
 `coaches` - see that repo's own commit and this file's Firestore collection naming note above for the
