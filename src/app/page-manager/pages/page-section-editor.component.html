@@ -436,7 +436,7 @@
                    would have needed nine of them. -->
               <mat-form-field appearance="outline" class="psd__col-ground">
                 <mat-label>Painted box</mat-label>
-                <mat-select (selectionChange)="edited()" [(ngModel)]="column.ground">
+                <mat-select (selectionChange)="setColumnGround(column)" [(ngModel)]="column.ground">
                   @for (g of columnGrounds; track g.key) {
                     <mat-option [value]="g.key">{{ g.label }}</mat-option>
                   }

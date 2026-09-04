@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { PageContentBlock } from '@impact-common/shared/models/domain/page-content.model';
+import { PageContentBlock, SectionColumn } from '@impact-common/shared/models/domain/page-content.model';
 import { CONTENT_PIECES, SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
@@ -348,5 +348,99 @@ describe('dropping into a column', () => {
     // The palette IS the registry - a kind that exists but cannot be reached
     // is a piece nobody can add.
     expect(build().pieceKinds.length).toBe(CONTENT_PIECES.length);
+  });
+});
+
+/**
+ * TURNING A COLUMN LEVER OFF HAS TO REMOVE THE KEY, not set it to undefined.
+ *
+ * TypeScript cannot tell the two apart - `column.align` reads as undefined
+ * either way, and `'align' in column` is the only thing that differs - which
+ * is why the original shipped and why this suite exists. Firestore can tell:
+ * a key holding undefined makes it reject the ENTIRE document write with
+ * "Unsupported field value: undefined", so switching a toggle ON saved and
+ * switching it OFF killed the whole save, taking every other edit made in
+ * the same sitting with it. Live on Coaching with Impact, 2026-09-04.
+ *
+ * `toEqual({})` is doing real work in these: Jasmine's toEqual treats a key
+ * holding undefined as absent, so the assertions below check `in` explicitly
+ * rather than trusting an object comparison to notice.
+ */
+describe('a column lever switched back off', () => {
+  function column(): SectionColumn {
+    TestBed.configureTestingModule({
+      providers: [
+        PageSectionEditorComponent,
+        { provide: TestimonialService, useValue: { getAllByValue: () => Promise.resolve([]) } },
+        { provide: FormDefinitionService, useValue: { getAll: () => Promise.resolve([]) } }
+      ]
+    });
+    return { key: 'c1', pieces: [] };
+  }
+
+  function editor(): PageSectionEditorComponent {
+    return TestBed.inject(PageSectionEditorComponent);
+  }
+
+  it('leaves NO align key behind', () => {
+    const c = column();
+    const e = editor();
+
+    e.setColumnAlign(c, true);
+    expect(c.align).toBe('centre');
+
+    e.setColumnAlign(c, false);
+    expect('align' in c).withContext('align survived as an undefined key').toBeFalse();
+  });
+
+  it('leaves NO measure, inset or full key behind', () => {
+    const c = column();
+    const e = editor();
+
+    e.setColumnMeasure(c, true);
+    e.setColumnInset(c, true);
+    e.setColumnFull(c, true);
+    expect([c.measure, c.inset, c.full]).toEqual([true, true, true]);
+
+    e.setColumnMeasure(c, false);
+    e.setColumnInset(c, false);
+    e.setColumnFull(c, false);
+
+    for (const key of ['measure', 'inset', 'full']) {
+      expect(key in c).withContext(`${key} survived as an undefined key`).toBeFalse();
+    }
+  });
+
+  it('leaves NO ground key behind when the select says "No box"', () => {
+    // ngModel has already written undefined onto the column by the time the
+    // handler runs - this proves the handler drops it again.
+    const c = column();
+    const e = editor();
+
+    c.ground = 'panel';
+    e.setColumnGround(c);
+    expect(c.ground).toBe('panel');
+
+    (c as { ground?: string }).ground = undefined;
+    e.setColumnGround(c);
+    expect('ground' in c).withContext('ground survived as an undefined key').toBeFalse();
+  });
+
+  it('never writes a key holding undefined, whatever the toggles do', () => {
+    // The property the document actually needs, stated once over the whole
+    // column rather than field by field.
+    const c = column();
+    const e = editor();
+
+    e.setColumnAlign(c, true);
+    e.setColumnMeasure(c, true);
+    e.setColumnAlign(c, false);
+    e.setColumnMeasure(c, false);
+    e.setColumnInset(c, false);
+    e.setColumnFull(c, false);
+
+    const bag = c as unknown as Record<string, unknown>;
+    const undefinedKeys = Object.keys(bag).filter((k) => bag[k] === undefined);
+    expect(undefinedKeys).toEqual([]);
   });
 });

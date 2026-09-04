@@ -604,24 +604,69 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   // Stored as ABSENT rather than false, so a column that never had an
   // opinion does not start carrying one - the same rule the section's own
   // levers follow.
+  //
+  // `delete`, NOT `= undefined`, and the difference is the whole of a live
+  // bug (2026-09-04). These four read as "absent" either way in TypeScript,
+  // but a key explicitly set to undefined is PRESENT with an undefined
+  // value, and Firestore rejects the ENTIRE write the moment it sees one:
+  //
+  //   Function updateDoc() called with invalid data.
+  //   Unsupported field value: undefined
+  //
+  // So switching a toggle ON saved fine and switching it OFF could not save
+  // at all - and the failure is the whole document, not the one field. Every
+  // other edit made in the same sitting went down with it. See CLAUDE.md's
+  // write gotcha, and the same house rule stated on FirebaseDAO.updateFields.
 
   setColumnAlign(column: SectionColumn, centred: boolean): void {
-    column.align = centred ? 'centre' : undefined;
+    if (centred) {
+      column.align = 'centre';
+    } else {
+      delete column.align;
+    }
     this.edited();
   }
 
   setColumnMeasure(column: SectionColumn, held: boolean): void {
-    column.measure = held || undefined;
+    if (held) {
+      column.measure = true;
+    } else {
+      delete column.measure;
+    }
     this.edited();
   }
 
   setColumnInset(column: SectionColumn, inset: boolean): void {
-    column.inset = inset || undefined;
+    if (inset) {
+      column.inset = true;
+    } else {
+      delete column.inset;
+    }
     this.edited();
   }
 
   setColumnFull(column: SectionColumn, full: boolean): void {
-    column.full = full || undefined;
+    if (full) {
+      column.full = true;
+    } else {
+      delete column.full;
+    }
+    this.edited();
+  }
+
+  /**
+   * The ground select, whose "No box" option has no value.
+   *
+   * ngModel has already written `undefined` onto the column by the time this
+   * runs - the same unsaveable key as the four toggles above - so this drops
+   * it. Handled here rather than by giving the option a real value, because
+   * "no box" genuinely is the absence of one and the renderer already reads
+   * it that way.
+   */
+  setColumnGround(column: SectionColumn): void {
+    if (!column.ground) {
+      delete column.ground;
+    }
     this.edited();
   }
 
@@ -742,7 +787,15 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   closeImageUploader(): void {
     if (this.target) {
-      this.target.image = this.card.image;
+      // Closing without a picture must leave the target with NO image key,
+      // not one holding undefined - see setColumnAlign's comment. `card` is
+      // this component's own staging object and is never written, so it can
+      // hold whatever it likes.
+      if (this.card.image) {
+        this.target.image = this.card.image;
+      } else {
+        delete this.target.image;
+      }
     }
     this.target = null;
     this.card.image = undefined;
@@ -751,7 +804,7 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   }
 
   clearImage(): void {
-    this.section.image = undefined;
+    delete this.section.image;
     this.edited();
   }
 
