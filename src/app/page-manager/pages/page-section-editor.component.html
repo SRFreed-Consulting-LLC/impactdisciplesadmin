@@ -57,6 +57,31 @@
       </p>
     </div>
 
+    <!-- How many cards sit on a row. Only for looks drawn as a grid: a
+         timeline or a carousel ignores it, and a control that does nothing is
+         worse than no control. The field and the rendering both already
+         existed - Seminars' picture cards run two-and-two - but nothing ever
+         offered it, so every other page was stuck with "as many as fit". -->
+    @if (showsCardsPerRow) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Cards per row</span>
+        <mat-button-toggle-group [value]="activePerRow"
+                                 (change)="pickPerRow($event.value)"
+                                 aria-label="How many cards sit on a row">
+          @for (choice of perRowChoices; track choice.key) {
+            <mat-button-toggle [value]="choice.key" [attr.aria-label]="choice.label">
+              {{ choice.label }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <p class="psd__axis-blurb">
+          &ldquo;As many as fit&rdquo; lets the row decide, which suits small tiles and
+          stretches wide cards tall. A count holds the shape you want &mdash; on
+          phones everything collapses to one column regardless.
+        </p>
+      </div>
+    }
+
     <!-- Two sections sharing one row, half and half - the Contact page's
          parallel halves. On phones they stack again. -->
     <div class="psd__axis">

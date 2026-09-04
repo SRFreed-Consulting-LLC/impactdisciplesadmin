@@ -17,8 +17,7 @@ import {
 } from './page-section-catalogue';
 import {
   CONTENT_PIECES, ContentPieceKindKey, SECTION_ARCHETYPE, SECTION_SURFACES, SIGNUP_LISTS,
-  SectionSurface
-} from '@impact-common/shared/lists/section_kit';
+  SectionSurface, GRID_LIST_LOOKS } from '@impact-common/shared/lists/section_kit';
 import { FormDefinitionModel } from '@impact-common/shared/models/domain/form-definition.model';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 
@@ -367,6 +366,24 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   setInk(which: 'card' | 'left' | 'right', value: 'dark' | 'light'): void {
     if (which === 'card') { this.section.cardInk = value; }
     this.edits.next();
+  }
+
+  /**
+   * Does a cards-per-row setting mean anything to this section?
+   *
+   * Only the looks drawn as a grid of cards obey it - a timeline or a
+   * carousel would ignore it silently, and a control that does nothing is
+   * worse than no control. GRID_LIST_LOOKS is shared with the renderer so
+   * the two answers cannot drift.
+   */
+  get showsCardsPerRow(): boolean {
+    const look = this.activeVariant?.key;
+    return !!look && GRID_LIST_LOOKS.includes(look);
+  }
+
+  /** The chosen count, or 0 for "as many as fit". */
+  get activePerRow(): number {
+    return this.section.cardsPerRow ?? 0;
   }
 
   readonly perRowChoices = [
