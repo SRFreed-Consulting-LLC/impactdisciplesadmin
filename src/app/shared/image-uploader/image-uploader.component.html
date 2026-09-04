@@ -54,8 +54,11 @@ DevExtreme popup open elsewhere on the page during the migration). -->
 
     <div class="uploader__body">
       <div class="uploader__tree">
+        <!-- The tree is rooted at the same place as the list. Left at ""
+             it listed the whole bucket, which is a way out of the root the
+             rest of the picker enforces. -->
         <app-file-tree-node
-          folderPath=""
+          [folderPath]="root"
           folderName="Files"
           [selectedPath]="currentPath"
           [refreshToken]="treeRefreshToken"
@@ -72,7 +75,7 @@ DevExtreme popup open elsewhere on the page during the migration). -->
         (dragover)="onDragOver($event)"
         (dragleave)="onDragLeave()">
         <div class="uploader__breadcrumb">
-          <button mat-icon-button type="button" [disabled]="!currentPath" (click)="navigateUp()">
+          <button mat-icon-button type="button" [disabled]="atRoot" (click)="navigateUp()">
             <mat-icon>arrow_upward</mat-icon>
           </button>
           <span class="uploader__breadcrumb-label">{{ currentFolderLabel }}</span>

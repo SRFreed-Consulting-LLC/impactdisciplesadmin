@@ -1,0 +1,53 @@
+.usd__lede {
+  margin: 0 0 16px;
+}
+
+.usd__sizes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.usd__size {
+  // The hint sits UNDER the label rather than beside it: four options each
+  // carrying an explanation read as a list of sentences otherwise.
+  display: block;
+}
+
+.usd__size-label {
+  font-weight: 600;
+}
+
+.usd__size-width {
+  margin-left: 8px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.usd__size-hint {
+  display: block;
+  margin-left: 2px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.usd__files {
+  margin: 16px 0 0;
+  padding-left: 18px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.usd__file-name {
+  // A long filename must not push the size off the edge of the dialog.
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.usd__note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}

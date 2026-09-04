@@ -41,7 +41,14 @@
 </mat-dialog-actions>
 
 @if (isImageUploaderVisible$ | async) {
+    <!-- ROOTED AT THE BUCKET, not the tenant (2026-09-04). The picker now
+       defaults to tenants/<id>/, but the store's files have not moved
+       there yet: Store/ holds 34 product images and EBooks/ holds the
+       five paid PDFs customers download. Rooting these two at the tenant
+       before that migration runs would simply hide them. Remove this
+       input - and this comment - as part of that move. -->
   <app-image-uploader
+    [root]="''"
     [card]="card"
     [isList]="false"
     [field]="'imageUrl'"

@@ -196,8 +196,14 @@ describe('ImageUploaderComponent', () => {
       expect(component.currentPath).toBe('images');
     });
 
+    // These three used to assert the BUCKET root, which is where this
+    // picker opened until 2026-09-04. It is rooted at the tenant now - see
+    // the `root` input - so "the root" means that folder, and the picker
+    // must not climb out of it.
+
     it('navigating up drops one path segment', () => {
       const component = makeComponent();
+      component.root = 'images';
       component.currentPath = 'images/products/2026';
       component.navigateUp();
       expect(component.currentPath).toBe('images/products');
@@ -205,16 +211,56 @@ describe('ImageUploaderComponent', () => {
 
     it('navigating up from a top-level folder lands at the root', () => {
       const component = makeComponent();
-      component.currentPath = 'images';
+      component.root = 'images';
+      component.currentPath = 'images/products';
       component.navigateUp();
-      expect(component.currentPath).toBe('');
+      expect(component.currentPath).toBe('images');
     });
 
     it('navigating up from the root stays at the root', () => {
       const component = makeComponent();
-      component.currentPath = '';
+      component.root = 'images';
+      component.currentPath = 'images';
+      component.navigateUp();
+      expect(component.currentPath).toBe('images');
+    });
+
+    it('CANNOT be walked out of its root, however deep the path looks', () => {
+      // The guard that matters. A path shorter than the root can only mean
+      // the walk has left it - without this the picker would surface another
+      // tenant's files, or the bucket root, one Up click at a time.
+      const component = makeComponent();
+      component.root = 'tenants/impactdisciples.com';
+      component.currentPath = 'tenants/impactdisciples.com/Web-Pages';
+
+      component.navigateUp();
+      expect(component.currentPath).toBe('tenants/impactdisciples.com');
+
+      component.navigateUp();
+      expect(component.currentPath).toBe('tenants/impactdisciples.com');
+      expect(component.atRoot).toBeTrue();
+    });
+
+    it('opens at its root rather than wherever the bucket starts', () => {
+      // Uploads land in currentPath, so where this OPENS is where a file
+      // goes for anyone who does not navigate first - which is most people.
+      const component = makeComponent();
+      component.root = 'tenants/impactdisciples.com';
+      component.ngOnInit();
+
+      expect(component.currentPath).toBe('tenants/impactdisciples.com');
+    });
+
+    it('still allows the whole bucket when a screen asks for it', () => {
+      // The store's files have not moved under the tenant yet, so those
+      // screens pass root="" - see products.component.html.
+      const component = makeComponent();
+      component.root = '';
+      component.currentPath = 'Store';
+
       component.navigateUp();
       expect(component.currentPath).toBe('');
+      expect(component.atRoot).toBeTrue();
     });
 
     it('selecting a folder in the tree jumps straight to it', () => {

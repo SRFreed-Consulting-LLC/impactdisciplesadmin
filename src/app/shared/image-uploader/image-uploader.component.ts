@@ -5,6 +5,9 @@ import { FileBrowserStorageService } from './file-browser-storage.service';
 import { NewFolderDialogComponent } from './new-folder-dialog.component';
 import { RenameDialogComponent } from './rename-dialog.component';
 import { FolderPickerDialogComponent } from './folder-picker-dialog.component';
+import { UploadSizeDialogComponent } from './upload-size-dialog.component';
+import { ResizePreset, resizeImage } from './image-resize.util';
+import { TENANT_STORAGE_ROOT } from './tenant-storage-root';
 import { ConfirmService } from '../confirm-dialog/confirm.service';
 import { SnackbarService } from '../snackbar.service';
 
@@ -49,6 +52,22 @@ export class ImageUploaderComponent implements OnInit {
 
   @ViewChild('fileInput') fileInput: ElementRef<HTMLInputElement>;
 
+  /**
+   * THE FOLDER THIS PICKER TREATS AS ITS TOP, and where uploads land.
+   *
+   * Defaults to the tenant's own prefix (owner, 2026-09-04): every picture
+   * the admin uploads belongs to the ministry, and leaving people to
+   * navigate there first meant new files landed wherever the picker happened
+   * to open - the bucket root, mostly, which is how thirteen team headshots
+   * ended up loose at the top level.
+   *
+   * It is a floor as well as a starting point: navigateUp() stops here, so
+   * the picker cannot wander into another tenant's files or the bucket root.
+   * Pass a different root - including '' for the whole bucket - for a screen
+   * whose files genuinely live elsewhere.
+   */
+  @Input() root = TENANT_STORAGE_ROOT;
+
   currentPath = '';
   items: FileItem[] = [];
   loading = true;
@@ -75,11 +94,15 @@ export class ImageUploaderComponent implements OnInit {
 
   ngOnInit(): void {
     this.originalValue = this.card ? this.card[this.field] : undefined;
+    this.currentPath = this.root;
     this.load();
   }
 
   get currentFolderLabel(): string {
-    if (!this.currentPath) {
+    // At the top it says "Files", not "impactdisciples.com" - the tenant id
+    // is a storage detail and naming it here would invite someone to try to
+    // navigate out of it.
+    if (!this.currentPath || this.atRoot) {
       return 'Files';
     }
     const parts = this.currentPath.split('/');
@@ -138,11 +161,21 @@ export class ImageUploaderComponent implements OnInit {
     this.load();
   }
 
+  /** Never above `root` - see that input's comment. At the root the Up
+   *  control is hidden (atRoot), so this is the belt to that braces. */
   navigateUp(): void {
+    if (this.atRoot) {
+      return;
+    }
     const idx = this.currentPath.lastIndexOf('/');
-    this.currentPath = idx === -1 ? '' : this.currentPath.slice(0, idx);
+    const parent = idx === -1 ? '' : this.currentPath.slice(0, idx);
+    this.currentPath = parent.length < this.root.length ? this.root : parent;
     this.clearSelection();
     this.load();
+  }
+
+  get atRoot(): boolean {
+    return this.currentPath === this.root;
   }
 
   onTreeFolderSelected(path: string): void {
@@ -214,9 +247,40 @@ export class ImageUploaderComponent implements OnInit {
     this.dragOver = false;
   }
 
+  /**
+   * ASKS WHAT SIZE first, then uploads.
+   *
+   * The ask happens here rather than at each call site because this is the
+   * ONE place a file enters Storage from the admin - drag-drop and the file
+   * input both land here - so a picture cannot get in at its original size
+   * by arriving through a different door.
+   *
+   * Cancelling the dialog cancels the upload, which is worth stating: the
+   * files are not uploaded-then-resized, so there is nothing left behind.
+   */
   private uploadFiles(files: File[]): void {
+    if (!files.length) {
+      return;
+    }
+    this.dialog
+      .open(UploadSizeDialogComponent, { width: '520px', data: { files } })
+      .afterClosed()
+      .subscribe((preset: ResizePreset | false | undefined) => {
+        if (!preset) {
+          return;
+        }
+        this.uploadResized(files, preset);
+      });
+  }
+
+  private uploadResized(files: File[], preset: ResizePreset): void {
     this.uploading = true;
-    Promise.all(files.map((file) => this.storage.uploadFile(file, this.currentPath)))
+    // Resize BEFORE any upload starts, so a failure part-way leaves nothing
+    // half-done - and resizeImage() never rejects, it returns the original.
+    Promise.all(files.map((file) => resizeImage(file, preset.width)))
+      .then((prepared) =>
+        Promise.all(prepared.map((file) => this.storage.uploadFile(file, this.currentPath)))
+      )
       .then(() => {
         this.snackbar.success(files.length > 1 ? 'Files Uploaded' : 'File Uploaded');
         this.load();

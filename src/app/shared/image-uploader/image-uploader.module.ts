@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,12 +10,14 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatRadioModule } from '@angular/material/radio';
 import { SharedModule } from '../shared.module';
 import { ImageUploaderComponent } from './image-uploader.component';
 import { FileTreeNodeComponent } from './file-tree-node.component';
 import { NewFolderDialogComponent } from './new-folder-dialog.component';
 import { RenameDialogComponent } from './rename-dialog.component';
 import { FolderPickerDialogComponent } from './folder-picker-dialog.component';
+import { UploadSizeDialogComponent } from './upload-size-dialog.component';
 
 // This app's own replacement for impactdisciplescommon's DevExtreme-backed
 // ImageUploaderModule - see file-browser-storage.service.ts and
@@ -29,10 +31,12 @@ import { FolderPickerDialogComponent } from './folder-picker-dialog.component';
     FileTreeNodeComponent,
     NewFolderDialogComponent,
     RenameDialogComponent,
-    FolderPickerDialogComponent
+    FolderPickerDialogComponent,
+    UploadSizeDialogComponent
   ],
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -43,6 +47,7 @@ import { FolderPickerDialogComponent } from './folder-picker-dialog.component';
     MatDividerModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    MatRadioModule,
     SharedModule
   ],
   exports: [ImageUploaderComponent]

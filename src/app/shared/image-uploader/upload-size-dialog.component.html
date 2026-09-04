@@ -1,0 +1,55 @@
+<app-popup-header title="IMAGE SIZE" [showCloseButton]="true" (closed)="onCancel()"></app-popup-header>
+
+<mat-dialog-content>
+  @if (resizable.length) {
+    <p class="usd__lede">
+      How big should
+      {{ resizable.length > 1 ? 'these pictures be' : 'this picture be' }} on the site?
+      Bigger is not better - a picture the page paints 300px wide costs the
+      visitor just as much to download at 2000.
+    </p>
+
+    <mat-radio-group class="usd__sizes" [(ngModel)]="chosen">
+      @for (preset of presets; track preset.key) {
+        <mat-radio-button class="usd__size" [value]="preset.key">
+          <span class="usd__size-label">
+            {{ preset.label }}
+            @if (preset.width) {
+              <span class="usd__size-width">{{ preset.width }}px wide</span>
+            }
+          </span>
+          <span class="usd__size-hint">{{ preset.hint }}</span>
+        </mat-radio-button>
+      }
+    </mat-radio-group>
+
+    <ul class="usd__files">
+      @for (file of resizable; track file.name) {
+        <li><span class="usd__file-name">{{ file.name }}</span> {{ sizeOf(file) }}</li>
+      }
+    </ul>
+
+    <p class="usd__note">
+      An image already smaller than the size you pick is left exactly as it
+      is, and nothing is ever cropped.
+    </p>
+  }
+
+  @if (passthrough.length) {
+    <!-- Said out loud so nobody picks Small and wonders why the logo did not
+         change. An SVG has no pixels to lose and a GIF may be animated. -->
+    <p class="usd__note">
+      {{ passthrough.length }}
+      {{ passthrough.length > 1 ? 'files cannot be resized' : 'file cannot be resized' }}
+      and will upload unchanged:
+      <span class="usd__file-name">{{ passthrough[0].name }}</span>@if (passthrough.length > 1) { and {{ passthrough.length - 1 }} more }.
+    </p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">CANCEL</button>
+  <button mat-raised-button color="primary" type="button" cdkFocusInitial (click)="onUpload()">
+    UPLOAD
+  </button>
+</mat-dialog-actions>
