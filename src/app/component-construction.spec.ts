@@ -10,6 +10,7 @@ import { Firestore } from '@angular/fire/firestore';
 import { Functions } from '@angular/fire/functions';
 import { Storage } from '@angular/fire/storage';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
+import { NAV_CONFIG } from 'src/app/core/main-screen/nav-config';
 import { AddContactNoteDialogComponent } from 'src/app/contacts-manager/contacts/add-contact-note-dialog.component';
 import { AddressFieldComponent } from 'src/app/shared/address-field/address-field.component';
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
@@ -401,5 +402,44 @@ describe('components - construction smoke', () => {
   it('names every component exactly once', () => {
     const names = [...CONSTRUCTIBLE, ...IMPORT_ONLY].map((c) => c.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  // EVERY screenKey A COMPONENT DECLARES MUST BE ONE THE REGISTRY PRODUCES.
+  //
+  // Found 2026-09-05: the 08-31 DATA move changed seven screenKeys and the
+  // stored grants were migrated, but the components kept asking
+  // PermissionService about the OLD keys ('store-manager.products',
+  // 'page-manager.testimonials', ...). Nothing failed: Admins short-circuit
+  // every check, and an Employee granted `data.testimonials` could reach the
+  // screen (the drawer and route gate use the registry key) and then found
+  // add/edit/delete all denied, because the component's literal matched no
+  // grant. A wrong key is indistinguishable from a missing grant.
+  //
+  // Valid keys are `group.slug` and `group.slug.tab`, from NAV_CONFIG. Page
+  // Manager's leaves are streamed from Firestore (NAV_GROUPS_FILLED_FROM_DATA)
+  // and are deliberately NOT allowed here by prefix: no component declares a
+  // static `page-manager.<page>` key (the page editor takes its slug from the
+  // route), and a prefix allowance would have waved through three of the
+  // seven stale keys this was written to catch. A key that is declared but
+  // empty (an @Input the host fills in) is skipped, not judged.
+  it('declares only screenKeys the nav registry produces', () => {
+    const registry = new Set<string>();
+    for (const group of NAV_CONFIG) {
+      for (const leaf of group.items ?? []) {
+        registry.add(`${group.id}.${leaf.slug}`);
+        for (const tab of leaf.tabs ?? []) {
+          registry.add(`${group.id}.${leaf.slug}.${tab.key}`);
+        }
+      }
+    }
+    const bad: string[] = [];
+    for (const { name, type } of CONSTRUCTIBLE) {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [type, ...PROVIDERS] });
+      const key = (TestBed.inject(type) as { screenKey?: unknown }).screenKey;
+      if (typeof key !== 'string' || key === '') continue;
+      if (!registry.has(key)) bad.push(`${name}: '${key}'`);
+    }
+    expect(bad).withContext('screenKeys with no registry entry').toEqual([]);
   });
 });

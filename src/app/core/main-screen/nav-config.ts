@@ -453,8 +453,15 @@ export const NAV_CONFIG: NavGroup[] = [
     // data.testimonials, store-manager.products became data.products, and so
     // on. Unlike a section change, that IS an identity change: stored
     // ScreenPermission grants were migrated by
-    // scripts/migrate-screenkey-renames-3.js, run on dev. The production run
-    // is written up in MIGRATION.md and has NOT been done.
+    // scripts/migrate-screenkey-renames-3.js, run on dev. Production never
+    // needed the run - verified 2026-09-05 that no admin_user there held a
+    // grant or a pin on any of the old keys.
+    //
+    // The COMPONENTS were the half that got missed: for five days after the
+    // move they still asked PermissionService about the old keys, so an
+    // Employee granted a Data screen would have found add/edit/delete all
+    // denied. component-construction.spec.ts now fails on any declared
+    // screenKey this registry does not produce.
     id: 'data',
     label: 'DATA',
     icon: 'inventory_2',

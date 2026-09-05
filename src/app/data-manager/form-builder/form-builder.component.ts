@@ -44,7 +44,7 @@ export class FormBuilderComponent implements OnInit {
 
   itemType = 'Form';
 
-  private readonly screenKey = 'tools-manager.form-builder';
+  private readonly screenKey = 'data.form-builder';
 
   headerActions: ListHeaderAction[] = [];
   rowActions: DataGridRowAction<FormDefinitionModel>[] = [

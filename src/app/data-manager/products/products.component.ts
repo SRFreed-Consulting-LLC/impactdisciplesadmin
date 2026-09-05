@@ -56,7 +56,7 @@ export class ProductsComponent implements OnInit {
 
   itemType = 'Product';
 
-  private readonly screenKey = 'store-manager.products';
+  private readonly screenKey = 'data.products';
 
   headerActions: ListHeaderAction[] = [];
 

@@ -212,7 +212,11 @@ screenKeys.
    (adds `site_navigation` and `site_footer`: public read, staff write; and
    the admin_users self-preferences carve-out)
 4. `node scripts/migrate-screenkey-renames-3.js --project=prod --dry-run`,
-   then without `--dry-run`
+   then without `--dry-run` - NOT NEEDED after all: verified 2026-09-05 that
+   no prod admin_user held a grant or pin on any of the five old keys, so
+   there was nothing to rename. (The components themselves still carried the
+   old keys until that day - fixed with a spec that fails on any declared
+   screenKey the registry does not produce.)
 5. Deploy web hosting, then admin hosting
 
 **Why the order is forgiving.** Both web readers fall back to the copy

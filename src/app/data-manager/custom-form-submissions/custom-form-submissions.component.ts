@@ -44,7 +44,7 @@ export class CustomFormSubmissionsComponent implements OnInit {
 
   itemType = 'Form Submission';
 
-  private readonly screenKey = 'contacts-manager.custom-form-submissions';
+  private readonly screenKey = 'data.custom-form-submissions';
 
   // Nothing to "add" - submissions come from a filled-out form, not staff.
   headerActions: ListHeaderAction[] = [];

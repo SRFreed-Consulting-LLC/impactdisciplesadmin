@@ -32,7 +32,7 @@ import { TeamPageDialogComponent } from './team-page-dialog.component';
 export class TeamPageComponent extends BaseListComponent<ImpactTeamMemberModel>
   implements OnInit, OnDestroy {
   readonly itemType = 'Team Member';
-  protected readonly screenKey = 'page-manager.team-page';
+  protected readonly screenKey = 'data.team-page';
   protected readonly dialogComponent = TeamPageDialogComponent;
   protected override readonly dialogConfig = { width: '1150px', maxWidth: '95vw' };
 

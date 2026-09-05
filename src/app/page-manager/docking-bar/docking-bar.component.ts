@@ -55,7 +55,7 @@ export class DockingBarComponent implements OnInit {
   // key nothing in nav-config declares any more. It is site furniture (the
   // web app mounts it in app.component.html, on every page), which is why it
   // sits with the rest of the site-wide configuration rather than on Home.
-  private readonly screenKey = 'page-manager.web-config';
+  private readonly screenKey = 'data.web-config';
 
   constructor(
     private service: DockBarService,
