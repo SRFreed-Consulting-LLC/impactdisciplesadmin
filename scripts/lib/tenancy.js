@@ -88,6 +88,9 @@ const TENANT_COLLECTIONS = [
   // Wave 4 - production-only. email_lists is deliberately absent: no rule,
   // no reader, no writer - a leftover of the removed saved-lists feature.
   "form_submissions",
+
+  // The public reader map's derived document - see the TypeScript source.
+  "library_map",
 ];
 
 /**

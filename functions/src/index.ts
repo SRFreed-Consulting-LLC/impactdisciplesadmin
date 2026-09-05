@@ -222,6 +222,13 @@ exports.updateMyPreferences = libraryProfile.updateMyPreferences;
 const adminClaims = require("./admin-claims.functions");
 exports.onAdminUserRoleSync = adminClaims.onAdminUserRoleSync;
 
+// Keeps `library_map/points` - the coordinates-only document the public
+// site's reader map draws - in step with libraryUsers, which the public site
+// cannot read and must not. See library-map.functions.ts for what is
+// deliberately left out of that document.
+const libraryMap = require("./library-map.functions");
+exports.onLibraryUserWritten = libraryMap.onLibraryUserWritten;
+
 const checkoutSupport = require("./checkout-support.functions");
 exports.lookup_coupon = checkoutSupport.lookupCouponHttp;
 exports.lookupCoupon = checkoutSupport.lookupCoupon;

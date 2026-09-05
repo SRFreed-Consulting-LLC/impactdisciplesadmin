@@ -575,6 +575,20 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isBusinessStaff();
       }
+      // The public reader map's one document. World-readable ON PURPOSE and
+      // safe to be, because of what it does NOT contain: coordinates and a
+      // total, with no name, email, id, city, country or per-place count.
+      //
+      // It is derived from libraryUsers by onLibraryUserWritten, which is the
+      // only writer - hence `write: false` rather than a staff gate. That
+      // collection stays owner-or-admin only (see its own block further down)
+      // and must never gain a public read: its documents carry emails, phone
+      // numbers, licences and last-login times. This document exists so that
+      // rule never has to be relaxed.
+      match /library_map/{id} {
+        allow read: if true;
+        allow write: if false;
+      }
       match /faq/{id} {
         allow read: if true;
         allow write: if isBusinessStaff();
