@@ -270,7 +270,7 @@ export class PurchasesComponent implements OnInit, OnDestroy {
         this.inProgress$.next(false);
       } else {
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       }
     }).catch((err) => {
       // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
@@ -280,7 +280,7 @@ export class PurchasesComponent implements OnInit, OnDestroy {
       // on 2026-08-15; it was never propagated to the other copies.
       console.error('Purchase save failed', err);
       this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     });
   }
 

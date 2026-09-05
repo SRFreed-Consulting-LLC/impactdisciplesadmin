@@ -323,7 +323,7 @@ export class SummitSetupWizardComponent implements OnInit {
       this.snackbar.success(goLive ? 'Summit published and LIVE' : 'Summit created (not live yet)');
       this.published.emit(created?.id);
     } catch {
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     } finally {
       this.saving$.next(false);
     }

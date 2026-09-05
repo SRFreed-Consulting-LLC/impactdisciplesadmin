@@ -323,7 +323,7 @@ export class FormBuilderComponent implements OnInit {
       })
       .catch(() => {
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       });
   }
 

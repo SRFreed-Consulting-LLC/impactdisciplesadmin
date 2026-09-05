@@ -103,7 +103,7 @@ export abstract class BaseEntityDialogComponent<T extends BaseModel> {
         // A falsy result is a write that did not happen. The dialog stays
         // open so the work is not lost.
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       })
       .catch((err) => {
         // THE POINT OF THIS CLASS. Without this branch a rejected write
@@ -112,7 +112,7 @@ export abstract class BaseEntityDialogComponent<T extends BaseModel> {
         // survived across the copies.
         console.error(this.itemType + ' save failed', err);
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       });
   }
 }

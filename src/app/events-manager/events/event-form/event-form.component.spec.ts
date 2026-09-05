@@ -33,6 +33,7 @@ function makeDeps(overrides: Record<string, unknown> = {}) {
     snackbar: {
       success: jasmine.createSpy('success'),
       error: jasmine.createSpy('error'),
+      somethingWentWrong: jasmine.createSpy('somethingWentWrong'),
     },
     permissions,
     ...overrides,
@@ -364,7 +365,7 @@ describe('EventFormComponent', () => {
       component.onSave();
       await flush();
 
-      expect(deps.snackbar.error).toHaveBeenCalledWith('Some Error Occured');
+      expect(deps.snackbar.somethingWentWrong).toHaveBeenCalled();
       expect(component.inProgress$.value).toBeFalse();
       expect(emitted).toEqual([]);
     });

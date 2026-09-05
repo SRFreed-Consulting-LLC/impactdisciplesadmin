@@ -248,7 +248,7 @@ export class AdminUsersComponent implements OnInit {
           this.inProgress$.next(false);
         } else {
           this.inProgress$.next(false);
-          this.snackbar.error('Some Error Occured');
+          this.snackbar.somethingWentWrong();
         }
       });
       return;

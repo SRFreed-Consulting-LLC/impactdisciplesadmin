@@ -198,7 +198,7 @@ export class TagRulesComponent implements OnInit {
     request.then((result) => {
       this.inProgress$.next(false);
       if (!result) {
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
         return;
       }
       this.snackbar.success(this.itemType + (this.editingItem?.id ? ' Updated' : ' Added'));
@@ -214,7 +214,7 @@ export class TagRulesComponent implements OnInit {
       // the other copies of this block.
       console.error('Tag rule save failed', err);
       this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     });
   }
 

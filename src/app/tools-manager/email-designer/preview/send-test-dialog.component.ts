@@ -65,7 +65,7 @@ export class SendTestDialogComponent {
         this.snackbar.success('Test email queued to ' + to);
         this.dialogRef.close(true);
       } else {
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       }
     });
   }

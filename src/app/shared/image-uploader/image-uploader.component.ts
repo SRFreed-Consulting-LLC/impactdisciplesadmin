@@ -289,7 +289,7 @@ export class ImageUploaderComponent implements OnInit {
         this.snackbar.success(files.length > 1 ? 'Files Uploaded' : 'File Uploaded');
         this.load();
       })
-      .catch(() => this.snackbar.error('Some Error Occured'))
+      .catch(() => this.snackbar.somethingWentWrong())
       .finally(() => (this.uploading = false));
   }
 
@@ -308,7 +308,7 @@ export class ImageUploaderComponent implements OnInit {
             this.treeRefreshToken++;
             this.load();
           })
-          .catch(() => this.snackbar.error('Some Error Occured'));
+          .catch(() => this.snackbar.somethingWentWrong());
       });
   }
 
@@ -332,7 +332,7 @@ export class ImageUploaderComponent implements OnInit {
             this.clearSelection();
             this.load();
           })
-          .catch(() => this.snackbar.error('Some Error Occured'));
+          .catch(() => this.snackbar.somethingWentWrong());
       });
   }
 
@@ -362,7 +362,7 @@ export class ImageUploaderComponent implements OnInit {
             this.clearSelection();
             this.load();
           })
-          .catch(() => this.snackbar.error('Some Error Occured'));
+          .catch(() => this.snackbar.somethingWentWrong());
       });
   }
 
@@ -389,7 +389,7 @@ export class ImageUploaderComponent implements OnInit {
             this.clearSelection();
             this.load();
           })
-          .catch(() => this.snackbar.error('Some Error Occured'));
+          .catch(() => this.snackbar.somethingWentWrong());
       });
   }
 
@@ -414,7 +414,7 @@ export class ImageUploaderComponent implements OnInit {
           this.clearSelection();
           this.load();
         })
-        .catch(() => this.snackbar.error('Some Error Occured'));
+        .catch(() => this.snackbar.somethingWentWrong());
     });
   }
 

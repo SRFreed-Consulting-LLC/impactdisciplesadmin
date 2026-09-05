@@ -5,7 +5,7 @@ import {
   BaseEntityDialogComponent,
   EntityDialogService
 } from './base-entity-dialog.component';
-import { SnackbarService } from './snackbar.service';
+import { SnackbarService, SOMETHING_WENT_WRONG } from './snackbar.service';
 
 // Sweep finding C4. This save routine existed in TEN copies and was tested
 // in NONE of them, which is exactly how a fix applied to one copy on
@@ -70,7 +70,8 @@ function setup(over: {
   } as unknown as MatDialogRef<unknown, boolean>;
   const snackbar = {
     success: (m: string) => { messages.success.push(m); },
-    error: (m: string) => { messages.error.push(m); }
+    error: (m: string) => { messages.error.push(m); },
+    somethingWentWrong: () => { messages.error.push(SOMETHING_WENT_WRONG); }
   } as unknown as SnackbarService;
 
   const fb = new FormBuilder();
@@ -181,7 +182,7 @@ describe('BaseEntityDialogComponent', () => {
       await Promise.resolve();
 
       expect(dialog.inProgress$.value).withContext('spinner stuck').toBeFalse();
-      expect(messages.error).toEqual(['Some Error Occured']);
+      expect(messages.error).toEqual([SOMETHING_WENT_WRONG]);
       // Deliberately still open: the user's work is not thrown away.
       expect(closed).toEqual([]);
     });
@@ -194,7 +195,7 @@ describe('BaseEntityDialogComponent', () => {
       await Promise.resolve();
 
       expect(dialog.inProgress$.value).toBeFalse();
-      expect(messages.error).toEqual(['Some Error Occured']);
+      expect(messages.error).toEqual([SOMETHING_WENT_WRONG]);
       expect(messages.success).toEqual([]);
       expect(closed).toEqual([]);
     });

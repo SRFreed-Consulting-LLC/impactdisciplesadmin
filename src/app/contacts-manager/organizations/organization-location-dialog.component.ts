@@ -1,9 +1,9 @@
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { BehaviorSubject } from 'rxjs';
 import { LocationModel } from '@impact-common/shared/models/domain/location.model';
 import { LocationService } from 'src/app/common/services/data/location.service';
+import { BaseEntityDialogComponent } from '../../shared/base-entity-dialog.component';
 import { SnackbarService } from '../../shared/snackbar.service';
 
 export interface OrganizationLocationDialogData {
@@ -23,19 +23,17 @@ export interface OrganizationLocationDialogData {
     styleUrls: ['./organization-location-dialog.component.scss'],
     standalone: false
 })
-export class OrganizationLocationDialogComponent {
-  form: FormGroup;
-  inProgress$ = new BehaviorSubject<boolean>(false);
-  isEdit: boolean;
+export class OrganizationLocationDialogComponent extends BaseEntityDialogComponent<LocationModel> {
+  readonly itemType = 'Location';
 
   constructor(
-    private dialogRef: MatDialogRef<OrganizationLocationDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) public data: OrganizationLocationDialogData,
+    protected readonly dialogRef: MatDialogRef<OrganizationLocationDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public readonly data: OrganizationLocationDialogData,
     private fb: FormBuilder,
-    private service: LocationService,
-    private snackbar: SnackbarService
+    protected readonly service: LocationService,
+    protected readonly snackbar: SnackbarService
   ) {
-    this.isEdit = !!data.item?.id;
+    super();
     this.form = this.fb.group({
       name: [data.item?.name ?? '', Validators.required],
       contactName: [data.item?.contactName ?? ''],
@@ -54,46 +52,15 @@ export class OrganizationLocationDialogComponent {
     });
   }
 
-  onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  onSave(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.inProgress$.next(true);
-    const value: LocationModel = {
-      ...this.data.item,
-      ...this.form.value,
+  // Two fields the form does not hold: the parent organization comes from
+  // the dialog DATA (fixed, not pickable - see the interface), and rooms
+  // are carried across untouched because they are edited on the Summit
+  // screen, never here.
+  protected override buildValue(): LocationModel {
+    return {
+      ...super.buildValue(),
       organization: this.data.organizationId,
       trainingrooms: this.data.item?.trainingrooms ?? []
     };
-
-    const request = this.isEdit
-      ? this.service.update(value.id!, value)
-      : this.service.add(value);
-
-    request.then((result) => {
-      if (result) {
-        this.snackbar.success('Location ' + (this.isEdit ? 'Updated' : 'Added'));
-        this.dialogRef.close(true);
-      } else {
-        this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
-      }
-    }).catch((err) => {
-      // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
-      // write left inProgress$ stuck true: the spinner span forever, the
-      // dialog never closed, and nothing surfaced beyond the console -
-      // indistinguishable from a hang. coach-dialog.component.ts fixed and
-      // documented exactly this on 2026-08-15; it was never propagated to
-      // the other copies of this block.
-      console.error('Location save failed', err);
-      this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
-    });
   }
 }

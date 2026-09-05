@@ -58,7 +58,7 @@ export class CoachQuickCreateDialogComponent {
       this.snackbar.success('Coach Added');
       this.dialogRef.close(coach);
     } catch {
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
       this.inProgress$.next(false);
     }
   }

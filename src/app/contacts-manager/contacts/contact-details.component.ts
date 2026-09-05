@@ -343,7 +343,7 @@ export class ContactDetailsComponent implements OnInit {
         this.saved.emit();
       } else {
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       }
     });
   }

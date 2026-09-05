@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 
+/** See SnackbarService.somethingWentWrong(). Exported so a spec can pin it. */
+export const SOMETHING_WENT_WRONG = 'Something went wrong. Please try again.';
+
 /**
  * Material replacement for devextreme/ui/notify's notify({message, type}).
  * Only 'success' and 'error' types are actually used anywhere in this app.
@@ -21,6 +24,19 @@ export class SnackbarService {
       duration: 6000,
       panelClass: 'app-snackbar-error'
     });
+  }
+
+  /**
+   * The one generic failure message, for a write or upload that did not
+   * happen and has nothing more specific to say.
+   *
+   * It was the literal 'Some Error Occured' - misspelled, and pasted into
+   * 36 call sites across 21 files, which is why it stayed misspelled for a
+   * month after the first person noticed. A message staff read belongs in
+   * one place with one spelling.
+   */
+  somethingWentWrong(): void {
+    this.error(SOMETHING_WENT_WRONG);
   }
 
   /**

@@ -45,7 +45,7 @@ function makeComponent(storage = fakeStorage()): ImageUploaderComponent {
       { provide: FileBrowserStorageService, useValue: storage },
       { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => ({ subscribe: () => undefined }) }) } },
       { provide: ConfirmService, useValue: { confirm: () => Promise.resolve(true) } },
-      { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined } },
+      { provide: SnackbarService, useValue: { success: () => undefined, error: () => undefined, somethingWentWrong: () => undefined } },
     ],
   });
   return TestBed.inject(ImageUploaderComponent);

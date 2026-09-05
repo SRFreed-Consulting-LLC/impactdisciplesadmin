@@ -228,7 +228,7 @@ export class CreateOrgContactDialogComponent implements OnInit {
       );
       this.dialogRef.close({ organizationId, contactId: contact?.id });
     } catch {
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
       this.inProgress$.next(false);
     }
   }

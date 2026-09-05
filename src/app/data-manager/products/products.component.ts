@@ -460,7 +460,7 @@ export class ProductsComponent implements OnInit {
         this.inProgress$.next(false);
       } else {
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       }
     }).catch((err) => {
       // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
@@ -471,7 +471,7 @@ export class ProductsComponent implements OnInit {
       // the other copies of this block.
       console.error('Product save failed', err);
       this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     });
   }
 

@@ -62,7 +62,7 @@ export class FormTestSubmitDialogComponent {
       })
       .catch(() => {
         this.submitting = false;
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       });
   }
 

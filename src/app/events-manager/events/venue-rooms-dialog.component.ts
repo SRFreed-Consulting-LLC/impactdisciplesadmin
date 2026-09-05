@@ -49,7 +49,7 @@ export class VenueRoomsDialogComponent implements OnInit {
         this.dialogRef.close(true);
       })
       .catch(() => {
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
         this.saving$.next(false);
       });
   }

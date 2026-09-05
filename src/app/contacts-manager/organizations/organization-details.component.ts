@@ -174,7 +174,7 @@ export class OrganizationDetailsComponent implements OnInit {
         }
       }
     } catch {
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     } finally {
       this.inProgress$.next(false);
     }
@@ -224,7 +224,7 @@ export class OrganizationDetailsComponent implements OnInit {
       this.snackbar.success(existing.length ? 'Linked to the existing contact' : 'Contact created and linked');
       this.loadChildren();
     } catch {
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     } finally {
       this.promoting = false;
     }

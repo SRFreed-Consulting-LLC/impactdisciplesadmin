@@ -424,7 +424,7 @@ export class EventFormComponent implements OnInit {
         this.saved.emit(result);
       } else {
         this.inProgress$.next(false);
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       }
     }).catch((err) => {
       // Stop-gap (sweep finding C4, 2026-08-27). Without this a rejected
@@ -435,7 +435,7 @@ export class EventFormComponent implements OnInit {
       // the other copies of this block.
       console.error('Event save failed', err);
       this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     });
   }
 }

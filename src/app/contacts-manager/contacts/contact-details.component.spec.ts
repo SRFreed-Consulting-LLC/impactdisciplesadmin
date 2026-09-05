@@ -41,6 +41,7 @@ function makeDeps(overrides: Record<string, unknown> = {}) {
     snackbar: {
       success: jasmine.createSpy('success'),
       error: jasmine.createSpy('error'),
+      somethingWentWrong: jasmine.createSpy('somethingWentWrong'),
     },
     confirmService: { confirm: () => Promise.resolve(true) },
     dialog: { open: jasmine.createSpy('open') },
@@ -210,7 +211,7 @@ describe('ContactDetailsComponent (characterization, pre-split)', () => {
       component.ngOnInit();
       component.onSave();
       await flush();
-      expect(deps.snackbar.error).toHaveBeenCalledWith('Some Error Occured');
+      expect(deps.snackbar.somethingWentWrong).toHaveBeenCalled();
       expect(component.inProgress$.value).toBeFalse();
     });
 

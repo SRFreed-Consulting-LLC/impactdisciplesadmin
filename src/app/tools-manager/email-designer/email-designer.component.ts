@@ -365,7 +365,7 @@ export class EmailDesignerComponent implements OnInit {
     request.then((result) => {
       this.saving$.next(false);
       if (!result) {
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
         return;
       }
       this.state.dirty = false;

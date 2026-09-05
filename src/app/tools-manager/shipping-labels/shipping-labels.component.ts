@@ -218,7 +218,7 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
         this.snackbar.success('Return Address Saved');
         this.step = 2;
       } else {
-        this.snackbar.error('Some Error Occured');
+        this.snackbar.somethingWentWrong();
       }
     }).catch((err) => {
       // Stop-gap (sweep finding C4, 2026-08-27). The next(false) above runs
@@ -228,7 +228,7 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
       // documented exactly this on 2026-08-15.
       console.error('Return address save failed', err);
       this.inProgress$.next(false);
-      this.snackbar.error('Some Error Occured');
+      this.snackbar.somethingWentWrong();
     });
   }
 
