@@ -97,7 +97,12 @@ async function main() {
   console.log('Written.');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Guarded so requiring this file for its test does not run the repair.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = {rekey};

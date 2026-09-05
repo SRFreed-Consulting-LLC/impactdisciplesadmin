@@ -468,12 +468,25 @@ const libraryUsers = {
     userId: "patron-uid-0001",
     licensedBookIds: ["lib-book-0001"],
     bookLicenses: [{bookId: "lib-book-0001", purchaseDate: T0, source: "admin-grant", grantedBy: "seed"}],
+    // A LOCATION, so the public reader map has something to plot.
+    //
+    // Added 2026-09-05 with the map's own integration test. Without it
+    // onLibraryUserWritten fires, does its work correctly and writes an EMPTY
+    // points array - so a test asserting "the map rebuilt" passes on a map
+    // with nothing in it, which is the shape of pass that hides the bug it
+    // was written for. The phone number and the name beside it are the point
+    // of the other half of that test: none of this may reach the derived
+    // document.
+    phone: "+1 555 0142",
+    location: {lat: 33.749, lng: -84.388, city: "Atlanta", region: "Georgia", country: "United States"},
   },
   "casey01@contacts.test": {
     email: "casey01@contacts.test",
     firstName: "Casey01", lastName: "Contact01",
     licensedBookIds: [],
     bookLicenses: [],
+    // Deliberately NO location - the map must skip a reader it cannot place
+    // rather than plotting them at 0,0 in the Gulf of Guinea.
   },
 };
 

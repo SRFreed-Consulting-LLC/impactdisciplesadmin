@@ -291,4 +291,65 @@ test("trigger liveness", {concurrency: false}, async (t) => {
         (d) => (d.locales || {})[locale] === label,
         `the registry the READER reads to gain locale ${locale}`);
     });
+
+  await t.test("libraryUsers: the public reader map is rebuilt, and carries " +
+    "nothing about who", async () => {
+    // TWO ASSERTIONS IN ONE TEST BECAUSE THEY ARE ONE FACT. The trigger has
+    // to fire (a tenant-path trigger that stops matching never runs, silently
+    // - the whole reason this file exists), AND what it writes has to be the
+    // projection rather than the source.
+    //
+    // functions/test/library-map.test.js already proves pointsFrom() is safe
+    // in isolation. It cannot prove pointsFrom() is what reaches the
+    // world-readable document. That gap is exactly one careless refactor wide
+    // - "let me stash the raw docs for debugging" - and every unit test stays
+    // green through it. This is the assertion that survives the code changing
+    // shape.
+    const email = `${uniq("reader")}@example.com`;
+    const secretName = "Verylongsurname";
+    const secretPhone = "+1 555 0199";
+
+    await db().collection(tenantPath("libraryUsers")).doc(email).set({
+      email,
+      firstName: "Probe",
+      lastName: secretName,
+      phone: secretPhone,
+      licensedBookIds: ["lib-book-0001"],
+      bookLicenses: [],
+      lastLogin: Date.now(),
+      location: {
+        lat: 51.5072, lng: -0.1276,
+        city: "London", region: "England", country: "United Kingdom",
+      },
+    });
+
+    const mapDoc = db().doc(`${tenantPath("library_map")}/points`);
+    const map = await eventually(mapDoc,
+      (d) => Array.isArray(d.points) &&
+        d.points.some((pt) => Math.abs(pt.lat - 51.5072) < 0.2),
+      "onLibraryUserWritten to plot a reader who just signed in");
+
+    assert.equal(map.total, map.points.length,
+      "the stored total must match the points it counts");
+
+    // What the document may contain, and nothing else. An allow-list rather
+    // than a denylist of known-bad names: a NEW libraryUsers field - a
+    // mailing address, a church, a payment id - passes a denylist by simply
+    // not being on it.
+    const allowed = new Set(["lat", "lng", "city", "region", "country"]);
+    for (const point of map.points) {
+      for (const key of Object.keys(point)) {
+        assert.ok(allowed.has(key),
+          `the public map published "${key}", which is not on the allow-list`);
+      }
+    }
+
+    // And the belt to those braces: none of the identifying values reached
+    // it, however they might have been nested.
+    const published = JSON.stringify(map);
+    for (const secret of [email, secretName, secretPhone, "lib-book-0001"]) {
+      assert.ok(!published.includes(secret),
+        `the public map leaked ${JSON.stringify(secret)}`);
+    }
+  });
 });

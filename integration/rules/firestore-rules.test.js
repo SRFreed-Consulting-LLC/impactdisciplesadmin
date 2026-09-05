@@ -89,6 +89,22 @@ before(async () => {
     });
     await setDoc(doc(db, p("site_footer/main")), {brandTitle: "Impact Discipleship Ministries", columns: []});
     await setDoc(doc(db, p("customers/c1")), {email: "c1@x.test"});
+    // The derived public map. Seeded so the anon READ assertion tests the
+    // rule rather than accidentally passing on a missing document - a get on
+    // a document that is not there succeeds under a permissive rule and is
+    // indistinguishable from one that is.
+    await setDoc(doc(db, p("library_map/points")), {
+      points: [{lat: 33.7, lng: -84.4, city: "Atlanta"}],
+      total: 1,
+      updatedAt: 1757030000000,
+    });
+    // A second reader, so "a patron cannot read another patron's doc" has a
+    // real document to be refused rather than a missing one.
+    await setDoc(doc(db, p("libraryUsers/admin@test.local")), {
+      email: "admin@test.local",
+      licensedBookIds: [],
+      bookLicenses: [],
+    });
     await setDoc(doc(db, p("coupons/FREE")), {code: "FREE", percentOff: 100});
     // An already-sent mail doc, so the resend path (clear `delivery` and
     // write it back) can be exercised as an UPDATE rather than a create.
@@ -431,4 +447,52 @@ test("patron: business collections invisible (public catalog still fine)", async
   await assertFails(getDoc(doc(patron(), p("campaigns/any"))));
   // products IS public - a patron reads it like anyone else.
   await assertSucceeds(getDoc(doc(patron(), p("products/p1"))));
+});
+
+// ---------------------------------------------------------------------------
+// THE PUBLIC READER MAP'S TWO HALVES.
+//
+// A world-readable document derived from an owner-or-admin-only one. Both
+// halves of that sentence are load-bearing and neither was tested when the
+// feature shipped on 2026-09-05: an `allow read: if true` block went into a
+// 1060-line rules file and this suite did not grow by a line.
+//
+// The failure mode has no symptom. A mis-scoped wildcard, a block moved above
+// a broader match, or a copy-paste that lands `read: if true` on the wrong
+// collection name publishes 101 readers' emails, phone numbers, licences and
+// last-login times - with no error, no log line and a map that still looks
+// right. The rule's own comment says "this document exists so that rule never
+// has to be relaxed"; these four assertions are what make that a fact rather
+// than a claim.
+
+test("anon: the reader map is readable by the public site, and writable by nobody", async () => {
+  // The whole point of the derived document. If this fails, the Discipleship
+  // Library page renders a world with no dots and nothing says why.
+  await assertSucceeds(getDoc(doc(anon(), p("library_map/points"))));
+
+  // Only onLibraryUserWritten writes it, via the Admin SDK, which bypasses
+  // rules - so every client is refused, staff included.
+  await assertFails(setDoc(doc(anon(), p("library_map/points")), {points: []}));
+  await assertFails(updateDoc(doc(anon(), p("library_map/points")), {total: 999}));
+  await assertFails(setDoc(doc(admin(), p("library_map/points")), {points: []}));
+});
+
+test("anon: libraryUsers stays shut, one document and the whole collection", async () => {
+  // The collection the map is derived FROM. The reader-map work must never
+  // have made this reachable, and a LIST is as good as a read to an attacker:
+  // it is the enumeration that turns one address into a mailing list.
+  await assertFails(getDoc(doc(anon(), p("libraryUsers/patron@test.local"))));
+  await assertFails(getDocs(collection(anon(), p("libraryUsers"))));
+
+  // Nor by guessing an address that does not exist - a rule that leaked
+  // "no such document" would still be an existence oracle.
+  await assertFails(getDoc(doc(anon(), p("libraryUsers/stranger@example.com"))));
+});
+
+test("a patron can read their own libraryUsers doc and nobody else's", async () => {
+  // The owner-or-admin rule, pinned from the side that matters: the map's
+  // derivation does not widen it.
+  await assertSucceeds(getDoc(doc(patron(), p("libraryUsers/patron@test.local"))));
+  await assertFails(getDoc(doc(patron(), p("libraryUsers/admin@test.local"))));
+  await assertFails(getDocs(collection(patron(), p("libraryUsers"))));
 });

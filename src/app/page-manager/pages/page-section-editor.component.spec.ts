@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import {
@@ -809,5 +811,158 @@ describe('loading the forms a form piece can choose from', () => {
     await Promise.resolve();
 
     expect(reads).toBe(0);
+  });
+});
+
+/**
+ * THE TABS, AS THE TEMPLATE ACTUALLY DRAWS THEM.
+ *
+ * Everything above tests the class. The protection this describe exists for
+ * lives in ONE template expression:
+ *
+ *     @if (editorTab === 'content' || !hasAppearanceControls) {
+ *
+ * Delete the second half of it and every class-level spec in this file still
+ * passes, while the twelve original pages - which declare no variants and no
+ * surfaces, so the tab strip is correctly absent - lose their entire content
+ * region. The spec that introduced the tabs names that exact fear in its
+ * header comment and then tests the getters.
+ *
+ * RENDERED TestBed, which CLAUDE.md reserves for precisely this ("Only do
+ * this when the TEMPLATE itself is what you are testing"). NO_ERRORS_SCHEMA
+ * so the Material controls, quill and the child components inside the regions
+ * are ignored - what is under test is the control flow around them, not
+ * them.
+ */
+describe('the section editor as rendered', () => {
+  function render(kind: Record<string, unknown>, section: Partial<PageContentBlock> = {}) {
+    TestBed.configureTestingModule({
+      declarations: [PageSectionEditorComponent],
+      // NO FormsModule on purpose. With it, ngModel binds to custom
+      // elements (quill-editor, mat-slide-toggle) that have no value
+      // accessor and the render throws NG01203. Without it, ngModel is an
+      // unknown property and NO_ERRORS_SCHEMA ignores it - which is right,
+      // because what is under test is the control flow AROUND the fields.
+      imports: [CommonModule],
+      schemas: [NO_ERRORS_SCHEMA],
+      providers: [
+        { provide: TestimonialService, useValue: { getAllByValue: () => Promise.resolve([]) } },
+        { provide: FormDefinitionService, useValue: { getAll: () => Promise.resolve([]) } },
+        { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } }
+      ]
+    });
+    const fixture = TestBed.createComponent(PageSectionEditorComponent);
+    fixture.componentInstance.section = {
+      key: 'k', type: SECTION_ARCHETYPE.SECTION, variant: 'columns', columns: [], ...section
+    } as PageContentBlock;
+    fixture.componentInstance.kind = kind as never;
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  /** The twelve original pages: their look is not a choice. */
+  const LEGACY_KIND = {
+    type: SECTION_ARCHETYPE.SECTION,
+    fields: { heading: true, body: true },
+    variants: [],
+    surfaces: []
+  };
+
+  /** A page built from the kit: Look and Ground are real choices. */
+  const KIT_KIND = {
+    type: SECTION_ARCHETYPE.SECTION,
+    fields: { heading: true, body: true },
+    variants: [
+      { key: 'columns', label: 'Columns', fields: { heading: true, body: true } },
+      { key: 'tiles', label: 'Tiles', fields: { heading: true, body: true } }
+    ],
+    surfaces: ['inherit', 'light', 'dark']
+  };
+
+  it('draws NO tab strip on a page whose look is not a choice', () => {
+    // A tab strip over an empty tab would be two clicks to nothing.
+    const el = render(LEGACY_KIND).nativeElement as HTMLElement;
+
+    expect(el.querySelector('.psd__tabs')).toBeNull();
+    expect(el.querySelector('input, textarea'))
+      .withContext('the twelve original pages lost their content region')
+      .not.toBeNull();
+  });
+
+  it('draws the content of a tab-less page even if the tab says otherwise', () => {
+    // THIS is what `|| !hasAppearanceControls` in the content region's @if is
+    // for, and it is worth being precise about why - I got it wrong once.
+    //
+    // The state below is UNREACHABLE today: `editorTab` initialises to
+    // 'content' and only showTab() moves it, which is only reachable from the
+    // tab strip, which only renders when hasAppearanceControls. So removing
+    // that half of the expression breaks nothing you can click today, and a
+    // test that only renders a legacy page passes either way - which is
+    // exactly the test I wrote first, and it could not fail.
+    //
+    // It is defence against one line changing: a different initial tab, a tab
+    // remembered per section, a deep link. Any of those and twelve public
+    // pages lose their entire editable content with a green suite. So the
+    // test forces the state directly rather than pretending it is reachable.
+    const fixture = render(LEGACY_KIND);
+    fixture.componentInstance.editorTab = 'appearance';
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('input, textarea'))
+      .withContext(
+        'a tab-less page drew no content region - the `|| !hasAppearanceControls` ' +
+        'fallback in the content @if has been removed'
+      )
+      .not.toBeNull();
+  });
+
+  it('draws both tabs on a kit page, and opens on Content', () => {
+    const fixture = render(KIT_KIND);
+    const el = fixture.nativeElement as HTMLElement;
+    const tabs = el.querySelectorAll('.psd__tab');
+
+    expect(tabs.length).toBe(2);
+    expect(tabs[0].textContent).toContain('Content');
+    expect(tabs[1].textContent).toContain('Appearance');
+    expect(tabs[0].classList).toContain('psd__tab--on');
+    expect(fixture.componentInstance.editorTab).toBe('content');
+  });
+
+  it('swaps the region when Appearance is clicked, and back again', () => {
+    const fixture = render(KIT_KIND);
+    const el = fixture.nativeElement as HTMLElement;
+    const [content, appearance] = Array.from(el.querySelectorAll<HTMLButtonElement>('.psd__tab'));
+
+    // The Look control belongs to Appearance and nothing else does, so its
+    // presence is how we know which region is drawn.
+    expect(el.querySelector('.psd__axis-select')).toBeNull();
+
+    appearance.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.psd__axis-select'))
+      .withContext('Appearance drew nothing')
+      .not.toBeNull();
+
+    content.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.psd__axis-select')).toBeNull();
+  });
+
+  it('offers the Look as a dropdown with one option per arrangement', () => {
+    // It was a wrapping row of toggle buttons until 2026-09-05. A select
+    // renders its options only when opened, so this asserts the control is
+    // a mat-select bound to the variants rather than counting options.
+    const fixture = render(KIT_KIND);
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelectorAll<HTMLButtonElement>('.psd__tab')[1]).click();
+    fixture.detectChanges();
+
+    const look = el.querySelector('.psd__axis-select');
+    expect(look).not.toBeNull();
+    expect(look!.querySelector('mat-select')).not.toBeNull();
+    expect(el.querySelector('mat-button-toggle-group[aria-label*="arrangement"]'))
+      .withContext('the Look toggle group came back')
+      .toBeNull();
   });
 });

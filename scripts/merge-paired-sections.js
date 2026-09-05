@@ -194,7 +194,18 @@ async function main() {
   console.log('Written.');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// GUARDED, because mergePairs is exported for its test and requiring this
+// file must not reach Firestore. Without it, `require(...)` from a spec runs
+// the migration.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+// mergePairs is the whole of what this script decides; main() is just the
+// plumbing that finds pages and writes them. Exported so the decision can be
+// tested without an emulator - the same reason scripts/lib/normalize-dates.js
+// is a library with its own suite in functions/test/.
+module.exports = {mergePairs, CONFLICTING};
