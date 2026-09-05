@@ -676,3 +676,37 @@
   background: rgba(255, 255, 255, 0.25);
   pointer-events: none;
 }
+
+/* The per-entry picture and its Position button, stacked so the button sits
+   under the thumbnail rather than stretching the row. */
+.psd__entry-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.psd__entry-focus-toggle {
+  min-width: 0;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 22px;
+}
+
+/* Opened under the entry, full width of the row, so the picture is big enough
+   to actually aim at. */
+.psd__entry-focus {
+  flex-basis: 100%;
+  order: 99;
+  padding: 10px 0 4px;
+}
+
+.psd__entry-focus .psd__focus {
+  max-width: 260px;
+}
+
+.psd__entry-focus-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}

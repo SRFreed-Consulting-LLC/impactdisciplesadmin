@@ -581,16 +581,51 @@
             <mat-icon class="psd__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
 
             @if (entryFields.image) {
-              <button type="button" class="psd__entry-image" (click)="showImageUploader(entry)"
-                      [matTooltip]="entry.image ? 'Change this picture' : 'Choose a picture'">
+              <div class="psd__entry-photo">
+                <button type="button" class="psd__entry-image" (click)="showImageUploader(entry)"
+                        [matTooltip]="entry.image ? 'Change this picture' : 'Choose a picture'">
+                  @if (entry.image) {
+                    <img [src]="entry.image.url" [alt]="entry.title">
+                  } @else {
+                    <mat-icon>add_photo_alternate</mat-icon>
+                  }
+                </button>
+                <!-- The card crops this picture to a fixed frame, so a portrait
+                     taken at arm's length loses the face unless the card is
+                     told where to look. Opened one at a time: eight of these
+                     open at once would be a wall of photographs. -->
                 @if (entry.image) {
-                  <img [src]="entry.image.url" [alt]="entry.title">
-                } @else {
-                  <mat-icon>add_photo_alternate</mat-icon>
+                  <button mat-button type="button" class="psd__entry-focus-toggle"
+                          (click)="toggleEntryFocus(entry)">
+                    {{ focusEntry === entry ? 'Done' : 'Position' }}
+                  </button>
                 }
-              </button>
+              </div>
             }
 
+            @if (focusEntry === entry && entry.image) {
+              <div class="psd__entry-focus">
+                <div class="psd__focus"
+                     (pointerdown)="startEntryFocusDrag(entry, $event)"
+                     (pointermove)="dragEntryFocus(entry, $event)"
+                     tabindex="0"
+                     role="application"
+                     aria-label="Drag to choose the part of this picture the card keeps"
+                     (keydown.arrowleft)="nudgeEntryFocus(entry, -5, 0); $event.preventDefault()"
+                     (keydown.arrowright)="nudgeEntryFocus(entry, 5, 0); $event.preventDefault()"
+                     (keydown.arrowup)="nudgeEntryFocus(entry, 0, -5); $event.preventDefault()"
+                     (keydown.arrowdown)="nudgeEntryFocus(entry, 0, 5); $event.preventDefault()">
+                  <img class="psd__focus-img" [src]="entry.image.url" [alt]="entry.title">
+                  <span class="psd__focus-dot"
+                        [style.left.%]="entryFocusPoint(entry).x"
+                        [style.top.%]="entryFocusPoint(entry).y"></span>
+                </div>
+                <p class="psd__entry-focus-note">
+                  Drag to the part the card should keep &mdash; a face, usually.
+                  <button mat-button type="button" (click)="clearEntryFocus(entry)">Reset</button>
+                </p>
+              </div>
+            }
             <div class="psd__entry-fields">
               <div class="psd__entry-top">
                 @if (entrySpec?.numbered) {

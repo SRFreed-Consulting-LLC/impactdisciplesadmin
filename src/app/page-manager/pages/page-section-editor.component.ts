@@ -334,6 +334,73 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   /** The focus lever only means anything while the photo is a cropped
    *  BACKGROUND - i.e. this section is actually on the photo surface. */
   /**
+   * Which entry's picture is being positioned, or null.
+   *
+   * One at a time: the picker is a real drag target, and a list of eight
+   * coaches showing eight of them at once would be a wall of photographs
+   * with the words nowhere to be seen.
+   */
+  focusEntry: PageContentItem | null = null;
+
+  toggleEntryFocus(entry: PageContentItem): void {
+    this.focusEntry = this.focusEntry === entry ? null : entry;
+  }
+
+  /** This entry's point, defaulting to the middle. */
+  entryFocusPoint(entry: PageContentItem): { x: number; y: number } {
+    const point = entry.photoFocusPoint;
+    return point && Number.isFinite(point.x) && Number.isFinite(point.y) ?
+      { x: point.x, y: point.y } : { x: 50, y: 50 };
+  }
+
+  /**
+   * Moves one entry's focal point to the pointer.
+   * @param entry The entry being positioned.
+   * @param event The pointer event on its picture.
+   */
+  moveEntryFocus(entry: PageContentItem, event: PointerEvent): void {
+    const el = event.currentTarget as HTMLElement | null;
+    if (!el) {
+      return;
+    }
+    const box = el.getBoundingClientRect();
+    if (!box.width || !box.height) {
+      return;
+    }
+    const pct = (v: number) => Math.round(Math.min(100, Math.max(0, v)));
+    entry.photoFocusPoint = {
+      x: pct(((event.clientX - box.left) / box.width) * 100),
+      y: pct(((event.clientY - box.top) / box.height) * 100)
+    };
+    this.edits.next();
+  }
+
+  startEntryFocusDrag(entry: PageContentItem, event: PointerEvent): void {
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    this.moveEntryFocus(entry, event);
+  }
+
+  dragEntryFocus(entry: PageContentItem, event: PointerEvent): void {
+    if (event.buttons === 1) {
+      this.moveEntryFocus(entry, event);
+    }
+  }
+
+  /** Keyboard equivalent - a drag is unreachable without a pointer. */
+  nudgeEntryFocus(entry: PageContentItem, dx: number, dy: number): void {
+    const { x, y } = this.entryFocusPoint(entry);
+    const clamp = (n: number) => Math.min(100, Math.max(0, n));
+    entry.photoFocusPoint = { x: clamp(x + dx), y: clamp(y + dy) };
+    this.edits.next();
+  }
+
+  /** Back to the card's own default - the ABSENCE of a point, not a
+   *  centred one, so the card keeps whatever crop it was designed with. */
+  clearEntryFocus(entry: PageContentItem): void {
+    delete entry.photoFocusPoint;
+    this.edits.next();
+  }
+  /**
    * The focal point as percentages, for the drag control and its preview.
    *
    * Falls back to whatever the old top/centre/bottom said, so opening a
