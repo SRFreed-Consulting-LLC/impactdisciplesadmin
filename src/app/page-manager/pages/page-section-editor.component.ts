@@ -144,7 +144,21 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     // appears the moment staff switch from the sign-up variant to one that
     // shows a Form Builder form, and ngOnInit has long passed by then.
     const anyVariantHasForm = (this.kind.variants ?? []).some((v) => v.fields.form);
-    if (this.fields.form || anyVariantHasForm) {
+    // AND EVERY COLUMN SECTION, because `form` is a PIECE kind as well as a
+    // section field, and a piece's fields are not the section's.
+    //
+    // This is what the Seminars page's "START TODAY" section hit: its form
+    // lives in a column as a `form` piece, so neither test above was true,
+    // loadForms() never ran, and the picker had no options at all. The stored
+    // id then matched nothing in the (empty) list, so mat-select drew a blank
+    // control under a floating "Which form" label - the section was correctly
+    // configured and looked unset, which is the worst of both.
+    //
+    // Gated on the archetype rather than on "does a form piece exist right
+    // now", for the same reason as the variant test: the palette can drop one
+    // in long after ngOnInit. It costs one read of a five-document collection
+    // on the sections that can contain pieces at all.
+    if (this.fields.form || anyVariantHasForm || this.isColumnSection) {
       this.loadForms();
     }
   }

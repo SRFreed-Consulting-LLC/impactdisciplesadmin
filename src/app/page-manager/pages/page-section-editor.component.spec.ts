@@ -749,3 +749,65 @@ describe('a closed entry row and the dialog behind it', () => {
     expect(component.entries.map((e) => e.title)).toEqual(['Written']);
   });
 });
+
+/**
+ * THE FORM PICKER'S OPTIONS.
+ *
+ * `form` is a PIECE kind as well as a section field, and a piece's fields are
+ * not the section's - so a section whose form sits in a column read as having
+ * no form at all, never loaded the list, and drew an empty picker under a
+ * floating label. The section was correctly configured and looked unset.
+ */
+describe('loading the forms a form piece can choose from', () => {
+  let reads: number;
+
+  function build(kind: Record<string, unknown>): PageSectionEditorComponent {
+    reads = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        PageSectionEditorComponent,
+        { provide: TestimonialService, useValue: { getAllByValue: () => Promise.resolve([]) } },
+        {
+          provide: FormDefinitionService,
+          useValue: {
+            getAll: () => {
+              reads++;
+              return Promise.resolve([{ id: 'f1', name: 'Consultation Request' }]);
+            }
+          }
+        },
+        { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } }
+      ]
+    });
+    const component = TestBed.inject(PageSectionEditorComponent);
+    component.section = {
+      key: 'k', type: SECTION_ARCHETYPE.SECTION, variant: 'columns', columns: []
+    } as PageContentBlock;
+    component.kind = kind as never;
+    return component;
+  }
+
+  it('loads them for a COLUMN section, where a form piece can live', async () => {
+    // Seminars' "START TODAY": a form piece in the right-hand column. Nothing
+    // on the section or its variants says "form", and that is not a reason to
+    // leave the picker empty.
+    const component = build({ type: SECTION_ARCHETYPE.SECTION, fields: {}, variants: [] });
+    component.ngOnInit();
+    await Promise.resolve();
+
+    expect(reads).toBe(1);
+    expect(component.formOptions.map((f) => f.name)).toEqual(['Consultation Request']);
+  });
+
+  it('does not read them for a LIST, which has no pieces at all', async () => {
+    const component = build({
+      type: SECTION_ARCHETYPE.LIST,
+      fields: {},
+      variants: [{ key: 'tiles', label: 'Tiles', fields: {} }]
+    });
+    component.ngOnInit();
+    await Promise.resolve();
+
+    expect(reads).toBe(0);
+  });
+});
