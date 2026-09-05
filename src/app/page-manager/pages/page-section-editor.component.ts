@@ -20,6 +20,10 @@ import {
   SectionSurface, GRID_LIST_LOOKS } from '@impact-common/shared/lists/section_kit';
 import { FormDefinitionModel } from '@impact-common/shared/models/domain/form-definition.model';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  TestimonialDialogComponent
+} from '../../shared/testimonial-dialog/testimonial-dialog.component';
 
 /** How long to wait after a keystroke before showing it in the preview.
  *  Short enough to feel immediate, long enough that a sentence is not
@@ -58,6 +62,7 @@ const LIVE_PREVIEW_DEBOUNCE_MS = 250;
 })
 export class PageSectionEditorComponent implements OnInit, OnDestroy {
   private readonly testimonialService = inject(TestimonialService);
+  private readonly dialog = inject(MatDialog);
   private readonly formDefinitions = inject(FormDefinitionService);
   readonly richTextModules = RICH_TEXT_TOOLBAR;
   readonly amounts = WEB_CONFIG_AMOUNTS;
@@ -172,6 +177,53 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edited();
   }
 
+  /**
+   * WRITE a quote from the page that shows it.
+   *
+   * The section could order quotes and nothing else: adding one, or fixing a
+   * typo in one, meant leaving the page, finding Site > Data > Testimonials,
+   * and coming back - and the note above the list said so, which made it a
+   * documented dead end rather than a missing feature.
+   *
+   * It is the SAME dialog the Testimonials screen opens (moved into shared/
+   * for exactly this), so there is one quote editor rather than two that can
+   * drift. What is edited here is the quote itself, not a copy of it: a
+   * testimonial belongs to no one page, and a correction made here shows
+   * everywhere it appears. That is the honest behaviour, and the note beside
+   * the buttons says it in as many words.
+   *
+   * A NEW one is seeded with this list's own type and switched on, because a
+   * quote added from the coaching page and saved as a customer review would
+   * vanish the moment the dialog closed - the list only holds its own type -
+   * and would read as a failed save.
+   */
+  addQuote(): void {
+    this.openQuoteDialog({
+      isActive: true,
+      type: TESTIMONIAL_TYPES.COACHING
+    } as TestimonialModel);
+  }
+
+  editQuote(quote: TestimonialModel): void {
+    this.openQuoteDialog(quote);
+  }
+
+  private openQuoteDialog(item: TestimonialModel): void {
+    this.dialog.open(TestimonialDialogComponent, {
+      data: { item },
+      width: '980px',
+      maxWidth: '96vw',
+      autoFocus: false
+    }).afterClosed().subscribe((saved) => {
+      if (!saved) {
+        return;
+      }
+      // Re-read rather than patch the row in place: the dialog can switch a
+      // quote OFF or change its type, either of which takes it out of this
+      // list entirely, and a patched row would leave it sitting there.
+      this.loadTestimonials();
+    });
+  }
   /** The first line of a quote, so a row is recognisable without opening it. */
   quotePreview(t: TestimonialModel): string {
     const text = (t.text ?? '').replace(/\s+/g, ' ').trim();

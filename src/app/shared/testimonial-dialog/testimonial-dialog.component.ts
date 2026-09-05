@@ -7,7 +7,7 @@ import { TestimonialModel } from '@impact-common/shared/models/domain/testimonia
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types.enum';
 import { EnumHelper } from '@impact-common/shared/utils/enum_helper';
-import { SnackbarService } from '../../shared/snackbar.service';
+import { SnackbarService } from '../snackbar.service';
 
 export interface TestimonialDialogData {
   item: TestimonialModel | null;

@@ -24,6 +24,11 @@ import { FormRendererComponent } from './form-renderer/form-renderer.component';
 import { FormRendererFieldComponent } from './form-renderer/form-renderer-field.component';
 import { DateTimeFieldComponent } from './date-time-field/date-time-field.component';
 import { AmazonConfirmationDialogComponent } from './amazon-confirmation-dialog/amazon-confirmation-dialog.component';
+// MOVED HERE from data-manager/testimonials/ 2026-09-05. A quote is not the
+// property of the screen that lists them: the Page Manager section that shows
+// a carousel of quotes now writes them too, so both openers need the same
+// dialog and neither manager can own it.
+import { TestimonialDialogComponent } from './testimonial-dialog/testimonial-dialog.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 // The confirmation dialog edits an email body here, and this module is
 // eager - which costs nothing extra: quill is already in the main bundle
@@ -52,6 +57,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+// The testimonial dialog's "Show on the site" switch.
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @NgModule({
   declarations: [
@@ -78,7 +85,8 @@ import { MatNativeDateModule } from '@angular/material/core';
     FormRendererComponent,
     FormRendererFieldComponent,
     DateTimeFieldComponent,
-    AmazonConfirmationDialogComponent
+    AmazonConfirmationDialogComponent,
+    TestimonialDialogComponent
   ],
   imports: [
     CommonModule,
@@ -105,7 +113,8 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatRadioModule,
     MatDatepickerModule,
     MatTimepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatSlideToggleModule
   ],
   exports: [
     PreviewRailComponent,
@@ -131,7 +140,8 @@ import { MatNativeDateModule } from '@angular/material/core';
     FormRendererComponent,
     FormRendererFieldComponent,
     DateTimeFieldComponent,
-    AmazonConfirmationDialogComponent
+    AmazonConfirmationDialogComponent,
+    TestimonialDialogComponent
   ],
   // DatePipe/CurrencyPipe aren't auto-registered for DI just by importing
   // CommonModule (that only makes the `| date`/`| currency` template pipes

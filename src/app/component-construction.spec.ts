@@ -138,7 +138,7 @@ import { TagRulesComponent } from 'src/app/campaigns-manager/tag-rules/tag-rules
 import { TeamPageComponent } from 'src/app/data-manager/team-page/team-page.component';
 import { TeamPageDialogComponent } from 'src/app/data-manager/team-page/team-page-dialog.component';
 import { TemplatePickerDialogComponent } from 'src/app/tools-manager/email-designer/template-picker/template-picker-dialog.component';
-import { TestimonialDialogComponent } from 'src/app/data-manager/testimonials/testimonial-dialog.component';
+import { TestimonialDialogComponent } from 'src/app/shared/testimonial-dialog/testimonial-dialog.component';
 import { TestimonialsComponent } from 'src/app/data-manager/testimonials/testimonials.component';
 import { ThemesComponent } from 'src/app/core/settings/themes.component';
 import { ToolsManagerComponent } from 'src/app/tools-manager/tools-manager.component';

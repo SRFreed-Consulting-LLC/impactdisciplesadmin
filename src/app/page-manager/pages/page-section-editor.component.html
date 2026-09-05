@@ -57,19 +57,27 @@
        therefore which fields are below; the GROUND only changes colour.
        Folding them into one list would make every new shade of band a new
        kind of section, which is the thing this whole design avoids. -->
+  <!-- A DROPDOWN, not a row of buttons (owner, 2026-09-05). The other two
+       axes have three or five short options and sit on one line; Look has as
+       many as the kit has arrangements, each with a real name, so the row
+       wrapped onto a second and third line and the section's own setting was
+       hard to find among them. A closed select shows the one answer that
+       matters and costs a click for the rest - the opposite trade to Ground,
+       which is why only this one changed. -->
   @if (variants.length > 1) {
     <div class="psd__axis">
-      <span class="psd__axis-label">Look</span>
-      <mat-button-toggle-group [value]="activeVariant?.key"
-                               (change)="pickVariant($event.value)"
-                               aria-label="Which arrangement this section uses">
-        @for (variant of variants; track variant.key) {
-          <mat-button-toggle [value]="variant.key" [matTooltip]="variant.blurb"
-                             [attr.aria-label]="variant.label + ': ' + variant.blurb">
-            {{ variant.label }}
-          </mat-button-toggle>
-        }
-      </mat-button-toggle-group>
+      <mat-form-field appearance="outline" class="psd__axis-select">
+        <mat-label>Look</mat-label>
+        <mat-select [value]="activeVariant?.key"
+                    (selectionChange)="pickVariant($event.value)"
+                    aria-label="Which arrangement this section uses">
+          @for (variant of variants; track variant.key) {
+            <mat-option [value]="variant.key">{{ variant.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <!-- The blurb stays: it is what each option MEANS, and a closed select
+           shows only the name. -->
       @if (activeVariant) {
         <p class="psd__axis-blurb">{{ activeVariant.blurb }}</p>
       }
@@ -392,13 +400,18 @@
     <div class="psd__entries">
       <div class="psd__entries-head">
         <h3 class="psd__entries-title">Quotes</h3>
+        <button mat-stroked-button type="button" (click)="addQuote()">
+          <mat-icon>add</mat-icon>
+          Add a quote
+        </button>
       </div>
       <p class="psd__entries-note">
-        Drag to set the order the carousel shows them in. Whether a quote
-        appears at all &mdash; and its words &mdash; are set on the
-        <strong>Testimonials</strong> screen, so switching one off there
-        removes it from every page at once. A new one appears here and on the
-        site without anyone re-saving this section.
+        Drag to set the order the carousel shows them in, and use the pencil to
+        change a quote&rsquo;s words. A quote is not the property of this page
+        &mdash; it also lives on the <strong>Testimonials</strong> screen, so an
+        edit here, and switching one off, changes it everywhere it appears. A
+        new one shows on the site straight away, without anyone re-saving this
+        section.
       </p>
 
       @if (testimonialsFailed) {
@@ -409,7 +422,7 @@
       } @else if (!testimonials.length) {
         <p class="psd__entries-empty">
           No coach testimonials are switched on &mdash; the carousel draws
-          nothing. Add one on the Testimonials screen.
+          nothing. &ldquo;Add a quote&rdquo; writes the first one.
         </p>
       }
 
@@ -424,6 +437,12 @@
               }
               <div class="psd__quote-text">{{ quotePreview(t) }}</div>
             </div>
+            <button type="button" class="psd__icon-btn"
+                    (click)="editQuote(t)"
+                    [attr.aria-label]="'Edit the quote from ' + t.author"
+                    matTooltip="Edit this quote">
+              <mat-icon>edit</mat-icon>
+            </button>
           </div>
         }
       </div>

@@ -7,7 +7,7 @@ import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { BaseListComponent } from '../../shared/base-list.component';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
-import { TestimonialDialogComponent } from './testimonial-dialog.component';
+import { TestimonialDialogComponent } from '../../shared/testimonial-dialog/testimonial-dialog.component';
 
 @Component({
     selector: 'app-testimonials',

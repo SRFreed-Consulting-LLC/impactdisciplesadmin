@@ -38,7 +38,6 @@ import { CategoryModalComponent } from './product-categories/category-modal/cate
 import { ProductSeriesComponent } from './product-series/product-series.component';
 import { SeriesModalComponent } from './product-series/series-modal/series-modal.component';
 import { TestimonialsComponent } from './testimonials/testimonials.component';
-import { TestimonialDialogComponent } from './testimonials/testimonial-dialog.component';
 import { TeamPageComponent } from './team-page/team-page.component';
 import { TeamPageDialogComponent } from './team-page/team-page-dialog.component';
 import { CustomFormSubmissionsComponent } from './custom-form-submissions/custom-form-submissions.component';
@@ -78,7 +77,6 @@ const routes: Routes = [
     ProductSeriesComponent,
     SeriesModalComponent,
     TestimonialsComponent,
-    TestimonialDialogComponent,
     TeamPageComponent,
     TeamPageDialogComponent,
     DMMServiceComponent,

@@ -783,3 +783,18 @@
      label itself must never wrap or truncate. */
   .psd__tab-note { display: none; }
 }
+
+/* THE LOOK DROPDOWN. Wide enough for the longest arrangement name without
+   stretching to the column - a select the width of the panel reads as a
+   text box waiting to be typed in. */
+.psd__axis-select {
+  width: 260px;
+  max-width: 100%;
+}
+
+/* The pencil sits against the row's right edge, top-aligned with the name
+   rather than centred on a quote that can run three lines. */
+.psd__entry .psd__icon-btn {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}

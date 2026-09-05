@@ -1,7 +1,11 @@
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { PageContentBlock, SectionColumn } from '@impact-common/shared/models/domain/page-content.model';
 import { CONTENT_PIECES, SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
+import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
+import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types.enum';
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 import { PageSectionEditorComponent, freshKey } from './page-section-editor.component';
 import { kitPage } from './kit-page.adapter';
@@ -525,5 +529,101 @@ describe('the section editor’s two tabs', () => {
     expect(component.editorTab).toBe('appearance');
     component.showTab('content');
     expect(component.editorTab).toBe('content');
+  });
+});
+
+/**
+ * WRITING A QUOTE FROM THE PAGE THAT SHOWS IT.
+ *
+ * The section could order quotes and nothing else. Two things here fail
+ * quietly rather than loudly and are what these specs are for: a new quote
+ * seeded with the wrong type saves successfully and then is simply not in the
+ * list (the list holds one type), which reads as a lost save; and a row
+ * patched in place after an edit stays visible even when the edit switched
+ * the quote off.
+ */
+describe('adding and editing a quote from the section', () => {
+  let opened: { data: { item: TestimonialModel } } | undefined;
+  let closedWith: boolean;
+  let reads: number;
+
+  function build(ids: string[] = []): PageSectionEditorComponent {
+    opened = undefined;
+    closedWith = true;
+    reads = 0;
+    const live: TestimonialModel[] = [
+      { id: 't1', author: 'Ann', text: 'One', isActive: true } as TestimonialModel,
+      { id: 't2', author: 'Bob', text: 'Two', isActive: true } as TestimonialModel
+    ];
+    TestBed.configureTestingModule({
+      providers: [
+        PageSectionEditorComponent,
+        {
+          provide: TestimonialService,
+          useValue: {
+            getAllByValue: () => {
+              reads++;
+              return Promise.resolve(live);
+            }
+          }
+        },
+        { provide: FormDefinitionService, useValue: { getAll: () => Promise.resolve([]) } },
+        {
+          provide: MatDialog,
+          useValue: {
+            open: (_c: unknown, config: { data: { item: TestimonialModel } }) => {
+              opened = config;
+              return { afterClosed: () => of(closedWith) };
+            }
+          }
+        }
+      ]
+    });
+    const component = TestBed.inject(PageSectionEditorComponent);
+    component.section = {
+      key: 'quotes', type: SECTION_ARCHETYPE.LIST, variant: 'quotes', testimonialIds: ids
+    } as PageContentBlock;
+    component.kind = {
+      type: SECTION_ARCHETYPE.LIST,
+      variants: [{ key: 'quotes', label: 'Quotes', fields: { testimonials: true } }]
+    } as never;
+    return component;
+  }
+
+  it('seeds a NEW quote with this list’s own type, switched on', () => {
+    // The list reads one type only. A quote saved as anything else is written
+    // successfully and then invisible - a save that looks like a failure.
+    const component = build();
+    component.addQuote();
+
+    expect(opened!.data.item.type).toBe(TESTIMONIAL_TYPES.COACHING);
+    expect(opened!.data.item.isActive).toBe(true);
+    expect(opened!.data.item.id).toBeUndefined();
+  });
+
+  it('hands the dialog the quote itself to edit, not a copy', () => {
+    // A testimonial belongs to no one page. Editing a copy here would give the
+    // site two versions of the same quote and no way to tell which is showing.
+    const component = build();
+    const quote = { id: 't2', author: 'Bob' } as TestimonialModel;
+    component.editQuote(quote);
+
+    expect(opened!.data.item).toBe(quote);
+  });
+
+  it('re-reads the list after a save, because an edit can remove a row', () => {
+    const component = build();
+    component.addQuote();
+
+    // ngOnInit is not run here, so this is the reload and nothing else.
+    expect(reads).toBe(1);
+  });
+
+  it('does not re-read when the dialog was cancelled', () => {
+    const component = build();
+    closedWith = false;
+    component.addQuote();
+
+    expect(reads).toBe(0);
   });
 });
