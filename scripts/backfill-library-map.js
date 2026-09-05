@@ -48,8 +48,13 @@ async function main() {
   // it.
   const keys = new Set(points.flatMap((p) => Object.keys(p)));
   console.log(`\nfields published per dot: ${[...keys].sort().join(', ') || '(none)'}`);
-  if ([...keys].some((k) => k !== 'lat' && k !== 'lng')) {
-    console.error('REFUSED: a point carries something other than lat/lng.');
+  // The allow-list is the privacy boundary, said where a human running this
+  // will see it. Place names joined it on 2026-09-05 for the map's popup;
+  // anything NOT on this list reaching a world-readable document is a bug.
+  const ALLOWED = new Set(['lat', 'lng', 'city', 'region', 'country']);
+  const extra = [...keys].filter((k) => !ALLOWED.has(k));
+  if (extra.length) {
+    console.error(`REFUSED: a point carries ${extra.join(', ')}.`);
     process.exit(1);
   }
 

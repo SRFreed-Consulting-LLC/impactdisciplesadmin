@@ -13,11 +13,15 @@ import {getFirestore} from "firebase-admin/firestore";
  * email address, a phone number, a name, book licences and a last-login time.
  *
  * The public site therefore never reads it. This derives one document -
- * `library_map/points` - holding COORDINATES AND A TOTAL, and nothing that
- * could be joined back to a person: no name, no email, no id, no city or
- * country, not even a count per place. That document's read rule is
- * `if true`; this function is the only thing that writes it, which is why the
- * rule's write side is `false` (the Admin SDK bypasses rules).
+ * `library_map/points` - holding COORDINATES, THE PLACE NAMES THAT GO WITH
+ * THEM, and a total. Nothing that could be joined back to a person: no name,
+ * no email, no id, no phone, no licences, no last-login. That document's read
+ * rule is `if true`; this function is the only thing that writes it, which is
+ * why the rule's write side is `false` (the Admin SDK bypasses rules).
+ *
+ * The place names were added 2026-09-05, for the map's popup, and they
+ * disclose nothing the coordinate did not: a coordinate IS a place. What
+ * stays out is everything that says WHO, and that line has not moved.
  *
  * A TRIGGER RATHER THAN A SCHEDULE, so the map is genuinely live: a reader
  * signing in for the first time appears on the public page within a second or
@@ -79,6 +83,34 @@ export function jitterFor(key: string): [number, number] {
 interface StoredLocation {
   lat?: unknown;
   lng?: unknown;
+  city?: unknown;
+  region?: unknown;
+  country?: unknown;
+}
+
+/** What a published point may carry. */
+interface PublicPoint {
+  lat: number;
+  lng: number;
+  city?: string;
+  region?: string;
+  country?: string;
+}
+
+/**
+ * A place name, if it is one - trimmed, and absent rather than empty.
+ * @param raw Whatever libraryUsers had in the field.
+ * @return A usable string, or undefined.
+ */
+function place(raw: unknown): string | undefined {
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const text = raw.trim();
+  // A cap, because this is going into a world-readable document and a field
+  // that should hold "Atlanta" holding a paragraph means something upstream
+  // is wrong and should not be republished.
+  return text && text.length <= 80 ? text : undefined;
 }
 
 /**
@@ -91,8 +123,8 @@ interface StoredLocation {
  */
 export function pointsFrom(
   users: readonly [string, {location?: StoredLocation}][]
-): {lat: number; lng: number}[] {
-  const points: {lat: number; lng: number}[] = [];
+): PublicPoint[] {
+  const points: PublicPoint[] = [];
   for (const [id, data] of users) {
     const lat = data?.location?.lat;
     const lng = data?.location?.lng;
@@ -109,11 +141,21 @@ export function pointsFrom(
       continue;
     }
     const [jLat, jLng] = jitterFor(id);
+    // The place names travel with the point for the map's popup. They
+    // disclose nothing the coordinate did not - a coordinate IS a place - and
+    // the fields are spread conditionally so an absent one is ABSENT rather
+    // than present-and-undefined, which Firestore rejects outright.
+    const city = place(data?.location?.city);
+    const region = place(data?.location?.region);
+    const country = place(data?.location?.country);
     points.push({
       // Rounded to four decimals - about 11 metres, far finer than anything
       // this draws, and it keeps the document small and diffable.
       lat: Math.round((lat + jLat * JITTER_DEGREES) * 1e4) / 1e4,
       lng: Math.round((lng + jLng * JITTER_DEGREES) * 1e4) / 1e4,
+      ...(city ? {city} : {}),
+      ...(region ? {region} : {}),
+      ...(country ? {country} : {}),
     });
   }
   return points;

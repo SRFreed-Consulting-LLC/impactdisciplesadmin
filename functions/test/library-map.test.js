@@ -33,7 +33,7 @@ function user(id, extra) {
   }];
 }
 
-test("publishes coordinates and NOTHING else", () => {
+test("publishes where, and nothing about WHO", () => {
   const points = pointsFrom([
     user("ann@example.com", {location: {
       lat: 33.749, lng: -84.388,
@@ -42,20 +42,43 @@ test("publishes coordinates and NOTHING else", () => {
   ]);
 
   assert.equal(points.length, 1);
-  // The exact shape, not a subset check: a subset check passes when a new
-  // field is added, which is the failure this file exists to catch.
-  assert.deepEqual(Object.keys(points[0]).sort(), ["lat", "lng"]);
+  // The EXACT shape, not a subset check: a subset check passes when a new
+  // field is added, which is the failure this file exists to catch. Place
+  // names are here on purpose (2026-09-05, for the map's popup) and disclose
+  // nothing the coordinate did not - a coordinate IS a place.
+  assert.deepEqual(
+    Object.keys(points[0]).sort(),
+    ["city", "country", "lat", "lng", "region"]
+  );
 
+  // What must never cross: anything that says WHO.
   const published = JSON.stringify(points);
-  for (const secret of [
-    "ann@example.com", "Ann", "Example", "555", "book-1",
-    "Atlanta", "Georgia", "United States",
-  ]) {
+  for (const secret of ["ann@example.com", "Ann", "Example", "555", "book-1"]) {
     assert.ok(
       !published.includes(secret),
       `the published points leaked ${JSON.stringify(secret)}`
     );
   }
+});
+
+test("omits a place name rather than publishing an empty or odd one", () => {
+  // Absent, not present-and-undefined: Firestore rejects a whole write over
+  // one explicitly-undefined field, however deep.
+  const points = pointsFrom([
+    user("a@example.com", {location: {lat: 1, lng: 2, city: "  ", country: 7}}),
+  ]);
+  assert.deepEqual(Object.keys(points[0]).sort(), ["lat", "lng"]);
+  assert.ok(!("city" in points[0]));
+  assert.ok(!("country" in points[0]));
+});
+
+test("refuses a place name long enough to be something else", () => {
+  // A field that should hold "Atlanta" holding a paragraph means something
+  // upstream is wrong, and this document is world-readable.
+  const points = pointsFrom([
+    user("a@example.com", {location: {lat: 1, lng: 2, city: "x".repeat(400)}}),
+  ]);
+  assert.ok(!("city" in points[0]));
 });
 
 test("skips a reader with no usable location rather than plotting 0,0", () => {
