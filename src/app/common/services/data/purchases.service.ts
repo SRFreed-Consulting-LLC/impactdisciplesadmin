@@ -279,7 +279,15 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     // A stored error (from before that fix, or written by an older client)
     // must not block a retry - it is a record of a failure, not a label.
     if (item.shippingLabel?.code || item.shippingLabel?.error) {
-      item.shippingLabel = undefined;
+      // DELETE, never `= undefined`. `item` is the live object the grid holds,
+      // and every workflow action passes it on as `{ ...item, ... }` to
+      // update(), which is a whole-document setDoc with no merge. Object
+      // spread PRESERVES an own key whose value is undefined, so assigning it
+      // here left the next markPackaged/markShipped rejecting the entire
+      // write with "Unsupported field value: undefined" - the same failure
+      // this method's own comment above was written to fix, arriving by a
+      // different door. Fixed 2026-09-05.
+      delete item.shippingLabel;
     }
 
     if (!item.shippingLabel) {

@@ -58,8 +58,17 @@ service firebase.storage {
     // is what broke every image picker on 2026-08-20 (storage/unauthorized,
     // live-diagnosed from the Team Page dialog).
     match /{allPaths=**} {
+      // THE book-imports EXCLUSION HAS TO BE ON BOTH VERBS. Storage grants on
+      // ANY matching allow, so the `allow read: if false` in the book-imports
+      // block above does not deny anything on its own - this rule also
+      // matches those paths, and the broader grant wins. Until 2026-09-05 the
+      // exclusion was on `write` only, so every Editor and Employee could
+      // download any other admin's uploaded source PDF. That is the same
+      // shadowing bug this file's own comment above records finding once
+      // before; it was fixed on one verb and not the other.
       allow read: if request.auth != null
-        && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor'];
+        && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor']
+        && allPaths[0] != 'book-imports';
       allow write: if request.auth != null
         && request.auth.token.get('role', '') in ['Admin', 'Root', 'Employee', 'Editor']
         && allPaths[0] != 'book-imports'

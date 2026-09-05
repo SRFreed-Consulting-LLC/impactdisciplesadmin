@@ -576,8 +576,16 @@ service cloud.firestore {
         allow write: if isBusinessStaff();
       }
       // The public reader map's one document. World-readable ON PURPOSE and
-      // safe to be, because of what it does NOT contain: coordinates and a
-      // total, with no name, email, id, city, country or per-place count.
+      // safe to be, because of what it does NOT contain: jittered
+      // coordinates, the place names that go with them, and a total - with
+      // NOTHING THAT SAYS WHO. No name, no email, no id, no phone, no
+      // licences, no last-login.
+      //
+      // The place names were added 2026-09-05 for the map's popup and this
+      // comment was not, for two days. That is worth recording, because a
+      // stale justification on a world-readable rule is exactly how the next
+      // field gets waved through: if you add a field to the derived document,
+      // this paragraph is part of the change.
       //
       // It is derived from libraryUsers by onLibraryUserWritten, which is the
       // only writer - hence `write: false` rather than a staff gate. That

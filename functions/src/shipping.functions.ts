@@ -262,10 +262,17 @@ exports.get_shipping_label = onRequest(
   {secrets: ["SHIP_ENGINE_API_KEY"], maxInstances: 10},
   (request, response) => {
     return restrictedCors(request, response, async () => {
-      // Purchasing a label costs real postage -- only recognized staff
-      // (admin app, real Firebase Auth session) may call this.
+      // Purchasing a label costs real postage -- ADMIN AND ROOT ONLY.
+      //
+      // This used to take the default role set, which is Admin/Root/Employee.
+      // The 2026-08-27 fix closed the Editor hole and stopped there, and that
+      // left the money layer disagreeing with every other layer: the nav,
+      // PermissionService and the UI all require a Tools Manager > Shipping
+      // Labels grant, but grants are advisory (they are enforced in the
+      // caller's own browser), so ANY Employee could take their ID token and
+      // buy postage in a loop. Narrowed 2026-09-05.
       try {
-        await requireStaffAuth(request);
+        await requireStaffAuth(request, ["Admin", "Root"]);
       } catch {
         response.status(401).send({code: 401, error: "Unauthorized"});
         return;
