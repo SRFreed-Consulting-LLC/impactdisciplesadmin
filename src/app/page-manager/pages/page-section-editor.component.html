@@ -86,7 +86,7 @@
          parallel halves. On phones they stack again. -->
     <div class="psd__axis">
       <mat-slide-toggle [checked]="section.pairWithNext === true"
-                        (change)="section.pairWithNext = $event.checked || undefined; edited()"
+                        (change)="setPairWithNext($event.checked)"
                         aria-label="Share the row with the next section">
         Share the row with the next section
       </mat-slide-toggle>

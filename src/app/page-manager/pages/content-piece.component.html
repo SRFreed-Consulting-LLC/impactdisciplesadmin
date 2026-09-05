@@ -59,7 +59,7 @@
            search engines punish, and it is why this says so out loud. -->
       <div class="cp__switch">
         <mat-slide-toggle [checked]="!!piece.hidden"
-                          (change)="piece.hidden = $event.checked || undefined; changed.emit()">
+                          (change)="setHidden($event.checked)">
           Read, but not shown
         </mat-slide-toggle>
         <p class="cp__hint">

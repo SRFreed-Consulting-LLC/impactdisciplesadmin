@@ -471,7 +471,32 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   ] as const;
 
   pickPerRow(value: number): void {
-    this.section.cardsPerRow = value === 0 ? undefined : (value as 2 | 3 | 4);
+    // "As many as fit" is the ABSENCE of a count. `delete`, not
+    // `= undefined` - see setColumnAlign below for what that costs.
+    if (value === 0) {
+      delete this.section.cardsPerRow;
+    } else {
+      this.section.cardsPerRow = value as 2 | 3 | 4;
+    }
+    this.edits.next();
+  }
+
+  /**
+   * Whether this section shares its row with the next one.
+   *
+   * A method rather than an assignment in the template, for the same reason
+   * the column levers became methods: `= $event.checked || undefined` writes
+   * a PRESENT key holding undefined, and Firestore rejects the whole document
+   * over it. Switching this ON saved; switching it OFF could not save at all,
+   * and took every other edit in the sitting down with it.
+   * @param shared Whether to pair with the next section.
+   */
+  setPairWithNext(shared: boolean): void {
+    if (shared) {
+      this.section.pairWithNext = true;
+    } else {
+      delete this.section.pairWithNext;
+    }
     this.edits.next();
   }
 

@@ -144,6 +144,25 @@ export class ContentPieceComponent {
   isGiving(button: PageContentItem): boolean {
     return this.givingDestinations.some((d) => d.key === button.link);
   }
+
+  /**
+   * Whether this piece is hidden.
+   *
+   * `delete`, not `= undefined`: a key explicitly set to undefined is
+   * PRESENT with an undefined value, and Firestore rejects the entire
+   * document write over it - so un-hiding a piece could not save, and took
+   * every other edit on the page down with it. Same rule as the section's
+   * own levers.
+   * @param hidden Whether to hide the piece.
+   */
+  setHidden(hidden: boolean): void {
+    if (hidden) {
+      this.piece.hidden = true;
+    } else {
+      delete this.piece.hidden;
+    }
+    this.changed.emit();
+  }
 }
 
 /** The first readable line of a rich-text passage, for the closed row. */
