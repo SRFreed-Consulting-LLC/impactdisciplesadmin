@@ -1,7 +1,9 @@
-import { afterNextRender, Component, Injector, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import {
+  afterNextRender, AfterViewInit, Component, ElementRef, Injector, OnDestroy, OnInit, ViewChild
+} from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSidenavContainer } from '@angular/material/sidenav';
+import { MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
@@ -30,7 +32,7 @@ interface PinnedNavItem {
     styleUrls: ['./main-screen.component.scss'],
     standalone: false
 })
-export class MainScreenComponent implements OnInit, OnDestroy {
+export class MainScreenComponent implements OnInit, AfterViewInit, OnDestroy {
   secureNav: NavGroup[] = [];
 
   // Which drawer TAB is showing - Admin / Site / Library, see nav-config's
@@ -47,6 +49,9 @@ export class MainScreenComponent implements OnInit, OnDestroy {
   // explicit updateContentMargins() the drawer would widen and the content
   // would stay where it was, overlapped. See onResizeMove.
   @ViewChild(MatSidenavContainer) private shell?: MatSidenavContainer;
+  /** The drawer itself, to watch its width - see ngAfterViewInit. */
+  @ViewChild(MatSidenav, { read: ElementRef }) private drawerEl?: ElementRef<HTMLElement>;
+  private drawerObserver?: ResizeObserver;
 
   // Backs the user menu (name/email/role + Settings + Log Off) in the
   // toolbar - set from the same loggedInUser$ emission secureNav is built
@@ -221,12 +226,65 @@ export class MainScreenComponent implements OnInit, OnDestroy {
       .subscribe((event) => this.syncActiveFromUrl(event.urlAfterRedirects));
   }
 
+  /**
+   * Keeps the content pane clear of the drawer, whatever moved it.
+   *
+   * WHY A WATCHER RATHER THAN MORE CALL SITES. Material recomputes the content
+   * pane's left margin on open/close, mode and direction changes, and window
+   * resize - never on a WIDTH change, because its sidenav has no
+   * ResizeObserver. The drawer is position:absolute, so its width contributes
+   * nothing to layout and that margin is the ONLY thing holding the content
+   * clear of it. Every path that changes the width has to ask by hand.
+   *
+   * reSyncContentMargin() was wired to the paths we knew about - the drag, and
+   * the saved width arriving after login. The drawer still painted over the
+   * page after a navigation, a refresh, or a return from another browser tab,
+   * with the first letter of every line hidden underneath it. Each of those
+   * settles layout again for its own reason: a lazy chunk arriving, a web font
+   * swapping in, a background tab restored with its layout recomputed.
+   * Enumerating them is a losing game - the list is however many things can
+   * change a width, and the symptom is silent until somebody sees a heading
+   * missing its first letter.
+   *
+   * So watch the drawer instead. One observer answers every cause, including
+   * the ones nobody has hit yet.
+   */
+  ngAfterViewInit(): void {
+    const drawer = this.drawerEl?.nativeElement;
+    if (!drawer || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    let last = -1;
+    this.drawerObserver = new ResizeObserver(([entry]) => {
+      const width = Math.round(entry.contentRect.width);
+      // Only a real change. The observer's first delivery is the drawer
+      // arriving at its width, which is exactly the moment Material missed;
+      // after that, re-measuring on every frame of a drag would repeat work
+      // the drag already does.
+      if (width !== last) {
+        last = width;
+        this.shell?.updateContentMargins();
+      }
+    });
+    this.drawerObserver.observe(drawer);
+
+    // And once after each navigation, for the case the observer cannot see:
+    // the width unchanged but the content pane rebuilt around a stale margin.
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntil(this.ngUnsubscribe)
+      )
+      .subscribe(() => this.reSyncContentMargin());
+  }
+
   ngOnDestroy(): void {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
     // A drag in progress when the shell is torn down would otherwise leave
     // two live window listeners holding a reference to this component.
     this.stopResizeListening();
+    this.drawerObserver?.disconnect();
   }
 
   // ---- Drawer sections (Admin / Site / Library) ----

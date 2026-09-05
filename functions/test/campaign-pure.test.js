@@ -6,7 +6,7 @@ const {test} = require("node:test");
 const assert = require("node:assert/strict");
 
 const {sanitizeAttribution} = require("../lib/campaign-tracking.functions");
-const {effectiveCampaignStatus, campaignSendBudget} =
+const {effectiveCampaignStatus, campaignSendBudget, isTransientRelayError} =
   require("../lib/campaign-send.functions");
 const {escapeHtml} = require("../lib/transactional-emails");
 
@@ -147,4 +147,60 @@ test("campaignSendBudget: the reserve is never spent - the largest " +
 test("campaignSendBudget: a nonsense negative count cannot inflate the " +
   "budget past the run ceiling", () => {
   assert.equal(campaignSendBudget(-500, 300), 300);
+});
+
+// ---- isTransientRelayError ------------------------------------------------
+//
+// Decides whether a relay refusal goes back in the queue or gives up. SMTP
+// says so itself: 4xx is temporary, 5xx is permanent. Getting it backwards
+// costs in both directions - retrying a bad address forever, or dropping a
+// recipient over a throttle that cleared in seconds. Eight people were dropped
+// exactly that way on 2026-09-04.
+
+test("the failure that started this is transient", () => {
+  assert.equal(
+    isTransientRelayError(
+      "Error: Invalid login: 435 Unable to authenticate at present"
+    ),
+    true
+  );
+});
+
+test("4xx is temporary", () => {
+  assert.equal(
+    isTransientRelayError("421 Too many concurrent SMTP connections"), true);
+  assert.equal(isTransientRelayError("450 Requested action not taken"), true);
+});
+
+test("5xx is permanent - retrying only repeats the refusal", () => {
+  assert.equal(
+    isTransientRelayError("501 <x@y> domain missing or malformed"), false);
+  assert.equal(isTransientRelayError("550 No such user here"), false);
+  // The mid-2025 auth failure: the credentials were WRONG, not busy, and
+  // retrying a wrong password is just a slower way to fail.
+  assert.equal(
+    isTransientRelayError("535 Incorrect authentication data"), false);
+});
+
+test("a 5xx anywhere in the text wins over a 4xx", () => {
+  // Relay messages quote codes in prose; a permanent verdict must not be
+  // overturned by a number that happens to appear beside it.
+  assert.equal(
+    isTransientRelayError("550 failed after 421 attempts"), false);
+});
+
+test("worded temporary failures count, even with no code", () => {
+  assert.equal(isTransientRelayError("Connection timeout"), true);
+  assert.equal(
+    isTransientRelayError("Service temporarily unavailable"), true);
+  assert.equal(
+    isTransientRelayError("Too many messages, try again later"), true);
+});
+
+test("an unrecognised failure is NOT retried", () => {
+  // Fails closed: an unknown error repeated three times is three chances to
+  // annoy the relay, and the ledger records it either way.
+  assert.equal(isTransientRelayError("something went wrong"), false);
+  assert.equal(isTransientRelayError(""), false);
+  assert.equal(isTransientRelayError(undefined), false);
 });

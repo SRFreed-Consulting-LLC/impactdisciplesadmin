@@ -909,6 +909,41 @@ async function finalizeSendingTouches(
 // campaignMeta, so a SUCCESS transition marks the ledger + counters.
 // Guarded on deliveredAt for idempotence across extension retries.
 
+/** How many times one recipient's mail may be handed to the relay. */
+const MAX_SEND_ATTEMPTS = 3;
+
+/**
+ * Is this relay failure worth trying again?
+ *
+ * SMTP says so itself: a 4xx is temporary and a 5xx is permanent. The failure
+ * that prompted this - "435 Unable to authenticate at present" - is the
+ * textbook case, a momentary throttle that cleared in seconds while eight
+ * recipients fell through it. A bad address answers 5xx and retrying it only
+ * repeats the refusal.
+ * @param {string} error The relay's error text.
+ * @return {boolean} Whether to hand it back to the queue.
+ */
+export function isTransientRelayError(error: string): boolean {
+  const text = String(error ?? "");
+  if (/\b5\d\d\b/.test(text)) {
+    return false;
+  }
+  return /\b4\d\d\b/.test(text) ||
+    /timeout|temporarily|try again|too many|rate limit|connection/i.test(text);
+}
+
+// ---- Delivery writeback: the Trigger Email extension stamps delivery.state
+// onto the mail doc it processed; campaign sends carry campaignMeta, so the
+// ledger and the counters follow it.
+//
+// BOTH OUTCOMES, since 2026-09-04. Only SUCCESS was handled before, and the
+// gap was invisible by construction: sendLedgerDoc marks a row 'sent' when the
+// mail document is WRITTEN, and the relay fails afterwards - so a refusal left
+// the row saying 'sent', the funnel reporting zero failures, and the recipient
+// simply never getting the email. Eight people fell through exactly that on a
+// 5,607-recipient send, and the only reason anyone noticed was a monitor
+// watching the mail collection rather than the ledger.
+
 export const onCampaignMailDelivered = onDocumentUpdated(
   // A LITERAL ON PURPOSE, and the only trigger in the repo that keeps one.
   // `mail` belongs to the firestore-send-email extension, whose own watch
@@ -921,23 +956,78 @@ export const onCampaignMailDelivered = onDocumentUpdated(
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     const meta = after?.campaignMeta;
-    if (!after || !meta?.sendId ||
-        after.delivery?.state !== "SUCCESS" ||
-        before?.delivery?.state === "SUCCESS") {
+    const state = after?.delivery?.state;
+    if (!after || !meta?.sendId || (state !== "SUCCESS" && state !== "ERROR")) {
       return;
     }
+    // Idempotent across the extension's own retries: a transition INTO the
+    // state is what counts, not the state being present.
+    if (before?.delivery?.state === state) {
+      return;
+    }
+
     const db = getFirestore();
     const ledgerRef = db.collection(SENDS).doc(meta.sendId);
     const ledger = await ledgerRef.get();
     if (!ledger.exists || ledger.data()?.deliveredAt) {
       return;
     }
-    await ledgerRef.update({deliveredAt: Timestamp.now()});
+
+    if (state === "SUCCESS") {
+      await ledgerRef.update({deliveredAt: Timestamp.now()});
+      await db.collection(EMAILS).doc(meta.emailId).update({
+        "stats.delivered": FieldValue.increment(1),
+      }).catch(() => undefined);
+      await db.collection(CAMPAIGNS).doc(meta.campaignId).update({
+        "stats.delivered": FieldValue.increment(1),
+      }).catch(() => undefined);
+      return;
+    }
+
+    // ---- ERROR ----
+    const error = String(after.delivery?.error ?? "unknown relay error");
+    const attempts = Number(ledger.data()?.sendAttempts ?? 1);
+    const retryable = isTransientRelayError(error) &&
+      attempts < MAX_SEND_ATTEMPTS;
+
+    // The row was counted as sent when the mail doc was written, and it was
+    // not sent - so the count comes back off whichever way this goes. A
+    // campaign reporting more sends than the relay accepted is the specific
+    // lie this whole change exists to stop telling.
     await db.collection(EMAILS).doc(meta.emailId).update({
-      "stats.delivered": FieldValue.increment(1),
+      "stats.sent": FieldValue.increment(-1),
     }).catch(() => undefined);
     await db.collection(CAMPAIGNS).doc(meta.campaignId).update({
-      "stats.delivered": FieldValue.increment(1),
+      "stats.sent": FieldValue.increment(-1),
     }).catch(() => undefined);
+
+    if (retryable) {
+      // Back to the queue for the next tick. mailDocId is cleared because it
+      // names a document that failed, and keeping it would make the next
+      // attempt look like the same one.
+      await ledgerRef.update({
+        status: "queued",
+        sendAttempts: attempts + 1,
+        lastError: error,
+        mailDocId: FieldValue.delete(),
+        sentAt: FieldValue.delete(),
+      });
+      console.warn(
+        `Relay refused ${ledger.data()?.email} temporarily ` +
+        `(attempt ${attempts}/${MAX_SEND_ATTEMPTS}) - requeued. ${error}`
+      );
+      return;
+    }
+
+    await ledgerRef.update({
+      status: "failed",
+      sendAttempts: attempts,
+      error,
+      failedAt: Timestamp.now(),
+    });
+    console.error(
+      `Relay REFUSED ${ledger.data()?.email} and it will not be retried ` +
+      `(attempt ${attempts}/${MAX_SEND_ATTEMPTS}). ${error}`
+    );
   }
 );

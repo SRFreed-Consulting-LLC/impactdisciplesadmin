@@ -52,6 +52,26 @@
   gap: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--app-card-border);
+
+  /* PINNED. This bar carries the way out of the editor - Back, and Cancel and
+     Save - and it lives INSIDE .ps__editor, which is the scrolling pane. So it
+     used to scroll away with the content, and on a long section (a list of
+     eight coaches, each with its own fields) saving meant scrolling back to
+     the top to find the button.
+
+     Sticky rather than fixed: it stays inside its own column, so the preview
+     rail beside it is unaffected and nothing has to know the bar's height. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+
+  /* The rows scroll UNDER it, so it needs its own ground - a transparent
+     sticky bar shows the content sliding through the buttons. Pulled up and
+     padded back out so the ground reaches the top edge of the pane rather
+     than leaving a strip of scrolling content above it. */
+  background: var(--app-card);
+  margin-top: -4px;
+  padding-top: 12px;
 }
 
 .ps__back {
