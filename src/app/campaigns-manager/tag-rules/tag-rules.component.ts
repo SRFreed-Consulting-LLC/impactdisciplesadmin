@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { BehaviorSubject } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TagRuleModel, TagRuleTrigger } from 'src/app/common/models/domain/tag-rule.model';
@@ -33,7 +34,7 @@ export class TagRulesComponent implements OnInit {
   events: { id: string; name: string }[] = [];
 
   itemType = 'Tag Rule';
-  private readonly screenKey = 'campaigns-manager.tag-rules';
+  private readonly screenKey = SCREEN_KEYS.campaigns.tagRules;
 
   columns: DataGridColumn<TagRuleModel>[] = [
     { key: 'name', label: 'Name' },

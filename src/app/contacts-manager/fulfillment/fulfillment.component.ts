@@ -1,4 +1,5 @@
 import { Component, OnInit} from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import {
   customerName as customerNameOf,
   isNewOrder,
@@ -62,7 +63,7 @@ export class FulfillmentComponent implements OnInit {
     return this.busy.get(item.id!) === action;
   }
 
-  private readonly screenKey = 'contacts-manager.fulfillment';
+  private readonly screenKey = SCREEN_KEYS.contacts.fulfillment;
 
   constructor(private service: PurchasesService, private permissionService: PermissionService, private snackbar: SnackbarService, private router: Router, private dialog: MatDialog, private confirmService: ConfirmService) {}
 

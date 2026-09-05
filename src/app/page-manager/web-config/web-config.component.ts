@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { WebConfigModel } from '@impact-common/shared/models/utils/web-config.model';
 import { WebConfigService } from 'src/app/common/services/data/web-config.service';
@@ -26,7 +27,7 @@ export class WebConfigComponent implements OnInit {
   // Moved from Tools Manager 2026-08-19 (Web Manager -> Content Manager
   // rename); stored grants on the old tools-manager.web-config key are
   // migrated by scripts/migrate-screenkey-renames.js.
-  private readonly screenKey = 'data.web-config';
+  private readonly screenKey = SCREEN_KEYS.data.webConfig;
 
   private selectedItem: WebConfigModel;
 

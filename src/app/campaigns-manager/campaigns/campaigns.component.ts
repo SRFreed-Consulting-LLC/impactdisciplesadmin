@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { CampaignModel, campaignKindLabel, channelLabel, effectiveStatus } from 'src/app/common/models/domain/campaign.model';
@@ -55,7 +56,7 @@ export class CampaignsComponent implements OnInit, OnDestroy {
 
   itemType = 'Campaign';
 
-  private readonly screenKey = 'campaigns-manager.campaigns';
+  private readonly screenKey = SCREEN_KEYS.campaigns.campaigns;
 
   paged: PagedCollectionSource<CampaignModel>;
 

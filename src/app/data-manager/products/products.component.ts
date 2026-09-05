@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { randomHexId } from 'src/app/common/utils/random-hex-id';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject } from 'rxjs';
@@ -56,7 +57,7 @@ export class ProductsComponent implements OnInit {
 
   itemType = 'Product';
 
-  private readonly screenKey = 'data.products';
+  private readonly screenKey = SCREEN_KEYS.data.products;
 
   headerActions: ListHeaderAction[] = [];
 

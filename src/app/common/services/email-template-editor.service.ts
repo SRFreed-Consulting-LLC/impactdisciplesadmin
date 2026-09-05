@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { Router } from '@angular/router';
 import { EMailTemplatesService } from './data/email-templates.service';
 import { MailTemplateModel, MailTemplateKind } from 'src/app/common/models/admin/mail.model';
@@ -49,7 +50,7 @@ export class EmailTemplateEditorService {
    *  five managers, and a direct URL visit has no calling screen to borrow
    *  from. Stored grants were migrated by
    *  scripts/migrate-email-designer-grant.js. */
-  private readonly screenKey = 'tools-manager.email-designer';
+  private readonly screenKey = SCREEN_KEYS.tools.emailDesigner;
 
   canEdit(): boolean {
     return this.permissions.canEdit(this.screenKey);

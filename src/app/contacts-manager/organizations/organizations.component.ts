@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { OrganizationModel } from '@impact-common/shared/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
@@ -36,7 +37,7 @@ export class OrganizationsComponent implements OnInit {
 
   itemType = 'Organization';
 
-  private readonly screenKey = 'contacts-manager.organizations';
+  private readonly screenKey = SCREEN_KEYS.contacts.organizations;
 
   headerActions: ListHeaderAction[] = [];
   rowActions: DataGridRowAction<OrganizationModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];

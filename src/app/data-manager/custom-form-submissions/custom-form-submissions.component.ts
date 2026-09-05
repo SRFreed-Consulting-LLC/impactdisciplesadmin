@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { MatDialog } from '@angular/material/dialog';
 import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
@@ -44,7 +45,7 @@ export class CustomFormSubmissionsComponent implements OnInit {
 
   itemType = 'Form Submission';
 
-  private readonly screenKey = 'data.custom-form-submissions';
+  private readonly screenKey = SCREEN_KEYS.data.customFormSubmissions;
 
   // Nothing to "add" - submissions come from a filled-out form, not staff.
   headerActions: ListHeaderAction[] = [];

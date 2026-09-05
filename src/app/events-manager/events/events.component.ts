@@ -1,5 +1,6 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { BehaviorSubject, Observable, Subject, map, takeUntil, tap } from 'rxjs';
 import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { EventService } from 'src/app/common/services/data/event.service';
@@ -72,7 +73,7 @@ export class EventsComponent implements OnInit, OnDestroy {
   // summitMode here is the one place that needs to change for every
   // permission check to route to the right grant.
   get screenKey(): string {
-    return this.summitMode ? 'events-manager.summit' : 'events-manager.events';
+    return this.summitMode ? SCREEN_KEYS.events.summit : SCREEN_KEYS.events.events;
   }
 
   /**

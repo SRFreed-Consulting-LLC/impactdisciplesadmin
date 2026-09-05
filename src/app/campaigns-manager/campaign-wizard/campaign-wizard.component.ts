@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CampaignAudience, CampaignModel, effectiveStatus, emptyCampaignStats } from 'src/app/common/models/domain/campaign.model';
 import { AudiencePreview, CampaignService } from 'src/app/common/services/data/campaign.service';
@@ -59,7 +60,7 @@ export class CampaignWizardComponent implements OnInit {
   audiencePreview: AudiencePreview | null = null;
   previewing = false;
 
-  private readonly screenKey = 'campaigns-manager.campaigns';
+  private readonly screenKey = SCREEN_KEYS.campaigns.campaigns;
 
   constructor(
     private service: CampaignService,

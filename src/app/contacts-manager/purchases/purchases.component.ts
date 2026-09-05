@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
@@ -87,7 +88,7 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     { icon: 'local_shipping', tooltip: 'DOWNLOAD SHIPPING LABEL', onClick: (item) => this.getShippingLabel(item), visible: (item) => this.permissionService.canEdit(this.screenKey) && this.isShippingButtonVisible(item) }
   ];
 
-  private readonly screenKey = 'contacts-manager.purchases';
+  private readonly screenKey = SCREEN_KEYS.contacts.purchases;
 
   // See new-record-tracking.util.ts - marks newly-arrived purchases seen the
   // moment this screen loads, and keeps them highlighted for this page view.

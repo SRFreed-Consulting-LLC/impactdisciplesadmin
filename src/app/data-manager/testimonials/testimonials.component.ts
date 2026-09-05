@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
@@ -17,7 +18,7 @@ import { TestimonialDialogComponent } from '../../shared/testimonial-dialog/test
 })
 export class TestimonialsComponent extends BaseListComponent<TestimonialModel> {
   readonly itemType = 'Testimonial';
-  protected readonly screenKey = 'data.testimonials';
+  protected readonly screenKey = SCREEN_KEYS.data.testimonials;
   protected readonly dialogComponent = TestimonialDialogComponent;
   // Wider than the 600px base default: the editor now sits beside a live
   // preview of the public testimonial.

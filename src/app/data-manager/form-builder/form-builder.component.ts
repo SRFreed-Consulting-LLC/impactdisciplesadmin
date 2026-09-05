@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { FormControl, Validators } from '@angular/forms';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -44,7 +45,7 @@ export class FormBuilderComponent implements OnInit {
 
   itemType = 'Form';
 
-  private readonly screenKey = 'data.form-builder';
+  private readonly screenKey = SCREEN_KEYS.data.formBuilder;
 
   headerActions: ListHeaderAction[] = [];
   rowActions: DataGridRowAction<FormDefinitionModel>[] = [

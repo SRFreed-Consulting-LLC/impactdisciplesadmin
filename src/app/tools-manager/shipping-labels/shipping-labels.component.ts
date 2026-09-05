@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { BehaviorSubject, Observable, Subject, takeUntil, tap } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -53,7 +54,7 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
 
   itemType = 'Shipping Label Batch';
 
-  private readonly screenKey = 'tools-manager.shipping-labels';
+  private readonly screenKey = SCREEN_KEYS.tools.shippingLabels;
 
   headerActions: ListHeaderAction[] = [];
   rowActions: DataGridRowAction<ShippingLabelBatchRequest>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.deleteBatch(item), visible: () => this.permissionService.canDelete(this.screenKey) }];

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { ContactModel } from 'src/app/common/models/domain/utils/contact.model';
 import { ContactService } from 'src/app/common/services/data/contact.service';
 import { EventModel } from '@impact-common/shared/models/domain/event.model';
@@ -42,7 +43,7 @@ export class ContactsComponent implements OnInit {
 
   itemType = 'Contact';
 
-  private readonly screenKey = 'contacts-manager.contacts';
+  private readonly screenKey = SCREEN_KEYS.contacts.contacts;
 
   rowActions: DataGridRowAction<ContactModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
 

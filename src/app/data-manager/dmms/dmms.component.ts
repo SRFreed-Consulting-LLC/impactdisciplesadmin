@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DMMModel } from '@impact-common/shared/models/domain/dmm.model';
 import { DMMService } from 'src/app/common/services/data/dmm.service';
@@ -21,7 +22,7 @@ export class DMMServiceComponent extends BaseListComponent<DMMModel> {
   // 2026-08-31 and a screenKey is `${group.id}.${item.slug}`. Nothing needed
   // migrating - no admin_user in dev OR prod held a grant on the old key
   // (both checked, read-only, before the move).
-  protected readonly screenKey = 'data.disciple-making-minute';
+  protected readonly screenKey = SCREEN_KEYS.data.discipleMakingMinute;
   protected readonly dialogComponent = DMMDialogComponent;
   protected override readonly dialogConfig: MatDialogConfig = { width: '1200px', maxWidth: '95vw' };
 

@@ -1,4 +1,5 @@
 import { Component, HostListener, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -141,7 +142,7 @@ export class CampaignEmailEditorComponent implements OnInit {
   }
 
   private load(): void {
-    const screenKey = 'campaigns-manager.campaigns';
+    const screenKey = SCREEN_KEYS.campaigns.campaigns;
     const allowed = this.touchId
       ? this.permissionService.canEdit(screenKey)
       : this.permissionService.canAdd(screenKey);

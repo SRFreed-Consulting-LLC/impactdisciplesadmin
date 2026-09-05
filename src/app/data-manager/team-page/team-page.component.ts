@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { Subject, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ImpactTeamMemberModel } from '@impact-common/shared/models/domain/impact-team-member.model';
@@ -32,7 +33,7 @@ import { TeamPageDialogComponent } from './team-page-dialog.component';
 export class TeamPageComponent extends BaseListComponent<ImpactTeamMemberModel>
   implements OnInit, OnDestroy {
   readonly itemType = 'Team Member';
-  protected readonly screenKey = 'data.team-page';
+  protected readonly screenKey = SCREEN_KEYS.data.teamPage;
   protected readonly dialogComponent = TeamPageDialogComponent;
   protected override readonly dialogConfig = { width: '1150px', maxWidth: '95vw' };
 

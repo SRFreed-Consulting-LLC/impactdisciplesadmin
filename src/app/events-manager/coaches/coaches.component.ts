@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { Subject, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { CoachModel } from '@impact-common/shared/models/domain/coach.model';
@@ -37,7 +38,7 @@ import { CoachDialogComponent } from './coach-dialog.component';
 export class CoachesComponent extends BaseListComponent<CoachModel>
   implements OnInit, OnDestroy {
   readonly itemType = 'Coach';
-  protected readonly screenKey = 'events-manager.coaches';
+  protected readonly screenKey = SCREEN_KEYS.events.coaches;
   protected readonly dialogComponent = CoachDialogComponent;
   protected override readonly dialogConfig = { width: '1150px', maxWidth: '95vw' };
 

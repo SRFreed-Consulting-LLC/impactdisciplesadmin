@@ -715,3 +715,104 @@ export function keepsNavGroup(group: Pick<NavGroup, 'id' | 'items'>): boolean {
   }
   return !group.items || group.items.length > 0;
 }
+
+/**
+ * Every static screenKey this registry produces, as typed constants.
+ *
+ * A component that gates on a screen names it from HERE, never as a string
+ * literal. The reason is the 2026-08-31 DATA move: seven screens changed
+ * group, their stored grants were migrated, and the components kept asking
+ * PermissionService about the OLD keys for five days - an Employee granted
+ * one of them could open the screen and then found add/edit/delete all
+ * denied, because a wrong key reads exactly like a missing grant. With a
+ * constant, moving a screen is a rename that the compiler follows.
+ *
+ * nav-config.spec.ts holds the two directions in step: every value here is
+ * a key NAV_CONFIG produces, and every key NAV_CONFIG produces is here. Page
+ * Manager's leaves are streamed from Firestore and have no constants.
+ *
+ * `docking-bar` gates on Web Config's key on purpose (it edits the same
+ * document) - that is the one component whose key is not its own leaf.
+ */
+export const SCREEN_KEYS = {
+  contacts: {
+    contacts: 'contacts-manager.contacts',
+    organizations: 'contacts-manager.organizations',
+    purchases: 'contacts-manager.purchases',
+    fulfillment: 'contacts-manager.fulfillment'
+  },
+  events: {
+    summit: 'events-manager.summit',
+    summitInfo: 'events-manager.summit.info',
+    summitApplication: 'events-manager.summit.application',
+    summitAgenda: 'events-manager.summit.agenda',
+    summitAttendees: 'events-manager.summit.attendees',
+    events: 'events-manager.events',
+    eventsInfo: 'events-manager.events.info',
+    eventsAttendees: 'events-manager.events.attendees',
+    coaches: 'events-manager.coaches'
+  },
+  store: {
+    coupons: 'store-manager.coupons'
+  },
+  footer: {
+    footer: 'footer.footer',
+    dockingBar: 'footer.docking-bar'
+  },
+  data: {
+    products: 'data.products',
+    testimonials: 'data.testimonials',
+    teamPage: 'data.team-page',
+    discipleMakingMinute: 'data.disciple-making-minute',
+    customFormSubmissions: 'data.custom-form-submissions',
+    formBuilder: 'data.form-builder',
+    webConfig: 'data.web-config'
+  },
+  tools: {
+    emailDesigner: 'tools-manager.email-designer',
+    shippingLabels: 'tools-manager.shipping-labels'
+  },
+  campaigns: {
+    campaigns: 'campaigns-manager.campaigns',
+    statusBoard: 'campaigns-manager.status-board',
+    websiteNewsletters: 'campaigns-manager.website-newsletters',
+    tagRules: 'campaigns-manager.tag-rules'
+  },
+  reports: {
+    purchases: 'reports-manager.purchases',
+    subscribers: 'reports-manager.subscribers',
+    contacts: 'reports-manager.contacts',
+    events: 'reports-manager.events',
+    digitalBookUsers: 'reports-manager.digital-book-users',
+    commissions: 'reports-manager.commissions'
+  },
+  admin: {
+    logs: 'admin-manager.logs',
+    adminUsers: 'admin-manager.admin-users',
+    e2eDashboard: 'admin-manager.e2e-dashboard'
+  },
+  library: {
+    browse: 'library-manager.browse',
+    subtemplates: 'library-manager.subtemplates',
+    lessonTemplates: 'library-manager.lesson-templates',
+    config: 'library-manager.config',
+    worldMap: 'library-manager.world-map',
+    groups: 'library-manager.groups',
+    libraryUsers: 'library-manager.library-users',
+    activityLog: 'library-manager.activity-log'
+  }
+} as const;
+
+/** Every screenKey NAV_CONFIG produces from its static leaves and tabs. */
+export function staticScreenKeys(): string[] {
+  const keys: string[] = [];
+  for (const group of NAV_CONFIG) {
+    for (const leaf of group.items ?? []) {
+      keys.push(`${group.id}.${leaf.slug}`);
+      for (const tab of leaf.tabs ?? []) {
+        keys.push(`${group.id}.${leaf.slug}.${tab.key}`);
+      }
+    }
+  }
+  return keys;
+}

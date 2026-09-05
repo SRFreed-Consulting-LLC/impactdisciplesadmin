@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionType, subscriptionFieldsForType } from 'src/app/common/models/domain/utils/contact.model';
@@ -61,7 +62,7 @@ export class SubscriberReportComponent {
   errorMessage: string | null = null;
 
   private readonly itemType = 'Subscriber';
-  private readonly screenKey = 'reports-manager.subscribers';
+  private readonly screenKey = SCREEN_KEYS.reports.subscribers;
 
   rowActions: DataGridRowAction<ReportRow>[] = [
     {

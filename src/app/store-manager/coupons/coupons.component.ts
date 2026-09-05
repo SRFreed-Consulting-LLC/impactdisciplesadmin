@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { CouponModel } from '@impact-common/shared/models/utils/coupon.model';
 import { CouponService } from 'src/app/common/services/data/coupon.service';
@@ -17,7 +18,7 @@ import { CouponDialogComponent } from './coupon-dialog.component';
 })
 export class CouponsComponent extends BaseListComponent<CouponModel> {
   readonly itemType = 'Coupon';
-  protected readonly screenKey = 'store-manager.coupons';
+  protected readonly screenKey = SCREEN_KEYS.store.coupons;
   protected readonly dialogComponent = CouponDialogComponent;
   protected override readonly dialogConfig: MatDialogConfig = { width: '900px', maxWidth: '95vw' };
 

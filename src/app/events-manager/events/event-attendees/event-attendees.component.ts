@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Unsubscribe } from 'firebase/firestore';
@@ -55,7 +56,7 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
 
   selection = new SelectionModel<EventRegistrationModel>(true, []);
 
-  private readonly screenKey = 'events-manager.events.attendees';
+  private readonly screenKey = SCREEN_KEYS.events.eventsAttendees;
 
   private unsub?: Unsubscribe;
 

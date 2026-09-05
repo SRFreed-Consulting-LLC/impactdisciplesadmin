@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DockBarCta, DockBarModel } from '@impact-common/shared/models/domain/dock-bar.model';
 import { DockBarService } from 'src/app/common/services/data/dock-bar.service';
@@ -55,7 +56,7 @@ export class DockingBarComponent implements OnInit {
   // key nothing in nav-config declares any more. It is site furniture (the
   // web app mounts it in app.component.html, on every page), which is why it
   // sits with the rest of the site-wide configuration rather than on Home.
-  private readonly screenKey = 'data.web-config';
+  private readonly screenKey = SCREEN_KEYS.data.webConfig;
 
   constructor(
     private service: DockBarService,

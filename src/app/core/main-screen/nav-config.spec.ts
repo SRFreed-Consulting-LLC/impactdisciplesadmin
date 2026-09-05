@@ -1,5 +1,5 @@
 import {
-  NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, keepsNavGroup, sectionOf
+  NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, SCREEN_KEYS, keepsNavGroup, sectionOf, staticScreenKeys
 } from './nav-config';
 import { Role } from '@impact-common/shared/lists/roles.enum';
 
@@ -319,6 +319,29 @@ describe('NAV_CONFIG', () => {
       // special case nobody can justify.
       const pageManager = groups.find((g) => g.id === 'page-manager');
       expect(pageManager?.items).toEqual([]);
+    });
+  });
+
+  // SCREEN_KEYS is the typed face of this registry (see its comment): the
+  // constants components gate on. Both directions are pinned so a screen
+  // cannot be added, moved or removed in one place without the other.
+  describe('SCREEN_KEYS', () => {
+    const constants = Object.values(SCREEN_KEYS).flatMap((group) => Object.values(group) as string[]);
+    const produced = staticScreenKeys();
+
+    it('names only keys the registry produces', () => {
+      const orphans = constants.filter((key) => !produced.includes(key));
+      expect(orphans).withContext('constants with no registry entry').toEqual([]);
+    });
+
+    it('names every key the registry produces', () => {
+      const missing = produced.filter((key) => !constants.includes(key));
+      expect(missing).withContext('registry keys with no constant').toEqual([]);
+    });
+
+    it('has no duplicate constants', () => {
+      const dupes = constants.filter((k, i) => constants.indexOf(k) !== i);
+      expect(dupes).toEqual([]);
     });
   });
 });
