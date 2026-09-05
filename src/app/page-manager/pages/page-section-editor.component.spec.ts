@@ -444,3 +444,86 @@ describe('a column lever switched back off', () => {
     expect(undefinedKeys).toEqual([]);
   });
 });
+
+/**
+ * CONTENT AND APPEARANCE TABS.
+ *
+ * The editor asks two kinds of question - what a section SAYS and what it
+ * LOOKS like - and used to ask them in one column with the look first, so the
+ * words sat below six controls. The tabs are the owner's chosen split.
+ *
+ * Two things here are worth pinning rather than eyeballing, because both fail
+ * invisibly: a kit page whose tabs never appear (the strip is conditional),
+ * and the twelve original pages losing their content when the strip is
+ * correctly absent but the content region is gated on a tab that is never
+ * shown.
+ */
+describe('the section editor’s two tabs', () => {
+  function build(kind: Record<string, unknown>, section: Partial<PageContentBlock> = {}) {
+    TestBed.configureTestingModule({
+      providers: [
+        PageSectionEditorComponent,
+        { provide: TestimonialService, useValue: { getAllByValue: () => Promise.resolve([]) } },
+        { provide: FormDefinitionService, useValue: { getAll: () => Promise.resolve([]) } }
+      ]
+    });
+    const component = TestBed.inject(PageSectionEditorComponent);
+    component.section = {
+      key: 'k1', type: SECTION_ARCHETYPE.LIST, items: [], ...section
+    } as PageContentBlock;
+    component.kind = kind as never;
+    return component;
+  }
+
+  const KIT_KIND = {
+    type: SECTION_ARCHETYPE.LIST,
+    variants: [
+      { key: 'tiles', label: 'Tiles', fields: {} },
+      { key: 'quoteCards', label: 'Quote cards', fields: {} }
+    ],
+    surfaces: ['inherit', 'light', 'photo']
+  };
+
+  it('opens on Content, because that is what a section is for', () => {
+    expect(build(KIT_KIND).editorTab).toBe('content');
+  });
+
+  it('offers the strip only where the look is actually a choice', () => {
+    // The twelve original pages each have their own component in the web app.
+    // They declare no variants and no surfaces, so an Appearance tab would
+    // open on nothing - and the CONTENT region must not be gated behind a tab
+    // strip that never renders, or those pages go blank.
+    // ONE build per spec - TestBed cannot be reconfigured once it has handed
+    // out an instance - so the second case swaps the kind on the same one.
+    const component = build({ type: SECTION_ARCHETYPE.SECTION, variants: [], surfaces: [] });
+    expect(component.hasAppearanceControls).toBe(false);
+
+    component.kind = KIT_KIND as never;
+    expect(component.hasAppearanceControls).toBe(true);
+  });
+
+  it('counts the entries on the Content tab so the badge is not a guess', () => {
+    const component = build(KIT_KIND, { items: [{ title: 'a', isActive: true }, { title: 'b', isActive: true }, { title: 'c', isActive: true }] });
+    expect(component.contentCount).toBe(3);
+  });
+
+  it('says what the look is WITHOUT switching to the tab that holds it', () => {
+    // The preview beside this editor renders the result of both tabs, so a
+    // section can change shape for a reason sitting on the hidden tab.
+    const component = build(KIT_KIND, { variant: 'quoteCards', surface: 'inherit', cardsPerRow: 2 });
+    expect(component.appearanceSummary).toBe('Quote cards \u00b7 Same as the page \u00b7 2 per row');
+  });
+
+  it('leaves the summary empty rather than printing separators for nothing', () => {
+    const component = build({ type: SECTION_ARCHETYPE.SECTION, variants: [], surfaces: [] });
+    expect(component.appearanceSummary).toBe('');
+  });
+
+  it('switches tabs', () => {
+    const component = build(KIT_KIND);
+    component.showTab('appearance');
+    expect(component.editorTab).toBe('appearance');
+    component.showTab('content');
+    expect(component.editorTab).toBe('content');
+  });
+});

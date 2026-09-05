@@ -13,6 +13,43 @@
     </p>
   }
 
+
+  <!-- CONTENT AND APPEARANCE. Two kinds of question were being asked in one
+       column, the section-wide settings first, so the words a section puts
+       on the page sat below six controls and four explanatory lines.
+
+       Skipped entirely where there is no appearance side: the twelve
+       original pages have their own components in the web app, so the look
+       is not a choice there and a tab over an empty tab is two clicks to
+       nothing.
+
+       The appearance tab carries its own current settings, because the live
+       preview beside this editor shows the result of BOTH tabs - so "what
+       look is this?" has to be answerable without switching to find out. -->
+  @if (hasAppearanceControls) {
+    <div class="psd__tabs" role="tablist">
+      <button type="button" role="tab" class="psd__tab"
+              [class.psd__tab--on]="editorTab === 'content'"
+              [attr.aria-selected]="editorTab === 'content'"
+              (click)="showTab('content')">
+        <span>Content</span>
+        @if (contentCount) {
+          <span class="psd__tab-badge">{{ contentCount }}</span>
+        }
+      </button>
+      <button type="button" role="tab" class="psd__tab"
+              [class.psd__tab--on]="editorTab === 'appearance'"
+              [attr.aria-selected]="editorTab === 'appearance'"
+              (click)="showTab('appearance')">
+        <span>Appearance</span>
+        @if (appearanceSummary) {
+          <span class="psd__tab-note">{{ appearanceSummary }}</span>
+        }
+      </button>
+    </div>
+  }
+
+  @if (editorTab === 'appearance') {
   <!-- THE TWO AXES. Only pages built from the section kit declare either, so
        the twelve original pages show neither and are unchanged.
 
@@ -192,6 +229,9 @@
       </div>
     }
   }
+  }
+
+  @if (editorTab === 'content' || !hasAppearanceControls) {
 
 
 
@@ -764,6 +804,7 @@
         }
       </div>
     </div>
+  }
   }
 </div>
 

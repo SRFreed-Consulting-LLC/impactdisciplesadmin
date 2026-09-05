@@ -477,6 +477,73 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     delete this.section.photoFocus;
     this.edits.next();
   }
+  // ---------------------------------------------------- content / appearance
+  //
+  // This editor asks TWO kinds of question and used to ask them in one
+  // undivided column, appearance first. Look, Ground, Cards per row and the
+  // text styles belong to the section as a whole and are set once; the
+  // heading, the picture and the entries are the words on the page and are
+  // why anyone opens a section at all. Six settings and four explanatory
+  // lines stood between opening a section and reaching its first word.
+  //
+  // Tabs rather than two stacked groups, chosen by the owner: the screen is
+  // half the height and it opens on the half you almost always want. The
+  // known cost is that the live preview beside this editor reflects BOTH
+  // tabs, so a section can change shape for a reason sitting on the tab you
+  // cannot see - which is why the appearance tab carries a summary of its own
+  // settings, readable without switching to it.
+
+  editorTab: 'content' | 'appearance' = 'content';
+
+  /**
+   * Is there anything on the appearance side at all?
+   *
+   * The twelve original pages declare neither variants nor surfaces - each
+   * has its own component in the web app, so its look is not a choice. A tab
+   * strip over an empty tab would be two clicks to nothing, so those screens
+   * keep the single column they have always had.
+   */
+  get hasAppearanceControls(): boolean {
+    return this.variants.length > 1 || this.surfaces.length > 0;
+  }
+
+  /** How many entries the content tab holds, for the badge on it. */
+  get contentCount(): number {
+    if (this.isColumnSection) {
+      return (this.section.columns ?? []).length;
+    }
+    if (this.fields.testimonials) {
+      return (this.section.testimonialIds ?? []).length;
+    }
+    return (this.section.items ?? []).length;
+  }
+
+  /**
+   * What the appearance tab currently says, shown ON the tab strip.
+   *
+   * The point of the whole change is that you should not have to switch tabs
+   * to answer "what look is this?" - so the answer travels with the tab.
+   */
+  get appearanceSummary(): string {
+    const parts: string[] = [];
+    const look = this.activeVariant?.label;
+    if (look && this.variants.length > 1) {
+      parts.push(look);
+    }
+    const ground = SECTION_SURFACES
+      .find((surface) => surface.key === this.activeSurface)?.label;
+    if (ground && this.surfaces.length) {
+      parts.push(ground);
+    }
+    if (this.section.cardsPerRow) {
+      parts.push(`${this.section.cardsPerRow} per row`);
+    }
+    return parts.join(' \u00b7 ');
+  }
+
+  showTab(tab: 'content' | 'appearance'): void {
+    this.editorTab = tab;
+  }
   get onPhotoSurface(): boolean {
     return this.activeSurface === 'photo';
   }

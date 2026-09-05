@@ -710,3 +710,76 @@
   font-size: 12px;
   opacity: 0.7;
 }
+
+/* CONTENT / APPEARANCE TABS.
+   Styled as a strip rather than mat-tabs: this component is hosted inside a
+   scrolling pane with its own sticky header, and a Material tab group brings
+   its own ink bar, its own body wrapper and its own scroll handling to fight
+   with. The two panels are plain @if blocks; nothing here needs animating. */
+.psd__tabs {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+.psd__tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-muted);
+  border-bottom: 2px solid transparent;
+  /* The border sits ON the strip's own rule rather than under it. */
+  margin-bottom: -1px;
+}
+
+.psd__tab:hover { color: var(--app-ink, inherit); }
+
+.psd__tab:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: -2px;
+}
+
+.psd__tab--on {
+  color: inherit;
+  border-bottom-color: var(--app-accent);
+}
+
+/* How many entries are on the content tab, so the count is legible from the
+   appearance tab without switching back. */
+.psd__tab-badge {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 9px;
+  background: var(--app-field);
+  border: 1px solid var(--app-field-border);
+  color: var(--app-muted);
+}
+
+/* The appearance tab's own settings, readable while on the content tab. The
+   preview shows the result of both tabs, so this is what keeps "why does it
+   look like that?" answerable without a click. */
+.psd__tab-note {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--app-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+@media (max-width: 900px) {
+  /* The summary is the first thing to go when the strip is tight - the tab
+     label itself must never wrap or truncate. */
+  .psd__tab-note { display: none; }
+}
