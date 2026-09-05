@@ -16,7 +16,7 @@ export class PhoneNumberMaskPipe implements PipeTransform {
     return `${number} ${showExtension && phoneNumber?.extension ? ` (ext. ${phoneNumber?.extension})` : ''}`;
   }
 
-  public matcher = (number) => {
+  public matcher = (number: string | undefined): string => {
     if (!number) {
       return '';
     }

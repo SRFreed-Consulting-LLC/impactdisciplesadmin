@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { booleanAttribute, Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
     selector: 'app-indicator-button',
@@ -8,8 +8,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 })
 export class IndicatorButtonComponent {
   @Input() public cssClass?: string;
-  @Input() public disabled: boolean;
-  @Input() public isInProgress: boolean;
+  // booleanAttribute on both: ~30 templates bind these to an async-piped
+  // inProgress$ subject, which is `boolean | null` before its first emission.
+  // Coercing at this boundary is what let strictNullChecks go on (2026-09-05)
+  // without a `?? false` in every one of them.
+  @Input({ transform: booleanAttribute }) public disabled = false;
+  @Input({ transform: booleanAttribute }) public isInProgress = false;
   @Input() public title = 'SAVE';
   @Input() public stylingMode: 'text' | 'outlined' | 'contained' = 'contained';
   @Input() public height: string;

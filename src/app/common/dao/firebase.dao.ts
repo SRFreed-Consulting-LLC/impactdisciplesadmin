@@ -3,7 +3,7 @@ import { addDoc, collectionData, deleteDoc, doc, getDoc, getDocs, limit, orderBy
 import { Firestore, collection } from '@angular/fire/firestore';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot, WriteBatch } from 'firebase/firestore';
+import { DocumentData, onSnapshot, OrderByDirection, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot, UpdateData, WriteBatch } from 'firebase/firestore';
 import { BaseModel } from '@impact-common/shared/models/base.model';
 import { tenantPath } from '@impact-common/shared/lists/tenancy';
 import { Unsubscribe } from 'firebase/auth';
@@ -18,6 +18,12 @@ export interface PagedResult<T> {
   cursor: QueryDocumentSnapshot<DocumentData> | null;
   hasMore: boolean;
 }
+
+// The per-collection deserialization hook a service may install (see
+// BaseService.fromFirestore). It receives the raw document data with `id`
+// already set and returns the model - in practice every implementation
+// mutates and returns the same object (converting Timestamps to Dates).
+export type FromFirestore<T> = (data: T) => T;
 
 @Injectable({
   providedIn: 'root'
@@ -44,7 +50,7 @@ export class FirebaseDAO<T extends BaseModel> {
   // limitCount is optional and defaults to unbounded (existing behavior) --
   // pass it to cap how many documents a page pulls back instead of the
   // entire collection.
-  public getAll(table: string, fromFirestore?, limitCount?: number): Promise<T[]>{
+  public getAll(table: string, fromFirestore?: FromFirestore<T>, limitCount?: number): Promise<T[]>{
     const constraints: QueryConstraint[] = limitCount ? [limit(limitCount)] : [];
 
     return getDocs(query(collection(this.fs, this.path(table)), ...constraints)).then(docs => {
@@ -52,7 +58,7 @@ export class FirebaseDAO<T extends BaseModel> {
     });
   }
 
-  public getAllByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number): Promise<T[]>{
+  public getAllByValue(table: string, field: string, value: unknown, fromFirestore?: FromFirestore<T>, limitCount?: number): Promise<T[]>{
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -61,7 +67,7 @@ export class FirebaseDAO<T extends BaseModel> {
     });
   }
 
-  public queryAllByMultiValue(table: string, queries: QueryParam[], fromFirestore?, limitCount?: number): Promise<T[]>{
+  public queryAllByMultiValue(table: string, queries: QueryParam[], fromFirestore?: FromFirestore<T>, limitCount?: number): Promise<T[]>{
     const queryConstraints: QueryConstraint[] = queries.map((query) =>
       where(query.field, query.operation, query.value),
     );
@@ -89,7 +95,7 @@ export class FirebaseDAO<T extends BaseModel> {
     orderByField: string,
     orderDirection: OrderByDirection = 'asc',
     filters?: QueryParam[],
-    fromFirestore?
+    fromFirestore?: FromFirestore<T>
   ): Promise<PagedResult<T>> {
     const constraints: QueryConstraint[] = (filters ?? []).map((f) => where(f.field, f.operation, f.value));
     constraints.push(orderBy(orderByField, orderDirection));
@@ -109,19 +115,26 @@ export class FirebaseDAO<T extends BaseModel> {
     };
   }
 
-  public getById(id: string, table: string, fromFirestore?): Promise<T>{
+  // Resolves undefined for a document that does not exist - it always did,
+  // but until strict null checks (2026-09-05) the signature said Promise<T>
+  // and every caller was free to dereference the result. Callers guard.
+  public getById(id: string, table: string, fromFirestore?: FromFirestore<T>): Promise<T | undefined>{
     return getDoc(doc(this.fs, this.path(table) + '/' + id)).then(async doc => {
       if(doc.exists()){
         const retval: T = doc.data() as T;
         retval.id = doc.id;
         return fromFirestore? fromFirestore(retval) : retval;
       }
+      return undefined;
     })
   }
 
-  public add(value: T, table: string, fromFirestore?): Promise<T>{
+  public add(value: T, table: string, fromFirestore?: FromFirestore<T>): Promise<T>{
     return addDoc(collection(this.fs, this.path(table)), value).then(async doc => {
       const retval = await this.getById(doc.id, table, fromFirestore);
+      if (!retval) {
+        throw new Error(`FirebaseDAO.add('${table}'): wrote ${doc.id} but could not read it back`);
+      }
       retval.id = doc.id;
       return retval;
     });
@@ -143,10 +156,13 @@ export class FirebaseDAO<T extends BaseModel> {
     return addDoc(collection(this.fs, this.path(table)), value).then((ref) => ref.id);
   }
 
-  public async update(id: string, value: T, table: string, fromFirestore?): Promise<T>{
+  public async update(id: string, value: T, table: string, fromFirestore?: FromFirestore<T>): Promise<T>{
     await setDoc(doc(this.fs, this.path(table) + '/' + id), value);
 
     const retval = await this.getById(id, table, fromFirestore);
+    if (!retval) {
+      throw new Error(`FirebaseDAO.update('${table}'): wrote ${id} but could not read it back`);
+    }
     retval.id = id;
     return retval;
   }
@@ -170,7 +186,7 @@ export class FirebaseDAO<T extends BaseModel> {
   // - Firestore rejects `undefined` values - build keys conditionally, same
   //   house rule as everywhere else (see CLAUDE.md's write gotcha).
   public updateFields(id: string, table: string, partial: Record<string, unknown>): Promise<void> {
-    return updateDoc(doc(this.fs, this.path(table) + '/' + id), partial);
+    return updateDoc(doc(this.fs, this.path(table) + '/' + id), partial as UpdateData<DocumentData>);
   }
 
   public delete(id: string, table: string){
@@ -200,7 +216,7 @@ export class FirebaseDAO<T extends BaseModel> {
     table: string,
     partial: Record<string, unknown>
   ): void {
-    batch.update(doc(this.fs, this.path(table) + '/' + id), partial);
+    batch.update(doc(this.fs, this.path(table) + '/' + id), partial as UpdateData<DocumentData>);
   }
 
   // onError is optional and purely a side-channel signal - the returned
@@ -214,7 +230,7 @@ export class FirebaseDAO<T extends BaseModel> {
   // - the live listener is gone, not paused, so recovering means calling
   // streamAll() again fresh (a brand new subscription), not waiting on this
   // one.
-  public streamAll(table: string, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+  public streamAll(table: string, fromFirestore?: FromFirestore<T>, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = limitCount ? [limit(limitCount)] : [];
 
     return collectionData(query(collection(this.fs, this.path(table)), ...constraints), {idField: 'id'}).pipe(
@@ -240,7 +256,7 @@ export class FirebaseDAO<T extends BaseModel> {
   // automatic single-field indexes cover it. Docs missing orderByField
   // entirely are excluded by Firestore's orderBy semantics - fine for a
   // required field like a created/submitted timestamp, not for optional ones.
-  public streamAllOrdered(table: string, orderByField: string, orderDirection: OrderByDirection = 'desc', fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+  public streamAllOrdered(table: string, orderByField: string, orderDirection: OrderByDirection = 'desc', fromFirestore?: FromFirestore<T>, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = [orderBy(orderByField, orderDirection)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -256,7 +272,7 @@ export class FirebaseDAO<T extends BaseModel> {
     );
   }
 
-  public streamByValue(table: string, field: string, value: unknown, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+  public streamByValue(table: string, field: string, value: unknown, fromFirestore?: FromFirestore<T>, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, "==", value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -272,7 +288,7 @@ export class FirebaseDAO<T extends BaseModel> {
     );
   }
 
-  public streamById(id: string, table: string, callBack, fromFirestore?): Unsubscribe{
+  public streamById(id: string, table: string, callBack: (value: T) => void, fromFirestore?: FromFirestore<T>): Unsubscribe{
     return onSnapshot(doc(this.fs, this.path(table) + '/' + id), async doc => {
       if(doc.exists()){
         let retval: T = doc.data() as T;
@@ -283,7 +299,7 @@ export class FirebaseDAO<T extends BaseModel> {
     })
   }
 
-  public queryStreamByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: unknown, fromFirestore?, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
+  public queryStreamByValue(table: string, field: string, opStr: WhereFilterOperandKeys, value: unknown, fromFirestore?: FromFirestore<T>, limitCount?: number, onError?: (err: unknown) => void): Observable<T[]>{
     const constraints: QueryConstraint[] = [where(field, opStr, value)];
     if (limitCount) constraints.push(limit(limitCount));
 
@@ -299,7 +315,7 @@ export class FirebaseDAO<T extends BaseModel> {
     );
   }
 
-  private getDocListFromStream(docs: (DocumentData | (DocumentData & {id: string}))[], fromFirestore){
+  private getDocListFromStream(docs: (DocumentData | (DocumentData & {id: string}))[], fromFirestore?: FromFirestore<T>){
     const retval: T[] = [];
 
     docs.forEach(doc => {
@@ -311,7 +327,7 @@ export class FirebaseDAO<T extends BaseModel> {
     return retval;
   }
 
-  private getDocListFromPromise(docs: QuerySnapshot<DocumentData, DocumentData>, fromFirestore){
+  private getDocListFromPromise(docs: QuerySnapshot<DocumentData, DocumentData>, fromFirestore?: FromFirestore<T>){
     const retval: T[] = [];
 
     docs.forEach(doc => {
@@ -323,11 +339,6 @@ export class FirebaseDAO<T extends BaseModel> {
     return retval;
   }
 
-  private getDoc(doc: (DocumentData | (DocumentData & {id: string})), fromFirestore){
-    const val: T = doc as T;
-    val.id = doc.id;
-    return fromFirestore? fromFirestore(val) : val;
-  }
 }
 
 

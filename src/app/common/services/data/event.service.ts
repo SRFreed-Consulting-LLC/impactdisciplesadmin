@@ -16,7 +16,7 @@ export class EventService extends BaseService<EventModel>{
     this.fromFirestore = EventService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): EventModel => {
+  static readonly fromFirestore = (data: EventModel): EventModel => {
     data.startDate = dateFromTimestamp(data.startDate as Timestamp);
     data.endDate = dateFromTimestamp(data.endDate as Timestamp);
 
@@ -58,7 +58,7 @@ export class EventService extends BaseService<EventModel>{
   async mutateAgendaItem(eventId: string, agendaItemId: string, mutate: (item: AgendaItem) => void): Promise<EventModel> {
     const fresh = await this.getById(eventId);
     const item = fresh?.agendaItems?.find((i) => i.id === agendaItemId);
-    if (!item) {
+    if (!fresh || !item) {
       throw new Error(`Agenda item ${agendaItemId} not found on event ${eventId}`);
     }
     mutate(item);

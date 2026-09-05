@@ -94,7 +94,7 @@
   <app-preview-rail storageKey="team-page" label="Public page" [width]="400">
     <div class="tmp">
       @if (card.photoUrl?.url) {
-        <img class="tmp__photo" [src]="card.photoUrl.url" [alt]="form.value.firstName || 'Team member'">
+        <img class="tmp__photo" [src]="card.photoUrl?.url" [alt]="form.value.firstName || 'Team member'">
       } @else {
         <div class="tmp__photo tmp__photo--empty">No picture yet</div>
       }

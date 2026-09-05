@@ -16,7 +16,7 @@ export class EMailService extends BaseService<EMailModel>{
     this.fromFirestore = EMailService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): EMailModel => {
+  static readonly fromFirestore = (data: EMailModel): EMailModel => {
     data.date = dateFromTimestamp(data.date as Timestamp)
 
     return data;

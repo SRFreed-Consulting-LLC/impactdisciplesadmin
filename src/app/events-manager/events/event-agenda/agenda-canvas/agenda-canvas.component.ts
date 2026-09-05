@@ -65,7 +65,7 @@ export class AgendaCanvasComponent extends AgendaHostComponent implements OnChan
     return itemTitle(item);
   }
 
-  roomName(roomId: string | undefined): string {
+  roomName(roomId: string | null | undefined): string {
     return this.rooms.find((r) => r.id === roomId)?.name ?? '—';
   }
 

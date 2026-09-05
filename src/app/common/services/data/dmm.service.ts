@@ -15,7 +15,7 @@ export class DMMService extends BaseService<DMMModel>{
     this.fromFirestore = DMMService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): DMMModel => {
+  static readonly fromFirestore = (data: DMMModel): DMMModel => {
     data.date = dateFromTimestamp(data.date as Timestamp)
 
     return data;

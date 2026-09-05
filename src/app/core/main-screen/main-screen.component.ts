@@ -161,7 +161,7 @@ export class MainScreenComponent implements OnInit, AfterViewInit, OnDestroy {
       // left of every screen - including over the resize handle, so there is
       // no way to drag it back. See reSyncContentMargin().
       const widthBefore = this.drawerWidth;
-      this.currentUser = user;
+      this.currentUser = user ?? null;
       if (this.drawerWidth !== widthBefore) {
         this.reSyncContentMargin();
       }
@@ -543,14 +543,15 @@ export class MainScreenComponent implements OnInit, AfterViewInit, OnDestroy {
     const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
 
     const previousUser = this.currentUser;
-    this.currentUser = { ...this.currentUser, pinnedScreens: next };
+    const userId = this.currentUser.id;
+    this.currentUser = { ...previousUser, pinnedScreens: next };
     this.rebuildPinnedItems();
 
     // PARTIAL write - see the note in onResizeEnd. This used to send the
     // whole record, which meant a pin toggle carried this component's cached
     // copy of every other field back to Firestore and clobbered anything
     // ThemeService had written from ITS cached copy since login.
-    this.adminUserService.updateFields(this.currentUser.id, { pinnedScreens: next }).catch((err) => {
+    this.adminUserService.updateFields(userId, { pinnedScreens: next }).catch((err) => {
       console.error('Failed to save pinned screens:', err);
       this.currentUser = previousUser;
       this.rebuildPinnedItems();
@@ -692,7 +693,8 @@ export class MainScreenComponent implements OnInit, AfterViewInit, OnDestroy {
     // - loggedInUser$ is a one-time read per auth change, so nothing would
     // re-pull this on its own.
     const previousUser = this.currentUser;
-    this.currentUser = { ...this.currentUser, drawerWidth: width };
+    const userId = this.currentUser.id;
+    this.currentUser = { ...previousUser, drawerWidth: width };
     this.reSyncContentMargin();
     // PARTIAL write, not the whole record. update() is a full setDoc with no
     // merge, so a preference write carried a stale copy of every other field
@@ -701,7 +703,7 @@ export class MainScreenComponent implements OnInit, AfterViewInit, OnDestroy {
     // after a drag reverted the width, and vice versa). Dragging makes this
     // by far the most frequent write to admin_users, which is what turned a
     // latent bug into a reliable one.
-    this.adminUserService.updateFields(this.currentUser.id, { drawerWidth: width }).catch((err) => {
+    this.adminUserService.updateFields(userId, { drawerWidth: width }).catch((err) => {
       console.error('Failed to save drawer width:', err);
       this.currentUser = previousUser;
       this.reSyncContentMargin();
@@ -752,10 +754,11 @@ export class MainScreenComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const next = !this.isDrawerPinned;
     const previousUser = this.currentUser;
-    this.currentUser = { ...this.currentUser, drawerPinned: next };
+    const userId = this.currentUser.id;
+    this.currentUser = { ...previousUser, drawerPinned: next };
 
     // PARTIAL write - see the note in onResizeEnd.
-    this.adminUserService.updateFields(this.currentUser.id, { drawerPinned: next }).catch((err) => {
+    this.adminUserService.updateFields(userId, { drawerPinned: next }).catch((err) => {
       console.error('Failed to save drawer pin state:', err);
       this.currentUser = previousUser;
     });

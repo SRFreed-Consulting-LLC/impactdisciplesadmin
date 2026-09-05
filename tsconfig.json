@@ -17,8 +17,20 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    // strict is the family switch, and until 2026-09-05 the two flags that
+    // carry most of it were turned back off below (noImplicitAny and
+    // strictNullChecks). The review put "turn the compiler on" first on its
+    // list; measured, it cost 108 errors app-wide - two-thirds of them
+    // untyped fromFirestore hooks in the DAO and its services - and found
+    // getById() resolving undefined behind a Promise<T>, a shipping-label
+    // update aimed at a document named "undefined", and two email resends
+    // that threw a TypeError into the void. Both flags stay on.
+    //
+    // strictPropertyInitialization is the one still off: it is a different
+    // kind of work (every @Input and every field a lifecycle hook fills in
+    // wants `!` or an initialiser) and is tracked separately.
     "strict": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
@@ -31,7 +43,7 @@
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "strictPropertyInitialization": false,
     "lib": [
       "ES2022",

@@ -67,7 +67,7 @@ export class PermissionService {
     // every call site, matching how events.component.ts already caches
     // currentUserRole off the same observable for its own isVisible().
     authService.dao.loggedInUser$.subscribe((user) => {
-      this.currentUser = user;
+      this.currentUser = user ?? null;
     });
   }
 

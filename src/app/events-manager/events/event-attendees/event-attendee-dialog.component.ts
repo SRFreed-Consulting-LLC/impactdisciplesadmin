@@ -54,10 +54,14 @@ export class EventAttendeeDialogComponent extends BaseEntityDialogComponent<Even
       return;
     }
     this.emailService.getById(this.data.item.receiptEmailId).then((mail) => {
+      // A receipt whose mail doc is gone used to throw a TypeError into an
+      // unhandled rejection and show nothing (strict null checks, 2026-09-05).
+      if (!mail?.id) {
+        this.snackbar.error('The original email could not be found, so it was not resent.');
+        return;
+      }
       delete mail.delivery;
-      return mail;
-    }).then((mail) => {
-      this.emailService.update(mail.id, mail).then(() => {
+      return this.emailService.update(mail.id, mail).then(() => {
         this.snackbar.success('Email Resent Successfully!');
       });
     });

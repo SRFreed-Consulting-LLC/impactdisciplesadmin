@@ -14,7 +14,7 @@ export class CoachService extends BaseService<CoachModel>{
     this.fromFirestore = CoachService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): CoachModel => {
+  static readonly fromFirestore = (data: CoachModel): CoachModel => {
     data.fullname = data.firstName + " " + data.lastName
 
     return data;

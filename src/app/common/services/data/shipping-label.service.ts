@@ -5,10 +5,16 @@ import { environment } from 'src/environments/environment';
 import { BaseService } from './base.service';
 import { ShippingLabelRequest } from '@impact-common/shared/models/domain/shipment-label-batch-request.model';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
-import { Timestamp } from 'firebase/firestore';
 import { Package, RateOptions, ShippingModel, ShippingRequest, WeightDetail } from '@impact-common/shared/models/domain/shipment.model';
 import { UNIT_OF_MEASURE } from '@impact-common/shared/lists/unit_of_measure.enum';
 
+// The slice of a ShipEngine rate this service reads; the full row is what
+// gets stored on shippingRateId.
+interface RateRow {
+  rateId: string;
+  shippingAmount: { amount: number };
+  [key: string]: unknown;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -21,13 +27,20 @@ export class ShippingLabelService extends BaseService<ShippingLabelRequest>{
     this.fromFirestore = ShippingLabelService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): ShippingLabelRequest => {
-    data.requestedDate = dateFromTimestamp(data.requestedDate as Timestamp)
-    data.purchasedDate = dateFromTimestamp(data.purchasedDate as Timestamp)
+  static readonly fromFirestore = (data: ShippingLabelRequest): ShippingLabelRequest => {
+    data.requestedDate = dateFromTimestamp(data.requestedDate)
+    data.purchasedDate = dateFromTimestamp(data.purchasedDate)
     return data;
   };
 
   public async createRequest(shippingLabel: ShippingLabelRequest){
+    // Every branch below ends in update(id, ...). Without an id that used to
+    // write to a document literally named "undefined" (strict null checks,
+    // 2026-09-05, made the hole visible); refusing is the honest outcome.
+    const id = shippingLabel.id;
+    if (!id) {
+      throw new Error('ShippingLabelService.createRequest: the request has no id');
+    }
     const shippingRequest = shippingLabel.request;
 
     const rateOptions = {... new RateOptions()};
@@ -51,25 +64,26 @@ export class ShippingLabelService extends BaseService<ShippingLabelRequest>{
       shippingLabel.requestedDate = new Date();
 
       if (result) {
-        result.rateResponse.rates.sort((a, b) => a.shippingAmount.amount - b.shippingAmount.amount);
+        const rates: RateRow[] = result.rateResponse.rates;
+        rates.sort((a, b) => a.shippingAmount.amount - b.shippingAmount.amount);
 
-        shippingLabel.shippingRateId = {... result.rateResponse.rates[0]};
+        shippingLabel.shippingRateId = {... rates[0]};
 
-        shippingLabel.shippingRate = Number(Number(result.rateResponse.rates[0].shippingAmount.amount).toFixed(2));
+        shippingLabel.shippingRate = Number(Number(rates[0].shippingAmount.amount).toFixed(2));
 
         shippingLabel.status = "CREATED"
 
-        return this.update(shippingLabel.id, shippingLabel)
+        return this.update(id, shippingLabel)
       } else {
         shippingLabel.status = "FAILED";
 
-        return this.update(shippingLabel.id, shippingLabel)
+        return this.update(id, shippingLabel)
       }
     }).catch(e => {
       shippingLabel.status = "FAILED";
       shippingLabel.message = {... e};
 
-      return this.update(shippingLabel.id, shippingLabel)
+      return this.update(id, shippingLabel)
     })
   }
 

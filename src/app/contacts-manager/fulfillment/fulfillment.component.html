@@ -14,7 +14,7 @@
     </div>
   }
 
-  @if ((loadFailed$ | async) === false && orders$ | async; as orders) {
+  @if ((loadFailed$ | async) === false && (orders$ | async); as orders) {
     @if (orders.length === 0 && (loading$ | async) === false) {
       <div class="empty-state">
         Nothing waiting on fulfillment right now.

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { CheckoutForm, FulfillmentStatus, StatusHistoryEntry } from '@impact-common/shared/models/utils/cart.model';
+import { CartItem, CheckoutForm, FulfillmentStatus, StatusHistoryEntry } from '@impact-common/shared/models/utils/cart.model';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
 import { environment } from 'src/environments/environment';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
@@ -71,7 +71,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     this.fromFirestore = PurchasesService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): CheckoutForm => {
+  static readonly fromFirestore = (data: CheckoutForm): CheckoutForm => {
     data.dateProcessed = dateFromTimestamp(data.dateProcessed as Timestamp)
 
     return data;
@@ -142,12 +142,12 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     return user ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email : undefined;
   }
 
-  calculateProductCostAmount(cartItem){
+  calculateProductCostAmount(cartItem: { data: CartItem }){
       return cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
   }
-  calculateItemTotalAmount(cartItem, selectedItem){
-    const totalPrice = cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price;
-    const quantity = cartItem.data.orderQuantity;
+  calculateItemTotalAmount(cartItem: { data: CartItem }, selectedItem: CheckoutForm){
+    const totalPrice = (cartItem.data.salePrice ? cartItem.data.salePrice : cartItem.data.price) ?? 0;
+    const quantity = cartItem.data.orderQuantity ?? 0;
     const discount = cartItem.data.discount ? cartItem.data.discount : 0;
     const shippingAmount = cartItem.data.isEvent? 0 : this.calculateItemShippingAmount(cartItem, selectedItem);
     const taxAmount = this.calculateItemTaxableAmount(cartItem, selectedItem);
@@ -157,27 +157,27 @@ export class PurchasesService extends BaseService<CheckoutForm>{
     return amountToRefund;
   }
 
-  calculateItemTaxableAmount(cartItem, selectedItem){
-    return (!cartItem.data.isEvent? (cartItem.data.price * cartItem.data.orderQuantity) * selectedItem.taxRate : 0);
+  calculateItemTaxableAmount(cartItem: { data: CartItem }, selectedItem: CheckoutForm){
+    return (!cartItem.data.isEvent? ((cartItem.data.price ?? 0) * (cartItem.data.orderQuantity ?? 0)) * (selectedItem.taxRate ?? 0) : 0);
   }
 
-  calculateItemShippingAmount(cartItem, selectedItem){
+  calculateItemShippingAmount(cartItem: { data: CartItem }, selectedItem: CheckoutForm){
     if(!cartItem.data.isEvent){
       let totalWeight: number;
       try{
-        totalWeight = selectedItem.cartItems.filter(item => item.isEvent == false).map(item => item.weight? item.weight : 0).reduce((a,b) => a + b);
+        totalWeight = (selectedItem.cartItems ?? []).filter(item => item.isEvent == false).map(item => item.weight? item.weight : 0).reduce((a,b) => a + b);
       } catch (err){
         console.error(err)
         totalWeight = 0;
       }
-      return (selectedItem.shippingRate - selectedItem.shippingDiscount) * parseFloat((cartItem.data.weight / totalWeight).toFixed(2));
+      return ((selectedItem.shippingRate ?? 0) - (selectedItem.shippingDiscount ?? 0)) * parseFloat(((cartItem.data.weight ?? 0) / totalWeight).toFixed(2));
     } else {
       return 0;
     }
   }
 
-  calculateItemDiscountAmount(cartItem){
-    const discountAmount = (cartItem.data.price - cartItem.data.discountPrice) * cartItem.data.orderQuantity
+  calculateItemDiscountAmount(cartItem: { data: CartItem }){
+    const discountAmount = ((cartItem.data.price ?? 0) - (cartItem.data.discountPrice ?? 0)) * (cartItem.data.orderQuantity ?? 0)
 
     return discountAmount && discountAmount > 0 ? discountAmount : 0;
   }
@@ -191,11 +191,11 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   // PurchasesComponent, which used to own all six) so all three render the
   // exact same figures instead of three copies of this math drifting apart.
   getProductTotalDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.item_total?.value ?? '') : (item.total ?? 0) > 0 ? item.total! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units?.[0]?.amount?.breakdown?.item_total?.value ?? '') : (item.total ?? 0) > 0 ? item.total! : 0;
   }
 
   getDiscountDisplayAmount(item: CheckoutForm): number {
-    const discount = item.payPalReceipt?.purchase_units[0]?.amount?.breakdown?.discount;
+    const discount = item.payPalReceipt?.purchase_units?.[0]?.amount?.breakdown?.discount;
     return discount
       ? parseFloat(discount.value)
       : (item.discount ?? 0) > 0
@@ -204,20 +204,20 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   }
 
   getTaxesDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.tax_total?.value ?? '') : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units?.[0]?.amount?.breakdown?.tax_total?.value ?? '') : (item.estimatedTaxes ?? 0) > 0 ? item.estimatedTaxes! : 0;
   }
 
   getShippingDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping?.value ?? '') : item.shippingRate ? item.shippingRate : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units?.[0]?.amount?.breakdown?.shipping?.value ?? '') : item.shippingRate ? item.shippingRate : 0;
   }
 
   getShippingDiscountDisplayAmount(item: CheckoutForm): number {
-    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.breakdown?.shipping_discount?.value ?? '') : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
+    return item.payPalReceipt ? parseFloat(item.payPalReceipt.purchase_units?.[0]?.amount?.breakdown?.shipping_discount?.value ?? '') : (item.shippingDiscount ?? 0) > 0 ? item.shippingDiscount! : 0;
   }
 
   getChargedDisplayAmount(item: CheckoutForm): number {
     if (item.payPalReceipt) {
-      return parseFloat(item.payPalReceipt.purchase_units[0]?.amount?.value ?? '');
+      return parseFloat(item.payPalReceipt.purchase_units?.[0]?.amount?.value ?? '');
     }
 
     // 2026-08-12 fullsweep fix: this used to be a single ternary that
@@ -236,7 +236,7 @@ export class PurchasesService extends BaseService<CheckoutForm>{
   // displayed here anymore), then a processedStatus (NEW/COMPLETE/REFUNDED)
   // fallback before that field was removed entirely.
   getOrderStatusDisplay(item: CheckoutForm): string {
-    return item.payPalReceipt ? item.payPalReceipt.status : this.getFulfillmentStatusLabel(item.fulfillmentStatus);
+    return item.payPalReceipt ? (item.payPalReceipt.status ?? '') : this.getFulfillmentStatusLabel(item.fulfillmentStatus);
   }
 
   getFulfillmentStatusLabel(status: FulfillmentStatus | undefined): string {
@@ -244,8 +244,8 @@ export class PurchasesService extends BaseService<CheckoutForm>{
       .find((s) => s.status === status)?.statusLabel ?? 'Unknown';
   }
 
-  calculateOrderRefundedAmount(selectedItem){
-    const refundedItems = selectedItem.cartItems.filter(item => item.processedStatus == "REFUNDED");
+  calculateOrderRefundedAmount(selectedItem: CheckoutForm){
+    const refundedItems = (selectedItem.cartItems ?? []).filter(item => item.processedStatus == "REFUNDED");
     const totalRefundedList: number[] = refundedItems.map(item => this.calculateItemTotalAmount({data: item}, selectedItem));
 
     if(totalRefundedList && totalRefundedList.length > 0){
@@ -332,7 +332,10 @@ export class PurchasesService extends BaseService<CheckoutForm>{
           item.statusHistory = this.withStatusHistory(item, 'shipping_label_printed');
         }
         this.update(item.id!, item).then((saved) => {
-          this.downloadShippingLabel(saved!.shippingLabel.labelDownload.pdf);
+          const pdf = saved.shippingLabel?.labelDownload?.pdf;
+          if (pdf) {
+            this.downloadShippingLabel(pdf);
+          }
         });
       }
     } else if (item.shippingLabel?.labelDownload?.pdf) {

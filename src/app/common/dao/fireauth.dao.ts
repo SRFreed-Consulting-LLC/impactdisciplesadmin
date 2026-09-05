@@ -26,7 +26,7 @@ export class FireAuthDao {
   public currentUser$: Observable<User>;
   public loggedInUser$: Observable<AdminUser | undefined>;
 
-  public currentAgent$ = new BehaviorSubject<AdminUser>(undefined);
+  public currentAgent$ = new BehaviorSubject<AdminUser | undefined>(undefined);
 
   constructor(
     public auth: Auth,

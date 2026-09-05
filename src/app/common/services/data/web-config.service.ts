@@ -25,7 +25,7 @@ export class WebConfigService extends BaseService<WebConfigModel>{
   // field is gone - nothing had read it since tax rates stopped being
   // imported - so there is nothing left to reshape on the way in, and a
   // hook that only re-wrote a dead field is worse than no hook.
-  static readonly fromFirestore = (data): WebConfigModel => data;
+  static readonly fromFirestore = (data: WebConfigModel): WebConfigModel => data;
 
   override getAll(): Promise<WebConfigModel[]> {
     if (!this.cachedConfig) {

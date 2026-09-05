@@ -802,7 +802,7 @@ describe('dropping a section into the page', () => {
       // markup - a screen reader and a search engine both find it. Not
       // counting it would nag Home about a title it has.
       const c = headed(['page']);
-      c.sections[0].columns[0].pieces[0].hidden = true;
+      c.sections[0].columns![0].pieces![0].hidden = true;
 
       expect(c.pageTitleCount).toBe(1);
       expect(c.pageTitleProblem).toBeNull();

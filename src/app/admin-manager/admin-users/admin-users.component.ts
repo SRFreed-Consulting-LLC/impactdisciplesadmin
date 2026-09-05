@@ -279,6 +279,9 @@ export class AdminUsersComponent implements OnInit {
       // `permissions` field, or every other field the Cloud Function just
       // wrote (role, firebaseUID, etc.) would be wiped out.
       const created = await this.service.getById(docId);
+      if (!created) {
+        throw new Error(`Admin user ${docId} was created but could not be read back`);
+      }
       await this.service.update(docId, { ...created, permissions: raw.role === Role.EMPLOYEE ? permissions : [] });
     }).then(() => {
       this.snackbar.success(this.itemType + ' Added - a password setup email has been sent.');

@@ -15,7 +15,7 @@ export class TestimonialService extends BaseService<TestimonialModel> {
     this.fromFirestore = TestimonialService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): TestimonialModel => {
+  static readonly fromFirestore = (data: TestimonialModel): TestimonialModel => {
     data.date = dateFromTimestamp(data.date as Timestamp)
 
     return data;

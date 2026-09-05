@@ -8,6 +8,7 @@ import { dateFromTimestamp, toMillis } from '@impact-common/shared/utils/date-fr
 import { ExcelColumn, exportToExcel } from '../table-export.util';
 import { ListHeaderAction } from '../list-header/list-header.component';
 import { PagedCollectionSource } from '../paged-collection-source';
+import { BaseModel } from '@impact-common/shared/models/base.model';
 import { DataGridCellDirective } from './data-grid-cell.directive';
 import { DataGridColumn, DataGridRowAction } from './data-grid.model';
 
@@ -72,8 +73,10 @@ export class DataGridComponent<T> implements OnInit, OnChanges, AfterContentInit
   @Input() rows: T[] = [];
   /** Static mode - drives the full-table loading overlay. Ignored once [pagedSource] is set. */
   @Input() loading = false;
-  /** Paged mode - see this class's own comment above. */
-  @Input() pagedSource?: PagedCollectionSource<T>;
+  /** Paged mode - see this class's own comment above. The source pages by
+   *  document id, so only rows that ARE documents can be paged; static-mode
+   *  rows (report rows, licence rows, tiers keyed by count) need no id. */
+  @Input() pagedSource?: PagedCollectionSource<T & BaseModel>;
 
   @Input() showColumnsButton = true;
   @Input() showExportButton = true;

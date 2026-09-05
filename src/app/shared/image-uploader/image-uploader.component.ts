@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { booleanAttribute, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { FileItem } from 'src/app/common/models/utils/file-item.model';
 import { FileBrowserStorageService } from './file-browser-storage.service';
@@ -35,7 +35,11 @@ const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'av
     standalone: false
 })
 export class ImageUploaderComponent implements OnInit {
-  @Input() imageSelectVisible = true;
+  // booleanAttribute: every caller binds this to an async-piped
+  // BehaviorSubject, which is `boolean | null` before its first emission.
+  // Coercing at the boundary keeps the template checker strict without a
+  // `?? false` at each of the ten call sites.
+  @Input({ transform: booleanAttribute }) imageSelectVisible = true;
   @Output() imageSelectClosed = new EventEmitter<boolean>();
 
   @Input() card: Record<string, unknown>;

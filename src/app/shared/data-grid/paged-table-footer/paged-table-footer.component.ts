@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { booleanAttribute, Component, Input } from '@angular/core';
 
 // Small inline status row for a paginated (PagedCollectionSource-backed)
 // table - sits below the table itself, inside the same .table-scroll
@@ -19,6 +19,8 @@ import { Component, Input } from '@angular/core';
 })
 export class PagedTableFooterComponent {
   @Input() loadedCount = 0;
-  @Input() loadingMore = false;
-  @Input() hasMore = true;
+  // booleanAttribute: the grid binds both from async-piped subjects, which
+  // are `boolean | null` before their first emission.
+  @Input({ transform: booleanAttribute }) loadingMore = false;
+  @Input({ transform: booleanAttribute }) hasMore = true;
 }

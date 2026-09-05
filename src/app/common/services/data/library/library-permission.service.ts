@@ -75,7 +75,7 @@ export class LibraryPermissionService {
     private readonly lessonService: LibraryLessonService
   ) {
     this.authService.dao.loggedInUser$.subscribe((user) => {
-      this.currentUser = user;
+      this.currentUser = user ?? null;
       if (!user || hasRole(user.role, [Role.ADMIN])) {
         this.ancestorVisibility.set(new Set());
         return;

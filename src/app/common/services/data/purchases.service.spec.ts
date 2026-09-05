@@ -80,7 +80,7 @@ describe('PurchasesService', () => {
 
     it('appends to existing history rather than replacing it', async () => {
       const existing = [{ status: 'received' as FulfillmentStatus, date: null }];
-      await service.markPackaged(order({ statusHistory: existing as CheckoutForm['statusHistory'] }));
+      await service.markPackaged(order({ statusHistory: existing as unknown as CheckoutForm['statusHistory'] }));
       const written = updates[0].value;
       expect(written.statusHistory!.length).toBe(2);
       expect(written.statusHistory![1].status).toBe('awaiting_shipping');
@@ -186,7 +186,7 @@ describe('PurchasesService', () => {
 
     it('closing without a confirmation still records who did it, and when', async () => {
       await service.closeWithoutConfirmation(order());
-      const history = updates[0].value.statusHistory;
+      const history = updates[0].value.statusHistory!;
       expect(history[history.length - 1].status).toBe('closed');
       expect(history[history.length - 1].date).toBeTruthy();
     });
@@ -321,7 +321,7 @@ describe('PurchasesService', () => {
       await service.getShippingLabel(item);
 
       expect(fetchCalls).toBe(1);
-      expect(item.shippingLabel['trackingNumber']).toBe('T1');
+      expect(item.shippingLabel?.['trackingNumber']).toBe('T1');
       expect(item.fulfillmentStatus).toBe('shipping_label_printed');
       expect(updates.length).toBe(1);
     });

@@ -45,7 +45,7 @@ function newGrid(): DataGridComponent<Row> {
   TestBed.configureTestingModule({
     providers: [DataGridComponent, DatePipe, CurrencyPipe],
   });
-  return TestBed.inject(DataGridComponent) as DataGridComponent<Row>;
+  return TestBed.inject(DataGridComponent) as unknown as DataGridComponent<Row>;
 }
 
 function makeGrid(columns: DataGridColumn<Row>[], rows: Row[] = []): DataGridComponent<Row> {
@@ -475,7 +475,7 @@ describe('DataGridComponent', () => {
       TestBed.configureTestingModule({
         providers: [DataGridComponent, DatePipe, CurrencyPipe],
       });
-      const grid = TestBed.inject(DataGridComponent) as DataGridComponent<Row>;
+      const grid = TestBed.inject(DataGridComponent) as unknown as DataGridComponent<Row>;
       const datePipe = TestBed.inject(DatePipe);
       const currencyPipe = TestBed.inject(CurrencyPipe);
       const calls = { date: 0, currency: 0 };

@@ -379,7 +379,7 @@
             <div class="preview-card">
               <div class="preview-card__img" [class.preview-card__img--filled]="card.imageUrl?.url">
                 @if (card.imageUrl?.url) {
-                  <img [src]="card.imageUrl.url" [alt]="card.imageUrl.name">
+                  <img [src]="card.imageUrl?.url" [alt]="card.imageUrl?.name">
                 } @else {
                   <span>No image yet</span>
                 }

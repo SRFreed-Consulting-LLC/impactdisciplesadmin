@@ -46,7 +46,7 @@ const AUTHENTICATION_FAILED: LoginResult = {
 // their Firebase Auth account (e.g. via the Firebase Console) is an open
 // follow-up, not handled by this app.
 export class AdminAuthService {
-  public user: AdminUser;
+  public user: AdminUser | null = null;
 
   constructor(
     private router: Router,
@@ -101,8 +101,11 @@ export class AdminAuthService {
    * SECURITY comment.
    */
   private startSession(user: AdminUser, expirationTime: string): LoginResult {
-    this.user = user;
-    this.user['cookie_expiration_time'] = Date.parse(expirationTime);
+    // The cached copy carries one field the model does not: when the cookie
+    // lapses. It is display caching only (see the class comment).
+    const cached: AdminUser & { cookie_expiration_time?: number } = user;
+    this.user = cached;
+    cached.cookie_expiration_time = Date.parse(expirationTime);
 
     // Was a three-branch switch on environment.application. That key is the
     // literal "admin" in all five env files, so branches two and three were
@@ -114,8 +117,8 @@ export class AdminAuthService {
 
     this.cookieService.set(
       COOKIE_NAME,
-      JSON.stringify(this.user),
-      { expires: this.user['cookie_expiration_time'] }
+      JSON.stringify(cached),
+      { expires: cached.cookie_expiration_time }
     );
 
     return {
@@ -179,10 +182,10 @@ export class AdminAuthService {
     return of(user);
   }
 
-  getLoggedInUser(): AdminUser {
+  getLoggedInUser(): AdminUser | null {
     const cookieValue = this.cookieService.get(COOKIE_NAME);
 
-    let user: AdminUser = null;
+    let user: AdminUser | null = null;
 
     try {
       if (cookieValue) {

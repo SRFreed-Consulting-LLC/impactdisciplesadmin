@@ -276,17 +276,24 @@ export class ShippingLabelsComponent implements OnInit, OnDestroy {
         item.purchasedDate = new Date();
 
         await this.labelService.update(item.id!, item).then((saved) => {
-          this.downloadShippingLabel(saved.shippingLabel.labelDownload.pdf);
+          const pdf = saved.shippingLabel?.labelDownload?.pdf;
+          if (pdf) {
+            this.downloadShippingLabel(pdf);
+          }
         });
 
         this.spinnerVisible = false;
       }
     } else {
+      const pdf = item.shippingLabel?.labelDownload?.pdf;
       if (item.shippingLabel?.code) {
-        this.snackbar.error(item.shippingLabel.error.message);
+        this.snackbar.error(item.shippingLabel.error?.message ?? 'Unable to purchase a shipping label.');
+        this.spinnerVisible = false;
+      } else if (pdf) {
+        this.downloadShippingLabel(pdf);
         this.spinnerVisible = false;
       } else {
-        this.downloadShippingLabel(item.shippingLabel.labelDownload.pdf);
+        this.snackbar.error('This label has no PDF to download.');
         this.spinnerVisible = false;
       }
     }

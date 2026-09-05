@@ -83,9 +83,9 @@ export class DestinationFieldComponent implements OnChanges {
 function buildDestinations(): Destination[] {
   const list: Destination[] = [];
   menuData.forEach((menu) => {
-    list.push({ text: menu.title, value: menu.link });
+    list.push({ text: menu.title, value: menu.link ?? '' });
     if (menu.hasDropdown) {
-      menu.dropdownItems.forEach((dd) => list.push({ text: dd.title, value: dd.link }));
+      (menu.dropdownItems ?? []).forEach((dd) => list.push({ text: dd.title, value: dd.link ?? '' }));
     }
   });
   list.push({ text: 'The banner on this page', value: '#history' });

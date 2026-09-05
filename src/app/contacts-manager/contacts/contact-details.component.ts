@@ -530,12 +530,13 @@ export class ContactDetailsComponent implements OnInit {
   }
 
   private persistNotes(): void {
-    if (!this.selectedItem?.id) {
+    const id = this.selectedItem?.id;
+    if (!id) {
       return;
     }
     const value: ContactModel = { ...this.selectedItem, notes: this.notes };
     this.selectedItem = value;
-    this.service.update(this.selectedItem.id, value).then((item) => {
+    this.service.update(id, value).then((item) => {
       if (item) {
         this.snackbar.success(this.itemType + ' Updated');
       }

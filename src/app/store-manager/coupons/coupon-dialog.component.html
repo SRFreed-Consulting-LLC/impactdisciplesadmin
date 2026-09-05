@@ -54,7 +54,7 @@
   working one. Sales takes the full width now. -->
   @if (isEdit && form.get('isAffilliate')?.value) {
     <div class="affiliate-panels">
-      <app-affiliate-sales class="affiliate-panels__sales" [code]="data.item?.code" [paypalAccount]="form.get('affiliatePaypalAccount')?.value"></app-affiliate-sales>
+      <app-affiliate-sales class="affiliate-panels__sales" [code]="data.item?.code ?? ''" [paypalAccount]="form.get('affiliatePaypalAccount')?.value"></app-affiliate-sales>
     </div>
   }
 </mat-dialog-content>

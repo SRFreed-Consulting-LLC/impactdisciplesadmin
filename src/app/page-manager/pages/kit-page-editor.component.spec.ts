@@ -118,7 +118,7 @@ describe('the per-leaf page editor', () => {
     const { component, messages } = build({
       updateFields: () => Promise.reject(new Error('nope'))
     });
-    component.page = { id: 'x', title: 'X', blocks: [{ key: 'k' }], isPublished: false } as never;
+    component.page = { id: 'x', title: 'X', blocks: [{ key: 'k' }], isPublished: false } as unknown as typeof component.page;
 
     await component.togglePublished(true);
 

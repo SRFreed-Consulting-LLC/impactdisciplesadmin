@@ -116,14 +116,15 @@ export class PurchaseDetailsComponent {
   }
 
   async openRefundDialog(): Promise<void> {
-    if (this.refunding) {
+    const purchaseId = this.selectedItem.id;
+    if (this.refunding || !purchaseId) {
       return;
     }
     const remaining = this.service.getRemainingRefundable(this.selectedItem);
     const data: RefundDialogData = {
       remaining,
       alreadyRefunded: this.selectedItem.refundAmount ?? 0,
-      email: this.selectedItem.email,
+      email: this.selectedItem.email ?? '',
       hasDigitalItems: this.hasDigitalItems(),
       allowPartial: this.allowPartial(),
     };
@@ -139,7 +140,7 @@ export class PurchaseDetailsComponent {
     try {
       const isFull = Math.round(result.amount * 100) === Math.round(remaining * 100);
       const outcome = await this.service.refundPurchase(
-        this.selectedItem.id, result.revokeLicenses, isFull ? undefined : result.amount
+        purchaseId, result.revokeLicenses, isFull ? undefined : result.amount
       );
       // Update local state from the callable's answer - no refetch needed.
       this.selectedItem.refundAmount = outcome.refundAmount;

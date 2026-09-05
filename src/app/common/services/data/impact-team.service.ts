@@ -14,7 +14,7 @@ export class ImpactTeamService extends BaseService<ImpactTeamMemberModel>{
     this.fromFirestore = ImpactTeamService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): ImpactTeamMemberModel => {
+  static readonly fromFirestore = (data: ImpactTeamMemberModel): ImpactTeamMemberModel => {
     data.fullname = data.firstName + " " + data.lastName
 
     return data;

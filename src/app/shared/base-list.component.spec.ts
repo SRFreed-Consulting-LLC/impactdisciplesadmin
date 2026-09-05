@@ -22,7 +22,7 @@ interface Thing extends BaseModel { name?: string }
 
 class TestListComponent extends BaseListComponent<Thing> {
   readonly itemType = 'Thing';
-  protected readonly screenKey = 'test.things';
+  protected readonly screenKey: string | null = 'test.things';
   readonly columns: DataGridColumn<Thing>[] = [{ key: 'name', label: 'Name' }];
   protected readonly dialogComponent = class {} as never;
 }

@@ -14,7 +14,7 @@ export class CampaignEmailService extends BaseService<CampaignEmailModel>{
     this.fromFirestore = CampaignEmailService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): CampaignEmailModel => {
+  static readonly fromFirestore = (data: CampaignEmailModel): CampaignEmailModel => {
     data.stats = { ...emptyEmailStats(), ...(data.stats ?? {}) };
 
     return data;

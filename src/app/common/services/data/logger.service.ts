@@ -17,7 +17,7 @@ export class LoggerService extends BaseService<LogMessage> {
     this.fromFirestore = LoggerService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): LogMessage => {
+  static readonly fromFirestore = (data: LogMessage): LogMessage => {
     data.date = dateFromTimestamp(data.date as Timestamp)
 
     return data;

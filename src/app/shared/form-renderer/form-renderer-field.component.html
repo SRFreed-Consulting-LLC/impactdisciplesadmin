@@ -178,7 +178,7 @@
       <mat-divider class="renderer-field__divider"></mat-divider>
     }
     @case ('columns') {
-      <div class="renderer-field__columns" [style.grid-template-columns]="'repeat(' + field.columns.length + ', 1fr)'">
+      <div class="renderer-field__columns" [style.grid-template-columns]="'repeat(' + (field.columns?.length ?? 0) + ', 1fr)'">
         @for (column of field.columns; track column) {
           <div class="renderer-field__column">
             @for (child of column.fields; track child) {

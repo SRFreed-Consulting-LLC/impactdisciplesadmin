@@ -97,7 +97,7 @@
     <div class="cop">
       <div class="cop__label">FEATURED SPEAKERS</div>
       @if (card.photoUrl?.url) {
-        <img class="cop__photo" [src]="card.photoUrl.url" [alt]="form.value.firstName || 'Speaker'">
+        <img class="cop__photo" [src]="card.photoUrl?.url" [alt]="form.value.firstName || 'Speaker'">
       } @else {
         <div class="cop__photo cop__photo--empty">No picture yet</div>
       }

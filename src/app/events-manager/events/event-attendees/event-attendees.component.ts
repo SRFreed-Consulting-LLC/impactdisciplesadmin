@@ -163,10 +163,14 @@ export class EventAttendeesComponent implements OnInit, OnDestroy {
     this.confirmService.confirm('<i>Are you sure you want resend this Registration Confirmation?</i>', 'Confirm').then((confirmed) => {
       if (confirmed && item.receiptEmailId) {
         this.emailService.getById(item.receiptEmailId).then((mail) => {
+          // Same guard as event-attendee-dialog's resendEmail(): a missing
+          // mail doc reports instead of throwing into the void.
+          if (!mail?.id) {
+            this.snackbar.error('The original email could not be found, so it was not resent.');
+            return;
+          }
           delete mail.delivery;
-          return mail;
-        }).then((mail) => {
-          this.emailService.update(mail.id, mail).then(() => {
+          return this.emailService.update(mail.id, mail).then(() => {
             this.snackbar.success('Email Resent Successfully!');
           });
         });

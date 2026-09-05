@@ -63,10 +63,15 @@ export class SummitCommandCenterComponent implements OnInit {
   async reload(): Promise<void> {
     this.loading = true;
     try {
-      [this.registrations, this.fresh] = await Promise.all([
+      const [registrations, fresh] = await Promise.all([
         this.registrationService.getAllByValue('eventId', this.event.id!),
         this.eventService.getById(this.event.id!)
       ]);
+      if (!fresh) {
+        throw new Error(`Event ${this.event.id} no longer exists`);
+      }
+      this.registrations = registrations;
+      this.fresh = fresh;
       this.recompute();
     } finally {
       this.loading = false;

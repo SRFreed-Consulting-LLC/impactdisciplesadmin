@@ -17,13 +17,13 @@ export class EventRegistrationService extends BaseService<EventRegistrationModel
     this.fromFirestore = EventRegistrationService.fromFirestore
   }
 
-  static readonly fromFirestore = (data): EventRegistrationModel => {
+  static readonly fromFirestore = (data: EventRegistrationModel): EventRegistrationModel => {
     data.registrationDate = dateFromTimestamp(data.registrationDate as Timestamp)
 
     return data;
   };
 
-  async getEventRegistrationById(id: string): Promise<EventRegistrationModel> {
+  async getEventRegistrationById(id: string): Promise<EventRegistrationModel | undefined> {
     return await this.getById(id);
   }
 

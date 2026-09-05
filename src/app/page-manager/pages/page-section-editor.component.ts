@@ -205,7 +205,7 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   reorderTestimonials(event: CdkDragDrop<TestimonialModel[]>): void {
     moveItemInArray(this.testimonials, event.previousIndex, event.currentIndex);
-    this.section.testimonialIds = this.testimonials.map((t) => t.id);
+    this.section.testimonialIds = this.testimonials.map((t) => t.id).filter((id): id is string => !!id);
     this.edited();
   }
 
