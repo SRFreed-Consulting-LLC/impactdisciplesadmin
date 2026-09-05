@@ -3,9 +3,13 @@ const CUSTOMERS = tenantPath("customers");
 const CAMPAIGNS = tenantPath("campaigns");
 const COUPONS = tenantPath("coupons");
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
-import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import {restrictedCors} from "./utils/security.functions";
+import {publicHttp} from "./utils/public-http";
+import {UNSUBSCRIBE_TOKEN_SECRET} from "./utils/secrets";
+import {
+  legacyLinksStillHonoured,
+  verifyUnsubscribeToken,
+} from "./utils/unsubscribe-token";
 import {SignupReward, queueSubscriptionConfirmation}
   from "./transactional-emails";
 import {effectiveCampaignStatus} from "./campaign-send.functions";
@@ -134,114 +138,111 @@ async function signupRewardFor(
   }
 }
 
-exports.subscribe_to_email_list = onRequest(
-  (request, response) => {
-    return restrictedCors(request, response, async () => {
+// UNSUBSCRIBE_TOKEN_SECRET is bound here because the confirmation email
+// this queues carries the subscriber's own (signed) unsubscribe link.
+exports.subscribe_to_email_list = publicHttp(
+  "subscribe_to_email_list",
+  {method: "POST", secrets: [UNSUBSCRIBE_TOKEN_SECRET]},
+  async (request, response) => {
+    const body =
+      (request.body ?? {}) as Partial<SubscribeToEmailListRequest>;
+    // Trim + length-cap (same 100/200 pattern as the event-registration
+    // endpoints) - these land on a customers doc and get interpolated
+    // into the branded confirmation email, so they must not be
+    // unbounded.
+    const email = typeof body.email === "string" ?
+      body.email.trim().toLowerCase().slice(0, 200) : "";
+    const firstName = typeof body.firstName === "string" ?
+      body.firstName.trim().slice(0, 100) : "";
+    const lastName = typeof body.lastName === "string" ?
+      body.lastName.trim().slice(0, 100) : "";
+    const type = body.type;
+
+    if (typeof type !== "string" || !ALLOWED_TYPES.includes(type)) {
+      response.status(400).send(
+        {code: 400, error: "Unknown subscription type"}
+      );
+      return;
+    }
+    if (!email || !email.includes("@")) {
+      response.status(400).send(
+        {code: 400, error: "Missing or invalid email"}
+      );
+      return;
+    }
+
+    const {flagField, dateField} = fieldsForType(type);
+    const now = Timestamp.now();
+    const db = getFirestore();
+    const existingSnap = await db.collection(CUSTOMERS)
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+
+    // alreadySubscribed lets callers (impactdisciples-web's
+    // SubscriptionService) keep showing a distinct "you're already on
+    // this list" message instead of a flat success toast every time -
+    // same UX the old createSubscription()'s null-vs-object return
+    // gave them back when this was a direct Firestore query against
+    // the `subscriptions` collection.
+    let alreadySubscribed = false;
+
+    if (existingSnap.empty) {
+      await db.collection(CUSTOMERS).add({
+        firstName,
+        lastName,
+        email,
+        role: "Customer",
+        notes: [],
+        pendingChanges: [],
+        [flagField]: true,
+        [dateField]: now,
+      });
+    } else {
+      alreadySubscribed = existingSnap.docs[0].data()[flagField] === true;
+      await existingSnap.docs[0].ref.update({
+        [flagField]: true,
+        [dateField]: now,
+      });
+    }
+
+    // Pre-prod #1: the confirmation email is queued here now (the web
+    // client's SubscriptionService.sendConfirmationEmail is retired,
+    // and the `mail` collection no longer accepts anonymous creates).
+    // Fresh subscribes only - same behavior the client had. Best-effort:
+    // the subscription itself already saved.
+    // Attribution is read BEFORE the email is queued now: a campaign
+    // that offers a signup coupon has to get its code into the very
+    // confirmation that welcomes the subscriber.
+    const attribution = sanitizeAttribution(body.attribution);
+
+    if (!alreadySubscribed) {
+      const reward = attribution ?
+        await signupRewardFor(db, attribution.campaignId) : null;
       try {
-        const body =
-          (request.body ?? {}) as Partial<SubscribeToEmailListRequest>;
-        // Trim + length-cap (same 100/200 pattern as the event-registration
-        // endpoints) - these land on a customers doc and get interpolated
-        // into the branded confirmation email, so they must not be
-        // unbounded.
-        const email = typeof body.email === "string" ?
-          body.email.trim().toLowerCase().slice(0, 200) : "";
-        const firstName = typeof body.firstName === "string" ?
-          body.firstName.trim().slice(0, 100) : "";
-        const lastName = typeof body.lastName === "string" ?
-          body.lastName.trim().slice(0, 100) : "";
-        const type = body.type;
-
-        if (typeof type !== "string" || !ALLOWED_TYPES.includes(type)) {
-          response.status(400).send(
-            {code: 400, error: "Unknown subscription type"}
-          );
-          return;
-        }
-        if (!email || !email.includes("@")) {
-          response.status(400).send(
-            {code: 400, error: "Missing or invalid email"}
-          );
-          return;
-        }
-
-        const {flagField, dateField} = fieldsForType(type);
-        const now = Timestamp.now();
-        const db = getFirestore();
-        const existingSnap = await db.collection(CUSTOMERS)
-          .where("email", "==", email)
-          .limit(1)
-          .get();
-
-        // alreadySubscribed lets callers (impactdisciples-web's
-        // SubscriptionService) keep showing a distinct "you're already on
-        // this list" message instead of a flat success toast every time -
-        // same UX the old createSubscription()'s null-vs-object return
-        // gave them back when this was a direct Firestore query against
-        // the `subscriptions` collection.
-        let alreadySubscribed = false;
-
-        if (existingSnap.empty) {
-          await db.collection(CUSTOMERS).add({
-            firstName,
-            lastName,
-            email,
-            role: "Customer",
-            notes: [],
-            pendingChanges: [],
-            [flagField]: true,
-            [dateField]: now,
-          });
-        } else {
-          alreadySubscribed = existingSnap.docs[0].data()[flagField] === true;
-          await existingSnap.docs[0].ref.update({
-            [flagField]: true,
-            [dateField]: now,
-          });
-        }
-
-        // Pre-prod #1: the confirmation email is queued here now (the web
-        // client's SubscriptionService.sendConfirmationEmail is retired,
-        // and the `mail` collection no longer accepts anonymous creates).
-        // Fresh subscribes only - same behavior the client had. Best-effort:
-        // the subscription itself already saved.
-        // Attribution is read BEFORE the email is queued now: a campaign
-        // that offers a signup coupon has to get its code into the very
-        // confirmation that welcomes the subscriber.
-        const attribution = sanitizeAttribution(body.attribution);
-
-        if (!alreadySubscribed) {
-          const reward = attribution ?
-            await signupRewardFor(db, attribution.campaignId) : null;
-          try {
-            await queueSubscriptionConfirmation(
-              db, type, firstName, email, reward
-            );
-          } catch (mailErr) {
-            logger.error(
-              "Failed to queue subscription confirmation", mailErr
-            );
-          }
-          // Campaign attribution (Campaign Manager v2, Phase 4): a FRESH
-          // subscribe that followed a campaign link/popup credits that
-          // campaign's funnel. Best-effort; validated inside.
-          if (attribution) {
-            await recordCampaignConversion(db, {
-              campaignId: attribution.campaignId,
-              emailId: attribution.emailId,
-              type: "subscribe",
-              via: attribution.source === "popup" ? "popup" : "link",
-              email,
-            });
-          }
-        }
-
-        response.send({subscribed: true, alreadySubscribed});
-      } catch (err) {
-        logger.error("subscribe_to_email_list failed", err);
-        response.status(500).send("Something went wrong");
+        await queueSubscriptionConfirmation(
+          db, type, firstName, email, reward
+        );
+      } catch (mailErr) {
+        logger.error(
+          "Failed to queue subscription confirmation", mailErr
+        );
       }
-    });
+      // Campaign attribution (Campaign Manager v2, Phase 4): a FRESH
+      // subscribe that followed a campaign link/popup credits that
+      // campaign's funnel. Best-effort; validated inside.
+      if (attribution) {
+        await recordCampaignConversion(db, {
+          campaignId: attribution.campaignId,
+          emailId: attribution.emailId,
+          type: "subscribe",
+          via: attribution.source === "popup" ? "popup" : "link",
+          email,
+        });
+      }
+    }
+
+    response.send({subscribed: true, alreadySubscribed});
   });
 
 // Unsubscribe links go out in emails to people with no account, so this
@@ -262,41 +263,59 @@ exports.subscribe_to_email_list = onRequest(
 // particular link is for). The `*SubscribedDate` field is left alone on
 // unsubscribe - it records "last subscribed", not "currently subscribed
 // since", so it stays meaningful history if they resubscribe later.
-exports.unsubscribe_from_email_list = onRequest(
-  (request, response) => {
-    return restrictedCors(request, response, async () => {
-      try {
-        const email = request.query.email;
-        const type = request.query.type;
+//
+// `token` (2026-09-05) proves the link came from an email WE sent to THAT
+// address - see utils/unsubscribe-token.ts. Without it, anyone could
+// unsubscribe anyone with one GET. Links sent before tokens existed are
+// honoured until LEGACY_UNSUBSCRIBE_LINKS_UNTIL and refused after.
+exports.unsubscribe_from_email_list = publicHttp(
+  "unsubscribe_from_email_list",
+  {method: "GET", secrets: [UNSUBSCRIBE_TOKEN_SECRET]},
+  async (request, response) => {
+    const email = request.query.email;
+    const type = request.query.type;
+    const token = request.query.token;
 
-        if (typeof type !== "string" || !ALLOWED_TYPES.includes(type)) {
-          response.status(400).send("Unknown subscription type");
-          return;
-        }
+    if (typeof type !== "string" || !ALLOWED_TYPES.includes(type)) {
+      response.status(400).send("Unknown subscription type");
+      return;
+    }
 
-        if (typeof email !== "string" || !email) {
-          response.status(400).send("Missing email");
-          return;
-        }
+    if (typeof email !== "string" || !email) {
+      response.status(400).send("Missing email");
+      return;
+    }
 
-        const {flagField} = fieldsForType(type);
-        // Customer emails are stored lowercased/trimmed (see subscribe
-        // path); normalize here too so a mixed-case or padded value in an
-        // unsubscribe link still matches instead of silently no-op'ing.
-        const normalizedEmail = email.trim().toLowerCase();
-        const db = getFirestore();
-        const matches = await db.collection(CUSTOMERS)
-          .where("email", "==", normalizedEmail)
-          .get();
+    // Customer emails are stored lowercased/trimmed (see subscribe
+    // path); normalize here too so a mixed-case or padded value in an
+    // unsubscribe link still matches instead of silently no-op'ing.
+    const normalizedEmail = email.trim().toLowerCase();
 
-        await Promise.all(
-          matches.docs.map((doc) => doc.ref.update({[flagField]: false}))
-        );
-
-        response.send("You have been successfully removed from the list");
-      } catch (err) {
-        logger.error("unsubscribe_from_email_list failed", err);
-        response.status(500).send("Unable to process unsubscribe request");
+    if (typeof token === "string" && token) {
+      const secret = UNSUBSCRIBE_TOKEN_SECRET.value();
+      if (!verifyUnsubscribeToken(normalizedEmail, type, token, secret)) {
+        response.status(403).send("This unsubscribe link is not valid.");
+        return;
       }
-    });
+    } else if (legacyLinksStillHonoured()) {
+      logger.warn("Untokened unsubscribe link honoured (legacy)", {type});
+    } else {
+      response.status(400).send(
+        "This unsubscribe link has expired. Please use the link in a " +
+        "more recent email."
+      );
+      return;
+    }
+
+    const {flagField} = fieldsForType(type);
+    const db = getFirestore();
+    const matches = await db.collection(CUSTOMERS)
+      .where("email", "==", normalizedEmail)
+      .get();
+
+    await Promise.all(
+      matches.docs.map((doc) => doc.ref.update({[flagField]: false}))
+    );
+
+    response.send("You have been successfully removed from the list");
   });

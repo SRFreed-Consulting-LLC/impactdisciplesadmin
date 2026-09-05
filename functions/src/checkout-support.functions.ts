@@ -1,12 +1,12 @@
 import {tenantPath, triggerPath} from "./common/shared/lists/tenancy";
-const COUPONS = tenantPath("coupons");
 const TAX_SUMMARIES = tenantPath("tax_rate_summaries");
-import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-import {restrictedCors} from "./utils/security.functions";
+import {publicHttp} from "./utils/public-http";
+import {RateLimiter, clientIp} from "./utils/rate-limit";
 import {getFirestore} from "firebase-admin/firestore";
-import {isCouponExpired} from "./utils/coupons";
+import {findActiveCoupon} from "./utils/coupons";
 import {toMillis} from "./utils/date-normalize.functions";
 import {
   LookupCouponResult,
@@ -48,35 +48,30 @@ interface CouponPublicFields {
 }
 
 /**
- * Resolves one coupon code, case-insensitively (stored codes aren't
- * consistently cased, so there's no canonical form to query by - the
- * whole small collection is scanned server-side, exactly what the
- * reader's client used to do).
+ * Resolves one coupon code through the shared findActiveCoupon (utils/
+ * coupons.ts) - case-insensitive, isActive checked BEFORE picking, expiry
+ * honoured - so this endpoint and the checkout that follows it agree. Its
+ * own find here used to skip the isActive filter, so a duplicated code
+ * (prod has two SAVE coupons) could report the inactive twin and refuse a
+ * code checkout would then accept.
+ *
+ * An expired or inactive coupon simply resolves to null: every storefront
+ * already refuses a null/inactive coupon, so nothing client-side changes.
  * @param {string} rawCode The user-entered code.
  * @return {Promise<CouponPublicFields | null>} Public fields, or null.
  */
 async function findCouponByCode(
   rawCode: string
 ): Promise<CouponPublicFields | null> {
-  const code = rawCode.trim().toLowerCase();
-  if (!code) {
+  const found = await findActiveCoupon(db, rawCode);
+  if (!found) {
     return null;
   }
-  const snap = await db.collection(COUPONS).get();
-  const match = snap.docs.find(
-    (d) => ((d.data().code as string) ?? "").toLowerCase() === code
-  );
-  if (!match) {
-    return null;
-  }
-  const data = match.data();
+  const data = found.data;
   return {
-    id: match.id,
+    id: found.id,
     code: data.code ?? "",
-    // An EXPIRED coupon is reported as inactive rather than as a separate
-    // state: every storefront already refuses an inactive coupon, so expiry
-    // is honoured by bundles that predate it and cannot be skipped client-side.
-    isActive: data.isActive === true && !isCouponExpired(data.expiresAt),
+    isActive: true,
     percentOff: typeof data.percentOff === "number" ? data.percentOff : null,
     tags: Array.isArray(data.tags) ?
       data.tags
@@ -86,18 +81,27 @@ async function findCouponByCode(
   };
 }
 
+// The brake on the coupon-code oracle (review finding, 2026-09-05). This
+// endpoint is auth-free by necessity and answers "is X a code" for any X,
+// so an unthrottled caller could walk a dictionary through it. Thirty
+// tries a minute per address is generous for a shopper mistyping and
+// useless for a scan; maxInstances keeps the fleet from scaling around
+// the per-instance counter.
+const LOOKUP_LIMIT = new RateLimiter(30, 60_000);
+
 /** The web storefront's face: POST {code} -> {coupon: ... | null}. */
-export const lookupCouponHttp = onRequest((request, response) => {
-  return restrictedCors(request, response, async () => {
-    if (request.method !== "POST") {
-      response.status(405).send({error: "POST required."});
+export const lookupCouponHttp = publicHttp(
+  "lookup_coupon", {method: "POST", maxInstances: 2},
+  async (request, response) => {
+    if (!LOOKUP_LIMIT.allow(clientIp(request))) {
+      response.status(429).send({error: "Too many attempts. Try again in " +
+        "a minute."});
       return;
     }
     const code =
       typeof request.body?.code === "string" ? request.body.code : "";
     response.send({coupon: await findCouponByCode(code)});
   });
-});
 
 /** The reader app's face: callable, same result shape. Unlike the web's
  *  onRequest face above (which must stay auth-free - the web has no

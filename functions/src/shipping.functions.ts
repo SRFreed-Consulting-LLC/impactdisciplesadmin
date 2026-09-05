@@ -5,6 +5,8 @@ import {onRequest} from "firebase-functions/v2/https";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
 import {resolveVendorBase} from "./utils/vendor-hosts";
+import {SHIP_ENGINE_API_KEY} from "./utils/secrets";
+import {readTenantConfig} from "./utils/tenant-config";
 import {
   sanitizeRateRequest,
   toShipEngineAddress,
@@ -54,16 +56,16 @@ async function buildShipmentForPurchase(
   purchaseId: string
 ): Promise<ShipmentResult> {
   const db = getFirestore();
-  const [purchaseSnap, configSnap] = await Promise.all([
+  const [purchaseSnap, configDoc] = await Promise.all([
     db.collection(PURCHASES).doc(purchaseId).get(),
-    db.collection(tenantPath("config")).limit(1).get(),
+    readTenantConfig(db),
   ]);
 
   const purchase = purchaseSnap.data();
   if (!purchaseSnap.exists || !purchase) {
     return {message: "That order no longer exists."};
   }
-  const config = configSnap.docs[0]?.data() ?? {};
+  const config = configDoc ?? {};
 
   const items = Array.isArray(purchase.cartItems) ? purchase.cartItems : [];
   const shippable = items.filter((i: Dict) => i && i.isEvent !== true);
@@ -214,7 +216,7 @@ function getShipEngineClient() {
   // anywhere else, because get_shipping_label BUYS REAL POSTAGE, so no
   // automated test could ever have exercised it against the real vendor.
   return new CachedShipEngine({
-    apiKey: process.env.SHIP_ENGINE_API_KEY ?? "",
+    apiKey: SHIP_ENGINE_API_KEY.value(),
     baseURL: resolveVendorBase("shipengine", "https://api.shipengine.com/"),
   });
 }
@@ -233,7 +235,7 @@ function getShipEngineClient() {
 // loop here burns the ShipEngine quota and takes real checkout down,
 // since the storefront cannot price shipping without it.
 exports.get_shipping_rates = onRequest(
-  {secrets: ["SHIP_ENGINE_API_KEY"], maxInstances: 10},
+  {secrets: [SHIP_ENGINE_API_KEY], maxInstances: 10},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       const clean = sanitizeRateRequest(request.body);
@@ -259,7 +261,7 @@ exports.get_shipping_rates = onRequest(
   });
 
 exports.get_shipping_label = onRequest(
-  {secrets: ["SHIP_ENGINE_API_KEY"], maxInstances: 10},
+  {secrets: [SHIP_ENGINE_API_KEY], maxInstances: 10},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       // Purchasing a label costs real postage -- ADMIN AND ROOT ONLY.

@@ -1,11 +1,14 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
-const COUPONS = tenantPath("coupons");
 const PRODUCTS = tenantPath("products");
 const PURCHASES = tenantPath("purchases");
 const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
-import {defineSecret} from "firebase-functions/params";
+import {
+  PAYPAL_LIVE_CLIENT_SECRET as paypalLiveSecret,
+  PAYPAL_SANDBOX_CLIENT_SECRET as paypalSandboxSecret,
+} from "./utils/secrets";
+import {knownBookIds} from "./utils/library-books";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {
   getAccessToken,
@@ -16,7 +19,7 @@ import {applyStorePurchaseGrant} from "./library-store-license-grant";
 import {
   CouponDoc,
   couponAppliesToProduct,
-  pickActiveCoupon,
+  findActiveCoupon,
 } from "./utils/coupons";
 import {
   assertCaptureMatchesTotal,
@@ -59,9 +62,6 @@ import {
  * never become customers/Mailchimp contacts - by design.
  */
 const libraryDb = getFirestore();
-
-const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
-const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 
 export const verifyAndGrantReaderStorePurchase = onCall(
   {secrets: [paypalSandboxSecret, paypalLiveSecret], timeoutSeconds: 120},
@@ -132,11 +132,9 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     // can't be "granted" and silently do nothing forever. A bare book id
     // doesn't say which series it's nested under, so scan the `books`
     // collectionGroup once and match by doc id.
-    const knownBookIds = new Set(
-      (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
-    );
+    const bookIds = await knownBookIds(libraryDb);
     const missingBooks = products
-      .filter((p) => !knownBookIds.has(p.data.digitalBookId))
+      .filter((p) => !bookIds.has(p.data.digitalBookId))
       .map((p) => p.id);
     if (missingBooks.length > 0) {
       throw new HttpsError(
@@ -147,7 +145,7 @@ export const verifyAndGrantReaderStorePurchase = onCall(
 
     // Coupon verification - now possible since Phase 4 moved `coupons`
     // into this project's own database. Resolution goes through the shared
-    // pickActiveCoupon (utils/coupons.ts) so all four coupon paths agree:
+    // findActiveCoupon (utils/coupons.ts) so all four coupon paths agree:
     // case-insensitive against every coupon (small collection), isActive
     // checked before selection, and EXPIRY honoured - the last of which
     // this path silently skipped until 2026-08-27, so an expired code
@@ -155,11 +153,8 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     let coupon: CouponDoc | undefined;
     const trimmedCode = (couponCode ?? "").trim();
     if (trimmedCode) {
-      const couponsSnap = await libraryDb.collection(COUPONS).get();
-      coupon = pickActiveCoupon(
-        couponsSnap.docs.map((d) => d.data()),
-        trimmedCode
-      ) as CouponDoc | undefined;
+      coupon = (await findActiveCoupon(libraryDb, trimmedCode))?.data as
+        CouponDoc | undefined;
       if (!coupon) {
         throw new HttpsError(
           "invalid-argument",

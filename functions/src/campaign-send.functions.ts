@@ -10,7 +10,8 @@ import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {Timestamp, FieldValue, getFirestore} from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import {requireAdminRole} from "./admin-users.functions";
-import {queueMail, UNSUBSCRIBE_URL} from "./transactional-emails";
+import {queueMail, unsubscribeUrlFor} from "./transactional-emails";
+import {UNSUBSCRIBE_TOKEN_SECRET} from "./utils/secrets";
 import {TRACKING_BASE} from "./campaign-tracking.functions";
 import {renderMergeTags} from "./utils/merge-tags.functions";
 import {toMillis} from "./utils/date-normalize.functions";
@@ -545,8 +546,7 @@ async function sendLedgerDoc(
 
     const operational = ledger.unsubType === "none";
     const unsubscribeUrl = operational ? "" :
-      `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(email)}` +
-      `&type=${ledger.unsubType ?? "newsletter"}`;
+      unsubscribeUrlFor(email, ledger.unsubType ?? "newsletter");
     const context = {
       firstName: customer.firstName ?? "",
       lastName: customer.lastName ?? "",
@@ -704,7 +704,10 @@ export const previewCampaignAudience = onCall(async (request):
   return {count: recipients.length, sample: recipients.slice(0, 10)};
 });
 
-export const sendCampaignTestEmail = onCall(async (request):
+// Binds the unsubscribe-link secret - the test email carries a signed link.
+const SIGNED_LINK = {secrets: [UNSUBSCRIBE_TOKEN_SECRET]};
+
+export const sendCampaignTestEmail = onCall(SIGNED_LINK, async (request):
   Promise<SendCampaignTestEmailResult> => {
   await requireAdminRole(request.auth?.uid);
   const {emailId, to} =
@@ -722,8 +725,7 @@ export const sendCampaignTestEmail = onCall(async (request):
   const context = {
     firstName: "Alex", lastName: "Sample", email: to,
     date: new Date().toLocaleDateString("en-US"),
-    unsubscribeUrl:
-      `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(to)}&type=newsletter`,
+    unsubscribeUrl: unsubscribeUrlFor(to, "newsletter"),
   };
   // No ledger, no campaignMeta - a test never counts in any funnel.
   const mailDocId = await queueMail(db, to,
@@ -741,6 +743,8 @@ export const campaignSendScheduler = onSchedule(
     schedule: "every 10 minutes",
     timeZone: "America/New_York",
     timeoutSeconds: 300,
+    // Every recipient's unsubscribe link is signed - unsubscribeUrlFor.
+    secrets: [UNSUBSCRIBE_TOKEN_SECRET],
   },
   async () => {
     const db = getFirestore();

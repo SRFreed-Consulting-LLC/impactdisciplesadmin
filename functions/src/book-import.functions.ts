@@ -1,5 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {defineSecret} from "firebase-functions/params";
+import {ANTHROPIC_API_KEY as anthropicSecret} from "./utils/secrets";
 import {requireAdminRole} from "./admin-users.functions";
 import {runBookImport} from "./book-import/importer";
 import {BookImportRequest} from "./book-import/types";
@@ -24,7 +24,6 @@ import {BookImportRequest} from "./book-import/types";
 // deployment has its own secret store, even sharing a Firestore project
 // doesn't share secrets). Model id is overridable with the
 // BOOK_IMPORT_MODEL env/param (default claude-sonnet-4-5).
-const anthropicSecret = defineSecret("ANTHROPIC_API_KEY");
 
 export const importBookFromPdf = onCall(
   {secrets: [anthropicSecret], timeoutSeconds: 540, memory: "1GiB"},

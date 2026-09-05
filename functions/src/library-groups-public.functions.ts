@@ -5,6 +5,7 @@ const GROUPS = tenantPath("discussionGroups");
    lookup_coupon, ...). */
 import {onRequest} from "firebase-functions/v2/https";
 import {getFirestore} from "firebase-admin/firestore";
+import {bookTitlesById} from "./utils/library-books";
 import {
   PublicGroupSummary,
   SearchImpactGroupsResult,
@@ -242,15 +243,10 @@ async function loadPublicGroups(): Promise<PublicGroupSummary[]> {
   const listed = snap.docs.filter((d) => isPubliclyListed(d.data()));
 
   // Book titles live under librarySeries/{s}/books/{b}; one collection-group
-  // read beats one get() per group.
-  const titles = new Map<string, string>();
-  if (listed.length) {
-    const books = await db().collectionGroup("books").get();
-    for (const b of books.docs) {
-      const title = b.data().title;
-      if (typeof title === "string") titles.set(b.id, title);
-    }
-  }
+  // read (bookTitlesById) beats one get() per group.
+  const titles = listed.length ?
+    await bookTitlesById(db()) :
+    new Map<string, string>();
 
   const groups = listed.map((d) =>
     toPublicSummary(d.id, d.data(), titles.get(d.data().bookId)));

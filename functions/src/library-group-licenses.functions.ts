@@ -1,5 +1,4 @@
 import {tenantPath} from "./common/shared/lists/tenancy";
-const COUPONS = tenantPath("coupons");
 const PRODUCTS = tenantPath("products");
 const PURCHASES = tenantPath("purchases");
 const GROUP_LICENSES = tenantPath("groupLicenses");
@@ -9,7 +8,11 @@ const GROUPS = tenantPath("discussionGroups");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PURCHASE_SOURCE_READER} from "./purchase-source";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
-import {defineSecret} from "firebase-functions/params";
+import {
+  PAYPAL_LIVE_CLIENT_SECRET as paypalLiveSecret,
+  PAYPAL_SANDBOX_CLIENT_SECRET as paypalSandboxSecret,
+} from "./utils/secrets";
+import {findBookDoc} from "./utils/library-books";
 import {
   getAccessToken,
   getOrderCapture,
@@ -24,7 +27,7 @@ import {applyLicenseGrant} from "./library-group-license-grant";
 import {
   CouponDoc,
   couponAppliesToProduct,
-  pickActiveCoupon,
+  findActiveCoupon,
 } from "./utils/coupons";
 import {
   assertCaptureMatchesTotal,
@@ -87,9 +90,6 @@ import {
  * doc id, same pattern this app's own LibraryBookService.getById() uses.
  */
 const libraryDb = getFirestore();
-
-const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
-const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
 
 /**
  * Whether a libraryUsers snapshot already holds ANY license for `bookId`.
@@ -244,11 +244,8 @@ export const purchaseGroupLicenses = onCall(
     // covered order, so it must join exactly against coupons.code.
     let canonicalCode = "";
     if (trimmedCode) {
-      const couponsSnap = await libraryDb.collection(COUPONS).get();
-      const coupon = pickActiveCoupon(
-        couponsSnap.docs.map((d) => d.data()),
-        trimmedCode
-      ) as CouponDoc | undefined;
+      const coupon = (await findActiveCoupon(libraryDb, trimmedCode))?.data as
+        CouponDoc | undefined;
       if (!coupon) {
         throw new HttpsError(
           "invalid-argument",
@@ -894,15 +891,15 @@ export const getInviteDetails = onCall(async (request):
   // every series' `books` subcollection once via a collectionGroup query
   // rather than a direct doc() lookup. Fine at this library's real scale
   // (a handful of books total).
-  const [groupSnap, booksSnap] = await Promise.all([
+  const [groupSnap, bookDoc] = await Promise.all([
     libraryDb.collection(GROUPS).doc(invite.groupId).get(),
-    libraryDb.collectionGroup("books").get(),
+    findBookDoc(libraryDb, invite.bookId),
   ]);
   // .data() already returns undefined for a non-existent doc, so this is
   // equivalent to the previous `groupSnap.exists ? groupSnap.data()! :
   // undefined` without needing the assertion.
   const group = groupSnap.data();
-  const book = booksSnap.docs.find((d) => d.id === invite.bookId)?.data();
+  const book = bookDoc?.data();
 
   // Deliberately NOT reporting whether `inviteeEmail` already has an
   // account here - would turn this into a free account-enumeration

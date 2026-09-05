@@ -1,8 +1,9 @@
 import {tenantPath} from "../common/shared/lists/tenancy";
-const COUPONS = tenantPath("coupons");
 const PRODUCTS = tenantPath("products");
 const EVENTS = tenantPath("events");
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
+import {TAX_API_KEY} from "./secrets";
+import {readTenantConfig} from "./tenant-config";
 import {
   bestOfferPrice,
   getActiveOffers,
@@ -13,7 +14,7 @@ import {isEventRegistrationOpen, isProductSellable} from "./sellable";
 import {
   couponOverridesSale,
   couponTagsCover,
-  pickActiveCoupon,
+  findActiveCoupon,
 } from "./coupons";
 
 // Shared server-side recompute logic for store checkout, used by both
@@ -162,7 +163,7 @@ async function lookupGeorgiaTaxRate(
         "&use_client_ip=false&country=US",
       {
         method: "GET",
-        headers: {apikey: process.env.TAX_API_KEY ?? ""},
+        headers: {apikey: TAX_API_KEY.value()},
         signal: controller.signal,
       }
     );
@@ -238,19 +239,17 @@ export async function computeOrderPricing(
   // item's product/event doc) are independent of one another - fetched in
   // parallel so the public checkout path pays one round trip, not one per
   // read. The pricing logic itself below is unchanged.
-  const [configSnap, activeOffers, couponSnap, itemSnaps] = await Promise.all([
-    db.collection(tenantPath("config")).limit(1).get(),
+  const [configDoc, activeOffers, couponMatch, itemSnaps] = await Promise.all([
+    readTenantConfig(db),
     getActiveOffers(),
-    request.couponCode ?
-      db.collection(COUPONS).get() :
-      Promise.resolve(undefined),
+    findActiveCoupon(db, request.couponCode),
     Promise.all(request.cartItems.map((input) =>
       db.collection(input.isEvent ? EVENTS : PRODUCTS)
         .doc(input.id).get()
     )),
   ]);
 
-  const config = configSnap.docs[0]?.data() ?? {};
+  const config = configDoc ?? {};
 
   // The sales collection is retired (Campaign Manager v3). Every discount,
   // including free shipping, now comes from a campaign offer.
@@ -260,15 +259,9 @@ export async function computeOrderPricing(
   // The whole (small) collection is scanned rather than queried by code
   // equality: stored codes aren't consistently cased, so there is no
   // canonical form to query by, and `limit(1)` picked arbitrarily between
-  // duplicates. See pickActiveCoupon in ./coupons. The read still rides in
-  // the Promise.all above, so this is the same single round trip.
-  let coupon: DocumentData | undefined;
-  if (couponSnap) {
-    coupon = pickActiveCoupon(
-      couponSnap.docs.map((d) => d.data()),
-      request.couponCode
-    );
-  }
+  // duplicates. See findActiveCoupon in ./coupons. The read rides in the
+  // Promise.all above, so this is the same single round trip.
+  const coupon: DocumentData | undefined = couponMatch?.data;
 
   const pricedItems: PricedCartItem[] = [];
 

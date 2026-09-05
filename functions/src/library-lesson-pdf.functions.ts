@@ -21,6 +21,7 @@ import {
   EmailLessonPdfResult,
 } from "./common/shared/contract/library-callables.types";
 import {mayReadBook} from "./library-access";
+import {findBookDoc} from "./utils/library-books";
 import {exceedsAttachmentLimit} from "./lesson-pdf/limits";
 import {buildLessonDoc} from "./lesson-pdf/lesson-doc";
 import {renderLessonPdf} from "./lesson-pdf/render-pdf";
@@ -145,8 +146,7 @@ async function findLesson(
   bookId: string,
   lessonId: string
 ): Promise<FoundLesson | undefined> {
-  const books = await db.collectionGroup("books").get();
-  const bookDoc = books.docs.find((d) => d.id === bookId);
+  const bookDoc = await findBookDoc(db, bookId);
   if (!bookDoc) return undefined;
 
   const units = await bookDoc.ref.collection("units").orderBy("order").get();

@@ -5,8 +5,11 @@
 // codes differently from the other three (library-purchases,
 // library-group-licenses, checkout-support's lookup_coupon) - and getting
 // it wrong. See pickActiveCoupon for the three specific defects.
-import {DocumentData} from "firebase-admin/firestore";
+import {DocumentData, Firestore} from "firebase-admin/firestore";
 import {toMillis} from "./date-normalize.functions";
+import {tenantPath} from "../common/shared/lists/tenancy";
+
+const COUPONS = tenantPath("coupons");
 import {
   couponOverridesSale,
   couponTagsCover,
@@ -76,6 +79,41 @@ export function pickActiveCoupon(
       !isCouponExpired(c.expiresAt) &&
       String(c.code ?? "").trim().toLowerCase() === code
   );
+}
+
+/** A matched coupon: its document id and its data. */
+export interface FoundCoupon {
+  id: string;
+  data: DocumentData;
+}
+
+/**
+ * The read and the pick, together: every ACTIVE, unexpired coupon matching
+ * a shopper-entered code, by document id. The whole (small) collection is
+ * scanned rather than queried by code equality - see pickActiveCoupon for
+ * why a `where("code", "==")` cannot do this job.
+ *
+ * Four paths did this read themselves until 2026-09-05, and one of them
+ * (lookup_coupon, the endpoint that tells the shopper "applied") did its
+ * own find with NO isActive filter, so a duplicated code could report the
+ * inactive twin and refuse a code checkout would then accept.
+ * @param {Firestore} db Firestore.
+ * @param {string|null|undefined} rawCode The shopper-entered code.
+ * @return {Promise<FoundCoupon|undefined>} The matching coupon, if any.
+ */
+export async function findActiveCoupon(
+  db: Firestore,
+  rawCode: string | null | undefined
+): Promise<FoundCoupon | undefined> {
+  if (!(rawCode ?? "").trim()) {
+    return undefined;
+  }
+  const snap = await db.collection(COUPONS).get();
+  // data() is read once per document: the pick is matched back to its
+  // document by object identity.
+  const docs = snap.docs.map((d) => ({id: d.id, data: d.data()}));
+  const picked = pickActiveCoupon(docs.map((d) => d.data), rawCode);
+  return docs.find((d) => d.data === picked);
 }
 
 /**

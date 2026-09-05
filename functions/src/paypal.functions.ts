@@ -6,6 +6,8 @@ const PURCHASES = tenantPath("purchases");
 import {onRequest} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {restrictedCors} from "./utils/security.functions";
+import {PAYPAL_CLIENT_SECRET, TAX_API_KEY} from "./utils/secrets";
+import {readTenantConfig} from "./utils/tenant-config";
 import {queueWebOrderEmails} from "./transactional-emails";
 import {
   campaignForCoupon,
@@ -75,7 +77,7 @@ const paypalApiBaseUrl = () => paypalApiBase(PAYPAL_ENV);
  */
 function getPayPalAccessToken(clientId: string): Promise<string> {
   return getAccessTokenWithCredentials(
-    PAYPAL_ENV, clientId, process.env.PAYPAL_CLIENT_SECRET ?? ""
+    PAYPAL_ENV, clientId, PAYPAL_CLIENT_SECRET.value()
   );
 }
 
@@ -97,21 +99,10 @@ async function getPaypalClientId(): Promise<string> {
   if (cachedClientId && cachedClientId.expiresAt > Date.now()) {
     return cachedClientId.value;
   }
-  // Deliberately NOT .limit(1): `config` is treated as a singleton
-  // everywhere, but nothing enforces that, and limit(1) returns an arbitrary
-  // document when there is more than one. Silently picking the wrong config
-  // in production means charging against the wrong PayPal app - read the
-  // collection and refuse to guess instead.
-  const configRef = getFirestore().collection(tenantPath("config"));
-  const configSnap = await configRef.get();
-  if (configSnap.size > 1) {
-    throw new Error(
-      `Expected a single config document, found ${configSnap.size} ` +
-      `(${configSnap.docs.map((d) => d.id).join(", ")}). Refusing to guess ` +
-      "which one holds the live paypalClientId - remove the extras."
-    );
-  }
-  const clientId = configSnap.docs[0]?.data()?.paypalClientId;
+  // readTenantConfig refuses to guess between two config documents -
+  // silently picking the wrong one here means charging against the wrong
+  // PayPal app. That rule started in this function and is shared now.
+  const clientId = (await readTenantConfig(getFirestore()))?.paypalClientId;
   if (!clientId) {
     throw new Error(
       "config.paypalClientId is not set in project " +
@@ -479,7 +470,7 @@ async function logCheckoutFailure(
 }
 
 exports.create_paypal_order = onRequest(
-  {secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]},
+  {secrets: [PAYPAL_CLIENT_SECRET, TAX_API_KEY]},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
@@ -686,7 +677,7 @@ exports.create_paypal_order = onRequest(
   });
 
 exports.capture_paypal_order = onRequest(
-  {secrets: ["PAYPAL_CLIENT_SECRET", "TAX_API_KEY"]},
+  {secrets: [PAYPAL_CLIENT_SECRET, TAX_API_KEY]},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       try {

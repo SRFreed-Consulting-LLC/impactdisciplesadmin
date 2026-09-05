@@ -59,14 +59,20 @@ const ENV_VARS = {
 // with "Failed to load function" and every integration test hanging until it
 // times out, which is what TAX_API_KEY did until 2026-08-21. Sources of truth
 // for this list: defineSecret("...") calls and .runWith({secrets: [...]}).
+// Since 2026-09-05 every secret is declared ONCE, in
+// functions/src/utils/secrets.ts - that file is the list to mirror here.
 const SECRETS = {
   PAYPAL_SANDBOX_CLIENT_SECRET: "fake-paypal-sandbox-secret",
   PAYPAL_LIVE_CLIENT_SECRET: "fake-paypal-live-secret",
   PAYPAL_CLIENT_SECRET: "fake-paypal-secret-emulator",
   ANTHROPIC_API_KEY: "fake-anthropic-key",
-  // Declared via .runWith({secrets: [...]}) in paypal.functions.ts, not
-  // defineSecret() - easy to miss when grepping for the latter.
   TAX_API_KEY: "fake-tax-key",
+  SHIP_ENGINE_API_KEY: "fake-shipengine-key",
+  GOOGLE_SECRET_KEY: "fake-google-key",
+  YOUTUBE_PLAYLIST_KEY: "fake-playlist",
+  // Signs unsubscribe links; integration/http-endpoints.test.js signs its
+  // own with this same value.
+  UNSUBSCRIBE_TOKEN_SECRET: "fake-unsubscribe-secret",
 };
 
 const toDotenv = (obj) =>

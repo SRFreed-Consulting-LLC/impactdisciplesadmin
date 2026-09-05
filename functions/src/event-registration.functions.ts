@@ -3,11 +3,10 @@ const EVENTS = tenantPath("events");
 const REGISTRATIONS = tenantPath("event-registrations");
 const SESSION_COUNTS = tenantPath("eventSessionCounts");
 const TEMPLATES = tenantPath("mail_templates");
-import {onRequest} from "firebase-functions/v2/https";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
-import {restrictedCors} from "./utils/security.functions";
+import {publicHttp} from "./utils/public-http";
 import {
   escapeHtml,
   queueMail,
@@ -213,12 +212,9 @@ async function queueConfirmationEmail(
  *
  *  Now idempotent per (eventId, email) - see the dedupe below - and capped
  *  by maxInstances. */
-export const registerForEventHttp = onRequest(PUB_FN, (request, response) => {
-  return restrictedCors(request, response, async () => {
-    if (request.method !== "POST") {
-      response.status(405).send({error: "POST required."});
-      return;
-    }
+export const registerForEventHttp = publicHttp(
+  "register_for_event", {...PUB_FN, method: "POST"},
+  async (request, response) => {
     const body =
       (request.body ?? {}) as Partial<RegisterForEventRequest>;
     const eventId = typeof body.eventId === "string" ? body.eventId.trim() : "";
@@ -326,16 +322,12 @@ export const registerForEventHttp = onRequest(PUB_FN, (request, response) => {
     });
     response.send({registrationId: registrationRef.id, receiptEmailId});
   });
-});
 
 /** Fetch by unguessable registration id (the emailed link's credential).
  *  POST {registrationId}. */
-export const getEventRegistrationHttp = onRequest((request, response) => {
-  return restrictedCors(request, response, async () => {
-    if (request.method !== "POST") {
-      response.status(405).send({error: "POST required."});
-      return;
-    }
+export const getEventRegistrationHttp = publicHttp(
+  "get_event_registration", {method: "POST"},
+  async (request, response) => {
     const registrationId =
       typeof request.body?.registrationId === "string" ?
         request.body.registrationId.trim() :
@@ -367,16 +359,12 @@ export const getEventRegistrationHttp = onRequest((request, response) => {
       },
     });
   });
-});
 
 /** Narrow breakout-session mutation, credentialed by registration id.
  *  POST {registrationId, sessionId, action: 'add'|'remove'}. */
-export const updateMySessionsHttp = onRequest(PUB_FN, (request, response) => {
-  return restrictedCors(request, response, async () => {
-    if (request.method !== "POST") {
-      response.status(405).send({error: "POST required."});
-      return;
-    }
+export const updateMySessionsHttp = publicHttp(
+  "update_my_sessions", {...PUB_FN, method: "POST"},
+  async (request, response) => {
     const body =
       (request.body ?? {}) as Partial<UpdateMySessionsRequest>;
     const registrationId =
@@ -405,16 +393,12 @@ export const updateMySessionsHttp = onRequest(PUB_FN, (request, response) => {
     const updated = await ref.get();
     response.send({trainingSessions: updated.data()?.trainingSessions ?? []});
   });
-});
 
 /** Boolean-only duplicate check for the signup form's validator - never
  *  discloses registration contents. POST {eventId, email}. */
-export const checkRegistrationExistsHttp = onRequest((request, response) => {
-  return restrictedCors(request, response, async () => {
-    if (request.method !== "POST") {
-      response.status(405).send({error: "POST required."});
-      return;
-    }
+export const checkRegistrationExistsHttp = publicHttp(
+  "check_registration_exists", {method: "POST"},
+  async (request, response) => {
     const eventId =
       typeof request.body?.eventId === "string" ?
         request.body.eventId.trim() :
@@ -435,7 +419,6 @@ export const checkRegistrationExistsHttp = onRequest((request, response) => {
       .get();
     response.send({exists: !snap.empty});
   });
-});
 
 /**
  * Extracts a registration's trainingSessions as a de-duplicated list of
@@ -575,12 +558,9 @@ export const onEventRegistrationSessionCounts = onDocumentWritten(
  *  conflicting increment forces a retry that recounts). `seeded` (not bare
  *  existence) gates serving, since the trigger may have created the doc
  *  with only post-deploy deltas before the first read ever happened. */
-export const getSessionCountsHttp = onRequest((request, response) => {
-  return restrictedCors(request, response, async () => {
-    if (request.method !== "POST") {
-      response.status(405).send({error: "POST required."});
-      return;
-    }
+export const getSessionCountsHttp = publicHttp(
+  "get_session_counts", {method: "POST"},
+  async (request, response) => {
     const eventId =
       typeof request.body?.eventId === "string" ?
         request.body.eventId.trim() :
@@ -612,4 +592,3 @@ export const getSessionCountsHttp = onRequest((request, response) => {
     }
     response.send({counts: clamped});
   });
-});

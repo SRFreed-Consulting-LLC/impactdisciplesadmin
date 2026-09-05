@@ -70,12 +70,14 @@ function reseed() {
     {stdio: "pipe"});
 }
 
-/** Calls an onRequest HTTP function. Returns {status, body}. */
-async function callHttp(name, body, headers = {}) {
+/** Calls an onRequest HTTP function. Returns {status, body}. POST with a
+ *  JSON body by default; pass method "GET" for a link-style endpoint (the
+ *  unsubscribe link), which sends no body. */
+async function callHttp(name, body, headers = {}, method = "POST") {
   const res = await fetch(`${FN_BASE}/${name}`, {
-    method: "POST",
+    method,
     headers: {"Content-Type": "application/json", ...headers},
-    body: JSON.stringify(body),
+    ...(method === "GET" ? {} : {body: JSON.stringify(body)}),
   });
   let parsed = null;
   const text = await res.text();

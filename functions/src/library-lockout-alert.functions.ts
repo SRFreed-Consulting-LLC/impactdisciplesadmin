@@ -4,6 +4,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {getFirestore} from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";
 import {queueMail} from "./transactional-emails";
+import {readTenantConfig} from "./utils/tenant-config";
 import {
   computeLockedOut,
   decideLockoutAlert,
@@ -121,13 +122,9 @@ export const lockedOutPatronAlert = onSchedule(
     const decision = decideLockoutAlert(currentLockedOut, prev, Date.now());
 
     if (decision.email) {
-      const configRef = db.collection(tenantPath("config"));
-      const configSnap = await configRef.limit(1).get();
-      const raw = configSnap.empty ?
-        "" :
-        ((configSnap.docs[0].data().lockedOutAlertEmail as
-          | string
-          | undefined) ?? "");
+      const config = await readTenantConfig(db);
+      const raw =
+        (config?.lockedOutAlertEmail as string | undefined) ?? "";
       const recipients = resolveRecipients(raw);
 
       const count = decision.email.kind === "new" ?

@@ -6,6 +6,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldPath, FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
 import {requireAdminRole} from "./admin-users.functions";
+import {knownBookIds} from "./utils/library-books";
 import {sendLibraryPushToUser, truncate} from "./library-push-notifications";
 import {getAuth} from "firebase-admin/auth";
 import {getApp} from "firebase-admin/app";
@@ -227,14 +228,9 @@ export const grantLibraryUserLicenses = onCall(async (request):
     );
   }
   const uniqueBookIds = Array.from(new Set(bookIds));
-  // A bare book id doesn't say which series/book it's nested under - scans
-  // every series' `books` subcollection once via a collectionGroup query
-  // rather than one lookup per id. Fine at this library's real scale (a
-  // handful of books total).
-  const knownBookIds = new Set(
-    (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
-  );
-  const missing = uniqueBookIds.filter((id) => !knownBookIds.has(id));
+  // One books collection-group scan, matched by doc id (knownBookIds).
+  const existing = await knownBookIds(libraryDb);
+  const missing = uniqueBookIds.filter((id) => !existing.has(id));
   if (missing.length > 0) {
     throw new HttpsError("not-found", `No such book(s): ${missing.join(", ")}`);
   }

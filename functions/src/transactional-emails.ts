@@ -6,6 +6,9 @@ import {
   MAIL_TEMPLATE_IDS,
   resolveCodeTemplate,
 } from "./utils/mail-templates.functions";
+import {readTenantConfig} from "./utils/tenant-config";
+import {UNSUBSCRIBE_TOKEN_SECRET} from "./utils/secrets";
+import {unsubscribeToken} from "./utils/unsubscribe-token";
 
 // Pre-prod hardening #1: every email the two public apps used to compose
 // and write into `mail` from the browser is queued server-side here
@@ -28,6 +31,22 @@ export const UNSUBSCRIBE_URL =
       "unsubscribe_from_email_list" :
     "https://us-central1-impactdisciplesdev.cloudfunctions.net/" +
       "unsubscribe_from_email_list";
+
+/**
+ * The recipient's own unsubscribe link, signed (utils/unsubscribe-token).
+ * The one place a link is built since 2026-09-05 - three sites each
+ * concatenated their own, none with a token. The calling function must
+ * bind UNSUBSCRIBE_TOKEN_SECRET or .value() throws at the read.
+ * @param {string} email The recipient.
+ * @param {string} type The list - "newsletter" or "prayer".
+ * @return {string} The full URL.
+ */
+export function unsubscribeUrlFor(email: string, type: string): string {
+  const token =
+    unsubscribeToken(email, type, UNSUBSCRIBE_TOKEN_SECRET.value());
+  return `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(email)}` +
+    `&type=${type}&token=${token}`;
+}
 /**
  * The free-ebook download link offered in the newsletter confirmation, read
  * from the `config` singleton rather than hardcoded.
@@ -51,15 +70,18 @@ export const UNSUBSCRIBE_URL =
 async function freeEbookUrl(
   db: FirebaseFirestore.Firestore
 ): Promise<string | null> {
-  const snap = await db.collection(tenantPath("config")).get();
-  if (snap.empty || snap.size > 1) {
+  let config;
+  try {
+    config = await readTenantConfig(db);
+  } catch (err) {
+    // More than one config document - readTenantConfig refuses to guess.
     console.error(
-      `freeEbookUrl: expected one config document, found ${snap.size} - ` +
-      "omitting the free ebook offer from this confirmation."
+      "freeEbookUrl: " + String(err) +
+      " - omitting the free ebook offer from this confirmation."
     );
     return null;
   }
-  const url = snap.docs[0].data()?.freeEbookUrl;
+  const url = config?.freeEbookUrl;
   if (typeof url !== "string" || !url.startsWith("https://")) {
     console.warn(
       "freeEbookUrl is not set on the config document, so the newsletter " +
@@ -248,8 +270,7 @@ export async function queueSubscriptionConfirmation(
 ): Promise<void> {
   const unsubscribe =
     "<br><br><br><div>If you believe you received this confirmation by " +
-    "mistake, please click <b><a href='" + UNSUBSCRIBE_URL + "?email=" +
-    encodeURIComponent(email) + "&type=" + type +
+    "mistake, please click <b><a href='" + unsubscribeUrlFor(email, type) +
     "'>here</a></b> to remove your address.</div>";
 
   if (type === "prayer") {

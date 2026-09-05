@@ -114,42 +114,88 @@ test("subscribe rejects an unknown type and a malformed email", async () => {
 });
 
 // ---- unsubscribe_from_email_list ----------------------------------------
+//
+// Links are signed since 2026-09-05 (functions/src/utils/unsubscribe-token):
+// the token is an HMAC of address + list under UNSUBSCRIBE_TOKEN_SECRET,
+// whose emulator value scripts/write-emulator-env.js writes. A link with no
+// token is honoured only until LEGACY_UNSUBSCRIBE_LINKS_UNTIL.
+const {
+  unsubscribeToken, legacyLinksStillHonoured,
+} = require("../functions/lib/utils/unsubscribe-token");
+const EMULATOR_UNSUB_SECRET = "fake-unsubscribe-secret";
+const unsubLink = (email, type, token) =>
+  `unsubscribe_from_email_list?email=${encodeURIComponent(email)}` +
+  `&type=${type}&token=${token}`;
+const signedLink = (email, type) =>
+  unsubLink(email, type, unsubscribeToken(email, type, EMULATOR_UNSUB_SECRET));
 
-test("unsubscribe clears the flag for the matching customer", async () => {
-  const res = await callHttp(
-    `unsubscribe_from_email_list?email=${encodeURIComponent(
-      SUBSCRIBED_NEWSLETTER)}&type=newsletter`, {}
-  );
-  assert.equal(res.status, 200);
+test("a signed unsubscribe link clears the flag for the matching customer",
+  async () => {
+    // GET, the way a mail client opens it - callHttp POSTs.
+    const res = await callHttp(signedLink(SUBSCRIBED_NEWSLETTER, "newsletter"),
+      {}, {}, "GET");
+    assert.equal(res.status, 200);
 
-  const customer = await customerByEmail(SUBSCRIBED_NEWSLETTER);
-  assert.equal(customer.subscribedToNewsletter, false);
-});
+    const customer = await customerByEmail(SUBSCRIBED_NEWSLETTER);
+    assert.equal(customer.subscribedToNewsletter, false);
+  });
 
 test("unsubscribe matches a mixed-case address from an email link",
   async () => {
     // Unsubscribe links are generated into sent mail; a mixed-case address
-    // in one must not silently no-op.
+    // in one must not silently no-op - and its token still verifies, since
+    // the token is computed over the normalised address.
     const target = "casey05@contacts.test";
     const res = await callHttp(
-      `unsubscribe_from_email_list?email=${encodeURIComponent(
-        target.toUpperCase())}&type=prayer`, {}
-    );
+      signedLink(target.toUpperCase(), "prayer"), {}, {}, "GET");
     assert.equal(res.status, 200);
 
     const customer = await customerByEmail(target);
     assert.equal(customer.subscribedToPrayerTeam, false);
   });
 
-test("unsubscribe rejects an unknown type and a missing email", async () => {
-  const badType = await callHttp(
-    "unsubscribe_from_email_list?email=a%40b.test&type=podcast", {});
-  assert.equal(badType.status, 400);
+test("a wrong token unsubscribes nobody", async () => {
+  const target = "casey06@contacts.test";
+  const forged = unsubscribeToken(target, "newsletter", "not-the-secret");
+  const res = await callHttp(unsubLink(target, "newsletter", forged),
+    {}, {}, "GET");
+  assert.equal(res.status, 403);
 
-  const noEmail = await callHttp(
-    "unsubscribe_from_email_list?type=newsletter", {});
-  assert.equal(noEmail.status, 400);
+  const customer = await customerByEmail(target);
+  assert.equal(customer.subscribedToNewsletter, true);
 });
+
+test("an untokened link is honoured during the grace period and refused after",
+  async () => {
+    const target = "casey03@contacts.test";
+    const res = await callHttp(
+      `unsubscribe_from_email_list?email=${encodeURIComponent(target)}` +
+      "&type=newsletter", {}, {}, "GET");
+    if (legacyLinksStillHonoured()) {
+      assert.equal(res.status, 200);
+      assert.equal((await customerByEmail(target)).subscribedToNewsletter,
+        false);
+    } else {
+      assert.equal(res.status, 400);
+      assert.equal((await customerByEmail(target)).subscribedToNewsletter,
+        true);
+    }
+  });
+
+test("unsubscribe rejects an unknown type, a missing email and a POST",
+  async () => {
+    const badType = await callHttp(
+      "unsubscribe_from_email_list?email=a%40b.test&type=podcast", {}, {},
+      "GET");
+    assert.equal(badType.status, 400);
+
+    const noEmail = await callHttp(
+      "unsubscribe_from_email_list?type=newsletter", {}, {}, "GET");
+    assert.equal(noEmail.status, 400);
+
+    const posted = await callHttp(signedLink("a@b.test", "newsletter"), {});
+    assert.equal(posted.status, 405);
+  });
 
 // ---- staff gates ---------------------------------------------------------
 

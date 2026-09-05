@@ -1,6 +1,7 @@
 import {onRequest} from "firebase-functions/v2/https";
 import type {Response} from "express";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
+import {GOOGLE_SECRET_KEY, YOUTUBE_PLAYLIST_KEY} from "./utils/secrets";
 
 /**
  * Shared implementation for both exports below: fetches the podcast
@@ -13,8 +14,8 @@ import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
  * @return {Promise<void>} Resolves once a response has been sent.
  */
 async function fetchAndSendPlaylistVideos(response: Response): Promise<void> {
-  const apiKey = process.env.GOOGLE_SECRET_KEY;
-  const playlistId = process.env.YOUTUBE_PLAYLIST_KEY;
+  const apiKey = GOOGLE_SECRET_KEY.value();
+  const playlistId = YOUTUBE_PLAYLIST_KEY.value();
   const base = "https://www.googleapis.com/youtube/v3/playlistItems";
 
   try {
@@ -59,7 +60,7 @@ async function fetchAndSendPlaylistVideos(response: Response): Promise<void> {
 // Staff-gated: only a signed-in admin's own Firebase Auth session may call
 // this. This is what the admin app's own podcast-management page uses.
 exports.get_youtube_videos = onRequest(
-  {secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]},
+  {secrets: [GOOGLE_SECRET_KEY, YOUTUBE_PLAYLIST_KEY]},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       try {
@@ -85,7 +86,7 @@ exports.get_youtube_videos = onRequest(
 // public on YouTube); only the API key needed protecting, and this keeps
 // it server-side exactly the same way the staff-gated version does.
 exports.get_youtube_videos_public = onRequest(
-  {secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]},
+  {secrets: [GOOGLE_SECRET_KEY, YOUTUBE_PLAYLIST_KEY]},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       await fetchAndSendPlaylistVideos(response);
@@ -237,8 +238,8 @@ async function fetchVideoDetails(
  * @return {Promise<YoutubePodcast[]>} The episodes, newest first.
  */
 async function buildPodcastFeed(): Promise<YoutubePodcast[]> {
-  const apiKey = process.env.GOOGLE_SECRET_KEY ?? "";
-  const playlistId = process.env.YOUTUBE_PLAYLIST_KEY ?? "";
+  const apiKey = GOOGLE_SECRET_KEY.value();
+  const playlistId = YOUTUBE_PLAYLIST_KEY.value();
 
   const ids = await fetchPlaylistVideoIds(apiKey, playlistId);
   if (ids.length === 0) {
@@ -270,7 +271,7 @@ function sendPodcasts(response: Response, videos: YoutubePodcast[]): void {
 // on YouTube, only the API key needed protecting, and it stays server
 // side.
 exports.get_youtube_podcasts_public = onRequest(
-  {secrets: ["GOOGLE_SECRET_KEY", "YOUTUBE_PLAYLIST_KEY"]},
+  {secrets: [GOOGLE_SECRET_KEY, YOUTUBE_PLAYLIST_KEY]},
   (request, response) => {
     return restrictedCors(request, response, async () => {
       const now = Date.now();

@@ -2,7 +2,12 @@ import {tenantPath} from "./common/shared/lists/tenancy";
 const PURCHASES = tenantPath("purchases");
 const LIBRARY_USERS = tenantPath("libraryUsers");
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {defineSecret} from "firebase-functions/params";
+import {
+  PAYPAL_CLIENT_SECRET as webPaypalSecret,
+  PAYPAL_LIVE_CLIENT_SECRET as paypalLiveSecret,
+  PAYPAL_SANDBOX_CLIENT_SECRET as paypalSandboxSecret,
+} from "./utils/secrets";
+import {readTenantConfig} from "./utils/tenant-config";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireAdminRole} from "./admin-users.functions";
 import {purchaseSourceOf} from "./purchase-source";
@@ -30,11 +35,9 @@ import {
 // refund (mirror of revokeAdminGrantedLicense, which only handles
 // source === 'admin-grant').
 
-const paypalSandboxSecret = defineSecret("PAYPAL_SANDBOX_CLIENT_SECRET");
-const paypalLiveSecret = defineSecret("PAYPAL_LIVE_CLIENT_SECRET");
-// The web storefront's own PayPal app secret (paypal.functions.ts) - a
-// capture made by that app must be refunded with that app's credentials.
-const webPaypalSecret = defineSecret("PAYPAL_CLIENT_SECRET");
+// Three PayPal secrets (utils/secrets.ts): the reader's sandbox/live pair
+// and the web storefront's own app - a capture made by that app must be
+// refunded with that app's credentials.
 
 // The Firestore handle is taken inside each function rather than at module
 // load (same as campaign-admin.functions.ts): a module-level
@@ -323,9 +326,7 @@ export const refundStorePurchase = onCall(
           paypalSandboxSecret.value();
         accessToken = await getAccessToken(env, secret);
       } else {
-        const configRef = db.collection(tenantPath("config"));
-        const configSnap = await configRef.limit(1).get();
-        const clientId = configSnap.docs[0]?.data()?.paypalClientId;
+        const clientId = (await readTenantConfig(db))?.paypalClientId;
         if (!clientId) {
           throw new HttpsError(
             "failed-precondition", "config.paypalClientId is not set."

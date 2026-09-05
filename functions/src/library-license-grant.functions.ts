@@ -4,6 +4,7 @@ import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions";
 import {isPlausibleEmail} from "./utils/customer-match.functions";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
+import {knownBookIds} from "./utils/library-books";
 import {getFirestore} from "firebase-admin/firestore";
 
 // Grants Impact Discipleship Library book licenses for digital books bought
@@ -123,16 +124,12 @@ export const onPurchaseGrantLibraryLicenses = onDocumentCreated(
     }
 
     // Confirm every claimed book actually exists, so a stale digitalBookId
-    // can't be "granted" and silently do nothing forever. A bare book id
-    // doesn't say which series it's nested under
-    // (librarySeries/{s}/books/{b}), so scan the `books` collectionGroup
-    // once and match by doc id - fine at this library's real scale.
-    const knownBookIds = new Set(
-      (await libraryDb.collectionGroup("books").get()).docs.map((d) => d.id)
-    );
-    const known = grants.filter((g) => knownBookIds.has(g.bookId));
+    // can't be "granted" and silently do nothing forever (knownBookIds:
+    // one books collection-group scan, matched by doc id).
+    const bookIds = await knownBookIds(libraryDb);
+    const known = grants.filter((g) => bookIds.has(g.bookId));
     const unknown = grants
-      .filter((g) => !knownBookIds.has(g.bookId))
+      .filter((g) => !bookIds.has(g.bookId))
       .map((g) => g.bookId);
     if (unknown.length > 0) {
       // A data problem no retry fixes - log it for an admin and grant

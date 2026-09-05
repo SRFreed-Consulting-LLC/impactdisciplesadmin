@@ -48,6 +48,36 @@ export exactly the names in the shared contract (`functions/test/contract.test.j
 Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
 `functions/src/utils/security.functions.ts`.
 
+**Shared helpers you should reach for before writing the read yourself (2026-09-05, review item 4):**
+
+- `utils/public-http.ts` — `publicHttp(name, {method, ...options}, handler)` is an anonymous,
+  browser-called endpoint: onRequest + the CORS allow-list + one verb + a catch-all 500. Eight
+  endpoints use it (the five event-registration ones, `lookup_coupon`, subscribe, unsubscribe).
+  Its catch is not decoration: `restrictedCors` cannot await the handler, so a throw from an
+  un-caught async handler used to be an unhandled rejection with nothing sent and the request
+  hanging to timeout. The PayPal, shipping and YouTube endpoints keep `restrictedCors` directly —
+  they map failures to their own error codes or gate on `requireStaffAuth`.
+- `utils/secrets.ts` — every `defineSecret()` param, declared once. Bind with
+  `{secrets: [X]}`, read with `X.value()` inside the handler. No more `secrets: ["NAME"]` +
+  `process.env.NAME ?? ""`: a typo or an unbound secret used to yield `""` and fail somewhere
+  downstream; `.value()` throws at the read, naming the secret. A new secret must also be added
+  to `scripts/write-emulator-env.js`'s SECRETS list or every function fails to load locally.
+- `utils/tenant-config.ts` — `readTenantConfig(db)` is the one way to read the `config`
+  singleton. It refuses (throws) when there are two documents rather than picking one at random.
+- `utils/coupons.ts` — `findActiveCoupon(db, code)` is the read + `pickActiveCoupon`; the four
+  money paths and `lookup_coupon` all resolve a code through it, so what the cart says "applied"
+  is what checkout charges.
+- `utils/library-books.ts` — `knownBookIds` / `findBookDoc` / `bookTitlesById`, over ONE
+  `collectionGroup("books")` read that lives only there. When a second tenant exists, that is the
+  single function to scope.
+- `utils/unsubscribe-token.ts` + `transactional-emails.unsubscribeUrlFor()` — every unsubscribe
+  link is signed (HMAC of address + list under `UNSUBSCRIBE_TOKEN_SECRET`); the endpoint verifies
+  it, and honours untokened links only until `LEGACY_UNSUBSCRIBE_LINKS_UNTIL` (2026-10-06). Any
+  function that builds a link must bind that secret.
+- `utils/rate-limit.ts` — `RateLimiter` (per-instance sliding window) + `clientIp`; `lookup_coupon`
+  allows 30 tries a minute per address and runs with `maxInstances: 2`, because a free
+  "is X a code" endpoint is a dictionary oracle otherwise.
+
 - **Shared contract + config (2026-08-20, Stage 2e of the refactor sweep)**: the suite-wide
   function-name contract and Firebase project config live in the shared submodule
   (`src/common/src/shared/contract/functions-contract.ts`, `.../config/firebase-projects.ts`).
