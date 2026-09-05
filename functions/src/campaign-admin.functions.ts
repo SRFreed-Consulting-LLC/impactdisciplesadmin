@@ -1,4 +1,4 @@
-import {tenantPath} from "./common/shared/lists/tenancy";
+import {TENANT_ID, tenantPath} from "./common/shared/lists/tenancy";
 const EMAILS = tenantPath("campaign_emails");
 const POPUPS = tenantPath("campaign_popups");
 const CAMPAIGNS = tenantPath("campaigns");
@@ -104,6 +104,26 @@ export function referencesPath(
     serialized.includes(encodeURIComponent(objectPath));
 }
 
+/**
+ * The collections the reference scan reads: everything under the tenant
+ * document PLUS the database root, minus the denylist. Root alone has been
+ * wrong since the 2026-09-02 cutover - `listCollections()` on the root
+ * never descends into `tenants/{id}`, so page_content, products and every
+ * other campaign were invisible to the scan and any image they shared with
+ * the deleted campaign was removed from Storage.
+ * @param {FirebaseFirestore.Firestore} db Firestore.
+ * @return {Promise<FirebaseFirestore.CollectionReference[]>} To scan.
+ */
+export async function collectionsToScan(
+  db: FirebaseFirestore.Firestore
+): Promise<FirebaseFirestore.CollectionReference[]> {
+  const [tenant, root] = await Promise.all([
+    db.doc(`tenants/${TENANT_ID}`).listCollections(),
+    db.listCollections(),
+  ]);
+  return [...tenant, ...root].filter((c) => !SCAN_DENYLIST.has(c.id));
+}
+
 interface TouchDoc {
   id: string;
   status?: string;
@@ -181,8 +201,7 @@ async function deleteUnreferencedImages(
   const pending = new Map(refs); // still unreferenced so far
   const kept: string[] = [];
   if (pending.size > 0) {
-    const collections = (await db.listCollections())
-      .filter((c) => !SCAN_DENYLIST.has(c.id));
+    const collections = await collectionsToScan(db);
     for (const collection of collections) {
       if (pending.size === 0) break;
       const snap = await collection.get();

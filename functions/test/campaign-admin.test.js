@@ -4,7 +4,7 @@
 const {test} = require("node:test");
 const assert = require("node:assert/strict");
 
-const {collectStorageRefs, referencesPath} =
+const {collectStorageRefs, referencesPath, collectionsToScan} =
   require("../lib/campaign-admin.functions");
 
 const URL1 = "https://firebasestorage.googleapis.com/v0/b/impactdisciples-a82a8.appspot.com/o/" +
@@ -43,4 +43,25 @@ test("referencesPath: matches the plain path or its encoded form", () => {
   assert.equal(referencesPath(doc, "products/other.jpg"), false);
   const raw = JSON.stringify({imagePath: "products/hero image.jpg"});
   assert.equal(referencesPath(raw, "products/hero image.jpg"), true);
+});
+
+// Since the 2026-09-02 tenant cutover the content lives under
+// tenants/impactdisciples.com. A scan of the database ROOT alone sees none
+// of it and reports every image as unreferenced. This pins: tenant
+// subcollections ARE scanned, the root still is (for anything that stays
+// top-level), and the denylist applies to both.
+test("collectionsToScan: tenant subcollections, root, denylist", async () => {
+  const col = (id) => ({id});
+  const db = {
+    listCollections: async () => [col("tenants"), col("mail"), col("meta")],
+    doc: (path) => {
+      assert.equal(path, "tenants/impactdisciples.com");
+      return {
+        listCollections: async () =>
+          [col("page_content"), col("campaign_emails"), col("customers")],
+      };
+    },
+  };
+  const ids = (await collectionsToScan(db)).map((c) => c.id).sort();
+  assert.deepEqual(ids, ["campaign_emails", "page_content", "tenants"]);
 });
