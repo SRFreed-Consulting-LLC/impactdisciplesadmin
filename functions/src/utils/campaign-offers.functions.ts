@@ -2,6 +2,7 @@ import {tenantPath} from "../common/shared/lists/tenancy";
 const OFFERS = tenantPath("campaign_offers");
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {toMillis} from "./date-normalize.functions";
+import {round2} from "../common/shared/lists/money";
 
 /**
  * Server-side mirror of the shared campaign-offer resolver
@@ -33,10 +34,6 @@ export interface OfferSubject {
   series?: string | null;
 }
 
-/** @return {number} Value rounded to cents. */
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
 
 /**
  * Every currently-active offer.

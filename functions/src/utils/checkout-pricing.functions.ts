@@ -4,6 +4,10 @@ const EVENTS = tenantPath("events");
 import {DocumentData, getFirestore} from "firebase-admin/firestore";
 import {TAX_API_KEY} from "./secrets";
 import {readTenantConfig} from "./tenant-config";
+// The SHARED cent rounding (2026-09-05). This file rounded with
+// Number(value.toFixed(2)) until then - the one copy in the suite that
+// did, and the one a PayPal capture is verified against.
+import {round2} from "../common/shared/lists/money";
 import {
   bestOfferPrice,
   getActiveOffers,
@@ -114,15 +118,6 @@ function clampPercent(value: unknown): number {
   return Math.min(100, Math.max(0, value));
 }
 
-/**
- * Rounds a number to 2 decimal places, matching every ".toFixed(2)" call
- * scattered through the client-side pricing math this replaces.
- * @param {number} value The value to round.
- * @return {number} The value rounded to 2 decimal places.
- */
-function round2(value: number): number {
-  return Number(value.toFixed(2));
-}
 
 // Per-warm-instance cache of apilayer Georgia tax-rate lookups by zip.
 // The live lookup sat uncached and untimed on create_paypal_order's

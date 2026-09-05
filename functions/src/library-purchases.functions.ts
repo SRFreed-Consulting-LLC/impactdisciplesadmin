@@ -16,17 +16,18 @@ import {
   resolvePaypalEnvironment,
 } from "./library-paypal";
 import {applyStorePurchaseGrant} from "./library-store-license-grant";
-import {
-  CouponDoc,
-  couponAppliesToProduct,
-  findActiveCoupon,
-} from "./utils/coupons";
+import {CouponDoc, findActiveCoupon} from "./utils/coupons";
 import {
   assertCaptureMatchesTotal,
   findPriorPurchaseByReceipt,
   isEffectivelyFree,
 } from "./utils/capture-verify";
-import {ProductDoc, round2, effectivePrice} from "./library-store-pricing";
+import {
+  ProductDoc,
+  round2,
+  effectivePrice,
+  readerLineDiscount,
+} from "./library-store-pricing";
 import {queueReaderReceiptEmail} from "./transactional-emails";
 import {
   VerifyAndGrantReaderStorePurchaseResult,
@@ -164,13 +165,11 @@ export const verifyAndGrantReaderStorePurchase = onCall(
     }
 
     // Rebuild the line items server-side - mirrors the reader's
-    // buildLineItems exactly.
+    // buildLineItems exactly (readerLineDiscount: tag scope + the shared
+    // sale-versus-coupon rule).
     const lineItems = products.map(({id, data}) => {
       const price = effectivePrice(data);
-      const discount =
-        coupon && couponAppliesToProduct(coupon as CouponDoc, id) ?
-          round2((price * (coupon.percentOff ?? 0)) / 100) :
-          0;
+      const discount = readerLineDiscount(id, data, coupon);
       return {
         id,
         title: data.title ?? id,

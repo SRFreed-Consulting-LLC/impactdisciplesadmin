@@ -37,7 +37,9 @@ import {
 import {
   ProductDoc,
   computeGroupLicensePricing,
+  couponBeatsSale,
   effectivePrice,
+  isOnSale,
 } from "./library-store-pricing";
 import {BulkDiscountTier} from "./common/models/bulk-discount-tier.model";
 import {
@@ -259,7 +261,12 @@ export const purchaseGroupLicenses = onCall(
       // so chooseLicenseDiscount does not report that bulk "beat" a coupon
       // that was never in the running. The dialog tells the leader at
       // apply-time that the code does not cover this book.
-      if (couponAppliesToProduct(coupon, productMatch.id)) {
+      // And a sale price beats a coupon short of a giveaway (the shared
+      // rule, coupon-scope) - the dialog previews with the same test.
+      if (
+        couponAppliesToProduct(coupon, productMatch.id) &&
+        couponBeatsSale(coupon.percentOff, isOnSale(product))
+      ) {
         couponPercentOff =
           typeof coupon.percentOff === "number" ? coupon.percentOff : 0;
       }
