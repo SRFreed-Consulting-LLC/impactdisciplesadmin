@@ -19,6 +19,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { PageStackComponent } from './pages/page-stack.component';
 import { PageSectionEditorComponent } from './pages/page-section-editor.component';
 import { PageEntryDialogComponent } from './pages/page-entry-dialog.component';
+import { PageSectionAppearanceComponent } from './pages/page-section-appearance.component';
 import { NewPageDialogComponent } from './pages/new-page-dialog.component';
 // The per-leaf editor for a created page - the loading shell around the
 // same app-page-stack the twelve originals use.
@@ -98,6 +99,7 @@ import { QuillModule } from 'ngx-quill';
     PageStackComponent,
     PageSectionEditorComponent,
     PageEntryDialogComponent,
+    PageSectionAppearanceComponent,
     NewPageDialogComponent,
     KitPageEditorComponent,
     DestinationFieldComponent,

@@ -1,0 +1,224 @@
+<!-- THE APPEARANCE HALF of a section editor: how it LOOKS, as opposed
+     to what it SAYS. Extracted from page-section-editor.component.html on
+     2026-09-05, unchanged except for the two-space dedent - the tab strip
+     that decides whether it is drawn stays on the shell. -->
+<!-- THE TWO AXES. Only pages built from the section kit declare either, so
+     the twelve original pages show neither and are unchanged.
+
+     They are separate controls on purpose. The LOOK changes the layout and
+     therefore which fields are below; the GROUND only changes colour.
+     Folding them into one list would make every new shade of band a new
+     kind of section, which is the thing this whole design avoids. -->
+<!-- A DROPDOWN, not a row of buttons (owner, 2026-09-05). The other two
+     axes have three or five short options and sit on one line; Look has as
+     many as the kit has arrangements, each with a real name, so the row
+     wrapped onto a second and third line and the section's own setting was
+     hard to find among them. A closed select shows the one answer that
+     matters and costs a click for the rest - the opposite trade to Ground,
+     which is why only this one changed. -->
+@if (variants.length > 1) {
+  <div class="psd__axis">
+    <mat-form-field appearance="outline" class="psd__axis-select">
+      <mat-label>Look</mat-label>
+      <mat-select [value]="activeVariant?.key"
+                  (selectionChange)="pickVariant($event.value)"
+                  aria-label="Which arrangement this section uses">
+        @for (variant of variants; track variant.key) {
+          <mat-option [value]="variant.key">{{ variant.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <!-- The blurb stays: it is what each option MEANS, and a closed select
+         shows only the name. -->
+    @if (activeVariant) {
+      <p class="psd__axis-blurb">{{ activeVariant.blurb }}</p>
+    }
+  </div>
+}
+
+@if (surfaces.length) {
+  <div class="psd__axis">
+    <span class="psd__axis-label">Ground</span>
+    <mat-button-toggle-group [value]="activeSurface"
+                             (change)="pickSurface($event.value)"
+                             aria-label="What colour this section is drawn on">
+      @for (surface of surfaceLabels; track surface.key) {
+        <mat-button-toggle [value]="surface.key" [attr.aria-label]="surface.label">
+          {{ surface.label }}
+        </mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+    <p class="psd__axis-blurb">
+      &ldquo;Same as the page&rdquo; follows this page&rsquo;s own setting, so the page reads
+      as one thing until you deliberately break the run.
+    </p>
+  </div>
+
+  <!-- How many cards sit on a row. Only for looks drawn as a grid: a
+       timeline or a carousel ignores it, and a control that does nothing is
+       worse than no control. The field and the rendering both already
+       existed - Seminars' picture cards run two-and-two - but nothing ever
+       offered it, so every other page was stuck with "as many as fit". -->
+  @if (showsCardsPerRow) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Cards per row</span>
+      <mat-button-toggle-group [value]="activePerRow"
+                               (change)="pickPerRow($event.value)"
+                               aria-label="How many cards sit on a row">
+        @for (choice of perRowChoices; track choice.key) {
+          <mat-button-toggle [value]="choice.key" [attr.aria-label]="choice.label">
+            {{ choice.label }}
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <p class="psd__axis-blurb">
+        &ldquo;As many as fit&rdquo; lets the row decide, which suits small tiles and
+        stretches wide cards tall. A count holds the shape you want &mdash; on
+        phones everything collapses to one column regardless.
+      </p>
+    </div>
+
+    <!-- A BOX BEHIND EACH CARD. Restored 2026-09-05: the site never stopped
+         drawing these, but the controls were removed, so the Give page's
+         donation options have carried a black box nobody could see or
+         change. Same gate as Cards per row - both only mean something to a
+         look drawn as a grid. -->
+    <div class="psd__axis">
+      <span class="psd__axis-label">Box behind each card</span>
+      <mat-button-toggle-group [value]="activeCardGround"
+                               (change)="pickCardGround($event.value)"
+                               aria-label="The colour of the box behind each card">
+        @for (g of cardGrounds; track g.key) {
+          <mat-button-toggle [value]="g.key">{{ g.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <p class="psd__axis-blurb">
+        &ldquo;No box&rdquo; draws the cards straight onto the section&rsquo;s own ground.
+      </p>
+    </div>
+
+    <!-- Only once there IS a box. A text colour with nothing to sit on is a
+         control that does nothing. -->
+    @if (showsCardInk) {
+      <div class="psd__axis">
+        <span class="psd__axis-label">Words on the box</span>
+        <mat-button-toggle-group [value]="activeCardInk"
+                                 (change)="pickCardInk($event.value)"
+                                 aria-label="Whether the words on the box are dark or light">
+          @for (i of cardInks; track i.key) {
+            <mat-button-toggle [value]="i.key">{{ i.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <p class="psd__axis-blurb">
+          Each box already picks the colour that reads on it &mdash; this is
+          how you take the other one. Grey on the brand blue is unreadable,
+          which is why the choice is two colours and not a palette.
+        </p>
+      </div>
+    }
+  }
+
+  <!-- "Share the row with the next section" was here until 2026-09-05.
+       See setPairWithNext's removal in the component for why: a section
+       with two columns already said it, and said it better. -->
+
+  <!-- Only while the photo is a cropped BACKGROUND does a focus mean
+       anything - which part of it the band keeps. Born from About Us's
+       history banner cutting every head off at centre.
+       Drag the point rather than pick one of three: top/centre/bottom moved
+       a photo vertically and only to three places, so a face slightly off
+       centre could not be kept - which is the whole job of the setting. -->
+  @if (onPhotoSurface && section.image) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Photo position</span>
+      <div class="psd__focus"
+           (pointerdown)="startFocusDrag($event)"
+           (pointermove)="dragFocus($event)"
+           tabindex="0"
+           role="application"
+           aria-label="Drag to choose the point of the photo to keep in view"
+           (keydown.arrowleft)="nudgeFocus(-5, 0); $event.preventDefault()"
+           (keydown.arrowright)="nudgeFocus(5, 0); $event.preventDefault()"
+           (keydown.arrowup)="nudgeFocus(0, -5); $event.preventDefault()"
+           (keydown.arrowdown)="nudgeFocus(0, 5); $event.preventDefault()">
+        <img class="psd__focus-img" [src]="section.image.url" [alt]="section.image.name">
+        <span class="psd__focus-dot" [style.left.%]="focusPoint.x" [style.top.%]="focusPoint.y"></span>
+      </div>
+      <p class="psd__axis-blurb">
+        Drag the marker to the part that must stay in view &mdash; a face, usually.
+        The band crops around it, and crops differently on a phone, so this
+        names a point in the picture rather than a height.
+        <button mat-button type="button" (click)="recentreFocus()">Centre it</button>
+      </p>
+    </div>
+  }
+}
+
+<!-- TEXT STYLE - kit pages only, and only where the fields exist. Each
+     defaults to the site's own style, so these read as a choice AWAY from
+     the house look rather than a decision every section demands. -->
+@if (surfaces.length && fields.heading) {
+  <div class="psd__axis">
+    <span class="psd__axis-label">Heading</span>
+    <mat-button-toggle-group [value]="section.headingStyle ?? 'bold'"
+                             (change)="pickHeadingStyle($event.value)"
+                             aria-label="How the heading is drawn">
+      @for (option of headingStyles; track option.key) {
+        <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+}
+
+@if (surfaces.length && fields.body) {
+  <div class="psd__axis">
+    <span class="psd__axis-label">Text colour</span>
+    <mat-button-toggle-group [value]="section.copyTone ?? 'soft'"
+                             (change)="pickCopyTone($event.value)"
+                             aria-label="The text colour">
+      @for (option of copyTones; track option.key) {
+        <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+
+  <div class="psd__axis">
+    <span class="psd__axis-label">Text size</span>
+    <mat-button-toggle-group [value]="section.copySize ?? 'compact'"
+                             (change)="pickCopySize($event.value)"
+                             aria-label="The text size">
+      @for (option of copySizes; track option.key) {
+        <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+    <p class="psd__axis-blurb">
+      Both are the site&rsquo;s own: Large is the wide 20px passages (the OVERVIEW
+      sections), Compact the 14px text beside pictures and videos.
+    </p>
+  </div>
+
+
+
+
+  <!-- THE PICTURE-SIDE AND STACKING-ORDER CONTROLS lived here until
+       2026-09-01. They asked which archetype this was to decide whether a
+       side or an order applied. A Section says which side its picture is
+       on by which COLUMN holds it, and a centred column says so itself. -->
+
+  <!-- Only where the copy ACTUALLY HAS A LIST in it. Offering a bullet
+       style for a passage with no bullets is a control that cannot do
+       anything, and staff reasonably read that as broken. Owner's call,
+       2026-08-31. -->
+  @if (copyHasBullets) {
+    <div class="psd__axis">
+      <span class="psd__axis-label">Bullets</span>
+      <mat-button-toggle-group [value]="section.bullets ?? 'dots'"
+                               (change)="pickBullets($event.value)"
+                               aria-label="How list items are marked">
+        @for (option of bulletStyles; track option.key) {
+          <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+  }
+}
