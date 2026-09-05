@@ -3,7 +3,7 @@
 // scripts/merge-paired-sections.js folds a `pairWithNext` pair into one
 // two-column section. It ran against dev AND prod page data on 2026-09-05
 // before it knew to rekey the incoming columns - so the Contact page ended up
-// with two columns both called `col-1`, and scripts/fix-duplicate-column-keys.js
+// with two columns both called `col-1`. scripts/fix-duplicate-column-keys.js
 // exists solely to repair that.
 //
 // WHY THAT BUG WAS INVISIBLE. Both templates that draw a section's columns
@@ -112,7 +112,7 @@ test("no output block carries pairWithNext", () => {
   assert.ok(!JSON.stringify(out).includes("pairWithNext"));
 });
 
-test("a section pairing with nothing loses the key and keeps its content", () => {
+test("a section pairing with nothing loses the key, keeps its content", () => {
   // The site already stacked it quietly. Dropping the key must not drop the
   // section - these documents are the only copy of a page's words.
   const out = merge([section("last", {pairWithNext: true})]);
@@ -123,7 +123,7 @@ test("a section pairing with nothing loses the key and keeps its content", () =>
   assert.equal(out[0].columns.length, 1);
 });
 
-test("a pair whose halves disagree about the look is REFUSED, not merged", () => {
+test("a pair whose halves disagree about the look is REFUSED", () => {
   // One section cannot have two grounds. Silently keeping the first would
   // change a page without saying so, so both blocks survive untouched and the
   // note tells a human to do it by hand.
@@ -133,7 +133,8 @@ test("a pair whose halves disagree about the look is REFUSED, not merged", () =>
       section("b", {[field]: "two"}),
     ], "test-page");
 
-    assert.equal(out.blocks.length, 2, `${field} should refuse to merge`);
+    assert.equal(out.blocks.length, 2,
+      `${field} should refuse to merge`);
     assert.ok(
       out.notes.some((n) => n.includes("REFUSED") && n.includes(field)),
       `${field} should be named in the refusal`
@@ -167,7 +168,7 @@ test("the merger and the repair script agree", () => {
   });
 
   assert.equal(JSON.stringify(out), before,
-    "the repair script found something the merger should not have produced");
+    "the repair found something the merger should not have produced");
 });
 
 test("the repair is idempotent", () => {

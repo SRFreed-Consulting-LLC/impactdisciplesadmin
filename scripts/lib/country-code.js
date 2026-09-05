@@ -28,8 +28,16 @@ const ENUM_PATH = path.join(
  */
 function loadCountries() {
   const src = fs.readFileSync(ENUM_PATH, "utf8");
-  const pairs = [...src.matchAll(/["']([A-Z]{2})["']\s*=\s*["']([^"']+)["']/g)]
-    .map((m) => [m[1], m[2]]);
+  // The value is matched up to the SAME quote that opened it (the \2
+  // backreference), not up to any quote. It was `[^"']+` until 2026-09-05,
+  // which stops at an apostrophe - so "Côte d'Ivoire" parsed as "Côte d" and
+  // "Lao People's Democratic Republic" as "Lao People". The map ended up
+  // keyed on truncated names no document contains, which meant the FULL
+  // names - the spelling documents actually hold - came back `unrecognised`
+  // and were left as long strings where ShipEngine wants two characters.
+  // Caught by functions/test/state-code-mirror.test.js on its first run.
+  const pairs = [...src.matchAll(/["']([A-Z]{2})["']\s*=\s*(["'])(.*?)\2/g)]
+    .map((m) => [m[1], m[3]]);
   if (pairs.length < 200) {
     throw new Error(
       `Parsed only ${pairs.length} countries from ${ENUM_PATH} - expected 200+. ` +

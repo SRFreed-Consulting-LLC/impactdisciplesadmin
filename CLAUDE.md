@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Line length — write it right the first time
+
+**In `functions/` (including `functions/test/`), no line may exceed 80
+columns.** It is an ESLint `max-len` error, not a warning, and it fails
+`npm run check-functions`, which now gates every deploy — so a long line does
+not get caught at review, it blocks the build.
+
+The Angular app is looser: Prettier at `printWidth: 120`, with no `max-len`
+rule. **When in doubt, use 80 anyway.**
+
+This is here because it kept costing round trips: write a `functions/` test,
+run the gate, get three `max-len` errors, re-wrap, re-run. Wrap as you type —
+break long string concatenations across lines, keep `test(...)` names short,
+and split a multi-argument `assert` onto its own lines. Checking the width
+while writing costs nothing; discovering it from the linter costs a full
+lint-and-test cycle each time.
+
 ## What this is
 
 Admin back-office app for Impact Disciples (events, store, contacts, campaigns, the public site's
@@ -14,8 +31,8 @@ pagination + Columns/Export pattern described below rather than older DevExtreme
 There are two sibling apps that share the same Firebase projects: the public site `impactdisciples-web`
 and the patron Library Reader `impact-discipleship-library-new`. (The former standalone Library
 Manager CMS, `impact-discipleship-library-manager-new`, was decommissioned 2026-08-16 and folded into
-this app as the `library-manager` module; its folder may still exist on disk as a dead reference
-shell.) They are not part of this git repo, but are reachable as sibling directories one level up
+this app as the `library-manager` module. Its folder is gone from disk - checked 2026-09-05; this
+used to hedge that it "may still exist as a dead reference shell".) They are not part of this git repo, but are reachable as sibling directories one level up
 (`../impactdisciples - web`, `../impact-discipleship-library-new`, note the spaces) on a machine that
 has them checked out side by side - worth checking for before assuming a cross-repo change is out of
 reach. All three apps + `functions/` consume the same shared git submodule, `src/common`
@@ -510,10 +527,13 @@ Form Builder (from Tools). That move changed five screenKeys — `store-manager.
 `data.products` and so on — migrated on dev by `scripts/migrate-screenkey-renames-3.js`;
 **the production run is written up in MIGRATION.md and has NOT been done.**
 
-Two leftovers worth knowing before you go looking: `store-manager/affiliate-sales/` is still
-declared in its module but no tab renders it, so it is unreachable in the app today; and Store
+One leftover worth knowing before you go looking: Store
 Manager keeps only the money screens now — the product catalogue, its categories and its series all
-live under `data/`.
+live under `data/`. (This used to say `store-manager/affiliate-sales/` was unreachable because no
+tab renders it. It is not: `coupon-dialog.component.html` renders `<app-affiliate-sales>` inside
+an affiliate coupon's editor, and `paypal.functions.ts`'s `recordAffiliateSale()` writes the
+collection on every coupon checkout. Corrected 2026-09-05 after an audit went looking for dead code
+and found this alive.)
 
 **App-wide vocabulary
 rename 2026-08-19 (user-requested): "Customers" → "Contacts" and "Web Manager" → "Content
@@ -749,8 +769,9 @@ it is actually needed:
 
 The Admin Users collection is `admin_users` (renamed from `users`; see commit `3ffcbd4`) — both the
 Angular `AdminUserService` and the Cloud Functions' `requireStaffAuth()` were updated together. The
-old `users` collection is still present in Firestore but intentionally unused/orphaned pending
-verification — don't resurrect it as a source of truth.
+old `users` collection is EMPTY in production — verified 2026-09-05, so the "still present but
+orphaned pending verification" this line carried for a month is settled. Don't resurrect it as a
+source of truth.
 
 Newsletter/Prayer Team subscriber state used to be its own `subscriptions` collection (itself already
 a merge of 2 even older `newsletter_subscriptions`/`prayer_team_subscriptions` collections) — it's now

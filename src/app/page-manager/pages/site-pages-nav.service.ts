@@ -30,9 +30,25 @@ import { isKitPage } from './kit-page.adapter';
 export class SitePagesNavService {
   private readonly pageContent = inject(PageContentService);
 
-  readonly leaves$: Observable<NavLeaf[]> = this.pageContent.streamAll().pipe(
-    map((pages) => (pages ?? [])
-      .filter((page) => isKitPage(page) && !!page.id)
+  /**
+   * THE one Firestore listener, and everything below is a projection of it.
+   *
+   * Until 2026-09-05 leaves$ and pages$ each called streamAll() and each
+   * carried a comment claiming they shared a stream. They did not:
+   * FirebaseDAO.streamAll() builds a fresh collectionData(query(collection(
+   * ...))) on every call, so it is COLD - one observable per invocation - and
+   * both were shareReplay'd with refCount:false and subscribed in the
+   * constructor, so both stayed open for the whole session. Two permanent
+   * onSnapshot listeners on page_content where the design intends one, and
+   * the second existed only to add a boolean the first already had in hand.
+   */
+  private readonly kitPages$ = this.pageContent.streamAll().pipe(
+    map((pages) => (pages ?? []).filter((page) => isKitPage(page) && !!page.id)),
+    shareReplay({ bufferSize: 1, refCount: false })
+  );
+
+  readonly leaves$: Observable<NavLeaf[]> = this.kitPages$.pipe(
+    map((pages) => pages
       .map((page) => ({ label: page.title ?? page.id ?? '', slug: page.id ?? '' }))
       // HOME FIRST, then alphabetical. It became an ordinary kit page on
       // 2026-08-31 and would otherwise sort between Give and Lunch and
@@ -65,11 +81,12 @@ export class SitePagesNavService {
    * business there. The menu picker cares because a menu item pointing at an
    * unpublished page sends every visitor to Page Not Found.
    *
-   * Same underlying stream, so this opens no second Firestore listener.
+   * Projected off kitPages$, so this genuinely opens no second Firestore
+   * listener - which is what this line claimed and did not deliver until
+   * 2026-09-05.
    */
-  readonly pages$: Observable<CreatedPage[]> = this.pageContent.streamAll().pipe(
-    map((pages) => (pages ?? [])
-      .filter((page) => isKitPage(page) && !!page.id)
+  readonly pages$: Observable<CreatedPage[]> = this.kitPages$.pipe(
+    map((pages) => pages
       .map((page): CreatedPage => ({
         slug: page.id ?? '',
         title: page.title ?? page.id ?? '',

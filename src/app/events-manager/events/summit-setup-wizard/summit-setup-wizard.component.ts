@@ -283,8 +283,15 @@ export class SummitSetupWizardComponent implements OnInit {
       ...this.draft,
       earlyRegistration: this.earlyRegistration,
       eventName: raw.eventName,
-      startDate: raw.startDate ? new Date(raw.startDate) : undefined,
-      endDate: raw.endDate ? new Date(raw.endDate) : undefined,
+      // CONDITIONAL SPREAD, not `: undefined`. This object goes straight to
+      // eventService.add() from both Publish and "Save draft & exit" - and a
+      // draft is precisely when a date is still blank. A key explicitly set
+      // to undefined rejects the ENTIRE document write, so the wizard failed
+      // to save the one thing it exists to let you save half-finished. Every
+      // other optional field here already uses `?? null`; these two were the
+      // outliers. Fixed 2026-09-05.
+      ...(raw.startDate ? { startDate: new Date(raw.startDate) } : {}),
+      ...(raw.endDate ? { endDate: new Date(raw.endDate) } : {}),
       checkIn: raw.checkIn || null,
       costInDollars: raw.costInDollars ?? 0,
       // Normalized on the way out, same as the draft above - this is the

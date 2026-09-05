@@ -34,8 +34,12 @@ const ENUM_PATH = path.join(
  */
 function loadStates() {
   const src = fs.readFileSync(ENUM_PATH, "utf8");
-  const pairs = [...src.matchAll(/["']([A-Z]{2})["']\s*=\s*["']([^"']+)["']/g)]
-    .map((m) => [m[1], m[2]]);
+  // Matched up to the SAME quote that opened it, for the reason written out
+  // in country-code.js's copy of this line: `[^"']+` stops at an apostrophe.
+  // No US state name contains one, so this was latent here rather than live -
+  // which is exactly why the two files should be fixed together.
+  const pairs = [...src.matchAll(/["']([A-Z]{2})["']\s*=\s*(["'])(.*?)\2/g)]
+    .map((m) => [m[1], m[3]]);
   if (pairs.length < 50) {
     throw new Error(
       `Parsed only ${pairs.length} states from ${ENUM_PATH} - expected 50. ` +

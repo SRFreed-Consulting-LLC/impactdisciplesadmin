@@ -685,11 +685,23 @@ await db.doc('meta/newRecordCounts').set({ eventRegistrations: 0, formSubmission
 
 ### Outstanding for production
 
-- Create the 5 form definitions in `impactdisciples-a82a8`'s `forms`
-  collection (currently missing entirely - see Prerequisite step 2
-  above).
-- Deploy the admin app (hosting + `onFormSubmissionCreated`/`Updated`
-  functions) to production.
+**MOSTLY DONE — audited against live prod 2026-09-05.** This list stood
+unchanged for weeks while the work underneath it was finished, which is worse
+than no list: the next person either redoes it or stops trusting the file.
+What is actually true now is marked below.
+
+- ~~Create the 5 form definitions in `impactdisciples-a82a8`'s `forms`
+  collection (currently missing entirely).~~ **DONE** — prod has all five:
+  Consultation Survey, Consultation Request, Contact Us, Seminar Request,
+  Lunch and Learn Request.
+- ~~Deploy the admin app (hosting + `onFormSubmissionCreated`/`Updated`
+  functions) to production.~~ **DONE** — deployed many times since; prod
+  `form_submissions` holds real records.
+- The four old collections (`consultation_requests`, `consultation_surveys`,
+  `lunch_and_learns`, `seminars`) are **already empty in prod**, so the
+  migrate-then-delete steps below have nothing left to act on. Confirm the 43
+  records were migrated rather than lost before closing this out — that is the
+  one thing the audit could not tell from a document count.
 - Merge the dynamic-form web pages to `master` (triggers the existing
   GitHub Action - `.github/workflows/firebase-hosting-merge.yml` - which
   auto-deploys to the *live* production site on push; not something to do

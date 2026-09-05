@@ -395,8 +395,16 @@ export class EventFormComponent implements OnInit {
     const value: EventModel = {
       ...this.item,
       ...raw,
-      startDate: raw.startDate ? new Date(raw.startDate) : this.item?.startDate,
-      endDate: raw.endDate ? new Date(raw.endDate) : this.item?.endDate,
+      // Same treatment as imageUrl above, and for the same reason. There is
+      // no literal `undefined` here, which is why a grep for one misses it:
+      // `this.item?.endDate` IS undefined on a new event, and endDate's
+      // control is disabled for an online event, so raw.endDate is empty -
+      // the combination writes `endDate: undefined` on an addDoc and rejects
+      // the whole document. Fixed 2026-09-05.
+      ...(raw.startDate ? { startDate: new Date(raw.startDate) } :
+        this.item?.startDate ? { startDate: this.item.startDate } : {}),
+      ...(raw.endDate ? { endDate: new Date(raw.endDate) } :
+        this.item?.endDate ? { endDate: this.item.endDate } : {}),
       venue,
       ...(pinnedId ? { location: pinnedId } : {}),
       // A Summit is always in-person at the pinned venue and NEVER Kajabi
