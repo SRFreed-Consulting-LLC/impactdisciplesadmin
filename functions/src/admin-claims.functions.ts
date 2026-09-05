@@ -23,6 +23,67 @@ import {getAuth} from "firebase-admin/auth";
  * that existed before this trigger deployed - run it once after the
  * first deploy.
  */
+/**
+ * The nav groups whose screens hold BUSINESS RECORDS - contacts, orders,
+ * registrations, campaigns and the reports over them.
+ *
+ * These are the groups on the ADMIN tab (nav-config.ts's NavSection); every
+ * other group is `site` (page content) or `library`. The list is duplicated
+ * here because functions/ cannot import src/app, and
+ * functions/test/admin-claims-biz.test.js pins it against nav-config so the
+ * copy cannot drift silently.
+ */
+const BUSINESS_GROUPS = [
+  "contacts-manager",
+  "events-manager",
+  "store-manager",
+  "tools-manager",
+  "campaigns-manager",
+  "reports-manager",
+  "admin-manager",
+];
+
+/**
+ * Has this staff member been given ANY business-records screen?
+ *
+ * The `biz` claim exists because a per-screen grant lives in an admin_users
+ * document and rules can only read custom claims - so until now ANY Employee,
+ * including one holding no grants at all, could read the entire customer
+ * database straight from devtools. firestore.rules said exactly that in its
+ * own header and accepted it (sweep S2, 2026-08-28).
+ *
+ * This does NOT mirror screen keys into the claim, which is the thing that
+ * decision rejected as too intricate to keep honest. It mirrors ONE derived
+ * fact - "was this person deliberately given some business access" - which
+ * needs no collection-to-screen map inside the rules and cannot quietly come
+ * to mean something subtler than it says.
+ *
+ * WHAT IT DOES NOT FIX, said plainly: an Employee granted ONE business screen
+ * can still reach every business collection. Per-collection granularity needs
+ * that map. This turns "any Employee, including one with none" into "an
+ * Employee somebody deliberately gave business access to", which is most of
+ * the blast radius for a fraction of the risk.
+ * @param {string | undefined} role The staff role.
+ * @param {unknown} permissions The admin_users permissions array.
+ * @return {boolean} Whether business collections should open for them.
+ */
+export function hasBusinessAccess(
+  role: string | undefined,
+  permissions: unknown
+): boolean {
+  if (role === "Admin" || role === "Root") {
+    return true;
+  }
+  if (role !== "Employee" || !Array.isArray(permissions)) {
+    return false;
+  }
+  return permissions.some((grant) => {
+    const key = (grant as {screenKey?: unknown})?.screenKey;
+    return typeof key === "string" &&
+      BUSINESS_GROUPS.some((g) => key === g || key.startsWith(g + "."));
+  });
+}
+
 const VALID_ROLES = new Set([
   "Admin",
   "Root",
@@ -59,12 +120,20 @@ export const onAdminUserRoleSync = onDocumentWritten(
     if (!afterUid) {
       return;
     }
-    if (before?.role === after?.role && beforeUid === afterUid) {
-      // No role/link change - skip the Auth round trip (this trigger
+    const beforeBiz = hasBusinessAccess(before?.role, before?.permissions);
+    const afterBiz = hasBusinessAccess(after?.role, after?.permissions);
+
+    if (before?.role === after?.role && beforeUid === afterUid &&
+        beforeBiz === afterBiz) {
+      // No role/link/access change - skip the Auth round trip (this trigger
       // fires on EVERY admin_users write, incl. lastLogin-style stamps).
+      //
+      // The biz comparison is why granting or revoking a business screen
+      // reaches Auth at all: without it a permissions-only edit matched the
+      // old early return and the claim never moved.
       return;
     }
-    await setRoleClaim(afterUid, afterRole);
+    await setRoleClaim(afterUid, afterRole, afterBiz);
   }
 );
 
@@ -74,11 +143,13 @@ export const onAdminUserRoleSync = onDocumentWritten(
  * Auth account - nothing to stamp, nothing to fail over.
  * @param {string} uid The Firebase Auth uid.
  * @param {string | undefined} role The role to stamp, or undefined.
+ * @param {boolean} biz Whether business collections should open for them.
  * @return {Promise<void>} Resolves when the claim is synced.
  */
 async function setRoleClaim(
   uid: string,
-  role: string | undefined
+  role: string | undefined,
+  biz = false
 ): Promise<void> {
   try {
     const user = await getAuth().getUser(uid);
@@ -88,8 +159,16 @@ async function setRoleClaim(
     } else {
       delete claims.role;
     }
+    // Absent rather than false, so a token carries only what it grants and
+    // `token.get('biz', false)` in rules reads the same either way.
+    if (biz) {
+      claims.biz = true;
+    } else {
+      delete claims.biz;
+    }
     await getAuth().setCustomUserClaims(uid, claims);
-    logger.info("Synced role claim", {uid, role: role ?? "(cleared)"});
+    logger.info("Synced role claim",
+      {uid, role: role ?? "(cleared)", biz});
   } catch (err) {
     if ((err as {code?: string}).code === "auth/user-not-found") {
       logger.warn("Role claim sync skipped - no Auth account", {uid});

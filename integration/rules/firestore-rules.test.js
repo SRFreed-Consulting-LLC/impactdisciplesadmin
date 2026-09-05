@@ -52,6 +52,12 @@ const admin = () => env.authenticatedContext("admin-uid",
   {email: "admin@test.local", role: "Admin"}).firestore();
 const employee = () => env.authenticatedContext("employee-uid",
   {email: "employee@test.local", role: "Employee"}).firestore();
+// The SAME tier, carrying the `biz` claim onLibraryUserWritten's sibling
+// (onAdminUserRoleSync) stamps when an Employee holds at least one ADMIN-tab
+// screen grant. Two contexts because that claim is now the whole difference
+// between an Employee who may read the contact database and one who may not.
+const employeeWithBiz = () => env.authenticatedContext("employee-biz-uid",
+  {email: "employee-biz@test.local", role: "Employee", biz: true}).firestore();
 const editor = () => env.authenticatedContext("editor-uid",
   {email: "editor@test.local", role: "Editor"}).firestore();
 const patron = () => env.authenticatedContext("patron-uid",
@@ -89,6 +95,17 @@ before(async () => {
     });
     await setDoc(doc(db, p("site_footer/main")), {brandTitle: "Impact Discipleship Ministries", columns: []});
     await setDoc(doc(db, p("customers/c1")), {email: "c1@x.test"});
+    // Seeded for the S1 tests below: a get on a document that is not there
+    // succeeds under a permissive rule and is indistinguishable from one
+    // that is, so every assertFails needs a real document to be refused.
+    await setDoc(doc(db, p("purchases/pu1")), {email: "c1@x.test", total: 25});
+    await setDoc(doc(db, p("event-registrations/er1")), {
+      email: "c1@x.test", eventId: "e1",
+    });
+    await setDoc(doc(db, p("form_submissions/fs1")), {
+      formId: "f1", values: {name: "Ann"}, submittedAt: Timestamp.now(),
+    });
+    await setDoc(doc(db, p("page_content/home")), {title: "Home", blocks: []});
     // The derived public map. Seeded so the anon READ assertion tests the
     // rule rather than accidentally passing on a missing document - a get on
     // a document that is not there succeeds under a permissive rule and is
@@ -389,9 +406,84 @@ test("The carve-out is limited to your OWN document", async () => {
 });
 
 test("Employee claim: business staff yes, admin-only collections no", async () => {
-  await assertSucceeds(getDoc(doc(employee(), p("customers/c1"))));
+  // customers moved OUT of this test on 2026-09-05 - see the block below.
+  // An Employee is still business staff for everything else.
   await assertSucceeds(getDoc(doc(employee(), p("coupons/FREE"))));
   await assertFails(updateDoc(doc(employee(), p("admin_users/a1")), {role: "Admin"}));
+});
+
+// ---------------------------------------------------------------------------
+// SWEEP FINDING S1, partially closed 2026-09-05.
+//
+// Per-screen grants live in an admin_users document and rules can only read
+// custom claims, so ANY Employee - including one holding no grants at all -
+// could read the entire contact database from devtools. Both of the
+// production Employee accounts were in exactly that position: one has no
+// grants, the other has a single Site page.
+//
+// onAdminUserRoleSync now derives ONE boolean, `biz`, and stamps it as a
+// claim. It is applied to the four collections carrying personal data and
+// nowhere else, deliberately - so the Site-page Employee keeps the page they
+// administer, which is the thing that makes this shippable rather than a
+// policy change nobody asked for.
+//
+// WHAT IS STILL OPEN, and these tests say so rather than implying otherwise:
+// an Employee WITH the claim reaches all four. Per-collection granularity
+// needs a collection-to-screen map inside the rules, which is the thing the
+// original S2 decision rejected and this deliberately still does not do.
+
+test("S1: an Employee with no business grants cannot read personal data", async () => {
+  // The exploit, as it actually existed. Every one of these succeeded before.
+  await assertFails(getDoc(doc(employee(), p("customers/c1"))));
+  await assertFails(getDocs(collection(employee(), p("customers"))));
+  await assertFails(getDoc(doc(employee(), p("purchases/pu1"))));
+  await assertFails(getDoc(doc(employee(), p("event-registrations/er1"))));
+  await assertFails(getDocs(collection(employee(), p("form_submissions"))));
+});
+
+test("S1: nor write it", async () => {
+  await assertFails(setDoc(doc(employee(), p("customers/c-new")), {email: "x@y.test"}));
+  await assertFails(updateDoc(doc(employee(), p("customers/c1")), {email: "taken@y.test"}));
+  await assertFails(updateDoc(doc(employee(), p("purchases/pu1")), {total: 0}));
+});
+
+test("S1: an Employee WITH a business grant still can", async () => {
+  // The claim is what a granted Employee carries, so granting somebody
+  // Contacts must still give them Contacts - otherwise this is not a
+  // narrowing, it is a removal.
+  await assertSucceeds(getDoc(doc(employeeWithBiz(), p("customers/c1"))));
+  await assertSucceeds(getDoc(doc(employeeWithBiz(), p("purchases/pu1"))));
+  await assertSucceeds(
+    updateDoc(doc(employeeWithBiz(), p("customers/c1")), {firstName: "Ann"}));
+});
+
+test("S1: Admin and Root never depended on the new claim", async () => {
+  // isAdminRole() reads the EXISTING `role` claim, so the rollout window -
+  // between the rule shipping and a token refreshing - cannot lock out the
+  // people who would have to fix it.
+  await assertSucceeds(getDoc(doc(admin(), p("customers/c1"))));
+  await assertSucceeds(getDoc(doc(admin(), p("purchases/pu1"))));
+  await assertSucceeds(getDoc(doc(admin(), p("form_submissions/fs1"))));
+});
+
+test("S1: the claim alone is not a way in without the role", async () => {
+  // A forged or stale token carrying biz but not a staff role must fail -
+  // the check is role AND claim, never claim alone.
+  const impostor = env.authenticatedContext("nobody-uid",
+    {email: "nobody@test.local", biz: true}).firestore();
+  await assertFails(getDoc(doc(impostor, p("customers/c1"))));
+  const patronWithBiz = env.authenticatedContext("patron-uid",
+    {email: "patron@test.local", biz: true}).firestore();
+  await assertFails(getDoc(doc(patronWithBiz, p("customers/c1"))));
+});
+
+test("S1: the Site-page Employee keeps the pages they administer", async () => {
+  // The narrowing is scoped to personal data. page_content stays on
+  // isBusinessStaff(), which is what makes this safe to ship to a production
+  // account whose entire job is one page.
+  await assertSucceeds(getDoc(doc(employee(), p("page_content/home"))));
+  await assertSucceeds(
+    updateDoc(doc(employee(), p("page_content/home")), {title: "Home"}));
 });
 
 // Sweep finding S2 (2026-08-28). Per-screen Employee grants are advisory -

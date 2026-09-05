@@ -70,6 +70,40 @@ service cloud.firestore {
     function isBusinessStaff() {
       return role() in ['Admin', 'Root', 'Employee'];
     }
+    /**
+     * The same tier, NARROWED to staff who were actually given some business
+     * access - for the collections that hold people's personal data.
+     *
+     * This is the partial answer to the note above, added 2026-09-05. It does
+     * NOT mirror screen keys into the claim, which is what that note rejected
+     * and still rightly rejects: rules would need a collection-to-screen map,
+     * and a map nothing compares is a map that drifts.
+     *
+     * It reads ONE derived boolean instead. onAdminUserRoleSync stamps `biz`
+     * when a staff member is Admin/Root, or is an Employee holding at least
+     * one grant on an ADMIN-tab screen. functions/test/admin-claims-biz.test.js
+     * pins the group list against nav-config so the two cannot drift.
+     *
+     * WHAT IT FIXES: an Employee with NO grants, or with only Site-page
+     * grants, can no longer read the customer database from devtools. Both
+     * are real production accounts.
+     *
+     * WHAT IT DOES NOT: an Employee granted ONE business screen still reaches
+     * every collection below. That is per-collection granularity and it needs
+     * the map. Applied only to the four collections carrying personal data,
+     * deliberately - every other isBusinessStaff() call site is unchanged, so
+     * the Site-page Employee keeps the page they administer.
+     *
+     * ROLLOUT ORDER MATTERS: the function and its backfill ship BEFORE this
+     * rule, or a staff member whose token predates the claim is denied until
+     * it refreshes. Admin and Root do not depend on the new claim at all -
+     * isAdminRole() is the existing `role` claim - so only Employees can be
+     * caught by that window, and today neither of them should pass anyway.
+     */
+    function hasBusinessData() {
+      return isAdminRole() ||
+        (role() == 'Employee' && request.auth.token.get('biz', false) == true);
+    }
     // Library content authors. Employees are deliberately excluded - they
     // never see the Library section.
     function isLibraryStaff() {
@@ -629,8 +663,12 @@ service cloud.firestore {
       // ---- Wave 2: business data ------------------------------------------
       // Mirrors of the top-level twins, same rule as Wave 1: a migration is
       // the wrong moment to change who can read something.
+      // hasBusinessData(), not isBusinessStaff(): this is the contact
+      // database - names, emails, phones, postal addresses, private notes.
+      // An Employee who was never given a business screen has no reason to
+      // read it and, until 2026-09-05, could read all of it from devtools.
       match /customers/{id} {
-        allow read, write: if isBusinessStaff();
+        allow read, write: if hasBusinessData();
       }
       match /tag_applications/{id} {
         allow read, create, delete: if isBusinessStaff();
@@ -730,13 +768,15 @@ service cloud.firestore {
       // for their subcollections; a condition mistyped in here either locks
       // a patron out of a book they paid for or hands them someone else's
       // study notes. Identical text is the point.
+      // hasBusinessData() on both: an order carries the buyer's name, email
+      // and shipping address, and a registration carries the attendee's.
       match /purchases/{id} {
-        allow read, update: if isBusinessStaff();
+        allow read, update: if hasBusinessData();
         allow create, delete: if false;
       }
 
       match /event-registrations/{id} {
-        allow read, update, delete: if isBusinessStaff();
+        allow read, update, delete: if hasBusinessData();
         allow create: if false;
       }
 
@@ -1014,7 +1054,11 @@ service cloud.firestore {
           request.resource.data.submittedAt is timestamp &&
           (!('isTest' in request.resource.data) ||
             request.resource.data.isTest is bool);
-        allow read, update, delete: if isBusinessStaff();
+        // hasBusinessData() to READ: a submission is whatever a visitor typed
+        // into a contact or consultation form - name, email, phone, and
+        // often why they are getting in touch. The anonymous CREATE above is
+        // unchanged; it is the reading of them that is narrowed.
+        allow read, update, delete: if hasBusinessData();
       }
     }
 
