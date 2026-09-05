@@ -1,23 +1,4 @@
-import { Injectable } from '@angular/core';
-import { FirebaseDAO } from '../../dao/firebase.dao';
-import { DMMModel } from '@impact-common/shared/models/domain/dmm.model';
-import { BaseService } from './base.service';
-import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
-import { Timestamp } from 'firebase/firestore';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class DMMService extends BaseService<DMMModel>{
-  constructor(public override dao: FirebaseDAO<DMMModel> ) {
-    super(dao)
-    this.table="dmms"
-    this.fromFirestore = DMMService.fromFirestore
-  }
-
-  static readonly fromFirestore = (data: DMMModel): DMMModel => {
-    data.date = dateFromTimestamp(data.date as Timestamp)
-
-    return data;
-  };
-}
+// Shared with the other app since 2026-09-05 (review item 9) - see
+// @impact-common/shared/data/services/dmm.service. This file only keeps
+// the import path.
+export * from '@impact-common/shared/data/services/dmm.service';

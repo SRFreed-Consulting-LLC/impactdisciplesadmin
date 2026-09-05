@@ -427,6 +427,20 @@ admin happily edited all three. Under one parent, every future collection rides 
 
 ### Data access: DAO → Service → Component, one pattern for every collection
 
+**The DAO, BaseService and ten record services are SHARED with the web site since 2026-09-05
+(review item 9)** - `src/common/src/shared/data/` (`firebase.dao.ts`, `base.service.ts`,
+`services/*.service.ts`), plus `shared/utils/random-hex-id.ts` and `shared/ui/screen.service.ts`.
+The files under `src/app/common/dao/` and `src/app/common/services/data/` with those names are
+one-line re-exports that keep the import paths; add a method to the shared class, not to the
+re-export. The merge took the superset of both apps' copies with one answer per disagreement:
+`add()`/`update()` echo the written value (the web's rule - a read-back needs read permission the
+anonymous site lacks on write-only collections); every stream takes `onError`; the admin's paging,
+partial updates and batches and the web's ordered reads and Observable document stream all stay.
+The record services that still differ between the apps (`event`, `event-registration`,
+`site-navigation`, `site-footer`, `page-content`, `campaign-offer`, `campaign-popup`, `dock-bar`,
+`impact-team`, `web-config`, `nav-menu-data`) differ in what they DO - admin edits, web reads - and
+stay app-local; merging those is a per-service decision, not a copy.
+
 - **`FirebaseDAO<T>`** (`src/app/common/dao/firebase.dao.ts`) — generic wrapper around
   `@angular/fire/firestore` giving every model type `getAll`/`getById`/`add`/`update`/`delete`,
   `getAllByValue`/`queryByValue`/`queryAllByMultiValue`, live `streamAll`/`streamByValue`/`streamById`,

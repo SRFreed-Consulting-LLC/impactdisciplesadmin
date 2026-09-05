@@ -1,14 +1,4 @@
-import { Injectable } from '@angular/core';
-import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { TagModel } from '@impact-common/shared/models/domain/tag.model';
-import { BaseService } from './base.service';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class ProductCategoriesService extends BaseService<TagModel> {
-  constructor(public override dao: FirebaseDAO<TagModel> ) {
-    super(dao)
-    this.table="product_categories"
-  }
-}
+// Shared with the other app since 2026-09-05 (review item 9) - see
+// @impact-common/shared/data/services/product-categories.service. This file only keeps
+// the import path.
+export * from '@impact-common/shared/data/services/product-categories.service';

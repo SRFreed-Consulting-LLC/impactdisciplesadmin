@@ -1,14 +1,4 @@
-import { Injectable } from '@angular/core';
-import { FirebaseDAO } from 'src/app/common/dao/firebase.dao';
-import { SeriesModel } from '@impact-common/shared/models/utils/series.model';
-import { BaseService } from './base.service';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class SeriesService extends BaseService<SeriesModel>{
-  constructor(public override dao: FirebaseDAO<SeriesModel>) {
-    super(dao)
-    this.table="series"
-  }
-}
+// Shared with the other app since 2026-09-05 (review item 9) - see
+// @impact-common/shared/data/services/series.service. This file only keeps
+// the import path.
+export * from '@impact-common/shared/data/services/series.service';
