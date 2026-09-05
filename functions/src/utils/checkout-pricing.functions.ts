@@ -77,7 +77,9 @@ export interface PricingRequest {
    * is re-derived here rather than trusted from a price the client sent.
    */
   attributedCampaignId?: string | null;
-  shippingAddress: {state?: string; zip?: string; [key: string]: unknown};
+  // Optional in truth as well as in name: a digital-only cart has none, and
+  // the Georgia tax branch below already reads it with `?.`.
+  shippingAddress?: {state?: string; zip?: string; [key: string]: unknown};
   shippingRate: number;
 }
 

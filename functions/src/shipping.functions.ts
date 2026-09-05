@@ -246,9 +246,9 @@ exports.get_shipping_rates = onRequest(
 
       const shipengine = getShipEngineClient();
 
-      shipengine.getRatesWithShipmentDetails(clean).then((result) => {
+      shipengine.getRatesWithShipmentDetails(clean).then((result: unknown) => {
         response.send(result);
-      }).catch((err) => {
+      }).catch((err: unknown) => {
         console.error("get_shipping_rates failed", err);
 
         response.status(502).send({

@@ -814,8 +814,18 @@ export const campaignSendScheduler = onSchedule(
       // and mailed someone who had opted out of prayer, and a tag-triggered
       // touch on an operational audience got a marketing unsubscribe footer
       // whose link opted the recipient out of a list they never joined.
-      const unsubType = unsubTypeFor(
-        touch.audienceOverride ?? campaign.audience);
+      //
+      // And the same GUARD enqueueTouch has: a live campaign with no
+      // audience is skipped, not sent. Before strict null checks (2026-09-05)
+      // this called unsubTypeFor(undefined) and the TypeError took down the
+      // whole scheduler tick - every other campaign's touches with it.
+      const audience = touch.audienceOverride ?? campaign.audience;
+      if (!audience?.mode) {
+        console.warn(`tag-triggered touch ${touch.id}: campaign ` +
+          `${campaign.id} has no audience defined - skipped`);
+        continue;
+      }
+      const unsubType = unsubTypeFor(audience);
 
       const cutoff = Timestamp.fromMillis(
         Date.now() - trigger.afterDays * DAY_MS);

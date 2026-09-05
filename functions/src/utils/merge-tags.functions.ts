@@ -134,7 +134,7 @@ const LEGACY_SPACE = String.raw`(?:\s|&nbsp;|&#160;|&#xa0;)+`;
  * @param {string} literal The legacy token, e.g. "{{Recipient First Name}}".
  * @return {string} A RegExp source string.
  */
-function legacyTokenPattern(literal) {
+function legacyTokenPattern(literal: string): string {
   return literal.split(" ").map(escapeRegExp).join(LEGACY_SPACE);
 }
 

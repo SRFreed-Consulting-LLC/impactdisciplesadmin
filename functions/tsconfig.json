@@ -14,7 +14,14 @@
     // and a loud tsc error if anything ever drifts outside src/.
     "rootDir": "src",
     "sourceMap": true,
-    "strict": false,
+    // Full strict since 2026-09-05. It was `false` while this package owned
+    // every money and licence write - a review put it first on the list, and
+    // turning it on cost exactly eight errors: five implicit-any parameters,
+    // one narrowing that did not reach into a transaction callback, one
+    // parameter that was optional in use but not in type, and one call the
+    // scheduler made with a possibly-missing audience that would have taken
+    // down the whole tick. Keep it on; new code that needs `any` says so.
+    "strict": true,
     // Added when this package was on TS 4.9 and newer transitive .d.ts files
     // (@google-cloud/storage 7.22+, @types/node 20+) used TypeScript-5.7-era
     // syntax it could not parse. That reason expired with the move to TS 5.8

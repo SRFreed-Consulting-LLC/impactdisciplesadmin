@@ -1,4 +1,5 @@
 import {onRequest} from "firebase-functions/v2/https";
+import type {Response} from "express";
 import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
 
 /**
@@ -8,10 +9,10 @@ import {restrictedCors, requireStaffAuth} from "./utils/security.functions";
  * (YOUTUBE_PLAYLIST_KEY) never leave the server -- this replaces the old
  * get_youtube_keys, which handed the raw API key back to the browser
  * (where it landed in client JS and request URLs).
- * @param {any} response The Express-style response to write to.
+ * @param {Response} response The Express response to write to.
  * @return {Promise<void>} Resolves once a response has been sent.
  */
-async function fetchAndSendPlaylistVideos(response): Promise<void> {
+async function fetchAndSendPlaylistVideos(response: Response): Promise<void> {
   const apiKey = process.env.GOOGLE_SECRET_KEY;
   const playlistId = process.env.YOUTUBE_PLAYLIST_KEY;
   const base = "https://www.googleapis.com/youtube/v3/playlistItems";
@@ -255,11 +256,11 @@ async function buildPodcastFeed(): Promise<YoutubePodcast[]> {
  * cloudfunctions.net URLs with no CDN in front, so max-age buys a
  * returning visitor's own browser cache -- the module cache above is what
  * spares YouTube.
- * @param {any} response The Express-style response.
+ * @param {Response} response The Express response.
  * @param {YoutubePodcast[]} videos The episodes to send.
  * @return {void}
  */
-function sendPodcasts(response, videos: YoutubePodcast[]): void {
+function sendPodcasts(response: Response, videos: YoutubePodcast[]): void {
   response.set("Cache-Control", "public, max-age=900");
   response.send({videos});
 }

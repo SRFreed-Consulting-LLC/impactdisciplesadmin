@@ -209,6 +209,9 @@ export const grantLibraryUserLicenses = onCall(async (request):
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
+  // Read once here, where the guard above has narrowed it - the narrowing
+  // does not reach into the transaction callback below.
+  const grantedBy = request.auth.uid;
 
   const {email, bookIds} =
     (request.data ?? {}) as Partial<GrantLibraryUserLicensesRequest>;
@@ -266,7 +269,7 @@ export const grantLibraryUserLicenses = onCall(async (request):
         bookId,
         purchaseDate: now,
         source: "admin-grant",
-        grantedBy: request.auth.uid,
+        grantedBy,
       });
       granted.push(bookId);
     }

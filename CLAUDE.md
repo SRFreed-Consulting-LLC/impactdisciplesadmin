@@ -42,6 +42,16 @@ web/admin domain models + enums + date util, `config/firebase-projects.ts` (proj
 request/response types) - see the Cloud Functions section. Shared code changes go in the submodule
 first (push it first), then bump the pointer in each consumer.
 
+**Submodule vs. workspace - decided 2026-09-05: KEEP the submodule for now.** The fresh-eyes review
+found the three repos at three different pointers (the reader ten commits behind) and judged the
+submodule the wrong tool for what the shared layer has become. The owner's instruction was to go
+with the best recommendation and document it, and the recommendation is: keep it, because
+`functions/test/submodule-parity.test.js` now fails any admin deploy on this machine while the three
+pointers disagree, which was the actual failure mode - and a pnpm workspace is a half-day of
+retooling every deploy script, CI workflow and doc for a benefit that only lands when the shared
+data layer and models are merged (review items 8 and 9). Revisit the workspace question when THOSE
+start; do not start it on its own.
+
 ## Commands
 
 ```bash
