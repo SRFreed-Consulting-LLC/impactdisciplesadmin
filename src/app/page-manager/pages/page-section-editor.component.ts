@@ -618,24 +618,25 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     this.edits.next();
   }
 
-  /**
-   * Whether this section shares its row with the next one.
-   *
-   * A method rather than an assignment in the template, for the same reason
-   * the column levers became methods: `= $event.checked || undefined` writes
-   * a PRESENT key holding undefined, and Firestore rejects the whole document
-   * over it. Switching this ON saved; switching it OFF could not save at all,
-   * and took every other edit in the sitting down with it.
-   * @param shared Whether to pair with the next section.
-   */
-  setPairWithNext(shared: boolean): void {
-    if (shared) {
-      this.section.pairWithNext = true;
-    } else {
-      delete this.section.pairWithNext;
-    }
-    this.edits.next();
-  }
+  // setPairWithNext, and the "Share the row with the next section" switch it
+  // backed, were removed on 2026-09-05 (owner). It was a section-level lever
+  // describing a relationship with a NEIGHBOUR - "put the next section beside
+  // me, half and half" - and it was the wrong shape twice over.
+  //
+  // It said something the archetype already said. A SECTION holds one to
+  // three columns of any piece kind, and `form` is a piece kind, so "text on
+  // the left, a form on the right" was always one section with two columns.
+  //
+  // And the two spellings did not look the same. A paired row is a two-cell
+  // grid of separate sections, and a grid cell stretches: each half paints
+  // its own ground for the height of the taller one, so the shorter half drew
+  // a slab of empty ground under its last line - which is what the Contact
+  // page looked like. Columns inside ONE section centre against each other on
+  // a single ground.
+  //
+  // One block on the site ever used it. scripts/merge-paired-sections.js
+  // folded it into a two-column section; `pairWithNext` is still in the model
+  // and still honoured by the web app, but nothing can set it any more.
 
   // titleTones and setTitleTone lived here until 2026-09-03. Both were dead:
   // nothing in any template or class referenced either, and setTitleTone

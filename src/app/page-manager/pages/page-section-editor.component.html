@@ -127,15 +127,9 @@
       </div>
     }
 
-    <!-- Two sections sharing one row, half and half - the Contact page's
-         parallel halves. On phones they stack again. -->
-    <div class="psd__axis">
-      <mat-slide-toggle [checked]="section.pairWithNext === true"
-                        (change)="setPairWithNext($event.checked)"
-                        aria-label="Share the row with the next section">
-        Share the row with the next section
-      </mat-slide-toggle>
-    </div>
+    <!-- "Share the row with the next section" was here until 2026-09-05.
+         See setPairWithNext's removal in the component for why: a section
+         with two columns already said it, and said it better. -->
 
     <!-- Only while the photo is a cropped BACKGROUND does a focus mean
          anything - which part of it the band keeps. Born from About Us's

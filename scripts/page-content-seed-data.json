@@ -1767,7 +1767,6 @@
       "type": "section",
       "isActive": true,
       "variant": "columns",
-      "pairWithNext": true,
       "columns": [
         {
           "key": "col-1",
@@ -1792,17 +1791,9 @@
               "key": "siteDetails-1-3"
             }
           ]
-        }
-      ]
-    },
-    {
-      "key": "form",
-      "type": "section",
-      "isActive": true,
-      "variant": "columns",
-      "columns": [
+        },
         {
-          "key": "col-1",
+          "key": "col-1-2",
           "align": "centre",
           "measure": true,
           "pieces": [
