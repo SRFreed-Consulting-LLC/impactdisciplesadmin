@@ -2,13 +2,13 @@ import { Component, Inject } from '@angular/core';
 import {
   customerName as customerNameOf,
   itemSummary as itemSummaryOf,
-} from 'src/app/contacts-manager/fulfillment/order-display.util';
+} from 'src/app/shared/fulfillment/order-display.util';
 import { Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { FulfillmentStep, WorkflowAction, segmentState, stepsFor } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, WorkflowAction, segmentState, stepsFor } from 'src/app/shared/fulfillment/fulfillment-steps';
 import { AmazonConfirmationDialogComponent } from '../amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { SnackbarService } from '../snackbar.service';
 import { ConfirmService } from '../confirm-dialog/confirm.service';

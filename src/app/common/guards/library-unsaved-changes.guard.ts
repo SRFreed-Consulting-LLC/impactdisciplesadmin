@@ -8,7 +8,7 @@ import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service'
 import type {
   LibraryUnsavedChangesDialogComponent,
   LibraryUnsavedChangesDialogResult,
-} from '../../library-manager/dialogs/library-unsaved-changes-dialog.component';
+} from '../../shared/unsaved-changes-dialog/library-unsaved-changes-dialog.component';
 
 export interface LibraryUnsavedChangesEditor {
   hasUnsavedChanges(): boolean;
@@ -43,7 +43,7 @@ export function libraryUnsavedChangesGuard<T extends LibraryUnsavedChangesEditor
       await Promise.all([
         import('@angular/material/dialog'),
         import('@angular/material/snack-bar'),
-        import('../../library-manager/dialogs/library-unsaved-changes-dialog.component'),
+        import('../../shared/unsaved-changes-dialog/library-unsaved-changes-dialog.component'),
       ]);
     const { dialog, snackBar, logger, authService } = runInInjectionContext(injector, () => ({
       dialog: inject(MatDialog),

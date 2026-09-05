@@ -146,7 +146,7 @@ import { ThemesComponent } from 'src/app/core/settings/themes.component';
 import { ToolsManagerComponent } from 'src/app/tools-manager/tools-manager.component';
 import { VariableInserterComponent } from 'src/app/shared/rich-text-editor/variable-inserter.component';
 import { VenueRoomsDialogComponent } from 'src/app/events-manager/events/venue-rooms-dialog.component';
-import { WebConfigComponent } from 'src/app/page-manager/web-config/web-config.component';
+import { WebConfigComponent } from 'src/app/data-manager/web-config/web-config.component';
 import { WebNewslettersComponent } from 'src/app/campaigns-manager/web-newsletters/web-newsletters.component';
 import { WorldMapComponent } from 'src/app/library-manager/world-map/world-map.component';
 

@@ -2,13 +2,13 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
-import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
+import { SitePagesNavService } from 'src/app/core/main-screen/site-pages-nav.service';
 import { NAV_CONFIG, NavGroup, NavLeaf, displayGroupLabel } from '../main-screen/nav-config';
 import {
   customerName as customerNameOf,
   isNewOrder,
   itemSummary as itemSummaryOf,
-} from 'src/app/contacts-manager/fulfillment/order-display.util';
+} from 'src/app/shared/fulfillment/order-display.util';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, combineLatest, takeUntil } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
@@ -24,7 +24,7 @@ import { EventRegistrationService } from 'src/app/common/services/data/event-reg
 import { FormSubmissionService } from 'src/app/common/services/data/form-submission.service';
 import { FormSubmissionModel } from '@impact-common/shared/models/domain/form-submission.model';
 import { toMillis } from '@impact-common/shared/utils/date-from-timestamp';
-import { FulfillmentStep, segmentState, stepsFor } from '../../contacts-manager/fulfillment/fulfillment-steps';
+import { FulfillmentStep, segmentState, stepsFor } from 'src/app/shared/fulfillment/fulfillment-steps';
 import { QueryParam, WhereFilterOperandKeys } from 'src/app/common/dao/firebase.dao';
 
 interface DashboardEventRow {

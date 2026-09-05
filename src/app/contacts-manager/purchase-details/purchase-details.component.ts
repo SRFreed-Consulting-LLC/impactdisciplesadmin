@@ -1,5 +1,5 @@
 import { Component, Input} from '@angular/core';
-import { customerName as customerNameOf } from 'src/app/contacts-manager/fulfillment/order-display.util';
+import { customerName as customerNameOf } from 'src/app/shared/fulfillment/order-display.util';
 import { MatDialog } from '@angular/material/dialog';
 import { filter, firstValueFrom, take } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
@@ -10,7 +10,7 @@ import { EventService } from 'src/app/common/services/data/event.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { hasRole } from '@impact-common/shared/lists/roles.enum';
 import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timestamp';
-import { FulfillmentStep, WorkflowAction, stepsFor } from '../fulfillment/fulfillment-steps';
+import { FulfillmentStep, WorkflowAction, stepsFor } from 'src/app/shared/fulfillment/fulfillment-steps';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';

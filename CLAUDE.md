@@ -671,6 +671,28 @@ in new code.)
 Which modules own which screens has moved more than once (see above) — don't assume a screen's
 module from memory or an old link; check `nav-config.ts` or `app-routing.module.ts` first.
 
+**Managers do not import each other (2026-09-05, review item 10).** A `*-manager/` folder is a lazy
+feature; code two features need lives in one of three places, each with a rule: `common/` is data
+and models (the DAO, the record services, guards, the permission service); `shared/` is UI and pure
+helpers used by more than one screen (dialogs, the list header, `fulfillment/` steps + order
+display, the unsaved-changes dialog); `core/` is the shell (main screen, nav config, the dashboard,
+`SitePagesNavService`). The moves that established this: fulfillment steps and the order display
+util out of contacts-manager, the site-pages nav service out of page-manager, the unsaved-changes
+dialog out of library-manager, Web Config into data-manager (the Data tab owns it). ONE sanctioned
+exception remains: `campaigns-manager` imports the email designer (`DesignerStateService`,
+`PreviewDialogComponent`, `EmailBuilderModule`) from `tools-manager` - the designer is a feature in
+its own right that both managers open, and moving it to a top-level feature is a routing +
+permission change that was judged not worth its risk today. Don't add a second exception; add to
+`shared/`, `common/` or `core/` instead.
+
+**Comments describe the code as it is; history goes in git.** The comment culture here is the
+suite's strength - every non-obvious decision cites its date and incident - but a growing share had
+become changelog ("was X until 2026-09-01", "used to be Y"), and a stale comment is a stale spec
+when comments are the primary documentation. When you change code, EDIT the comment to describe
+the new state and put the "was/until" story in the commit message. Keep a date in a comment only
+when the date itself explains the code (a grace period, a migration cutover, a rule an owner set).
+This file is partly a changelog for the same reason; trim it when a paragraph is touched.
+
 ### Nav config as permission registry (`src/app/core/main-screen/nav-config.ts`)
 
 `NAV_CONFIG` (`NavGroup`/`NavLeaf`/`NavTab`) drives the left nav *and* doubles as the permission

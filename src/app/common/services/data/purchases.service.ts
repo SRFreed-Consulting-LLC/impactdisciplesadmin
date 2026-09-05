@@ -7,7 +7,7 @@ import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timesta
 import { environment } from 'src/environments/environment';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
-import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS } from 'src/app/contacts-manager/fulfillment/fulfillment-steps';
+import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS } from 'src/app/shared/fulfillment/fulfillment-steps';
 import { renderMergeTags } from 'src/app/common/utils/email/merge-tags';
 import { BaseService } from './base.service';
 import { EMailService } from './email.service';

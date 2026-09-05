@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
+import { SitePagesNavService } from 'src/app/core/main-screen/site-pages-nav.service';
 import { BehaviorSubject, Observable, filter, take, tap } from 'rxjs';
 import { AdminUser } from 'src/app/common/models/admin/admin-user.model';
 import { ScreenPermission } from 'src/app/common/models/admin/screen-permission.model';

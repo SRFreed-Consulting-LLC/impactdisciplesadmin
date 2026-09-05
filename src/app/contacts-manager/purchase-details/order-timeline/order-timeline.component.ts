@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
 import { CheckoutForm, FulfillmentStatus, PurchaseRefundEntry } from '@impact-common/shared/models/utils/cart.model';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
-import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS, FulfillmentStep, stepsFor } from '../../fulfillment/fulfillment-steps';
+import { AMAZON_FULFILLMENT_STEPS, FULFILLMENT_STEPS, FulfillmentStep, stepsFor } from 'src/app/shared/fulfillment/fulfillment-steps';
 
 export interface TimelineNode {
   step: FulfillmentStep;

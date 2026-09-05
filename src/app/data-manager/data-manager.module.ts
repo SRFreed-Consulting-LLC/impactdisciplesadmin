@@ -3,7 +3,7 @@ import { NgModule } from '@angular/core';
 // Their FILES stay under page-manager/ - the same arrangement
 // NavigationModule already has, and for the same reason: the files are
 // fine where they are and moving them would make the diff unreadable.
-import { WebConfigComponent } from '../page-manager/web-config/web-config.component';
+import { WebConfigComponent } from './web-config/web-config.component';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';

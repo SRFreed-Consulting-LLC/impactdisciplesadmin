@@ -48,6 +48,24 @@ export exactly the names in the shared contract (`functions/test/contract.test.j
 Shared cross-cutting concerns (`restrictedCors`, `requireStaffAuth`) live in
 `functions/src/utils/security.functions.ts`.
 
+**Integration-test backlog (2026-09-05, review item 12).** 42 of the 83 contract names appear in an
+`integration/*.test.js`; these 41 do not, and the money/identity ones are the ones to write first
+(`refundStorePurchase`, `revokeStorePurchasedLicense`, `assignGroupLicense`, `revokeGroupLicense`,
+`leaveGroupAndRevokeLicense`, `deleteMyAccount`, `createAdminUser`/`deleteAdminUser`):
+`get_youtube_podcasts_public, campaign_web_event, newsletter_archive, search_impact_groups,
+lookup_coupon, lookupCoupon, createAdminUser, deleteAdminUser, applyTagRuleRetroactively,
+deleteCampaign, rebuildLanguageRegistry, importBookFromPdf, refundStorePurchase,
+revokeStorePurchasedLicense, updateLibraryUser, sendLibraryUserMessage, requestToJoinGroup,
+approveGroupMembership, rejectGroupMembership, closeMyGroup, sendGroupInvite, cancelGroupInvite,
+assignGroupLicense, revokeGroupLicense, leaveGroupAndRevokeLicense, copyGroupMembers,
+getInviteDetails, declineGroupInvite, acceptGroupInvite, deleteMyAccount, recordMyLogin,
+createMyReaderProfile, updateMyPreferences, onEventRegistrationUpdated, onFormSubmissionCreated,
+onFormSubmissionUpdated, onPurchaseUpdated, pruneSentMail, onCampaignMailDelivered,
+onPurchaseTaxSummary, lockedOutPatronAlert`. (Several have pure-helper unit tests under
+`functions/test/`; "not named in an integration test" is the gap being counted, not "untested".)
+Recompute with a one-liner over `functions-contract.ts` and `integration/*.test.js` rather than
+trusting this list once it is a month old.
+
 **Shared helpers you should reach for before writing the read yourself (2026-09-05, review item 4):**
 
 - `utils/public-http.ts` — `publicHttp(name, {method, ...options}, handler)` is an anonymous,

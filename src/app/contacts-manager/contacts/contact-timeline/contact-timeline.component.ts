@@ -3,7 +3,7 @@ import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { CheckoutForm, FulfillmentStatus } from '@impact-common/shared/models/utils/cart.model';
 import { EventRegistrationModel } from '@impact-common/shared/models/domain/event-registration.model';
 import { ContactNoteModel } from 'src/app/common/models/domain/utils/contact-note.model';
-import { FULFILLMENT_STEPS } from '../../fulfillment/fulfillment-steps';
+import { FULFILLMENT_STEPS } from 'src/app/shared/fulfillment/fulfillment-steps';
 
 export type TimelineFilter = 'all' | 'purchase' | 'event' | 'note';
 

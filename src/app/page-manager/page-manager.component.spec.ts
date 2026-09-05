@@ -8,7 +8,7 @@ import { PageContentService } from '../common/services/data/page-content.service
 import { PermissionService } from '../common/services/permission.service';
 import { SnackbarService } from '../shared/snackbar.service';
 import { PageManagerComponent } from './page-manager.component';
-import { SitePagesNavService } from './pages/site-pages-nav.service';
+import { SitePagesNavService } from 'src/app/core/main-screen/site-pages-nav.service';
 
 /**
  * CREATING A PAGE MUST NOT BE ABLE TO DESTROY ONE.

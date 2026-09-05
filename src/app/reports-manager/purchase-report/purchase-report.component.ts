@@ -8,7 +8,7 @@ import { dateFromTimestamp } from '@impact-common/shared/utils/date-from-timesta
 import { stateVariants } from 'src/app/common/utils/state-variants';
 import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 import { ReportColumn, ReportColumnSet } from '../report-column-set';
-import { FULFILLMENT_STEPS } from '../../contacts-manager/fulfillment/fulfillment-steps';
+import { FULFILLMENT_STEPS } from 'src/app/shared/fulfillment/fulfillment-steps';
 
 // Flat, report-specific row shape - not CheckoutForm itself.
 interface ReportRow {

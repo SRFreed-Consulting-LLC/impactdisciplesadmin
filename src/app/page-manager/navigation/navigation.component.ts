@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { SiteNavigationService } from 'src/app/common/services/data/site-navigation.service';
 import { ConfirmService } from 'src/app/shared/confirm-dialog/confirm.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
-import { CreatedPage, SitePagesNavService } from '../pages/site-pages-nav.service';
+import { CreatedPage, SitePagesNavService } from 'src/app/core/main-screen/site-pages-nav.service';
 import {
   SiteNavItem,
   liveNavItems,

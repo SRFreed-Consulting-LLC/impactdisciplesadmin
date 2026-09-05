@@ -2,7 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 import { NavLeaf } from 'src/app/core/main-screen/nav-config';
 import { PageContentService } from 'src/app/common/services/data/page-content.service';
-import { isKitPage } from './kit-page.adapter';
+// The one page-manager import core keeps: a pure "is this a kit page"
+// predicate over a page_content document, which belongs with the page
+// kit's own adapter rather than with the drawer.
+import { isKitPage } from 'src/app/page-manager/pages/kit-page.adapter';
 
 /**
  * THE PAGES STAFF CREATED, AS LEFT-NAV LEAVES.

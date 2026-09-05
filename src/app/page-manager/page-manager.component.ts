@@ -9,7 +9,7 @@ import { TabShellComponent } from '../core/main-screen/tab-shell.component';
 import { SnackbarService } from '../shared/snackbar.service';
 import { EDITABLE_PAGES, EditablePage } from './pages/page-section-catalogue';
 import { NewPageDialogComponent, NewPageResult } from './pages/new-page-dialog.component';
-import { SitePagesNavService } from './pages/site-pages-nav.service';
+import { SitePagesNavService } from 'src/app/core/main-screen/site-pages-nav.service';
 
 @Component({
     selector: 'app-page-manager',

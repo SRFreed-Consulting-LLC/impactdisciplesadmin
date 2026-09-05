@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { DASHBOARD_SECTION_KEYS, DashboardComponent } from './dashboard.component';
 import { PermissionService } from 'src/app/common/services/permission.service';
 import { AdminAuthService } from 'src/app/common/forms/admin/admin-auth.service';
-import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
+import { SitePagesNavService } from 'src/app/core/main-screen/site-pages-nav.service';
 import { PurchasesService } from 'src/app/common/services/data/purchases.service';
 import { EventService } from 'src/app/common/services/data/event.service';
 import { LocationService } from 'src/app/common/services/data/location.service';

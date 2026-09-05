@@ -4,7 +4,7 @@ import {
   customerName as customerNameOf,
   isNewOrder,
   itemSummary as itemSummaryOf,
-} from './order-display.util';
+} from 'src/app/shared/fulfillment/order-display.util';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { CheckoutForm } from '@impact-common/shared/models/utils/cart.model';
@@ -16,7 +16,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { SnackbarService } from '../../shared/snackbar.service';
 import { AmazonConfirmationDialogComponent } from '../../shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
-import { FulfillmentStep, WorkflowAction, completedStepCount, segmentState, stepsFor } from './fulfillment-steps';
+import { FulfillmentStep, WorkflowAction, completedStepCount, segmentState, stepsFor } from 'src/app/shared/fulfillment/fulfillment-steps';
 
 // Store Manager > Fulfillment - the 5-step physical-order workflow (see
 // fulfillment-steps.ts). Only ever shows purchases with a fulfillmentStatus

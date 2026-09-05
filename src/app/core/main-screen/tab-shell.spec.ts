@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { PageContentService } from 'src/app/common/services/data/page-content.service';
 import { SnackbarService } from 'src/app/shared/snackbar.service';
-import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
+import { SitePagesNavService } from './site-pages-nav.service';
 import { PageManagerComponent } from 'src/app/page-manager/page-manager.component';
 import { AdminManagerComponent } from 'src/app/admin-manager/admin-manager.component';
 

@@ -19,7 +19,7 @@ import {
   NAV_CONFIG, NAV_SECTIONS, NavGroup, NavLeaf, NavSection, NavSectionDef,
   displayGroupLabel, keepsNavGroup, sectionOf
 } from './nav-config';
-import { SitePagesNavService } from 'src/app/page-manager/pages/site-pages-nav.service';
+import { SitePagesNavService } from './site-pages-nav.service';
 
 interface PinnedNavItem {
   group: NavGroup;
