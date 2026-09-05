@@ -1,0 +1,51 @@
+<div class="field-row">
+  <span class="field-label">Image</span>
+  <div class="image-picker-row">
+    @if (props.src) {
+      <img class="image-thumb" [src]="props.src" alt="">
+    }
+    <button mat-stroked-button (click)="openPicker()">
+      {{ props.src ? 'Replace' : 'Choose image' }}
+    </button>
+  </div>
+</div>
+<div class="field-row">
+  <span class="field-label">Sizing</span>
+  <mat-button-toggle-group hideSingleSelectionIndicator [value]="props.sizing"
+      (change)="commit(setSizing($event.value))">
+    <mat-button-toggle value="original">Original</mat-button-toggle>
+    <mat-button-toggle value="fill">Fill</mat-button-toggle>
+    <mat-button-toggle value="scale">Scale</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
+@if (props.sizing === 'scale') {
+  <div class="field-row">
+    <span class="field-label">Scale ({{ props.scalePercent }}%)</span>
+    <input class="range-input" type="range" min="10" max="100"
+           [value]="props.scalePercent"
+           (change)="commit(setScale($any($event.target).value))">
+  </div>
+}
+<div class="field-row">
+  <span class="field-label">Link to</span>
+  <input class="text-input" placeholder="https://" [value]="props.href ?? ''"
+         (change)="commit(setHref($any($event.target).value))">
+</div>
+<div class="field-row">
+  <mat-slide-toggle [checked]="props.openInNewTab"
+      (change)="commit(setNewTab($event.checked))">
+    Open link in new tab
+  </mat-slide-toggle>
+</div>
+<div class="field-row">
+  <span class="field-label">Alt text</span>
+  <input class="text-input" [value]="props.alt"
+         (change)="commit(setAlt($any($event.target).value))">
+</div>
+
+@if (pickerVisible$ | async) {
+  <app-image-uploader [card]="pickerCard" [isList]="false" [field]="'image'"
+      [selectionMode]="'single'" [imageSelectVisible]="pickerVisible$ | async"
+      (imageSelectClosed)="onPickerClosed()">
+  </app-image-uploader>
+}

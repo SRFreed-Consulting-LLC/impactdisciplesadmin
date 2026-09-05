@@ -2,8 +2,8 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 // The app has no global HttpClient provider (everything else talks to
 // Firestore through @angular/fire) - the builder needs it only for Vimeo's
-// oEmbed thumbnail lookup in the side panel, so it's provided here, inside
-// whichever lazy chunk pulls the builder in.
+// oEmbed thumbnail lookup in the video block's settings, so it's provided
+// here, inside whichever lazy chunk pulls the builder in.
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -25,6 +25,13 @@ import { InlineTextEditorComponent } from './inline-editor/inline-text-editor.co
 import { DesignerSidePanelComponent } from './side-panel/designer-side-panel.component';
 import { SocialBlockSettingsComponent } from './side-panel/block-settings/social-block-settings.component';
 import { FooterBlockSettingsComponent } from './side-panel/block-settings/footer-block-settings.component';
+import { TextBlockSettingsComponent } from './side-panel/block-settings/text-block-settings.component';
+import { HtmlBlockSettingsComponent } from './side-panel/block-settings/html-block-settings.component';
+import { ImageBlockSettingsComponent } from './side-panel/block-settings/image-block-settings.component';
+import { ButtonBlockSettingsComponent } from './side-panel/block-settings/button-block-settings.component';
+import { SpacerBlockSettingsComponent } from './side-panel/block-settings/spacer-block-settings.component';
+import { DividerBlockSettingsComponent } from './side-panel/block-settings/divider-block-settings.component';
+import { VideoBlockSettingsComponent } from './side-panel/block-settings/video-block-settings.component';
 import { BlockStyleEditorComponent } from './side-panel/block-style-editor.component';
 import { GlobalStylesPanelComponent } from './side-panel/global-styles-panel.component';
 import { PreviewDialogComponent } from './preview/preview-dialog.component';
@@ -75,6 +82,13 @@ import { TemplatePickerDialogComponent } from './template-picker/template-picker
     DesignerSidePanelComponent,
     SocialBlockSettingsComponent,
     FooterBlockSettingsComponent,
+    TextBlockSettingsComponent,
+    HtmlBlockSettingsComponent,
+    ImageBlockSettingsComponent,
+    ButtonBlockSettingsComponent,
+    SpacerBlockSettingsComponent,
+    DividerBlockSettingsComponent,
+    VideoBlockSettingsComponent,
     BlockStyleEditorComponent,
     GlobalStylesPanelComponent,
     PreviewDialogComponent,

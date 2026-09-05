@@ -1,0 +1,45 @@
+<div class="field-row">
+  <span class="field-label">Video URL (YouTube or Vimeo)</span>
+  <input class="text-input" placeholder="https://youtube.com/watch?v=..."
+         [value]="block.props.url"
+         (change)="onUrlChange($any($event.target).value)">
+</div>
+@if (block.props.provider !== 'other' || block.props.url) {
+  <p class="hint subtle">
+    @switch (block.props.provider) {
+      @case ('youtube') { YouTube video detected - thumbnail fetched automatically. }
+      @case ('vimeo') { Vimeo video detected - thumbnail fetched automatically. }
+      @default { Unrecognized source - add a thumbnail image below. }
+    }
+  </p>
+}
+<div class="field-row">
+  <span class="field-label">Thumbnail</span>
+  <div class="image-picker-row">
+    @if (block.props.thumbnailUrl) {
+      <img class="image-thumb" [src]="block.props.thumbnailUrl" alt="">
+    }
+    <button mat-stroked-button (click)="openThumbnailPicker()">
+      {{ block.props.thumbnailUrl ? 'Replace' : 'Choose image' }}
+    </button>
+  </div>
+  @if (block.props.customThumbnail) {
+    <button mat-button class="clear-button" (click)="useSourceThumbnail()">
+      Use source thumbnail
+    </button>
+  }
+</div>
+<div class="field-row">
+  <span class="field-label">Caption / accessible label</span>
+  <input class="text-input" [value]="block.props.caption"
+         (change)="commit(setCaption($any($event.target).value))">
+</div>
+<p class="hint">Recipients see the thumbnail with a play button; clicking opens the video
+  in their browser (email clients can't embed players).</p>
+
+@if (pickerVisible$ | async) {
+  <app-image-uploader [card]="pickerCard" [isList]="false" [field]="'image'"
+      [selectionMode]="'single'" [imageSelectVisible]="pickerVisible$ | async"
+      (imageSelectClosed)="onPickerClosed()">
+  </app-image-uploader>
+}

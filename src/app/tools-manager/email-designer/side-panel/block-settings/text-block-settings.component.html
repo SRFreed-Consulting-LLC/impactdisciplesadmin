@@ -1,0 +1,29 @@
+@if (isHeading) {
+  <div class="field-row">
+    <span class="field-label">Heading level</span>
+    <mat-button-toggle-group hideSingleSelectionIndicator [value]="$any(block).props.level"
+        (change)="commit(setLevel($event.value))">
+      <mat-button-toggle [value]="1">H1</mat-button-toggle>
+      <mat-button-toggle [value]="2">H2</mat-button-toggle>
+      <mat-button-toggle [value]="3">H3</mat-button-toggle>
+      <mat-button-toggle [value]="4">H4</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+}
+<div class="field-row">
+  <span class="field-label">Font</span>
+  <select class="text-input" [value]="font"
+          (change)="commit(setFont($any($event.target).value))"
+          aria-label="Block font family">
+    <option value="">Email default</option>
+    @for (family of fontFamilies; track family) {
+      <option [value]="family">{{ fontLabel(family) }}</option>
+    }
+  </select>
+</div>
+@if (isHeading) {
+  <p class="hint">Click the heading on the canvas to edit its text in place.</p>
+} @else {
+  <p class="hint">Click the text on the canvas to edit it in place - the floating toolbar
+    has size, color, highlight, alignment, and the Merge tag menu.</p>
+}

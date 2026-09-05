@@ -1,0 +1,131 @@
+// The side panel's field vocabulary - .field-row/.field-label/.text-input/
+// .hint and friends - as ONE partial every block-settings component `@use`s.
+//
+// Angular scopes styles per component, so the panel's copy of these rules
+// cannot reach an extracted editor's template. The first two extractions
+// (social, footer; 2026-08-21) each carried a hand-pasted copy; with nine
+// editors that would be nine copies drifting apart, so it is a partial now
+// (2026-09-05). Keep it in step with designer-side-panel.component.scss,
+// which still owns the panel-level chrome (tabs, header, palettes).
+//
+// Explicit text/control colors: the app-wide (dark) theme styles bare
+// inputs/selects for dark surfaces, which reads as invisible on this panel's
+// white background.
+
+:host {
+  display: block;
+
+  input,
+  select,
+  textarea {
+    background: #ffffff;
+    color: #22282f;
+    color-scheme: light;
+  }
+}
+
+.field-row {
+  margin-bottom: 16px;
+
+  // Static display captions, deliberately not <label> elements - a <label>
+  // with no associated control is an a11y-lint error (same convention as
+  // agenda-wizard's .flabel).
+  .field-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #6a7280;
+    margin-bottom: 6px;
+  }
+}
+
+.text-input {
+  width: 100%;
+  border: 1px solid #848f9e;
+  border-radius: 7px;
+  padding: 7px 9px;
+  font: inherit;
+  box-sizing: border-box;
+
+  &.narrow {
+    width: 110px;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #0e6e6e;
+  }
+}
+
+.range-input {
+  width: 100%;
+}
+
+.color-input {
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #848f9e;
+  border-radius: 6px;
+  background: none;
+  vertical-align: middle;
+}
+
+.clear-button {
+  margin-left: 8px;
+}
+
+.hint {
+  color: #5f6875;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+
+  &.subtle {
+    color: #0e6e6e;
+    font-weight: 600;
+    font-size: 11.5px;
+  }
+}
+
+.inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .grow {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #848f9e;
+    border-radius: 7px;
+    padding: 7px 6px;
+    font: inherit;
+    font-size: 12.5px;
+  }
+}
+
+textarea.text-input {
+  resize: vertical;
+  font-family: inherit;
+}
+
+textarea.code-input {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.image-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.image-thumb {
+  max-width: 96px;
+  max-height: 56px;
+  border: 1px solid #dbe0e6;
+  border-radius: 6px;
+  object-fit: cover;
+}

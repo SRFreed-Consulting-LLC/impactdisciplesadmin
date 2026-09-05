@@ -1,0 +1,25 @@
+<div class="field-row">
+  <span class="field-label">Line (blank = email default)</span>
+  <div class="inline-controls">
+    <select class="grow" [value]="block.props.style ?? ''"
+            (change)="commit(setStyle($any($event.target).value || null))"
+            aria-label="Divider line style">
+      <option value="">Default</option>
+      <option value="solid">Solid</option>
+      <option value="dashed">Dashed</option>
+      <option value="dotted">Dotted</option>
+      <option value="double">Double</option>
+      <option value="inset">Inset</option>
+      <option value="outset">Outset</option>
+      <option value="groove">Groove</option>
+      <option value="ridge">Ridge</option>
+    </select>
+    <input class="text-input narrow" type="number" min="1" max="12" placeholder="px"
+           [value]="block.props.thickness ?? ''"
+           (change)="commit(setThickness($any($event.target).value || null))"
+           aria-label="Divider thickness">
+    <input class="color-input" type="color" [value]="block.props.color ?? '#dfe3e8'"
+           (change)="commit(setColor($any($event.target).value))"
+           aria-label="Divider color">
+  </div>
+</div>

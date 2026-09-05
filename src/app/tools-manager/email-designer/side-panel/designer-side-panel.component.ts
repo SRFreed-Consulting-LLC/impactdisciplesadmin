@@ -1,12 +1,9 @@
 import { Component, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { BehaviorSubject } from 'rxjs';
 import {
   BlockType,
   ButtonBlock,
   DividerBlock,
-  EMAIL_FONT_FAMILIES,
   EmailBlock,
   EmailRow,
   EmailSection,
@@ -14,20 +11,14 @@ import {
   HeadingBlock,
   HtmlBlock,
   ImageBlock,
-  ImageProps,
   LogoBlock,
   SocialBlock,
   SpacerBlock,
   TextBlock,
   VideoBlock,
   createDefaultDesign,
-  newDesignId,
-  BLOCK_BOUNDS,
-  clampToBounds
+  newDesignId
 } from 'src/app/common/models/admin/email-design.model';
-import DOMPurify from 'dompurify';
-import { parseVideoUrl, vimeoOembedUrl } from '../video-url.util';
-import { ImageModel } from '@impact-common/shared/models/utils/image.model';
 import {
   BLOCK_PALETTE_ID,
   CHROME_PALETTE_ID,
@@ -61,6 +52,12 @@ interface ChromeGroup {
 // The right-hand panel: Add (block + layout palettes) and Styles tabs, or
 // the contextual Settings panel whenever something on the canvas is
 // selected - the Mailchimp panel model.
+//
+// Since 2026-09-05 every BLOCK's settings live in their own component under
+// block-settings/ (one @Input() block, own mutations, commits straight to
+// DesignerStateService). What stays here is the panel itself: selection
+// plumbing, the palettes, the chrome chips, and the two non-block editors -
+// a section's background and a row's columns.
 @Component({
     selector: 'app-designer-side-panel',
     templateUrl: './designer-side-panel.component.html',
@@ -117,15 +114,7 @@ export class DesignerSidePanelComponent {
     return this.palette.map((entry) => entry.type);
   }
 
-  // app-image-uploader contract: it writes an ImageModel into card[field].
-  // The picker serves two callers - image/logo blocks (imageTarget) and a
-  // video block's custom thumbnail (videoThumbnailTarget).
-  imageUploaderVisible$ = new BehaviorSubject<boolean>(false);
-  imageCard: { image?: ImageModel } = {};
-  private imageTarget: ImageProps | null = null;
-  private videoThumbnailTarget: VideoBlock | null = null;
-
-  constructor(public state: DesignerStateService, private http: HttpClient) {}
+  constructor(public state: DesignerStateService) {}
 
   /**
    * Builds the chrome chips and their previews.
@@ -215,74 +204,9 @@ export class DesignerSidePanelComponent {
 
   // The template composes commitBlockChange(setXxx(...)) - each setter
   // returns a mutator closure, and commitBlockChange runs it through the
-  // state service's undo-snapshotting commit(). Text inputs bind (change),
-  // not (ngModelChange), so a commit (one undo step) lands per edit, not
-  // per keystroke.
+  // state service's undo-snapshotting commit().
   commitBlockChange(mutate: () => void): void {
     this.state.commit(mutate);
-  }
-
-  setHeadingLevel(block: EmailBlock, level: 1 | 2 | 3 | 4): () => void {
-    return () => {
-      (block as HeadingBlock).props.level = level;
-    };
-  }
-
-  setButtonLabel(block: EmailBlock, label: string): () => void {
-    return () => {
-      (block as ButtonBlock).props.label = label;
-    };
-  }
-
-  setButtonHref(block: EmailBlock, href: string): () => void {
-    return () => {
-      (block as ButtonBlock).props.href = href;
-    };
-  }
-
-  setButtonFullWidth(block: EmailBlock, fullWidth: boolean): () => void {
-    return () => {
-      (block as ButtonBlock).props.fullWidth = fullWidth;
-    };
-  }
-
-  setSpacerHeight(block: EmailBlock, height: string | number): () => void {
-    return () => {
-      // R4: bounds live in BLOCK_BOUNDS so the compiler holds a design to
-      // exactly what this control allows. They used to disagree.
-      (block as SpacerBlock).props.height = clampToBounds(height, BLOCK_BOUNDS.spacerHeight);
-    };
-  }
-
-  setImageSizing(block: EmailBlock, sizing: ImageProps['sizing']): () => void {
-    return () => {
-      (block as ImageBlock).props.sizing = sizing;
-    };
-  }
-
-  setImageScale(block: EmailBlock, percent: string | number): () => void {
-    return () => {
-      (block as ImageBlock).props.scalePercent =
-        clampToBounds(percent, BLOCK_BOUNDS.imageScalePercent);
-    };
-  }
-
-  setImageHref(block: EmailBlock, href: string): () => void {
-    return () => {
-      (block as ImageBlock).props.href = href.trim() ? href.trim() : null;
-    };
-  }
-
-  setImageNewTab(block: EmailBlock, openInNewTab: boolean): () => void {
-    return () => {
-      (block as ImageBlock).props.openInNewTab = openInNewTab;
-    };
-  }
-
-  setImageAlt(block: EmailBlock, alt: string): () => void {
-    return () => {
-      (block as ImageBlock).props.alt = alt;
-    };
   }
 
   setSectionBackground(section: EmailSection, color: string | null): () => void {
@@ -294,119 +218,6 @@ export class DesignerSidePanelComponent {
   setHideOn(block: EmailBlock, key: 'hideOnMobile' | 'hideOnDesktop', value: boolean): () => void {
     return () => {
       block[key] = value;
-    };
-  }
-
-  // ------------------------------------------------------------ video
-
-  // URL entry drives everything: parse provider/id, auto-thumbnail for
-  // YouTube, async oEmbed thumbnail for Vimeo, manual for anything else
-  // (matching Mailchimp's video block behavior).
-  onVideoUrlChange(block: EmailBlock, url: string): void {
-    const video = block as VideoBlock;
-    const parsed = parseVideoUrl(url);
-    this.state.commit(() => {
-      video.props.url = url.trim();
-      video.props.provider = parsed.provider;
-      video.props.videoId = parsed.videoId;
-      if (!video.props.customThumbnail) {
-        video.props.thumbnailUrl = parsed.thumbnailUrl;
-      }
-    });
-    if (parsed.provider === 'vimeo' && !video.props.customThumbnail) {
-      this.http.get<{ thumbnail_url?: string }>(vimeoOembedUrl(url)).subscribe({
-        next: (response) => {
-          if (response?.thumbnail_url) {
-            this.state.commit(() => {
-              video.props.thumbnailUrl = response.thumbnail_url!;
-            });
-          }
-        },
-        // Private/unlisted videos or a network hiccup: leave the thumbnail
-        // empty, the author can set one manually.
-        error: () => undefined
-      });
-    }
-  }
-
-  setVideoCaption(block: EmailBlock, caption: string): () => void {
-    return () => {
-      (block as VideoBlock).props.caption = caption;
-    };
-  }
-
-  openVideoThumbnailPicker(block: EmailBlock): void {
-    const video = block as VideoBlock;
-    this.videoThumbnailTarget = video;
-    this.imageCard = {};
-    this.imageUploaderVisible$.next(true);
-  }
-
-  useSourceThumbnail(block: EmailBlock): void {
-    const video = block as VideoBlock;
-    const parsed = parseVideoUrl(video.props.url);
-    this.state.commit(() => {
-      video.props.customThumbnail = false;
-      video.props.thumbnailUrl = parsed.thumbnailUrl;
-    });
-    if (parsed.provider === 'vimeo') {
-      this.onVideoUrlChange(block, video.props.url);
-    }
-  }
-
-  // ------------------------------------------------------------ footer
-
-  // ------------------------------------------------------------ button / divider overrides
-
-  setButtonOverrideColor(block: EmailBlock, key: 'backgroundColor' | 'color', value: string | null): () => void {
-    return () => {
-      (block as ButtonBlock).props[key] = value;
-    };
-  }
-
-  setDividerOverride(block: EmailBlock, key: 'style' | 'thickness' | 'color', value: string | number | null): () => void {
-    return () => {
-      const divider = block as DividerBlock;
-      if (key === 'thickness') {
-        // null is meaningful here - it means "inherit globalStyles.divider"
-        // - so it is preserved rather than clamped to the minimum.
-        divider.props.thickness = value === null ?
-          null :
-          clampToBounds(value, BLOCK_BOUNDS.dividerThickness);
-      } else if (key === 'style') {
-        divider.props.style = (value as DividerBlock['props']['style']) ?? null;
-      } else {
-        divider.props.color = (value as string) ?? null;
-      }
-    };
-  }
-
-  // ------------------------------------------------------------ fonts
-
-  readonly fontFamilies = EMAIL_FONT_FAMILIES;
-
-  fontLabel(family: string): string {
-    return family.split(',')[0];
-  }
-
-  setBlockFont(block: EmailBlock, family: string): () => void {
-    return () => {
-      (block as TextBlock | HeadingBlock).props.fontFamily = family || null;
-    };
-  }
-
-  blockFont(block: EmailBlock): string {
-    return (block as TextBlock | HeadingBlock).props.fontFamily ?? '';
-  }
-
-  // ------------------------------------------------------------ html block
-
-  // Sanitized here, at edit time (scripts/event handlers stripped, layout
-  // markup kept) - the compiler then passes the stored markup through
-  // untouched.
-  setHtmlContent(block: EmailBlock, html: string): () => void {
-    return () => {
-      (block as HtmlBlock).props.html = DOMPurify.sanitize(html ?? '');
     };
   }
 
@@ -474,8 +285,16 @@ export class DesignerSidePanelComponent {
     }
   }
 
-  asHeading(block: EmailBlock): HeadingBlock {
-    return block as HeadingBlock;
+  // ------------------------------------------------------------ casts for the template
+  // The @switch on block.type has already decided the shape; these only tell
+  // strictTemplates so, for the typed [block] inputs below.
+
+  asTextish(block: EmailBlock): HeadingBlock | TextBlock {
+    return block as HeadingBlock | TextBlock;
+  }
+
+  asHtml(block: EmailBlock): HtmlBlock {
+    return block as HtmlBlock;
   }
 
   asImage(block: EmailBlock): ImageBlock | LogoBlock {
@@ -490,6 +309,10 @@ export class DesignerSidePanelComponent {
     return block as SpacerBlock;
   }
 
+  asDivider(block: EmailBlock): DividerBlock {
+    return block as DividerBlock;
+  }
+
   asVideo(block: EmailBlock): VideoBlock {
     return block as VideoBlock;
   }
@@ -500,46 +323,5 @@ export class DesignerSidePanelComponent {
 
   asFooter(block: EmailBlock): FooterBlock {
     return block as FooterBlock;
-  }
-
-  asDivider(block: EmailBlock): DividerBlock {
-    return block as DividerBlock;
-  }
-
-  // ------------------------------------------------------------ images
-
-  openImagePicker(target: ImageProps): void {
-    this.imageTarget = target;
-    this.imageCard = {};
-    this.imageUploaderVisible$.next(true);
-  }
-
-  onImagePickerClosed(): void {
-    this.imageUploaderVisible$.next(false);
-    const picked = this.imageCard.image;
-    const target = this.imageTarget;
-    const videoTarget = this.videoThumbnailTarget;
-    this.imageTarget = null;
-    this.videoThumbnailTarget = null;
-    if (!picked?.url) {
-      return;
-    }
-    if (videoTarget) {
-      this.state.commit(() => {
-        videoTarget.props.thumbnailUrl = picked.url;
-        videoTarget.props.customThumbnail = true;
-      });
-      return;
-    }
-    if (!target) {
-      return;
-    }
-    this.state.commit(() => {
-      target.src = picked.url;
-      target.naturalWidth = null;
-      if (!target.alt) {
-        target.alt = picked.name ?? '';
-      }
-    });
   }
 }

@@ -1,0 +1,6 @@
+<div class="field-row">
+  <span class="field-label">Height (px)</span>
+  <input class="text-input narrow" type="number" min="4" max="200"
+         [value]="block.props.height"
+         (change)="commit(setHeight($any($event.target).value))">
+</div>

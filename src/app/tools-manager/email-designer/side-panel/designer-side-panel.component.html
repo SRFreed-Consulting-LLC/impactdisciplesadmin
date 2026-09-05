@@ -1,4 +1,4 @@
-﻿@if (selectedBlock || selectedSection || state.selection$.value?.kind === 'row') {
+@if (selectedBlock || selectedSection || state.selection$.value?.kind === 'row') {
   <!-- ============================================= contextual settings -->
   <div class="panel-header">
     <span class="panel-title">{{ selectionTitle }}</span>
@@ -9,151 +9,34 @@
 
   <div class="panel-body">
     @if (selectedBlock; as block) {
+      <!-- One settings component per block type - see block-settings/. -->
       @switch (block.type) {
         @case ('heading') {
-          <div class="field-row">
-            <span class="field-label">Heading level</span>
-            <mat-button-toggle-group hideSingleSelectionIndicator [value]="asHeading(block).props.level"
-                (change)="commitBlockChange(setHeadingLevel(block, $event.value))">
-              <mat-button-toggle [value]="1">H1</mat-button-toggle>
-              <mat-button-toggle [value]="2">H2</mat-button-toggle>
-              <mat-button-toggle [value]="3">H3</mat-button-toggle>
-              <mat-button-toggle [value]="4">H4</mat-button-toggle>
-            </mat-button-toggle-group>
-          </div>
-          <ng-container *ngTemplateOutlet="fontSelect; context: { $implicit: block }"></ng-container>
-          <p class="hint">Click the heading on the canvas to edit its text in place.</p>
+          <app-text-block-settings [block]="asTextish(block)"></app-text-block-settings>
         }
         @case ('text') {
-          <ng-container *ngTemplateOutlet="fontSelect; context: { $implicit: block }"></ng-container>
-          <p class="hint">Click the text on the canvas to edit it in place - the floating toolbar
-            has size, color, highlight, alignment, and the Merge tag menu.</p>
+          <app-text-block-settings [block]="asTextish(block)"></app-text-block-settings>
         }
         @case ('html') {
-          <div class="field-row">
-            <span class="field-label">HTML</span>
-            <textarea class="text-input code-input" rows="10" spellcheck="false"
-                      [value]="$any(block).props.html"
-                      (change)="commitBlockChange(setHtmlContent(block, $any($event.target).value))"></textarea>
-          </div>
-          <p class="hint">Raw markup, inserted into the email as-is (scripts are stripped). You are
-            responsible for making it email-client-safe - prefer tables and inline styles.</p>
+          <app-html-block-settings [block]="asHtml(block)"></app-html-block-settings>
         }
         @case ('image') {
-          <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
+          <app-image-block-settings [block]="asImage(block)"></app-image-block-settings>
         }
         @case ('logo') {
-          <ng-container *ngTemplateOutlet="imageSettings; context: { $implicit: block }"></ng-container>
+          <app-image-block-settings [block]="asImage(block)"></app-image-block-settings>
         }
         @case ('button') {
-          <div class="field-row">
-            <span class="field-label">Label</span>
-            <input class="text-input" [value]="asButton(block).props.label"
-                   (change)="commitBlockChange(setButtonLabel(block, $any($event.target).value))">
-          </div>
-          <div class="field-row">
-            <span class="field-label">Link to</span>
-            <input class="text-input" placeholder="https://" [value]="asButton(block).props.href"
-                   (change)="commitBlockChange(setButtonHref(block, $any($event.target).value))">
-          </div>
-          <div class="field-row">
-            <mat-slide-toggle [checked]="asButton(block).props.fullWidth"
-                (change)="commitBlockChange(setButtonFullWidth(block, $event.checked))">
-              Full width
-            </mat-slide-toggle>
-          </div>
-          <div class="field-row">
-            <span class="field-label">Colors (blank = email default)</span>
-            <div class="inline-controls">
-              <input class="color-input" type="color"
-                     [value]="asButton(block).props.backgroundColor ?? '#1f3a5f'"
-                     (change)="commitBlockChange(setButtonOverrideColor(block, 'backgroundColor', $any($event.target).value))"
-                     aria-label="Button background override">
-              <input class="color-input" type="color"
-                     [value]="asButton(block).props.color ?? '#ffffff'"
-                     (change)="commitBlockChange(setButtonOverrideColor(block, 'color', $any($event.target).value))"
-                     aria-label="Button text color override">
-              <button mat-button class="clear-button"
-                      (click)="commitBlockChange(setButtonOverrideColor(block, 'backgroundColor', null)); commitBlockChange(setButtonOverrideColor(block, 'color', null))">
-                Use defaults
-              </button>
-            </div>
-          </div>
+          <app-button-block-settings [block]="asButton(block)"></app-button-block-settings>
         }
         @case ('spacer') {
-          <div class="field-row">
-            <span class="field-label">Height (px)</span>
-            <input class="text-input narrow" type="number" min="4" max="200"
-                   [value]="asSpacer(block).props.height"
-                   (change)="commitBlockChange(setSpacerHeight(block, $any($event.target).value))">
-          </div>
+          <app-spacer-block-settings [block]="asSpacer(block)"></app-spacer-block-settings>
         }
         @case ('divider') {
-          <div class="field-row">
-            <span class="field-label">Line (blank = email default)</span>
-            <div class="inline-controls">
-              <select class="grow" [value]="asDivider(block).props.style ?? ''"
-                      (change)="commitBlockChange(setDividerOverride(block, 'style', $any($event.target).value || null))"
-                      aria-label="Divider line style">
-                <option value="">Default</option>
-                <option value="solid">Solid</option>
-                <option value="dashed">Dashed</option>
-                <option value="dotted">Dotted</option>
-                <option value="double">Double</option>
-                <option value="inset">Inset</option>
-                <option value="outset">Outset</option>
-                <option value="groove">Groove</option>
-                <option value="ridge">Ridge</option>
-              </select>
-              <input class="text-input narrow" type="number" min="1" max="12" placeholder="px"
-                     [value]="asDivider(block).props.thickness ?? ''"
-                     (change)="commitBlockChange(setDividerOverride(block, 'thickness', $any($event.target).value || null))"
-                     aria-label="Divider thickness">
-              <input class="color-input" type="color" [value]="asDivider(block).props.color ?? '#dfe3e8'"
-                     (change)="commitBlockChange(setDividerOverride(block, 'color', $any($event.target).value))"
-                     aria-label="Divider color">
-            </div>
-          </div>
+          <app-divider-block-settings [block]="asDivider(block)"></app-divider-block-settings>
         }
         @case ('video') {
-          <div class="field-row">
-            <span class="field-label">Video URL (YouTube or Vimeo)</span>
-            <input class="text-input" placeholder="https://youtube.com/watch?v=..."
-                   [value]="asVideo(block).props.url"
-                   (change)="onVideoUrlChange(block, $any($event.target).value)">
-          </div>
-          @if (asVideo(block).props.provider !== 'other' || asVideo(block).props.url) {
-            <p class="hint subtle">
-              @switch (asVideo(block).props.provider) {
-                @case ('youtube') { YouTube video detected - thumbnail fetched automatically. }
-                @case ('vimeo') { Vimeo video detected - thumbnail fetched automatically. }
-                @default { Unrecognized source - add a thumbnail image below. }
-              }
-            </p>
-          }
-          <div class="field-row">
-            <span class="field-label">Thumbnail</span>
-            <div class="image-picker-row">
-              @if (asVideo(block).props.thumbnailUrl) {
-                <img class="image-thumb" [src]="asVideo(block).props.thumbnailUrl" alt="">
-              }
-              <button mat-stroked-button (click)="openVideoThumbnailPicker(block)">
-                {{ asVideo(block).props.thumbnailUrl ? 'Replace' : 'Choose image' }}
-              </button>
-            </div>
-            @if (asVideo(block).props.customThumbnail) {
-              <button mat-button class="clear-button" (click)="useSourceThumbnail(block)">
-                Use source thumbnail
-              </button>
-            }
-          </div>
-          <div class="field-row">
-            <span class="field-label">Caption / accessible label</span>
-            <input class="text-input" [value]="asVideo(block).props.caption"
-                   (change)="commitBlockChange(setVideoCaption(block, $any($event.target).value))">
-          </div>
-          <p class="hint">Recipients see the thumbnail with a play button; clicking opens the video
-            in their browser (email clients can't embed players).</p>
+          <app-video-block-settings [block]="asVideo(block)"></app-video-block-settings>
         }
         @case ('social') {
           <app-social-block-settings [block]="asSocial(block)"></app-social-block-settings>
@@ -292,72 +175,4 @@
       <app-global-styles-panel></app-global-styles-panel>
     </div>
   }
-}
-
-<ng-template #fontSelect let-block>
-  <div class="field-row">
-    <span class="field-label">Font</span>
-    <select class="text-input" [value]="blockFont(block)"
-            (change)="commitBlockChange(setBlockFont(block, $any($event.target).value))"
-            aria-label="Block font family">
-      <option value="">Email default</option>
-      @for (family of fontFamilies; track family) {
-        <option [value]="family">{{ fontLabel(family) }}</option>
-      }
-    </select>
-  </div>
-</ng-template>
-
-<ng-template #imageSettings let-block>
-  <div class="field-row">
-    <span class="field-label">Image</span>
-    <div class="image-picker-row">
-      @if (asImage(block).props.src) {
-        <img class="image-thumb" [src]="asImage(block).props.src" alt="">
-      }
-      <button mat-stroked-button (click)="openImagePicker(asImage(block).props)">
-        {{ asImage(block).props.src ? 'Replace' : 'Choose image' }}
-      </button>
-    </div>
-  </div>
-  <div class="field-row">
-    <span class="field-label">Sizing</span>
-    <mat-button-toggle-group hideSingleSelectionIndicator [value]="asImage(block).props.sizing"
-        (change)="commitBlockChange(setImageSizing(block, $event.value))">
-      <mat-button-toggle value="original">Original</mat-button-toggle>
-      <mat-button-toggle value="fill">Fill</mat-button-toggle>
-      <mat-button-toggle value="scale">Scale</mat-button-toggle>
-    </mat-button-toggle-group>
-  </div>
-  @if (asImage(block).props.sizing === 'scale') {
-    <div class="field-row">
-      <span class="field-label">Scale ({{ asImage(block).props.scalePercent }}%)</span>
-      <input class="range-input" type="range" min="10" max="100"
-             [value]="asImage(block).props.scalePercent"
-             (change)="commitBlockChange(setImageScale(block, $any($event.target).value))">
-    </div>
-  }
-  <div class="field-row">
-    <span class="field-label">Link to</span>
-    <input class="text-input" placeholder="https://" [value]="asImage(block).props.href ?? ''"
-           (change)="commitBlockChange(setImageHref(block, $any($event.target).value))">
-  </div>
-  <div class="field-row">
-    <mat-slide-toggle [checked]="asImage(block).props.openInNewTab"
-        (change)="commitBlockChange(setImageNewTab(block, $event.checked))">
-      Open link in new tab
-    </mat-slide-toggle>
-  </div>
-  <div class="field-row">
-    <span class="field-label">Alt text</span>
-    <input class="text-input" [value]="asImage(block).props.alt"
-           (change)="commitBlockChange(setImageAlt(block, $any($event.target).value))">
-  </div>
-</ng-template>
-
-@if (imageUploaderVisible$ | async) {
-  <app-image-uploader [card]="imageCard" [isList]="false" [field]="'image'"
-      [selectionMode]="'single'" [imageSelectVisible]="imageUploaderVisible$ | async"
-      (imageSelectClosed)="onImagePickerClosed()">
-  </app-image-uploader>
 }

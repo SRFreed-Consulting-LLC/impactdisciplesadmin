@@ -1,0 +1,32 @@
+<div class="field-row">
+  <span class="field-label">Label</span>
+  <input class="text-input" [value]="block.props.label"
+         (change)="commit(setLabel($any($event.target).value))">
+</div>
+<div class="field-row">
+  <span class="field-label">Link to</span>
+  <input class="text-input" placeholder="https://" [value]="block.props.href"
+         (change)="commit(setHref($any($event.target).value))">
+</div>
+<div class="field-row">
+  <mat-slide-toggle [checked]="block.props.fullWidth"
+      (change)="commit(setFullWidth($event.checked))">
+    Full width
+  </mat-slide-toggle>
+</div>
+<div class="field-row">
+  <span class="field-label">Colors (blank = email default)</span>
+  <div class="inline-controls">
+    <input class="color-input" type="color"
+           [value]="block.props.backgroundColor ?? '#1f3a5f'"
+           (change)="commit(setColor('backgroundColor', $any($event.target).value))"
+           aria-label="Button background override">
+    <input class="color-input" type="color"
+           [value]="block.props.color ?? '#ffffff'"
+           (change)="commit(setColor('color', $any($event.target).value))"
+           aria-label="Button text color override">
+    <button mat-button class="clear-button" (click)="clearColors()">
+      Use defaults
+    </button>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<div class="field-row">
+  <span class="field-label">HTML</span>
+  <textarea class="text-input code-input" rows="10" spellcheck="false"
+            [value]="block.props.html"
+            (change)="commit(setHtml($any($event.target).value))"></textarea>
+</div>
+<p class="hint">Raw markup, inserted into the email as-is (scripts are stripped). You are
+  responsible for making it email-client-safe - prefer tables and inline styles.</p>
