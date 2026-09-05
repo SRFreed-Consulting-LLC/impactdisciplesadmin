@@ -8,6 +8,7 @@
 import {DocumentData, Firestore} from "firebase-admin/firestore";
 import {toMillis} from "./date-normalize.functions";
 import {tenantPath} from "../common/shared/lists/tenancy";
+import {CouponDocument} from "../common/shared/contract/library-store.types";
 
 const COUPONS = tenantPath("coupons");
 import {
@@ -117,20 +118,16 @@ export async function findActiveCoupon(
 }
 
 /**
- * The shape the two reader money paths read a coupon document as.
+ * The shape the money paths read a coupon document as.
  *
- * Declared here rather than privately in each caller because it had already
- * DRIFTED: library-group-licenses' copy carried `expiresAt`, and
- * library-purchases' did not - so the two disagreed about whether expiry was
- * even part of a coupon, on the paths that decide what a customer is charged.
+ * Declared once because it had already DRIFTED between callers
+ * (library-group-licenses' copy carried `expiresAt`, library-purchases' did
+ * not). Since 2026-09-05 the declaration itself lives in the shared
+ * contract (CouponDocument, library-store.types.ts), where the admin suite
+ * checks every field against the full CouponModel - so a renamed coupon
+ * field fails a build rather than reading undefined on a money path.
  */
-export interface CouponDoc {
-  code?: string;
-  isActive?: boolean;
-  percentOff?: number | null;
-  expiresAt?: unknown;
-  tags?: {id: string}[];
-}
+export type CouponDoc = CouponDocument;
 
 /**
  * Whether a coupon discounts a given product.

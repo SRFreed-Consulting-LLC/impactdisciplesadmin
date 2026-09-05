@@ -42,6 +42,18 @@ web/admin domain models + enums + date util, `config/firebase-projects.ts` (proj
 request/response types) - see the Cloud Functions section. Shared code changes go in the submodule
 first (push it first), then bump the pointer in each consumer.
 
+**One type per document (2026-09-05, review item 8).** A Firestore document has ONE TypeScript type,
+and it lives in the submodule: `LibraryUser` (`src/common/src/models/library-user.model.ts` -
+this app's `common/models/domain/library/library-user.model.ts` and the reader's
+`core/models/user.model.ts` are re-exports now, not copies), `ContactModel` + `ContactNoteModel`
+(`shared/models/domain/` - the web's `CustomerModel` is an alias), and the reader's read-only
+`StoreProduct` / the functions' `CouponDocument` in `shared/contract/library-store.types.ts`.
+Those last ones cannot `Pick` from `ProductModel`/`CouponModel` (the reader and the functions
+cannot compile the SDK-importing models), so `shared/models/model-projections.spec.ts` checks at
+compile time that every projected field exists on its document - rename a model field without
+renaming the projection and THIS suite stops compiling. Do not start a second copy of a document
+type in an app; re-export the shared one.
+
 **Submodule vs. workspace - decided 2026-09-05: KEEP the submodule for now.** The fresh-eyes review
 found the three repos at three different pointers (the reader ten commits behind) and judged the
 submodule the wrong tool for what the shared layer has become. The owner's instruction was to go
