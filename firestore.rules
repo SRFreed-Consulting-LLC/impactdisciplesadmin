@@ -209,52 +209,13 @@ service cloud.firestore {
     // pre-prod checklist). Until then: create-only wherever possible, and
     // reads locked to staff wherever no public flow needs them.
     // ========================================================================
-    // Create stays anonymous (public contact/consultation forms) but is
-    // shape-constrained to the exact fields the two real writers send (the
-    // web app's dynamic-form.component.ts and the admin form builder's
-    // test-submit dialog): no extra keys, typed fields, generous size caps
-    // on the free-text ones. `values` is the visitor's answers map - its
-    // per-answer text is uncapped here (rules can't iterate map values);
-    // Firestore's own 1MB doc limit is the backstop.
-    match /form_submissions/{id} {
-      allow create: if
-        // newRecordStatus is NOT in this list, and that is the finding.
-        //
-        // S7, completed 2026-08-28. onFormSubmissionCreated treats a doc
-        // that ARRIVES carrying newRecordStatus as one it has already
-        // counted and skips it. So the field had two problems at once:
-        // a submission POSTed with 'seen' suppressed the staff alert bell
-        // (notification suppression - exactly the primitive someone
-        // probing the public forms wants), AND the three writers that
-        // legitimately sent 'new' - web's dynamic-form.component.ts and
-        // campaign-popup.component.ts, and admin's form-test-submit-dialog
-        // - meant no public submission was EVER counted.
-        //
-        // The first half shipped earlier as a value constraint ('new'
-        // only). This is the second half: all three writers stopped
-        // sending it, so the trigger is now the field's sole writer and
-        // the key can be refused outright.
-        //
-        // DEPLOY ORDER MATTERS: web hosting must ship BEFORE these rules.
-        // A running old bundle still sends the field, and rules that
-        // refuse it would reject every public form submission. The
-        // standing order (functions -> hosting -> rules LAST) already
-        // does this - do not shortcut it for a "rules-only" change.
-        request.resource.data.keys().hasOnly([
-          'formId', 'formName', 'fieldSnapshot', 'values', 'submittedAt',
-          'isTest'
-        ]) &&
-        request.resource.data.formId is string &&
-        request.resource.data.formId.size() <= 500 &&
-        request.resource.data.formName is string &&
-        request.resource.data.formName.size() <= 500 &&
-        request.resource.data.fieldSnapshot is list &&
-        request.resource.data.values is map &&
-        request.resource.data.submittedAt is timestamp &&
-        (!('isTest' in request.resource.data) ||
-          request.resource.data.isTest is bool);
-      allow read, update, delete: if isBusinessStaff();
-    }
+    // form_submissions lives under /tenants now - its anonymous create,
+    // the shape lock and the S7 newRecordStatus finding are all in the
+    // Wave 4 block below. The top-level mirror that stood here was kept
+    // "until the web deploy that starts writing under the tenant"; that
+    // deploy landed 2026-09-02, and the mirror was retired 2026-09-05
+    // when an audit found it still allowing anonymous creates into a path
+    // nothing reads. integration/rules pins the flat path as closed.
     // Staff-only since pre-prod hardening #2: every public flow (RSVP
     // create + confirmation email, emailed-link lookup, breakout session
     // changes, duplicate check, capacity counts) goes through the
@@ -1012,10 +973,10 @@ service cloud.firestore {
       }
 
       // ---- Wave 4 ------------------------------------------------------
-      // Mirrored from the top-level block, which STAYS until the web
-      // deploy that starts writing here. The public create is
-      // constrained field by field and an old bundle sends a shape the
-      // narrowed rule refuses.
+      // THE ONLY form_submissions rule since 2026-09-05. It began as a
+      // mirror of a top-level block that stayed until the web deploy
+      // started writing here (2026-09-02); that block is gone. The public
+      // create is constrained field by field.
       match /form_submissions/{id} {
         allow create: if
           // newRecordStatus is NOT in this list, and that is the finding.

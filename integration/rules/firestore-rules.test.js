@@ -237,6 +237,19 @@ test("anon: form_submissions create allowed ONLY in the exact shape", async () =
   await assertFails(getDoc(doc(anon(), p("form_submissions/ok"))));
 });
 
+// The pre-tenancy TOP-LEVEL path is closed. Its rule block was kept as a
+// mirror "until the web deploy that starts writing under the tenant" - that
+// deploy landed 2026-09-02, the trigger listens under the tenant, and nothing
+// has written the flat path since - but the block itself outlived its reason
+// until 2026-09-05: an anonymous create allowed into a place nobody reads.
+// RAW path on purpose, NOT p(): p() routes through the tenant seam, and this
+// test exists to prove the path OUTSIDE the seam is dead.
+test("anon: the flat pre-tenancy form_submissions path is closed", async () => {
+  const valid = validSubmission();
+  await assertFails(setDoc(doc(anon(), "form_submissions/flat"), valid));
+  await assertFails(getDoc(doc(admin(), "form_submissions/flat")));
+});
+
 // Finding S7, second half (2026-08-28). onFormSubmissionCreated skips any
 // doc that ARRIVES carrying newRecordStatus, so a client able to send it
 // could silence the staff alert bell - and the three writers that sent
