@@ -51,7 +51,11 @@ function makeDeps(overrides: Record<string, unknown> = {}) {
     },
     dialog: { open: jasmine.createSpy('open') },
     confirmService: { confirm: jasmine.createSpy('confirm').and.returnValue(Promise.resolve(true)) },
-    snackbar: { success: jasmine.createSpy('success'), error: jasmine.createSpy('error') },
+    snackbar: {
+      success: jasmine.createSpy('success'),
+      error: jasmine.createSpy('error'),
+      somethingWentWrong: jasmine.createSpy('somethingWentWrong'),
+    },
     permissions,
     ...overrides,
   };
@@ -200,6 +204,82 @@ describe('BaseListComponent', () => {
       await flush();
       expect(deps.confirmService.confirm).not.toHaveBeenCalled();
       expect(deps.service.delete).not.toHaveBeenCalled();
+    });
+
+    // Until 2026-09-05 a refused delete showed nothing at all - the review
+    // that found it called it the same silence the dialog base class was
+    // created to end, on the other half of every list screen.
+    it('reports a REFUSED delete instead of swallowing it', async () => {
+      const { component, deps } = makeComponent();
+      deps.service.delete.and.returnValue(Promise.reject(new Error('permission-denied')));
+      component.delete({ id: 'a' } as Thing);
+      await flush();
+      expect(deps.snackbar.somethingWentWrong).toHaveBeenCalled();
+      expect(deps.snackbar.success).not.toHaveBeenCalled();
+    });
+
+    it('asks the subclass\'s own question when it has one', async () => {
+      class LoudDeleteComponent extends TestListComponent {
+        protected override readonly deleteConfirmMessage = 'Really? Its children go too.';
+      }
+      const { component, deps } = makeComponent(LoudDeleteComponent);
+      component.delete({ id: 'a' } as Thing);
+      await flush();
+      expect(deps.confirmService.confirm).toHaveBeenCalledWith('Really? Its children go too.', 'Confirm');
+    });
+
+    it('tells the subclass after a successful delete, and only then', async () => {
+      const gone: Thing[] = [];
+      class TrackingComponent extends TestListComponent {
+        protected override onDeleted(item: Thing): void { gone.push(item); }
+      }
+      const { component, deps } = makeComponent(TrackingComponent);
+      deps.confirmService.confirm.and.returnValue(Promise.resolve(false));
+      component.delete({ id: 'a' } as Thing);
+      await flush();
+      expect(gone).toEqual([]);
+
+      deps.confirmService.confirm.and.returnValue(Promise.resolve(true));
+      component.delete({ id: 'b' } as Thing);
+      await flush();
+      expect(gone.map((t) => t.id)).toEqual(['b']);
+    });
+  });
+
+  // Added 2026-09-05 for Organizations, which edits IN PAGE (the grid gives
+  // way to a details view) and so declares no dialog at all.
+  describe('in-page editors (no dialogComponent)', () => {
+    class InPageComponent extends BaseListComponent<Thing> {
+      readonly itemType = 'Thing';
+      protected readonly screenKey: string | null = 'test.things';
+      readonly columns: DataGridColumn<Thing>[] = [];
+      protected readonly dialogComponent = undefined;
+      opened: (Thing | null)[] = [];
+      protected override openEditor(item: Thing | null): void { this.opened.push(item); }
+    }
+    class ForgotfulComponent extends BaseListComponent<Thing> {
+      readonly itemType = 'Thing';
+      protected readonly screenKey: string | null = 'test.things';
+      readonly columns: DataGridColumn<Thing>[] = [];
+      protected readonly dialogComponent = undefined;
+    }
+
+    it('routes add and edit through the override, still behind the gates', () => {
+      const { component, deps } = makeComponent(InPageComponent as unknown as typeof TestListComponent);
+      const inPage = component as unknown as InPageComponent;
+      inPage.showAddModal();
+      inPage.showEditModal({ id: 'a' } as Thing);
+      expect(inPage.opened).toEqual([null, { id: 'a' } as Thing]);
+      expect(deps.dialog.open).not.toHaveBeenCalled();
+
+      deps.permissions['edit:test.things'] = false;
+      inPage.showEditModal({ id: 'b' } as Thing);
+      expect(inPage.opened.length).toBe(2);
+    });
+
+    it('names the mistake when a screen declares neither', () => {
+      const { component } = makeComponent(ForgotfulComponent as unknown as typeof TestListComponent);
+      expect(() => component.showAddModal()).toThrowError(/declare dialogComponent or override openEditor/);
     });
   });
 

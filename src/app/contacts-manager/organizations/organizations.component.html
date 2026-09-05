@@ -6,7 +6,7 @@
     [headerActions]="headerActions"
     [columns]="columns"
     [rowActions]="rowActions"
-    [rows]="(organizations$ | async) ?? []"
+    [rows]="(items$ | async) ?? []"
     [loading]="(loading$ | async) ?? false"
     tableClass="organizations-table"
     initialSortKey="name"

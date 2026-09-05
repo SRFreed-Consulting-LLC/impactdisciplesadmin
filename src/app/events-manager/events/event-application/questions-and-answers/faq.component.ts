@@ -1,14 +1,15 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { SelectionModel } from '@angular/cdk/collections';
-import { MatDialog } from '@angular/material/dialog';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { Observable, tap } from 'rxjs';
 import { EventModel } from '@impact-common/shared/models/domain/event.model';
 import { FAQModel } from '@impact-common/shared/models/utils/faq.model';
 import { FAQService } from 'src/app/common/services/data/faq.service';
+import { PermissionService } from 'src/app/common/services/permission.service';
+import { BaseListComponent } from '../../../../shared/base-list.component';
 import { ConfirmService } from '../../../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../../../shared/snackbar.service';
-import { ListHeaderAction } from '../../../../shared/list-header/list-header.component';
-import { DataGridColumn, DataGridRowAction } from '../../../../shared/data-grid/data-grid.model';
+import { DataGridColumn } from '../../../../shared/data-grid/data-grid.model';
 import { FaqDialogComponent } from './faq-dialog.component';
 
 // Two concerns in one screen, matching the original: (a) a global FAQ
@@ -22,42 +23,39 @@ import { FaqDialogComponent } from './faq-dialog.component';
     styleUrls: ['./faq.component.scss'],
     standalone: false
 })
-export class FAQComponent implements OnInit, OnChanges {
+export class FAQComponent extends BaseListComponent<FAQModel> implements OnChanges {
   @Input() event: EventModel;
 
-  faqs$: Observable<FAQModel[]>;
-
-  columns: DataGridColumn<FAQModel>[] = [
+  readonly columns: DataGridColumn<FAQModel>[] = [
     { key: 'sortOrder', label: 'Sort Order', type: 'number' },
     { key: 'question', label: 'Question' },
     { key: 'answer', label: 'Answer', filterable: false, cellClass: 'answer-cell', exportValue: (item) => this.stripHtml(item.answer ?? '') }
   ];
 
-  itemType = 'FAQ';
-
-  headerActions: ListHeaderAction[] = [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }];
-  rowActions: DataGridRowAction<FAQModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item) }];
+  readonly itemType = 'FAQ';
+  // UNGATED: this table lives inside the event editor, which is what gates
+  // it; the FAQ library has no NAV_CONFIG entry of its own.
+  protected readonly screenKey = null;
+  protected readonly dialogComponent = FaqDialogComponent;
+  protected override readonly dialogConfig: MatDialogConfig = { width: '700px' };
 
   selection = new SelectionModel<FAQModel>(true, []);
 
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
-
-  private allFaqs: FAQModel[] = [];
   private selectionInitialized = false;
 
   constructor(
-    private service: FAQService,
-    private dialog: MatDialog,
-    private confirmService: ConfirmService,
-    private snackbar: SnackbarService
-  ) {}
+    service: FAQService,
+    permissionService: PermissionService,
+    dialog: MatDialog,
+    confirmService: ConfirmService,
+    snackbar: SnackbarService
+  ) {
+    super(service, permissionService, dialog, confirmService, snackbar);
+  }
 
-  ngOnInit(): void {
-    this.faqs$ = this.service.streamAll().pipe(
+  protected override loadItems(): Observable<FAQModel[]> {
+    return this.service.streamAll().pipe(
       tap((items) => {
-        this.allFaqs = items;
         // Only pre-select once, the first time the library loads - after
         // that, selection changes are user-driven and shouldn't be
         // clobbered by every subsequent stream emission.
@@ -88,23 +86,9 @@ export class FAQComponent implements OnInit, OnChanges {
     this.event.faqList = this.selection.selected;
   }
 
-  showAddModal(): void {
-    this.dialog.open(FaqDialogComponent, { width: '700px', data: { item: null } });
-  }
-
-  showEditModal(item: FAQModel): void {
-    this.dialog.open(FaqDialogComponent, { width: '700px', data: { item } });
-  }
-
-  delete(item: FAQModel): void {
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.selection.deselect(item);
-          this.onSelectionChange();
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
+  // A deleted FAQ leaves the event's own list too, not just the library.
+  protected override onDeleted(item: FAQModel): void {
+    this.selection.deselect(item);
+    this.onSelectionChange();
   }
 }

@@ -27,6 +27,12 @@ import { DataGridColumn, DataGridRowAction } from './data-grid/data-grid.model';
  * loading, non-dialog editing) stays in the subclass - override
  * `loadItems()`, `rowActions`, or the modal methods as needed. Plain
  * constructor injection on purpose (house style - see CLAUDE.md).
+ *
+ * NOT on this class, deliberately (judged 2026-09-05): Admin Users, Form
+ * Builder and Shipping Labels. Each is a list PLUS an in-page editor or
+ * wizard, and the list half is a dozen lines inside a 300-425 line
+ * component with no spec - the editor is the component. Adopting the
+ * skeleton would touch all of it to share almost none of it.
  */
 @Directive()
 export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
@@ -45,9 +51,24 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
    */
   protected abstract readonly screenKey: string | null;
   abstract readonly columns: DataGridColumn<T>[];
-  /** The add/edit dialog, opened with `data: { item }` (null = new). */
-  protected abstract readonly dialogComponent: ComponentType<unknown>;
+  /**
+   * The add/edit dialog, opened with `data: { item }` (null = new).
+   *
+   * May be `undefined` since 2026-09-05: a screen that edits IN PAGE
+   * (Organizations swaps the grid for a details view) declares it undefined
+   * and overrides openEditor() instead. Still abstract on purpose, so "no
+   * dialog" is a line the screen writes rather than a field it forgot;
+   * declaring undefined WITHOUT the override is caught by openEditor() the
+   * first time it is called.
+   */
+  protected abstract readonly dialogComponent: ComponentType<unknown> | undefined;
   protected readonly dialogConfig: MatDialogConfig = { width: '600px' };
+  /**
+   * What the delete confirmation asks. Override where a plain "delete this
+   * record?" would understate the blast radius - Organizations warns that
+   * its locations and member links are not removed with it.
+   */
+  protected readonly deleteConfirmMessage: string = '<i>Are you sure you want to delete this record?</i>';
 
   items$!: Observable<T[]>;
 
@@ -126,12 +147,25 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
     if (!this.canAddHere()) {
       return;
     }
-    this.dialog.open(this.dialogComponent, { ...this.dialogConfig, data: { item: null } });
+    this.openEditor(null);
   }
 
   showEditModal(item: T): void {
     if (!this.canEditHere()) {
       return;
+    }
+    this.openEditor(item);
+  }
+
+  /**
+   * How this screen edits an item, once the permission gate has passed.
+   * By default a dialog; a screen that edits in page overrides this and
+   * declares no dialogComponent.
+   * @param item The item to edit, or null to add.
+   */
+  protected openEditor(item: T | null): void {
+    if (!this.dialogComponent) {
+      throw new Error(`${this.itemType} list: declare dialogComponent or override openEditor()`);
     }
     this.dialog.open(this.dialogComponent, { ...this.dialogConfig, data: { item } });
   }
@@ -140,12 +174,28 @@ export abstract class BaseListComponent<T extends BaseModel> implements OnInit {
     if (!this.canDeleteHere()) {
       return;
     }
-    this.confirmService.confirm('<i>Are you sure you want to delete this record?</i>', 'Confirm').then((confirmed) => {
+    this.confirmService.confirm(this.deleteConfirmMessage, 'Confirm').then((confirmed) => {
       if (confirmed) {
         this.service.delete(item.id!).then(() => {
           this.snackbar.success(this.itemType + ' Deleted');
+          this.onDeleted(item);
+        }).catch((err) => {
+          // Until 2026-09-05 a refused delete (rules, network) showed
+          // NOTHING - the same silence the dialog base class was created
+          // to end, on the other half of every list screen.
+          console.error(this.itemType + ' delete failed', err);
+          this.snackbar.somethingWentWrong();
         });
       }
     });
+  }
+
+  /**
+   * Runs after a successful delete. FAQ uses it to drop the row from the
+   * event's own list as well as the library.
+   * @param item The item that was deleted.
+   */
+  protected onDeleted(item: T): void {
+    void item; // nothing by default
   }
 }

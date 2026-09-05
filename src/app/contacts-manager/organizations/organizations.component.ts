@@ -1,13 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { SCREEN_KEYS } from 'src/app/core/main-screen/nav-config';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { OrganizationModel } from '@impact-common/shared/models/domain/organization.model';
 import { OrganizationService } from 'src/app/common/services/data/organization.service';
 import { PermissionService } from 'src/app/common/services/permission.service';
+import { BaseListComponent } from '../../shared/base-list.component';
 import { ConfirmService } from '../../shared/confirm-dialog/confirm.service';
 import { SnackbarService } from '../../shared/snackbar.service';
-import { ListHeaderAction } from '../../shared/list-header/list-header.component';
-import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-grid.model';
+import { DataGridColumn } from '../../shared/data-grid/data-grid.model';
 
 // Contacts Manager > Organizations - the orgs we keep in contact with
 // (churches, ministries, partners), moved here from Events Manager in the
@@ -21,12 +21,10 @@ import { DataGridColumn, DataGridRowAction } from '../../shared/data-grid/data-g
     styleUrls: ['./organizations.component.scss'],
     standalone: false
 })
-export class OrganizationsComponent implements OnInit {
+export class OrganizationsComponent extends BaseListComponent<OrganizationModel> {
   mode: 'list' | 'edit' = 'list';
 
-  organizations$: Observable<OrganizationModel[]>;
-
-  columns: DataGridColumn<OrganizationModel>[] = [
+  readonly columns: DataGridColumn<OrganizationModel>[] = [
     { key: 'name', label: 'Name' },
     { key: 'pointOfContact', label: 'Point of Contact', value: (item) => this.pocLabel(item) },
     { key: 'city', label: 'City', value: (item) => item.address?.city ?? '' },
@@ -35,30 +33,23 @@ export class OrganizationsComponent implements OnInit {
     { key: 'email', label: 'Email', visible: false, value: (item) => item.email ?? '' }
   ];
 
-  itemType = 'Organization';
-
-  private readonly screenKey = SCREEN_KEYS.contacts.organizations;
-
-  headerActions: ListHeaderAction[] = [];
-  rowActions: DataGridRowAction<OrganizationModel>[] = [{ icon: 'delete', tooltip: 'DELETE', onClick: (item) => this.delete(item), visible: () => this.permissionService.canDelete(this.screenKey) }];
-
-  // House rule: loading spinner shown until first emission - see
-  // contacts.component.ts for the full explanation.
-  loading$ = new BehaviorSubject<boolean>(true);
+  readonly itemType = 'Organization';
+  protected readonly screenKey = SCREEN_KEYS.contacts.organizations;
+  // Edited IN PAGE (openEditor below), so there is no dialog.
+  protected readonly dialogComponent = undefined;
+  protected override readonly deleteConfirmMessage =
+    '<i>Are you sure you want to delete this organization? Its locations and member links are not removed automatically.</i>';
 
   editingItem: OrganizationModel | null = null;
 
   constructor(
-    public service: OrganizationService,
-    private permissionService: PermissionService,
-    private confirmService: ConfirmService,
-    private snackbar: SnackbarService
-  ) {}
-
-  ngOnInit(): void {
-    this.organizations$ = this.service.streamAll().pipe(tap(() => this.loading$.next(false)));
-
-    this.headerActions = this.permissionService.canAdd(this.screenKey) ? [{ label: 'New', icon: 'add', onClick: () => this.showAddModal() }] : [];
+    service: OrganizationService,
+    permissionService: PermissionService,
+    dialog: MatDialog,
+    confirmService: ConfirmService,
+    snackbar: SnackbarService
+  ) {
+    super(service, permissionService, dialog, confirmService, snackbar);
   }
 
   // Structured PoC when present, else the deprecated free-text contactName
@@ -69,18 +60,9 @@ export class OrganizationsComponent implements OnInit {
     return name || item.contactName || '';
   }
 
-  showAddModal(): void {
-    if (!this.permissionService.canAdd(this.screenKey)) {
-      return;
-    }
-    this.editingItem = null;
-    this.mode = 'edit';
-  }
-
-  showEditModal(item: OrganizationModel): void {
-    if (!this.permissionService.canEdit(this.screenKey)) {
-      return;
-    }
+  // Same list/edit mode switch as ContactsComponent - the grid gives way to
+  // OrganizationDetailsComponent rather than a popup.
+  protected override openEditor(item: OrganizationModel | null): void {
     this.editingItem = item;
     this.mode = 'edit';
   }
@@ -88,18 +70,5 @@ export class OrganizationsComponent implements OnInit {
   onEditClosed(): void {
     this.editingItem = null;
     this.mode = 'list';
-  }
-
-  delete(item: OrganizationModel): void {
-    if (!this.permissionService.canDelete(this.screenKey)) {
-      return;
-    }
-    this.confirmService.confirm('<i>Are you sure you want to delete this organization? Its locations and member links are not removed automatically.</i>', 'Confirm').then((confirmed) => {
-      if (confirmed) {
-        this.service.delete(item.id!).then(() => {
-          this.snackbar.success(this.itemType + ' Deleted');
-        });
-      }
-    });
   }
 }
