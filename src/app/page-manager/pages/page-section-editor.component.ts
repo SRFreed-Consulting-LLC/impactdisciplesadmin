@@ -333,6 +333,83 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   /** The focus lever only means anything while the photo is a cropped
    *  BACKGROUND - i.e. this section is actually on the photo surface. */
+  /**
+   * The focal point as percentages, for the drag control and its preview.
+   *
+   * Falls back to whatever the old top/centre/bottom said, so opening a
+   * section that has never been dragged shows the marker where the photo
+   * actually sits rather than jumping it to the middle.
+   */
+  get focusPoint(): { x: number; y: number } {
+    const point = this.section.photoFocusPoint;
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      return { x: point.x, y: point.y };
+    }
+    const legacy = this.section.photoFocus ?? 'center';
+    return { x: 50, y: legacy === 'top' ? 0 : legacy === 'bottom' ? 100 : 50 };
+  }
+
+  /** Where to draw the marker, and how to crop the thumbnail's own preview. */
+  get focusCss(): string {
+    const { x, y } = this.focusPoint;
+    return `${x}% ${y}%`;
+  }
+
+  /**
+   * Moves the focal point to where the pointer is, in the picture's own
+   * percentages.
+   *
+   * Writing the POINT retires the old three-way value for this section: two
+   * fields describing one thing would disagree the moment either is touched,
+   * and the renderer prefers the point anyway - so leaving the old one behind
+   * would be a value that no longer means anything.
+   * @param event The pointer event on the picture.
+   */
+  moveFocus(event: PointerEvent): void {
+    const el = event.currentTarget as HTMLElement | null;
+    if (!el) {
+      return;
+    }
+    const box = el.getBoundingClientRect();
+    if (!box.width || !box.height) {
+      return;
+    }
+    const pct = (v: number) => Math.round(Math.min(100, Math.max(0, v)));
+    this.section.photoFocusPoint = {
+      x: pct(((event.clientX - box.left) / box.width) * 100),
+      y: pct(((event.clientY - box.top) / box.height) * 100)
+    };
+    delete this.section.photoFocus;
+    this.edits.next();
+  }
+
+  /** Drag, not just click: the pointer is captured so it keeps tracking
+   *  outside the thumbnail, which is where a corner point is chosen from. */
+  startFocusDrag(event: PointerEvent): void {
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    this.moveFocus(event);
+  }
+
+  dragFocus(event: PointerEvent): void {
+    if (event.buttons === 1) {
+      this.moveFocus(event);
+    }
+  }
+
+  /** Keyboard equivalent, because a drag is not reachable without a pointer. */
+  nudgeFocus(dx: number, dy: number): void {
+    const { x, y } = this.focusPoint;
+    const clamp = (n: number) => Math.min(100, Math.max(0, n));
+    this.section.photoFocusPoint = { x: clamp(x + dx), y: clamp(y + dy) };
+    delete this.section.photoFocus;
+    this.edits.next();
+  }
+
+  recentreFocus(): void {
+    this.section.photoFocusPoint = { x: 50, y: 50 };
+    delete this.section.photoFocus;
+    this.edits.next();
+  }
   get onPhotoSurface(): boolean {
     return this.activeSurface === 'photo';
   }
@@ -465,7 +542,20 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   }
 
   get imageLabel(): string {
+    // On the photo surface the picture is the GROUND, not content in the
+    // section - and a field called "Picture" beside a ground control reads as
+    // a second, inline image.
+    if (this.onPhotoSurface) {
+      return 'Background photo';
+    }
     return this.kind.imageLabel ?? 'Picture';
+  }
+
+  /** What an empty picture field means, which differs by what it is for. */
+  get emptyImageHint(): string {
+    return this.onPhotoSurface ?
+      'No picture - this section will draw on a plain ground instead' :
+      'No picture - this section will draw a gap';
   }
 
   get noteLabel(): string {

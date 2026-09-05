@@ -94,17 +94,32 @@
 
     <!-- Only while the photo is a cropped BACKGROUND does a focus mean
          anything - which part of it the band keeps. Born from About Us's
-         history banner cutting every head off at centre. -->
-    @if (onPhotoSurface && fields.image) {
+         history banner cutting every head off at centre.
+         Drag the point rather than pick one of three: top/centre/bottom moved
+         a photo vertically and only to three places, so a face slightly off
+         centre could not be kept - which is the whole job of the setting. -->
+    @if (onPhotoSurface && section.image) {
       <div class="psd__axis">
-        <span class="psd__axis-label">Photo focus</span>
-        <mat-button-toggle-group [value]="section.photoFocus ?? 'center'"
-                                 (change)="pickPhotoFocus($event.value)"
-                                 aria-label="Which part of the photo the band keeps">
-          @for (option of photoFocuses; track option.key) {
-            <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
+        <span class="psd__axis-label">Photo position</span>
+        <div class="psd__focus"
+             (pointerdown)="startFocusDrag($event)"
+             (pointermove)="dragFocus($event)"
+             tabindex="0"
+             role="application"
+             aria-label="Drag to choose the point of the photo to keep in view"
+             (keydown.arrowleft)="nudgeFocus(-5, 0); $event.preventDefault()"
+             (keydown.arrowright)="nudgeFocus(5, 0); $event.preventDefault()"
+             (keydown.arrowup)="nudgeFocus(0, -5); $event.preventDefault()"
+             (keydown.arrowdown)="nudgeFocus(0, 5); $event.preventDefault()">
+          <img class="psd__focus-img" [src]="section.image.url" [alt]="section.image.name">
+          <span class="psd__focus-dot" [style.left.%]="focusPoint.x" [style.top.%]="focusPoint.y"></span>
+        </div>
+        <p class="psd__axis-blurb">
+          Drag the marker to the part that must stay in view &mdash; a face, usually.
+          The band crops around it, and crops differently on a phone, so this
+          names a point in the picture rather than a height.
+          <button mat-button type="button" (click)="recentreFocus()">Centre it</button>
+        </p>
       </div>
     }
   }
@@ -280,13 +295,17 @@
     </mat-form-field>
   }
 
-  @if (fields.image) {
+  <!-- OR on the photo surface, whatever the variant declares. Choosing "Over
+       the photo" IS asking for a picture, and a section that offers the ground
+       but no way to pick the photo for it is a dead end - the state the
+       progress report was in. -->
+  @if (fields.image || onPhotoSurface) {
     <div class="psd__image">
       <div class="psd__image-label">{{ imageLabel }}</div>
       @if (section.image; as image) {
         <img class="psd__image-thumb" [src]="image.url" [alt]="image.name">
       } @else {
-        <div class="psd__image-empty">No picture &mdash; this section will draw a gap</div>
+        <div class="psd__image-empty">{{ emptyImageHint }}</div>
       }
       <div class="psd__image-actions">
         <button mat-stroked-button type="button" (click)="showImageUploader()">

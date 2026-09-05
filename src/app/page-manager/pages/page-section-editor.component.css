@@ -636,3 +636,43 @@
     width: auto;
   }
 }
+
+/* The focal-point picker. The picture is shown WHOLE - not cropped to a band -
+   because the point being chosen is a point in the picture, and you cannot
+   pick what you cannot see. */
+.psd__focus {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none; /* or a drag scrolls the panel on a touchscreen */
+  outline: none;
+}
+
+.psd__focus:focus-visible {
+  box-shadow: 0 0 0 2px var(--app-primary, #3f51b5);
+}
+
+.psd__focus-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Two rings, light over dark, so the marker is visible on any photo. */
+.psd__focus-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 1px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
