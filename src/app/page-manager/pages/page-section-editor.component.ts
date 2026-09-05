@@ -809,10 +809,16 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
       side: this.sideOf(index),
       isNew
     };
+    // WIDE, and as tall as the window allows (owner, 2026-09-05). At 860px an
+    // entry carrying a picture, a paragraph and a rich-text field scrolled
+    // inside the dialog while the screen around it sat empty - a scrollbar
+    // inside a pop-up, with Done below the fold of it. This is a back-office
+    // screen on a desktop; the room is there, so use it.
     this.dialog.open(PageEntryDialogComponent, {
       data,
-      width: '860px',
-      maxWidth: '96vw',
+      width: '1160px',
+      maxWidth: '95vw',
+      maxHeight: '92vh',
       autoFocus: false
     }).afterClosed().subscribe((result: PageContentItem | undefined) => {
       if (!result) {

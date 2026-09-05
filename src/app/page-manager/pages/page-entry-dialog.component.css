@@ -117,7 +117,17 @@
   border-radius: var(--app-radius-card);
 }
 
-.ped__live {
-  align-self: flex-start;
-  margin: 4px 0 8px;
+/* THE DIALOG SHOULD NOT SCROLL (owner, 2026-09-05). Material caps dialog
+   content at 65vh, which put a scrollbar inside a pop-up that had a screen's
+   worth of room around it - two scrollbars on one page, and the Done button
+   below the fold of the inner one. The dialog is opened wider now (see the
+   editor's openEntryDialog) and its content is allowed most of the window;
+   the cap stays, because a rich-text field can be arbitrarily tall and a
+   dialog that grows past the viewport loses its own buttons.
+
+   Written as mat-dialog-content.ped, not .ped: Material's own cap is
+   .mat-mdc-dialog-content, the same specificity as a bare class, so which one
+   wins would come down to stylesheet order. The element qualifier settles it. */
+mat-dialog-content.ped {
+  max-height: calc(92vh - 168px);
 }

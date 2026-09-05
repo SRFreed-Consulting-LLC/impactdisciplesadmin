@@ -168,12 +168,12 @@
     </div>
   }
 
-  <!-- Showing or hidden is on the list row too, where it can be flipped
-       without opening anything. It is repeated here so a NEW entry can be
-       written and left switched off until it is ready. -->
-  <mat-slide-toggle class="ped__live" [(ngModel)]="entry.isActive">
-    {{ entry.isActive ? 'Showing on the site' : 'Hidden from the site' }}
-  </mat-slide-toggle>
+  <!-- Showing or hidden is on the LIST ROW ONLY (owner, 2026-09-05). It was
+       repeated here so a new entry could be written and left switched off,
+       but one setting with two places to change it is one setting too many:
+       the row is where you can see every entry's state at once and flip one
+       without opening anything, so that is where it belongs. A new entry
+       arrives switched on and is hidden from the row if that is not wanted. -->
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
