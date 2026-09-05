@@ -148,6 +148,7 @@ import { TagRuleService } from 'src/app/common/services/data/tag-rule.service';
 import { TeamPageDialogComponent } from 'src/app/data-manager/team-page/team-page-dialog.component';
 import { TemplatePickerDialogComponent } from 'src/app/tools-manager/email-designer/template-picker/template-picker-dialog.component';
 import { TestimonialDialogComponent } from 'src/app/shared/testimonial-dialog/testimonial-dialog.component';
+import { PageEntryDialogComponent } from 'src/app/page-manager/pages/page-entry-dialog.component';
 import { ToolsManagerModule } from 'src/app/tools-manager/tools-manager.module';
 import { ToolsManagerRoutingModule } from 'src/app/tools-manager/tools-manager-routing.module';
 
@@ -330,6 +331,7 @@ const LOADABLE: { name: string; value: unknown }[] = [
   { name: 'TagRuleModel', value: TagRuleModel },
   { name: 'TeamPageDialogComponent', value: TeamPageDialogComponent },
   { name: 'TemplatePickerDialogComponent', value: TemplatePickerDialogComponent },
+  { name: 'PageEntryDialogComponent', value: PageEntryDialogComponent },
   { name: 'TestimonialDialogComponent', value: TestimonialDialogComponent },
   { name: 'ToolsManagerModule', value: ToolsManagerModule },
   { name: 'ToolsManagerRoutingModule', value: ToolsManagerRoutingModule },

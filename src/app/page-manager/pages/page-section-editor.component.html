@@ -636,181 +636,51 @@
 
       <div cdkDropList class="psd__entry-list" (cdkDropListDropped)="reorderEntries($event)">
         @for (entry of entries; track $index) {
-          <div class="psd__entry" cdkDrag [class.psd__entry--off]="!entry.isActive">
+          <!-- AN IDENTITY LINE, NOT A FORM. What this row has to do is let
+               someone find the entry they mean; its fields open in a dialog
+               (owner, 2026-09-05). What stays on the row is what belongs to
+               the LIST rather than to the entry: the order, whether it shows
+               at all, and removing it.
+
+               The whole row opens the dialog, not just the pencil - a row
+               that has one clickable pixel is a row people miss. -->
+          <div class="psd__entry psd__entry--row" cdkDrag
+               [class.psd__entry--off]="!entry.isActive">
             <mat-icon class="psd__grip" cdkDragHandle matTooltip="Drag to reorder">drag_indicator</mat-icon>
 
             @if (entryFields.image) {
-              <div class="psd__entry-photo">
-                <button type="button" class="psd__entry-image" (click)="showImageUploader(entry)"
-                        [matTooltip]="entry.image ? 'Change this picture' : 'Choose a picture'">
-                  @if (entry.image) {
-                    <img [src]="entry.image.url" [alt]="entry.title">
-                  } @else {
-                    <mat-icon>add_photo_alternate</mat-icon>
-                  }
-                </button>
-                <!-- The card crops this picture to a fixed frame, so a portrait
-                     taken at arm's length loses the face unless the card is
-                     told where to look. Opened one at a time: eight of these
-                     open at once would be a wall of photographs. -->
+              <div class="psd__entry-thumb">
                 @if (entry.image) {
-                  <button mat-button type="button" class="psd__entry-focus-toggle"
-                          (click)="toggleEntryFocus(entry)">
-                    {{ focusEntry === entry ? 'Done' : 'Position' }}
-                  </button>
+                  <img [src]="entry.image.url" [alt]="entry.title">
+                } @else {
+                  <mat-icon matTooltip="No picture yet">image_not_supported</mat-icon>
                 }
               </div>
             }
 
-            @if (focusEntry === entry && entry.image) {
-              <div class="psd__entry-focus">
-                <div class="psd__focus"
-                     (pointerdown)="startEntryFocusDrag(entry, $event)"
-                     (pointermove)="dragEntryFocus(entry, $event)"
-                     tabindex="0"
-                     role="application"
-                     aria-label="Drag to choose the part of this picture the card keeps"
-                     (keydown.arrowleft)="nudgeEntryFocus(entry, -5, 0); $event.preventDefault()"
-                     (keydown.arrowright)="nudgeEntryFocus(entry, 5, 0); $event.preventDefault()"
-                     (keydown.arrowup)="nudgeEntryFocus(entry, 0, -5); $event.preventDefault()"
-                     (keydown.arrowdown)="nudgeEntryFocus(entry, 0, 5); $event.preventDefault()">
-                  <img class="psd__focus-img" [src]="entry.image.url" [alt]="entry.title">
-                  <span class="psd__focus-dot"
-                        [style.left.%]="entryFocusPoint(entry).x"
-                        [style.top.%]="entryFocusPoint(entry).y"></span>
-                </div>
-                <p class="psd__entry-focus-note">
-                  Drag to the part the card should keep &mdash; a face, usually.
-                  <button mat-button type="button" (click)="clearEntryFocus(entry)">Reset</button>
-                </p>
-              </div>
+            @if (entrySpec?.numbered) {
+              <span class="psd__entry-chip">{{ chipOf($index) }}</span>
             }
-            <div class="psd__entry-fields">
-              <div class="psd__entry-top">
-                @if (entrySpec?.numbered) {
-                  <span class="psd__entry-chip">{{ chipOf($index) }}</span>
-                }
-                @if (entryFields.title) {
-                  <mat-form-field appearance="outline" class="psd__entry-title">
-                    <mat-label>{{ entrySpec?.titleLabel ?? 'Title' }}</mat-label>
-                    <input matInput [(ngModel)]="entry.title">
-                  </mat-form-field>
-                }
-                @if (entryFields.column) {
-                  <mat-form-field appearance="outline" class="psd__entry-column">
-                    <mat-label>Column</mat-label>
-                    <mat-select (selectionChange)="edited()" [(ngModel)]="entry.column">
-                      <mat-option value="left">Left</mat-option>
-                      <mat-option value="right">Right</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                }
-                @if (entryFields.icon) {
-                  <mat-form-field appearance="outline" class="psd__entry-icon">
-                    <mat-label>Icon</mat-label>
-                    <mat-select (selectionChange)="edited()" [(ngModel)]="entry.icon">
-                      @for (i of icons; track i.value) {
-                        <mat-option [value]="i.value">{{ i.label }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                }
-                @if (sideOf($index); as side) {
-                  <span class="psd__entry-side" matTooltip="Worked out from the order, not stored">
-                    {{ side }}
-                  </span>
-                }
-              </div>
 
-              @if (entryFields.heading) {
-                <mat-form-field appearance="outline" class="psd__entry-line">
-                  <mat-label>{{ entrySpec?.headingLabel ?? 'Headline' }}</mat-label>
-                  <input matInput [(ngModel)]="entry.heading">
-                </mat-form-field>
+            <button type="button" class="psd__entry-id" (click)="openEntry($index)">
+              <span class="psd__entry-id-label">{{ entryLabel(entry, $index) }}</span>
+              @if (entryDetail(entry, $index); as detail) {
+                <span class="psd__entry-id-detail">{{ detail }}</span>
               }
+            </button>
 
-              @if (entryFields.amount) {
-                <div class="psd__entry-amount">
-                  <mat-form-field appearance="outline" class="psd__entry-price">
-                    <mat-label>Price from Web Config</mat-label>
-                    <mat-select (selectionChange)="edited()" [(ngModel)]="entry.amountKey">
-                      <mat-option [value]="undefined">No price on this one</mat-option>
-                      @for (a of amounts; track a.key) {
-                        <mat-option [value]="a.key">{{ a.label }}</mat-option>
-                      }
-                    </mat-select>
-                    <mat-hint>The amount itself is edited in Web Config.</mat-hint>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="psd__entry-suffix">
-                    <mat-label>After the amount</mat-label>
-                    <input matInput [(ngModel)]="entry.amountSuffix" placeholder="/month">
-                  </mat-form-field>
-                </div>
-              }
+            @if (sideOf($index); as side) {
+              <span class="psd__entry-side" matTooltip="Worked out from the order, not stored">
+                {{ side }}
+              </span>
+            }
 
-              @if (entryFields.description) {
-                <mat-form-field appearance="outline" class="psd__entry-copy">
-                  <mat-label>{{ entrySpec?.descriptionLabel ?? 'Copy' }}</mat-label>
-                  <textarea matInput rows="3" [(ngModel)]="entry.description"></textarea>
-                </mat-form-field>
-              }
-
-              @if (entryFields.body) {
-                <div class="psd__entry-rich">
-                  <span class="psd__rich-label">{{ entrySpec?.bodyLabel ?? 'Copy' }}</span>
-                  <quill-editor [(ngModel)]="entry.body" [modules]="richTextModules"
-                                [attr.aria-label]="entrySpec?.bodyLabel ?? 'Copy'"></quill-editor>
-                </div>
-              }
-
-              @if (entryFields.link) {
-                <app-destination-field
-                  [label]="entrySpec?.linkLabel ?? 'Goes to'"
-                  [url]="entry.link"
-                  (urlChange)="entry.link = $event; edited()"></app-destination-field>
-              }
-
-              @if (entryFields.cta || entryFields.giving) {
-                <div class="psd__entry-cta">
-                  <mat-form-field appearance="outline" class="psd__entry-line">
-                    <mat-label>Button text</mat-label>
-                    <input matInput [(ngModel)]="entry.ctaTitle">
-                    <mat-hint>Leave empty for no button.</mat-hint>
-                  </mat-form-field>
-
-                  @if (entryFields.giving) {
-                    <!-- A KEY, not an address. See the catalogue's header:
-                         a free-text URL here would let anyone who can edit
-                         this page redirect donations. -->
-                    <mat-form-field appearance="outline" class="psd__entry-line">
-                      <mat-label>Button opens</mat-label>
-                      <mat-select (selectionChange)="edited()" [(ngModel)]="entry.link">
-                        @for (d of givingDestinations; track d.key) {
-                          <mat-option [value]="d.key">{{ d.label }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else if (entryFields.cta) {
-                    <app-destination-field
-                      [url]="entry.ctaUrl"
-                      (urlChange)="entry.ctaUrl = $event; edited()"></app-destination-field>
-                  }
-
-                  <!-- Per button. The Give page's donation buttons leave for
-                       a payment provider and should keep the site open
-                       behind them; a button to another page here should
-                       not. Same switch as a buttons piece carries. -->
-                  <mat-slide-toggle class="psd__entry-newtab"
-                                    [checked]="entry.newTab === true"
-                                    (change)="entry.newTab = $event.checked; edited()"
-                                    matTooltip="Open in a new browser tab, keeping this site open behind it">
-                    Opens in a new tab
-                  </mat-slide-toggle>
-                </div>
-              }
-            </div>
-
-            <div class="psd__entry-side-col">
+            <div class="psd__entry-side-col psd__entry-side-col--row">
+              <button type="button" class="psd__icon-btn"
+                      [matTooltip]="'Edit this ' + entryNoun" (click)="openEntry($index)"
+                      [attr.aria-label]="'Edit ' + entryLabel(entry, $index)">
+                <mat-icon>edit</mat-icon>
+              </button>
               <mat-slide-toggle (change)="edited()" [(ngModel)]="entry.isActive"
                                 [matTooltip]="entry.isActive ? 'Showing' : 'Hidden'">
               </mat-slide-toggle>

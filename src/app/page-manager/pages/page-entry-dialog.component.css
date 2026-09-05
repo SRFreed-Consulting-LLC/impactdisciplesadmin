@@ -1,0 +1,123 @@
+/* ONE ENTRY'S FIELDS. The list row is now an identity line, so everything a
+   list used to hold open for eight rows at once is in here for one. */
+.ped {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.ped__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ped__grow {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.ped__narrow {
+  flex: 0 0 180px;
+}
+
+.ped__wide {
+  width: 100%;
+}
+
+.ped__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+/* THE PICTURE AND ITS CROP, side by side: the thumbnail is what the card
+   shows, the drag target is where in the photo it looks. Seeing both at once
+   is the whole point of positioning. */
+.ped__photo {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ped__image {
+  flex: 0 0 auto;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--app-field);
+  border: 1px dashed var(--app-card-border);
+  border-radius: var(--app-radius-card);
+  color: var(--app-muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ped__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--app-radius-card) - 2px);
+}
+
+.ped__focus-col {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.ped__note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+/* A fact about this entry, not a field on it. */
+.ped__derived {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.ped__derived mat-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.ped__rich {
+  margin-bottom: 16px;
+}
+
+.ped__cta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--app-field);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius-card);
+}
+
+.ped__live {
+  align-self: flex-start;
+  margin: 4px 0 8px;
+}

@@ -24,11 +24,29 @@ import { MatDialog } from '@angular/material/dialog';
 import {
   TestimonialDialogComponent
 } from '../../shared/testimonial-dialog/testimonial-dialog.component';
+import {
+  PageEntryDialogComponent, PageEntryDialogData
+} from './page-entry-dialog.component';
 
 /** How long to wait after a keystroke before showing it in the preview.
  *  Short enough to feel immediate, long enough that a sentence is not
  *  twenty reloads of a frame. */
 const LIVE_PREVIEW_DEBOUNCE_MS = 250;
+
+/**
+ * The words out of a rich-text field, for a one-line summary.
+ *
+ * Tags stripped and entities left as they are: this is only ever shown
+ * truncated in an interpolation, which escapes what it draws, so an entity
+ * that survives is a cosmetic `&amp;` in a preview rather than anything that
+ * can reach the page.
+ *
+ * @param html The stored rich text, or nothing.
+ * @returns The text with tags removed and whitespace collapsed.
+ */
+export function plainText(html: string | undefined): string {
+  return (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 /**
  * Edits ONE section of ONE public page.
@@ -386,73 +404,6 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
   /** The focus lever only means anything while the photo is a cropped
    *  BACKGROUND - i.e. this section is actually on the photo surface. */
   /**
-   * Which entry's picture is being positioned, or null.
-   *
-   * One at a time: the picker is a real drag target, and a list of eight
-   * coaches showing eight of them at once would be a wall of photographs
-   * with the words nowhere to be seen.
-   */
-  focusEntry: PageContentItem | null = null;
-
-  toggleEntryFocus(entry: PageContentItem): void {
-    this.focusEntry = this.focusEntry === entry ? null : entry;
-  }
-
-  /** This entry's point, defaulting to the middle. */
-  entryFocusPoint(entry: PageContentItem): { x: number; y: number } {
-    const point = entry.photoFocusPoint;
-    return point && Number.isFinite(point.x) && Number.isFinite(point.y) ?
-      { x: point.x, y: point.y } : { x: 50, y: 50 };
-  }
-
-  /**
-   * Moves one entry's focal point to the pointer.
-   * @param entry The entry being positioned.
-   * @param event The pointer event on its picture.
-   */
-  moveEntryFocus(entry: PageContentItem, event: PointerEvent): void {
-    const el = event.currentTarget as HTMLElement | null;
-    if (!el) {
-      return;
-    }
-    const box = el.getBoundingClientRect();
-    if (!box.width || !box.height) {
-      return;
-    }
-    const pct = (v: number) => Math.round(Math.min(100, Math.max(0, v)));
-    entry.photoFocusPoint = {
-      x: pct(((event.clientX - box.left) / box.width) * 100),
-      y: pct(((event.clientY - box.top) / box.height) * 100)
-    };
-    this.edits.next();
-  }
-
-  startEntryFocusDrag(entry: PageContentItem, event: PointerEvent): void {
-    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
-    this.moveEntryFocus(entry, event);
-  }
-
-  dragEntryFocus(entry: PageContentItem, event: PointerEvent): void {
-    if (event.buttons === 1) {
-      this.moveEntryFocus(entry, event);
-    }
-  }
-
-  /** Keyboard equivalent - a drag is unreachable without a pointer. */
-  nudgeEntryFocus(entry: PageContentItem, dx: number, dy: number): void {
-    const { x, y } = this.entryFocusPoint(entry);
-    const clamp = (n: number) => Math.min(100, Math.max(0, n));
-    entry.photoFocusPoint = { x: clamp(x + dx), y: clamp(y + dy) };
-    this.edits.next();
-  }
-
-  /** Back to the card's own default - the ABSENCE of a point, not a
-   *  centred one, so the card keeps whatever crop it was designed with. */
-  clearEntryFocus(entry: PageContentItem): void {
-    delete entry.photoFocusPoint;
-    this.edits.next();
-  }
-  /**
    * The focal point as percentages, for the drag control and its preview.
    *
    * Falls back to whatever the old top/centre/bottom said, so opening a
@@ -803,8 +754,112 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
       title: '', isActive: true,
       ...(this.entryFields.column ? { column: 'left' as const } : {})
     };
-    this.section.items = [...this.entries, seed];
-    this.edited();
+    // Straight into the dialog, and only added if it comes back: the old
+    // behaviour appended a blank row you then had to find and fill in, and
+    // an abandoned one sat in the list drawing an empty card.
+    this.openEntryDialog(seed, this.entries.length, true, (entry) => {
+      this.section.items = [...this.entries, entry];
+    });
+  }
+
+  /**
+   * Opens one entry's fields.
+   *
+   * @param index Which entry in the list.
+   *
+   * A LIST SHOULD READ AS A LIST. Every entry used to hold every field it
+   * has open at once - a picture, a title, a headline, a paragraph, a
+   * rich-text box, a destination and two button fields - so eight coaches
+   * were eight stacked forms and finding the third meant scrolling past two
+   * of them. The row identifies the entry now; this is where its fields are
+   * (owner, 2026-09-05).
+   */
+  openEntry(index: number): void {
+    const entry = this.entries[index];
+    if (!entry) {
+      return;
+    }
+    this.openEntryDialog(entry, index, false, (edited) => {
+      this.section.items = this.entries.map((e, i) => (i === index ? edited : e));
+    });
+  }
+
+  private openEntryDialog(
+    entry: PageContentItem,
+    index: number,
+    isNew: boolean,
+    apply: (entry: PageContentItem) => void
+  ): void {
+    const spec = this.entrySpec;
+    if (!spec) {
+      return;
+    }
+    // A COPY, so Cancel means cancel. The dialog covers the live preview, so
+    // nothing is gained by writing through to the section as you type, and
+    // the ordinary expectation of a dialog is that it can be abandoned.
+    // structuredClone rather than a spread: an entry holds an image object
+    // and a focal point, and a shallow copy would let the dialog edit those
+    // in place on the real entry.
+    const data: PageEntryDialogData = {
+      entry: structuredClone(entry),
+      spec,
+      index,
+      chip: this.chipOf(index),
+      side: this.sideOf(index),
+      isNew
+    };
+    this.dialog.open(PageEntryDialogComponent, {
+      data,
+      width: '860px',
+      maxWidth: '96vw',
+      autoFocus: false
+    }).afterClosed().subscribe((result: PageContentItem | undefined) => {
+      if (!result) {
+        return;
+      }
+      apply(result);
+      this.edited();
+    });
+  }
+
+  /**
+   * The one line that has to tell one entry from another in a closed list.
+   *
+   * Falls through whatever this kind of entry actually carries, because no
+   * single field is present on all of them: a price tile has no title, a
+   * quote card's words are its body, an icon row is a headline and a
+   * sentence. The last resort names the position rather than showing a blank
+   * row, which is the one thing a list must never do.
+   */
+  entryLabel(entry: PageContentItem, index: number): string {
+    const first = [entry.title, entry.heading, entry.description]
+      .map((v) => (v ?? '').trim())
+      .find((v) => v.length > 0);
+    if (first) {
+      return first.length > 80 ? `${first.slice(0, 80)}…` : first;
+    }
+    const fromBody = plainText(entry.body).trim();
+    if (fromBody) {
+      return fromBody.length > 80 ? `${fromBody.slice(0, 80)}…` : fromBody;
+    }
+    return `Untitled ${this.entryNoun} ${index + 1}`;
+  }
+
+  /**
+   * The quieter second line - whatever the label did NOT use.
+   *
+   * Empty is fine and common: a row with one field has nothing to say twice,
+   * and repeating the label underneath itself would be noise.
+   */
+  entryDetail(entry: PageContentItem, index: number): string {
+    const label = this.entryLabel(entry, index);
+    const rest = [entry.heading, entry.description, plainText(entry.body), entry.ctaTitle]
+      .map((v) => (v ?? '').replace(/\s+/g, ' ').trim())
+      .find((v) => v.length > 0 && !label.startsWith(v.slice(0, 40)));
+    if (!rest) {
+      return '';
+    }
+    return rest.length > 110 ? `${rest.slice(0, 110)}…` : rest;
   }
 
   removeEntry(index: number): void {

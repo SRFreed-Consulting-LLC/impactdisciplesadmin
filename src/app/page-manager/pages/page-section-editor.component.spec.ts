@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
-import { PageContentBlock, SectionColumn } from '@impact-common/shared/models/domain/page-content.model';
+import {
+  PageContentBlock, PageContentItem, SectionColumn
+} from '@impact-common/shared/models/domain/page-content.model';
 import { CONTENT_PIECES, SECTION_ARCHETYPE } from '@impact-common/shared/lists/section_kit';
 import { TestimonialService } from 'src/app/common/services/data/testimonial.service';
 import { TestimonialModel } from '@impact-common/shared/models/domain/testimonial.model';
@@ -9,6 +11,7 @@ import { TESTIMONIAL_TYPES } from '@impact-common/shared/lists/testimonial_types
 import { FormDefinitionService } from 'src/app/common/services/data/form-definition.service';
 import { PageSectionEditorComponent, freshKey } from './page-section-editor.component';
 import { kitPage } from './kit-page.adapter';
+import { PageEntryDialogData } from './page-entry-dialog.component';
 
 /**
  * THE COLUMN EDITOR - the half of the Section archetype that lives in the
@@ -625,5 +628,124 @@ describe('adding and editing a quote from the section', () => {
     component.addQuote();
 
     expect(reads).toBe(0);
+  });
+});
+
+/**
+ * A LIST THAT READS AS A LIST.
+ *
+ * Every entry used to hold every field it has open at once, so eight coaches
+ * were eight stacked forms. The row identifies the entry now and the fields
+ * are in a dialog - which puts the weight on two things that were free
+ * before: the row has to say WHICH entry it is even when the obvious field is
+ * empty, and the dialog must not be able to half-apply an abandoned edit.
+ */
+describe('a closed entry row and the dialog behind it', () => {
+  let opened: { data: PageEntryDialogData } | undefined;
+  let closeWith: PageContentItem | undefined;
+
+  function build(items: PageContentItem[] = []): PageSectionEditorComponent {
+    opened = undefined;
+    closeWith = undefined;
+    TestBed.configureTestingModule({
+      providers: [
+        PageSectionEditorComponent,
+        { provide: TestimonialService, useValue: { getAllByValue: () => Promise.resolve([]) } },
+        { provide: FormDefinitionService, useValue: { getAll: () => Promise.resolve([]) } },
+        {
+          provide: MatDialog,
+          useValue: {
+            open: (_c: unknown, config: { data: PageEntryDialogData }) => {
+              opened = config;
+              return { afterClosed: () => of(closeWith) };
+            }
+          }
+        }
+      ]
+    });
+    const component = TestBed.inject(PageSectionEditorComponent);
+    component.section = {
+      key: 'list', type: SECTION_ARCHETYPE.LIST, variant: 'tiles', items
+    } as PageContentBlock;
+    component.kind = {
+      type: SECTION_ARCHETYPE.LIST,
+      variants: [{
+        key: 'tiles', label: 'Tiles',
+        fields: { entries: true },
+        entry: { noun: 'card', fields: { title: true, description: true, image: true } }
+      }]
+    } as never;
+    return component;
+  }
+
+  it('names a row by whatever that kind of entry actually carries', () => {
+    // No one field is on all of them: a price tile has no title, a quote
+    // card's words are its body, a feature row is a headline and a sentence.
+    const component = build([
+      { title: 'Kevin Wilson', isActive: true },
+      { title: '', heading: 'Second', isActive: true },
+      { title: '', description: 'Only some copy', isActive: true },
+      { title: '', body: '<p>Words <em>in</em> a quote</p>', isActive: true }
+    ] as PageContentItem[]);
+
+    expect(component.entryLabel(component.entries[0], 0)).toBe('Kevin Wilson');
+    expect(component.entryLabel(component.entries[1], 1)).toBe('Second');
+    expect(component.entryLabel(component.entries[2], 2)).toBe('Only some copy');
+    expect(component.entryLabel(component.entries[3], 3)).toBe('Words in a quote');
+  });
+
+  it('never draws a blank row, which is the one thing a closed list must not do', () => {
+    const component = build([{ title: '', isActive: true }] as PageContentItem[]);
+    expect(component.entryLabel(component.entries[0], 0)).toBe('Untitled card 1');
+  });
+
+  it('does not repeat the label as its own second line', () => {
+    const component = build([
+      { title: 'Kevin Wilson', description: 'Coaches in Georgia', isActive: true },
+      { title: '', description: 'Only some copy', isActive: true }
+    ] as PageContentItem[]);
+
+    expect(component.entryDetail(component.entries[0], 0)).toBe('Coaches in Georgia');
+    expect(component.entryDetail(component.entries[1], 1)).toBe('');
+  });
+
+  it('hands the dialog a COPY, so Cancel really cancels', () => {
+    // A shallow copy would not be enough: an entry holds an image object and
+    // a focal point, and the dialog edits both in place.
+    const component = build([
+      { title: 'Kevin', isActive: true, photoFocusPoint: { x: 20, y: 30 } }
+    ] as PageContentItem[]);
+    component.openEntry(0);
+
+    const handed = opened!.data.entry;
+    expect(handed).not.toBe(component.entries[0]);
+    expect(handed.photoFocusPoint).not.toBe(component.entries[0].photoFocusPoint);
+
+    // Cancelled: nothing came back, so nothing was applied.
+    expect(component.entries[0].title).toBe('Kevin');
+  });
+
+  it('applies what the dialog returns, in place, to that one entry', () => {
+    const component = build([
+      { title: 'One', isActive: true },
+      { title: 'Two', isActive: true }
+    ] as PageContentItem[]);
+    closeWith = { title: 'Two, renamed', isActive: true } as PageContentItem;
+    component.openEntry(1);
+
+    expect(component.entries.map((e) => e.title)).toEqual(['One', 'Two, renamed']);
+  });
+
+  it('adds a NEW entry only if the dialog was seen through', () => {
+    // The old Add appended a blank row you then had to find and fill in, and
+    // an abandoned one sat in the list drawing an empty card.
+    const component = build([]);
+    component.addEntry();
+    expect(component.entries.length).toBe(0);
+    expect(opened!.data.isNew).toBe(true);
+
+    closeWith = { title: 'Written', isActive: true } as PageContentItem;
+    component.addEntry();
+    expect(component.entries.map((e) => e.title)).toEqual(['Written']);
   });
 });

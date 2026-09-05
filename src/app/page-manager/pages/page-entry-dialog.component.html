@@ -1,0 +1,195 @@
+<app-popup-header [title]="title" [showCloseButton]="true"
+                  (closed)="cancel()"></app-popup-header>
+
+<mat-dialog-content class="ped">
+  <!-- The picture and, only once there is one, where the card should look.
+       Both are here rather than on the list row because a card's crop is
+       part of editing the card, not part of identifying it. -->
+  @if (fields.image) {
+    <div class="ped__photo">
+      <button type="button" class="ped__image" (click)="showImageUploader()"
+              [matTooltip]="entry.image ? 'Change this picture' : 'Choose a picture'">
+        @if (entry.image) {
+          <img [src]="entry.image.url" [alt]="entry.title">
+        } @else {
+          <mat-icon>add_photo_alternate</mat-icon>
+          <span>{{ spec.imageLabel ?? 'Choose a picture' }}</span>
+        }
+      </button>
+
+      @if (entry.image) {
+        <div class="ped__focus-col">
+          <span class="ped__label">Where the card looks</span>
+          <div class="psd__focus"
+               (pointerdown)="startFocusDrag($event)"
+               (pointermove)="dragFocus($event)"
+               tabindex="0"
+               role="application"
+               aria-label="Drag to choose the part of this picture the card keeps"
+               (keydown.arrowleft)="nudgeFocus(-5, 0); $event.preventDefault()"
+               (keydown.arrowright)="nudgeFocus(5, 0); $event.preventDefault()"
+               (keydown.arrowup)="nudgeFocus(0, -5); $event.preventDefault()"
+               (keydown.arrowdown)="nudgeFocus(0, 5); $event.preventDefault()">
+            <img class="psd__focus-img" [src]="entry.image.url" [alt]="entry.title">
+            <span class="psd__focus-dot"
+                  [style.left.%]="focusPoint.x"
+                  [style.top.%]="focusPoint.y"></span>
+          </div>
+          <p class="ped__note">
+            Drag to the part the card should keep &mdash; a face, usually.
+            <button mat-button type="button" (click)="clearFocus()">Reset</button>
+            <button mat-button type="button" (click)="clearImage()">Remove picture</button>
+          </p>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="ped__row">
+    @if (spec.numbered) {
+      <span class="psd__entry-chip">{{ data.chip }}</span>
+    }
+    @if (fields.title) {
+      <mat-form-field appearance="outline" class="ped__grow">
+        <mat-label>{{ spec.titleLabel ?? 'Title' }}</mat-label>
+        <input matInput [(ngModel)]="entry.title">
+      </mat-form-field>
+    }
+    @if (fields.column) {
+      <mat-form-field appearance="outline" class="ped__narrow">
+        <mat-label>Column</mat-label>
+        <mat-select [(ngModel)]="entry.column">
+          <mat-option value="left">Left</mat-option>
+          <mat-option value="right">Right</mat-option>
+        </mat-select>
+      </mat-form-field>
+    }
+    @if (fields.icon) {
+      <mat-form-field appearance="outline" class="ped__narrow">
+        <mat-label>Icon</mat-label>
+        <mat-select [(ngModel)]="entry.icon">
+          @for (i of icons; track i.value) {
+            <mat-option [value]="i.value">{{ i.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+  </div>
+
+  <!-- Worked out from the order, not stored - so it is said here as a fact
+       about this entry rather than offered as a field. -->
+  @if (data.side) {
+    <p class="ped__derived">
+      <mat-icon>swap_horiz</mat-icon>
+      <span>This one sits {{ data.side }} &mdash; that follows from its place in
+        the list, and changes if you reorder it.</span>
+    </p>
+  }
+
+  @if (fields.heading) {
+    <mat-form-field appearance="outline" class="ped__wide">
+      <mat-label>{{ spec.headingLabel ?? 'Headline' }}</mat-label>
+      <input matInput [(ngModel)]="entry.heading">
+    </mat-form-field>
+  }
+
+  @if (fields.amount) {
+    <div class="ped__row">
+      <mat-form-field appearance="outline" class="ped__grow">
+        <mat-label>Price from Web Config</mat-label>
+        <mat-select [(ngModel)]="entry.amountKey">
+          <mat-option [value]="undefined">No price on this one</mat-option>
+          @for (a of amounts; track a.key) {
+            <mat-option [value]="a.key">{{ a.label }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>The amount itself is edited in Web Config.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="ped__narrow">
+        <mat-label>After the amount</mat-label>
+        <input matInput [(ngModel)]="entry.amountSuffix" placeholder="/month">
+      </mat-form-field>
+    </div>
+  }
+
+  @if (fields.description) {
+    <mat-form-field appearance="outline" class="ped__wide">
+      <mat-label>{{ spec.descriptionLabel ?? 'Copy' }}</mat-label>
+      <textarea matInput rows="4" [(ngModel)]="entry.description"></textarea>
+    </mat-form-field>
+  }
+
+  @if (fields.body) {
+    <div class="ped__rich">
+      <span class="ped__label">{{ spec.bodyLabel ?? 'Copy' }}</span>
+      <quill-editor [(ngModel)]="entry.body" [modules]="richTextModules"
+                    [attr.aria-label]="spec.bodyLabel ?? 'Copy'"></quill-editor>
+    </div>
+  }
+
+  @if (fields.link) {
+    <app-destination-field
+      [label]="spec.linkLabel ?? 'Goes to'"
+      [url]="entry.link"
+      (urlChange)="entry.link = $event"></app-destination-field>
+  }
+
+  @if (fields.cta || fields.giving) {
+    <div class="ped__cta">
+      <mat-form-field appearance="outline" class="ped__wide">
+        <mat-label>Button text</mat-label>
+        <input matInput [(ngModel)]="entry.ctaTitle">
+        <mat-hint>Leave empty for no button.</mat-hint>
+      </mat-form-field>
+
+      @if (fields.giving) {
+        <!-- A KEY, not an address. See the catalogue's header: a free-text
+             URL here would let anyone who can edit this page redirect
+             donations. -->
+        <mat-form-field appearance="outline" class="ped__wide">
+          <mat-label>Button opens</mat-label>
+          <mat-select [(ngModel)]="entry.link">
+            @for (d of givingDestinations; track d.key) {
+              <mat-option [value]="d.key">{{ d.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      } @else if (fields.cta) {
+        <app-destination-field
+          [url]="entry.ctaUrl"
+          (urlChange)="entry.ctaUrl = $event"></app-destination-field>
+      }
+
+      <mat-slide-toggle [checked]="entry.newTab === true"
+                        (change)="entry.newTab = $event.checked"
+                        matTooltip="Open in a new browser tab, keeping this site open behind it">
+        Opens in a new tab
+      </mat-slide-toggle>
+    </div>
+  }
+
+  <!-- Showing or hidden is on the list row too, where it can be flipped
+       without opening anything. It is repeated here so a NEW entry can be
+       written and left switched off until it is ready. -->
+  <mat-slide-toggle class="ped__live" [(ngModel)]="entry.isActive">
+    {{ entry.isActive ? 'Showing on the site' : 'Hidden from the site' }}
+  </mat-slide-toggle>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">
+    {{ data.isNew ? 'Add' : 'Done' }}
+  </button>
+</mat-dialog-actions>
+
+@if (isImageUploaderVisible$ | async) {
+  <app-image-uploader
+    [card]="card"
+    [isList]="false"
+    [field]="'image'"
+    [selectionMode]="'single'"
+    [imageSelectVisible]="isImageUploaderVisible$ | async"
+    (imageSelectClosed)="closeImageUploader()">
+  </app-image-uploader>
+}

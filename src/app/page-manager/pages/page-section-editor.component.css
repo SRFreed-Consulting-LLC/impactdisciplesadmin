@@ -798,3 +798,93 @@
   flex: 0 0 auto;
   align-self: flex-start;
 }
+
+/* A CLOSED LIST ROW. One line per entry, so a list of eight reads as eight
+   things rather than eight stacked forms. */
+.psd__entry--row {
+  align-items: center;
+  padding: 8px 10px;
+  cursor: default;
+}
+
+.psd__entry--row:hover {
+  border-color: var(--app-accent);
+}
+
+/* The picture, small: enough to tell one coach from another, not enough to
+   push the words off the row. */
+.psd__entry-thumb {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--app-field);
+  border: 1px solid var(--app-card-border);
+  border-radius: 6px;
+  color: var(--app-muted);
+}
+
+.psd__entry-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.psd__entry-thumb mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* THE IDENTITY, and the way in. A button rather than a div: opening an entry
+   has to be reachable from a keyboard, and the row is the target people
+   actually aim at. */
+.psd__entry-id {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.psd__entry-id-label {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psd__entry-id-detail {
+  font-size: 12px;
+  color: var(--app-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psd__entry-id:hover .psd__entry-id-label {
+  text-decoration: underline;
+}
+
+.psd__entry-id:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The list's own controls, in a row now that the entry is one line tall. */
+.psd__entry-side-col--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}

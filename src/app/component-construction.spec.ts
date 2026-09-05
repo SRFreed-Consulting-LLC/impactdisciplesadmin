@@ -20,6 +20,7 @@ import { AgendaGridComponent } from 'src/app/events-manager/events/event-agenda/
 import { AgendaItemDialogComponent } from 'src/app/events-manager/events/event-agenda/agenda-item-dialog.component';
 import { AgendaWizardComponent } from 'src/app/events-manager/events/event-agenda/agenda-wizard/agenda-wizard.component';
 import { AmazonConfirmationDialogComponent } from 'src/app/shared/amazon-confirmation-dialog/amazon-confirmation-dialog.component';
+import { PageEntryDialogComponent } from 'src/app/page-manager/pages/page-entry-dialog.component';
 import { AnimatedLogoComponent } from 'src/app/common/forms/admin/login/animated-logo.component';
 import { AppComponent } from 'src/app/app.component';
 import { AuthCardComponent } from 'src/app/core/auth/auth-card/auth-card.component';
@@ -359,6 +360,7 @@ const IMPORT_ONLY: ComponentRow[] = [
   { name: 'LibraryPermissionDialogComponent', type: LibraryPermissionDialogComponent },
   { name: 'LibrarySendMessageDialogComponent', type: LibrarySendMessageDialogComponent },
   { name: 'NewRecordAlertsComponent', type: NewRecordAlertsComponent },
+  { name: 'PageEntryDialogComponent', type: PageEntryDialogComponent },
   { name: 'PreviewDialogComponent', type: PreviewDialogComponent },
   { name: 'PublishWebDialogComponent', type: PublishWebDialogComponent },
   { name: 'SubscriberDialogComponent', type: SubscriberDialogComponent },
