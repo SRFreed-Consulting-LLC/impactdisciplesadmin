@@ -4,12 +4,23 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
+    // Explicit, not inferred. TS infers rootDir from the common ancestor of
+    // the input files - today './src', which is why lib/ mirrors src/ flat
+    // and package.json's "main": "lib/index.js" resolves. That inference
+    // moves the moment one input lands outside src/, and the emit silently
+    // becomes lib/src/index.js - a deploy-time "function not found", not a
+    // compile error. TypeScript 6 stops inferring it at all (aka.ms/ts6) and
+    // the editor already warns. Pinned here it is a no-op for today's layout
+    // and a loud tsc error if anything ever drifts outside src/.
+    "rootDir": "src",
     "sourceMap": true,
     "strict": false,
-    // Newer transitive .d.ts files (@google-cloud/storage 7.22+,
-    // @types/node 20+) use TypeScript-5.7-era syntax this project's TS 4.9
-    // can't parse - skip type-checking declaration files (our own src is
-    // still fully checked).
+    // Added when this package was on TS 4.9 and newer transitive .d.ts files
+    // (@google-cloud/storage 7.22+, @types/node 20+) used TypeScript-5.7-era
+    // syntax it could not parse. That reason expired with the move to TS 5.8
+    // (2026-09-05 - the version this package now pins); it stays because
+    // skipping declaration-file checking keeps the build fast, and our own
+    // src is fully checked either way.
     "skipLibCheck": true,
     "target": "es2017"
   },

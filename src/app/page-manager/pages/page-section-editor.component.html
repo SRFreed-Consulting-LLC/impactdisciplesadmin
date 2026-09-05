@@ -125,6 +125,45 @@
           phones everything collapses to one column regardless.
         </p>
       </div>
+
+      <!-- A BOX BEHIND EACH CARD. Restored 2026-09-05: the site never stopped
+           drawing these, but the controls were removed, so the Give page's
+           donation options have carried a black box nobody could see or
+           change. Same gate as Cards per row - both only mean something to a
+           look drawn as a grid. -->
+      <div class="psd__axis">
+        <span class="psd__axis-label">Box behind each card</span>
+        <mat-button-toggle-group [value]="activeCardGround"
+                                 (change)="pickCardGround($event.value)"
+                                 aria-label="The colour of the box behind each card">
+          @for (g of cardGrounds; track g.key) {
+            <mat-button-toggle [value]="g.key">{{ g.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <p class="psd__axis-blurb">
+          &ldquo;No box&rdquo; draws the cards straight onto the section&rsquo;s own ground.
+        </p>
+      </div>
+
+      <!-- Only once there IS a box. A text colour with nothing to sit on is a
+           control that does nothing. -->
+      @if (showsCardInk) {
+        <div class="psd__axis">
+          <span class="psd__axis-label">Words on the box</span>
+          <mat-button-toggle-group [value]="activeCardInk"
+                                   (change)="pickCardInk($event.value)"
+                                   aria-label="Whether the words on the box are dark or light">
+            @for (i of cardInks; track i.key) {
+              <mat-button-toggle [value]="i.key">{{ i.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+          <p class="psd__axis-blurb">
+            Each box already picks the colour that reads on it &mdash; this is
+            how you take the other one. Grey on the brand blue is unreadable,
+            which is why the choice is two colours and not a palette.
+          </p>
+        </div>
+      }
     }
 
     <!-- "Share the row with the next section" was here until 2026-09-05.

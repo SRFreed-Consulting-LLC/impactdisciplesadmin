@@ -565,14 +565,23 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     return this.activeSurface === 'photo';
   }
 
-  // --------------------------------------------------------- card grounds
+  // --------------------------------------------------- the box behind a card
   //
-  // A box behind a column or the tiles, from the same fixed palette as the
-  // surfaces. Shane's own follow-up named the trap - "then we'd have to let
-  // them change the text colours too" - and the palette IS the answer: each
-  // ground defaults its text to what reads on it (brand defaults DARK,
-  // because that is what the original blue box does), and the text lever is
-  // its own two-way choice rather than a colour wheel.
+  // A coloured box behind each card of a grid, and whether the words on it
+  // are dark or light.
+  //
+  // THESE CONTROLS WERE MISSING, not new. The renderer never stopped drawing
+  // them - kit-section's groundClasses() reads both fields and maps them to
+  // --kit-card-bg - but the editor's controls were removed at some point and
+  // only the unused member declarations were left behind. So the Give page
+  // has carried `cardGround: 'dark'` on its donation options the whole time,
+  // drawing black boxes nobody could see, change or switch off from the
+  // admin. Restored with a real control 2026-09-05.
+  //
+  // The ink is a separate lever because a box and its text have to be chosen
+  // together to be readable: grey on the brand blue measures ~1.4:1. Each
+  // ground therefore carries a default that reads on it, and this is the
+  // override rather than a colour wheel.
 
   readonly cardGrounds = [
     { key: 'none', label: 'No box' },
@@ -586,13 +595,51 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
     { key: 'light', label: 'Light text' }
   ] as const;
 
-  setGround(which: 'card' | 'left' | 'right', value: 'none' | 'panel' | 'brand' | 'dark'): void {
-    if (which === 'card') { this.section.cardGround = value; }
+  /** 'none' rather than undefined, so the control always shows a selection
+   *  and "No box" reads as a choice rather than a blank. */
+  get activeCardGround(): string {
+    return this.section.cardGround ?? 'none';
+  }
+
+  /**
+   * What the text will actually be, stored or not.
+   *
+   * Shown as the toggle's value so the control never lies about what is
+   * rendering: brand and dark default to LIGHT, panel to dark - the same
+   * defaults groundClasses() applies, and they have to stay the same or the
+   * editor and the page disagree about a colour nobody typed.
+   */
+  get activeCardInk(): string {
+    return this.section.cardInk ??
+      (this.activeCardGround === 'panel' ? 'dark' : 'light');
+  }
+
+  /** The ink lever means nothing without a box to put it on. */
+  get showsCardInk(): boolean {
+    return this.showsCardsPerRow && this.activeCardGround !== 'none';
+  }
+
+  /**
+   * @param value Which ground, or 'none' to remove the box entirely.
+   *
+   * DELETE on 'none', never `= undefined`: a key explicitly set to undefined
+   * rejects the whole page document. Same rule as every other lever here.
+   */
+  pickCardGround(value: 'none' | 'panel' | 'brand' | 'dark'): void {
+    if (value === 'none') {
+      delete this.section.cardGround;
+      // The ink is meaningless without a ground and would otherwise sit on
+      // the document forever, reappearing if a box is ever chosen again.
+      delete this.section.cardInk;
+    } else {
+      this.section.cardGround = value;
+    }
     this.edits.next();
   }
 
-  setInk(which: 'card' | 'left' | 'right', value: 'dark' | 'light'): void {
-    if (which === 'card') { this.section.cardInk = value; }
+  /** @param value Dark or light text on the box. */
+  pickCardInk(value: 'dark' | 'light'): void {
+    this.section.cardInk = value;
     this.edits.next();
   }
 
@@ -660,14 +707,6 @@ export class PageSectionEditorComponent implements OnInit, OnDestroy {
 
   // isColumns and isGrid asked whether this section was one of two
   // archetypes, and both are gone. Nothing has asked since.
-
-  /** What a ground's text defaults to when no ink is stored - the pair that
-   *  reads on it. Brand defaults LIGHT: the original's grey-on-blue measured
-   *  ~1.4:1 and Shane called it terrible on sight. Shown as the toggle's
-   *  value so the control never lies about what is rendering. */
-  inkFor(ground: string | undefined, stored: string | undefined): string {
-    return stored ?? (ground === 'panel' ? 'dark' : 'light');
-  }
 
   // hasSplitMedia and isCentred asked which ARCHETYPE this was, to decide
   // whether a media-side or a stacking-order control applied. Both are
